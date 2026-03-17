@@ -7,7 +7,7 @@
 
 ### Voice Receptionist
 
-- [ ] **VOICE-01**: AI answers every inbound call within 1 second via Vapi/Retell with natural-sounding voice
+- [ ] **VOICE-01**: AI answers every inbound call within 1 second via Retell with natural-sounding voice
 - [ ] **VOICE-02**: AI greets caller using the specific business name to establish professional trust
 - [ ] **VOICE-03**: AI extracts caller ID, job type/scope, and service address from conversation
 - [ ] **VOICE-04**: AI performs mandatory read-back confirmation of captured address (e.g., "Just to confirm, you're at 123 Ubi Ave 1, correct?")
@@ -95,50 +95,50 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VOICE-01 | — | Pending |
-| VOICE-02 | — | Pending |
-| VOICE-03 | — | Pending |
-| VOICE-04 | — | Pending |
-| VOICE-05 | — | Pending |
-| VOICE-06 | — | Pending |
-| VOICE-07 | — | Pending |
-| VOICE-08 | — | Pending |
-| VOICE-09 | — | Pending |
-| TRIAGE-01 | — | Pending |
-| TRIAGE-02 | — | Pending |
-| TRIAGE-03 | — | Pending |
-| TRIAGE-04 | — | Pending |
-| TRIAGE-05 | — | Pending |
-| TRIAGE-06 | — | Pending |
-| SCHED-01 | — | Pending |
-| SCHED-02 | — | Pending |
-| SCHED-03 | — | Pending |
-| SCHED-04 | — | Pending |
-| SCHED-05 | — | Pending |
-| SCHED-06 | — | Pending |
-| SCHED-07 | — | Pending |
-| SCHED-08 | — | Pending |
-| SCHED-09 | — | Pending |
-| CRM-01 | — | Pending |
-| CRM-02 | — | Pending |
-| CRM-03 | — | Pending |
-| CRM-04 | — | Pending |
-| CRM-05 | — | Pending |
-| NOTIF-01 | — | Pending |
-| NOTIF-02 | — | Pending |
-| NOTIF-03 | — | Pending |
-| ONBOARD-01 | — | Pending |
-| ONBOARD-02 | — | Pending |
-| ONBOARD-03 | — | Pending |
-| ONBOARD-04 | — | Pending |
-| ONBOARD-05 | — | Pending |
-| ONBOARD-06 | — | Pending |
+| VOICE-01 | Phase 1 | Pending |
+| VOICE-02 | Phase 2 | Pending |
+| VOICE-03 | Phase 3 | Pending |
+| VOICE-04 | Phase 3 | Pending |
+| VOICE-05 | Phase 1 | Pending |
+| VOICE-06 | Phase 1 | Pending |
+| VOICE-07 | Phase 2 | Pending |
+| VOICE-08 | Phase 1 | Pending |
+| VOICE-09 | Phase 1 | Pending |
+| TRIAGE-01 | Phase 2 | Pending |
+| TRIAGE-02 | Phase 2 | Pending |
+| TRIAGE-03 | Phase 2 | Pending |
+| TRIAGE-04 | Phase 2 | Pending |
+| TRIAGE-05 | Phase 2 | Pending |
+| TRIAGE-06 | Phase 4 | Pending |
+| SCHED-01 | Phase 3 | Pending |
+| SCHED-02 | Phase 3 | Pending |
+| SCHED-03 | Phase 3 | Pending |
+| SCHED-04 | Phase 3 | Pending |
+| SCHED-05 | Phase 3 | Pending |
+| SCHED-06 | Phase 3 | Pending |
+| SCHED-07 | Phase 3 | Pending |
+| SCHED-08 | Phase 3 | Pending |
+| SCHED-09 | Phase 3 | Pending |
+| CRM-01 | Phase 4 | Pending |
+| CRM-02 | Phase 4 | Pending |
+| CRM-03 | Phase 4 | Pending |
+| CRM-04 | Phase 4 | Pending |
+| CRM-05 | Phase 4 | Pending |
+| NOTIF-01 | Phase 4 | Pending |
+| NOTIF-02 | Phase 4 | Pending |
+| NOTIF-03 | Phase 4 | Pending |
+| ONBOARD-01 | Phase 2 | Pending |
+| ONBOARD-02 | Phase 2 | Pending |
+| ONBOARD-03 | Phase 2 | Pending |
+| ONBOARD-04 | Phase 2 | Pending |
+| ONBOARD-05 | Phase 2 | Pending |
+| ONBOARD-06 | Phase 2 | Pending |
 
 **Coverage:**
 - v1 requirements: 38 total
-- Mapped to phases: 0
-- Unmapped: 38 ⚠️
+- Mapped to phases: 38
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-18*
-*Last updated: 2026-03-18 after initial definition*
+*Last updated: 2026-03-18 after roadmap creation — all 38 requirements mapped*

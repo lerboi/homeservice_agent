@@ -16,7 +16,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 ### Active
 
-- [ ] AI voice receptionist answers inbound calls with sub-second pickup via Vapi/Retell
+- [ ] AI voice receptionist answers inbound calls with sub-second pickup via Retell
 - [ ] Multi-language voice support from day one (global home service markets)
 - [ ] Layered triage system: keywords + caller urgency + owner-configured rules to classify emergency vs routine
 - [ ] Owner-defined service tiers to mark which job types are high-ticket
@@ -46,7 +46,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 **The Market:** Home services is a fragmented market of millions of SMEs globally. Most run on phone calls. The owner is often on a job site and can't answer. There's no affordable "instant response" solution that actually books.
 
-**Voice AI Approach:** Use Vapi or Retell as the telephony + speech layer for low-latency, natural-sounding voice interactions. These platforms handle STT/TTS and telephony infrastructure, letting us focus on the intelligence layer (triage, scheduling, CRM).
+**Voice AI Approach:** Use Retell as the telephony + speech layer for low-latency, natural-sounding voice interactions. Retell handles STT/TTS and telephony infrastructure, letting us focus on the intelligence layer (triage, scheduling, CRM).
 
 **Triage Intelligence:** Three-layer system:
 1. **Keyword detection:** "flooding," "gas smell," "no heat" → emergency. "Quote," "next week," "remodel" → routine.
@@ -62,7 +62,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 ## Constraints
 
 - **Voice Latency:** Must feel like talking to a real person — sub-second response times are critical for caller trust
-- **Telephony Platform:** Vapi or Retell for voice infrastructure (not building from scratch)
+- **Telephony Platform:** Retell for voice infrastructure (not building from scratch)
 - **Calendar Integrity:** Zero tolerance for double-bookings — atomic slot locking is non-negotiable
 - **Multi-language:** Voice AI must handle multiple languages from v1, not a later addition
 - **Web-first:** Browser-based dashboard, no native mobile app in v1
@@ -71,7 +71,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Vapi/Retell over raw Twilio+STT | Faster to market, proven low-latency voice, focus on intelligence not infra | — Pending |
+| Retell over Vapi and raw Twilio+STT | Faster to market, proven low-latency voice, focus on intelligence not infra | — Pending |
 | Lead tracker over full CRM | Avoid competing with ServiceTitan/Housecall Pro; integrate don't replace | — Pending |
 | Voice-first, defer chat channels | Calls are where the money is lost; chat can layer on later | — Pending |
 | Multi-language from day one | Global market = global languages; retrofitting is harder than building in | — Pending |
