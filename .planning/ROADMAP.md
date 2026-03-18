@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Speaking Spanish or Singlish on a test call produces a language-detected response in the correct language without the conversation breaking
   4. Code-switching mid-call (mixing English and another language) does not cause the AI to drop context or default back to English-only
   5. All user-facing strings (prompts, templates, notifications) are keyed through a translation layer with no raw English strings hardcoded in application logic
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
 - [ ] 01-01-PLAN.md — Project scaffold, DB schema, i18n layer, test infrastructure
 - [ ] 01-02-PLAN.md — Retell webhook pipeline with recording and transcript storage
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Voice Infrastructure | 0/3 | Planning complete | - |
+| 1. Voice Infrastructure | 1/3 | In Progress|  |
 | 2. Onboarding and Triage | 0/TBD | Not started | - |
 | 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |

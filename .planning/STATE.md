@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-17T22:54:58.544Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-03-18T19:37:02.849Z"
 last_activity: 2026-03-18 — Roadmap created, all 38 v1 requirements mapped across 5 phases
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01 P01 | 5 | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - [Research]: Local DB mirror is source of truth for availability — never query Google/Outlook in call hot path
 - [Research]: Redis SET NX + Postgres SELECT FOR UPDATE double-lock for atomic slot reservation
 - [Research]: Language abstraction layer must precede any language-specific content (Phase 1 gate)
+- [Phase 01]: Use node jest-cli/bin/jest.js instead of .bin/jest shim for Windows bash compatibility
+- [Phase 01]: Add type:module to package.json — next.config.js uses ES module syntax
+- [Phase 01]: next-intl cookie-based locale without URL prefix routing for API-first multi-tenant app
 
 ### Pending Todos
 
@@ -78,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T22:54:58.540Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-voice-infrastructure/01-CONTEXT.md
+Last session: 2026-03-18T19:37:02.845Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
