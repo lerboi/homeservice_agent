@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 01-03-PLAN.md (checkpoint:human-verify pending)
-last_updated: "2026-03-19T00:00:00Z"
-last_activity: 2026-03-19 — Plans 01-01 and 01-03 complete, 01-02 in progress
+status: executing
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-18T19:43:52.079Z"
+last_activity: 2026-03-19 — 01-03 agent prompt and Retell config complete, awaiting human verification
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 33
 ---
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 *Updated after each plan completion*
 | Phase 01 P01 | 5 | 2 tasks | 19 files |
 | Phase 01 P03 | 8 | 1 task  | 4 files  |
+| Phase 01-voice-infrastructure P02 | 4 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 01 P03]: Direct JSON import of translation files (not next-intl runtime) — buildSystemPrompt runs outside Next.js context
 - [Phase 01 P03]: transfer_call function takes no parameters — call context (owner_phone) resolved server-side by webhook handler
 - [Phase 01 P03]: Always capture caller info BEFORE invoking transfer_call — lead preserved even if transfer fails (locked product decision)
+- [Phase 01-02]: Webhook defers heavy work via after() — returns 200 immediately, recording/transcript processing runs post-response
+- [Phase 01-02]: Language barrier detection uses i18n/routing.js locales as single source of truth — any detected_language not in locales array triggers language_barrier=true
+- [Phase 01-02]: transfer_call two-hop query (calls->tenants) for owner_phone lookup rather than embedding in dynamic_variables at call start
 
 ### Pending Todos
 
@@ -86,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T00:00:00Z
-Stopped at: Completed 01-03-PLAN.md (Task 1 committed 094c85a — checkpoint:human-verify Task 2 awaiting approval)
+Last session: 2026-03-18T19:43:52.075Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

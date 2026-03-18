@@ -12,7 +12,7 @@ Build an AI voice receptionist that answers every inbound call for home service 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Voice Infrastructure** - Retell webhook pipeline, call recording/transcript storage, language abstraction layer, and multi-tenant database schema
+- [x] **Phase 1: Voice Infrastructure** - Retell webhook pipeline, call recording/transcript storage, language abstraction layer, and multi-tenant database schema (completed 2026-03-18)
 - [ ] **Phase 2: Onboarding and Triage** - Business configuration wizard, three-layer triage engine, and per-business AI persona
 - [ ] **Phase 3: Scheduling and Calendar Sync** - Atomic slot booking, travel time buffers, bidirectional Google and Outlook sync
 - [ ] **Phase 4: CRM, Dashboard, and Notifications** - Lead pipeline, web dashboard, owner SMS/email alerts
@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Speaking Spanish or Singlish on a test call produces a language-detected response in the correct language without the conversation breaking
   4. Code-switching mid-call (mixing English and another language) does not cause the AI to drop context or default back to English-only
   5. All user-facing strings (prompts, templates, notifications) are keyed through a translation layer with no raw English strings hardcoded in application logic
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold, DB schema, i18n layer, test infrastructure
 - [ ] 01-02-PLAN.md — Retell webhook pipeline with recording and transcript storage
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Voice Infrastructure | 2/3 | In Progress|  |
+| 1. Voice Infrastructure | 3/3 | Complete   | 2026-03-18 |
 | 2. Onboarding and Triage | 0/TBD | Not started | - |
 | 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
