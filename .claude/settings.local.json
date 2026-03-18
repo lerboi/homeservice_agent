@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(git:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebSearch",
+      "Bash(cat F:/homeservice-agent/.planning/phases/01-voice-infrastructure/*-VERIFICATION.md)",
+      "Bash(grep -E VOICE-0[0-9] F:/homeservice-agent/.planning/REQUIREMENTS.md)",
+      "Bash(npm test:*)"
     ]
   }
 }
