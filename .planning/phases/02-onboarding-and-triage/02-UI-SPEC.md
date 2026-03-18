@@ -53,14 +53,14 @@ Declared values (multiples of 4 only — Tailwind defaults map 1 unit = 4px):
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Display | 28px (text-3xl) | 700 (bold) | 1.2 | Wizard step headings ("Set up your AI receptionist") |
+| Display | 28px (text-3xl) | 600 (semibold) | 1.2 | Wizard step headings ("Set up your AI receptionist") |
 | Heading | 20px (text-xl) | 600 (semibold) | 1.3 | Card section titles, post-activation headline |
 | Body | 16px (text-base) | 400 (normal) | 1.5 | Form labels, helper text, description copy |
-| Label/Small | 14px (text-sm) | 500 (medium) | 1.4 | Input sub-labels, service tag pills, badge text, step counter |
+| Label/Small | 14px (text-sm) | 400 (normal) | 1.4 | Input sub-labels, service tag pills, badge text, step counter |
 
 **Rules:**
 - Only 4 sizes declared above — no intermediate sizes.
-- Only 3 weights in use: 400, 500, 600/700. Never use 300 (too light for SME audience) or 800+.
+- Only 2 weights in use: 400 (normal) and 600 (semibold). Never use 300 (too light for SME audience), 500, 700, or 800+.
 - Minimum body text 16px to prevent iOS auto-zoom on form inputs (source: ui-ux-pro-max `readable-font-size`).
 - All copy in `next-intl` translation keys — no hardcoded English strings (source: CONTEXT.md established patterns).
 
@@ -129,9 +129,9 @@ Screens in scope for Phase 2 UI:
 | Screen | Route | Primary CTA | Key States |
 |--------|-------|-------------|------------|
 | Sign-in | `/auth/signin` | "Continue with Google" / "Sign in with email" | Default, loading (OAuth redirect) |
-| Wizard Step 1 | `/onboarding` | "Continue" | Default, validation error (business name empty) |
-| Wizard Step 2 | `/onboarding/services` | "Continue" | Default, adding service, removing service |
-| Wizard Step 3 | `/onboarding/verify` | "Send code" → "Verify" → "Activate AI" | Phone entry, OTP sent, OTP verified, number provisioning, provisioning error |
+| Wizard Step 1 | `/onboarding` | "Continue to services" | Default, validation error (business name empty) |
+| Wizard Step 2 | `/onboarding/services` | "Continue to verify" | Default, adding service, removing service |
+| Wizard Step 3 | `/onboarding/verify` | "Send code" → "Verify number" → "Activate AI" | Phone entry, OTP sent, OTP verified, number provisioning, provisioning error |
 | Activation | `/onboarding/complete` | "Test your AI" | Waiting for test call, test call in progress, test call completed |
 | Service Manager | `/dashboard/services` | "Save changes" | Default list, editing tag, unsaved changes |
 
@@ -167,6 +167,8 @@ Every interactive element must implement all applicable states:
 
 ### Wizard Layout (Steps 1–3 and Activation)
 
+**Primary focal point:** The step heading (Display/28px/semibold) is the first element the eye lands on after the progress bar. It must be the largest text block in the wizard card and must have a minimum 24px gap below it before any form content begins. This ensures the owner always knows what step they are completing before interacting with any input.
+
 ```
 ┌──────────────────────────────────────────────────────┐
 │  Logo (top-left, 24px height)         Step N of 3    │
@@ -175,12 +177,12 @@ Every interactive element must implement all applicable states:
 ├──────────────────────────────────────────────────────┤
 │                                                      │
 │          ┌────────────────────────────┐              │
-│          │  Step heading (Display)    │              │
+│          │  Step heading (Display)    │  <-- focal   │
 │          │  Step subtext (Body/sm)    │              │
 │          │                            │              │
 │          │  [Step content area]       │              │
 │          │                            │              │
-│          │  [Back]          [Continue]│              │
+│          │  [Back]    [Continue to X] │              │
 │          └────────────────────────────┘              │
 │                                                      │
 └──────────────────────────────────────────────────────┘
@@ -217,9 +219,10 @@ All copy below is the canonical English source. Translations live in `src/i18n/m
 | **Wizard Step 3 subtext** | "Verify your mobile number and we'll assign your AI phone number." |
 | **Activation heading** | "Your AI is ready to answer calls" |
 | **Activation subtext** | "Call [number] to test it, or hit the button below and we'll call you." |
-| **Primary CTA — Steps 1 and 2** | "Continue" |
+| **Primary CTA — Step 1** | "Continue to services" |
+| **Primary CTA — Step 2** | "Continue to verify" |
 | **Primary CTA — Step 3 (pre-verify)** | "Send code" |
-| **Primary CTA — Step 3 (post-OTP-entry)** | "Verify" |
+| **Primary CTA — Step 3 (post-OTP-entry)** | "Verify number" |
 | **Primary CTA — Step 3 (provisioning)** | "Activating…" (disabled state) |
 | **Primary CTA — Activation** | "Test your AI" |
 | **Back button label** | "Back" |
@@ -321,3 +324,6 @@ Minimum requirements (source: ui-ux-pro-max Priority 1 + WCAG AA):
 | Animation timings 150–200ms ease-out | ui-ux-pro-max skill — Priority 7 (`duration-timing`) |
 | Inline error below field, not top-of-form only | ui-ux-pro-max skill — Priority 8 (`error-placement`) |
 | Undo toast for remove (not confirmation modal) | ui-ux-pro-max skill — Priority 8 (`undo-support`) |
+| Typography reduced to 2 weights (400, 600) | Checker revision — Dimension 4 BLOCK resolved 2026-03-19 |
+| Focal point declaration added to Layout section | Checker revision — Dimension 2 FLAG resolved 2026-03-19 |
+| CTA labels updated for specificity (Step 1, 2, OTP) | Checker revision — Dimension 1 FLAG resolved 2026-03-19 |
