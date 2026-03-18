@@ -30,11 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Speaking Spanish or Singlish on a test call produces a language-detected response in the correct language without the conversation breaking
   4. Code-switching mid-call (mixing English and another language) does not cause the AI to drop context or default back to English-only
   5. All user-facing strings (prompts, templates, notifications) are keyed through a translation layer with no raw English strings hardcoded in application logic
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold, DB schema, i18n layer, test infrastructure
+- [x] 01-01-PLAN.md — Project scaffold, DB schema, i18n layer, test infrastructure
 - [ ] 01-02-PLAN.md — Retell webhook pipeline with recording and transcript storage
-- [ ] 01-03-PLAN.md — Agent prompt system with language detection and code-switching
+- [x] 01-03-PLAN.md — Agent prompt system with language detection and code-switching
 
 ### Phase 2: Onboarding and Triage
 **Goal**: An owner can configure their business (name, greeting, services, hours, escalation rules) and the three-layer triage engine correctly classifies calls as emergency, routine, or high-ticket based on those owner-defined rules
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Voice Infrastructure | 1/3 | In Progress|  |
+| 1. Voice Infrastructure | 2/3 | In Progress|  |
 | 2. Onboarding and Triage | 0/TBD | Not started | - |
 | 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
