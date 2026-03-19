@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-03-19T07:16:25.557Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-03-19T07:22:28.924Z"
 last_activity: 2026-03-19 — 02-02 three-layer triage engine complete, all 84 tests passing
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 9
   percent: 44
 ---
 
@@ -58,6 +58,7 @@ Progress: [████░░░░░░] 44%
 | Phase 02-onboarding-and-triage P02 | 15 | 2 tasks | 9 files |
 | Phase 02-onboarding-and-triage P05 | 3 | 2 tasks | 4 files |
 | Phase 02-onboarding-and-triage P03 | 8 | 2 tasks | 14 files |
+| Phase 02-onboarding-and-triage P06 | 8 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 02-03]: Tailwind v4 uses @import 'tailwindcss' in CSS + @tailwindcss/postcss plugin (no tailwind.config.js)
 - [Phase 02-03]: OpenAI client in layer2-llm.js lazy-instantiated (getClient() pattern) to prevent build failure without OPENAI_API_KEY
 - [Phase 02-03]: shadcn CLI v4 --style flag removed; components.json created manually with new-york style
+- [Phase 02-06]: Soft-delete via is_active=false preserves call history and audit trail
+- [Phase 02-06]: Working hours jsonb nullable stub satisfies ONBOARD-03; full UI in Phase 3
+- [Phase 02-06]: Dashboard layout is single-column with breadcrumb — sidebar nav deferred to Phase 4
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:16:25.553Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-19T07:22:28.920Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
