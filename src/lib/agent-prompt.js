@@ -3,6 +3,12 @@ import es from '../../messages/es.json' with { type: 'json' };
 
 const messages = { en, es };
 
+const TONE_LABELS = {
+  professional: 'measured and formal',
+  friendly: 'upbeat and warm',
+  local_expert: 'relaxed and neighborly',
+};
+
 /**
  * Build the system prompt for the Retell AI agent.
  * All user-facing strings are resolved from translation keys.
@@ -11,9 +17,10 @@ const messages = { en, es };
  * @param {object} options
  * @param {string} options.business_name - Business name for greeting
  * @param {boolean} options.onboarding_complete - Whether onboarding is done
+ * @param {string} options.tone_preset - Tone preset: 'professional' | 'friendly' | 'local_expert'
  * @returns {string} Complete system prompt for Retell agent
  */
-export function buildSystemPrompt(locale, { business_name = 'HomeService', onboarding_complete = false } = {}) {
+export function buildSystemPrompt(locale, { business_name = 'HomeService', onboarding_complete = false, tone_preset = 'professional' } = {}) {
   const t = (key) => {
     const parts = key.split('.');
     let val = messages[locale] || messages['en'];
@@ -23,11 +30,22 @@ export function buildSystemPrompt(locale, { business_name = 'HomeService', onboa
     return val || key;
   };
 
+  const toneLabel = TONE_LABELS[tone_preset] || TONE_LABELS.professional;
+
   const greeting = onboarding_complete
     ? `Greet the caller: "Hello, thank you for calling ${business_name}. ${t('agent.recording_disclosure')} ${t('agent.capture_job_type')}"`
     : `Greet the caller: "${t('agent.recording_disclosure')} ${t('agent.default_greeting')}"`;
 
+  const triageSection = onboarding_complete ? `
+TRIAGE-AWARE BEHAVIOR:
+- If the caller describes an emergency (flooding, gas leak, fire, etc.), respond with urgency: speak faster, be more direct, say "I understand this is urgent, let me get someone to you right away."
+- For routine requests (quotes, scheduling), take a relaxed approach to information gathering.
+` : '';
+
   return `You are a professional AI receptionist for ${business_name}. You are warm, friendly, calm, and speak at a moderate pace.
+
+PERSONALITY:
+- Your communication style is ${toneLabel}.
 
 RECORDING NOTICE:
 - State at the start of every call: "${t('agent.recording_disclosure')}"
@@ -67,5 +85,5 @@ CALL DURATION:
 
 LANGUAGE BARRIER ESCALATION:
 - If you detect an unsupported language, after apologizing, say: "${t('agent.language_barrier_escalation').replace('{language}', '[the detected language]')}"
-`;
+${triageSection}`;
 }

@@ -54,4 +54,50 @@ describe('getAgentConfig', () => {
     expect(typeof defaultConfig.system_prompt).toBe('string');
     expect(Array.isArray(defaultConfig.functions)).toBe(true);
   });
+
+  // Tone preset tests
+  test('professional tone preset returns voice_speed 0.95', () => {
+    const professionalConfig = getAgentConfig({ tone_preset: 'professional' });
+    expect(professionalConfig.voice_speed).toBe(0.95);
+  });
+
+  test('professional tone preset returns responsiveness 0.75', () => {
+    const professionalConfig = getAgentConfig({ tone_preset: 'professional' });
+    expect(professionalConfig.responsiveness).toBe(0.75);
+  });
+
+  test('friendly tone preset returns voice_speed 1.05', () => {
+    const friendlyConfig = getAgentConfig({ tone_preset: 'friendly' });
+    expect(friendlyConfig.voice_speed).toBe(1.05);
+  });
+
+  test('friendly tone preset returns responsiveness 0.85', () => {
+    const friendlyConfig = getAgentConfig({ tone_preset: 'friendly' });
+    expect(friendlyConfig.responsiveness).toBe(0.85);
+  });
+
+  test('local_expert tone preset returns voice_speed 0.90', () => {
+    const localExpertConfig = getAgentConfig({ tone_preset: 'local_expert' });
+    expect(localExpertConfig.voice_speed).toBe(0.90);
+  });
+
+  test('local_expert tone preset returns responsiveness 0.80', () => {
+    const localExpertConfig = getAgentConfig({ tone_preset: 'local_expert' });
+    expect(localExpertConfig.responsiveness).toBe(0.80);
+  });
+
+  test('default call (no tone_preset) returns professional voice_speed 0.95', () => {
+    const defaultConfig = getAgentConfig();
+    expect(defaultConfig.voice_speed).toBe(0.95);
+  });
+
+  test('default call (no tone_preset) returns professional responsiveness 0.75', () => {
+    const defaultConfig = getAgentConfig();
+    expect(defaultConfig.responsiveness).toBe(0.75);
+  });
+
+  test('config passes tone_preset through to system prompt (professional contains "measured and formal")', () => {
+    const professionalConfig = getAgentConfig({ tone_preset: 'professional' });
+    expect(professionalConfig.system_prompt).toContain('measured and formal');
+  });
 });

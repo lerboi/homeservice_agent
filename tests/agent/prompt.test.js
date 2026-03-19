@@ -79,4 +79,30 @@ describe('buildSystemPrompt', () => {
   test('contains LANGUAGE_BARRIER tag instruction', () => {
     expect(enPrompt).toContain('LANGUAGE_BARRIER');
   });
+
+  // Tone preset tests
+  test('professional tone preset contains "measured and formal"', () => {
+    const prompt = buildSystemPrompt('en', { tone_preset: 'professional' });
+    expect(prompt).toContain('measured and formal');
+  });
+
+  test('friendly tone preset contains "upbeat and warm"', () => {
+    const prompt = buildSystemPrompt('en', { tone_preset: 'friendly' });
+    expect(prompt).toContain('upbeat and warm');
+  });
+
+  test('local_expert tone preset contains "relaxed and neighborly"', () => {
+    const prompt = buildSystemPrompt('en', { tone_preset: 'local_expert' });
+    expect(prompt).toContain('relaxed and neighborly');
+  });
+
+  test('default call (no tone_preset) contains "measured and formal" (professional is default)', () => {
+    const prompt = buildSystemPrompt('en', {});
+    expect(prompt).toContain('measured and formal');
+  });
+
+  test('prompt with onboarding_complete: true contains "TRIAGE-AWARE BEHAVIOR"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('TRIAGE-AWARE BEHAVIOR');
+  });
 });

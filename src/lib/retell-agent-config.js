@@ -1,5 +1,11 @@
 import { buildSystemPrompt } from './agent-prompt.js';
 
+const TONE_PRESETS = {
+  professional: { voice_speed: 0.95, responsiveness: 0.75 },
+  friendly:     { voice_speed: 1.05, responsiveness: 0.85 },
+  local_expert: { voice_speed: 0.90, responsiveness: 0.80 },
+};
+
 /**
  * Get the Retell agent configuration for a tenant.
  * This is used when creating or updating the Retell agent via API.
@@ -13,14 +19,17 @@ import { buildSystemPrompt } from './agent-prompt.js';
  * @param {string} options.locale - Tenant default locale ('en' or 'es')
  * @param {string} options.business_name - Business name
  * @param {boolean} options.onboarding_complete - Whether onboarding is done
+ * @param {string} options.tone_preset - Tone preset: 'professional' | 'friendly' | 'local_expert'
  * @returns {object} Retell agent config object
  */
-export function getAgentConfig({ locale = 'en', business_name = 'HomeService', onboarding_complete = false } = {}) {
+export function getAgentConfig({ locale = 'en', business_name = 'HomeService', onboarding_complete = false, tone_preset = 'professional' } = {}) {
+  const preset = TONE_PRESETS[tone_preset] || TONE_PRESETS.professional;
+
   return {
     language: 'multilingual',
-    system_prompt: buildSystemPrompt(locale, { business_name, onboarding_complete }),
-    voice_speed: 1.0,
-    responsiveness: 0.8,
+    system_prompt: buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset }),
+    voice_speed: preset.voice_speed,
+    responsiveness: preset.responsiveness,
     interruption_sensitivity: 0.7,
     ambient_sound: 'off',
     max_call_duration_ms: 600000, // 10 minutes
