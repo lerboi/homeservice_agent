@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-03-18T20:54:51.007Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-19T07:03:32.666Z"
 last_activity: 2026-03-19 — 01-03 agent prompt and Retell config complete, human verification approved
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 9
+  completed_plans: 4
   percent: 33
 ---
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01 P01 | 5 | 2 tasks | 19 files |
 | Phase 01 P03 | 8 | 1 task  | 4 files  |
 | Phase 01-voice-infrastructure P02 | 4 | 2 tasks | 5 files |
+| Phase 02-onboarding-and-triage P01 | 2 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 01-02]: Webhook defers heavy work via after() — returns 200 immediately, recording/transcript processing runs post-response
 - [Phase 01-02]: Language barrier detection uses i18n/routing.js locales as single source of truth — any detected_language not in locales array triggers language_barrier=true
 - [Phase 01-02]: transfer_call two-hop query (calls->tenants) for owner_phone lookup rather than embedding in dynamic_variables at call start
+- [Phase 02-01]: Tone preset voice_speed values: professional=0.95, friendly=1.05, local_expert=0.90
+- [Phase 02-01]: TRIAGE-AWARE BEHAVIOR section injected only when onboarding_complete=true to avoid confusing pre-onboarding AI
+- [Phase 02-01]: TONE_LABELS fallback to professional preset for unknown/missing tone_preset values
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T20:54:51.001Z
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: .planning/phases/02-onboarding-and-triage/02-UI-SPEC.md
+Last session: 2026-03-19T07:03:32.662Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

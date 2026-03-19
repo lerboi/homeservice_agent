@@ -8,12 +8,12 @@
 ### Voice Receptionist
 
 - [x] **VOICE-01**: AI answers every inbound call within 1 second via Retell with natural-sounding voice
-- [ ] **VOICE-02**: AI greets caller using the specific business name to establish professional trust
+- [x] **VOICE-02**: AI greets caller using the specific business name to establish professional trust
 - [ ] **VOICE-03**: AI extracts caller ID, job type/scope, and service address from conversation
 - [ ] **VOICE-04**: AI performs mandatory read-back confirmation of captured address (e.g., "Just to confirm, you're at 123 Ubi Ave 1, correct?")
 - [x] **VOICE-05**: AI detects caller's language on first utterance and switches to appropriate language seamlessly
 - [x] **VOICE-06**: AI handles code-switching (Singlish/Spanish/mixed language) without breaking conversation flow
-- [ ] **VOICE-07**: Per-business custom greeting script and AI persona configurable by owner
+- [x] **VOICE-07**: Per-business custom greeting script and AI persona configurable by owner
 - [x] **VOICE-08**: Call recording stored and accessible per lead in dashboard
 - [x] **VOICE-09**: Call transcript generated and stored per lead in dashboard
 
@@ -54,10 +54,10 @@
 
 ### Business Onboarding
 
-- [ ] **ONBOARD-01**: Owner can configure business name, greeting script, and AI persona
-- [ ] **ONBOARD-02**: Owner can configure service list with categories and tier/priority tags
+- [x] **ONBOARD-01**: Owner can configure business name, greeting script, and AI persona
+- [x] **ONBOARD-02**: Owner can configure service list with categories and tier/priority tags
 - [ ] **ONBOARD-03**: Owner can configure availability schedule (working hours, days off)
-- [ ] **ONBOARD-04**: Owner can configure emergency escalation rules per service type
+- [x] **ONBOARD-04**: Owner can configure emergency escalation rules per service type
 - [ ] **ONBOARD-05**: Owner can configure notification preferences (SMS number, email address)
 - [ ] **ONBOARD-06**: Onboarding flow gets owner to hear AI answer a test call within 5 minutes of signup
 
@@ -96,12 +96,12 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | VOICE-01 | Phase 1 | Complete |
-| VOICE-02 | Phase 2 | Pending |
+| VOICE-02 | Phase 2 | Complete |
 | VOICE-03 | Phase 3 | Pending |
 | VOICE-04 | Phase 3 | Pending |
 | VOICE-05 | Phase 1 | Complete |
 | VOICE-06 | Phase 1 | Complete |
-| VOICE-07 | Phase 2 | Pending |
+| VOICE-07 | Phase 2 | Complete |
 | VOICE-08 | Phase 1 | Complete |
 | VOICE-09 | Phase 1 | Complete |
 | TRIAGE-01 | Phase 2 | Pending |
@@ -127,10 +127,10 @@
 | NOTIF-01 | Phase 4 | Pending |
 | NOTIF-02 | Phase 4 | Pending |
 | NOTIF-03 | Phase 4 | Pending |
-| ONBOARD-01 | Phase 2 | Pending |
-| ONBOARD-02 | Phase 2 | Pending |
+| ONBOARD-01 | Phase 2 | Complete |
+| ONBOARD-02 | Phase 2 | Complete |
 | ONBOARD-03 | Phase 2 | Pending |
-| ONBOARD-04 | Phase 2 | Pending |
+| ONBOARD-04 | Phase 2 | Complete |
 | ONBOARD-05 | Phase 2 | Pending |
 | ONBOARD-06 | Phase 2 | Pending |
 
