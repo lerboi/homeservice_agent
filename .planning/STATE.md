@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-03-19T07:22:42.621Z"
+stopped_at: Phase 02.1 context gathered
+last_updated: "2026-03-19T18:43:10.918Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -103,6 +103,10 @@ Recent decisions affecting current work:
 - [Phase 02-04]: Wizard Step 3 uses 3 internal sub-states (phone, otp, provisioning) in one page component — avoids route flicker
 - [Phase 02-04]: Email collected alongside phone in sms-confirm — single round-trip saves owner_phone and owner_email
 
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 02: Public marketing landing page (INSERTED)
+
 ### Pending Todos
 
 None yet.
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:22:42.616Z
-Stopped at: Completed 02-04-PLAN.md
-Resume file: None
+Last session: 2026-03-19T18:43:10.912Z
+Stopped at: Phase 02.1 context gathered
+Resume file: .planning/phases/02.1-public-marketing-landing-page/02.1-CONTEXT.md
