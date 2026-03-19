@@ -11,15 +11,16 @@
     "test:all": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --passWithNoTests"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
     "next": "^16.1.7",
+    "next-intl": "^4.8.3",
+    "openai": "^6.32.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "retell-sdk": "^5.9.0",
-    "@supabase/supabase-js": "^2.99.2",
-    "next-intl": "^4.8.3"
+    "retell-sdk": "^5.9.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "@jest/globals": "^29.7.0"
+    "@jest/globals": "^29.7.0",
+    "jest": "^29.7.0"
   }
 }
