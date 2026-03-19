@@ -40,6 +40,11 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-landing-surface: var(--color-landing-surface);
+  --color-landing-dark: var(--color-landing-dark);
+  --color-landing-accent: var(--color-landing-accent);
+  --color-landing-muted: var(--color-landing-muted);
+  --color-landing-success: var(--color-landing-success);
 }
 
 :root {
@@ -75,6 +80,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --color-landing-surface: #F5F5F4;
+  --color-landing-dark: #0F172A;
+  --color-landing-accent: #C2410C;
+  --color-landing-muted: #475569;
+  --color-landing-success: #166534;
 }
 
 .dark {
@@ -118,5 +128,9 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-inter), system-ui, sans-serif;
+  }
+  html {
+    scroll-padding-top: 4rem;
+    scroll-behavior: smooth;
   }
 }
