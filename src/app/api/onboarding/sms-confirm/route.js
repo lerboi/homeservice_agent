@@ -6,24 +6,19 @@ export async function POST(request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { phone, token, email } = await request.json();
-  const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+  const { phone, email } = await request.json();
 
-  if (error) return Response.json({ error: error.message }, { status: 400 });
+  // Save phone and email directly to tenant row (no OTP verification for now)
+  const updateFields = {};
+  if (phone?.trim()) updateFields.owner_phone = phone.trim();
+  if (email?.trim()) updateFields.owner_email = email.trim();
 
-  // Save verified phone AND email to tenant row (using service role for cross-RLS write)
-  // owner_email column already exists in 001_initial_schema.sql
-  const tenantId = user.user_metadata?.tenant_id;
-  if (tenantId) {
-    const updateFields = { owner_phone: phone };
-    if (email?.trim()) {
-      updateFields.owner_email = email.trim();
-    }
+  if (Object.keys(updateFields).length > 0) {
     await adminSupabase
       .from('tenants')
       .update(updateFields)
-      .eq('id', tenantId);
+      .eq('owner_id', user.id);
   }
 
-  return Response.json({ verified: true });
+  return Response.json({ saved: true });
 }

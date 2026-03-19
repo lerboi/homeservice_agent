@@ -18,7 +18,8 @@ CREATE TABLE services (
 CREATE INDEX idx_services_tenant_id ON services(tenant_id);
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "services_tenant_own" ON services
-  FOR ALL USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+  FOR ALL USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()))
+  WITH CHECK (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
 CREATE POLICY "service_role_all_services" ON services
   FOR ALL USING (auth.role() = 'service_role');
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { supabase } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SignInPage() {
   const t = useTranslations('auth');
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get('next') || '/onboarding';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -23,7 +26,7 @@ export default function SignInPage() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/auth/callback',
+        redirectTo: window.location.origin + '/auth/callback?next=' + encodeURIComponent(nextPath),
       },
     });
     setLoading(false);
@@ -43,8 +46,11 @@ export default function SignInPage() {
 
     if (result.error) {
       setError(result.error.message);
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    window.location.href = nextPath;
+    return;
   }
 
   return (

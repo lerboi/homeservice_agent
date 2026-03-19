@@ -3,6 +3,7 @@ CREATE TABLE tenants (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
+  owner_id        uuid UNIQUE NOT NULL,
   business_name   text,
   retell_phone_number text UNIQUE,
   owner_phone     text,
@@ -50,16 +51,19 @@ ALTER TABLE calls ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for tenant isolation
 CREATE POLICY "tenants_read_own" ON tenants
-  FOR SELECT USING (id = (auth.jwt() ->> 'tenant_id')::uuid);
+  FOR SELECT USING (owner_id = auth.uid());
 
 CREATE POLICY "tenants_update_own" ON tenants
-  FOR UPDATE USING (id = (auth.jwt() ->> 'tenant_id')::uuid)
-  WITH CHECK (id = (auth.jwt() ->> 'tenant_id')::uuid);
+  FOR UPDATE USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
+
+CREATE POLICY "tenants_insert_own" ON tenants
+  FOR INSERT WITH CHECK (owner_id = auth.uid());
 
 CREATE POLICY "calls_all_own" ON calls
   FOR ALL
-  USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid)
-  WITH CHECK (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+  USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()))
+  WITH CHECK (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
 
 -- Service role bypass (for webhook handlers using service role key)
 CREATE POLICY "service_role_all_tenants" ON tenants

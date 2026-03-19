@@ -6,7 +6,15 @@
       "WebSearch",
       "Bash(cat F:/homeservice-agent/.planning/phases/01-voice-infrastructure/*-VERIFICATION.md)",
       "Bash(grep -E VOICE-0[0-9] F:/homeservice-agent/.planning/REQUIREMENTS.md)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx next:*)",
+      "Skill(gsd:pause-work)",
+      "Skill(gsd:insert-phase)",
+      "WebFetch(domain:21st.dev)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:magicui.design)",
+      "Bash(grep -rn LAND- F:/homeservice-agent/.planning/ --include=*.md)"
     ]
   }
 }
