@@ -1,10 +1,16 @@
 /**
  * Tests for call-processor: processCallAnalyzed and processCallEnded.
  * Covers recording upload, transcript storage, language barrier detection,
- * and upsert idempotency.
+ * triage classification, and upsert idempotency.
  */
 
 import { jest } from '@jest/globals';
+
+// Mock triage classifier before importing call-processor
+const mockClassifyCall = jest.fn();
+jest.unstable_mockModule('@/lib/triage/classifier', () => ({
+  classifyCall: mockClassifyCall,
+}));
 
 // Build a fresh supabase mock per test for isolation
 const mockUpsert = jest.fn();
@@ -56,6 +62,8 @@ beforeEach(() => {
     data: { id: 'tenant-uuid' },
     error: null,
   });
+  // Default triage result — routine, no emergency
+  mockClassifyCall.mockResolvedValue({ urgency: 'routine', confidence: 'high', layer: 'layer1' });
 });
 
 // ─── processCallEnded ────────────────────────────────────────────────────────
@@ -262,5 +270,97 @@ describe('processCallAnalyzed', () => {
     const [upsertArg] = mockUpsert.mock.calls[0];
     expect(upsertArg.language_barrier).toBe(false);
     expect(upsertArg.barrier_language).toBeNull();
+  });
+
+  // ─── Triage classification ──────────────────────────────────────────────────
+
+  it('stores triage result from classifyCall on call record', async () => {
+    mockClassifyCall.mockResolvedValue({
+      urgency: 'emergency',
+      confidence: 'high',
+      layer: 'layer1',
+      reason: 'flooding detected',
+    });
+
+    const call = {
+      call_id: 'call_triage_emergency',
+      from_number: '+1111',
+      to_number: '+2222',
+      recording_url: null,
+      transcript: 'My basement is flooding and the water is rising fast!',
+    };
+
+    await processCallAnalyzed(call);
+
+    const [upsertArg] = mockUpsert.mock.calls[0];
+    expect(upsertArg.urgency_classification).toBe('emergency');
+    expect(upsertArg.urgency_confidence).toBe('high');
+    expect(upsertArg.triage_layer_used).toBe('layer1');
+  });
+
+  it('emits console.warn for emergency triage', async () => {
+    mockClassifyCall.mockResolvedValue({
+      urgency: 'emergency',
+      confidence: 'high',
+      layer: 'layer1',
+      reason: 'flooding detected',
+    });
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const call = {
+      call_id: 'call_emergency_warn',
+      from_number: '+1111',
+      to_number: '+2222',
+      recording_url: null,
+      transcript: 'There is a gas leak in my house!',
+    };
+
+    await processCallAnalyzed(call);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/EMERGENCY TRIAGE/)
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('handles classifyCall failure gracefully — still upserts with routine defaults', async () => {
+    mockClassifyCall.mockRejectedValue(new Error('LLM timeout'));
+
+    const call = {
+      call_id: 'call_triage_fail',
+      from_number: '+1111',
+      to_number: '+2222',
+      recording_url: null,
+      transcript: 'I need to schedule a plumbing check.',
+    };
+
+    await processCallAnalyzed(call);
+
+    // Upsert should still happen
+    expect(mockUpsert).toHaveBeenCalledTimes(1);
+    const [upsertArg] = mockUpsert.mock.calls[0];
+    expect(upsertArg.urgency_classification).toBe('routine');
+    expect(upsertArg.urgency_confidence).toBe('low');
+    expect(upsertArg.triage_layer_used).toBe('layer1');
+  });
+
+  it('passes transcript and tenant_id to classifyCall', async () => {
+    const call = {
+      call_id: 'call_triage_passthrough',
+      from_number: '+1111',
+      to_number: '+2222',
+      recording_url: null,
+      transcript: 'test transcript',
+    };
+
+    // tenant-uuid is returned by default mock
+    await processCallAnalyzed(call);
+
+    expect(mockClassifyCall).toHaveBeenCalledWith({
+      transcript: 'test transcript',
+      tenant_id: 'tenant-uuid',
+    });
   });
 });
