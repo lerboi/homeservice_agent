@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 02.1 plans verified
-last_updated: "2026-03-19T19:10:34.147Z"
+stopped_at: Completed 02.1-01-PLAN.md
+last_updated: "2026-03-19T19:17:19.576Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 50
 ---
 
@@ -60,6 +60,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-onboarding-and-triage P03 | 8 | 2 tasks | 14 files |
 | Phase 02-onboarding-and-triage P06 | 8 | 2 tasks | 12 files |
 | Phase 02-onboarding-and-triage P04 | 4 | 2 tasks | 8 files |
+| Phase 02.1-public-marketing-landing-page P01 | 8 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 02-04]: onboarding_complete flag set atomically with test call trigger — not on Retell webhook callback
 - [Phase 02-04]: Wizard Step 3 uses 3 internal sub-states (phone, otp, provisioning) in one page component — avoids route flicker
 - [Phase 02-04]: Email collected alongside phone in sms-confirm — single round-trip saves owner_phone and owner_email
+- [Phase 02.1-01]: Tailwind v4 landing tokens use hex values (not oklch) — matches UI-SPEC exactly: #F5F5F4, #0F172A, #C2410C, #475569, #166534
+- [Phase 02.1-01]: AnimatedSection useReducedMotion with initial={false} skips animation state entirely when prefers-reduced-motion OS setting is active — Framer Motion v12 pattern
 
 ### Roadmap Evolution
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T19:10:34.143Z
-Stopped at: Phase 02.1 plans verified
-Resume file: .planning/phases/02.1-public-marketing-landing-page/02.1-01-PLAN.md
+Last session: 2026-03-19T19:17:19.572Z
+Stopped at: Completed 02.1-01-PLAN.md
+Resume file: None
