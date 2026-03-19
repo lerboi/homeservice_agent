@@ -46,7 +46,14 @@ Plans:
   3. A call saying "my basement is flooding" is classified as EMERGENCY; a call saying "I need a quote for next month" is classified as ROUTINE — both visible on the lead card without replaying the recording
   4. Owner can add a custom service type (e.g., "pool heater repair") and mark it as high-ticket, and the triage engine applies that rule on the next call
   5. A new owner signs up and hears their AI answer a test call within 5 minutes of starting onboarding
-**Plans**: TBD
+**Plans:** 6 plans
+Plans:
+- [ ] 02-01-PLAN.md — DB schema extensions, trade templates, tone preset wiring
+- [ ] 02-02-PLAN.md — Three-layer triage engine (keywords, LLM, owner rules)
+- [ ] 02-03-PLAN.md — shadcn init, auth flow, wizard Steps 1-2
+- [ ] 02-04-PLAN.md — Wizard Step 3 (SMS verify, phone provisioning) and activation page
+- [ ] 02-05-PLAN.md — Triage integration into call processor and webhook extensions
+- [ ] 02-06-PLAN.md — Service manager dashboard and services CRUD API
 
 ### Phase 3: Scheduling and Calendar Sync
 **Goal**: Emergency calls book a confirmed appointment slot while the caller is still on the line, routine calls create a lead with suggested slots — with zero double-bookings, travel time buffers between consecutive jobs, and real-time Google and Outlook calendar sync
@@ -94,7 +101,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Voice Infrastructure | 3/3 | Complete   | 2026-03-18 |
-| 2. Onboarding and Triage | 0/TBD | Not started | - |
+| 2. Onboarding and Triage | 0/6 | Not started | - |
 | 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
