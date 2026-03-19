@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { locales } from '@/i18n/routing';
+import { classifyCall } from '@/lib/triage/classifier';
 
 /** Supported languages — calls in any other language trigger a language barrier tag. */
 const SUPPORTED_LANGUAGES = new Set(locales); // ['en', 'es']
@@ -109,6 +110,22 @@ export async function processCallAnalyzed(call) {
   const detectedLanguage = metadata?.detected_language || call_analysis?.detected_language || null;
   const isLanguageBarrier = detectedLanguage != null && !SUPPORTED_LANGUAGES.has(detectedLanguage);
 
+  // Run triage classification on the transcript
+  let triageResult = { urgency: 'routine', confidence: 'low', layer: 'layer1' };
+  try {
+    triageResult = await classifyCall({
+      transcript: transcript || '',
+      tenant_id: tenantId,
+    });
+  } catch (err) {
+    console.error('Triage classification failed:', err);
+  }
+
+  // Emergency priority notification (lightweight, pre-Phase-4)
+  if (triageResult.urgency === 'emergency') {
+    console.warn(`EMERGENCY TRIAGE: call ${call_id} for tenant ${tenantId} — ${triageResult.reason || 'keyword match'}`);
+  }
+
   // Upsert call record with full analyzed data
   await supabase.from('calls').upsert(
     {
@@ -129,6 +146,9 @@ export async function processCallAnalyzed(call) {
       language_barrier: isLanguageBarrier,
       barrier_language: isLanguageBarrier ? detectedLanguage : null,
       retell_metadata: { ...(metadata || {}), call_analysis: call_analysis || null },
+      urgency_classification: triageResult.urgency,
+      urgency_confidence: triageResult.confidence,
+      triage_layer_used: triageResult.layer,
     },
     { onConflict: 'retell_call_id' }
   );
