@@ -22,8 +22,8 @@
 - [x] **TRIAGE-01**: Layer 1 — Keyword/regex detection classifies job type and urgency from transcript (e.g., "flooding", "gas smell" → emergency)
 - [x] **TRIAGE-02**: Layer 2 — LLM-based urgency scoring using temporal cues ("happening right now" vs "next week") and caller stress indicators
 - [x] **TRIAGE-03**: Layer 3 — Owner-configured rule table maps service types to emergency/routine/high-ticket classification
-- [ ] **TRIAGE-04**: Emergency calls routed to instant booking workflow; routine calls captured as leads for owner confirmation
-- [ ] **TRIAGE-05**: Owner can define which service types are high-ticket in business settings
+- [x] **TRIAGE-04**: Emergency calls routed to instant booking workflow; routine calls captured as leads for owner confirmation
+- [x] **TRIAGE-05**: Owner can define which service types are high-ticket in business settings
 - [ ] **TRIAGE-06**: Urgency score and triage label visible on each lead card in dashboard without replaying the call
 
 ### Scheduling & Booking
@@ -59,7 +59,7 @@
 - [ ] **ONBOARD-03**: Owner can configure availability schedule (working hours, days off)
 - [x] **ONBOARD-04**: Owner can configure emergency escalation rules per service type
 - [ ] **ONBOARD-05**: Owner can configure notification preferences (SMS number, email address)
-- [ ] **ONBOARD-06**: Onboarding flow gets owner to hear AI answer a test call within 5 minutes of signup
+- [x] **ONBOARD-06**: Onboarding flow gets owner to hear AI answer a test call within 5 minutes of signup
 
 ## v2 Requirements
 
@@ -107,8 +107,8 @@
 | TRIAGE-01 | Phase 2 | Complete |
 | TRIAGE-02 | Phase 2 | Complete |
 | TRIAGE-03 | Phase 2 | Complete |
-| TRIAGE-04 | Phase 2 | Pending |
-| TRIAGE-05 | Phase 2 | Pending |
+| TRIAGE-04 | Phase 2 | Complete |
+| TRIAGE-05 | Phase 2 | Complete |
 | TRIAGE-06 | Phase 4 | Pending |
 | SCHED-01 | Phase 3 | Pending |
 | SCHED-02 | Phase 3 | Pending |
@@ -132,7 +132,7 @@
 | ONBOARD-03 | Phase 2 | Pending |
 | ONBOARD-04 | Phase 2 | Complete |
 | ONBOARD-05 | Phase 2 | Pending |
-| ONBOARD-06 | Phase 2 | Pending |
+| ONBOARD-06 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 38 total
