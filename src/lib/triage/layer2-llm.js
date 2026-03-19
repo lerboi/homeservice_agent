@@ -6,7 +6,13 @@
 
 import OpenAI from 'openai';
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _client = null;
+function getClient() {
+  if (!_client) {
+    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _client;
+}
 
 /**
  * Score the urgency of a call transcript using GPT-4o-mini.
@@ -15,7 +21,7 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * @returns {Promise<{ urgency: 'emergency'|'routine'|'high_ticket', confidence: 'high'|'medium'|'low', reason: string }>}
  */
 export async function runLLMScorer(transcript) {
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
