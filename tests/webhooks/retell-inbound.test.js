@@ -127,6 +127,43 @@ describe('call_inbound event handling', () => {
     expect(body.dynamic_variables.onboarding_complete).toBe(false);
   });
 
+  it('includes tone_preset in dynamic_variables for known tenant', async () => {
+    const tenantQuery = makeChainableQuery({
+      data: {
+        id: 'tenant-uuid',
+        business_name: 'Friendly Plumbing',
+        default_locale: 'en',
+        onboarding_complete: true,
+        owner_phone: '+6591234567',
+        tone_preset: 'friendly',
+      },
+      error: null,
+    });
+    mockFromImpl.mockReturnValue(tenantQuery);
+
+    const req = makeInboundRequest();
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.dynamic_variables.tone_preset).toBe('friendly');
+  });
+
+  it('defaults tone_preset to professional for unknown number', async () => {
+    const tenantQuery = makeChainableQuery({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
+    mockFromImpl.mockReturnValue(tenantQuery);
+
+    const req = makeInboundRequest();
+    const res = await POST(req);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.dynamic_variables.tone_preset).toBe('professional');
+  });
+
   it('returns 200 for call_ended event', async () => {
     const callQuery = makeChainableQuery({ data: null, error: null });
     mockFromImpl.mockReturnValue(callQuery);
