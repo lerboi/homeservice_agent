@@ -55,6 +55,17 @@ Plans:
 - [ ] 02-05-PLAN.md — Triage integration into call processor and webhook extensions
 - [ ] 02-06-PLAN.md — Service manager dashboard and services CRUD API
 
+### Phase 02.1: Public marketing landing page (INSERTED)
+
+**Goal:** A public-facing marketing landing page that explains the HomeService AI product and converts home service business owners into signups, replacing the current placeholder at the root route
+**Requirements**: LAND-01, LAND-02, LAND-03, LAND-04, LAND-05, LAND-06, LAND-07, LAND-08, LAND-09, LAND-10
+**Depends on:** Phase 2
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02.1-01-PLAN.md — Foundation: framer-motion install, landing color palette, AnimatedSection + LandingNav client components
+- [ ] 02.1-02-PLAN.md — All content sections (Hero, How it Works, Features, Social Proof, Final CTA, Footer) + page.js rewrite + /demo placeholder
+
 ### Phase 3: Scheduling and Calendar Sync
 **Goal**: Emergency calls book a confirmed appointment slot while the caller is still on the line, routine calls create a lead with suggested slots — with zero double-bookings, travel time buffers between consecutive jobs, and real-time Google and Outlook calendar sync
 **Depends on**: Phase 2
@@ -96,12 +107,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Voice Infrastructure | 3/3 | Complete   | 2026-03-18 |
 | 2. Onboarding and Triage | 6/6 | Complete   | 2026-03-19 |
+| 2.1 Public Marketing Landing Page | 0/2 | Planning complete | - |
 | 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
