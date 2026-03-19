@@ -60,7 +60,7 @@ Plans:
 **Goal:** A public-facing marketing landing page that explains the HomeService AI product and converts home service business owners into signups, replacing the current placeholder at the root route
 **Requirements**: LAND-01, LAND-02, LAND-03, LAND-04, LAND-05, LAND-06, LAND-07, LAND-08, LAND-09, LAND-10
 **Depends on:** Phase 2
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 02.1-01-PLAN.md — Foundation: framer-motion install, landing color palette, AnimatedSection + LandingNav client components

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02.1-01-PLAN.md
-last_updated: "2026-03-19T19:17:19.576Z"
+stopped_at: "Checkpoint 02.1-02: awaiting visual verification of landing page at http://localhost:3000"
+last_updated: "2026-03-19T19:23:01.847Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
   percent: 50
 ---
 
@@ -61,6 +61,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-onboarding-and-triage P06 | 8 | 2 tasks | 12 files |
 | Phase 02-onboarding-and-triage P04 | 4 | 2 tasks | 8 files |
 | Phase 02.1-public-marketing-landing-page P01 | 8 | 2 tasks | 5 files |
+| Phase 02.1-public-marketing-landing-page P02 | 3 | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 02-04]: Email collected alongside phone in sms-confirm — single round-trip saves owner_phone and owner_email
 - [Phase 02.1-01]: Tailwind v4 landing tokens use hex values (not oklch) — matches UI-SPEC exactly: #F5F5F4, #0F172A, #C2410C, #475569, #166534
 - [Phase 02.1-01]: AnimatedSection useReducedMotion with initial={false} skips animation state entirely when prefers-reduced-motion OS setting is active — Framer Motion v12 pattern
+- [Phase 02.1-02]: All section components are Server Components — no use client; client animation delegated to AnimatedSection from Plan 01 foundation
+- [Phase 02.1-02]: FinalCTASection uses inverted button (bg-landing-dark on bg-landing-accent) for contrast — dark button on copper background per UI-SPEC intent
 
 ### Roadmap Evolution
 
@@ -122,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T19:17:19.572Z
-Stopped at: Completed 02.1-01-PLAN.md
+Last session: 2026-03-19T19:23:01.843Z
+Stopped at: Checkpoint 02.1-02: awaiting visual verification of landing page at http://localhost:3000
 Resume file: None
