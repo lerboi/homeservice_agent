@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-19T07:03:32.666Z"
-last_activity: 2026-03-19 — 01-03 agent prompt and Retell config complete, human verification approved
+status: in_progress
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-19T07:10:00.000Z"
+last_activity: 2026-03-19 — 02-02 three-layer triage engine complete, all 84 tests passing
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 9
-  completed_plans: 4
-  percent: 33
+  completed_plans: 5
+  percent: 44
 ---
 
 # Project State
@@ -21,32 +21,33 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 1 — Voice Infrastructure
+**Current focus:** Phase 2 — Onboarding and Triage
 
 ## Current Position
 
-Phase: 1 of 5 (Voice Infrastructure)
-Plan: 3 of 3 in current phase
-Status: Complete (all 3 plans in Phase 01 done)
-Last activity: 2026-03-19 — 01-03 agent prompt and Retell config complete, human verification approved
+Phase: 2 of 5 (Onboarding and Triage)
+Plan: 2 of 5 in current phase (02-02 complete)
+Status: In progress
+Last activity: 2026-03-19 — 02-02 three-layer triage engine complete, all 84 tests passing
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 44%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~8 min
-- Total execution time: 0.3 hours
+- Total plans completed: 5
+- Average duration: ~10 min
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-voice-infrastructure | 2/3 | ~16 min | ~8 min |
+| 01-voice-infrastructure | 3/3 | ~21 min | ~7 min |
+| 02-onboarding-and-triage | 2/5 | ~17 min | ~8.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5min), 01-03 (8min)
+- Last 5 plans: 01-01 (5min), 01-03 (8min), 01-02 (4min), 02-01 (2min), 02-02 (15min)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -54,6 +55,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01 P03 | 8 | 1 task  | 4 files  |
 | Phase 01-voice-infrastructure P02 | 4 | 2 tasks | 5 files |
 | Phase 02-onboarding-and-triage P01 | 2 | 2 tasks | 6 files |
+| Phase 02-onboarding-and-triage P02 | 15 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -81,6 +83,10 @@ Recent decisions affecting current work:
 - [Phase 02-01]: Tone preset voice_speed values: professional=0.95, friendly=1.05, local_expert=0.90
 - [Phase 02-01]: TRIAGE-AWARE BEHAVIOR section injected only when onboarding_complete=true to avoid confusing pre-onboarding AI
 - [Phase 02-01]: TONE_LABELS fallback to professional preset for unknown/missing tone_preset values
+- [Phase 02-02]: Routine patterns checked before emergency patterns — prevents "not urgent" false-positive on emergency keyword "urgent"
+- [Phase 02-02]: Layer 3 applyOwnerRules returns { urgency, escalated } shape — lets classifier report layer:'layer3' accurately
+- [Phase 02-02]: classifyCall returns early with routine/low/layer1 for empty or < 10 char transcripts — no LLM cost
+- [Phase 02-02]: openai SDK installed as runtime dependency — GPT-4o-mini for Layer 2 cost-effective classification
 
 ### Pending Todos
 
@@ -94,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:03:32.662Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-19T07:10:00.000Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

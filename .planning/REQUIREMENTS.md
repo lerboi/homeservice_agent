@@ -19,9 +19,9 @@
 
 ### Triage Intelligence
 
-- [ ] **TRIAGE-01**: Layer 1 — Keyword/regex detection classifies job type and urgency from transcript (e.g., "flooding", "gas smell" → emergency)
-- [ ] **TRIAGE-02**: Layer 2 — LLM-based urgency scoring using temporal cues ("happening right now" vs "next week") and caller stress indicators
-- [ ] **TRIAGE-03**: Layer 3 — Owner-configured rule table maps service types to emergency/routine/high-ticket classification
+- [x] **TRIAGE-01**: Layer 1 — Keyword/regex detection classifies job type and urgency from transcript (e.g., "flooding", "gas smell" → emergency)
+- [x] **TRIAGE-02**: Layer 2 — LLM-based urgency scoring using temporal cues ("happening right now" vs "next week") and caller stress indicators
+- [x] **TRIAGE-03**: Layer 3 — Owner-configured rule table maps service types to emergency/routine/high-ticket classification
 - [ ] **TRIAGE-04**: Emergency calls routed to instant booking workflow; routine calls captured as leads for owner confirmation
 - [ ] **TRIAGE-05**: Owner can define which service types are high-ticket in business settings
 - [ ] **TRIAGE-06**: Urgency score and triage label visible on each lead card in dashboard without replaying the call
@@ -104,9 +104,9 @@
 | VOICE-07 | Phase 2 | Complete |
 | VOICE-08 | Phase 1 | Complete |
 | VOICE-09 | Phase 1 | Complete |
-| TRIAGE-01 | Phase 2 | Pending |
-| TRIAGE-02 | Phase 2 | Pending |
-| TRIAGE-03 | Phase 2 | Pending |
+| TRIAGE-01 | Phase 2 | Complete |
+| TRIAGE-02 | Phase 2 | Complete |
+| TRIAGE-03 | Phase 2 | Complete |
 | TRIAGE-04 | Phase 2 | Pending |
 | TRIAGE-05 | Phase 2 | Pending |
 | TRIAGE-06 | Phase 4 | Pending |
