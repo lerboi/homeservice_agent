@@ -1,5 +1,23 @@
-import { getTranslations } from 'next-intl/server';
-export default async function Home() {
-  const t = await getTranslations('agent');
-  return <main><h1>HomeService AI</h1><p>{t('default_greeting')}</p></main>;
+import { LandingNav } from './components/landing/LandingNav';
+import { HeroSection } from './components/landing/HeroSection';
+import { HowItWorksSection } from './components/landing/HowItWorksSection';
+import { FeaturesGrid } from './components/landing/FeaturesGrid';
+import { SocialProofSection } from './components/landing/SocialProofSection';
+import { FinalCTASection } from './components/landing/FinalCTASection';
+import { LandingFooter } from './components/landing/LandingFooter';
+
+export default function HomePage() {
+  return (
+    <>
+      <LandingNav />
+      <main>
+        <HeroSection />
+        <HowItWorksSection />
+        <FeaturesGrid />
+        <SocialProofSection />
+        <FinalCTASection />
+      </main>
+      <LandingFooter />
+    </>
+  );
 }
