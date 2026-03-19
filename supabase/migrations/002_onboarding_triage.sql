@@ -22,6 +22,9 @@ CREATE POLICY "services_tenant_own" ON services
 CREATE POLICY "service_role_all_services" ON services
   FOR ALL USING (auth.role() = 'service_role');
 
+-- Working hours stub (ONBOARD-03 — full UI deferred to Phase 3)
+ALTER TABLE tenants ADD COLUMN working_hours jsonb;
+
 -- Triage result columns on calls table
 ALTER TABLE calls
   ADD COLUMN urgency_classification text
