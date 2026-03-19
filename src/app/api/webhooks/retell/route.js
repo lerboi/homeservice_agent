@@ -47,7 +47,7 @@ async function handleInbound(payload) {
   // Look up tenant by the Retell phone number that was called
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, business_name, default_locale, onboarding_complete, owner_phone')
+    .select('id, business_name, default_locale, onboarding_complete, owner_phone, tone_preset')
     .eq('retell_phone_number', to_number)
     .single();
 
@@ -60,6 +60,7 @@ async function handleInbound(payload) {
         onboarding_complete: false,
         caller_number: from_number,
         owner_phone: '',
+        tone_preset: 'professional',
       },
     });
   }
@@ -72,6 +73,7 @@ async function handleInbound(payload) {
       caller_number: from_number,
       tenant_id: tenant.id,
       owner_phone: tenant.owner_phone || '',
+      tone_preset: tenant.tone_preset || 'professional',
     },
   });
 }
