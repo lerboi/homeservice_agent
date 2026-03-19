@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Checkpoint 02.1-02: awaiting visual verification of landing page at http://localhost:3000"
-last_updated: "2026-03-19T19:23:01.847Z"
+stopped_at: Completed 02.1-02-PLAN.md — Phase 02.1 fully complete, all 7 landing sections built and user-approved
+last_updated: "2026-03-19T19:42:11.077Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
@@ -62,6 +62,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02-onboarding-and-triage P04 | 4 | 2 tasks | 8 files |
 | Phase 02.1-public-marketing-landing-page P01 | 8 | 2 tasks | 5 files |
 | Phase 02.1-public-marketing-landing-page P02 | 3 | 1 tasks | 8 files |
+| Phase 02.1-public-marketing-landing-page P02 | 45 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,9 @@ Recent decisions affecting current work:
 - [Phase 02.1-01]: AnimatedSection useReducedMotion with initial={false} skips animation state entirely when prefers-reduced-motion OS setting is active — Framer Motion v12 pattern
 - [Phase 02.1-02]: All section components are Server Components — no use client; client animation delegated to AnimatedSection from Plan 01 foundation
 - [Phase 02.1-02]: FinalCTASection uses inverted button (bg-landing-dark on bg-landing-accent) for contrast — dark button on copper background per UI-SPEC intent
+- [Phase 02.1-02]: All section components are Server Components — no use client; client animation delegated to AnimatedSection from Plan 01 foundation
+- [Phase 02.1-02]: Post-checkpoint design rebuild: all 7 sections rebuilt with design-engineer quality (bento grid, metric badges, radial gradients) after user requested visual improvements
+- [Phase 02.1-02]: AnimatedSection gained direction prop (up/left/right) and stagger/item variant system — required for polished directional animations across sections
 
 ### Roadmap Evolution
 
@@ -125,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T19:23:01.843Z
-Stopped at: Checkpoint 02.1-02: awaiting visual verification of landing page at http://localhost:3000
+Last session: 2026-03-19T19:42:11.074Z
+Stopped at: Completed 02.1-02-PLAN.md — Phase 02.1 fully complete, all 7 landing sections built and user-approved
 Resume file: None
