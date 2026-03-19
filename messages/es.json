@@ -77,5 +77,23 @@
     "error_provisioning_failed": "No pudimos asignar un numero de telefono en este momento. Actualiza la pagina e intenta de nuevo, o contacta al soporte.",
     "error_test_call_failed": "No pudimos realizar la llamada de prueba. Marca {number} directamente para probar tu IA.",
     "error_save_failed": "Los cambios no se pudieron guardar. Verifica tu conexion e intenta de nuevo."
+  },
+  "services": {
+    "page_heading": "Tus servicios",
+    "empty_heading": "Sin servicios aun",
+    "empty_body": "Agrega tu primer servicio para que tu IA sepa que trabajos esperar.",
+    "empty_cta": "Agrega tu primer servicio",
+    "save_changes": "Guardar cambios",
+    "unsaved_toast": "Tienes cambios sin guardar",
+    "save_success_toast": "Servicios guardados",
+    "remove_undo_toast": "Se elimino {serviceName}.",
+    "undo": "Deshacer",
+    "add_service": "Agregar servicio",
+    "tag_emergency": "Emergencia",
+    "tag_routine": "Rutinario",
+    "tag_high_ticket": "Alto valor",
+    "working_hours_coming_soon": "La configuracion de horario laboral estara disponible pronto.",
+    "checklist_heading": "Sigue adelante \u2014 optimiza tu configuracion",
+    "checklist_subtext": "Tu IA esta en vivo. Estos pasos opcionales la hacen aun mejor."
   }
 }

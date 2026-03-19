@@ -77,5 +77,23 @@
     "error_provisioning_failed": "We couldn't assign a phone number right now. Refresh and try again, or contact support.",
     "error_test_call_failed": "We couldn't place the test call. Dial {number} directly to test your AI.",
     "error_save_failed": "Changes couldn't be saved. Check your connection and try again."
+  },
+  "services": {
+    "page_heading": "Your services",
+    "empty_heading": "No services yet",
+    "empty_body": "Add your first service so your AI knows what jobs to expect.",
+    "empty_cta": "Add your first service",
+    "save_changes": "Save changes",
+    "unsaved_toast": "You have unsaved changes",
+    "save_success_toast": "Services saved",
+    "remove_undo_toast": "Removed {serviceName}.",
+    "undo": "Undo",
+    "add_service": "Add service",
+    "tag_emergency": "Emergency",
+    "tag_routine": "Routine",
+    "tag_high_ticket": "High-Ticket",
+    "working_hours_coming_soon": "Working hours configuration is coming soon.",
+    "checklist_heading": "Keep going \u2014 optimize your setup",
+    "checklist_subtext": "Your AI is live. These optional steps make it even better."
   }
 }
