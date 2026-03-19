@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-03-19T07:22:28.924Z"
-last_activity: 2026-03-19 — 02-02 three-layer triage engine complete, all 84 tests passing
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-19T07:22:42.621Z"
+last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 9
-  completed_plans: 9
-  percent: 44
+  completed_plans: 8
+  percent: 50
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 2 of 5 (Onboarding and Triage)
-Plan: 2 of 5 in current phase (02-02 complete)
+Plan: 4 of 5 in current phase (02-04 complete)
 Status: In progress
-Last activity: 2026-03-19 — 02-02 three-layer triage engine complete, all 84 tests passing
+Last activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 
-Progress: [████░░░░░░] 44%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [████░░░░░░] 44%
 | Phase 02-onboarding-and-triage P05 | 3 | 2 tasks | 4 files |
 | Phase 02-onboarding-and-triage P03 | 8 | 2 tasks | 14 files |
 | Phase 02-onboarding-and-triage P06 | 8 | 2 tasks | 12 files |
+| Phase 02-onboarding-and-triage P04 | 4 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 02-06]: Soft-delete via is_active=false preserves call history and audit trail
 - [Phase 02-06]: Working hours jsonb nullable stub satisfies ONBOARD-03; full UI in Phase 3
 - [Phase 02-06]: Dashboard layout is single-column with breadcrumb — sidebar nav deferred to Phase 4
+- [Phase 02-04]: onboarding_complete flag set atomically with test call trigger — not on Retell webhook callback
+- [Phase 02-04]: Wizard Step 3 uses 3 internal sub-states (phone, otp, provisioning) in one page component — avoids route flicker
+- [Phase 02-04]: Email collected alongside phone in sms-confirm — single round-trip saves owner_phone and owner_email
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:22:28.920Z
-Stopped at: Completed 02-06-PLAN.md
+Last session: 2026-03-19T07:22:42.616Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

@@ -58,7 +58,7 @@
 - [x] **ONBOARD-02**: Owner can configure service list with categories and tier/priority tags
 - [x] **ONBOARD-03**: Owner can configure availability schedule (working hours, days off)
 - [x] **ONBOARD-04**: Owner can configure emergency escalation rules per service type
-- [ ] **ONBOARD-05**: Owner can configure notification preferences (SMS number, email address)
+- [x] **ONBOARD-05**: Owner can configure notification preferences (SMS number, email address)
 - [x] **ONBOARD-06**: Onboarding flow gets owner to hear AI answer a test call within 5 minutes of signup
 
 ## v2 Requirements
@@ -131,7 +131,7 @@
 | ONBOARD-02 | Phase 2 | Complete |
 | ONBOARD-03 | Phase 2 | Complete |
 | ONBOARD-04 | Phase 2 | Complete |
-| ONBOARD-05 | Phase 2 | Pending |
+| ONBOARD-05 | Phase 2 | Complete |
 | ONBOARD-06 | Phase 2 | Complete |
 
 **Coverage:**
