@@ -25,6 +25,36 @@ const TONE_PRESETS = {
 export function getAgentConfig({ locale = 'en', business_name = 'HomeService', onboarding_complete = false, tone_preset = 'professional' } = {}) {
   const preset = TONE_PRESETS[tone_preset] || TONE_PRESETS.professional;
 
+  const functions = [
+    {
+      name: 'transfer_call',
+      description: "Transfer the current call to the business owner's phone number. Use this when the caller requests to speak with a human or when you cannot handle their request. Always capture caller information (name, phone, issue) BEFORE invoking this function.",
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+  ];
+
+  if (onboarding_complete) {
+    functions.push({
+      name: 'book_appointment',
+      description: 'Book a confirmed appointment slot for the caller. Only invoke AFTER: (1) collecting caller name, phone, and service address, (2) reading back the address and receiving verbal confirmation ("Just to confirm, you are at [address], correct?") and the caller said yes, (3) the caller has selected a slot from the offered options. Pass the confirmed slot the caller selected.',
+      parameters: {
+        type: 'object',
+        properties: {
+          slot_start: { type: 'string', description: 'ISO 8601 datetime of the appointment start (e.g., "2026-03-21T10:00:00")' },
+          slot_end: { type: 'string', description: 'ISO 8601 datetime of the appointment end' },
+          service_address: { type: 'string', description: 'Service address as verbally confirmed by the caller' },
+          caller_name: { type: 'string', description: 'Caller full name' },
+          urgency: { type: 'string', enum: ['emergency', 'routine', 'high_ticket'], description: 'Urgency level from triage' },
+        },
+        required: ['slot_start', 'slot_end', 'service_address', 'caller_name', 'urgency'],
+      },
+    });
+  }
+
   return {
     language: 'multilingual',
     system_prompt: buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset }),
@@ -33,16 +63,6 @@ export function getAgentConfig({ locale = 'en', business_name = 'HomeService', o
     interruption_sensitivity: 0.7,
     ambient_sound: 'off',
     max_call_duration_ms: 600000, // 10 minutes
-    functions: [
-      {
-        name: 'transfer_call',
-        description: "Transfer the current call to the business owner's phone number. Use this when the caller requests to speak with a human or when you cannot handle their request. Always capture caller information (name, phone, issue) BEFORE invoking this function.",
-        parameters: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-    ],
+    functions,
   };
 }
