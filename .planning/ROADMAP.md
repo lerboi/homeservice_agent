@@ -67,7 +67,7 @@ Plans:
 - [ ] 02.1-02-PLAN.md — All content sections (Hero, How it Works, Features, Social Proof, Final CTA, Footer) + page.js rewrite + /demo placeholder
 
 ### Phase 3: Scheduling and Calendar Sync
-**Goal**: Emergency calls book a confirmed appointment slot while the caller is still on the line, routine calls create a lead with suggested slots — with zero double-bookings, travel time buffers between consecutive jobs, and real-time Google and Outlook calendar sync
+**Goal**: Emergency calls book a confirmed appointment slot while the caller is still on the line, routine calls create a lead with suggested slots — with zero double-bookings, travel time buffers between consecutive jobs, and real-time Google Calendar sync (Outlook deferred to Phase 5)
 **Depends on**: Phase 2
 **Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05, SCHED-06, SCHED-07, SCHED-08, SCHED-09, VOICE-03, VOICE-04
 **Success Criteria** (what must be TRUE):
@@ -77,7 +77,15 @@ Plans:
   4. A booking in Jurong at 10AM automatically blocks the 11AM slot in Changi due to geographic travel time — the buffer is enforced without owner intervention
   5. A calendar event created directly in Google Calendar appears in platform availability within 60 seconds and blocks that slot from new bookings
   6. The caller hears address read-back confirmation before any slot is locked
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — DB migration (scheduling tables, atomic booking RPC) + slot calculator + booking module
+- [ ] 03-02-PLAN.md — book_appointment Retell function + BOOKING FLOW agent prompt section
+- [ ] 03-03-PLAN.md — Google Calendar OAuth, push notification sync, incremental mirror, cron renewal
+- [ ] 03-04-PLAN.md — Dashboard settings UI (WorkingHoursEditor, CalendarSyncCard, ZoneManager) + API routes
+- [ ] 03-05-PLAN.md — Calendar/Appointments dashboard page + AppointmentFlyout + ConflictAlertBanner
+- [ ] 03-06-PLAN.md — Webhook integration: available_slots in calls, handleBookAppointment, suggested_slots for routine
 
 ### Phase 4: CRM, Dashboard, and Notifications
 **Goal**: Every lead created by the AI is visible in a web dashboard with full call context, the owner can move leads through the pipeline, and they receive immediate SMS and email alerts when a new lead or booking arrives
@@ -114,6 +122,6 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 1. Voice Infrastructure | 3/3 | Complete   | 2026-03-18 |
 | 2. Onboarding and Triage | 6/6 | Complete   | 2026-03-19 |
 | 2.1 Public Marketing Landing Page | 0/2 | Planning complete | - |
-| 3. Scheduling and Calendar Sync | 0/TBD | Not started | - |
+| 3. Scheduling and Calendar Sync | 0/6 | Planning complete | - |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
