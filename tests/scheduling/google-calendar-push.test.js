@@ -88,7 +88,7 @@ beforeEach(() => {
 
 // --- createOAuth2Client tests ---
 describe('createOAuth2Client', () => {
-  test('creates OAuth2 client with correct env vars', () => {
+  test('creates OAuth2 client with correct env vars', async () => {
     process.env.GOOGLE_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
     process.env.NEXT_PUBLIC_APP_URL = 'https://example.com';
@@ -174,8 +174,21 @@ describe('handleGoogleCalendarPush', () => {
       update: jest.fn().mockResolvedValue({ error: null }),
     };
 
+    let credCallCount = 0;
     mockFrom.mockImplementation((table) => {
-      if (table === 'calendar_credentials') return { ...credChain };
+      if (table === 'calendar_credentials') {
+        credCallCount++;
+        if (credCallCount === 1) {
+          // First call: select credentials
+          return { ...credChain };
+        }
+        // Subsequent calls: update sync token
+        return {
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
       if (table === 'calendar_events') return { ...eventChain };
       return { select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(), update: jest.fn().mockResolvedValue({ error: null }) };
     });
@@ -234,18 +247,20 @@ describe('syncCalendarEvents', () => {
       update: jest.fn().mockResolvedValue({ error: null }),
     };
 
-    let credCallCount = 0;
+    let credCallCount410 = 0;
     mockFrom.mockImplementation((table) => {
       if (table === 'calendar_credentials') {
-        if (credCallCount === 0) {
-          credCallCount++;
+        credCallCount410++;
+        if (credCallCount410 === 1) {
           return { ...credChain };
         }
         // subsequent calls for update
         return {
+          update: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({ error: null }),
+          }),
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
-          update: jest.fn().mockResolvedValue({ error: null }),
           single: jest.fn().mockResolvedValue({ data: { access_token: 'acc', refresh_token: 'ref', expiry_date: 9999999999999, calendar_id: 'primary', last_sync_token: 'oldtoken' }, error: null }),
         };
       }
