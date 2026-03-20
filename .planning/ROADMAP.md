@@ -98,7 +98,15 @@ Plans:
   4. Within 60 seconds of a new booking, owner receives both an SMS and email with caller name, job type, urgency, address, and a one-tap callback link
   5. If a caller hangs up before booking completes, an auto-SMS is sent to the caller's number within 60 seconds
   6. Owner can see cumulative revenue tracked through the AI pipeline (booked → completed → paid) on the dashboard
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — DB migration (leads, lead_calls, activity_log) + leads module (createOrMergeLead, getLeads) + tests
+- [ ] 04-02-PLAN.md — Notification service (Twilio SMS + Resend email) + React Email template + tests
+- [ ] 04-03-PLAN.md — Webhook integration: lead creation in processCallAnalyzed + owner notifications + Vercel Cron recovery SMS
+- [ ] 04-04-PLAN.md — Sidebar nav update + leads API route + lead list page (LeadCard, LeadFilterBar)
+- [ ] 04-05-PLAN.md — Lead flyout (AudioPlayer, TranscriptViewer, status change, RevenueInput) + KanbanBoard + lead detail API
+- [ ] 04-06-PLAN.md — Dashboard home (stats, activity feed) + analytics page (charts) + Supabase Realtime + settings stub
 
 ### Phase 5: Hardening and Launch
 **Goal**: The full product is demo-ready and production-hardened — multi-language works end-to-end from first utterance through notifications, the 5-minute onboarding activation gate is validated with a non-technical user, and concurrency and escalation edge cases are verified in a staging environment
@@ -123,5 +131,5 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 2. Onboarding and Triage | 6/6 | Complete   | 2026-03-19 |
 | 2.1 Public Marketing Landing Page | 0/2 | Planning complete | - |
 | 3. Scheduling and Calendar Sync | 5/6 | In Progress|  |
-| 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
+| 4. CRM, Dashboard, and Notifications | 0/6 | Planning complete | - |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
