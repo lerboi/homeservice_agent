@@ -77,7 +77,7 @@ Plans:
   4. A booking in Jurong at 10AM automatically blocks the 11AM slot in Changi due to geographic travel time — the buffer is enforced without owner intervention
   5. A calendar event created directly in Google Calendar appears in platform availability within 60 seconds and blocks that slot from new bookings
   6. The caller hears address read-back confirmation before any slot is locked
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — DB migration (scheduling tables, atomic booking RPC) + slot calculator + booking module
@@ -122,6 +122,6 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 1. Voice Infrastructure | 3/3 | Complete   | 2026-03-18 |
 | 2. Onboarding and Triage | 6/6 | Complete   | 2026-03-19 |
 | 2.1 Public Marketing Landing Page | 0/2 | Planning complete | - |
-| 3. Scheduling and Calendar Sync | 4/6 | In Progress|  |
+| 3. Scheduling and Calendar Sync | 5/6 | In Progress|  |
 | 4. CRM, Dashboard, and Notifications | 0/TBD | Not started | - |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
