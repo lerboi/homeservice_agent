@@ -1,13 +1,15 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
-// Mock the supabase module before importing the module under test
+// ESM mock: must use jest.unstable_mockModule before any dynamic import
 const mockRpc = jest.fn();
-jest.mock('@/lib/supabase.js', () => ({
+
+jest.unstable_mockModule('@/lib/supabase.js', () => ({
   supabase: {
     rpc: mockRpc,
   },
 }));
 
+// Dynamic import after mock is registered
 const { atomicBookSlot } = await import('@/lib/scheduling/booking.js');
 
 describe('atomicBookSlot', () => {
