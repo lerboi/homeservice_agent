@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md — scheduling foundation
-last_updated: "2026-03-20T13:17:25.973Z"
+stopped_at: Completed 03-06-PLAN.md — scheduling engine integration
+last_updated: "2026-03-20T18:11:32.679Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 17
-  completed_plans: 13
+  completed_plans: 17
   percent: 50
 ---
 
@@ -65,6 +65,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02.1-public-marketing-landing-page P02 | 45 | 2 tasks | 9 files |
 | Phase 03-scheduling-and-calendar-sync P02 | 3 | 2 tasks | 4 files |
 | Phase 03-scheduling-and-calendar-sync P01 | 8 | 2 tasks | 7 files |
+| Phase 03-scheduling-and-calendar-sync P06 | 18 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,9 @@ Recent decisions affecting current work:
 - [Phase 03-01]: Used pg_try_advisory_xact_lock (non-blocking) for atomic slot booking — prevents queue buildup under concurrent load
 - [Phase 03-01]: jest.unstable_mockModule for ESM supabase mock in booking tests — consistent with project ESM pattern
 - [Phase 03-01]: Tests placed in tests/scheduling/ not src/lib/scheduling/__tests__/ — matches jest.config.js testMatch pattern
+- [Phase 03-06]: handleInbound fetches all scheduling data in parallel (Promise.all) before slot calculation
+- [Phase 03-06]: suggested_slots only calculated for routine AND unbooked calls — emergency calls book during the call
+- [Phase 03-06]: Calendar push always async via after() — never in synchronous call hot path
 
 ### Roadmap Evolution
 
@@ -137,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:17:25.968Z
-Stopped at: Completed 03-01-PLAN.md — scheduling foundation
+Last session: 2026-03-20T18:11:32.672Z
+Stopped at: Completed 03-06-PLAN.md — scheduling engine integration
 Resume file: None

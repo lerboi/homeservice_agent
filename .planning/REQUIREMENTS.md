@@ -33,7 +33,7 @@
 - [x] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
 - [x] **SCHED-04**: Atomic slot locking — when AI books a slot, it is locked at database level with zero race conditions
 - [x] **SCHED-05**: Emergency calls get immediate slot lock while caller is still on the line
-- [ ] **SCHED-06**: Routine calls create a lead with suggested time slots for owner to confirm
+- [x] **SCHED-06**: Routine calls create a lead with suggested time slots for owner to confirm
 - [x] **SCHED-07**: 30-60 minute travel time buffer automatically inserted between consecutive bookings
 - [x] **SCHED-08**: Geographic zone awareness — prevents back-to-back bookings across distant locations (e.g., Jurong 10AM and Changi 11AM)
 - [x] **SCHED-09**: Calendar is never queried live during a call — availability served from local DB mirror updated asynchronously
@@ -115,7 +115,7 @@
 | SCHED-03 | Phase 3 | Complete |
 | SCHED-04 | Phase 3 | Complete |
 | SCHED-05 | Phase 3 | Complete |
-| SCHED-06 | Phase 3 | Pending |
+| SCHED-06 | Phase 3 | Complete |
 | SCHED-07 | Phase 3 | Complete |
 | SCHED-08 | Phase 3 | Complete |
 | SCHED-09 | Phase 3 | Complete |
