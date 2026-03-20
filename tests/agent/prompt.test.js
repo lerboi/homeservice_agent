@@ -105,4 +105,45 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt('en', { onboarding_complete: true });
     expect(prompt).toContain('TRIAGE-AWARE BEHAVIOR');
   });
+
+  // BOOKING FLOW tests
+  test('onboarding_complete=true prompt contains "BOOKING FLOW"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('BOOKING FLOW');
+  });
+
+  test('onboarding_complete=true prompt contains "read back the address"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('read back the address');
+  });
+
+  test('onboarding_complete=true prompt contains "book_appointment"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('book_appointment');
+  });
+
+  test('onboarding_complete=true prompt does NOT contain "cannot book appointments"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).not.toContain('cannot book appointments');
+  });
+
+  test('onboarding_complete=false prompt does NOT contain "BOOKING FLOW"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: false });
+    expect(prompt).not.toContain('BOOKING FLOW');
+  });
+
+  test('onboarding_complete=true prompt contains "available_slots" reference', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('available_slots');
+  });
+
+  test('onboarding_complete=true prompt contains "Just to confirm"', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('Just to confirm');
+  });
+
+  test('onboarding_complete=true prompt contains "slot was just taken" handling', () => {
+    const prompt = buildSystemPrompt('en', { onboarding_complete: true });
+    expect(prompt).toContain('slot was just taken');
+  });
 });
