@@ -1,9 +1,32 @@
 import { supabase } from '@/lib/supabase';
 import { locales } from '@/i18n/routing';
 import { classifyCall } from '@/lib/triage/classifier';
+import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 /** Supported languages — calls in any other language trigger a language barrier tag. */
 const SUPPORTED_LANGUAGES = new Set(locales); // ['en', 'es']
+
+/**
+ * Convert a zone_travel_buffers array into the format expected by calculateAvailableSlots.
+ * @param {Array<{zone_a_id: string, zone_b_id: string, buffer_mins: number}>} buffers
+ * @returns {Array<{zone_a_id: string, zone_b_id: string, buffer_mins: number}>}
+ */
+function formatBuffers(buffers) {
+  return buffers || [];
+}
+
+/**
+ * Format a Date object into a "YYYY-MM-DD" string in the given IANA timezone.
+ * @param {Date} date
+ * @param {string} timezone IANA timezone string
+ * @returns {string} "YYYY-MM-DD"
+ */
+function toLocalDateString(date, timezone) {
+  const zoned = toZonedTime(date, timezone || 'America/Chicago');
+  return format(zoned, 'yyyy-MM-dd');
+}
 
 /**
  * Process call_ended event — create initial call record.
@@ -56,6 +79,9 @@ export async function processCallEnded(call) {
  * Per locked decision: unsupported languages create a lead tagged with
  * "LANGUAGE BARRIER: [Detected Language]" — implemented via language_barrier
  * and barrier_language columns on the calls table.
+ *
+ * For routine calls that were not booked during the call, calculate and store
+ * suggested_slots so the owner can do manual follow-up with ready-to-offer times.
  */
 export async function processCallAnalyzed(call) {
   const {
@@ -126,6 +152,85 @@ export async function processCallAnalyzed(call) {
     console.warn(`EMERGENCY TRIAGE: call ${call_id} for tenant ${tenantId} — ${triageResult.reason || 'keyword match'}`);
   }
 
+  // Check whether a booking was made during this call
+  let appointmentExists = false;
+  if (tenantId) {
+    const { data: appt } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('retell_call_id', call_id)
+      .maybeSingle();
+    appointmentExists = appt != null;
+  }
+
+  // For routine/unbooked calls: calculate suggested slots for owner follow-up
+  // This allows the owner to see ready-to-offer times when reviewing leads in the dashboard
+  let suggestedSlots = null;
+  const isRoutineUnbooked = triageResult.urgency === 'routine' && !appointmentExists;
+
+  if (isRoutineUnbooked && tenantId) {
+    try {
+      // Load tenant scheduling config
+      const { data: tenantScheduling } = await supabase
+        .from('tenants')
+        .select('id, working_hours, slot_duration_mins, tenant_timezone')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantScheduling?.working_hours) {
+        const tenantTimezone = tenantScheduling.tenant_timezone || 'America/Chicago';
+
+        // Load scheduling data in parallel
+        const [appointments, events, zones, buffers] = await Promise.all([
+          supabase
+            .from('appointments')
+            .select('start_time, end_time, zone_id')
+            .eq('tenant_id', tenantScheduling.id)
+            .neq('status', 'cancelled'),
+          supabase
+            .from('calendar_events')
+            .select('start_time, end_time')
+            .eq('tenant_id', tenantScheduling.id),
+          supabase
+            .from('service_zones')
+            .select('id, name, postal_codes')
+            .eq('tenant_id', tenantScheduling.id),
+          supabase
+            .from('zone_travel_buffers')
+            .select('zone_a_id, zone_b_id, buffer_mins')
+            .eq('tenant_id', tenantScheduling.id),
+        ]);
+
+        // Calculate next 3 available slots starting from tomorrow
+        const collectedSlots = [];
+        for (let d = 0; d < 3 && collectedSlots.length < 3; d++) {
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + d + 1); // start from tomorrow
+          const targetDateStr = toLocalDateString(targetDate, tenantTimezone);
+
+          const daySlots = calculateAvailableSlots({
+            workingHours: tenantScheduling.working_hours,
+            slotDurationMins: tenantScheduling.slot_duration_mins || 60,
+            existingBookings: appointments.data || [],
+            externalBlocks: events.data || [],
+            zones: zones.data || [],
+            zonePairBuffers: formatBuffers(buffers.data || []),
+            targetDate: targetDateStr,
+            tenantTimezone,
+            maxSlots: 3 - collectedSlots.length,
+          });
+          collectedSlots.push(...daySlots);
+        }
+
+        suggestedSlots = collectedSlots.length > 0 ? collectedSlots : null;
+      }
+    } catch (err) {
+      // Non-fatal: suggested_slots is an enhancement, not a core requirement
+      console.error('suggested_slots calculation failed:', err);
+    }
+  }
+
   // Upsert call record with full analyzed data
   await supabase.from('calls').upsert(
     {
@@ -149,6 +254,7 @@ export async function processCallAnalyzed(call) {
       urgency_classification: triageResult.urgency,
       urgency_confidence: triageResult.confidence,
       triage_layer_used: triageResult.layer,
+      suggested_slots: suggestedSlots,
     },
     { onConflict: 'retell_call_id' }
   );

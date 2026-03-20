@@ -12,9 +12,28 @@ jest.unstable_mockModule('@/lib/triage/classifier', () => ({
   classifyCall: mockClassifyCall,
 }));
 
+// Mock slot calculator — not under test here
+jest.unstable_mockModule('@/lib/scheduling/slot-calculator', () => ({
+  calculateAvailableSlots: jest.fn(() => []),
+}));
+
 // Build a fresh supabase mock per test for isolation
 const mockUpsert = jest.fn();
 const mockFromStorage = jest.fn();
+
+/** Generic chainable query that resolves to empty / null by default */
+function makeGenericQuery(resolvedValue = { data: null, error: null }) {
+  return {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    neq: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockResolvedValue({ data: [], error: null }),
+    single: jest.fn().mockResolvedValue(resolvedValue),
+    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: mockUpsert,
+    update: jest.fn().mockReturnThis(),
+  };
+}
 
 const mockTenantsQuery = {
   select: jest.fn().mockReturnThis(),
@@ -23,6 +42,11 @@ const mockTenantsQuery = {
 };
 
 const mockCallsQuery = {
+  select: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  neq: jest.fn().mockReturnThis(),
+  gte: jest.fn().mockResolvedValue({ data: [], error: null }),
+  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
   upsert: mockUpsert,
 };
 
@@ -30,7 +54,8 @@ const mockSupabase = {
   from: jest.fn((table) => {
     if (table === 'tenants') return mockTenantsQuery;
     if (table === 'calls') return mockCallsQuery;
-    return {};
+    // appointments, calendar_events, service_zones, zone_travel_buffers
+    return makeGenericQuery();
   }),
   storage: {
     from: mockFromStorage,

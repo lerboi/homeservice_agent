@@ -8,6 +8,10 @@ ALTER TABLE tenants
   ADD COLUMN tenant_timezone text NOT NULL DEFAULT 'America/Chicago',
   ADD COLUMN slot_duration_mins int NOT NULL DEFAULT 60;
 
+-- Add suggested_slots to calls table for routine/unbooked call leads
+ALTER TABLE calls
+  ADD COLUMN suggested_slots jsonb;
+
 -- ============================================================
 -- appointments table
 -- ============================================================
