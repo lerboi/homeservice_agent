@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 UI-SPEC complete — ready for planning
-last_updated: "2026-03-20T09:42:35.465Z"
+stopped_at: Completed 03-02-PLAN.md — book_appointment function and BOOKING FLOW prompt
+last_updated: "2026-03-20T13:12:49.217Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 17
+  completed_plans: 12
   percent: 50
 ---
 
@@ -63,6 +63,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02.1-public-marketing-landing-page P01 | 8 | 2 tasks | 5 files |
 | Phase 02.1-public-marketing-landing-page P02 | 3 | 1 tasks | 8 files |
 | Phase 02.1-public-marketing-landing-page P02 | 45 | 2 tasks | 9 files |
+| Phase 03-scheduling-and-calendar-sync P02 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,9 @@ Recent decisions affecting current work:
 - [Phase 02.1-02]: All section components are Server Components — no use client; client animation delegated to AnimatedSection from Plan 01 foundation
 - [Phase 02.1-02]: Post-checkpoint design rebuild: all 7 sections rebuilt with design-engineer quality (bento grid, metric badges, radial gradients) after user requested visual improvements
 - [Phase 02.1-02]: AnimatedSection gained direction prop (up/left/right) and stagger/item variant system — required for polished directional animations across sections
+- [Phase 03-02]: book_appointment only injected when onboarding_complete=true — consistent with TRIAGE-AWARE BEHAVIOR gate
+- [Phase 03-02]: BOOKING FLOW prompt section replaces 'cannot book appointments yet' placeholder when onboarding complete
+- [Phase 03-02]: Address read-back is a mandatory blocking step — AI must not invoke book_appointment until caller verbally confirms
 
 ### Roadmap Evolution
 
@@ -129,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20
-Stopped at: Phase 3 UI-SPEC complete — ready for planning
-Resume file: .planning/phases/03-scheduling-and-calendar-sync/03-UI-SPEC.md
+Last session: 2026-03-20T13:12:49.213Z
+Stopped at: Completed 03-02-PLAN.md — book_appointment function and BOOKING FLOW prompt
+Resume file: None

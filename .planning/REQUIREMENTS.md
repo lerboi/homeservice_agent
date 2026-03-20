@@ -9,8 +9,8 @@
 
 - [x] **VOICE-01**: AI answers every inbound call within 1 second via Retell with natural-sounding voice
 - [x] **VOICE-02**: AI greets caller using the specific business name to establish professional trust
-- [ ] **VOICE-03**: AI extracts caller ID, job type/scope, and service address from conversation
-- [ ] **VOICE-04**: AI performs mandatory read-back confirmation of captured address (e.g., "Just to confirm, you're at 123 Ubi Ave 1, correct?")
+- [x] **VOICE-03**: AI extracts caller ID, job type/scope, and service address from conversation
+- [x] **VOICE-04**: AI performs mandatory read-back confirmation of captured address (e.g., "Just to confirm, you're at 123 Ubi Ave 1, correct?")
 - [x] **VOICE-05**: AI detects caller's language on first utterance and switches to appropriate language seamlessly
 - [x] **VOICE-06**: AI handles code-switching (Singlish/Spanish/mixed language) without breaking conversation flow
 - [x] **VOICE-07**: Per-business custom greeting script and AI persona configurable by owner
@@ -32,7 +32,7 @@
 - [ ] **SCHED-02**: Bidirectional Google Calendar sync — local DB mirrors external calendar, changes propagate both ways
 - [ ] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
 - [ ] **SCHED-04**: Atomic slot locking — when AI books a slot, it is locked at database level with zero race conditions
-- [ ] **SCHED-05**: Emergency calls get immediate slot lock while caller is still on the line
+- [x] **SCHED-05**: Emergency calls get immediate slot lock while caller is still on the line
 - [ ] **SCHED-06**: Routine calls create a lead with suggested time slots for owner to confirm
 - [ ] **SCHED-07**: 30-60 minute travel time buffer automatically inserted between consecutive bookings
 - [ ] **SCHED-08**: Geographic zone awareness — prevents back-to-back bookings across distant locations (e.g., Jurong 10AM and Changi 11AM)
@@ -97,8 +97,8 @@
 |-------------|-------|--------|
 | VOICE-01 | Phase 1 | Complete |
 | VOICE-02 | Phase 2 | Complete |
-| VOICE-03 | Phase 3 | Pending |
-| VOICE-04 | Phase 3 | Pending |
+| VOICE-03 | Phase 3 | Complete |
+| VOICE-04 | Phase 3 | Complete |
 | VOICE-05 | Phase 1 | Complete |
 | VOICE-06 | Phase 1 | Complete |
 | VOICE-07 | Phase 2 | Complete |
@@ -114,7 +114,7 @@
 | SCHED-02 | Phase 3 | Pending |
 | SCHED-03 | Phase 3 | Pending |
 | SCHED-04 | Phase 3 | Pending |
-| SCHED-05 | Phase 3 | Pending |
+| SCHED-05 | Phase 3 | Complete |
 | SCHED-06 | Phase 3 | Pending |
 | SCHED-07 | Phase 3 | Pending |
 | SCHED-08 | Phase 3 | Pending |
