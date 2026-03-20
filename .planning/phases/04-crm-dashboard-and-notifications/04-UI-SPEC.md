@@ -45,7 +45,7 @@ Declared values (multiples of 4):
 | 3xl | 64px | Page-level top padding on full-bleed views |
 
 Exceptions:
-- Sidebar nav links: `py-2.5 px-3` (10px/12px) — matches existing DashboardSidebar pattern, do not change
+- Sidebar nav links (existing DashboardSidebar): do not change the existing `py-2.5 px-3` spacing on existing nav link elements. This is a legacy value in an already-shipped component — new components must NOT use 10px (non-multiple-of-4) spacing anywhere.
 - Touch targets for status change buttons: minimum 44px height (accessibility requirement)
 - Filter bar pill buttons: 36px height — compact but above minimum for desktop-primary tool
 - Kanban column cards: 12px internal padding — denser than standard card for pipeline overview
@@ -59,14 +59,16 @@ Exceptions:
 | Body | 14px | 400 (regular) | 1.5 | Lead list row detail text, flyout description, table cells |
 | Label | 12px | 600 (semibold) | 1.4 | Section sub-headers (uppercase tracking-wider), status badges, filter tags |
 | Heading | 20px | 600 (semibold) | 1.2 | Flyout SheetTitle, page section headings, widget titles |
-| Display | 28px | 700 (bold) | 1.15 | Dashboard home stat numbers (today's new leads count, revenue total) |
+| Display | 28px | 600 (semibold) | 1.15 | Dashboard home stat numbers (today's new leads count, revenue total) |
+
+**Permitted weights: 2 — regular (400) and semibold (600) only.** The size difference between Display (28px) and Heading (20px) provides sufficient visual hierarchy without a third weight.
 
 **Font family:** Inter via `var(--font-inter)` — already loaded in root layout.
 
 **Typography constraints from ui-ux-pro-max skill:**
 - No body text below 12px
 - Base body at 14px is appropriate for data-dense dashboard (matches AppointmentFlyout pattern)
-- Stat display numbers at 28px bold create visual hierarchy anchors on the home page
+- Stat display numbers at 28px semibold create visual hierarchy anchors on the home page
 
 ---
 
@@ -202,7 +204,7 @@ Exceptions:
 
 **Layout:** 2-column stats row (lg+) / single column (mobile) → Recent activity feed
 
-**Stat widget design:** White card (`card.base` token), large number (28px bold, `text-[#0F172A]`), label below (12px, `text-[#475569]`), delta indicator (small arrow + percentage, green or red semantic color). Minimum 4 stat widgets: New Leads Today, Upcoming Appointments, Calls Today, Conversion Rate.
+**Stat widget design:** White card (`card.base` token), large number (28px semibold, `text-[#0F172A]`), label below (12px, `text-[#475569]`), delta indicator (small arrow + percentage, green or red semantic color). Minimum 4 stat widgets: New Leads Today, Upcoming Appointments, Calls Today, Conversion Rate.
 
 **Recent activity feed:** Chronological list of events (new lead, status change, booking, notification sent). Each item: icon (16px lucide) + description + relative time. No pagination — shows last 20 events. Skeleton state during load.
 
@@ -277,7 +279,7 @@ Settings link moves to bottom of nav above business name footer, separated by a 
 - Flyout Sheet must trap focus when open (inherits from Radix Dialog).
 - Transcript: Use `role="log"` on the scrollable container. Speaker labels use `aria-label="Caller:"` / `aria-label="AI:"`.
 - Color contrast: `#C2410C` on white = 4.6:1 — passes WCAG AA for normal text at 14px+.
-- Dashboard stat numbers (28px bold) use semantic `<p>` not decorative heading — label below is the accessible name.
+- Dashboard stat numbers (28px semibold) use semantic `<p>` not decorative heading — label below is the accessible name.
 - Kanban columns: `role="region"` with `aria-label="[Status] leads"` for each column.
 
 ---
