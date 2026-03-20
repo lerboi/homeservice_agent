@@ -29,8 +29,8 @@
 ### Scheduling & Booking
 
 - [x] **SCHED-01**: Built-in availability scheduler with configurable time slots and business hours
-- [ ] **SCHED-02**: Bidirectional Google Calendar sync — local DB mirrors external calendar, changes propagate both ways
-- [x] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
+- [x] **SCHED-02**: Bidirectional Google Calendar sync — local DB mirrors external calendar, changes propagate both ways
+- [ ] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
 - [x] **SCHED-04**: Atomic slot locking — when AI books a slot, it is locked at database level with zero race conditions
 - [x] **SCHED-05**: Emergency calls get immediate slot lock while caller is still on the line
 - [x] **SCHED-06**: Routine calls create a lead with suggested time slots for owner to confirm
@@ -111,8 +111,8 @@
 | TRIAGE-05 | Phase 2 | Complete |
 | TRIAGE-06 | Phase 4 | Pending |
 | SCHED-01 | Phase 3 | Complete |
-| SCHED-02 | Phase 3 | Pending |
-| SCHED-03 | Phase 3 | Complete |
+| SCHED-02 | Phase 3 | Complete |
+| SCHED-03 | Phase 5 | Pending |
 | SCHED-04 | Phase 3 | Complete |
 | SCHED-05 | Phase 3 | Complete |
 | SCHED-06 | Phase 3 | Complete |
