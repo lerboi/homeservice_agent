@@ -50,6 +50,19 @@ jest.unstable_mockModule('next/server', () => ({
   after: jest.fn((fn) => fn()),
 }));
 
+// Mock scheduling modules — not under test in this file
+jest.unstable_mockModule('@/lib/scheduling/slot-calculator', () => ({
+  calculateAvailableSlots: jest.fn(() => []),
+}));
+
+jest.unstable_mockModule('@/lib/scheduling/booking', () => ({
+  atomicBookSlot: jest.fn(),
+}));
+
+jest.unstable_mockModule('@/lib/scheduling/google-calendar', () => ({
+  pushBookingToCalendar: jest.fn(),
+}));
+
 let POST;
 
 beforeAll(async () => {
@@ -75,8 +88,11 @@ function makeChainableQuery(resolvedValue) {
   const q = {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    neq: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockResolvedValue({ data: [], error: null }),
     single: jest.fn().mockResolvedValue(resolvedValue),
     upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
+    update: jest.fn().mockReturnThis(),
   };
   return q;
 }
