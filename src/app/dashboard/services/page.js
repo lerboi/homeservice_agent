@@ -16,6 +16,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
+import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
+import ZoneManager from '@/components/dashboard/ZoneManager';
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
@@ -209,7 +212,12 @@ export default function ServicesPage() {
           </Button>
         </div>
 
-        <WorkingHoursStub t={t} />
+        <Separator className="my-6" />
+        <WorkingHoursEditor />
+        <Separator className="my-6" />
+        <CalendarSyncCard />
+        <Separator className="my-6" />
+        <ZoneManager />
       </div>
     );
   }
@@ -308,21 +316,12 @@ export default function ServicesPage() {
         )}
       </div>
 
-      <WorkingHoursStub t={t} />
-    </div>
-  );
-}
-
-function WorkingHoursStub({ t }) {
-  return (
-    <>
       <Separator className="my-6" />
-      <section aria-labelledby="working-hours-heading">
-        <h2 id="working-hours-heading" className="text-xl font-semibold text-slate-900 mb-2">
-          Working hours
-        </h2>
-        <p className="text-sm text-slate-500">{t('working_hours_coming_soon')}</p>
-      </section>
-    </>
+      <WorkingHoursEditor />
+      <Separator className="my-6" />
+      <CalendarSyncCard />
+      <Separator className="my-6" />
+      <ZoneManager />
+    </div>
   );
 }
