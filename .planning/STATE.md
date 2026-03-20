@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
+stopped_at: Phase 3 UI-SPEC complete — ready for planning
 last_updated: "2026-03-20T09:42:35.465Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
@@ -129,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T09:42:35.460Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-scheduling-and-calendar-sync/03-CONTEXT.md
+Last session: 2026-03-20
+Stopped at: Phase 3 UI-SPEC complete — ready for planning
+Resume file: .planning/phases/03-scheduling-and-calendar-sync/03-UI-SPEC.md
