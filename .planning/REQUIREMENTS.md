@@ -28,15 +28,15 @@
 
 ### Scheduling & Booking
 
-- [ ] **SCHED-01**: Built-in availability scheduler with configurable time slots and business hours
+- [x] **SCHED-01**: Built-in availability scheduler with configurable time slots and business hours
 - [ ] **SCHED-02**: Bidirectional Google Calendar sync — local DB mirrors external calendar, changes propagate both ways
-- [ ] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
-- [ ] **SCHED-04**: Atomic slot locking — when AI books a slot, it is locked at database level with zero race conditions
+- [x] **SCHED-03**: Bidirectional Outlook Calendar sync — local DB mirrors external calendar, changes propagate both ways
+- [x] **SCHED-04**: Atomic slot locking — when AI books a slot, it is locked at database level with zero race conditions
 - [x] **SCHED-05**: Emergency calls get immediate slot lock while caller is still on the line
 - [ ] **SCHED-06**: Routine calls create a lead with suggested time slots for owner to confirm
-- [ ] **SCHED-07**: 30-60 minute travel time buffer automatically inserted between consecutive bookings
-- [ ] **SCHED-08**: Geographic zone awareness — prevents back-to-back bookings across distant locations (e.g., Jurong 10AM and Changi 11AM)
-- [ ] **SCHED-09**: Calendar is never queried live during a call — availability served from local DB mirror updated asynchronously
+- [x] **SCHED-07**: 30-60 minute travel time buffer automatically inserted between consecutive bookings
+- [x] **SCHED-08**: Geographic zone awareness — prevents back-to-back bookings across distant locations (e.g., Jurong 10AM and Changi 11AM)
+- [x] **SCHED-09**: Calendar is never queried live during a call — availability served from local DB mirror updated asynchronously
 
 ### Lead CRM
 
@@ -110,15 +110,15 @@
 | TRIAGE-04 | Phase 2 | Complete |
 | TRIAGE-05 | Phase 2 | Complete |
 | TRIAGE-06 | Phase 4 | Pending |
-| SCHED-01 | Phase 3 | Pending |
+| SCHED-01 | Phase 3 | Complete |
 | SCHED-02 | Phase 3 | Pending |
-| SCHED-03 | Phase 3 | Pending |
-| SCHED-04 | Phase 3 | Pending |
+| SCHED-03 | Phase 3 | Complete |
+| SCHED-04 | Phase 3 | Complete |
 | SCHED-05 | Phase 3 | Complete |
 | SCHED-06 | Phase 3 | Pending |
-| SCHED-07 | Phase 3 | Pending |
-| SCHED-08 | Phase 3 | Pending |
-| SCHED-09 | Phase 3 | Pending |
+| SCHED-07 | Phase 3 | Complete |
+| SCHED-08 | Phase 3 | Complete |
+| SCHED-09 | Phase 3 | Complete |
 | CRM-01 | Phase 4 | Pending |
 | CRM-02 | Phase 4 | Pending |
 | CRM-03 | Phase 4 | Pending |

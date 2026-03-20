@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-02-PLAN.md — book_appointment function and BOOKING FLOW prompt
-last_updated: "2026-03-20T13:12:49.217Z"
+stopped_at: Completed 03-01-PLAN.md — scheduling foundation
+last_updated: "2026-03-20T13:17:25.973Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 17
-  completed_plans: 12
+  completed_plans: 13
   percent: 50
 ---
 
@@ -64,6 +64,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02.1-public-marketing-landing-page P02 | 3 | 1 tasks | 8 files |
 | Phase 02.1-public-marketing-landing-page P02 | 45 | 2 tasks | 9 files |
 | Phase 03-scheduling-and-calendar-sync P02 | 3 | 2 tasks | 4 files |
+| Phase 03-scheduling-and-calendar-sync P01 | 8 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,9 @@ Recent decisions affecting current work:
 - [Phase 03-02]: book_appointment only injected when onboarding_complete=true — consistent with TRIAGE-AWARE BEHAVIOR gate
 - [Phase 03-02]: BOOKING FLOW prompt section replaces 'cannot book appointments yet' placeholder when onboarding complete
 - [Phase 03-02]: Address read-back is a mandatory blocking step — AI must not invoke book_appointment until caller verbally confirms
+- [Phase 03-01]: Used pg_try_advisory_xact_lock (non-blocking) for atomic slot booking — prevents queue buildup under concurrent load
+- [Phase 03-01]: jest.unstable_mockModule for ESM supabase mock in booking tests — consistent with project ESM pattern
+- [Phase 03-01]: Tests placed in tests/scheduling/ not src/lib/scheduling/__tests__/ — matches jest.config.js testMatch pattern
 
 ### Roadmap Evolution
 
@@ -133,6 +137,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:12:49.213Z
-Stopped at: Completed 03-02-PLAN.md — book_appointment function and BOOKING FLOW prompt
+Last session: 2026-03-20T13:17:25.968Z
+Stopped at: Completed 03-01-PLAN.md — scheduling foundation
 Resume file: None
