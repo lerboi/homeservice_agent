@@ -249,7 +249,7 @@ export default function WorkingHoursEditor() {
   if (fetchError) {
     return (
       <section aria-labelledby="working-hours-heading" className="mt-6">
-        <h2 id="working-hours-heading" className="text-xl font-semibold text-slate-900 mb-4">
+        <h2 id="working-hours-heading" className="text-xl font-semibold text-[#0F172A] mb-4">
           Working Hours
         </h2>
         <Alert variant="destructive">
@@ -267,10 +267,10 @@ export default function WorkingHoursEditor() {
         {/* Section header */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
           <div>
-            <h2 id="working-hours-heading" className="text-xl font-semibold text-slate-900">
+            <h2 id="working-hours-heading" className="text-xl font-semibold text-[#0F172A]">
               Working Hours
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-[#475569] mt-0.5">
               Set the days and hours your team is available to take bookings.
             </p>
           </div>
@@ -317,9 +317,9 @@ export default function WorkingHoursEditor() {
             const hasLunch = !!dayData.lunchStart;
 
             return (
-              <div key={day} className="grid grid-cols-[80px_44px_1fr_auto] gap-3 items-start py-2 border-b border-slate-50 last:border-b-0">
+              <div key={day} className="grid grid-cols-[80px_44px_1fr_auto] gap-3 items-start py-2 border-b border-stone-50 last:border-b-0">
                 {/* Day label */}
-                <span className="text-sm text-slate-700 pt-1.5">{DAY_LABELS[day]}</span>
+                <span className="text-sm text-[#0F172A]/80 pt-1.5">{DAY_LABELS[day]}</span>
 
                 {/* Toggle */}
                 <div className="flex items-center justify-center h-9">
@@ -339,41 +339,41 @@ export default function WorkingHoursEditor() {
                           type="time"
                           value={dayData.open || '08:00'}
                           onChange={(e) => updateDay(day, 'open', e.target.value)}
-                          className="h-8 text-sm rounded-md border border-slate-200 px-2 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                          className="h-8 text-sm rounded-md border border-stone-200 px-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:border-transparent"
                           aria-label={`${DAY_LABELS[day]} open time`}
                         />
-                        <span className="text-slate-400 text-sm">–</span>
+                        <span className="text-stone-400 text-sm">–</span>
                         <input
                           type="time"
                           value={dayData.close || '17:00'}
                           onChange={(e) => updateDay(day, 'close', e.target.value)}
-                          className="h-8 text-sm rounded-md border border-slate-200 px-2 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                          className="h-8 text-sm rounded-md border border-stone-200 px-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:border-transparent"
                           aria-label={`${DAY_LABELS[day]} close time`}
                         />
                       </div>
 
                       {hasLunch ? (
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-slate-500">Lunch:</span>
+                          <span className="text-xs text-[#475569]">Lunch:</span>
                           <input
                             type="time"
                             value={dayData.lunchStart || '12:00'}
                             onChange={(e) => updateDay(day, 'lunchStart', e.target.value)}
-                            className="h-8 text-sm rounded-md border border-slate-200 px-2 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                            className="h-8 text-sm rounded-md border border-stone-200 px-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:border-transparent"
                             aria-label={`${DAY_LABELS[day]} lunch start`}
                           />
-                          <span className="text-slate-400 text-sm">–</span>
+                          <span className="text-stone-400 text-sm">–</span>
                           <input
                             type="time"
                             value={dayData.lunchEnd || '13:00'}
                             onChange={(e) => updateDay(day, 'lunchEnd', e.target.value)}
-                            className="h-8 text-sm rounded-md border border-slate-200 px-2 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                            className="h-8 text-sm rounded-md border border-stone-200 px-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:border-transparent"
                             aria-label={`${DAY_LABELS[day]} lunch end`}
                           />
                           <button
                             type="button"
                             onClick={() => toggleLunchBreak(day)}
-                            className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                            className="text-xs text-stone-400 hover:text-red-500 transition-colors"
                           >
                             Remove break
                           </button>
@@ -382,14 +382,14 @@ export default function WorkingHoursEditor() {
                         <button
                           type="button"
                           onClick={() => toggleLunchBreak(day)}
-                          className="text-xs text-slate-400 hover:text-slate-700 transition-colors text-left"
+                          className="text-xs text-stone-400 hover:text-[#0F172A]/80 transition-colors text-left"
                         >
                           + Add lunch break
                         </button>
                       )}
                     </>
                   ) : (
-                    <span className="text-sm text-slate-400 pt-1.5 italic">Closed</span>
+                    <span className="text-sm text-stone-400 pt-1.5 italic">Closed</span>
                   )}
                 </div>
 
@@ -407,7 +407,7 @@ export default function WorkingHoursEditor() {
                           <button
                             type="button"
                             onClick={() => openCopyPopover(day)}
-                            className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+                            className="h-8 w-8 flex items-center justify-center rounded-md text-stone-400 hover:text-[#0F172A]/80 hover:bg-stone-50 transition-colors"
                             aria-label="Apply to other days"
                           >
                             <Copy className="h-4 w-4" />
@@ -419,7 +419,7 @@ export default function WorkingHoursEditor() {
                       </Tooltip>
                     </PopoverTrigger>
                     <PopoverContent className="w-48 p-3" side="left" align="start">
-                      <p className="text-xs font-medium text-slate-700 mb-2">Copy to:</p>
+                      <p className="text-xs font-medium text-[#0F172A]/80 mb-2">Copy to:</p>
                       <div className="space-y-1.5">
                         {DAYS.filter((d) => d !== day).map((d) => (
                           <label key={d} className="flex items-center gap-2 cursor-pointer">
@@ -429,9 +429,9 @@ export default function WorkingHoursEditor() {
                               onChange={(e) =>
                                 setCopySelections((prev) => ({ ...prev, [d]: e.target.checked }))
                               }
-                              className="rounded border-slate-300"
+                              className="rounded border-stone-300"
                             />
-                            <span className="text-sm text-slate-700">{DAY_LABELS[d]}</span>
+                            <span className="text-sm text-[#0F172A]/80">{DAY_LABELS[d]}</span>
                           </label>
                         ))}
                       </div>
@@ -459,9 +459,9 @@ export default function WorkingHoursEditor() {
         )}
 
         {/* Slot duration */}
-        <div className="mt-4 pt-4 border-t border-slate-100">
+        <div className="mt-4 pt-4 border-t border-stone-100">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-slate-700">Default appointment duration:</span>
+            <span className="text-sm text-[#0F172A]/80">Default appointment duration:</span>
             <Select
               value={slotDuration}
               onValueChange={(val) => setSlotDuration(val)}
@@ -478,7 +478,7 @@ export default function WorkingHoursEditor() {
               </SelectContent>
             </Select>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-stone-400 mt-1">
             Calls booked with no specific duration use this default.
           </p>
         </div>

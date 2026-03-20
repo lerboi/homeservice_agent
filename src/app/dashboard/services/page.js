@@ -23,7 +23,7 @@ import ZoneManager from '@/components/dashboard/ZoneManager';
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
   high_ticket: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-  routine: 'bg-slate-100 text-slate-600 hover:bg-slate-100',
+  routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
 };
 
 const VALID_URGENCY_TAGS = ['emergency', 'routine', 'high_ticket'];
@@ -189,11 +189,11 @@ export default function ServicesPage() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-slate-900">{t('page_heading')}</h1>
+          <h1 className="text-xl font-semibold text-[#0F172A]">{t('page_heading')}</h1>
           <Button
             variant="outline"
             size="sm"
-            className="border-slate-200 hover:bg-slate-50"
+            className="border-stone-200 hover:bg-stone-50"
             onClick={() => setAddingService(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -202,10 +202,10 @@ export default function ServicesPage() {
         </div>
 
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">{t('empty_heading')}</h2>
-          <p className="text-base text-slate-500 mb-6 max-w-sm">{t('empty_body')}</p>
+          <h2 className="text-xl font-semibold text-[#0F172A] mb-2">{t('empty_heading')}</h2>
+          <p className="text-base text-[#475569] mb-6 max-w-sm">{t('empty_body')}</p>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
             onClick={() => setAddingService(true)}
           >
             {t('empty_cta')}
@@ -228,11 +228,11 @@ export default function ServicesPage() {
     <div className="p-6">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">{t('page_heading')}</h1>
+        <h1 className="text-xl font-semibold text-[#0F172A]">{t('page_heading')}</h1>
         <Button
           variant="outline"
           size="sm"
-          className="border-slate-200 hover:bg-slate-50"
+          className="border-stone-200 hover:bg-stone-50"
           onClick={() => setAddingService(true)}
         >
           <Plus className="h-4 w-4 mr-1" />
@@ -241,22 +241,22 @@ export default function ServicesPage() {
       </div>
 
       {/* Table */}
-      <div className="border border-slate-200 rounded-lg overflow-hidden">
+      <div className="border border-stone-200 rounded-lg overflow-hidden">
         {/* Table header */}
-        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-slate-50 border-b border-slate-200">
-          <span className="text-sm font-semibold text-slate-600">Service Name</span>
-          <span className="text-sm font-semibold text-slate-600 w-36 text-center">Urgency Tag</span>
-          <span className="text-sm font-semibold text-slate-600 w-10 text-center">Actions</span>
+        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 py-2 bg-[#F5F5F4] border-b border-stone-200">
+          <span className="text-sm font-semibold text-[#475569]">Service Name</span>
+          <span className="text-sm font-semibold text-[#475569] w-36 text-center">Urgency Tag</span>
+          <span className="text-sm font-semibold text-[#475569] w-10 text-center">Actions</span>
         </div>
 
         {/* Service rows */}
         {services.map((service) => (
           <div
             key={service.id}
-            className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 items-center min-h-14 border-b border-slate-100 last:border-b-0"
+            className="grid grid-cols-[1fr_auto_auto] gap-4 px-4 items-center min-h-14 border-b border-stone-100 last:border-b-0"
           >
             {/* Service name */}
-            <span className="text-base text-slate-900">{service.name}</span>
+            <span className="text-base text-[#0F172A]">{service.name}</span>
 
             {/* Urgency tag dropdown */}
             <div className="w-36 flex items-center gap-2">
@@ -269,7 +269,7 @@ export default function ServicesPage() {
                 value={service.urgency_tag}
                 onValueChange={(value) => handleTagChange(service.id, value)}
               >
-                <SelectTrigger className="h-8 w-8 p-0 border-0 shadow-none focus:ring-0 text-slate-400" aria-label={`Change urgency for ${service.name}`}>
+                <SelectTrigger className="h-8 w-8 p-0 border-0 shadow-none focus:ring-0 text-stone-400" aria-label={`Change urgency for ${service.name}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -277,7 +277,7 @@ export default function ServicesPage() {
                     <span className="text-red-700">{t('tag_emergency')}</span>
                   </SelectItem>
                   <SelectItem value="routine">
-                    <span className="text-slate-600">{t('tag_routine')}</span>
+                    <span className="text-[#475569]">{t('tag_routine')}</span>
                   </SelectItem>
                   <SelectItem value="high_ticket">
                     <span className="text-amber-700">{t('tag_high_ticket')}</span>
@@ -289,7 +289,7 @@ export default function ServicesPage() {
             {/* Remove button */}
             <button
               type="button"
-              className="w-10 flex items-center justify-center h-10 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="w-10 flex items-center justify-center h-10 rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
               aria-label={`Remove ${service.name}`}
               onClick={() => handleRemoveService(service)}
             >
@@ -300,7 +300,7 @@ export default function ServicesPage() {
 
         {/* Add new service inline row */}
         {addingService && (
-          <div className="flex items-center px-4 min-h-14 border-t border-slate-100 gap-2">
+          <div className="flex items-center px-4 min-h-14 border-t border-stone-100 gap-2">
             <Input
               ref={newServiceInputRef}
               placeholder="Service name"
@@ -311,7 +311,7 @@ export default function ServicesPage() {
               className="max-w-xs"
               autoFocus
             />
-            <span className="text-sm text-slate-400">Press Enter to add</span>
+            <span className="text-sm text-stone-400">Press Enter to add</span>
           </div>
         )}
       </div>

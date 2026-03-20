@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
-  routine: { badge: 'bg-blue-100 text-blue-700', label: 'Routine' },
+  routine: { badge: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70', label: 'Routine' },
   high_ticket: { badge: 'bg-amber-100 text-amber-700', label: 'High Ticket' },
 };
 
@@ -126,19 +126,19 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
         <div className="px-6 space-y-6">
           {/* Appointment Details */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Details</h3>
+            <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Details</h3>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Clock className="h-4 w-4 text-slate-400" />
+              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <Clock className="h-4 w-4 text-stone-400" />
                 <span>{formatDateTime(appointment.start_time)}</span>
-                <span className="text-slate-400">({formatDuration(appointment.start_time, appointment.end_time)})</span>
+                <span className="text-stone-400">({formatDuration(appointment.start_time, appointment.end_time)})</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <MapPin className="h-4 w-4 text-slate-400" />
+              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <MapPin className="h-4 w-4 text-stone-400" />
                 <span>{appointment.service_address || 'No address'}</span>
               </div>
               {appointment.booked_via && (
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-stone-400">
                   Booked via {appointment.booked_via}
                 </div>
               )}
@@ -148,13 +148,13 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {/* Caller */}
           {appointment.caller_phone && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Caller</h3>
-              <div className="flex items-center gap-2 text-sm text-slate-700">
-                <Phone className="h-4 w-4 text-slate-400" />
+              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Caller</h3>
+              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <Phone className="h-4 w-4 text-stone-400" />
                 <span>{appointment.caller_phone}</span>
               </div>
               {call?.created_at && (
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-stone-400">
                   Called {formatRelativeTime(call.created_at)}
                 </div>
               )}
@@ -164,14 +164,14 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {/* Links */}
           {call && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Links</h3>
+              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Links</h3>
               <div className="flex flex-col gap-2">
                 {call.recording_url && (
                   <a
                     href={call.recording_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412]"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Listen to Recording
@@ -180,7 +180,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 {call.transcript && (
                   <button
                     type="button"
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 text-left"
+                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left"
                   >
                     <FileText className="h-4 w-4" />
                     View Transcript
@@ -193,8 +193,8 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {/* Notes */}
           {appointment.notes && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Notes</h3>
-              <p className="text-sm text-slate-700">{appointment.notes}</p>
+              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Notes</h3>
+              <p className="text-sm text-[#0F172A]/80">{appointment.notes}</p>
             </div>
           )}
 

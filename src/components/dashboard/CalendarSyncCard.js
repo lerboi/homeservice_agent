@@ -29,8 +29,8 @@ function SyncStatusDot({ status }) {
   }
   if (status === 'syncing') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm text-blue-600">
-        <span className="w-2 h-2 rounded-full bg-blue-500 inline-block animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 text-sm text-[#C2410C]">
+        <span className="w-2 h-2 rounded-full bg-[#C2410C] inline-block animate-pulse" />
         Syncing…
       </span>
     );
@@ -140,23 +140,23 @@ export default function CalendarSyncCard() {
   if (loading) {
     return (
       <section aria-labelledby="calendar-sync-heading" className="mt-6">
-        <h2 id="calendar-sync-heading" className="text-xl font-semibold text-slate-900 mb-1">
+        <h2 id="calendar-sync-heading" className="text-xl font-semibold text-[#0F172A] mb-1">
           Google Calendar Sync
         </h2>
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm text-[#475569] mb-4">
           Sync appointments with your Google Calendar in real time.
         </p>
-        <div className="h-32 rounded-lg border border-slate-200 animate-pulse bg-slate-50" />
+        <div className="h-32 rounded-lg border border-stone-200 animate-pulse bg-[#F5F5F4]" />
       </section>
     );
   }
 
   return (
     <section aria-labelledby="calendar-sync-heading" className="mt-6">
-      <h2 id="calendar-sync-heading" className="text-xl font-semibold text-slate-900 mb-1">
+      <h2 id="calendar-sync-heading" className="text-xl font-semibold text-[#0F172A] mb-1">
         Google Calendar Sync
       </h2>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-[#475569] mb-4">
         Sync appointments with your Google Calendar in real time.
       </p>
 
@@ -181,7 +181,7 @@ export default function CalendarSyncCard() {
 
       {connected ? (
         /* Connected state */
-        <div className="rounded-lg border border-slate-200 p-4">
+        <div className="rounded-lg border border-stone-200 p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 p-2 rounded-full bg-emerald-50">
@@ -189,14 +189,14 @@ export default function CalendarSyncCard() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-900">Connected</span>
+                  <span className="text-sm font-semibold text-[#0F172A]">Connected</span>
                   <SyncStatusDot status={syncStatus} />
                 </div>
                 {calendarName && (
-                  <p className="text-sm text-slate-600 mt-0.5">{calendarName}</p>
+                  <p className="text-sm text-[#475569] mt-0.5">{calendarName}</p>
                 )}
                 {lastSyncedAt && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-stone-400 mt-1">
                     Last synced:{' '}
                     {formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}
                   </p>
@@ -245,12 +245,12 @@ export default function CalendarSyncCard() {
         </div>
       ) : (
         /* Disconnected state */
-        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 flex flex-col items-center text-center">
-          <div className="p-3 rounded-full bg-white border border-slate-200 mb-3">
-            <CalendarDays className="h-6 w-6 text-slate-400" />
+        <div className="rounded-lg border border-dashed border-stone-300 bg-[#F5F5F4] p-6 flex flex-col items-center text-center">
+          <div className="p-3 rounded-full bg-white border border-stone-200 mb-3">
+            <CalendarDays className="h-6 w-6 text-stone-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 mb-1">Connect Google Calendar</h3>
-          <p className="text-sm text-slate-500 mb-4 max-w-xs">
+          <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Connect Google Calendar</h3>
+          <p className="text-sm text-[#475569] mb-4 max-w-xs">
             When connected, confirmed bookings are automatically added to your calendar.
           </p>
           <Button

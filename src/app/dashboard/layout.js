@@ -1,6 +1,9 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
+import { GridTexture } from '@/components/ui/grid-texture';
+import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
 const BREADCRUMB_LABELS = {
   services: 'Services',
@@ -10,36 +13,49 @@ const BREADCRUMB_LABELS = {
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
-  // Extract the last path segment: /dashboard/services -> services
   const segments = pathname.replace(/\/$/, '').split('/').filter(Boolean);
   const lastSegment = segments[segments.length - 1];
   const label = BREADCRUMB_LABELS[lastSegment];
 
-  // On root /dashboard — show just "Dashboard"
   if (!label || lastSegment === 'dashboard') {
     return (
-      <nav className="mb-6 text-sm text-slate-500" aria-label="Breadcrumb">
-        <span className="text-slate-900 font-semibold">Dashboard</span>
+      <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
+        <span className="text-[#0F172A] font-semibold">Dashboard</span>
       </nav>
     );
   }
 
   return (
-    <nav className="mb-6 text-sm text-slate-500" aria-label="Breadcrumb">
+    <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
       <span>Dashboard</span>
-      <span className="mx-2 text-slate-300">&rsaquo;</span>
-      <span className="text-slate-900 font-semibold">{label}</span>
+      <span className="mx-2 text-stone-300">&rsaquo;</span>
+      <span className="text-[#0F172A] font-semibold">{label}</span>
     </nav>
   );
 }
 
 export default function DashboardLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <DashboardBreadcrumb />
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-          {children}
+    <div className="min-h-screen bg-[#F5F5F4] relative">
+      <GridTexture variant="light" />
+      <DashboardSidebar />
+
+      <div className="relative lg:pl-60">
+        {/* Top bar */}
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-stone-200/60 px-4 lg:px-8">
+          <div className="max-w-6xl mx-auto h-14 flex items-center">
+            <div className="lg:hidden w-10" /> {/* Spacer for mobile menu button */}
+            <DashboardBreadcrumb />
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6">
+          <AnimatedSection>
+            <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.04),0_1px_2px_-1px_rgba(0,0,0,0.03)] border border-stone-200/60">
+              {children}
+            </div>
+          </AnimatedSection>
         </div>
       </div>
     </div>

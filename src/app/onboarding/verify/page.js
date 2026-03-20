@@ -42,10 +42,10 @@ export default function OnboardingStep3() {
 
   return (
     <div>
-      <h1 className="text-3xl font-semibold text-slate-900 leading-tight">
+      <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
         Contact details
       </h1>
-      <p className="mt-2 mb-6 text-base text-slate-500">
+      <p className="mt-2 mb-6 text-base text-[#475569]">
         Where should we reach you for urgent calls?
       </p>
 
@@ -57,8 +57,8 @@ export default function OnboardingStep3() {
 
       <div className="space-y-6">
         <div className="space-y-1">
-          <Label htmlFor="phone" className="text-base font-normal text-slate-900">
-            Phone number <span className="text-slate-400 text-sm">(optional)</span>
+          <Label htmlFor="phone" className="text-base font-normal text-[#0F172A]">
+            Phone number <span className="text-[#475569]/60 text-sm">(optional)</span>
           </Label>
           <Input
             id="phone"
@@ -66,13 +66,13 @@ export default function OnboardingStep3() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+1 555 000 0000"
-            className="min-h-11 border-slate-200 text-base"
+            className="min-h-11 border-stone-200 text-base focus:border-[#C2410C]"
           />
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="email" className="text-base font-normal text-slate-900">
-            Email address <span className="text-slate-400 text-sm">(optional)</span>
+          <Label htmlFor="email" className="text-base font-normal text-[#0F172A]">
+            Email address <span className="text-[#475569]/60 text-sm">(optional)</span>
           </Label>
           <Input
             id="email"
@@ -80,7 +80,7 @@ export default function OnboardingStep3() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="owner@example.com"
-            className="min-h-11 border-slate-200 text-base"
+            className="min-h-11 border-stone-200 text-base focus:border-[#C2410C]"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function OnboardingStep3() {
           variant="ghost"
           onClick={() => router.push('/onboarding/services')}
           disabled={loading}
-          className="text-slate-500 hover:text-slate-700 px-0 min-h-11"
+          className="text-[#475569] hover:text-[#0F172A] px-0 min-h-11"
         >
           Back
         </Button>
@@ -99,8 +99,8 @@ export default function OnboardingStep3() {
           type="button"
           onClick={handleContinue}
           disabled={loading}
-          className="w-full sm:w-40 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-95
-                     text-white min-h-11 transition-all duration-150"
+          className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
+                     text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

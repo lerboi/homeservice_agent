@@ -11,13 +11,13 @@ const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR
 
 const URGENCY_COLORS = {
   emergency: 'bg-red-50 border-l-2 border-red-400',
-  routine: 'bg-blue-50 border-l-2 border-blue-400',
+  routine: 'bg-[#0F172A]/[0.04] border-l-2 border-[#0F172A]/20',
   high_ticket: 'bg-amber-50 border-l-2 border-amber-400',
 };
 
 const URGENCY_BADGE = {
   emergency: 'bg-red-100 text-red-700',
-  routine: 'bg-blue-100 text-blue-700',
+  routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70',
   high_ticket: 'bg-amber-100 text-amber-700',
 };
 
@@ -76,8 +76,8 @@ function CurrentTimeIndicator({ dayIndex, totalColumns }) {
       className="absolute left-0 right-0 z-20 pointer-events-none"
       style={{ top: `${top}px` }}
     >
-      <div className="relative w-full border-t-2 border-red-500">
-        <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500" />
+      <div className="relative w-full border-t-2 border-[#C2410C]">
+        <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-[#C2410C]" />
       </div>
     </div>
   );
@@ -98,9 +98,9 @@ function AppointmentBlock({ appointment, onClick }) {
     >
       <div className="flex items-start justify-between gap-1">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-slate-900 truncate">{appointment.caller_name}</div>
-          <div className="text-xs text-slate-600 truncate">{appointment.notes || ''}</div>
-          <div className="text-xs text-slate-500 truncate">{appointment.service_address || ''}</div>
+          <div className="text-sm font-semibold text-[#0F172A] truncate">{appointment.caller_name}</div>
+          <div className="text-xs text-[#475569] truncate">{appointment.notes || ''}</div>
+          <div className="text-xs text-[#475569] truncate">{appointment.service_address || ''}</div>
         </div>
         <span className={`text-[11px] px-1.5 py-0.5 rounded-full shrink-0 ${badgeClass}`}>
           {urgency === 'emergency' ? 'Emerg' : urgency === 'high_ticket' ? 'High' : 'Routine'}
@@ -115,10 +115,10 @@ function TravelBufferBlock({ buffer }) {
 
   return (
     <div
-      className="absolute left-1 right-1 bg-slate-100 border border-dashed border-slate-300 rounded-md pointer-events-none flex items-center justify-center"
+      className="absolute left-1 right-1 bg-stone-100 border border-dashed border-stone-300 rounded-md pointer-events-none flex items-center justify-center"
       style={style}
     >
-      <span className="text-[11px] text-slate-400">Travel buffer</span>
+      <span className="text-[11px] text-stone-400">Travel buffer</span>
     </div>
   );
 }
@@ -150,7 +150,7 @@ function AllDayEvents({ events }) {
         </div>
       ))}
       {remaining > 0 && (
-        <span className="text-[11px] text-slate-400 self-center">+{remaining} more</span>
+        <span className="text-[11px] text-stone-400 self-center">+{remaining} more</span>
       )}
     </div>
   );
@@ -177,9 +177,9 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <CalendarIcon className="h-10 w-10 text-slate-300 mb-3" />
-      <h3 className="text-lg font-semibold text-slate-900 mb-1">No appointments this week</h3>
-      <p className="text-sm text-slate-500">Appointments booked by your AI will appear here.</p>
+      <CalendarIcon className="h-10 w-10 text-stone-300 mb-3" />
+      <h3 className="text-lg font-semibold text-[#0F172A] mb-1">No appointments this week</h3>
+      <p className="text-sm text-[#475569]">Appointments booked by your AI will appear here.</p>
     </div>
   );
 }
@@ -217,16 +217,16 @@ export default function CalendarView({
     <div className="overflow-x-auto">
       <div className={`grid ${viewMode === 'week' ? 'grid-cols-[48px_repeat(7,1fr)]' : 'grid-cols-[48px_1fr]'} min-w-[640px]`}>
         {/* Header row */}
-        <div className="border-b border-slate-200" />
+        <div className="border-b border-stone-200" />
         {columns.map((day, i) => {
           const isToday = isSameDay(day, today);
           return (
             <div
               key={i}
-              className="border-b border-l border-slate-200 text-center py-2"
+              className="border-b border-l border-stone-200 text-center py-2"
             >
-              <div className="text-xs text-slate-500 font-medium">{DAY_ABBREVS[day.getDay()]}</div>
-              <div className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? 'bg-blue-600 text-white rounded-full w-8 h-8' : 'text-slate-900'}`}>
+              <div className="text-xs text-[#475569] font-medium">{DAY_ABBREVS[day.getDay()]}</div>
+              <div className={`text-sm font-semibold mt-0.5 inline-flex items-center justify-center ${isToday ? 'bg-[#C2410C] text-white rounded-full w-8 h-8' : 'text-[#0F172A]'}`}>
                 {day.getDate()}
               </div>
             </div>
@@ -236,9 +236,9 @@ export default function CalendarView({
         {/* All-day events row */}
         {allDayEvents.length > 0 && (
           <>
-            <div className="border-b border-slate-200 text-[10px] text-slate-400 text-right pr-1 pt-1">all-day</div>
+            <div className="border-b border-stone-200 text-[10px] text-stone-400 text-right pr-1 pt-1">all-day</div>
             {columns.map((day, i) => (
-              <div key={i} className="border-b border-l border-slate-200">
+              <div key={i} className="border-b border-l border-stone-200">
                 <AllDayEvents events={getItemsForDay(day, allDayEvents)} />
               </div>
             ))}
@@ -250,7 +250,7 @@ export default function CalendarView({
           {HOURS.map((hour) => (
             <div
               key={hour}
-              className="text-right pr-2 text-[11px] text-slate-400"
+              className="text-right pr-2 text-[11px] text-stone-400"
               style={{ height: `${HOUR_HEIGHT}px`, lineHeight: `${HOUR_HEIGHT}px` }}
             >
               {formatHour(hour)}
@@ -267,14 +267,14 @@ export default function CalendarView({
           return (
             <div
               key={colIndex}
-              className="relative border-l border-slate-200"
+              className="relative border-l border-stone-200"
               style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}
             >
               {/* Hour grid lines */}
               {HOURS.map((hour) => (
                 <div
                   key={hour}
-                  className="absolute left-0 right-0 border-b border-slate-100"
+                  className="absolute left-0 right-0 border-b border-stone-100"
                   style={{ top: `${(hour - START_HOUR) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                 />
               ))}

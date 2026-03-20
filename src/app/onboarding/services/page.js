@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TRADE_TEMPLATES } from '@/lib/trade-templates';
+import { AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
 
 const TRADE_KEYS = Object.keys(TRADE_TEMPLATES);
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
   high_ticket: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-  routine: 'bg-slate-100 text-slate-600 hover:bg-slate-100',
+  routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
 };
 
 const URGENCY_LABELS = {
@@ -39,16 +40,16 @@ function TradeCard({ tradeKey, label, isSelected, onSelect }) {
       onClick={() => onSelect(tradeKey)}
       onKeyDown={handleKeyDown}
       className={`
-        flex flex-col items-center justify-center p-4 rounded-lg border cursor-pointer min-h-[80px]
-        transition-colors duration-150
-        focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1
+        flex flex-col items-center justify-center p-4 rounded-2xl border cursor-pointer min-h-[80px]
+        transition-all duration-200
+        focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1
         ${isSelected
-          ? 'border-blue-600 bg-blue-50'
-          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+          ? 'border-[#C2410C] bg-[#C2410C]/[0.04] shadow-[0_0_0_1px_rgba(194,65,12,0.15)]'
+          : 'border-stone-200 bg-[#F5F5F4] hover:bg-stone-100 hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] hover:-translate-y-0.5'
         }
       `}
     >
-      <span className="text-base font-semibold text-slate-900 text-center">{label}</span>
+      <span className="text-base font-semibold text-[#0F172A] text-center">{label}</span>
     </div>
   );
 }
@@ -118,29 +119,30 @@ export default function OnboardingStep2() {
 
   return (
     <div>
-      <h1 className="text-3xl font-semibold text-slate-900 leading-tight">
+      <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
         {t('step2_heading')}
       </h1>
-      <p className="mt-2 mb-6 text-base text-slate-500">
+      <p className="mt-2 mb-6 text-base text-[#475569]">
         {t('step2_subtext')}
       </p>
 
       {/* Trade template cards */}
       <div className="mb-6">
-        <p className="text-base font-semibold text-slate-900 mb-3">
+        <p className="text-base font-semibold text-[#0F172A] mb-3">
           {t('trade_section_label')}
         </p>
-        <div className="grid grid-cols-2 gap-4" role="radiogroup" aria-label={t('trade_section_label')}>
+        <AnimatedStagger className="grid grid-cols-2 gap-4" role="radiogroup" aria-label={t('trade_section_label')}>
           {TRADE_KEYS.map((key) => (
-            <TradeCard
-              key={key}
-              tradeKey={key}
-              label={TRADE_TEMPLATES[key].label}
-              isSelected={selectedTrade === key}
-              onSelect={handleSelectTrade}
-            />
+            <AnimatedItem key={key}>
+              <TradeCard
+                tradeKey={key}
+                label={TRADE_TEMPLATES[key].label}
+                isSelected={selectedTrade === key}
+                onSelect={handleSelectTrade}
+              />
+            </AnimatedItem>
           ))}
-        </div>
+        </AnimatedStagger>
         {tradeError && (
           <p role="alert" className="mt-2 text-sm text-red-600">
             {tradeError}
@@ -151,20 +153,20 @@ export default function OnboardingStep2() {
       {/* Service list */}
       {services.length > 0 && (
         <div className="mb-8">
-          <p className="text-base font-semibold text-slate-900 mb-1">
+          <p className="text-base font-semibold text-[#0F172A] mb-1">
             {t('services_section_label')}
           </p>
-          <p className="text-sm text-slate-500 mb-3">
+          <p className="text-sm text-[#475569] mb-3">
             {t('services_section_helper')}
           </p>
           <ul className="space-y-2">
             {services.map((svc) => (
               <li
                 key={svc.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 bg-slate-50
-                           rounded-lg border border-slate-200 min-h-11"
+                className="flex items-center justify-between gap-3 px-3 py-2 bg-[#F5F5F4]
+                           rounded-xl border border-stone-200 min-h-11"
               >
-                <span className="text-base text-slate-900 flex-1">{svc.name}</span>
+                <span className="text-base text-[#0F172A] flex-1">{svc.name}</span>
                 <Badge
                   className={`text-sm font-normal ${URGENCY_BADGE_CLASSES[svc.urgency_tag] || URGENCY_BADGE_CLASSES.routine}`}
                 >
@@ -175,7 +177,7 @@ export default function OnboardingStep2() {
                   onClick={() => handleRemoveService(svc.id)}
                   aria-label={t('remove_service_aria', { serviceName: svc.name })}
                   className="text-red-600 hover:text-red-700 p-1 rounded focus:outline-none
-                             focus:ring-2 focus:ring-red-600 focus:ring-offset-1 min-h-[44px] min-w-[44px]
+                             focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1 min-h-[44px] min-w-[44px]
                              flex items-center justify-center"
                 >
                   <X size={16} aria-hidden="true" />
@@ -193,9 +195,9 @@ export default function OnboardingStep2() {
                 value={newServiceName}
                 onChange={(e) => setNewServiceName(e.target.value)}
                 placeholder="Service name"
-                className="flex-1 min-h-11 text-base border-slate-200"
+                className="flex-1 min-h-11 text-base border-stone-200"
               />
-              <Button type="submit" className="min-h-11 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="submit" className="min-h-11 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white">
                 <Plus size={16} aria-hidden="true" />
               </Button>
               <Button
@@ -212,7 +214,7 @@ export default function OnboardingStep2() {
               type="button"
               onClick={() => setAddingService(true)}
               variant="outline"
-              className="mt-3 border-slate-200 text-slate-700 hover:bg-slate-50 min-h-11"
+              className="mt-3 border-stone-200 text-[#475569] hover:bg-stone-50 min-h-11"
             >
               <Plus size={16} className="mr-1" aria-hidden="true" />
               {t('add_service')}
@@ -228,7 +230,7 @@ export default function OnboardingStep2() {
           variant="ghost"
           onClick={() => router.push('/onboarding')}
           disabled={loading}
-          className="text-slate-500 hover:text-slate-700 px-0 min-h-11"
+          className="text-[#475569] hover:text-[#0F172A] px-0 min-h-11"
         >
           {t('back')}
         </Button>
@@ -236,8 +238,8 @@ export default function OnboardingStep2() {
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full sm:w-40 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-95
-                     text-white min-h-11 transition-all duration-150"
+          className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
+                     text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
         >
           {t('cta_step2')}
         </Button>

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
 
 const TONE_PRESETS = [
   {
@@ -75,17 +76,17 @@ export default function OnboardingStep1() {
 
   return (
     <div>
-      <h1 className="text-3xl font-semibold text-slate-900 leading-tight">
+      <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
         {t('step1_heading')}
       </h1>
-      <p className="mt-2 mb-6 text-base text-slate-500">
+      <p className="mt-2 mb-6 text-base text-[#475569]">
         {t('step1_subtext')}
       </p>
 
       <form onSubmit={handleSubmit} noValidate>
         {/* Business name field */}
         <div className="mb-6">
-          <Label htmlFor="business_name" className="text-base text-slate-900 mb-2 block">
+          <Label htmlFor="business_name" className="text-base text-[#0F172A] mb-2 block">
             {t('business_name_label')}
           </Label>
           <Input
@@ -100,7 +101,7 @@ export default function OnboardingStep1() {
             disabled={loading}
             aria-invalid={!!error}
             aria-describedby={error ? 'business-name-error' : undefined}
-            className="min-h-11 text-base border-slate-200 focus:border-blue-600"
+            className="min-h-11 text-base border-stone-200 focus:border-[#C2410C]"
           />
           {error && (
             <p
@@ -115,43 +116,44 @@ export default function OnboardingStep1() {
 
         {/* Tone preset selection */}
         <div className="mb-8">
-          <p className="text-base text-slate-900 font-semibold mb-3">
+          <p className="text-base text-[#0F172A] font-semibold mb-3">
             {t('tone_section_label')}
           </p>
-          <div className="space-y-3">
+          <AnimatedStagger className="space-y-3">
             {TONE_PRESETS.map((preset) => {
               const isSelected = tonePreset === preset.id;
               return (
-                <div
-                  key={preset.id}
-                  role="radio"
-                  aria-checked={isSelected}
-                  tabIndex={0}
-                  onClick={() => setTonePreset(preset.id)}
-                  onKeyDown={(e) => handleKeyDown(e, preset.id)}
-                  className={`
-                    min-h-[80px] flex items-start gap-3 p-4 rounded-lg border cursor-pointer
-                    transition-colors duration-150
-                    focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1
-                    ${isSelected
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }
-                  `}
-                >
-                  <span className="text-xl mt-0.5" aria-hidden="true">{preset.icon}</span>
-                  <div>
-                    <p className="text-base font-semibold text-slate-900">
-                      {t(preset.nameKey)}
-                    </p>
-                    <p className="text-sm text-slate-500 mt-0.5">
-                      {t(preset.descKey)}
-                    </p>
+                <AnimatedItem key={preset.id}>
+                  <div
+                    role="radio"
+                    aria-checked={isSelected}
+                    tabIndex={0}
+                    onClick={() => setTonePreset(preset.id)}
+                    onKeyDown={(e) => handleKeyDown(e, preset.id)}
+                    className={`
+                      min-h-[80px] flex items-start gap-3 p-4 rounded-2xl border cursor-pointer
+                      transition-all duration-200
+                      focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1
+                      ${isSelected
+                        ? 'border-[#C2410C] bg-[#C2410C]/[0.04] shadow-[0_0_0_1px_rgba(194,65,12,0.15)]'
+                        : 'border-stone-200 bg-[#F5F5F4] hover:bg-stone-100 hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] hover:-translate-y-0.5'
+                      }
+                    `}
+                  >
+                    <span className="text-xl mt-0.5" aria-hidden="true">{preset.icon}</span>
+                    <div>
+                      <p className="text-base font-semibold text-[#0F172A]">
+                        {t(preset.nameKey)}
+                      </p>
+                      <p className="text-sm text-[#475569] mt-0.5">
+                        {t(preset.descKey)}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </AnimatedItem>
               );
             })}
-          </div>
+          </AnimatedStagger>
         </div>
 
         {/* CTA */}
@@ -159,8 +161,8 @@ export default function OnboardingStep1() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-40 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-95
-                       text-white min-h-11 transition-all duration-150"
+            className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
+                       text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
           >
             {t('cta_step1')}
           </Button>

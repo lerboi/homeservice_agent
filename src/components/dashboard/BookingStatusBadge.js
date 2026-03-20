@@ -6,11 +6,11 @@ const VARIANTS = {
     label: 'Booked',
   },
   lead_with_slots: {
-    className: 'border-blue-200 bg-blue-50 text-blue-700',
+    className: 'border-[#0F172A]/10 bg-[#0F172A]/[0.04] text-[#0F172A]/70',
     label: 'Lead - slots suggested',
   },
   no_booking: {
-    className: 'border-slate-200 bg-slate-50 text-slate-500',
+    className: 'border-stone-200 bg-[#F5F5F4] text-[#475569]',
     label: 'No booking',
   },
   failed: {
