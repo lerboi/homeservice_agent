@@ -11,6 +11,7 @@
     "test:all": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --passWithNoTests"
   },
   "dependencies": {
+    "@react-email/components": "^1.0.10",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.2",
     "class-variance-authority": "^0.7.1",
@@ -28,9 +29,11 @@
     "radix-ui": "^1.4.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "resend": "^6.9.4",
     "retell-sdk": "^5.9.0",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "twilio": "^5.13.0"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
