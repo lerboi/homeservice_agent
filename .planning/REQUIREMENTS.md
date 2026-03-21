@@ -157,7 +157,7 @@
 | TRIAGE-06 | Phase 4 | Complete |
 | SCHED-01 | Phase 3 | Complete |
 | SCHED-02 | Phase 3 | Complete |
-| SCHED-03 | Phase 5 | Pending |
+| SCHED-03 | Phase 8 | Pending |
 | SCHED-04 | Phase 3 | Complete |
 | SCHED-05 | Phase 3 | Complete |
 | SCHED-06 | Phase 3 | Complete |
@@ -178,6 +178,34 @@
 | ONBOARD-04 | Phase 2 | Complete |
 | ONBOARD-05 | Phase 2 | Complete |
 | ONBOARD-06 | Phase 2 | Complete |
+| PRICE-01 | Phase 6 | Pending |
+| PRICE-02 | Phase 6 | Pending |
+| PRICE-03 | Phase 6 | Pending |
+| PRICE-04 | Phase 6 | Pending |
+| PRICE-05 | Phase 6 | Pending |
+| PRICE-06 | Phase 6 | Pending |
+| PRICE-07 | Phase 6 | Pending |
+| PAGE-01 | Phase 6 | Pending |
+| PAGE-02 | Phase 6 | Pending |
+| PAGE-03 | Phase 6 | Pending |
+| PAGE-04 | Phase 6 | Pending |
+| PAGE-05 | Phase 6 | Pending |
+| WIZARD-01 | Phase 7 | Pending |
+| WIZARD-02 | Phase 7 | Pending |
+| WIZARD-03 | Phase 7 | Pending |
+| WIZARD-04 | Phase 7 | Pending |
+| WIZARD-05 | Phase 7 | Pending |
+| WIZARD-06 | Phase 7 | Pending |
+| WIZARD-07 | Phase 7 | Pending |
+| OUTLOOK-01 | Phase 8 | Pending |
+| OUTLOOK-02 | Phase 8 | Pending |
+| OUTLOOK-03 | Phase 8 | Pending |
+| OUTLOOK-04 | Phase 8 | Pending |
+| LAUNCH-01 | Phase 9 | Pending |
+| LAUNCH-02 | Phase 9 | Pending |
+| LAUNCH-03 | Phase 9 | Pending |
+| LAUNCH-04 | Phase 9 | Pending |
+| LAUNCH-05 | Phase 9 | Pending |
 
 **v1.0 Coverage:**
 - v1.0 requirements: 38 total
@@ -185,10 +213,12 @@
 - Unmapped: 0 ✓
 
 **v1.1 Coverage:**
-- v1.1 requirements: 24 total
-- Mapped to phases: 0 ⚠️
-- Unmapped: 24 (awaiting roadmap)
+- v1.1 requirements: 28 total (PRICE-01–07, PAGE-01–05, WIZARD-01–07, OUTLOOK-01–04, LAUNCH-01–05)
+- Mapped to phases: 28 ✓
+- Unmapped: 0 ✓
+
+Note: REQUIREMENTS.md listed 24 v1.1 requirements but the actual requirement blocks contain 28 (7+5+7+4+5). All 28 are mapped. SCHED-03 (v1.0 requirement previously pending in Phase 5) has been reassigned to Phase 8 where Outlook Calendar sync is implemented.
 
 ---
 *Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1)*
-*Last updated: 2026-03-22 after v1.1 requirements definition*
+*Last updated: 2026-03-22 after v1.1 roadmap creation*

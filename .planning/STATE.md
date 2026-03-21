@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Site Completeness & Launch Readiness
-status: defining_requirements
+status: roadmap_ready
 stopped_at: null
 last_updated: "2026-03-22"
-last_activity: 2026-03-22 — Milestone v1.1 started
+last_activity: 2026-03-22 — v1.1 roadmap created (Phases 6-9)
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 6 — Public Marketing Pages (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-22 — Milestone v1.1 started
+Status: Roadmap ready — awaiting phase planning
+Last activity: 2026-03-22 — v1.1 roadmap created (Phases 6-9)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -103,6 +103,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 02: Public marketing landing page (INSERTED)
+- Phases 6-9 added for milestone v1.1: Site Completeness & Launch Readiness (2026-03-22)
 
 ### Pending Todos
 
@@ -113,9 +114,12 @@ None yet.
 - [Phase 1]: Vapi current API shape (assistantOverrides schema, function-call event payload) needs verification against live Vapi docs before webhook handler implementation
 - [Phase 3]: Microsoft Graph OAuth tenant consent flow is more complex than Google's — needs targeted research before calendar sync work begins
 - [Phase 5]: TCPA compliance review required before any outbound SMS recovery is built (Phase 4 NOTIF-03 is inbound caller SMS, not outbound campaign — this is fine for v1)
+- [Phase 8]: Outlook admin consent exact error shape should be verified against a live Azure AD response during Phase 8 research — UX error state is designed but trigger condition needs confirmation with a real Microsoft 365 Business account
+- [Phase 8]: onboarding_complete backfill safety: verify count of tenants with partial onboarding (account created but business_name not set) before running backfill migration in production
+- [Phase 9]: k6 availability in CI environment must be confirmed — k6 is a system binary (not npm); may require Docker-based CI step or local pre-merge gate if CI environment does not support it
 
 ## Session Continuity
 
 Last session: 2026-03-22
-Stopped at: Milestone v1.1 initialization in progress
+Stopped at: v1.1 roadmap created — ready to begin Phase 6 planning
 Resume file: None

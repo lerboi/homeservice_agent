@@ -133,3 +133,80 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 3. Scheduling and Calendar Sync | 5/6 | In Progress|  |
 | 4. CRM, Dashboard, and Notifications | 6/6 | Complete   | 2026-03-21 |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
+
+---
+
+## Milestone v1.1 Phases
+
+**Milestone:** v1.1 — Site Completeness & Launch Readiness
+**Goal:** Complete the public-facing site (pricing, contact, about), unify the signup+onboarding flow into a single wizard, add Outlook Calendar sync, and harden the platform for demo-ready launch.
+**Phase range:** 6–9
+**Requirements:** 28 v1.1 requirements (PRICE-01 through LAUNCH-05)
+
+### v1.1 Phase Checklist
+
+- [ ] **Phase 6: Public Marketing Pages** - Pricing page (4 tiers, toggle, FAQ, comparison table), About page, Contact page, and nav/footer updated across all public pages
+- [ ] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale
+- [ ] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal
+- [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
+
+### Phase 6: Public Marketing Pages
+**Goal**: Prospective customers can learn about the product, understand pricing relative to their own call volume, and contact the team — all from a polished public site that reflects a real product, not a placeholder
+**Depends on**: Phase 5 (v1.0 complete, marketing site can now represent a shipped product)
+**Requirements**: PRICE-01, PRICE-02, PRICE-03, PRICE-04, PRICE-05, PRICE-06, PRICE-07, PAGE-01, PAGE-02, PAGE-03, PAGE-04, PAGE-05
+**Success Criteria** (what must be TRUE):
+  1. Visitor sees all 4 pricing tiers with call volume limits and price on a single page; clicking the monthly/annual toggle updates displayed prices without a page reload; the Growth tier card carries a visible "Most Popular" badge
+  2. Visitor reads a feature comparison table below the fold and an FAQ section that addresses cancellation, overages, trial availability, and refunds — without emailing the team for that information
+  3. Visitor on pricing or landing page clicks any "Get Started" CTA and lands at the unified onboarding wizard step 1
+  4. Visitor can navigate to Pricing, About, and Contact from every public page using the site nav — including on a mobile viewport
+  5. Visitor submits a contact form, selecting inquiry type (sales, support, or partnerships), and receives an acknowledgment; the submission arrives in the ops inbox via Resend within 2 minutes
+**Plans**: TBD
+
+### Phase 7: Unified Signup and Onboarding Wizard
+**Goal**: Any visitor who clicks a CTA is carried through account creation and full business setup into a live test call with their AI receptionist — in a single, uninterrupted flow that replaces the current split auth+onboarding paths
+**Depends on**: Phase 6
+**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-06, WIZARD-07
+**Success Criteria** (what must be TRUE):
+  1. A new user clicks any CTA (landing page, pricing page, contact page), creates an account, and completes business setup without leaving the wizard or hitting a dead-end page — the entire flow is one continuous URL-routed sequence
+  2. The wizard opens with a trade-type routing question; selecting a trade (e.g., "Plumber") pre-populates a relevant service list and triage rules so the owner does not start from a blank slate
+  3. Email verification completes inline — the user clicks the verification link, returns to the browser, and resumes at the correct wizard step without losing previously entered form data
+  4. A non-technical user who refreshes the page mid-wizard finds their previously entered data still present (sessionStorage persistence)
+  5. The wizard finale triggers a live test call; the owner hears their configured AI receptionist answer before the wizard marks onboarding complete
+  6. A returning user who has already completed onboarding bypasses the wizard entirely and goes directly to the dashboard
+**Plans**: TBD
+
+### Phase 8: Outlook Calendar Sync
+**Goal**: An owner can connect their Outlook Calendar from dashboard settings and have it sync bidirectionally with the platform's availability database — blocking slots in both directions, auto-renewing webhook subscriptions before they expire
+**Depends on**: Phase 6
+**Requirements**: OUTLOOK-01, OUTLOOK-02, OUTLOOK-03, OUTLOOK-04
+**Success Criteria** (what must be TRUE):
+  1. Owner clicks "Connect Outlook" in dashboard settings, completes Microsoft OAuth consent, and returns to the settings page with Outlook shown as connected — no developer intervention required
+  2. An event created directly in Outlook Calendar appears as a blocked slot in the platform availability database within 60 seconds; a booking made through the platform appears in Outlook Calendar within 60 seconds
+  3. The Outlook webhook subscription renews automatically before its 3-day expiry; the owner never loses sync due to an expired subscription
+  4. Owner clicks "Disconnect Outlook" and the platform stops syncing Outlook events; availability reverts to manual schedule management without requiring a re-onboard
+**Plans**: TBD
+
+### Phase 9: Hardening and Launch QA
+**Goal**: Every critical failure mode is instrumented, monitored, and validated before the first real customer is handed a demo — including multi-language correctness end-to-end, slot-locking correctness under genuine contention, the 5-minute activation promise with a real SME user, and no secrets in source
+**Depends on**: Phase 7, Phase 8
+**Requirements**: LAUNCH-01, LAUNCH-02, LAUNCH-03, LAUNCH-04, LAUNCH-05
+**Success Criteria** (what must be TRUE):
+  1. An unhandled exception or Retell API failure in production triggers a Sentry alert within 60 seconds with full stack trace and request context — confirmed via a deliberate test throw in a staging environment
+  2. A Spanish-language test call is answered in Spanish, triaged in Spanish, booked with a Spanish-language confirmation, and the owner's SMS/email notification arrives with Spanish-language content — validated by a human reviewer end-to-end
+  3. A k6 contention test fires 20 simultaneous requests at the exact same availability slot within a 100ms window; exactly 1 request returns HTTP 201 and the remaining 19 return HTTP 409 — this test runs in CI and must pass before demo-ready is declared
+  4. A real non-technical home service business owner completes the wizard on staging and hears their AI answer a test call in under 5 minutes, measured from the landing page CTA click — timing and result logged
+  5. A full environment variable audit confirms zero secrets in source control and all required production env vars are set and non-empty — the audit checklist is saved as a file in the repository
+**Plans**: TBD
+
+## v1.1 Progress
+
+**Execution Order:**
+Phases execute in numeric order: 6 → 7 → 8 → 9
+(Note: Phase 7 and Phase 8 may execute in parallel as they share no implementation dependencies after Phase 6 is complete)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 6. Public Marketing Pages | 0/TBD | Not started | - |
+| 7. Unified Signup and Onboarding Wizard | 0/TBD | Not started | - |
+| 8. Outlook Calendar Sync | 0/TBD | Not started | - |
+| 9. Hardening and Launch QA | 0/TBD | Not started | - |
