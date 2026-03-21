@@ -9,6 +9,8 @@ const BREADCRUMB_LABELS = {
   services: 'Services',
   calendar: 'Calendar',
   settings: 'Settings',
+  leads: 'Leads',
+  analytics: 'Analytics',
 };
 
 function DashboardBreadcrumb() {

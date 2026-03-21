@@ -3,16 +3,28 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wrench, Calendar, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Wrench, Calendar, Menu, X, Settings } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
+import { Separator } from '@/components/ui/separator';
 
 const NAV_ITEMS = [
-  { href: '/dashboard/services', label: 'Services', icon: Wrench },
+  { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/leads', label: 'Leads', icon: Users },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/dashboard/services', label: 'Services', icon: Wrench },
 ];
 
-function NavLink({ item, active }) {
+const BOTTOM_NAV = [
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+];
+
+function NavLink({ item, pathname }) {
   const Icon = item.icon;
+  const active = item.exact
+    ? pathname === item.href
+    : pathname.startsWith(item.href);
+
   return (
     <Link
       href={item.href}
@@ -48,15 +60,31 @@ export default function DashboardSidebar({ businessName }) {
         </span>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            active={pathname.startsWith(item.href)}
-          />
-        ))}
+      {/* Main navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-1 flex flex-col">
+        <div className="flex-1 space-y-1">
+          {NAV_ITEMS.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+            />
+          ))}
+        </div>
+
+        {/* Separator before Settings */}
+        <Separator className="bg-white/[0.06] my-2" />
+
+        {/* Bottom nav (Settings) */}
+        <div className="space-y-1">
+          {BOTTOM_NAV.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+            />
+          ))}
+        </div>
       </nav>
 
       {/* Business name */}
