@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-21T07:27:56.963Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-03-21T08:05:57.762Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 23
-  completed_plans: 18
+  completed_plans: 20
   percent: 50
 ---
 
@@ -67,6 +67,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03-scheduling-and-calendar-sync P01 | 8 | 2 tasks | 7 files |
 | Phase 03-scheduling-and-calendar-sync P06 | 18 | 2 tasks | 6 files |
 | Phase 04-crm-dashboard-and-notifications P01 | 15 | 2 tasks | 4 files |
+| Phase 04-crm-dashboard-and-notifications P03 | 11 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,9 @@ Recent decisions affecting current work:
 - [Phase 04-crm-dashboard-and-notifications]: Repeat caller merge uses .in('status', ['new','booked']) — completed/paid/lost leads trigger new lead creation
 - [Phase 04-crm-dashboard-and-notifications]: getLeads excludes transcript_text from list queries — fetched separately on lead detail view
 - [Phase 04-crm-dashboard-and-notifications]: REPLICA IDENTITY FULL on leads table required for Supabase Realtime row-level change events
+- [Phase 04-03]: appointmentId lookup uses targeted select after appointmentExists boolean — avoids redundant query when no booking
+- [Phase 04-03]: sendOwnerNotifications is fire-and-forget (.catch pattern) — failure never blocks call record persistence
+- [Phase 04-03]: Recovery cron limits to 10 calls per invocation for Twilio rate limit safety
 
 ### Roadmap Evolution
 
@@ -146,6 +150,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T07:27:56.958Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-21T08:05:57.756Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

@@ -48,9 +48,9 @@
 
 ### Notifications
 
-- [ ] **NOTIF-01**: Owner receives SMS alert with lead summary when new lead/booking is created
-- [ ] **NOTIF-02**: Owner receives email alert with lead details when new lead/booking is created
-- [ ] **NOTIF-03**: If caller hangs up before booking completes, auto-SMS sent to caller's number for recovery
+- [x] **NOTIF-01**: Owner receives SMS alert with lead summary when new lead/booking is created
+- [x] **NOTIF-02**: Owner receives email alert with lead details when new lead/booking is created
+- [x] **NOTIF-03**: If caller hangs up before booking completes, auto-SMS sent to caller's number for recovery
 
 ### Business Onboarding
 
@@ -124,9 +124,9 @@
 | CRM-03 | Phase 4 | Complete |
 | CRM-04 | Phase 4 | Pending |
 | CRM-05 | Phase 4 | Complete |
-| NOTIF-01 | Phase 4 | Pending |
-| NOTIF-02 | Phase 4 | Pending |
-| NOTIF-03 | Phase 4 | Pending |
+| NOTIF-01 | Phase 4 | Complete |
+| NOTIF-02 | Phase 4 | Complete |
+| NOTIF-03 | Phase 4 | Complete |
 | ONBOARD-01 | Phase 2 | Complete |
 | ONBOARD-02 | Phase 2 | Complete |
 | ONBOARD-03 | Phase 2 | Complete |
