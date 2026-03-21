@@ -1,8 +1,14 @@
 # Feature Research
 
-**Domain:** AI Voice Receptionist + Home Service Booking / Lead CRM
-**Researched:** 2026-03-18
-**Confidence:** MEDIUM (training knowledge through Aug 2025; live web verification was unavailable — all findings derived from training data on Vapi, Retell, Housecall Pro, ServiceTitan, Smith.ai, Jobber, and related platforms)
+**Domain:** SaaS site completeness & launch readiness — pricing page, unified onboarding wizard, contact page, about page, hardening
+**Researched:** 2026-03-22
+**Confidence:** HIGH (pricing, onboarding wizard patterns — verified via live web sources) / MEDIUM (contact/about, hardening specifics)
+
+---
+
+## Scope
+
+This file covers ONLY the new features for milestone v1.1. The existing platform (voice receptionist, triage, scheduling, CRM, dashboard, landing page) is treated as a stable dependency. References to "existing" mean already built in v1.0.
 
 ---
 
@@ -10,156 +16,129 @@
 
 ### Table Stakes (Users Expect These)
 
-Features home service business owners assume any answering/booking product has. Missing these = product feels broken or unprofessional.
+Features that visitors and prospects assume exist. Missing them signals "not a real product."
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Instant call pickup (no ring delay) | Core promise — caller hangs up in 6 sec if not answered | HIGH | Requires Vapi/Retell webhook + phone number provisioning; latency is the product |
-| Natural-sounding voice (not robotic) | Any robotic IVR kills caller trust immediately | HIGH | Solved by Vapi/Retell TTS layer; voice model selection matters; ElevenLabs-backed voices are table stakes in 2025+ |
-| Caller ID capture | Every lead tracker starts with "who called" | LOW | Telephony provider delivers ANI automatically; display + store it |
-| Job type / service capture | Owner must know what the call was about | MEDIUM | Structured extraction via LLM from transcript; needs a service taxonomy configured per business |
-| Appointment date/time capture | Booking is the whole point | HIGH | Must integrate with real calendar; slot availability query + confirmation loop with caller |
-| Address / location capture | Home service = on-site; no address = useless lead | MEDIUM | Voice address parsing is error-prone; must read back and confirm with caller |
-| Owner notification on new lead or booking | Owner is on a job site; needs to know immediately | MEDIUM | SMS + email minimum; push notification if web app has service worker |
-| Call recording storage | For quality review, dispute resolution, and context | LOW | Vapi/Retell provide recording URLs; store reference + serve from dashboard |
-| Call transcript storage | Owner reads transcript instead of re-listening | MEDIUM | Vapi/Retell provide transcripts; store and display per lead |
-| Lead status pipeline (new → booked → done) | Any CRM has a pipeline; without it there's no tracking | MEDIUM | Simple state machine; kanban or list view in dashboard |
-| Business hours / availability configuration | Must not book outside working hours | MEDIUM | Owner-configured schedule; integration with calendar free/busy |
-| Duplicate lead detection | Same caller calling back should not create two records | MEDIUM | Match on phone number; merge or link records |
-| Dashboard to view all leads and calls | Operator needs a single place to see what happened overnight | MEDIUM | Web UI; filterable list + detail view |
-| Settings / onboarding configuration | Owner must set greeting, services, hours before going live | MEDIUM | Wizard or settings form; greeting script, service list, schedule, escalation rules |
+| Pricing page with 4 tiers | Every SaaS product shows pricing; absence creates suspicion and pushes prospects away | LOW | Starter $99 / Growth $249 / Scale $599 / Enterprise custom; display-only at v1.1 |
+| Tier feature comparison table | Buyers need to diff tiers without guessing; absence forces them to contact sales for basic questions | LOW | 8-10 features max per tier; more creates noise not clarity |
+| "Most popular" badge on mid-tier | Standard UX signal; pages without a highlighted recommended tier convert 22% worse (per 2025 UX study) | LOW | Growth tier ($249) is the intended anchor/recommended tier |
+| Annual/monthly billing toggle | Expected on any subscription product; signals pricing maturity even when display-only | LOW | Default to monthly; add "Save 20%" callout on annual; no Stripe needed for display |
+| Enterprise "Contact Sales" CTA | High-ACV tiers that hide pricing destroy trust; Enterprise custom pricing is the one exception buyers accept | LOW | Links to contact page, not a modal form |
+| Self-serve tier "Get Started" CTA | Primary conversion action per tier; must be unambiguous | LOW | Routes to unified onboarding wizard |
+| Pricing FAQ section | Addresses objections inline; reduces support emails; buyers need answers before committing | LOW | 5-7 questions minimum: cancellation, seat limits, call volume overages, trial availability, refunds |
+| Unified signup + onboarding wizard | Separate auth page → separate onboarding page is the old pattern; single cohesive flow is the 2026 expectation | MEDIUM | Replace existing `/auth/signin` → `/onboarding` two-stop flow with one wizard |
+| Progress indicator in wizard | Users need to know how many steps remain; abandonment spikes without it | LOW | "Step 2 of 4" label or dot indicators |
+| Email verification handled gracefully inside wizard | Supabase auth requires email verification; surfacing this as a redirect dead end destroys wizard completion rates | LOW | Inline "Check your inbox" step with auto-polling or manual continue |
+| Test call as wizard finale | The activation moment belongs inside onboarding, not as a post-signup afterthought; this is the "aha moment" | MEDIUM | Depends on Retell number provisioning already built (VOICE-01); ONBOARD-06 gate |
+| Contact page with segmented inquiry routes | Visitors need distinct paths for sales, support, and partnerships; a single form for all three feels amateurish | LOW | Three sections or tabs with separate form targets or email addresses |
+| Visible response time SLA on contact page | Sets expectations; "reply within 1 business day" reduces anxiety for a business owner making a trust decision | LOW | Static copy only |
+| About page with mission statement | Builds trust for a product asking access to a business owner's phone line and Google Calendar | LOW | Mission + founding problem + story; team headshots optional at launch |
+| Social proof signals | For SME buyers making a trust-sensitive purchase, even a count ("trusted by 40+ home service businesses") reduces anxiety | LOW | Use real beta count; do not fabricate; placeholder acceptable |
+| Error monitoring in production | Non-negotiable for any launch; silent failures in a telephony product are invisible and destructive | MEDIUM | Sentry or Axiom; catch unhandled exceptions and API failures |
+| Environment variable audit before launch | Secrets must not be in source; production env vars must match expected values | LOW | Pre-launch checklist item; not a build task |
 
 ### Differentiators (Competitive Advantage)
 
-These are where this product competes. Aligned to the core value: every call converted, no lead lost.
+Features that create competitive lift. Aligned to the core value: 5-minute activation, zero voicemail.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Three-layer triage (keyword + urgency + owner rules) | Competitors use dumb IVR or single-signal classification; three layers catches edge cases a single rule misses | HIGH | Layer 1: regex/keyword matching on transcript. Layer 2: LLM urgency scoring from temporal cues and stress markers. Layer 3: owner-configured rule table. Emergency path books immediately; routine path queues for confirmation |
-| Atomic slot locking (zero double-booking) | Human answering services and basic AI bots do not lock slots atomically; double-booking destroys trust | HIGH | Requires database-level locking or optimistic concurrency with conflict resolution; non-trivial when concurrent calls arrive simultaneously |
-| Real-time Google Calendar + Outlook sync (bidirectional) | Owner already lives in their calendar; any solution requiring a second calendar is abandoned | HIGH | OAuth for both providers; webhook/poll for external changes; push availability into voice agent in real time |
-| Multi-language voice from day one | Competitors launch English-only and retrofit; retrofitting voice agent prompts and TTS at scale is painful | HIGH | Requires language detection on first utterance; per-language system prompts; multi-language TTS voice selection in Vapi/Retell |
-| Emergency vs routine call separation with separate workflows | High-ticket emergency jobs ($2,000+ water main break) get different treatment than "call me next week" routine quotes | HIGH | Emergency: immediate slot lock + owner SMS with urgency flag. Routine: capture + add to lead queue. This is the direct monetization logic |
-| Owner-defined service tiers with high-ticket flagging | Owner marks HVAC replacement as high-ticket; AI treats those calls differently in triage priority | MEDIUM | Simple configuration — service list with tier/priority tag; influences triage scoring |
-| Travel time buffer + geographic zone grouping | Reduces back-to-back bookings across city; prevents wasted drive time between appointments | HIGH | Complex scheduling logic; requires ZIP code / address to zone mapping; travel time estimation; not table stakes but a strong retention feature |
-| Per-business custom greeting and persona | Owner's business name, tone, and personality reflected in the AI voice | MEDIUM | Templated system prompt with owner-provided business name, services, and tone preference; Vapi/Retell agent configuration |
-| Caller urgency scoring visible in dashboard | Owner sees "HIGH urgency" on a lead without replaying the call | MEDIUM | LLM outputs urgency label + reason; store and display in lead card |
-| Lead conversion rate analytics | Owner sees how many calls turned into bookings vs abandoned | MEDIUM | Aggregate metrics per period; funnel: calls answered → leads captured → booked → completed |
-| Missed/abandoned call recovery | If caller hangs up before booking, queue an SMS follow-up | HIGH | Requires outbound SMS (Twilio); caller number available; permission/compliance considerations (TCPA); this is v1.x territory |
+| 5-minute onboarding gate | The wizard delivers a working AI receptionist before the session ends; no competitor offers this as a self-serve flow | HIGH | Sequence: account creation → routing question → business config → Retell provisioning → live test call; all inside one wizard |
+| Routing question at wizard start | Single "What trade are you in?" question pre-populates the service list and triage rules; setup feels instant, not manual | LOW | 8-10 trade categories (plumber, HVAC, electrician, etc.); seeds ONBOARD-02 config from existing API |
+| Live test call inside the wizard | Prospect hears their own AI receptionist answer their actual phone number before closing the tab; this is the activation event that correlates with retention | HIGH | Existing Retell integration handles this; wizard UI surfaces it as the final step |
+| ROI framing on pricing page hero | SME owners think in job values ($1,000+ per booking), not SaaS metrics; "pays for itself on day 1" framing outperforms feature lists | LOW | Copy-level differentiator; no build cost |
+| Inline social proof near pricing CTAs | "Used by 120+ home service businesses" adjacent to CTA buttons; reduces "am I the first?" anxiety in risk-averse SME buyers | LOW | Use real beta pilot count; update as it grows |
+| Calendly/Cal.com embed on contact page | Sales-qualified leads self-book a live demo; no email back-and-forth; reduces sales cycle friction | LOW | Cal.com is open-source and self-hostable; no third-party dependency required |
+| Founding story targeting trade owners | "We built this because our plumber friend lost a $2,000 job to voicemail" resonates more than generic SaaS copy | LOW | About page copy; no build cost |
+| Outlook Calendar sync | Expands TAM to Windows-centric trade businesses; Google-only is a market filter that competitors have not closed | MEDIUM | SCHED-03; deferred from v1.0; Microsoft OAuth + Graph API |
+| Multi-language E2E validation | Proves the multi-language claim with evidence from the full pipeline (voice → triage → booking → notifications); competitors claim it but rarely validate E2E | MEDIUM | Spanish + one Asian language minimum; formal test script through entire pipeline |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Native iOS/Android app | "I want it on my phone" | Doubles build cost, app store delays, push notification complexity; the dashboard is read-mostly and works fine as a PWA | Mobile-responsive web dashboard with PWA manifest; add home screen shortcut; defer native app to v2 when retention is proven |
-| Full invoicing and job costing (replacing ServiceTitan) | Owners want fewer tools | Competing with established FSM platforms is a multi-year effort; ServiceTitan has 10,000+ developer hours invested | Integrate with ServiceTitan/Jobber/Housecall Pro via API rather than replacing them; be the inbound layer, not the ops layer |
-| Outbound auto-dialer / robocall campaigns | "Can it call my old customers for reviews?" | TCPA compliance in the US is a legal minefield; high churn risk if owners get fined; completely different product surface | Offer manual "call this lead back" button that initiates a human call; defer outbound AI calling to v2 with legal review |
-| SMS/chat/WhatsApp/web widget omnichannel | "Meet customers everywhere" | Each channel doubles QA burden; chat has different UX constraints than voice; risks shipping nothing great instead of voice done perfectly | Voice first, prove conversion rates, then add SMS as v1.x add-on; don't build omnichannel until voice channel has retention |
-| Real-time transcription display (watch the call live) | "I want to see what's happening" | Adds WebSocket streaming complexity, significant infrastructure overhead; owners are on job sites and won't watch live | Provide post-call transcript within 30 seconds of call end; that's what owners actually use |
-| AI upselling scripts during call | "Can it pitch maintenance contracts?" | Pushes caller through longer call = higher hang-up rate; destroys the core "book fast" value prop | Keep call short and outcome-focused; upsell offers can be in the post-booking confirmation SMS/email |
-| Crew/technician dispatch and GPS tracking | "One tool for everything" | Field service dispatch is a solved market (ServiceTitan, Jobber); building dispatch = competing with FSM giants on their home turf | Integrate via webhook/API to pass confirmed bookings to whatever FSM the owner uses |
-| Payment processing built-in | "Collect deposit at booking" | PCI compliance, payment gateway integration, chargeback handling — enormous scope for v1 | Note the booking; let the owner's existing payment process handle it; revisit in v2 with Stripe Elements |
+| Free trial tier on pricing page | "Let users try before they buy" sounds growth-oriented | Requires metered infrastructure, abuse prevention, credit card-or-not decision, support load from unqualified free users; payment processing is explicitly out of scope for v1.1 | "Book a live demo" CTA with Calendly embed; sales-assisted trial shows the product without self-serve billing complexity |
+| Per-seat pricing toggle | Enterprise buyers want to model cost by headcount | Adds pricing page complexity; current model is per-business not per-seat; forces premature pricing architecture changes | Keep per-business pricing; add "custom pricing for larger teams" in Enterprise tier copy |
+| Payment processing on pricing page | "Convert in place" is a good instinct | PCI compliance, Stripe integration, chargeback handling — large scope; explicitly deferred; display-only pricing is the correct v1.1 approach | Display-only pricing + "Get Started" CTA routing to wizard; sales handles billing offline at launch |
+| Email verification redirect outside wizard | Default Supabase auth pattern sends user to inbox, breaking wizard context | Users who leave the wizard to check email rarely return; the 5-minute promise collapses | Surface email verification inline as a wizard step with auto-polling + resend link |
+| Full team page with headshots | "Legitimacy building" | At pre-scale launch with no professional photos, stock or absent headshots destroy trust faster than a clean text-only story | Mission + founding story paragraph is sufficient; "Meet the team" can be deferred to when the team is real |
+| Live chat widget on contact page | "Reduce friction for inbound inquiries" | Requires staffing or an AI chatbot; unmanned chat is worse than no chat; adds third-party script weight and privacy surface | Clear contact form with explicit response time SLA; Calendly for demo self-booking |
+| A/B testing pricing page at launch | "Optimize conversion rate from day one" | Requires meaningful traffic volume to reach statistical significance; at launch there is no such traffic | Ship one well-reasoned pricing page with analytics events attached; add A/B testing when monthly traffic exceeds ~5,000 unique visitors |
+| Cookie consent / GDPR banner | Compliance concern | Adds implementation complexity, degrades UX, and is premature if no EU traffic is being targeted at launch | Note in launch checklist; implement when EU market is targeted |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Voice receptionist (Vapi/Retell integration)]
-    └──requires──> [Phone number provisioning]
-    └──requires──> [Business onboarding / configuration]
-                       └──requires──> [Service list configuration]
-                       └──requires──> [Availability schedule configuration]
-                       └──requires──> [Greeting script configuration]
+Pricing Page
+    └──CTA routes to──> Unified Signup+Onboarding Wizard
+    └──Enterprise CTA routes to──> Contact Page
+    └──display only; no Stripe dependency
 
-[Appointment booking]
-    └──requires──> [Availability scheduler]
-                       └──requires──> [Calendar sync (Google/Outlook)]
-    └──requires──> [Atomic slot locking]
-    └──requires──> [Address capture + confirmation]
+Unified Signup+Onboarding Wizard
+    └──replaces──> /auth/signin + /onboarding (existing 2-stop flow)
+    └──requires──> Supabase Auth (ALREADY BUILT)
+    └──requires──> Business Onboarding API ONBOARD-01..06 (ALREADY BUILT)
+    └──requires──> Retell number provisioning VOICE-01 (ALREADY BUILT)
+    └──finale step──> Live Test Call (ONBOARD-06 gate; ALREADY BUILT)
+    └──routing question──> seeds ONBOARD-02 service list config
 
-[Triage (emergency vs routine)]
-    └──requires──> [Service list configuration] (to match job types to tiers)
-    └──requires──> [Owner-defined rules] (escalation paths)
-    └──enhances──> [Appointment booking] (emergency → immediate slot lock)
+Contact Page
+    └──receives traffic from──> Pricing Page (Enterprise CTA)
+    └──receives traffic from──> Landing Page nav (ALREADY BUILT)
+    └──optional embed──> Calendly / Cal.com (external, zero build cost)
 
-[Lead CRM pipeline]
-    └──requires──> [Lead capture] (caller ID, job type, address, notes)
-    └──requires──> [Call recording + transcript storage]
-    └──enhances──> [Owner notifications]
+About Page
+    └──standalone; no technical dependencies
+    └──linked from──> Landing Page nav (ALREADY BUILT)
 
-[Owner notifications]
-    └──requires──> [Lead capture] (need something to notify about)
-    └──requires──> [Owner contact configuration] (SMS number, email)
-
-[Multi-language support]
-    └──requires──> [Language detection on first utterance]
-    └──requires──> [Per-language system prompt variants]
-    └──requires──> [Multi-language TTS voice in Vapi/Retell]
-
-[Analytics / conversion metrics]
-    └──requires──> [Lead CRM pipeline] (needs status data to aggregate)
-    └──requires──> [Call logs] (answered, abandoned, duration)
-
-[Travel time buffer / geo zone grouping]
-    └──requires──> [Address capture]
-    └──requires──> [Availability scheduler]
-    └──requires──> [External geocoding/routing API]
-
-[Urgency scoring in dashboard]
-    └──requires──> [Triage system] (urgency label must be stored)
-    └──requires──> [Lead CRM] (display surface)
+Hardening
+    └──gates on──> all v1.1 pages complete
+    └──gates on──> Unified Wizard functional end-to-end
+    └──includes──> Outlook Calendar sync (SCHED-03; independent)
+    └──includes──> Multi-language E2E validation
+    └──gate──> 5-minute onboarding test with non-technical user
+    └──includes──> Error monitoring (Sentry)
+    └──includes──> Concurrency / load testing
 ```
 
 ### Dependency Notes
 
-- **Appointment booking requires Calendar sync:** Without real calendar integration, slot availability is fictional and double-bookings are inevitable. Calendar sync must be in the same phase as booking, not deferred.
-- **Triage requires Service list configuration:** The keyword and rule layers of triage need to know the owner's service taxonomy. Onboarding must happen before the agent goes live.
-- **Multi-language requires language detection first:** Cannot route to per-language prompts without detecting the caller's language on the first utterance. Detection logic is a prerequisite, not an afterthought.
-- **Travel time buffering conflicts with simple slot locking:** Atomic slot locking assumes fixed-duration appointments; travel time buffers require variable-duration gaps between bookings. Do not combine these in the same phase — get atomic locking right first, add travel buffers as a scheduling enhancement later.
-- **Analytics requires a populated pipeline:** Metrics are meaningless on day one. Build the CRM pipeline in v1; add analytics dashboards in v1.x once there's real data.
+- **Wizard requires existing APIs, not rebuilds:** ONBOARD-01..06 and the Retell provisioning flow are already built; the wizard is a new multi-step UI shell around existing logic plus auth, not a rewrite.
+- **Pricing page CTAs require wizard:** If the wizard ships late, pricing page CTAs are dead links. Wizard must ship before or simultaneously with pricing page.
+- **Hardening gates on wizard completion:** The 5-minute onboarding validation cannot pass until the wizard is functional end-to-end including the test call step.
+- **Outlook sync is independent:** Does not block pricing, wizard, contact, or about pages. Can ship in parallel or after.
+- **Multi-language validation is a QA task, not a build task:** The multi-language infrastructure is already built (v1.0); this is formal test script execution across the full pipeline.
 
 ---
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (v1.1)
 
-Minimum viable product to validate "AI answers calls and books jobs."
-
-- [ ] Voice receptionist via Vapi or Retell — answers every inbound call instantly with natural voice
-- [ ] Business onboarding configuration — greeting script, service list, working hours, owner contact info
-- [ ] Three-layer triage — classify emergency vs routine, apply owner rules
-- [ ] Address + job type + caller ID capture with read-back confirmation
-- [ ] Availability scheduler with atomic slot locking
-- [ ] Google Calendar + Outlook sync (bidirectional, real-time)
-- [ ] Lead CRM: new → booked → completed pipeline with lead detail view
-- [ ] Call recording and transcript stored per lead
-- [ ] Owner notifications via SMS and email on new lead / booking
-- [ ] Web dashboard (mobile-responsive) — leads list, calendar view, settings
-- [ ] Multi-language support — language detection + per-language prompts + TTS
+- [ ] **Pricing page (display-only, 4 tiers)** — Converts marketing traffic; required for any sales conversation; no Stripe needed
+- [ ] **Unified signup+onboarding wizard** — Core activation funnel; replaces existing two-stop flow
+- [ ] **Live test call finale in wizard** — The activation "aha moment"; without it the wizard is a form, not a product demo
+- [ ] **Contact page with segmented inquiry routes** — Sales, support, and partnership inquiries need distinct destinations
+- [ ] **About page with mission + founding story** — Trust signal for audience being asked to route their business phone through an unfamiliar product
+- [ ] **Error monitoring (Sentry or equivalent)** — Non-negotiable for production; silent telephony failures are invisible without it
+- [ ] **Environment variable audit** — Secrets hygiene; must verify before demo-ready claim
+- [ ] **Outlook Calendar sync (SCHED-03)** — Deferred from v1.0; included in v1.1 hardening
 
 ### Add After Validation (v1.x)
 
-Add once core booking loop is proven and owners are retaining.
-
-- [ ] Urgency scoring visible on lead card — trigger: owners report re-listening to recordings to determine urgency
-- [ ] Lead conversion rate analytics — trigger: owners ask "is this working?"
-- [ ] Duplicate lead detection and merge — trigger: same caller appearing multiple times in CRM
-- [ ] Missed/abandoned call SMS recovery — trigger: owners notice calls that ended before booking
-- [ ] Travel time buffer and geographic zone grouping — trigger: owners in dense urban markets complain about scheduling
-- [ ] Per-business custom voice persona (voice model selection) — trigger: owners want brand differentiation
+- [ ] **Annual billing toggle (functional with Stripe)** — Add when Stripe integration lands; display toggle is fine at v1.1
+- [ ] **Multi-language E2E test automation** — Formal regression suite; run manually at v1.1, automate when CI/CD is stable
+- [ ] **Pricing page A/B testing** — Add when monthly traffic exceeds ~5,000 unique visitors
 
 ### Future Consideration (v2+)
 
-Defer until product-market fit is established.
-
-- [ ] Native iOS/Android app — defer; validate that mobile-responsive web is insufficient first
-- [ ] Outbound AI calling (review requests, follow-ups) — defer; TCPA compliance requires legal review
-- [ ] SMS/chat/WhatsApp omnichannel — defer; prove voice ROI before expanding channels
-- [ ] Payment processing / deposit collection at booking — defer; PCI scope is disproportionate for v1
-- [ ] Crew dispatch and field service management — defer; integrate with ServiceTitan/Jobber instead
-- [ ] Full white-label / multi-tenant reseller portal — defer; useful for agency channel but not core validation
+- [ ] **Free trial tier** — Requires metered infra, abuse prevention, and billing integration
+- [ ] **Per-seat pricing model** — Requires pricing architecture restructure
+- [ ] **Cookie consent / GDPR compliance** — When EU market is targeted
+- [ ] **Full team page with headshots** — When team exists and photos are professional
 
 ---
 
@@ -167,27 +146,22 @@ Defer until product-market fit is established.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Instant call pickup (Vapi/Retell integration) | HIGH | HIGH | P1 |
-| Business onboarding configuration | HIGH | MEDIUM | P1 |
-| Three-layer triage (emergency vs routine) | HIGH | HIGH | P1 |
-| Address + job type capture with confirmation | HIGH | MEDIUM | P1 |
-| Atomic slot locking | HIGH | HIGH | P1 |
-| Google Calendar + Outlook sync | HIGH | HIGH | P1 |
-| Lead CRM pipeline | HIGH | MEDIUM | P1 |
-| Call recording + transcript | HIGH | LOW | P1 |
-| Owner SMS + email notifications | HIGH | LOW | P1 |
-| Web dashboard (leads + calendar + settings) | HIGH | MEDIUM | P1 |
-| Multi-language support | HIGH | HIGH | P1 |
-| Urgency scoring on lead card | MEDIUM | MEDIUM | P2 |
-| Lead conversion analytics | MEDIUM | MEDIUM | P2 |
-| Duplicate lead detection | MEDIUM | MEDIUM | P2 |
-| Missed call SMS recovery | MEDIUM | HIGH | P2 |
-| Travel time buffer + geo zone grouping | MEDIUM | HIGH | P2 |
-| Custom voice persona selection | LOW | MEDIUM | P2 |
-| Native mobile app | MEDIUM | HIGH | P3 |
-| Outbound AI calling | MEDIUM | HIGH | P3 |
-| Payment deposit collection | MEDIUM | HIGH | P3 |
-| Crew dispatch / FSM integration | LOW | HIGH | P3 |
+| Unified signup+onboarding wizard | HIGH | MEDIUM | P1 |
+| Live test call finale in wizard | HIGH | MEDIUM | P1 |
+| Pricing page (display-only, 4 tiers) | HIGH | LOW | P1 |
+| Pricing FAQ + tier comparison table | HIGH | LOW | P1 |
+| "Most popular" badge + ROI hero copy | HIGH | LOW | P1 |
+| Contact page (segmented routes) | MEDIUM | LOW | P1 |
+| About page (mission + story) | MEDIUM | LOW | P1 |
+| Error monitoring (Sentry) | HIGH | LOW | P1 |
+| Routing question at wizard start | HIGH | LOW | P1 |
+| Outlook Calendar sync (SCHED-03) | MEDIUM | MEDIUM | P1 |
+| Multi-language E2E validation (manual) | MEDIUM | LOW | P1 (QA, not build) |
+| 5-minute onboarding gate QA | HIGH | LOW | P1 (QA gate) |
+| Calendly embed on contact page | MEDIUM | LOW | P2 |
+| Annual billing toggle (display) | LOW | LOW | P2 |
+| Concurrency / load testing | MEDIUM | MEDIUM | P2 |
+| Inline social proof on pricing page | MEDIUM | LOW | P2 |
 
 **Priority key:**
 - P1: Must have for launch
@@ -198,31 +172,36 @@ Defer until product-market fit is established.
 
 ## Competitor Feature Analysis
 
-| Feature | Smith.ai (AI receptionist) | Housecall Pro / Jobber (FSM) | Our Approach |
-|---------|---------------------------|------------------------------|--------------|
-| Call answering | AI + human hybrid; human escalation available | Not primary feature | AI-only; no human fallback in v1; owner is the human escalation path |
-| Triage / emergency detection | Basic message-taking; no structured triage | Not applicable | Three-layer triage is a primary differentiator |
-| Calendar / booking | Passes messages; does not book into calendar | Native scheduling within FSM | Real-time calendar sync + atomic booking is core, not an add-on |
-| CRM pipeline | Minimal; contact log only | Full FSM: jobs, invoicing, dispatch | Lead tracker only; intentionally narrow to avoid FSM competition |
-| Multi-language | English primary; limited Spanish | English-only primarily | Multi-language from day one; competitive gap in non-English markets |
-| Pricing model | Per-minute + per-call; expensive at volume | Monthly SaaS; mid-market pricing | Monthly SaaS subscription per business; predictable for SME owners |
-| Voice quality | AI or live human | Not applicable | Low-latency AI voice via Vapi/Retell; ElevenLabs-quality TTS |
-| Integration depth | Zapier-level webhooks | Native integrations with QuickBooks, Stripe, etc. | Google Calendar + Outlook native; Zapier/webhook for FSM handoff |
+Relevant competitors for the pricing/onboarding/public-site surface: Goodcall, Smith.ai, Ruby Receptionists, Synthflow.
+
+| Feature | Goodcall / Smith.ai | Ruby Receptionists | Our Approach |
+|---------|---------------------|--------------------|--------------|
+| Pricing transparency | Goodcall shows tiers; Smith.ai hides pricing behind "contact sales" | Shows pricing | Full display-only tiers with ROI framing; no hiding |
+| Self-serve signup | Goodcall yes; Smith.ai is sales-assisted | Sales-assisted only | Self-serve wizard with live test call finale |
+| Time to activation | 1-7 days (Goodcall); days to weeks (Smith.ai) | Days to weeks | 5 minutes — wizard-to-live-AI-receptionist |
+| Multi-language | Limited / English-primary | English only | Validated E2E from day one |
+| Calendar sync | Google only (Goodcall) | None | Google (done) + Outlook (v1.1) |
+| About / trust page | Generic corporate | Generic | Trade-specific founding story; problem-first framing |
+| Contact page | Generic form | Phone + form | Segmented by intent: sales / support / partnerships |
 
 ---
 
 ## Sources
 
-- Training knowledge: Vapi platform capabilities (vapi.ai, through Aug 2025)
-- Training knowledge: Retell AI capabilities (retellai.com, through Aug 2025)
-- Training knowledge: Smith.ai AI receptionist feature set (through Aug 2025)
-- Training knowledge: Housecall Pro and Jobber FSM feature sets (through Aug 2025)
-- Training knowledge: ServiceTitan enterprise FSM feature set (through Aug 2025)
-- Training knowledge: TCPA compliance constraints for outbound SMS/calling (through Aug 2025)
-- All claims: MEDIUM confidence (training data only; live verification was unavailable during this research session)
-
-**Note on confidence:** WebSearch and WebFetch were both unavailable during this research session. All findings derive from training data (cutoff August 2025). The feature landscape for AI voice receptionists was evolving rapidly through 2025; specific competitor feature details should be spot-checked against live product pages before using for strategic decisions.
+- [SaaS Pricing Page Best Practices 2026 — InfluenceFlow](https://influenceflow.io/resources/saas-pricing-page-best-practices-complete-guide-for-2026/)
+- [SaaS Pricing Page Best Practices: What Actually Converts in 2026 — PipelineRoad](https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices)
+- [13 Pricing Page Best Practices to Boost Conversion Rates — Userpilot](https://userpilot.com/blog/pricing-page-best-practices/)
+- [9 Best Practices for a High-Converting SaaS Pricing Page — The Spot On Agency](https://www.thespotonagency.com/blog/the-architects-guide-9-best-practices-for-a-high-converting-saas-pricing-page)
+- [SaaS Onboarding Flow: 10 Best Practices That Reduce Churn — DesignRevision](https://designrevision.com/blog/saas-onboarding-best-practices)
+- [What is an Onboarding Wizard (with Examples) — UserGuiding](https://userguiding.com/blog/what-is-an-onboarding-wizard-with-examples)
+- [SaaS Onboarding Flows That Actually Convert in 2026 — SaaSUI](https://www.saasui.design/blog/saas-onboarding-flows-that-actually-convert-2026)
+- [The Old vs. The New: Why the Onboarding Wizard Falls Short — Userpilot](https://userpilot.com/blog/onboarding-wizard/)
+- [A Guide to SaaS Signup Flows — UserGuiding](https://userguiding.com/blog/signup-flows-saas)
+- [Best Practices for Designing B2B SaaS Product Pages 2026 — GenesysGrowth](https://genesysgrowth.com/blog/designing-b2b-saas-product-pages)
+- [SaaS Security Checklist Before Launch 2026 — Peiko](https://peiko.space/blog/article/saas-security-checklist-before-launch)
+- [Advanced SaaS Pricing Psychology 2026 — Ghost.io](https://ghl-services-playbooks-automation-crm-marketing.ghost.io/advanced-saas-pricing-psychology-beyond-basic-tiered-models/)
 
 ---
-*Feature research for: AI Voice Receptionist + Home Service Booking CRM*
-*Researched: 2026-03-18*
+
+*Feature research for: HomeService AI Agent — v1.1 Site Completeness & Launch Readiness*
+*Researched: 2026-03-22*

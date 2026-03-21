@@ -1,8 +1,8 @@
 # Pitfalls Research
 
 **Domain:** AI voice receptionist + home service booking platform (SaaS)
-**Researched:** 2026-03-18
-**Confidence:** MEDIUM (web search unavailable; based on training knowledge through Aug 2025 covering Vapi/Retell production usage, telephony systems, calendar API behavior, and home service SaaS patterns)
+**Researched:** 2026-03-22 (updated — v1.1 milestone pitfalls appended)
+**Confidence:** MEDIUM-HIGH (v1.0 pitfalls: MEDIUM from training knowledge; v1.1 pitfalls: MEDIUM-HIGH from live web search + codebase inspection)
 
 ---
 
@@ -185,6 +185,219 @@ Developers build onboarding to match the system's internal data model rather tha
 
 ---
 
+## v1.1 Milestone Pitfalls
+
+The following pitfalls are specific to adding the v1.1 feature set (pricing page, unified onboarding wizard, contact/about pages, Outlook sync, multi-language E2E, concurrency QA, 5-min gate) to the existing system. These are integration-addition pitfalls, not greenfield design pitfalls.
+
+---
+
+### Pitfall 8: Breaking Existing Users When Unifying the Auth+Onboarding Flow
+
+**What goes wrong:**
+The current system has two separate flows: `/auth/signin` creates a Supabase account, then redirects to `/onboarding` (3-step wizard: business name → services → contact details). Unifying means moving account creation INTO the wizard (CTA → enter email/password → business setup → test call). Existing users who have already completed `/auth/signin` and `/onboarding` have auth state and a partially-or-fully-seeded `tenants` row. If the new unified flow applies onboarding redirect logic to ALL authenticated users (including existing ones), every existing user gets looped back through onboarding on next login.
+
+**Why it happens:**
+The redirect guard logic checks `if (!user) → /auth/signin` but doesn't distinguish between a returning user with complete onboarding and a new user who just created an account. Middleware that says "if logged in and no onboarding_complete flag → /onboarding" traps existing users who don't have that flag set in the database (because the flag was added after they onboarded).
+
+**How to avoid:**
+- Add an `onboarding_completed_at` timestamp column to the `tenants` table (nullable = incomplete) before deploying any new flow logic
+- Backfill `onboarding_completed_at` for all existing tenants that have a `business_name` set — this is the safe migration step
+- New unified wizard sets `onboarding_completed_at` on final step; existing users already have it set
+- Auth callback redirect logic: `if (onboarding_completed_at IS NULL) → /signup-wizard ELSE → /dashboard`
+- Deploy backfill migration and verify existing user count matches before deploying new flow
+- Test explicitly: log in as an existing user, confirm they go to `/dashboard` not back through onboarding
+
+**Warning signs:**
+- New redirect logic added before backfill migration runs
+- `onboarding_completed_at` column added but not backfilled for existing records
+- No E2E test that verifies existing-user login still lands on `/dashboard`
+- New unified wizard assumes `step=1` for any user that reaches it (including returning users)
+
+**Phase to address:** Unified Onboarding Wizard phase — run the backfill migration as the very first step, before any frontend changes ship to production
+
+---
+
+### Pitfall 9: Outlook Calendar Sync is Significantly More Complex Than Google Calendar Sync
+
+**What goes wrong:**
+Teams treat Outlook sync as "Google Calendar sync but for Microsoft." It is not. Outlook sync via Microsoft Graph API involves Azure AD app registration, multi-tenant OAuth consent flows, admin approval requirements that can block individual SMB users (many of whom use Office 365 Business accounts where their employer's IT admin controls app consent), delta token management for incremental sync, and subscription-based webhooks that expire and must be renewed every 3 days. A naive implementation that mirrors the Google Calendar integration will fail silently for a significant portion of SMB users who cannot grant consent without IT administrator involvement.
+
+**Why it happens:**
+The Microsoft Graph API surface looks similar to Google's — OAuth2, access tokens, REST calendar endpoints. Developers assume the consent and permission model is the same. It is not: Microsoft's enterprise model distinguishes between personal Microsoft accounts (no admin) and Microsoft 365 work/school accounts (admin consent may be required), and many home service business owners who use Outlook are on Microsoft 365 business plans managed by an IT provider or Microsoft partner who controls app consent.
+
+**How to avoid:**
+- Register the Azure AD app as multi-tenant but request only `Calendars.ReadWrite` and `offline_access` delegated permissions — avoid any scopes requiring admin consent (like `Calendars.ReadWrite.Shared` or application-level permissions)
+- Surface a clear "Your organization may require admin approval" error state with a mailto link to forward the admin consent URL to their IT contact
+- Implement Microsoft Graph delta query with stored `@odata.deltaLink` for incremental calendar sync — do not poll full calendar on every sync cycle
+- Webhook subscriptions (change notifications) expire in 4230 minutes (approximately 3 days) and must be renewed proactively; build a background job that renews all active subscriptions before expiry
+- Store the delta token per tenant in the database; if a delta token is lost or expired, fall back to full re-sync of the calendar window (current day + next 30 days)
+- Test specifically with a Microsoft 365 Business account, not just a personal @outlook.com account — the consent flows are different
+
+**Warning signs:**
+- Azure app registration requests application-level permissions instead of delegated permissions
+- No handling for "admin approval required" error response during OAuth consent
+- Webhook subscription renewal is not scheduled as a background job
+- Delta token stored only in memory (lost on server restart → full re-sync on every restart)
+- Only tested with personal @outlook.com accounts, not enterprise Office 365 accounts
+
+**Phase to address:** Outlook Calendar Sync phase (Hardening & Launch) — treat this as a distinct integration from Google Calendar, not a copy-paste
+
+---
+
+### Pitfall 10: Pricing Page That Lists Features Instead of Selling Outcomes
+
+**What goes wrong:**
+The pricing page renders a feature matrix ("10 call recordings/month", "API access", "Priority support") instead of communicating the value at each tier. Home service SMB owners don't know what "API access" means and can't reason about "10 call recordings" vs "unlimited." They abandon the page without converting because they can't figure out which tier fits them. The pricing page looks complete but converts poorly.
+
+**Why it happens:**
+Developers and product teams copy competitors' feature-comparison tables because they're straightforward to build and seem comprehensive. The table answers "what do you get?" but not "who is this for?" or "why should I pay more?"
+
+**How to avoid:**
+- Lead each tier with a customer persona, not a feature list: "Starter — Solo plumber answering 20-50 calls/month", "Growth — HVAC shop with 2-3 technicians"
+- The tier description should state the concrete outcome: "Never miss a lead when you're on a job"
+- Feature comparison table can exist below the fold but should not be the primary content
+- The recommended/hero tier ("Growth" at $249) should be visually prominent with a "Most Popular" badge — the center-stage effect drives middle-tier selection
+- Price anchoring: the Enterprise tier ($Custom) makes $599 (Scale) feel reasonable; the $99 (Starter) makes $249 (Growth) look like a bargain
+- For a product that isn't yet taking payment (display-only pricing per out-of-scope decision), the CTA should be "Start Free Trial" or "Get Started" — not a dead "Contact Sales" link with no next step
+
+**Warning signs:**
+- Pricing page primary content is a feature comparison table
+- No visual differentiation between the recommended tier and others
+- CTAs are the same across all tiers ("Get Started") without any behavioral difference
+- No social proof near pricing (testimonials, number of businesses using the platform)
+- Mobile view shows all 4 tiers horizontally, creating a scrolling mess
+
+**Phase to address:** Pricing Page phase — review against conversion principles before ship, not after
+
+---
+
+### Pitfall 11: Unified Wizard Loses Step State on Page Refresh
+
+**What goes wrong:**
+The multi-step signup+onboarding wizard uses React component state (`useState`) to track which step the user is on and what data they've entered. If the user refreshes, navigates away, or the session expires mid-wizard, all state is lost and they restart from step 1. For a 5-step wizard (email entry → email verification → business name → services → test call), losing state at step 4 is a major drop-off point. This is especially bad for email verification flows where the user must leave the browser to click a link, come back, and resume.
+
+**Why it happens:**
+The current onboarding is split across URL routes (`/onboarding`, `/onboarding/services`, `/onboarding/verify`) which naturally persist step state via the URL and server-side session. Merging into a single-page wizard with client-side step management loses this property. Developers don't notice because they test by clicking through without refreshing.
+
+**How to avoid:**
+- Use URL-based step routing even within the wizard: `/signup/step/1`, `/signup/step/2`, etc. — or use query params `?step=business-name`
+- Alternatively, persist wizard progress to the database after each step: once step 1 (business name) is saved via `/api/onboarding/start`, the user can return and pick up at step 2
+- The wizard entry point should check for existing incomplete onboarding and resume at the correct step
+- For the email verification step specifically: after the user clicks the email link and is redirected back, the `/auth/callback` route must carry forward the wizard step context (e.g., via the `next` query param: `?next=/signup?step=verify`)
+- Test the refresh scenario explicitly at every step
+
+**Warning signs:**
+- Wizard step is tracked only in `useState` with no URL or DB persistence
+- No "resume where you left off" logic at wizard entry
+- `/auth/callback` redirects to `/onboarding` root without step context
+- No test for the email verification mid-wizard flow (user must leave browser to click link)
+
+**Phase to address:** Unified Onboarding Wizard phase — decide URL-vs-state persistence strategy as the first architectural decision, before building any wizard steps
+
+---
+
+### Pitfall 12: Concurrency QA That Tests the Happy Path, Not Contention
+
+**What goes wrong:**
+The concurrency QA phase runs load tests that simulate 50 concurrent users booking slots — but all users book different slots. The test passes. In production, a weather event causes 12 calls to arrive in 30 seconds, all trying to book the next available emergency slot (which is the same slot). The database locking that "passed QA" was never actually contended. Double-bookings happen.
+
+**Why it happens:**
+Load test scripts are written to simulate realistic traffic distribution — different users, different times, different slots. This tests throughput but not contention. Testing actual atomic locking requires deliberately sending multiple concurrent requests for the exact same resource simultaneously, which feels artificial but is the only way to verify the lock works.
+
+**How to avoid:**
+- Write a dedicated contention test separate from the load test: fire 20 simultaneous POST requests to `/api/bookings` all targeting slot ID `X` within a 100ms window
+- Assert: exactly 1 request returns 201 Created; the rest return 409 Conflict with "slot already taken"
+- Run this test in CI so it cannot be skipped
+- Also test the soft-reservation TTL: reserve a slot, wait for TTL to expire without confirming, verify the slot becomes bookable again
+- For Supabase/PostgreSQL specifically: verify that `SELECT ... FOR UPDATE` or the equivalent RPC function actually acquires a row-level lock — test this by inspecting `pg_locks` during a slow transaction
+
+**Warning signs:**
+- Load test script distributes requests evenly across many different slots — no contention simulation
+- No test that deliberately fires concurrent requests at the same resource
+- Soft-reservation TTL is not tested for expiry and release
+- QA declared "passed" after throughput test but before contention test
+
+**Phase to address:** Hardening & Launch phase — add the contention test to CI as a non-optional check during this phase
+
+---
+
+### Pitfall 13: Multi-Language E2E Testing That Stops at the Voice Layer
+
+**What goes wrong:**
+Multi-language E2E testing verifies that the Retell voice agent responds in Spanish when a Spanish-speaking caller calls. It does not verify that: (1) the triage output is language-aware (urgency classification for a Spanish emergency call), (2) the SMS notification to the owner includes the Spanish-language job description without garbling, (3) the booking confirmation SMS to the caller is in Spanish, and (4) the dashboard renders the Spanish transcript correctly without Unicode mangling. The "multi-language" test passes for voice but the non-English call still produces English notifications and garbled transcript text.
+
+**Why it happens:**
+Multi-language testing is scoped to "does the voice respond in Spanish?" because that's the obvious layer. The downstream chain — triage → booking → notification → dashboard display — is tested separately (if at all) and only in English.
+
+**How to avoid:**
+- Define multi-language E2E as a chain test that follows a call from inbound audio to dashboard display:
+  `Spanish audio → Retell STT → triage (Spanish classification) → booking → SMS notification (Spanish) → email notification (Spanish) → dashboard transcript display (UTF-8 preserved)`
+- Test each link in the chain explicitly, not just the first link
+- Use a realistic Spanish test scenario: a caller describing a plumbing emergency in Spanish colloquial language ("se me rompió una tubería y hay agua por todas partes")
+- Verify SMS and email notification bodies are in the caller's detected language, not the owner's UI language
+- Test Unicode edge cases: Portuguese accented characters (ã, õ, ç), Chinese characters, Arabic right-to-left text in transcript display
+
+**Warning signs:**
+- Multi-language test only tests the Retell layer in isolation
+- SMS notification templates have hardcoded English strings not passing through the i18n layer
+- No test for what happens when ASR detects language mid-call (code-switching: English-Spanish mix)
+- Dashboard transcript field is VARCHAR not TEXT — may truncate or corrupt long non-ASCII content
+
+**Phase to address:** Hardening & Launch phase — define the chain test as the acceptance criterion for multi-language E2E before the phase begins
+
+---
+
+### Pitfall 14: 5-Minute Onboarding Gate Tested Only by Developers
+
+**What goes wrong:**
+The 5-minute onboarding gate ("a non-technical user can go from landing page → hearing their AI answer a test call in under 5 minutes") is validated by having a developer or teammate click through the wizard. Developers know what every field means, know to expect an email verification step, have a phone number ready, and complete the wizard in 3 minutes. A real SME owner (on a job site, unfamiliar with "AI agent," unsure what "business tone" means) takes 12 minutes, gets stuck on the phone number format, and never reaches the test call. The gate "passes" but the product fails real users.
+
+**Why it happens:**
+Convenience. Testing with a real non-technical user requires scheduling, a test environment, and willingness to observe awkward moments. Teams substitute their own judgment ("this is obvious") for user observation.
+
+**How to avoid:**
+- Recruit one actual home service SME owner (or someone who runs a small service business) to do a timed walkthrough on a staging environment
+- Observer should not help — watch where they pause, what they re-read, what they skip
+- Measure time-to-test-call from landing page CTA click, not from wizard step 1
+- If the walkthrough takes more than 5 minutes, treat it as a blocking bug, not a nice-to-have
+- Specific UX items that commonly block non-technical users: phone number format ambiguity ("+1 555..." vs "555..."), unclear distinction between "business phone" (where AI answers) and "owner notification phone" (where alerts go), multi-step email verification requiring app-switching
+
+**Warning signs:**
+- 5-minute gate tested only by people who built the product
+- No real user recruited before declaring gate passed
+- Time measurement starts at wizard step 1, not at the public landing page CTA
+- No observation of where users hesitate or re-read
+
+**Phase to address:** Hardening & Launch phase — schedule the non-technical user test before the phase is declared complete, not as an optional nice-to-have
+
+---
+
+### Pitfall 15: Contact and About Pages Treated as "Just Static Content"
+
+**What goes wrong:**
+The contact page's form submissions are not routed anywhere (or route to an email inbox that nobody monitors). The about page has placeholder team bio text that ships to production. The contact form has no spam protection, generating hundreds of spam submissions per day within 48 hours of launch. None of these pages are included in the sitemap or have meta descriptions, limiting SEO value. These pages "look done" in a design review but are broken in the functional sense.
+
+**Why it happens:**
+Contact and about pages are low-effort UI work that get built in an afternoon and deprioritized in QA. The form backend plumbing (where do submissions go? which email? what confirmation does the submitter see?) is often deferred to "later" and forgotten. Spam protection is added reactively after the inbox floods.
+
+**How to avoid:**
+- Contact form backend must be wired before the page ships: decide the destination (Resend/SendGrid to an ops inbox, or a Supabase table for CRM tracking)
+- Add reCAPTCHA v3 or honeypot field at form build time, not after first spam wave
+- Confirm email back to the submitter (even a simple "We'll get back to you within 1 business day")
+- About page: ship with real (even minimal) content — a founder photo, one-paragraph mission statement, founding year — not placeholder "Lorem ipsum" or "Team bio coming soon"
+- Both pages need `<title>` and `<meta description>` before going live; these cannot be retrofitted without a new crawl cycle
+- Test: submit the contact form and verify the email arrives in the ops inbox within 60 seconds
+
+**Warning signs:**
+- Contact form `onSubmit` posts to an API route that returns 200 without actually sending email
+- About page content is still placeholder text at code review
+- No spam protection on the contact form
+- Pages are not listed in the sitemap or have `noindex` meta tag from a dev environment config that wasn't removed
+
+**Phase to address:** Contact & About Pages phase — treat form wiring and spam protection as acceptance criteria, not post-launch tasks
+
+---
+
 ## Technical Debt Patterns
 
 Shortcuts that seem reasonable but create long-term problems.
@@ -197,6 +410,10 @@ Shortcuts that seem reasonable but create long-term problems.
 | No soft-reservation TTL (book immediately) | Simpler flow | Race conditions under concurrent load | Never for a booking system |
 | Single-environment Vapi/Retell config | One less thing to manage | Can't test without hitting production webhook/phone number | Only in solo developer with no users; add staging before first external tester |
 | Store call recordings only in Vapi/Retell platform | No storage cost | Recordings lost if you switch platforms or account is suspended | Only in early dev; migrate to own storage before first real customer |
+| Track wizard step in React useState only | Simpler component code | State lost on refresh; email verification mid-wizard fails | Never for a multi-step wizard with an email verification step |
+| Outlook sync copy-pasted from Google Calendar sync | Faster implementation | Silent failures for enterprise M365 users; delta token drift; webhook subscription expiry | Never — Outlook Graph API has fundamentally different consent and sync mechanics |
+| Contact form without spam protection | Ship faster | Inbox flooded within 48 hours of public launch | Only behind an auth wall; never on a public page |
+| Backfill migration skipped for onboarding_completed_at | Avoid migration complexity | All existing users looped back through onboarding on next login | Never — backfill is 2 lines of SQL and must run before flow logic deploys |
 
 ---
 
@@ -214,6 +431,11 @@ Common mistakes when connecting to external services.
 | Retell custom LLM endpoint | Using streaming responses without handling partial JSON — causes silent parse failures | Test streaming endpoint with a mock that sends partial chunks; verify assembly logic |
 | Google Calendar events | Creating events without a timezone — Calendar assumes UTC, owner sees wrong times | Always specify `timeZone` in every event create/update call, derived from owner's configured timezone |
 | SMS notifications (Twilio/etc.) | Not handling delivery failures — owner never knows a notification was lost | Implement delivery status webhooks; surface failed notifications in the dashboard |
+| Microsoft Graph API (Outlook) | Requesting application-level calendar permissions instead of delegated — blocks all personal and most SMB accounts | Use delegated permissions (`Calendars.ReadWrite` + `offline_access`) only; never application permissions for user-calendar access |
+| Microsoft Graph API (Outlook) | Not renewing webhook subscriptions before 3-day expiry — silent sync stoppage | Background job renews all active Graph subscriptions every 48 hours; alert on renewal failure |
+| Microsoft Graph API (Outlook) | Losing delta token on server restart — triggers full calendar re-sync on every deploy | Persist `@odata.deltaLink` per tenant in the database; read from DB, not memory, on every sync cycle |
+| Microsoft Graph API (Outlook) | Assuming SMB users can self-approve OAuth consent — many are on managed M365 plans requiring IT admin | Surface a clear "Your organization may need admin approval" error state with instructions for the admin consent URL |
+| Supabase auth / unified wizard | Auth callback `next` param only carries the path, not wizard step state | Encode wizard step into the `next` param: `/auth/callback?next=/signup%3Fstep%3Dverify` |
 
 ---
 
@@ -229,6 +451,8 @@ Patterns that work at small scale but fail as usage grows.
 | No database indexes on lead status + created_at | Lead pipeline queries slow | Add composite index (status, created_at, business_id) at migration time | ~1,000 leads |
 | Polling calendar sync every 5 seconds per connected business | DB and Calendar API hammering | Exponential backoff sync; use webhook push where available (Google Calendar push notifications) | ~20 connected businesses |
 | Logging every STT word event to the database | Write amplification, DB bloat | Buffer in memory, write completed transcripts only | ~50 concurrent calls |
+| Concurrency load test with no slot contention | False "pass" on locking correctness | Dedicated contention test: 20 concurrent requests targeting same slot ID | Discovered only in production under real emergency call surge |
+| Microsoft Graph delta query without stored token | Full calendar re-sync on every server restart | Persist delta link token per tenant in DB | Every deploy cycle (daily in active development) |
 
 ---
 
@@ -245,6 +469,9 @@ Domain-specific security issues beyond general web security.
 | Multi-tenant data leakage (missing business_id filter) | Owner A sees Owner B's leads | Every DB query must include business_id scoping; integration test for cross-tenant access |
 | Logging full call transcripts to application logs | Transcripts contain PII (caller name, address, phone) that appears in log aggregators | Never log transcript content; log metadata only (call ID, duration, outcome) |
 | Weak Vapi/Retell API key rotation policy | Leaked key = attacker can make calls billed to your account | Rotate API keys on any suspected exposure; store in secrets manager, not .env files in repo |
+| Microsoft Graph refresh token stored in plaintext | Compromised DB = attacker reads/modifies any connected owner's Outlook calendar | Encrypt Graph refresh tokens with the same AES-256 pattern used for Google OAuth tokens |
+| Contact form without CSRF protection or rate limiting | Bot abuse, spam inbox flooding, potential data injection | Add reCAPTCHA v3 or honeypot field; rate-limit submissions per IP to 5/hour |
+| Pricing page CTAs that link to an unauthenticated internal API to start trial | Bots can trigger account creation at scale | Rate-limit the signup endpoint; add email verification before tenant row is created |
 
 ---
 
@@ -261,6 +488,9 @@ Common user experience mistakes in this domain.
 | No confirmation to the caller after booking | Caller hangs up uncertain — "did I actually get booked?" | End every booking with a verbal confirmation summary AND an SMS confirmation to the caller |
 | Owner can't listen to calls from the dashboard | Owner can't verify what was promised or coach on misclassifications | Call recordings accessible (1-click play) directly from the lead detail view |
 | Showing raw AI transcript without structure | Hard to scan; owner can't find the key info quickly | Lead detail shows extracted fields (job type, urgency, address, time slot) prominently; transcript is secondary/expandable |
+| Pricing page with 4 horizontal tiers on mobile | Tiny cards, hard to compare, high abandon rate | Stack tiers vertically on mobile; show recommended tier first with expand-to-compare |
+| Unified wizard that asks for email twice (in wizard and in existing verify step) | User confusion, perception of broken flow | Email collected once in step 1; verification happens in-flow via Supabase magic link or OTP, not a separate page |
+| About page with no real humans visible | Low trust for a product that handles sensitive business calls | Show at minimum one founder's name, photo, and one-line bio — even a LinkedIn link is better than nothing |
 
 ---
 
@@ -272,10 +502,17 @@ Things that appear complete but are missing critical pieces.
 - [ ] **Calendar booking works:** Verify two simultaneous booking attempts for the same slot result in exactly one confirmation and one "next available" offer — concurrency test must exist
 - [ ] **Triage classifies emergencies:** Verify it correctly handles indirect emergency descriptions ("water everywhere in my garage" not "flooding") — test with 20+ realistic non-idealized phrases
 - [ ] **Google Calendar syncs:** Verify behavior when owner deletes an event in Google Calendar directly — does the slot re-open? Does a booking get orphaned?
-- [ ] **Multi-language works:** Verify that a Spanish-speaking caller gets Spanish SMS notifications and Spanish voice responses end-to-end, not just a Spanish voice with English notifications
+- [ ] **Outlook Calendar syncs:** Verify with a Microsoft 365 Business account (not personal @outlook.com) — consent flow, delta sync, and webhook subscription renewal all work
+- [ ] **Multi-language works (full chain):** Verify that a Spanish-speaking caller gets Spanish triage, Spanish SMS notifications, Spanish booking confirmation, and Spanish transcript stored without corruption — not just a Spanish voice response
 - [ ] **Owner notifications fire:** Verify SMS and email notifications work when the SMS provider has a temporary failure — do they retry? Does the owner get told?
 - [ ] **Call recordings are stored:** Verify recordings survive a Vapi/Retell account token rotation — are they in your storage or only in their platform?
-- [ ] **Onboarding is complete:** Verify a non-technical user (not a developer) can complete setup in under 5 minutes — test with an actual SME, not a teammate
+- [ ] **Unified onboarding works for existing users:** Verify that an existing user who completed onboarding before the wizard was deployed logs in and lands on `/dashboard`, not in the wizard
+- [ ] **Unified onboarding handles mid-wizard refresh:** Verify that refreshing the browser at step 3 of the wizard does not reset to step 1
+- [ ] **Unified onboarding handles email verification mid-flow:** Verify that clicking the email verification link, switching back to the browser, and continuing the wizard works end-to-end
+- [ ] **Pricing page converts:** Verify all CTA buttons link to the correct destinations; verify the page renders correctly on mobile (no horizontal overflow); verify the Enterprise "Contact Sales" CTA triggers an action (form/email), not a dead link
+- [ ] **Contact form actually delivers submissions:** Submit the form and verify the email arrives in the ops inbox — do not assume the API route works without end-to-end verification
+- [ ] **About page has no placeholder text:** Search codebase for "Lorem ipsum", "Coming soon", "TBD", "Team bio" strings before shipping
+- [ ] **Onboarding is complete (5-minute gate):** Verify with an actual non-technical user (not a developer or teammate) — measure time from public landing page CTA to hearing the test call, not from wizard step 1
 
 ---
 
@@ -291,6 +528,10 @@ When pitfalls occur despite prevention, how to recover.
 | Triage misclassified emergency as routine | HIGH | (1) Owner calls back immediately, (2) review and update triage prompt, (3) add the misclassified phrase as a labeled example in the test set, (4) re-run full triage test suite |
 | Call recording lost (platform-only storage) | HIGH | (1) Contact Vapi/Retell support for recovery, (2) accept data loss for past calls, (3) immediately implement recording export to own storage, (4) communicate transparently to affected owners |
 | Multi-tenant data leak (owner sees wrong leads) | CRITICAL | (1) Immediately audit all API endpoints for missing business_id scoping, (2) notify affected owners, (3) rotate all API keys, (4) engage security review before reopening access |
+| Existing users looped back through onboarding after wizard deploy | HIGH | (1) Roll back the redirect logic, (2) run the backfill migration for onboarding_completed_at on all tenants with business_name set, (3) re-deploy with backfill verified, (4) monitor login success rate |
+| Outlook sync silently broken (webhook subscription expired) | MEDIUM | (1) Check subscription expiry timestamps in DB, (2) manually re-register all expired subscriptions, (3) deploy the background renewal job, (4) trigger a full re-sync for affected tenants |
+| Outlook admin consent blocking SMB user signup | MEDIUM | (1) Surface better error state ("Your IT admin needs to approve this app"), (2) provide admin consent URL for their IT contact, (3) consider offering Google Calendar as the primary path for affected users |
+| Contact form spam flooding ops inbox | LOW | (1) Add rate limiting at the API route (5 submissions/IP/hour), (2) add honeypot field to the form, (3) add reCAPTCHA v3 async, (4) delete spam submissions from inbox |
 
 ---
 
@@ -310,18 +551,31 @@ How roadmap phases should address these pitfalls.
 | Webhook signature not validated | Voice Infrastructure (Phase 1) | Unsigned webhook POST returns 401; duplicate event POST is idempotent |
 | Call recordings in platform-only storage | Voice Infrastructure (Phase 1) | Recordings stored in own object storage within 24h of call completion |
 | Multi-tenant data leakage | Any DB/API phase | Automated cross-tenant access test: Owner A's token cannot retrieve Owner B's leads |
+| Breaking existing users (wizard unification) | Unified Onboarding Wizard | Run backfill migration first; verify existing user login → /dashboard before any flow changes deploy |
+| Outlook sync complexity (consent, delta, webhooks) | Outlook Calendar Sync (Hardening) | Test with M365 Business account; verify delta token persists across restarts; webhook renewal scheduled |
+| Pricing page feature-list antipattern | Pricing Page phase | Outcome-led tier descriptions reviewed before ship; mobile render verified; all CTAs functional |
+| Wizard state lost on refresh | Unified Onboarding Wizard | Refresh-at-each-step test passes; email verification mid-flow E2E test passes |
+| Concurrency QA missing contention test | Hardening & Launch phase | Dedicated contention test (20 concurrent requests, same slot) in CI; exactly 1 succeeds |
+| Multi-language E2E stops at voice layer | Hardening & Launch phase | Full chain test: Spanish call → Spanish triage → Spanish SMS → dashboard UTF-8 intact |
+| 5-minute gate tested only by developers | Hardening & Launch phase | Non-technical user timed walkthrough on staging; time measured from landing page CTA |
+| Contact/about pages incomplete on ship | Contact & About Pages phase | Contact form email delivery verified; no placeholder text in about page; spam protection in place |
 
 ---
 
 ## Sources
 
-- Vapi documentation and community (training knowledge through Aug 2025) — MEDIUM confidence
-- Retell AI documentation and developer community (training knowledge through Aug 2025) — MEDIUM confidence
-- Google Calendar API documentation — behavior of rate limits, push notifications, OAuth — HIGH confidence (stable API)
-- General patterns: voice AI latency constraints, TOCTOU race conditions in booking systems, LLM hallucination mitigation — HIGH confidence (well-established)
-- Home service SME onboarding behavior, caller psychology — MEDIUM confidence (pattern from comparable SaaS domains)
-- Note: Web search and WebFetch were unavailable during this research session. Claims marked MEDIUM or LOW should be validated against current Vapi/Retell changelogs and community discussions before committing to architecture decisions.
+- Microsoft Graph API documentation (Outlook Calendar, permissions reference, delta query, webhook subscriptions) — HIGH confidence [https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview](https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview)
+- Microsoft Q&A: OAuth scope accumulation and admin consent pitfalls — MEDIUM confidence [https://learn.microsoft.com/en-us/answers/questions/2287394/issues-with-microsoft-graph-api-oauth-scope-handli](https://learn.microsoft.com/en-us/answers/questions/2287394/issues-with-microsoft-graph-api-oauth-scope-handli)
+- Microsoft Entra: multi-tenant consent requirements — HIGH confidence [https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent)
+- Microsoft Graph webhook best practices (delta token + subscription renewal) — HIGH confidence [https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/](https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/)
+- Supabase / PostgreSQL SERIALIZABLE isolation and race condition patterns — MEDIUM confidence [https://github.com/orgs/supabase/discussions/30334](https://github.com/orgs/supabase/discussions/30334)
+- PostgreSQL SELECT FOR UPDATE and SKIP LOCKED for booking contention — HIGH confidence [https://on-systems.tech/blog/128-preventing-read-committed-sql-concurrency-errors/](https://on-systems.tech/blog/128-preventing-read-committed-sql-concurrency-errors/)
+- Hamming AI: multilingual voice agent testing framework — MEDIUM confidence [https://hamming.ai/resources/multilingual-voice-agent-testing](https://hamming.ai/resources/multilingual-voice-agent-testing)
+- SaaS pricing page psychology and conversion (center-stage effect, anchor pricing) — MEDIUM confidence [https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices](https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices)
+- Auth0: user onboarding strategies and existing user migration pitfalls — MEDIUM confidence [https://auth0.com/blog/user-onboarding-strategies-b2b-saas/](https://auth0.com/blog/user-onboarding-strategies-b2b-saas/)
+- SaaS launch checklist: contact/about page, analytics, accessibility oversights — MEDIUM confidence [https://designrevision.com/blog/saas-launch-checklist](https://designrevision.com/blog/saas-launch-checklist)
+- Codebase inspection: `/src/app/auth/signin/page.js`, `/src/app/onboarding/page.js`, `/src/app/auth/callback/route.js`, `/src/app/onboarding/layout.js` — HIGH confidence (direct code evidence)
 
 ---
-*Pitfalls research for: AI voice receptionist + home service booking platform*
-*Researched: 2026-03-18*
+*Pitfalls research for: AI voice receptionist + home service booking platform (v1.1: pricing, unified onboarding, Outlook sync, launch hardening)*
+*Researched: 2026-03-22*

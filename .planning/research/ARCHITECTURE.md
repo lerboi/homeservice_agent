@@ -1,348 +1,557 @@
 # Architecture Research
 
-**Domain:** AI voice receptionist with real-time scheduling and CRM (home services SaaS)
-**Researched:** 2026-03-18
-**Confidence:** MEDIUM — web access was unavailable; based on training data (cutoff August 2025) covering Vapi, Retell, Google Calendar API, and voice AI system design patterns. Flag for verification against current Vapi/Retell docs before implementation.
+**Domain:** SaaS marketing site + unified onboarding + calendar integrations
+**Researched:** 2026-03-22
+**Confidence:** HIGH (based on direct codebase inspection)
 
 ---
 
-## Standard Architecture
+## Existing Architecture Snapshot
 
-### System Overview
+The current codebase does NOT use Next.js App Router route groups. The public/authenticated split
+is enforced by middleware, not folder structure.
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        TELEPHONY LAYER                               │
-│  ┌─────────────────────────────────────────────────────────────┐     │
-│  │  Vapi / Retell  (PSTN inbound, STT, TTS, session mgmt)     │     │
-│  └──────────────────────────┬────────────────────────────────┘      │
-│                             │  webhooks / tool-call requests         │
-└─────────────────────────────┼────────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼────────────────────────────────────────┐
-│                        APPLICATION LAYER                             │
-│                                                                      │
-│  ┌──────────────┐  ┌───────────────┐  ┌───────────────────────┐     │
-│  │ Voice Event  │  │ Triage Engine │  │  Scheduler Service    │     │
-│  │ Gateway      │  │ (classify     │  │  (slot locking,       │     │
-│  │ (webhooks)   │  │  emergency vs │  │   calendar sync,      │     │
-│  └──────┬───────┘  │  routine)     │  │   booking)            │     │
-│         │          └───────┬───────┘  └──────────┬────────────┘     │
-│         │                  │                     │                   │
-│  ┌──────▼──────────────────▼─────────────────────▼────────────┐     │
-│  │                   Core API Server (REST/JSON)               │     │
-│  └──────────────────────────────────────────────────────────┬─┘     │
-│                                                             │        │
-│  ┌───────────────────┐  ┌─────────────────────────────────┐ │        │
-│  │  Notification     │  │  CRM / Lead Pipeline Service    │ │        │
-│  │  Service          │  │  (state machine, audit log)     │ │        │
-│  │  (SMS/email/push) │  └─────────────────────────────────┘ │        │
-│  └───────────────────┘                                      │        │
-└─────────────────────────────────────────────────────────────┼────────┘
-                                                              │
-┌─────────────────────────────────────────────────────────────▼────────┐
-│                        DATA LAYER                                    │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐                 │
-│  │  Postgres   │  │  Redis       │  │  Object      │                 │
-│  │  (primary   │  │  (slot lock  │  │  Storage     │                 │
-│  │   records)  │  │   cache,     │  │  (recordings,│                 │
-│  │             │  │   sessions)  │  │  transcripts)│                 │
-│  └─────────────┘  └──────────────┘  └──────────────┘                 │
-└──────────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼────────────────────────────────────────┐
-│                    EXTERNAL INTEGRATIONS                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐               │
-│  │ Google       │  │ Microsoft    │  │ Twilio/      │               │
-│  │ Calendar API │  │ Graph API    │  │ Vonage       │               │
-│  │ (OAuth 2.0)  │  │ (Outlook)    │  │ (phone #     │               │
-│  └──────────────┘  └──────────────┘  │  provisioning│               │
-│                                      └──────────────┘               │
-└──────────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼────────────────────────────────────────┐
-│                        CLIENT LAYER                                  │
-│  ┌──────────────────────────────────────────────────────────────┐    │
-│  │  Web Dashboard (Next.js)  —  Owner-facing SPA                │    │
-│  │  Leads pipeline │ Calendar view │ Settings │ Call recordings  │    │
-│  └──────────────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────────────┘
+src/app/
+├── page.js                     ← Landing page (public)
+├── layout.js                   ← Root layout (NextIntl provider)
+├── globals.css
+├── auth/
+│   ├── signin/page.js          ← Supabase email/Google auth
+│   └── callback/route.js       ← OAuth code exchange → redirect
+├── onboarding/
+│   ├── layout.js               ← Wizard shell (progress bar, card)
+│   ├── page.js                 ← Step 1: business name + tone
+│   ├── services/page.js        ← Step 2: trade selection + services
+│   ├── verify/page.js          ← Step 3: phone/email contact details
+│   └── complete/page.js        ← Success screen
+├── dashboard/                  ← Protected by middleware
+│   ├── layout.js
+│   ├── page.js
+│   ├── analytics/page.js
+│   ├── calendar/page.js
+│   ├── leads/page.js
+│   ├── services/page.js
+│   └── settings/page.js        ← Stub ("coming soon")
+├── components/landing/         ← Landing page components only
+│   ├── AnimatedSection.jsx     ← Framer Motion wrappers
+│   ├── LandingNav.jsx
+│   ├── LandingFooter.jsx
+│   ├── HeroSection.jsx
+│   ├── FeaturesGrid.jsx
+│   ├── HowItWorksSection.jsx
+│   ├── SocialProofSection.jsx
+│   └── FinalCTASection.jsx
+└── api/                        ← Route handlers
+    ├── onboarding/             ← start, sms-verify, sms-confirm, provision-number, test-call
+    ├── google-calendar/        ← auth, callback
+    ├── calendar-sync/          ← status, disconnect
+    ├── leads/, appointments/, services/, zones/, working-hours/
+    └── webhooks/               ← retell, google-calendar
+
+src/components/
+├── dashboard/                  ← Dashboard-only components
+└── ui/                         ← shadcn/ui primitives
+
+src/lib/
+├── design-tokens.js            ← Shared color/shadow/class constants
+├── scheduling/google-calendar.js ← Google OAuth + push/sync
+└── ...
+
+src/middleware.js               ← Protects /onboarding/* and /dashboard/*
 ```
 
-### Component Responsibilities
+**Auth flow today:**
+```
+Landing CTA → /auth/signin → Supabase OAuth/email
+  → /auth/callback?next=/onboarding
+    → /onboarding (step 1) → /onboarding/services (step 2)
+      → /onboarding/verify (step 3) → /onboarding/complete
+        → /dashboard/services
+```
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| Telephony Platform (Vapi/Retell) | Inbound PSTN call handling, STT, LLM orchestration, TTS, call session lifecycle | Managed SaaS — no self-hosting required |
-| Voice Event Gateway | Receives webhooks from Vapi/Retell (`call-started`, `end-of-call-report`, `tool-calls`), validates signatures, routes to handlers | Express/Fastify middleware, verified webhook endpoint |
-| Triage Engine | Classifies call as emergency vs routine using keyword rules + LLM-extracted urgency signals + owner-configured service tiers | Pure function / rule engine; receives structured transcript segments or LLM tool-call output |
-| Scheduler Service | Queries available slots, atomically locks a slot, creates booking record, triggers calendar sync | Database transaction + Redis distributed lock; exposes book/cancel/reschedule operations |
-| Calendar Sync Service | Bidirectional sync with Google Calendar and Outlook; resolves external events that block availability | OAuth token manager + Google Calendar API + Microsoft Graph API; runs on webhook push + polling fallback |
-| CRM / Lead Pipeline Service | Manages lead state machine (new → contacted → booked → completed → paid), stores caller details, job type, urgency, address, notes | State machine in Postgres; appends events to audit log |
-| Notification Service | Fires SMS/email/push alerts to business owner on new leads, emergency calls, and booking confirmations | Twilio SMS + SendGrid/Resend email + Web Push; queue-backed |
-| Core API Server | Unified REST API consumed by the dashboard; orchestrates above services | Node.js/Next.js API routes or standalone Express; JWT-authenticated |
-| Web Dashboard | Owner-facing SPA for lead management, calendar, settings, onboarding, call recordings | Next.js App Router; mobile-responsive |
-| Object Storage | Stores call recordings and transcripts linked to lead records | S3-compatible (AWS S3 or Cloudflare R2) |
+**Key architectural facts discovered from code:**
+- Middleware guards `/onboarding` AND `/dashboard` — both require auth
+- The CTA in `LandingNav` links directly to `/onboarding`, which triggers auth redirect
+- Onboarding wizard uses URL-based step routing (separate pages), not in-page state
+- `OnboardingLayout` derives `currentStep` from `usePathname()` — each step is a real route
+- API route `/api/onboarding/start` handles BOTH step 1 and step 2 data (body branching on field presence)
+- `tenants.onboarding_complete` column exists in schema but wizard never sets it to true
+- `tenants.owner_id` is `UNIQUE` — one tenant per user account
+- Google Calendar: OAuth stored in `calendar_credentials` table, push webhooks + incremental sync already built
+- No `(public)` / `(dashboard)` route groups in current code — the milestone context described a planned structure that does not yet exist
 
 ---
 
-## Recommended Project Structure
+## New Features: Integration Analysis
 
-```
-src/
-├── app/                      # Next.js App Router (UI + API routes)
-│   ├── (dashboard)/          # Owner-facing pages (auth-gated)
-│   │   ├── leads/            # Lead pipeline view
-│   │   ├── calendar/         # Availability and bookings
-│   │   ├── settings/         # Business config, services, tiers
-│   │   └── calls/            # Call recordings and transcripts
-│   ├── api/
-│   │   ├── webhooks/
-│   │   │   └── voice/        # Vapi/Retell event endpoint
-│   │   ├── leads/            # Lead CRUD
-│   │   ├── bookings/         # Booking + slot management
-│   │   ├── calendar/         # Availability windows + sync
-│   │   └── notifications/    # Notification preferences
-│   └── auth/                 # NextAuth / Clerk routes
-│
-├── lib/
-│   ├── voice/
-│   │   ├── gateway.ts        # Webhook signature verification + routing
-│   │   ├── triage.ts         # Emergency vs routine classification
-│   │   └── prompts.ts        # System prompt templates per business
-│   ├── scheduler/
-│   │   ├── slots.ts          # Available slot query logic
-│   │   ├── lock.ts           # Redis-based atomic slot locking
-│   │   └── booking.ts        # Booking create/cancel/reschedule
-│   ├── calendar/
-│   │   ├── google.ts         # Google Calendar OAuth + API client
-│   │   ├── outlook.ts        # Microsoft Graph OAuth + API client
-│   │   └── sync.ts           # Bidirectional sync coordinator
-│   ├── crm/
-│   │   ├── lead.ts           # Lead state machine
-│   │   └── pipeline.ts       # Stage transitions + validation
-│   ├── notifications/
-│   │   ├── sms.ts            # Twilio SMS
-│   │   ├── email.ts          # SendGrid/Resend
-│   │   └── push.ts           # Web Push
-│   └── db/
-│       ├── schema.ts         # Drizzle/Prisma schema
-│       └── client.ts         # Database client singleton
-│
-├── workers/                  # Background jobs (if using queue)
-│   ├── calendar-sync.ts      # Periodic sync for polling fallback
-│   └── notification.ts       # Async notification dispatch
-│
-└── types/                    # Shared TypeScript types
-    ├── voice.ts              # Vapi/Retell event shapes
-    ├── lead.ts               # Lead and booking types
-    └── business.ts           # Business config types
-```
+### 1. Pricing Page (`/pricing`)
 
-### Structure Rationale
+**Route:** `src/app/pricing/page.js` — new public page, no auth required
 
-- **app/api/webhooks/voice/:** Isolated webhook endpoint with dedicated signature verification — never mixed with regular API routes to prevent accidental auth bypass.
-- **lib/voice/:** Voice-specific logic (triage, prompts) separated from scheduler — triage emits a classification result that the scheduler consumes, not a direct dependency.
-- **lib/scheduler/lock.ts:** Slot locking extracted into its own module because it crosses the Redis/Postgres boundary and requires careful transaction semantics.
-- **lib/calendar/:** Each provider has its own client file because OAuth token refresh and API shapes differ significantly between Google and Microsoft.
-- **workers/:** Anything that must not block the webhook response (calendar sync, async notifications) lives here to run off the critical path.
+**Middleware:** No change needed. Middleware only guards `/onboarding/*` and `/dashboard/*`.
+
+**LandingNav integration:** Must add "Pricing" nav link. LandingNav is a fixed-position dark nav
+used only on the landing page. The pricing page will also use it, so LandingNav needs two changes:
+- Add `<Link href="/pricing">Pricing</Link>` to the `hidden md:flex` nav links
+- Add mobile menu handling — currently has none. With multiple nav links, a hamburger is necessary.
+
+**LandingFooter integration:** Add `/pricing` to footer links column (currently only Terms and Privacy).
+Footer needs a proper multi-column layout to accommodate Pricing, About, Contact links.
+
+**Data:** Display-only. No API route needed. Tier data (Starter $99, Growth $249, Scale $599,
+Enterprise custom) lives as static config in a `src/lib/pricing-config.js` file.
+No DB writes. No Supabase reads.
+
+**Components needed (new):**
+- `src/app/pricing/page.js` — page shell with LandingNav + LandingFooter
+- `src/app/components/landing/PricingSection.jsx` — tier cards grid, reusable on landing page
+- `src/lib/pricing-config.js` — tier definitions (name, price, features list, CTA label)
+
+**Integration points:**
+- LandingNav: add Pricing link, add mobile nav
+- LandingFooter: add Pricing, About, Contact columns
+- FinalCTASection on landing page: link to pricing or show pricing inline
+
+**i18n:** Add `pricing.*` keys to `en.json` and `es.json`
 
 ---
 
-## Architectural Patterns
+### 2. Contact Page (`/contact`)
 
-### Pattern 1: Tool-Call / Function-Calling for Real-Time Actions
+**Route:** `src/app/contact/page.js` — new public page, no auth required
 
-**What:** Vapi and Retell both support LLM "tool calls" (function calling) during a live call. When the LLM decides it needs to book a slot, it emits a tool-call event. Your server receives this as an HTTP POST, executes the action (query slots, lock, book), and returns the result synchronously so the LLM can speak the confirmation.
+**Form submissions:** Three inquiry types (sales, support, partnerships). Options:
+- Resend email API (already used for lead notifications) — reuse `src/lib/notifications.js` pattern
+- New API route: `src/app/api/contact/route.js` — accepts `{ name, email, company, type, message }`, sends via Resend, returns `{ ok: true }`
 
-**When to use:** Any action that must happen during the live call and be confirmed to the caller — slot availability checks, booking confirmation, triage classification.
+**No DB table needed.** Contact submissions go straight to email. If a log is needed later, add a
+`contact_submissions` table, but that is out of scope for v1.1.
 
-**Trade-offs:** Response must be fast (< 1-2 seconds to avoid awkward silence). Keep tool implementations lean — no slow external API chains in the hot path.
+**Components needed (new):**
+- `src/app/contact/page.js` — page with LandingNav + LandingFooter
+- `src/app/components/landing/ContactForm.jsx` — form with type selector, validation, success state
+- `src/app/api/contact/route.js` — POST handler using Resend
 
-**Confidence:** HIGH — this is the standard Vapi/Retell integration pattern as of mid-2025.
+**Integration points:**
+- LandingNav: add Contact link
+- LandingFooter: add Contact link
+- Resend: reuse existing pattern from `src/lib/notifications.js`
 
-**Example:**
-```typescript
-// lib/voice/gateway.ts
-export async function handleToolCall(event: VapiToolCallEvent) {
-  switch (event.toolName) {
-    case 'check_availability':
-      const slots = await getAvailableSlots(event.args.date, event.businessId);
-      return { available_slots: slots };
+**i18n:** Add `contact.*` keys
 
-    case 'book_appointment':
-      const booking = await atomicBookSlot({
-        businessId: event.businessId,
-        slotId: event.args.slot_id,
-        caller: event.args.caller_details,
-      });
-      return { booking_id: booking.id, confirmed_time: booking.startTime };
+---
 
-    default:
-      return { error: 'Unknown tool' };
+### 3. About/Company Page (`/about`)
+
+**Route:** `src/app/about/page.js` — new public page, no auth required
+
+**Data:** Static content only. No API, no DB. Team members as static array in a
+`src/lib/team-config.js` file.
+
+**Components needed (new):**
+- `src/app/about/page.js` — page shell
+- `src/app/components/landing/AboutHero.jsx` — mission statement hero
+- `src/app/components/landing/TeamGrid.jsx` — team member cards
+- `src/app/components/landing/CompanyStory.jsx` — timeline or narrative section
+
+**Integration points:**
+- LandingNav: add About link
+- LandingFooter: add About link
+
+**i18n:** Add `about.*` keys
+
+---
+
+### 4. Unified Signup + Onboarding Wizard
+
+This is the most architecturally significant change. Today the flow is:
+
+```
+CTA → /auth/signin (separate full-page) → /auth/callback → /onboarding (step 1) ...
+```
+
+The unified wizard collapses account creation INTO the wizard as step 0:
+
+```
+CTA → /onboarding (step 0: email/password or Google) → step 1 → step 2 → step 3 → complete
+```
+
+**Approach: Add step 0 to the existing onboarding layout — not a full rewrite.**
+
+The `OnboardingLayout` already derives `currentStep` from pathname. Add a new sub-route for
+step 1 and make the root `/onboarding` the auth step:
+
+```
+/onboarding              ← REPLACE: step 0 — account creation (email signup or Google)
+/onboarding/setup        ← NEW: was /onboarding (step 1: business name + tone)
+/onboarding/services     ← UNCHANGED (step 2: trade + services)
+/onboarding/verify       ← UNCHANGED (step 3: contact details)
+/onboarding/complete     ← MODIFY: write onboarding_complete=true
+```
+
+**Concrete file changes:**
+
+| File | Change Type | Detail |
+|------|-------------|--------|
+| `src/app/onboarding/page.js` | REPLACE | Becomes auth step: email/Google sign-up form using supabase-browser client |
+| `src/app/onboarding/layout.js` | MODIFY | Update `getStep()` to handle 4 steps (0=auth, 1=setup, 2=services, 3=verify), update step_counter |
+| `src/app/onboarding/setup/page.js` | NEW | Move content of current `/onboarding/page.js` here |
+| `src/middleware.js` | MODIFY | Remove `/onboarding` root from PROTECTED_PATHS (auth step must be public); add `/onboarding/setup` |
+| `src/app/auth/callback/route.js` | MODIFY | Default redirect changes from `/onboarding` to `/onboarding/setup` |
+| `src/app/components/landing/LandingNav.jsx` | UNCHANGED | CTA still links `/onboarding` — URL same, behavior changes inside |
+
+**Middleware critical change:** Currently both `/onboarding` and `/dashboard` are protected. The
+new wizard step 0 must be public — unauthenticated users must reach it. After sign-up in step 0,
+user is authenticated and subsequent steps remain protected.
+
+```javascript
+// src/middleware.js — new PROTECTED_PATHS
+const PROTECTED_PATHS = ['/onboarding/setup', '/onboarding/services', '/onboarding/verify', '/dashboard'];
+```
+
+**Already-onboarded detection:** When a user who completed onboarding visits `/onboarding`,
+they should be redirected to `/dashboard`. Add a server check in the step 0 page component
+(or middleware) using supabase-server to read `tenants.onboarding_complete`:
+
+```
+GET /onboarding by auth'd user
+  → fetch tenant → onboarding_complete = true → redirect /dashboard
+  → fetch tenant → onboarding_complete = false → redirect /onboarding/setup
+  → no tenant → render step 0 auth form
+```
+
+This requires `tenants.onboarding_complete` to be set to `true` at wizard completion. The field
+exists in the DB schema (migration 001) but is never written. A new API route
+`/api/onboarding/complete` must set it, called from the `OnboardingComplete` page.
+
+**i18n:** Add `onboarding.step0_*` keys. Update `step_counter` from "Step {step} of 3" to
+"Step {step} of 4".
+
+---
+
+### 5. Outlook Calendar Sync
+
+**Pattern mirrors the existing Google Calendar integration exactly.**
+
+```
+Existing Google flow:
+  /api/google-calendar/auth     → OAuth redirect
+  /api/google-calendar/callback → token exchange → store in calendar_credentials
+  /api/webhooks/google-calendar → push notification handler
+  src/lib/scheduling/google-calendar.js → OAuth, sync, push, revoke
+
+New Outlook flow (mirrors):
+  /api/outlook-calendar/auth     → MSAL redirect
+  /api/outlook-calendar/callback → token exchange → store in calendar_credentials (provider='outlook')
+  /api/webhooks/outlook-calendar → Graph subscription notification handler
+  src/lib/scheduling/outlook-calendar.js → MSAL, sync, push, revoke
+```
+
+**DB schema change required:** The `calendar_credentials` table currently stores Google tokens
+with no `provider` column — it implicitly assumes Google. A migration must add `provider`:
+
+```sql
+-- supabase/migrations/005_outlook_calendar.sql
+ALTER TABLE calendar_credentials ADD COLUMN provider text NOT NULL DEFAULT 'google';
+CREATE UNIQUE INDEX calendar_credentials_tenant_provider ON calendar_credentials(tenant_id, provider);
+```
+
+This allows one row per provider per tenant, enabling a user to connect both Google and Outlook.
+
+**MSAL vs googleapis differences:**
+- Use `@azure/msal-node` for server-side OAuth token exchange
+- Graph API endpoint for events: `https://graph.microsoft.com/v1.0/me/events`
+- Graph API endpoint for availability: `https://graph.microsoft.com/v1.0/me/calendarView`
+- Subscriptions (push notifications): `https://graph.microsoft.com/v1.0/subscriptions`
+- Subscriptions expire after maximum 3 days for calendar — must be renewed more frequently than
+  Google's 7-day watch channels. The cron renewal interval must be tightened to daily.
+
+**Critical difference — validation token handshake:** When creating a Graph subscription,
+Microsoft immediately sends a POST to the webhook URL with `?validationToken=...` as a query
+parameter. The endpoint must respond within seconds with `Content-Type: text/plain` and the
+token value as the body. The existing Google webhook handler does not have this pattern.
+
+```javascript
+// /api/webhooks/outlook-calendar/route.js
+export async function POST(request) {
+  const { searchParams } = new URL(request.url);
+  const validationToken = searchParams.get('validationToken');
+  if (validationToken) {
+    // Subscription validation — respond immediately
+    return new Response(validationToken, { status: 200, headers: { 'Content-Type': 'text/plain' } });
+  }
+  // Normal notification processing
+  const body = await request.json();
+  // fire-and-forget sync to avoid timeout
+  syncCalendarEvents(tenantId, 'outlook').catch(console.error);
+  return Response.json({ ok: true });
+}
+```
+
+**Abstraction opportunity:** Since Google and Outlook sync are structurally identical at the
+booking-push level, the `pushBookingToCalendar` function in `google-calendar.js` can be wrapped
+by a provider-agnostic dispatcher:
+
+```javascript
+// src/lib/scheduling/calendar-provider.js
+export async function pushBookingToCalendar(tenantId, appointmentId) {
+  const creds = await getCredentials(tenantId); // may return multiple rows
+  for (const cred of creds) {
+    if (cred.provider === 'google') await googlePush(tenantId, appointmentId, cred);
+    if (cred.provider === 'outlook') await outlookPush(tenantId, appointmentId, cred);
   }
 }
 ```
 
-### Pattern 2: Atomic Slot Locking with Redis + Postgres
+This is optional for v1.1 but prevents the booking.js caller from needing to know which
+providers are connected.
 
-**What:** When a caller requests a slot, acquire a Redis lock on the slot key before writing to Postgres. This prevents the race condition where two simultaneous calls grab the same slot. Lock TTL is set to the maximum expected booking transaction time (e.g., 10 seconds). On Postgres write success, lock is released. On failure, lock expires automatically.
+**Dashboard `CalendarSyncCard`:** Currently shows only Google connect/disconnect. Must show
+both providers with independent states. Consider two separate connect buttons in the card,
+each with their own "connected" indicator.
 
-**When to use:** Any booking write — this is non-negotiable given the PROJECT.md requirement for zero double-bookings.
+**Files needed (new):**
+- `src/lib/scheduling/outlook-calendar.js` — MSAL client, Graph API event CRUD, subscription management
+- `src/app/api/outlook-calendar/auth/route.js` — MSAL redirect initiation
+- `src/app/api/outlook-calendar/callback/route.js` — token exchange + store + register subscription
+- `src/app/api/webhooks/outlook-calendar/route.js` — subscription notification handler (with validation token)
+- `src/app/api/cron/renew-outlook-subscriptions/route.js` — daily subscription renewal
 
-**Trade-offs:** Adds Redis as an infrastructure dependency. Lock TTL must be tuned — too short risks false conflict, too long blocks legitimate concurrent callers unnecessarily.
+**Files modified:**
+- `src/components/dashboard/CalendarSyncCard.js` — add Outlook connect/disconnect UI
+- `src/app/api/calendar-sync/status/route.js` — return status for both google and outlook
+- `supabase/migrations/005_outlook_calendar.sql` — provider column + unique constraint
 
-**Confidence:** HIGH — Redis distributed locking (Redlock pattern) is the standard solution for this class of problem.
+---
 
-**Example:**
-```typescript
-// lib/scheduler/lock.ts
-const LOCK_TTL_MS = 10_000;
+## Component Boundary Map
 
-export async function atomicBookSlot(params: BookingParams): Promise<Booking> {
-  const lockKey = `slot:${params.slotId}`;
-  const lock = await redis.set(lockKey, params.callId, 'NX', 'PX', LOCK_TTL_MS);
-
-  if (!lock) throw new SlotUnavailableError(params.slotId);
-
-  try {
-    const booking = await db.transaction(async (tx) => {
-      // Verify slot still open inside transaction
-      const slot = await tx.query.slots.findFirst({
-        where: and(eq(slots.id, params.slotId), eq(slots.status, 'available')),
-        for: 'update', // row-level lock in Postgres
-      });
-      if (!slot) throw new SlotUnavailableError(params.slotId);
-
-      return await tx.insert(bookings).values({ ...params, slotId: params.slotId }).returning();
-    });
-    return booking[0];
-  } finally {
-    await redis.del(lockKey); // always release
-  }
-}
 ```
+Public Routes (no auth required)
+├── / (landing)
+│   ├── LandingNav               ← MODIFY: add Pricing/About/Contact links + mobile nav
+│   ├── [existing sections]
+│   └── LandingFooter            ← MODIFY: multi-column with new page links
+├── /pricing                     ← NEW
+│   ├── LandingNav (shared)
+│   ├── PricingSection           ← NEW component
+│   └── LandingFooter (shared)
+├── /about                       ← NEW
+│   ├── LandingNav (shared)
+│   ├── AboutHero + TeamGrid + CompanyStory  ← NEW components
+│   └── LandingFooter (shared)
+└── /contact                     ← NEW
+    ├── LandingNav (shared)
+    ├── ContactForm              ← NEW component
+    └── LandingFooter (shared)
 
-### Pattern 3: Lead State Machine with Event Log
+Onboarding (step 0 public, steps 1-3 auth-required)
+├── /onboarding                  ← REPLACE: step 0 auth form (public)
+├── /onboarding/setup            ← NEW: was /onboarding step 1 (auth required)
+├── /onboarding/services         ← UNCHANGED step 2 (auth required)
+├── /onboarding/verify           ← UNCHANGED step 3 (auth required)
+└── /onboarding/complete         ← MODIFY: write onboarding_complete=true
 
-**What:** Rather than mutating a `status` column directly, model lead lifecycle as a state machine (new → contacted → booked → confirmed → completed) and append each transition to an immutable event log. The current state is derived from the latest event.
-
-**When to use:** CRM pipeline where audit trail matters (call recordings, dispatcher confirmations, payment status).
-
-**Trade-offs:** Slightly more complex than a single status column but provides full history with timestamps and actor (AI vs owner vs system). Avoids lost-update problems.
-
-**Confidence:** MEDIUM — standard event-sourcing-lite pattern, well established but more complex than needed for an MVP. A simpler status column with an updated_at timestamp may suffice for phase 1 if audit trail is not a launch requirement.
-
-**Example:**
-```typescript
-// lib/crm/lead.ts
-type LeadStatus = 'new' | 'contacted' | 'booked' | 'confirmed' | 'completed' | 'lost';
-
-const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  new:       ['contacted', 'lost'],
-  contacted: ['booked', 'lost'],
-  booked:    ['confirmed', 'lost'],
-  confirmed: ['completed', 'lost'],
-  completed: [],
-  lost:      [],
-};
-
-export async function transitionLead(leadId: string, to: LeadStatus, actor: string) {
-  const lead = await db.query.leads.findFirst({ where: eq(leads.id, leadId) });
-  if (!VALID_TRANSITIONS[lead.status].includes(to)) {
-    throw new InvalidTransitionError(lead.status, to);
-  }
-  await db.update(leads).set({ status: to, updatedAt: new Date() }).where(eq(leads.id, leadId));
-  await db.insert(leadEvents).values({ leadId, fromStatus: lead.status, toStatus: to, actor });
-}
+Protected Routes (auth required)
+└── /dashboard/**                ← UNCHANGED structure
+    └── settings/page.js         ← MODIFY: CalendarSyncCard gains Outlook panel
 ```
 
 ---
 
-## Data Flow
+## Data Flow Changes
 
-### Inbound Call Flow (Happy Path — Emergency Booking)
-
-```
-Caller dials phone number
-    │
-    ▼
-Vapi/Retell (PSTN → STT → LLM session starts)
-    │  LLM emits tool-call: "classify_call"
-    ▼
-Voice Event Gateway (POST /api/webhooks/voice)
-    │  validates signature, routes tool-call
-    ▼
-Triage Engine
-    │  keyword match + LLM urgency signals → "emergency"
-    ▼
-Gateway returns tool-call result to Vapi/Retell
-    │  LLM says "I'll book you right now" → emits "check_availability"
-    ▼
-Scheduler Service (getAvailableSlots)
-    │  queries Postgres slots table (filtered by business calendar + Google/Outlook blocks)
-    ▼
-Gateway returns available slots to LLM
-    │  LLM offers slot, caller confirms → LLM emits "book_appointment"
-    ▼
-Scheduler Service (atomicBookSlot)
-    │  Redis lock → Postgres transaction → booking record created
-    ▼
-CRM Service (createLead → status: "booked")
-    │
-    ▼
-Notification Service (async, off hot path)
-    │  SMS + email + push to business owner
-    ▼
-Vapi/Retell call ends → "end-of-call-report" webhook fires
-    │
-    ▼
-Voice Event Gateway stores transcript + recording URL → linked to lead record
-```
-
-### Calendar Sync Flow
+### Pricing Page
 
 ```
-Google/Outlook calendar event created/modified
-    │  (push notification via webhook subscription)
-    ▼
-Calendar Sync Service receives change notification
-    │
-    ▼
-Fetch updated event details from Google/Microsoft API
-    │
-    ▼
-Map external event → block internal availability slots
-    │  (Postgres: mark slots as 'blocked' for overlap window)
-    ▼
-Invalidate any cached availability for affected business
+src/lib/pricing-config.js (static)
+    ↓ import at build time
+PricingSection component
+    ↓ render
+Browser — no API call, no DB read
 ```
 
-### Dashboard Data Flow
+### Contact Form
 
 ```
-Owner opens Lead Pipeline view
-    │
-    ▼
-Next.js page (server component) → Core API: GET /api/leads
-    │
-    ▼
-API queries Postgres (leads + bookings + lead_events)
-    │
-    ▼
-Returns paginated lead list with status + latest event
-    │
-    ▼
-Client hydrates; real-time updates via polling or WebSocket (optional v1)
+User fills ContactForm → POST /api/contact
+    ↓
+API route → Resend.emails.send({ to: process.env.CONTACT_EMAIL, ... })
+    ↓
+Response { ok: true } → ContactForm shows success state
 ```
 
-### Key Data Flows Summary
+### Unified Wizard Auth Step
 
-1. **Tool-call hot path:** Vapi/Retell → webhook → triage/scheduler → synchronous JSON response → LLM speaks result. Must complete in < 2 seconds.
-2. **Booking commit:** Webhook handler → Redis lock → Postgres transaction → booking record + lead record created atomically.
-3. **Async fan-out:** After booking, notifications (SMS/email/push) and transcript storage are queued and processed outside the webhook response cycle.
-4. **Calendar availability:** Derived at query time by joining internal slots against Google/Outlook blocked periods. Cached in Redis with short TTL (30-60 seconds) to avoid repeated external API calls during active calls.
-5. **Lead lifecycle:** Every state transition appended to event log; dashboard reads from materialized lead status column updated in the same transaction.
+```
+User visits /onboarding (unauthenticated — now public)
+    ↓
+Google path: supabase.auth.signInWithOAuth({ redirectTo: '/auth/callback?next=/onboarding/setup' })
+    → /auth/callback → session established → redirect /onboarding/setup
+Email path: supabase.auth.signUp({ email, password }) → session established
+    → window.location.href = '/onboarding/setup'
+    ↓
+/onboarding/setup (protected) — existing step 1 logic, unchanged API calls
+    ↓
+Steps 2 and 3 unchanged
+    ↓
+/onboarding/complete → POST /api/onboarding/complete → tenants.onboarding_complete = true
+    → redirect /dashboard
+```
+
+### Outlook Calendar Sync
+
+```
+User clicks "Connect Outlook" in CalendarSyncCard
+    ↓
+GET /api/outlook-calendar/auth
+    → MSAL.getAuthCodeUrl() → 302 to Microsoft login
+    ↓
+Microsoft → GET /api/outlook-calendar/callback?code=...
+    → MSAL.acquireTokenByCode() → tokens
+    → INSERT calendar_credentials (provider='outlook', access_token, refresh_token, expiry)
+    → POST graph.microsoft.com/v1.0/subscriptions → store subscription_id, expiry
+    ↓
+GET /api/calendar-sync/status → { google: {...}, outlook: { connected: true } }
+CalendarSyncCard updates UI
+
+On booking creation:
+    pushBookingToCalendar(tenantId, appointmentId)
+        ↓ (reads provider from calendar_credentials)
+        → outlook-calendar.js → POST graph.microsoft.com/v1.0/me/events
+
+On Graph notification:
+    POST /api/webhooks/outlook-calendar
+        ↓ (validation token check first)
+        → syncCalendarEvents(tenantId, 'outlook') fire-and-forget
+        → upsert calendar_events (provider='outlook')
+```
+
+---
+
+## Recommended Build Order
+
+Build order is driven by dependencies, risk, and demo value:
+
+1. **LandingNav + LandingFooter updates** — All three public pages need these. Do once, unblock
+   everything. Touch these files exactly once before building any page.
+
+2. **Pricing page** — Highest business value. Static content, zero integration risk. Build immediately
+   after nav/footer.
+
+3. **About page** — Static content, no API. Build after pricing while nav/footer changes are fresh.
+
+4. **Contact page + API route** — Form + Resend integration. Slightly more complex than static pages.
+   Build last among the three public pages.
+
+5. **Unified wizard (signup as step 0)** — Highest integration risk among site features. Touches
+   middleware, auth callback, onboarding layout, and creates `/onboarding/setup`. Must be validated
+   E2E (sign up → wizard → dashboard) before moving on. Block no other feature, but is critical path
+   for the "5-minute onboarding gate" QA.
+
+6. **Outlook Calendar sync** — Most complex feature. Requires MSAL package install, new API routes,
+   DB migration, and CalendarSyncCard update. Google Calendar already works — Outlook is additive.
+   Build last so it cannot block demo-readiness.
+
+---
+
+## New vs Modified Files Summary
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/pricing/page.js` | Pricing page route |
+| `src/app/about/page.js` | About page route |
+| `src/app/contact/page.js` | Contact page route |
+| `src/app/api/contact/route.js` | Contact form POST handler via Resend |
+| `src/app/components/landing/PricingSection.jsx` | Tier cards component |
+| `src/app/components/landing/AboutHero.jsx` | About page hero with mission |
+| `src/app/components/landing/TeamGrid.jsx` | Team member cards |
+| `src/app/components/landing/CompanyStory.jsx` | Mission/story section |
+| `src/app/components/landing/ContactForm.jsx` | Contact form with inquiry type selector |
+| `src/app/onboarding/setup/page.js` | Wizard step 1 (moved from /onboarding) |
+| `src/app/api/onboarding/complete/route.js` | Sets tenants.onboarding_complete = true |
+| `src/lib/pricing-config.js` | Static tier definitions |
+| `src/lib/scheduling/outlook-calendar.js` | MSAL + Graph API calendar operations |
+| `src/app/api/outlook-calendar/auth/route.js` | Outlook OAuth redirect initiation |
+| `src/app/api/outlook-calendar/callback/route.js` | Outlook OAuth token exchange + subscription |
+| `src/app/api/webhooks/outlook-calendar/route.js` | Graph subscription notification handler |
+| `src/app/api/cron/renew-outlook-subscriptions/route.js` | Daily subscription renewal cron |
+| `supabase/migrations/005_outlook_calendar.sql` | provider column + per-tenant-provider unique index |
+
+### Modified Files
+
+| File | Change |
+|------|--------|
+| `src/app/components/landing/LandingNav.jsx` | Add Pricing/About/Contact links + mobile nav |
+| `src/app/components/landing/LandingFooter.jsx` | Multi-column layout with new page links |
+| `src/app/onboarding/page.js` | Replace with auth step (sign-up form, now public) |
+| `src/app/onboarding/layout.js` | 4-step progress, updated getStep() for /setup route |
+| `src/app/onboarding/complete/page.js` | Call /api/onboarding/complete to set flag |
+| `src/app/auth/callback/route.js` | Default redirect changed to /onboarding/setup |
+| `src/middleware.js` | Remove /onboarding root, add /onboarding/setup to PROTECTED_PATHS |
+| `src/components/dashboard/CalendarSyncCard.js` | Add Outlook connect/disconnect panel |
+| `src/app/api/calendar-sync/status/route.js` | Return status for google + outlook providers |
+| `messages/en.json` | Add pricing.*, about.*, contact.* namespaces; update onboarding.* |
+| `messages/es.json` | Same |
+
+---
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Duplicating LandingNav per public page
+
+**What people do:** Copy-paste LandingNav markup into each new page file.
+**Why it's wrong:** Three new pages means three copies. Adding a link (which happens multiple times
+in this milestone) requires editing each separately.
+**Do this instead:** All public pages import `LandingNav` and `LandingFooter` from
+`src/app/components/landing/`. Modify once, applies everywhere.
+
+### Anti-Pattern 2: Rewriting the onboarding wizard from scratch
+
+**What people do:** Interpret "unified wizard" as requiring a single-page component with all steps
+in local state, replacing the multi-route approach.
+**Why it's wrong:** The existing multi-route wizard is fully functional. The only thing missing
+is step 0 (auth). A full rewrite risks breaking the working 3-step flow and dramatically
+increases scope.
+**Do this instead:** Add `/onboarding/setup` (move step 1 content), keep steps 2-3 unchanged,
+replace `/onboarding/page.js` with the auth step. Minimal diff, maximal safety.
+
+### Anti-Pattern 3: DB table for contact form submissions
+
+**What people do:** Create `contact_submissions` table to log inquiries.
+**Why it's wrong:** Adds schema complexity, RLS policies, and a migration for purely operational
+data that the team reads from email.
+**Do this instead:** Send via Resend directly. If logging is needed post-launch, add it then.
+
+### Anti-Pattern 4: Blocking on Graph subscription validation token
+
+**What people do:** Process the full calendar sync before responding to the Graph notification,
+causing a timeout on the validation handshake.
+**Why it's wrong:** Microsoft requires a 200 response with `validationToken` body within seconds.
+A slow sync blocks this and causes subscription creation to fail.
+**Do this instead:** Check for `validationToken` query param first, respond immediately with
+`text/plain` body, then fire-and-forget the sync.
+
+### Anti-Pattern 5: Single MSAL client instantiation per route
+
+**What people do:** Instantiate `ConfidentialClientApplication` inline inside each API route handler.
+**Why it's wrong:** Duplicates MSAL configuration, makes credential rotation error-prone.
+**Do this instead:** Export `createMSALClient()` from `outlook-calendar.js` — mirrors how
+`createOAuth2Client()` works in `google-calendar.js`.
+
+### Anti-Pattern 6: Forgetting to set onboarding_complete
+
+**What people do:** Build the unified wizard but never write `tenants.onboarding_complete = true`,
+leaving every returning user re-routed into the wizard.
+**Why it's wrong:** `onboarding_complete` already exists in the schema (migration 001) but is
+never written by any current code. The already-onboarded detection in step 0 only works if this
+field is set.
+**Do this instead:** The `/onboarding/complete` page effect or the new `/api/onboarding/complete`
+route must write this field. Confirm in E2E test: sign up, complete wizard, sign out, sign back
+in, verify redirect goes to `/dashboard` not `/onboarding/setup`.
 
 ---
 
@@ -350,60 +559,14 @@ Client hydrates; real-time updates via polling or WebSocket (optional v1)
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| 0-100 businesses | Monolith is fine. Single Next.js app + Postgres + Redis. No queue needed; fire-and-forget async with `Promise.resolve().then(...)` or lightweight `setImmediate`. |
-| 100-1k businesses | Add a proper job queue (BullMQ on Redis) for notifications and calendar sync. Consider read replicas for dashboard queries if lead volume grows. Webhook handler remains critical path — keep it fast. |
-| 1k-10k businesses | Separate the webhook handler service from the dashboard API (can scale independently). Calendar sync becomes a dedicated worker pool. Redis cluster for slot locking if concurrent booking volume spikes. |
-| 10k+ businesses | Consider separate microservices for voice, scheduling, and CRM. Multi-region Postgres (Neon or PlanetScale) if global latency matters. But this is premature for v1. |
+| 0-100 tenants | Current monolith is fine. Calendar sync in API route handlers. Cron is sufficient. |
+| 100-1k tenants | Move calendar sync to background job queue. Outlook subscription renewals become critical operational task — monitor expiry. |
+| 1k+ tenants | Calendar sync must be async (queue + worker). Contact form needs rate limiting. |
 
-### Scaling Priorities
-
-1. **First bottleneck:** Webhook response latency. If the tool-call handler is slow (> 1.5s), callers hear silence. Fix: optimize slot query with proper indexes, cache availability in Redis, keep tool handlers pure and fast.
-2. **Second bottleneck:** Calendar sync rate limits. Google Calendar API has per-user quotas. Fix: cache aggressively, use push webhooks instead of polling, implement exponential backoff on 429s.
-3. **Third bottleneck:** Notification throughput. If 100 calls come in simultaneously, 100 SMS/email jobs queue up. Fix: BullMQ with concurrency limits and Twilio/SendGrid rate-aware retries.
-
----
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Booking Inside Webhook Without Distributed Lock
-
-**What people do:** Query available slots and insert a booking in a single Postgres query inside the webhook handler, without any locking.
-
-**Why it's wrong:** Two simultaneous calls for the same business can both pass the "is slot available?" check before either has committed, resulting in a double-booking. Postgres transaction isolation at READ COMMITTED does not prevent this race.
-
-**Do this instead:** Redis `SET NX` lock on the slot key before the Postgres transaction. Combined with `SELECT FOR UPDATE` inside the transaction as a belt-and-suspenders second check.
-
-### Anti-Pattern 2: Calling Google Calendar API in the Webhook Hot Path
-
-**What people do:** When the LLM calls "check_availability", query Google Calendar API in real-time to see if the owner is free.
-
-**Why it's wrong:** Google Calendar API p99 latency can be 500-1500ms. Chained with slot query and Postgres write, you'll routinely exceed the 2-second threshold for natural-sounding voice AI. Callers hear awkward pauses.
-
-**Do this instead:** Maintain a local mirror of the owner's calendar in Postgres/Redis, updated by push webhooks from Google/Outlook. Serve availability queries from the local mirror — never from the external API in the hot path.
-
-### Anti-Pattern 3: One Vapi/Retell Assistant Configuration for All Businesses
-
-**What people do:** Create one assistant in Vapi/Retell with a generic system prompt, and try to handle all business context at runtime via tool calls.
-
-**Why it's wrong:** Business-specific configuration (services offered, greeting name, emergency types, service zones) needs to be in the system prompt at call-start for the LLM to behave correctly throughout the call. Fetching it mid-call via tool calls is fragile and slow.
-
-**Do this instead:** Dynamically generate a business-specific system prompt at call-start time. Vapi supports `serverMessages` and `assistantOverrides` on a per-call basis — use these to inject business context before the LLM speaks its first word.
-
-### Anti-Pattern 4: Storing Recordings Locally Instead of Object Storage
-
-**What people do:** Save Vapi/Retell call recordings to the local server filesystem.
-
-**Why it's wrong:** Files are lost on redeploy, can't be served with signed URLs, and don't scale.
-
-**Do this instead:** Upload recordings to S3 or Cloudflare R2 immediately on receipt of the `end-of-call-report` webhook. Store only the object URL in Postgres, linked to the lead record. Generate short-lived signed URLs for dashboard playback.
-
-### Anti-Pattern 5: Polling Google/Outlook Calendar on Every Availability Check
-
-**What people do:** Call Google Calendar API every time a caller asks "are you free Thursday afternoon?"
-
-**Why it's wrong:** Rate limits, latency, and cost compound as business count grows. This hits Google's per-user API quotas quickly under load.
-
-**Do this instead:** Subscribe to Google Calendar push notifications (webhook channel) and Outlook change notifications. On each push, update the local mirror. Poll as a fallback only when push notifications fail or the subscription expires.
+**First bottleneck for this milestone:** Microsoft Graph subscriptions expire after a maximum of
+3 days for calendar resources (compared to Google's 7 days). The cron job at
+`/api/cron/renew-outlook-subscriptions` must run daily and be registered in `vercel.json`.
+Missing renewals result in silent loss of Outlook sync without any error visible to the user.
 
 ---
 
@@ -413,60 +576,24 @@ Client hydrates; real-time updates via polling or WebSocket (optional v1)
 
 | Service | Integration Pattern | Notes |
 |---------|---------------------|-------|
-| Vapi | Webhook receiver + REST API (assistant config, call history) | Signature verification required on all incoming webhooks. Tool-call responses must be synchronous and fast. Confidence: HIGH |
-| Retell AI | WebSocket-based custom LLM server OR REST webhook mode | Retell's "custom LLM" mode allows full control over response generation; webhook mode is simpler for most cases. Confidence: HIGH |
-| Google Calendar API | OAuth 2.0 (per business owner), push notifications, Events API | Store refresh tokens encrypted in Postgres. Push notification channels expire every 7 days — must re-register. Confidence: HIGH |
-| Microsoft Graph API (Outlook) | OAuth 2.0, change notifications (subscriptions), Calendar API | Similar pattern to Google but different scopes and subscription renewal logic. Confidence: MEDIUM |
-| Twilio SMS | REST API, outbound SMS for owner notifications | Use messaging service SID for production (not raw phone numbers) to get send queuing and geo-routing. Confidence: HIGH |
-| SendGrid / Resend | REST API, transactional email | Resend is a simpler modern alternative; SendGrid has more deliverability tooling. Either works for v1. Confidence: HIGH |
-| Cloudflare R2 / AWS S3 | S3-compatible API, pre-signed URLs | R2 is cheaper for egress (free egress); AWS S3 is more standard. Confidence: HIGH |
-| Auth provider (Clerk / NextAuth) | SDK-level, session management | Clerk is faster to set up; NextAuth gives more control. Either works. Confidence: HIGH |
+| Supabase Auth | Browser client signUp/signInWithOAuth in wizard step 0 | Same client already used in auth/signin |
+| Resend | POST to Resend in /api/contact handler | Same pattern as notifications.js |
+| Microsoft MSAL | @azure/msal-node ConfidentialClientApplication | New package install required |
+| Microsoft Graph | REST calls in outlook-calendar.js | Events, CalendarView, Subscriptions endpoints |
+| Microsoft Graph Webhooks | POST /api/webhooks/outlook-calendar with validation token | Different from Google — requires immediate text/plain response |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| Webhook Gateway ↔ Triage Engine | Direct function call (same process) | Keep in-process — must be fast. Do not make this an HTTP boundary for v1. |
-| Webhook Gateway ↔ Scheduler Service | Direct function call (same process) | Same rationale — on the hot path, in-process is required. |
-| Scheduler Service ↔ Redis | Redis client (ioredis) | Slot lock acquisition. TTL must be set on every lock — never acquire without a TTL. |
-| Scheduler Service ↔ Postgres | ORM/query builder (Drizzle or Prisma) | All booking writes must be in a transaction. Never partial writes. |
-| CRM Service ↔ Notification Service | Async (BullMQ job queue or Promise chain for v1) | Do NOT block the booking confirmation on notification delivery. Fire and forget with retry. |
-| Calendar Sync ↔ Scheduler | Postgres (shared data store) | Calendar sync writes to `calendar_blocks` table; Scheduler reads it when computing availability. No direct service call needed. |
-| Dashboard API ↔ All services | Next.js API routes calling service functions | Server components can call service functions directly — no HTTP hop needed within Next.js. |
+| Public pages ↔ LandingNav/Footer | Direct component import | All public pages share one nav |
+| Wizard step 0 ↔ Supabase | supabase-browser (existing instance) | No new client needed |
+| Wizard complete ↔ tenants table | New /api/onboarding/complete route | Sets onboarding_complete = true |
+| Outlook sync ↔ calendar_credentials | DB read/write with provider='outlook' | Requires migration 005 |
+| CalendarSyncCard ↔ /api/calendar-sync/status | Existing endpoint extended | Returns { google: {...}, outlook: {...} } shape |
+| booking.js ↔ calendar push | Existing pushBookingToCalendar call | Must become multi-provider aware |
 
 ---
 
-## Suggested Build Order (Phase Dependencies)
-
-Based on the component dependency graph above, the natural build order is:
-
-1. **Foundation (database schema + auth):** All other components depend on Postgres schema and authenticated API. Build schema (leads, bookings, slots, businesses, calendar_blocks) first. Add auth gating to API routes.
-
-2. **Business onboarding + configuration:** The voice agent needs business context (services, tiers, greeting, availability windows) to function. Onboarding UI and API must exist before voice integration can be tested end-to-end.
-
-3. **Scheduling core (without calendar sync):** Build slot management, availability query, and atomic booking using internal schedule only. No Google/Outlook yet — just database-driven availability windows. This unblocks voice integration testing.
-
-4. **Voice integration (Vapi/Retell webhook + triage + booking):** Wire up the webhook endpoint, triage engine, and scheduler. Test with real calls. This is the highest-risk component — surface integration unknowns early.
-
-5. **CRM lead pipeline + dashboard:** Build lead state machine and owner-facing pipeline view. At this point, calls create real leads visible in the dashboard.
-
-6. **Notification service:** SMS/email/push alerts to owner. Depends on lead creation (step 5) and booking (step 3).
-
-7. **Calendar integration (Google/Outlook sync):** Adds real availability from external calendars. This is a distinct integration effort and can be phased — v1 might ship with internal availability only, with calendar sync as an early follow-on.
-
-8. **Call recordings + transcripts:** Store and surface in dashboard. Depends on voice integration (step 4) and object storage setup.
-
----
-
-## Sources
-
-- Training data: Vapi documentation and webhook architecture (confidence: MEDIUM — verified against Vapi docs knowledge as of August 2025; recommend re-checking current docs before implementation)
-- Training data: Retell AI integration patterns (confidence: MEDIUM — same caveat)
-- Redis Redlock pattern for distributed locking — well-established, documented at redis.io (confidence: HIGH)
-- Google Calendar API push notifications — documented pattern, 7-day expiry is a known gotcha (confidence: HIGH)
-- Microsoft Graph API change notifications — similar pattern to Google (confidence: MEDIUM — details should be verified against current MS docs)
-- General voice AI latency requirements (< 2s tool-call response) — derived from Vapi/Retell community guidance and product constraints (confidence: MEDIUM)
-
----
-*Architecture research for: AI voice receptionist + scheduling + CRM (home services SaaS)*
-*Researched: 2026-03-18*
+*Architecture research for: HomeService AI v1.1 — Site Completeness & Launch Readiness*
+*Researched: 2026-03-22*
