@@ -1,7 +1,52 @@
 # Requirements: HomeService AI Agent
 
-**Defined:** 2026-03-18
+**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1)
 **Core Value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
+
+## v1.1 Requirements
+
+### Pricing Page
+
+- [ ] **PRICE-01**: User sees 4 pricing tiers (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls, Enterprise custom) with clear feature breakdown
+- [ ] **PRICE-02**: Growth tier is visually highlighted with "Most Popular" badge as the recommended option
+- [ ] **PRICE-03**: User can toggle between monthly and annual pricing display (display-only, no Stripe)
+- [ ] **PRICE-04**: User sees a feature comparison table below the fold showing what each tier includes
+- [ ] **PRICE-05**: User sees an FAQ section addressing cancellation, overages, trial availability, and refunds
+- [ ] **PRICE-06**: User sees ROI-framed hero copy that speaks in job revenue, not SaaS metrics
+- [ ] **PRICE-07**: Each tier has a "Get Started" CTA that routes to the unified onboarding wizard
+
+### Public Pages
+
+- [ ] **PAGE-01**: User can navigate to Pricing, About, and Contact pages from any public page via updated nav
+- [ ] **PAGE-02**: User sees an About page with mission statement and founding story targeting trade owners
+- [ ] **PAGE-03**: User can submit a contact inquiry with segmented routes for sales, support, or partnerships
+- [ ] **PAGE-04**: Contact form submissions are delivered to ops inbox via Resend with spam protection
+- [ ] **PAGE-05**: Contact page displays explicit response time SLA
+
+### Unified Onboarding
+
+- [ ] **WIZARD-01**: Any CTA (landing, pricing, contact) drops user into a single wizard where account creation is step 1
+- [ ] **WIZARD-02**: Wizard starts with a trade routing question that pre-populates service list and triage rules
+- [ ] **WIZARD-03**: Wizard shows progress indicator (step N of M) throughout the flow
+- [ ] **WIZARD-04**: Email verification is handled inline within the wizard without redirecting to a dead-end page
+- [ ] **WIZARD-05**: Wizard form data persists across page refresh via sessionStorage
+- [ ] **WIZARD-06**: Live test call is the wizard finale — user hears their AI receptionist before completing onboarding
+- [ ] **WIZARD-07**: Existing users with completed onboarding bypass wizard and go directly to dashboard
+
+### Outlook Calendar
+
+- [ ] **OUTLOOK-01**: Owner can connect Outlook Calendar via Microsoft OAuth from dashboard settings
+- [ ] **OUTLOOK-02**: Outlook calendar events sync bidirectionally with local availability database
+- [ ] **OUTLOOK-03**: Outlook webhook subscriptions auto-renew before 3-day expiry via cron job
+- [ ] **OUTLOOK-04**: Owner can disconnect Outlook Calendar and revert to manual availability
+
+### Launch Hardening
+
+- [ ] **LAUNCH-01**: Sentry error monitoring captures unhandled exceptions and API failures in production
+- [ ] **LAUNCH-02**: Multi-language E2E validated through full pipeline (voice → triage → booking → notifications → dashboard)
+- [ ] **LAUNCH-03**: Slot-locking contention test proves exactly 1 booking from 20 simultaneous requests to the same slot
+- [ ] **LAUNCH-04**: 5-minute onboarding gate validated by a real non-technical SME user on staging
+- [ ] **LAUNCH-05**: Environment variable audit confirms no secrets in source and all production env vars are set
 
 ## v1 Requirements
 
@@ -43,7 +88,7 @@
 - [x] **CRM-01**: Lead pipeline with statuses: New → Booked → Completed → Paid
 - [x] **CRM-02**: Each lead card shows: caller ID, job type, address, urgency score, call recording, transcript, triage label
 - [x] **CRM-03**: Phone number used as unique ID — repeat caller updates existing lead instead of creating duplicate
-- [ ] **CRM-04**: Dashboard with filterable list view of all leads and calls
+- [x] **CRM-04**: Dashboard with filterable list view of all leads and calls
 - [x] **CRM-05**: Owner can see total revenue funneled through AI (booked → completed → paid tracking)
 
 ### Notifications
@@ -122,7 +167,7 @@
 | CRM-01 | Phase 4 | Complete |
 | CRM-02 | Phase 4 | Complete |
 | CRM-03 | Phase 4 | Complete |
-| CRM-04 | Phase 4 | Pending |
+| CRM-04 | Phase 4 | Complete |
 | CRM-05 | Phase 4 | Complete |
 | NOTIF-01 | Phase 4 | Complete |
 | NOTIF-02 | Phase 4 | Complete |
@@ -134,11 +179,16 @@
 | ONBOARD-05 | Phase 2 | Complete |
 | ONBOARD-06 | Phase 2 | Complete |
 
-**Coverage:**
-- v1 requirements: 38 total
+**v1.0 Coverage:**
+- v1.0 requirements: 38 total
 - Mapped to phases: 38
 - Unmapped: 0 ✓
 
+**v1.1 Coverage:**
+- v1.1 requirements: 24 total
+- Mapped to phases: 0 ⚠️
+- Unmapped: 24 (awaiting roadmap)
+
 ---
-*Requirements defined: 2026-03-18*
-*Last updated: 2026-03-18 after roadmap creation — all 38 requirements mapped*
+*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1)*
+*Last updated: 2026-03-22 after v1.1 requirements definition*
