@@ -160,7 +160,12 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
   3. Visitor on pricing or landing page clicks any "Get Started" CTA and lands at the unified onboarding wizard step 1
   4. Visitor can navigate to Pricing, About, and Contact from every public page using the site nav — including on a mobile viewport
   5. Visitor submits a contact form, selecting inquiry type (sales, support, or partnerships), and receives an acknowledgment; the submission arrives in the ops inbox via Resend within 2 minutes
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Foundation: (public) route group, nav/footer extension, pricing data constants, Wave 0 test scaffolds
+- [ ] 06-02-PLAN.md — Pricing page: hero, billing toggle, tier cards, comparison table, FAQ accordion, CTA banner
+- [ ] 06-03-PLAN.md — About page (mission + values) and Contact page (form + API route with Resend dispatch)
 
 ### Phase 7: Unified Signup and Onboarding Wizard
 **Goal**: Any visitor who clicks a CTA is carried through account creation and full business setup into a live test call with their AI receptionist — in a single, uninterrupted flow that replaces the current split auth+onboarding paths
@@ -206,7 +211,7 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Public Marketing Pages | 0/TBD | Not started | - |
+| 6. Public Marketing Pages | 0/3 | Planning complete | - |
 | 7. Unified Signup and Onboarding Wizard | 0/TBD | Not started | - |
 | 8. Outlook Calendar Sync | 0/TBD | Not started | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
