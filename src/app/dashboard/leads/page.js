@@ -5,6 +5,32 @@ import { LayoutList, Columns3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import LeadCard from '@/components/dashboard/LeadCard';
 import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
+import LeadFlyout from '@/components/dashboard/LeadFlyout';
+import KanbanBoard from '@/components/dashboard/KanbanBoard';
+import { supabase } from '@/lib/supabase-browser';
+
+// ─── Realtime animation keyframe (injected once into document) ────────────────
+
+const SLIDE_IN_STYLE_ID = 'lead-slide-in-keyframe';
+
+function ensureSlideInKeyframe() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(SLIDE_IN_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = SLIDE_IN_STYLE_ID;
+  style.textContent = `
+    @keyframes slide-in-from-top {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-in-from-top {
+      animation: slide-in-from-top 200ms ease-out;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ─── Filter helpers ───────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS = {
   status: '',
@@ -30,13 +56,35 @@ function hasActiveFilters(filters) {
   return Object.values(filters).some(Boolean);
 }
 
+// ─── Leads page ───────────────────────────────────────────────────────────────
+
 export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [viewMode, setViewMode] = useState('list');
+
+  // Flyout state
   const [selectedLeadId, setSelectedLeadId] = useState(null);
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
+
+  // Tenant ID for Realtime filter
+  const [tenantId, setTenantId] = useState(null);
+
+  // ── Inject Realtime animation keyframe once ─────────────────────────────
+  useEffect(() => { ensureSlideInKeyframe(); }, []);
+
+  // ── Get tenant ID for Realtime subscription ─────────────────────────────
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setTenantId(user?.id ?? null);
+    }).catch(() => {
+      setTenantId(null);
+    });
+  }, []);
+
+  // ── Fetch leads ─────────────────────────────────────────────────────────
 
   const fetchLeads = useCallback(async (activeFilters) => {
     setLoading(true);
@@ -58,6 +106,51 @@ export default function LeadsPage() {
     fetchLeads(filters);
   }, [filters, fetchLeads]);
 
+  // ── Supabase Realtime subscription ─────────────────────────────────────
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel('leads-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'leads',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          // Only animate Realtime inserts, not initial page load
+          setLeads((prev) => [{ ...payload.new, _isNew: true }, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'leads',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.id === payload.new.id ? { ...payload.new, _isNew: false } : l
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId]);
+
+  // ── Event handlers ──────────────────────────────────────────────────────
+
   function handleFilterChange(partial) {
     setFilters((prev) => ({ ...prev, ...partial }));
   }
@@ -68,10 +161,17 @@ export default function LeadsPage() {
 
   function handleView(leadId) {
     setSelectedLeadId(leadId);
-    // LeadFlyout coming in Plan 05
+    setFlyoutOpen(true);
   }
 
-  // ─── Loading state ─────────────────────────────────────────────────────────
+  function handleStatusChange(updatedLead) {
+    // Update the lead in the local list after a status change in the flyout
+    setLeads((prev) =>
+      prev.map((l) => (l.id === updatedLead.id ? { ...updatedLead, _isNew: false } : l))
+    );
+  }
+
+  // ── Loading state ───────────────────────────────────────────────────────
 
   const skeletonCards = (
     <div className="space-y-3">
@@ -81,7 +181,7 @@ export default function LeadsPage() {
     </div>
   );
 
-  // ─── Error state ────────────────────────────────────────────────────────────
+  // ── Error state ─────────────────────────────────────────────────────────
 
   if (error) {
     return (
@@ -98,7 +198,7 @@ export default function LeadsPage() {
     );
   }
 
-  // ─── Page header ────────────────────────────────────────────────────────────
+  // ── Page header ─────────────────────────────────────────────────────────
 
   const pageHeader = (
     <div className="flex items-center justify-between px-6 pt-6 pb-4">
@@ -143,15 +243,22 @@ export default function LeadsPage() {
     </div>
   );
 
-  // ─── Lead list ─────────────────────────────────────────────────────────────
+  // ── Lead list / kanban content ──────────────────────────────────────────
 
   const isFiltered = hasActiveFilters(filters);
 
-  let listContent;
+  let mainContent;
   if (loading) {
-    listContent = skeletonCards;
+    mainContent = skeletonCards;
+  } else if (viewMode === 'kanban') {
+    mainContent = (
+      <KanbanBoard
+        leads={leads}
+        onViewLead={handleView}
+      />
+    );
   } else if (leads.length === 0 && !isFiltered) {
-    listContent = (
+    mainContent = (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <h2 className="text-xl font-semibold text-[#0F172A] mb-2">No leads yet</h2>
         <p className="text-sm text-[#475569] max-w-sm">
@@ -160,7 +267,7 @@ export default function LeadsPage() {
       </div>
     );
   } else if (leads.length === 0 && isFiltered) {
-    listContent = (
+    mainContent = (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-sm text-[#475569] mb-2">No leads match your filters.</p>
         <button
@@ -173,32 +280,46 @@ export default function LeadsPage() {
       </div>
     );
   } else {
-    listContent = (
+    mainContent = (
       <div className="space-y-3">
         {leads.map((lead) => (
-          <LeadCard
+          <div
             key={lead.id}
-            lead={lead}
-            onView={handleView}
-          />
+            className={lead._isNew ? 'animate-slide-in-from-top' : ''}
+          >
+            <LeadCard
+              lead={lead}
+              onView={handleView}
+            />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div>
-      {pageHeader}
+    <>
+      <div>
+        {pageHeader}
 
-      <LeadFilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClear={handleClearFilters}
-      />
+        <LeadFilterBar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClear={handleClearFilters}
+        />
 
-      <div className="px-6 py-4">
-        {listContent}
+        <div className="px-6 py-4">
+          {mainContent}
+        </div>
       </div>
-    </div>
+
+      {/* LeadFlyout — rendered outside the card stack to avoid stacking context issues */}
+      <LeadFlyout
+        leadId={selectedLeadId}
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        onStatusChange={handleStatusChange}
+      />
+    </>
   );
 }
