@@ -1,19 +1,10 @@
-import { createSupabaseServer } from '@/lib/supabase-server';
-
-async function getAuthContext() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { user: null, tenantId: null, supabase };
-  const tenantId = user.user_metadata?.tenant_id || null;
-  return { user, tenantId, supabase };
-}
+import { getTenantId } from '@/lib/get-tenant-id';
+import { supabase } from '@/lib/supabase';
 
 // revokeAndDisconnect is imported from google-calendar.js when it exists.
 // We do a dynamic import so that this route can be called even before the
 // google-calendar lib is fully wired up (e.g., missing env vars won't crash the module).
-async function revokeAndDisconnect(tenantId, supabase) {
+async function revokeAndDisconnect(tenantId) {
   try {
     const { revokeAndDisconnect: revoke } = await import('@/lib/google-calendar');
     await revoke(tenantId, supabase);
@@ -30,10 +21,10 @@ async function revokeAndDisconnect(tenantId, supabase) {
 
 export async function POST() {
   try {
-    const { tenantId, supabase } = await getAuthContext();
+    const tenantId = await getTenantId();
     if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await revokeAndDisconnect(tenantId, supabase);
+    await revokeAndDisconnect(tenantId);
 
     return Response.json({ disconnected: true });
   } catch (err) {

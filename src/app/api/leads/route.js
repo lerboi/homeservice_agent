@@ -1,12 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { createSupabaseServer } from '@/lib/supabase-server';
-
-async function getTenantId() {
-  const serverSupabase = await createSupabaseServer();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) return null;
-  return user.user_metadata?.tenant_id || null;
-}
+import { getTenantId } from '@/lib/get-tenant-id';
 
 export async function GET(request) {
   const tenantId = await getTenantId();

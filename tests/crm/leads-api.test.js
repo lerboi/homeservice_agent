@@ -52,11 +52,20 @@ jest.unstable_mockModule('@/lib/supabase-server', () => ({
   createSupabaseServer: jest.fn().mockResolvedValue(mockServerSupabase),
 }));
 
+// Mock getTenantId — returns tenant-uuid by default (overridable in tests)
+const mockGetTenantId = jest.fn().mockResolvedValue('tenant-uuid');
+jest.unstable_mockModule('@/lib/get-tenant-id', () => ({
+  getTenantId: mockGetTenantId,
+}));
+
 // Service-role supabase mock for activity_log inserts
 const mockActivityInsert = jest.fn().mockResolvedValue({ data: null, error: null });
 
 const mockServiceSupabase = {
   from: jest.fn((table) => {
+    if (table === 'leads') {
+      return isUpdateOperation ? currentUpdateQuery : currentDetailQuery;
+    }
     if (table === 'activity_log') {
       return { insert: mockActivityInsert };
     }
@@ -179,7 +188,7 @@ describe('GET /api/leads/[id]', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockServerSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const req = {};
     const params = Promise.resolve({ id: 'lead-uuid-1' });
@@ -303,7 +312,7 @@ describe('PATCH /api/leads/[id]', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockServerSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const req = { json: jest.fn().mockResolvedValue({ status: 'booked' }) };
     const params = Promise.resolve({ id: 'lead-uuid-1' });

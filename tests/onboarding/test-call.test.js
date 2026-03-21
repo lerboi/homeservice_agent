@@ -37,6 +37,12 @@ jest.unstable_mockModule('@/lib/supabase-server', () => ({
   }),
 }));
 
+// Mock getTenantId — returns tenant-123 by default
+const mockGetTenantId = jest.fn().mockResolvedValue('tenant-123');
+jest.unstable_mockModule('@/lib/get-tenant-id', () => ({
+  getTenantId: mockGetTenantId,
+}));
+
 let POST;
 
 beforeAll(async () => {
@@ -68,7 +74,7 @@ function makeChainableQuery(resolvedValue) {
 
 describe('POST /api/onboarding/test-call', () => {
   it('returns 401 when user is not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const res = await POST(makeRequest());
     const body = await res.json();
@@ -78,9 +84,6 @@ describe('POST /api/onboarding/test-call', () => {
   });
 
   it('returns 400 when tenant has no retell_phone_number', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { user_metadata: { tenant_id: 'tenant-123' } } },
-    });
 
     const tenantQuery = makeChainableQuery({
       data: { retell_phone_number: null, owner_phone: '+15551234567', business_name: 'Test Co', tone_preset: 'professional' },
@@ -191,7 +194,7 @@ describe('POST /api/onboarding/test-call', () => {
       test_call_completed: true,
       onboarding_complete: true,
     });
-    expect(mockUpdateEq).toHaveBeenCalledWith('id', 'tenant-abc');
+    expect(mockUpdateEq).toHaveBeenCalledWith('id', 'tenant-123');
   });
 
   it('returns 500 when createPhoneCall throws (Retell API error)', async () => {

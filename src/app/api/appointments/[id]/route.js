@@ -1,23 +1,13 @@
-import { createSupabaseServer } from '@/lib/supabase-server';
+import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
-
-async function getAuthContext() {
-  const serverSupabase = await createSupabaseServer();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) return null;
-  const tenantId = user.user_metadata?.tenant_id || null;
-  return tenantId ? { user, tenantId } : null;
-}
 
 /**
  * GET /api/appointments/[id]
  * Returns single appointment with call data (recording_url, transcript).
  */
 export async function GET(request, { params }) {
-  const auth = await getAuthContext();
-  if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { tenantId } = auth;
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
 
   const { data: appointment, error } = await supabase
@@ -51,10 +41,8 @@ export async function GET(request, { params }) {
  *   { conflict_dismissed: true, calendar_event_id: '...' } — dismiss conflict on calendar_events
  */
 export async function PATCH(request, { params }) {
-  const auth = await getAuthContext();
-  if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { tenantId } = auth;
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
   const body = await request.json();
 

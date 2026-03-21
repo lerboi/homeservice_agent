@@ -1,14 +1,7 @@
 import { supabase } from '@/lib/supabase';
-import { createSupabaseServer } from '@/lib/supabase-server';
+import { getTenantId } from '@/lib/get-tenant-id';
 
 const VALID_TAGS = ['emergency', 'routine', 'high_ticket'];
-
-async function getTenantId() {
-  const serverSupabase = await createSupabaseServer();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) return null;
-  return user.user_metadata?.tenant_id || null;
-}
 
 export async function GET() {
   const tenantId = await getTenantId();

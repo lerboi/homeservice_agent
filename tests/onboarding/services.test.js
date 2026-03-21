@@ -41,6 +41,12 @@ jest.unstable_mockModule('@/lib/supabase', () => ({
   supabase: mockSupabase,
 }));
 
+// Mock getTenantId — returns tenant-abc by default
+const mockGetTenantId = jest.fn().mockResolvedValue('tenant-abc');
+jest.unstable_mockModule('@/lib/get-tenant-id', () => ({
+  getTenantId: mockGetTenantId,
+}));
+
 // ─── Import route handlers after mocks are set up ────────────────────────────
 
 let GET, POST, PUT, DELETE;
@@ -92,7 +98,7 @@ describe('GET /api/services', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const res = await GET();
     const body = await res.json();
@@ -167,7 +173,7 @@ describe('POST /api/services', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const req = makeRequest({ name: 'Test', urgency_tag: 'routine' });
     const res = await POST(req);
@@ -204,7 +210,7 @@ describe('PUT /api/services', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const req = makeRequest({ id: 'svc-1', urgency_tag: 'routine' });
     const res = await PUT(req);
@@ -238,7 +244,7 @@ describe('DELETE /api/services', () => {
   });
 
   it('returns 401 when not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetTenantId.mockResolvedValueOnce(null);
 
     const req = makeRequest({ id: 'svc-1' });
     const res = await DELETE(req);

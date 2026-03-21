@@ -1,14 +1,10 @@
+import { getTenantId } from '@/lib/get-tenant-id';
 import { retell } from '@/lib/retell';
 import { supabase } from '@/lib/supabase';
-import { createSupabaseServer } from '@/lib/supabase-server';
 
 export async function POST(request) {
-  const serverSupabase = await createSupabaseServer();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const tenantId = user.user_metadata?.tenant_id;
-  if (!tenantId) return Response.json({ error: 'No tenant' }, { status: 400 });
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     // Provision a new Retell phone number

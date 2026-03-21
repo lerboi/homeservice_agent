@@ -28,15 +28,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function load() {
-      // ── Get tenant ID from auth session ──────────────────────────────────
-      let tenantId = null;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        tenantId = user?.id ?? null;
-      } catch {
-        // Proceed without tenant filtering if auth fails
-      }
-
       // ── Fetch stats in parallel ──────────────────────────────────────────
       const today = new Date().toISOString().split('T')[0];
 
@@ -91,25 +82,20 @@ export default function DashboardPage() {
       setStats({ newLeadsToday, upcomingAppointments, callsToday, conversionRate });
       setStatsLoading(false);
 
-      // ── Fetch recent activity from activity_log ──────────────────────────
-      if (tenantId) {
-        try {
-          const { data, error } = await supabase
-            .from('activity_log')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .order('created_at', { ascending: false })
-            .limit(20);
+      // ── Fetch recent activity from activity_log (RLS filters by tenant) ─
+      try {
+        const { data, error } = await supabase
+          .from('activity_log')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-          if (!error) {
-            setActivities(data ?? []);
-          } else {
-            setActivities([]);
-          }
-        } catch {
+        if (!error) {
+          setActivities(data ?? []);
+        } else {
           setActivities([]);
         }
-      } else {
+      } catch {
         setActivities([]);
       }
       setActivitiesLoading(false);

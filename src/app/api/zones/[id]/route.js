@@ -1,18 +1,9 @@
-import { createSupabaseServer } from '@/lib/supabase-server';
-
-async function getAuthContext() {
-  const supabase = await createSupabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { user: null, tenantId: null, supabase };
-  const tenantId = user.user_metadata?.tenant_id || null;
-  return { user, tenantId, supabase };
-}
+import { getTenantId } from '@/lib/get-tenant-id';
+import { supabase } from '@/lib/supabase';
 
 export async function PUT(request, { params }) {
   try {
-    const { tenantId, supabase } = await getAuthContext();
+    const tenantId = await getTenantId();
     if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
@@ -46,7 +37,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { tenantId, supabase } = await getAuthContext();
+    const tenantId = await getTenantId();
     if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;

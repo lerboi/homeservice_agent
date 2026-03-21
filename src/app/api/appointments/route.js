@@ -1,13 +1,5 @@
-import { createSupabaseServer } from '@/lib/supabase-server';
+import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
-
-async function getAuthContext() {
-  const serverSupabase = await createSupabaseServer();
-  const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user) return null;
-  const tenantId = user.user_metadata?.tenant_id || null;
-  return tenantId ? { user, tenantId } : null;
-}
 
 /**
  * Compute travel buffer blocks between consecutive same-day appointments.
@@ -100,10 +92,8 @@ function detectConflicts(appointments, calendarEvents) {
 }
 
 export async function GET(request) {
-  const auth = await getAuthContext();
-  if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { tenantId } = auth;
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const { searchParams } = new URL(request.url);
 
   const start = searchParams.get('start');
