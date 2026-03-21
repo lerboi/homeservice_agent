@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-03-20T21:29:35.221Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-21T07:27:56.963Z"
 last_activity: 2026-03-19 — 02-04 wizard step 3 + activation + test-call route, 110 tests passing
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 23
+  completed_plans: 18
   percent: 50
 ---
 
@@ -66,6 +66,7 @@ Progress: [█████░░░░░] 50%
 | Phase 03-scheduling-and-calendar-sync P02 | 3 | 2 tasks | 4 files |
 | Phase 03-scheduling-and-calendar-sync P01 | 8 | 2 tasks | 7 files |
 | Phase 03-scheduling-and-calendar-sync P06 | 18 | 2 tasks | 6 files |
+| Phase 04-crm-dashboard-and-notifications P01 | 15 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,10 @@ Recent decisions affecting current work:
 - [Phase 03-06]: handleInbound fetches all scheduling data in parallel (Promise.all) before slot calculation
 - [Phase 03-06]: suggested_slots only calculated for routine AND unbooked calls — emergency calls book during the call
 - [Phase 03-06]: Calendar push always async via after() — never in synchronous call hot path
+- [Phase 04-crm-dashboard-and-notifications]: Short call filter at 15 seconds — calls under 15s return null (voicemails, mis-dials)
+- [Phase 04-crm-dashboard-and-notifications]: Repeat caller merge uses .in('status', ['new','booked']) — completed/paid/lost leads trigger new lead creation
+- [Phase 04-crm-dashboard-and-notifications]: getLeads excludes transcript_text from list queries — fetched separately on lead detail view
+- [Phase 04-crm-dashboard-and-notifications]: REPLICA IDENTITY FULL on leads table required for Supabase Realtime row-level change events
 
 ### Roadmap Evolution
 
@@ -141,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T21:29:35.215Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-crm-dashboard-and-notifications/04-UI-SPEC.md
+Last session: 2026-03-21T07:27:56.958Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None

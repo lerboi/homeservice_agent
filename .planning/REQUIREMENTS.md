@@ -24,7 +24,7 @@
 - [x] **TRIAGE-03**: Layer 3 — Owner-configured rule table maps service types to emergency/routine/high-ticket classification
 - [x] **TRIAGE-04**: Emergency calls routed to instant booking workflow; routine calls captured as leads for owner confirmation
 - [x] **TRIAGE-05**: Owner can define which service types are high-ticket in business settings
-- [ ] **TRIAGE-06**: Urgency score and triage label visible on each lead card in dashboard without replaying the call
+- [x] **TRIAGE-06**: Urgency score and triage label visible on each lead card in dashboard without replaying the call
 
 ### Scheduling & Booking
 
@@ -40,11 +40,11 @@
 
 ### Lead CRM
 
-- [ ] **CRM-01**: Lead pipeline with statuses: New → Booked → Completed → Paid
-- [ ] **CRM-02**: Each lead card shows: caller ID, job type, address, urgency score, call recording, transcript, triage label
-- [ ] **CRM-03**: Phone number used as unique ID — repeat caller updates existing lead instead of creating duplicate
+- [x] **CRM-01**: Lead pipeline with statuses: New → Booked → Completed → Paid
+- [x] **CRM-02**: Each lead card shows: caller ID, job type, address, urgency score, call recording, transcript, triage label
+- [x] **CRM-03**: Phone number used as unique ID — repeat caller updates existing lead instead of creating duplicate
 - [ ] **CRM-04**: Dashboard with filterable list view of all leads and calls
-- [ ] **CRM-05**: Owner can see total revenue funneled through AI (booked → completed → paid tracking)
+- [x] **CRM-05**: Owner can see total revenue funneled through AI (booked → completed → paid tracking)
 
 ### Notifications
 
@@ -109,7 +109,7 @@
 | TRIAGE-03 | Phase 2 | Complete |
 | TRIAGE-04 | Phase 2 | Complete |
 | TRIAGE-05 | Phase 2 | Complete |
-| TRIAGE-06 | Phase 4 | Pending |
+| TRIAGE-06 | Phase 4 | Complete |
 | SCHED-01 | Phase 3 | Complete |
 | SCHED-02 | Phase 3 | Complete |
 | SCHED-03 | Phase 5 | Pending |
@@ -119,11 +119,11 @@
 | SCHED-07 | Phase 3 | Complete |
 | SCHED-08 | Phase 3 | Complete |
 | SCHED-09 | Phase 3 | Complete |
-| CRM-01 | Phase 4 | Pending |
-| CRM-02 | Phase 4 | Pending |
-| CRM-03 | Phase 4 | Pending |
+| CRM-01 | Phase 4 | Complete |
+| CRM-02 | Phase 4 | Complete |
+| CRM-03 | Phase 4 | Complete |
 | CRM-04 | Phase 4 | Pending |
-| CRM-05 | Phase 4 | Pending |
+| CRM-05 | Phase 4 | Complete |
 | NOTIF-01 | Phase 4 | Pending |
 | NOTIF-02 | Phase 4 | Pending |
 | NOTIF-03 | Phase 4 | Pending |
