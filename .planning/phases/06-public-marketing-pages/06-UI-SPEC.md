@@ -1,7 +1,7 @@
 ---
 phase: 6
 slug: public-marketing-pages
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york / neutral / cssVariables
 created: 2026-03-22
