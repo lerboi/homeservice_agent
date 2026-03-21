@@ -1,12 +1,16 @@
+import { supabase } from '@/lib/supabase';
 import { createSupabaseServer } from '@/lib/supabase-server';
 
-export async function GET(request) {
-  const supabaseServer = await createSupabaseServer();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+async function getTenantId() {
+  const serverSupabase = await createSupabaseServer();
+  const { data: { user } } = await serverSupabase.auth.getUser();
+  if (!user) return null;
+  return user.user_metadata?.tenant_id || null;
+}
 
-  const tenantId = user.user_metadata?.tenant_id;
-  if (!tenantId) return Response.json({ error: 'No tenant' }, { status: 403 });
+export async function GET(request) {
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status');
@@ -18,7 +22,7 @@ export async function GET(request) {
 
   // Build query — join calls via lead_calls junction for urgency/recording data
   // DO NOT select transcript_text (performance per RESEARCH.md Pitfall 4)
-  let query = supabaseServer
+  let query = supabase
     .from('leads')
     .select(`
       id, tenant_id, from_number, caller_name, job_type, service_address,

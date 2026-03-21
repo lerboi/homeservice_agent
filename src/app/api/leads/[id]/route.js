@@ -1,4 +1,12 @@
+import { supabase } from '@/lib/supabase';
 import { createSupabaseServer } from '@/lib/supabase-server';
+
+async function getTenantId() {
+  const serverSupabase = await createSupabaseServer();
+  const { data: { user } } = await serverSupabase.auth.getUser();
+  if (!user) return null;
+  return user.user_metadata?.tenant_id || null;
+}
 
 /**
  * GET /api/leads/[id]
@@ -6,13 +14,12 @@ import { createSupabaseServer } from '@/lib/supabase-server';
  * This is the flyout detail endpoint — transcript is only fetched here, not in the list query.
  */
 export async function GET(request, { params }) {
-  const supabaseServer = await createSupabaseServer();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
 
-  const { data, error } = await supabaseServer
+  const { data, error } = await supabase
     .from('leads')
     .select(`
       *,
@@ -27,6 +34,7 @@ export async function GET(request, { params }) {
       appointments(id, start_time, end_time, status, service_address)
     `)
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 404 });
@@ -40,11 +48,9 @@ export async function GET(request, { params }) {
  * Side effect: logs status_changed event to activity_log (fire-and-forget).
  */
 export async function PATCH(request, { params }) {
-  const supabaseServer = await createSupabaseServer();
-  const { data: { user } } = await supabaseServer.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const tenantId = await getTenantId();
+  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const tenantId = user.user_metadata?.tenant_id;
   const { id } = await params;
   const body = await request.json();
   const { status, revenue_amount, previous_status } = body;
@@ -58,10 +64,11 @@ export async function PATCH(request, { params }) {
   if (status) updateData.status = status;
   if (revenue_amount !== undefined) updateData.revenue_amount = revenue_amount;
 
-  const { data, error } = await supabaseServer
+  const { data, error } = await supabase
     .from('leads')
     .update(updateData)
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .select()
     .single();
 
@@ -70,7 +77,6 @@ export async function PATCH(request, { params }) {
   // Log activity — fire-and-forget, never block the response
   (async () => {
     try {
-      const { supabase } = await import('@/lib/supabase');
       await supabase.from('activity_log').insert({
         tenant_id: tenantId,
         event_type: 'status_changed',
