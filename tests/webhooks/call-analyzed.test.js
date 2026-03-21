@@ -17,6 +17,18 @@ jest.unstable_mockModule('@/lib/scheduling/slot-calculator', () => ({
   calculateAvailableSlots: jest.fn(() => []),
 }));
 
+// Mock leads + notifications — not under test here (tested in webhook-lead-creation.test.js)
+jest.unstable_mockModule('@/lib/leads', () => ({
+  createOrMergeLead: jest.fn().mockResolvedValue(null),
+}));
+
+jest.unstable_mockModule('@/lib/notifications', () => ({
+  sendOwnerNotifications: jest.fn().mockResolvedValue(undefined),
+  sendOwnerSMS: jest.fn().mockResolvedValue(undefined),
+  sendOwnerEmail: jest.fn().mockResolvedValue(undefined),
+  sendCallerRecoverySMS: jest.fn().mockResolvedValue(undefined),
+}));
+
 // Build a fresh supabase mock per test for isolation
 const mockUpsert = jest.fn();
 const mockFromStorage = jest.fn();

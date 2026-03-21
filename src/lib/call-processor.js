@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase';
 import { locales } from '@/i18n/routing';
 import { classifyCall } from '@/lib/triage/classifier';
 import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator';
+import { createOrMergeLead } from '@/lib/leads';
+import { sendOwnerNotifications } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -258,4 +260,64 @@ export async function processCallAnalyzed(call) {
     },
     { onConflict: 'retell_call_id' }
   );
+
+  // === LEAD CREATION (Phase 4: CRM-01, CRM-03) ===
+  // Create or merge lead after call record is persisted.
+  // Short call filter (< 15s) is handled inside createOrMergeLead — returns null.
+  const callDuration = start_timestamp && end_timestamp
+    ? Math.round((new Date(end_timestamp) - new Date(start_timestamp)) / 1000)
+    : 0;
+
+  // Look up appointmentId for this call if a booking was made during the call
+  let appointmentId = null;
+  if (appointmentExists && tenantId) {
+    const { data: apptRow } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('retell_call_id', call_id)
+      .maybeSingle();
+    appointmentId = apptRow?.id || null;
+  }
+
+  let lead = null;
+  try {
+    lead = await createOrMergeLead({
+      tenantId,
+      callId: call_id,
+      fromNumber: from_number,
+      callerName: metadata?.caller_name || call_analysis?.caller_name || null,
+      jobType: metadata?.job_type || call_analysis?.job_type || null,
+      serviceAddress: metadata?.service_address || call_analysis?.service_address || null,
+      triageResult,
+      appointmentId,
+      callDuration,
+    });
+  } catch (err) {
+    console.error('Lead creation failed:', err);
+  }
+
+  // === OWNER NOTIFICATIONS (Phase 4: NOTIF-01, NOTIF-02) ===
+  // Fire-and-forget: notification failures are logged but never block the handler.
+  if (lead && tenantId) {
+    try {
+      const { data: tenantInfo } = await supabase
+        .from('tenants')
+        .select('business_name, owner_phone, owner_email')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantInfo) {
+        sendOwnerNotifications({
+          tenantId,
+          lead,
+          businessName: tenantInfo.business_name || 'Your Business',
+          ownerPhone: tenantInfo.owner_phone,
+          ownerEmail: tenantInfo.owner_email,
+        }).catch(err => console.error('Owner notification failed:', err));
+      }
+    } catch (err) {
+      console.error('Tenant lookup for notifications failed:', err);
+    }
+  }
 }
