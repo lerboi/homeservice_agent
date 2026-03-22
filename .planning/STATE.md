@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-stopped_at: Completed 07-03-PLAN.md
-last_updated: "2026-03-22T10:42:30.651Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-22T10:44:03.643Z"
 last_activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
 progress:
   total_phases: 10
   completed_phases: 6
   total_plans: 31
-  completed_plans: 29
+  completed_plans: 30
   percent: 94
 ---
 
@@ -114,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 07]: OAuth callback default changed to /onboarding/profile so Google OAuth users skip step 1 (auth already done via Google)
 - [Phase 07-unified-signup-and-onboarding-wizard]: onboarding_complete timing: webhook sets flag on call completion, not at trigger time — removed premature DB set from test-call route
 - [Phase 07-unified-signup-and-onboarding-wizard]: retell_llm_dynamic_variables keeps onboarding_complete: true for AI behavior during test call (separate concern from DB wizard completion flag)
+- [Phase 07-02]: Step 1 OTP phase uses useState toggle (not router.push) — keeps user in wizard card, avoids layout re-mount and progress bar flicker
+- [Phase 07-02]: shouldCreateUser: false on signInWithOtp prevents duplicate user creation when OTP sent post-signUp (Research Pitfall 2)
+- [Phase 07-02]: Two sequential POST calls to /api/onboarding/start in Step 2: business_name+tone first creates tenant, then trade+services saved (depends on tenant existing)
 
 ### Roadmap Evolution
 
@@ -135,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T10:42:30.643Z
-Stopped at: Completed 07-03-PLAN.md
+Last session: 2026-03-22T10:44:03.638Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None

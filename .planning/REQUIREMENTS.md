@@ -25,10 +25,10 @@
 
 ### Unified Onboarding
 
-- [ ] **WIZARD-01**: Any CTA (landing, pricing, contact) drops user into a single wizard where account creation is step 1
-- [ ] **WIZARD-02**: Wizard starts with a trade routing question that pre-populates service list and triage rules
+- [x] **WIZARD-01**: Any CTA (landing, pricing, contact) drops user into a single wizard where account creation is step 1
+- [x] **WIZARD-02**: Wizard starts with a trade routing question that pre-populates service list and triage rules
 - [x] **WIZARD-03**: Wizard shows progress indicator (step N of M) throughout the flow
-- [ ] **WIZARD-04**: Email verification is handled inline within the wizard without redirecting to a dead-end page
+- [x] **WIZARD-04**: Email verification is handled inline within the wizard without redirecting to a dead-end page
 - [x] **WIZARD-05**: Wizard form data persists across page refresh via sessionStorage
 - [x] **WIZARD-06**: Live test call is the wizard finale — user hears their AI receptionist before completing onboarding
 - [x] **WIZARD-07**: Existing users with completed onboarding bypass wizard and go directly to dashboard
@@ -190,10 +190,10 @@
 | PAGE-03 | Phase 6 | Complete |
 | PAGE-04 | Phase 6 | Complete |
 | PAGE-05 | Phase 6 | Complete |
-| WIZARD-01 | Phase 7 | Pending |
-| WIZARD-02 | Phase 7 | Pending |
+| WIZARD-01 | Phase 7 | Complete |
+| WIZARD-02 | Phase 7 | Complete |
 | WIZARD-03 | Phase 7 | Complete |
-| WIZARD-04 | Phase 7 | Pending |
+| WIZARD-04 | Phase 7 | Complete |
 | WIZARD-05 | Phase 7 | Complete |
 | WIZARD-06 | Phase 7 | Complete |
 | WIZARD-07 | Phase 7 | Complete |
