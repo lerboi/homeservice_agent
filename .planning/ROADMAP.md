@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
   3. The owner can trigger a test voice call from the dashboard and hear their AI receptionist answer — without needing to remember or look up their AI phone number
   4. Checklist progress persists across sessions and the checklist dismisses itself once all items are complete or the owner manually dismisses it
   5. A non-technical user visiting the dashboard for the first time can identify what each section does and what actions they need to take within 30 seconds — no guessing, no dead ends
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] 10-01-PLAN.md — DB migration + checklist API + SetupChecklist/ChecklistItem/SetupCompleteBar/WelcomeBanner + dashboard home integration
@@ -240,4 +240,4 @@ Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
 | 8. Outlook Calendar Sync | 0/TBD | Not started | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
-| 10. Dashboard Guided Setup | 0/4 | Planning complete | - |
+| 10. Dashboard Guided Setup | 3/4 | In Progress|  |
