@@ -30,7 +30,7 @@
 - [x] **WIZARD-03**: Wizard shows progress indicator (step N of M) throughout the flow
 - [ ] **WIZARD-04**: Email verification is handled inline within the wizard without redirecting to a dead-end page
 - [x] **WIZARD-05**: Wizard form data persists across page refresh via sessionStorage
-- [ ] **WIZARD-06**: Live test call is the wizard finale — user hears their AI receptionist before completing onboarding
+- [x] **WIZARD-06**: Live test call is the wizard finale — user hears their AI receptionist before completing onboarding
 - [x] **WIZARD-07**: Existing users with completed onboarding bypass wizard and go directly to dashboard
 
 ### Outlook Calendar
@@ -195,7 +195,7 @@
 | WIZARD-03 | Phase 7 | Complete |
 | WIZARD-04 | Phase 7 | Pending |
 | WIZARD-05 | Phase 7 | Complete |
-| WIZARD-06 | Phase 7 | Pending |
+| WIZARD-06 | Phase 7 | Complete |
 | WIZARD-07 | Phase 7 | Complete |
 | OUTLOOK-01 | Phase 8 | Pending |
 | OUTLOOK-02 | Phase 8 | Pending |

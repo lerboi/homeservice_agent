@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: completed
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-22T10:36:14.707Z"
-last_activity: 2026-03-22 — Completed Plan 07-01 (middleware rewrite, 5-step layout, useWizardSession hook, celebration keyframes)
+status: executing
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-03-22T10:42:30.651Z"
+last_activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
 progress:
   total_phases: 10
   completed_phases: 6
   total_plans: 31
-  completed_plans: 28
-  percent: 90
+  completed_plans: 29
+  percent: 94
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 7 — Unified Signup and Onboarding Wizard (1/4 plans complete)
-Plan: 01 (complete)
-Status: Phase 7 in progress — foundation routing, layout, session hook, and CSS animations complete
-Last activity: 2026-03-22 — Completed Plan 07-01 (middleware rewrite, 5-step layout, useWizardSession hook, celebration keyframes)
+Phase: 7 — Unified Signup and Onboarding Wizard (3/4 plans complete)
+Plan: 03 (complete)
+Status: Phase 7 in progress — steps 3-4 migrated, test-call-status polling endpoint added, onboarding_complete timing fixed
+Last activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 94%
 
 ## Accumulated Context
 
@@ -112,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Middleware only queries onboarding_complete on /onboarding paths, not /dashboard — avoids unnecessary DB latency on every dashboard page load
 - [Phase 07]: useWizardSession uses gsd_onboarding_ prefix for sessionStorage key isolation; clearWizardSession bulk-removes all keys on wizard completion
 - [Phase 07]: OAuth callback default changed to /onboarding/profile so Google OAuth users skip step 1 (auth already done via Google)
+- [Phase 07-unified-signup-and-onboarding-wizard]: onboarding_complete timing: webhook sets flag on call completion, not at trigger time — removed premature DB set from test-call route
+- [Phase 07-unified-signup-and-onboarding-wizard]: retell_llm_dynamic_variables keeps onboarding_complete: true for AI behavior during test call (separate concern from DB wizard completion flag)
 
 ### Roadmap Evolution
 
@@ -133,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T10:36:14.703Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-22T10:42:30.643Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
