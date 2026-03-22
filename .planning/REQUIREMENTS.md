@@ -7,13 +7,13 @@
 
 ### Pricing Page
 
-- [ ] **PRICE-01**: User sees 4 pricing tiers (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls, Enterprise custom) with clear feature breakdown
-- [ ] **PRICE-02**: Growth tier is visually highlighted with "Most Popular" badge as the recommended option
+- [x] **PRICE-01**: User sees 4 pricing tiers (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls, Enterprise custom) with clear feature breakdown
+- [x] **PRICE-02**: Growth tier is visually highlighted with "Most Popular" badge as the recommended option
 - [x] **PRICE-03**: User can toggle between monthly and annual pricing display (display-only, no Stripe)
-- [ ] **PRICE-04**: User sees a feature comparison table below the fold showing what each tier includes
-- [ ] **PRICE-05**: User sees an FAQ section addressing cancellation, overages, trial availability, and refunds
-- [ ] **PRICE-06**: User sees ROI-framed hero copy that speaks in job revenue, not SaaS metrics
-- [ ] **PRICE-07**: Each tier has a "Get Started" CTA that routes to the unified onboarding wizard
+- [x] **PRICE-04**: User sees a feature comparison table below the fold showing what each tier includes
+- [x] **PRICE-05**: User sees an FAQ section addressing cancellation, overages, trial availability, and refunds
+- [x] **PRICE-06**: User sees ROI-framed hero copy that speaks in job revenue, not SaaS metrics
+- [x] **PRICE-07**: Each tier has a "Get Started" CTA that routes to the unified onboarding wizard
 
 ### Public Pages
 
@@ -27,11 +27,11 @@
 
 - [ ] **WIZARD-01**: Any CTA (landing, pricing, contact) drops user into a single wizard where account creation is step 1
 - [ ] **WIZARD-02**: Wizard starts with a trade routing question that pre-populates service list and triage rules
-- [ ] **WIZARD-03**: Wizard shows progress indicator (step N of M) throughout the flow
+- [x] **WIZARD-03**: Wizard shows progress indicator (step N of M) throughout the flow
 - [ ] **WIZARD-04**: Email verification is handled inline within the wizard without redirecting to a dead-end page
-- [ ] **WIZARD-05**: Wizard form data persists across page refresh via sessionStorage
+- [x] **WIZARD-05**: Wizard form data persists across page refresh via sessionStorage
 - [ ] **WIZARD-06**: Live test call is the wizard finale — user hears their AI receptionist before completing onboarding
-- [ ] **WIZARD-07**: Existing users with completed onboarding bypass wizard and go directly to dashboard
+- [x] **WIZARD-07**: Existing users with completed onboarding bypass wizard and go directly to dashboard
 
 ### Outlook Calendar
 
@@ -178,13 +178,13 @@
 | ONBOARD-04 | Phase 2 | Complete |
 | ONBOARD-05 | Phase 2 | Complete |
 | ONBOARD-06 | Phase 2 | Complete |
-| PRICE-01 | Phase 6 | Pending |
-| PRICE-02 | Phase 6 | Pending |
+| PRICE-01 | Phase 6 | Complete |
+| PRICE-02 | Phase 6 | Complete |
 | PRICE-03 | Phase 6 | Complete |
-| PRICE-04 | Phase 6 | Pending |
-| PRICE-05 | Phase 6 | Pending |
-| PRICE-06 | Phase 6 | Pending |
-| PRICE-07 | Phase 6 | Pending |
+| PRICE-04 | Phase 6 | Complete |
+| PRICE-05 | Phase 6 | Complete |
+| PRICE-06 | Phase 6 | Complete |
+| PRICE-07 | Phase 6 | Complete |
 | PAGE-01 | Phase 6 | Complete |
 | PAGE-02 | Phase 6 | Complete |
 | PAGE-03 | Phase 6 | Complete |
@@ -192,11 +192,11 @@
 | PAGE-05 | Phase 6 | Complete |
 | WIZARD-01 | Phase 7 | Pending |
 | WIZARD-02 | Phase 7 | Pending |
-| WIZARD-03 | Phase 7 | Pending |
+| WIZARD-03 | Phase 7 | Complete |
 | WIZARD-04 | Phase 7 | Pending |
-| WIZARD-05 | Phase 7 | Pending |
+| WIZARD-05 | Phase 7 | Complete |
 | WIZARD-06 | Phase 7 | Pending |
-| WIZARD-07 | Phase 7 | Pending |
+| WIZARD-07 | Phase 7 | Complete |
 | OUTLOOK-01 | Phase 8 | Pending |
 | OUTLOOK-02 | Phase 8 | Pending |
 | OUTLOOK-03 | Phase 8 | Pending |

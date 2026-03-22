@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: completed
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-22T08:43:14.038Z"
-last_activity: 2026-03-22 — Completed Plan 06-03 (About page, Contact page, contact API route)
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-22T10:36:14.707Z"
+last_activity: 2026-03-22 — Completed Plan 07-01 (middleware rewrite, 5-step layout, useWizardSession hook, celebration keyframes)
 progress:
   total_phases: 10
   completed_phases: 6
-  total_plans: 27
-  completed_plans: 27
-  percent: 96
+  total_plans: 31
+  completed_plans: 28
+  percent: 90
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 6 — Public Marketing Pages (3/3 plans complete)
-Plan: 03 (complete)
-Status: Phase 6 complete — all 3 plans executed
-Last activity: 2026-03-22 — Completed Plan 06-03 (About page, Contact page, contact API route)
+Phase: 7 — Unified Signup and Onboarding Wizard (1/4 plans complete)
+Plan: 01 (complete)
+Status: Phase 7 in progress — foundation routing, layout, session hook, and CSS animations complete
+Last activity: 2026-03-22 — Completed Plan 07-01 (middleware rewrite, 5-step layout, useWizardSession hook, celebration keyframes)
 
-Progress: [██████████] 96%
+Progress: [█████████░] 90%
 
 ## Accumulated Context
 
@@ -108,6 +108,10 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06-02]: @radix-ui/react-accordion is the correct import path — radix-ui/react-accordion subpath does not exist as a module
 - [Phase 06]: Accordion animation registered via --animate-* convention in @theme inline block (Tailwind v4 auto-generates animate-accordion-down utility)
 - [Phase 06]: height: var(--radix-accordion-content-height) for smooth accordion height transition — Radix sets this CSS variable automatically at runtime
+- [Phase 07]: AUTH_REQUIRED_PATHS guards wizard sub-paths and dashboard; /onboarding itself is public (it is the auth step)
+- [Phase 07]: Middleware only queries onboarding_complete on /onboarding paths, not /dashboard — avoids unnecessary DB latency on every dashboard page load
+- [Phase 07]: useWizardSession uses gsd_onboarding_ prefix for sessionStorage key isolation; clearWizardSession bulk-removes all keys on wizard completion
+- [Phase 07]: OAuth callback default changed to /onboarding/profile so Google OAuth users skip step 1 (auth already done via Google)
 
 ### Roadmap Evolution
 
@@ -129,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T08:43:14.033Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-unified-signup-and-onboarding-wizard/07-CONTEXT.md
+Last session: 2026-03-22T10:36:14.703Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None
