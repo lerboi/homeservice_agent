@@ -1,12 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Loader2, Phone } from 'lucide-react';
+import { Loader2, Phone, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CelebrationOverlay } from '@/components/onboarding/CelebrationOverlay';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
-export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
+export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard, context = 'onboarding' }) {
   const [callState, setCallState] = useState('ready');
   const [error, setError] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -80,6 +80,24 @@ export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
   }
 
   if (callState === 'ready') {
+    if (context === 'settings') {
+      return (
+        <div className="flex flex-col gap-3">
+          <Button
+            onClick={handleCallMyAI}
+            className="w-full min-h-[44px] bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all duration-150"
+          >
+            Test My AI
+          </Button>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -120,6 +138,15 @@ export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
   }
 
   if (callState === 'calling') {
+    if (context === 'settings') {
+      return (
+        <div aria-live="polite" className="flex items-center gap-3 py-2">
+          <Loader2 className="size-5 text-[#C2410C] animate-spin" aria-hidden="true" />
+          <span className="text-sm text-[#0F172A] font-medium">Calling your AI...</span>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -140,6 +167,19 @@ export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
   }
 
   if (callState === 'in_progress') {
+    if (context === 'settings') {
+      return (
+        <div aria-live="polite" className="flex items-center gap-3 py-2">
+          <div className="size-8 rounded-full ring-2 ring-[#166534] animate-pulse flex items-center justify-center bg-white shrink-0">
+            <Phone className="size-4 text-[#166534]" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-sm text-[#0F172A] font-medium">Call in progress ({formatTime(elapsedSeconds)})</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-6">
         <div>
@@ -163,6 +203,15 @@ export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
   }
 
   if (callState === 'complete') {
+    if (context === 'settings') {
+      return (
+        <div className="flex items-center gap-2 text-[#166534]" aria-live="polite">
+          <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+          <span className="text-sm font-medium">Test call complete. Your AI is working!</span>
+        </div>
+      );
+    }
+
     return (
       <AnimatedSection>
         <div className="flex flex-col items-center gap-6 text-center">
@@ -189,6 +238,24 @@ export function TestCallPanel({ phoneNumber, onComplete, onGoToDashboard }) {
   }
 
   if (callState === 'timeout') {
+    if (context === 'settings') {
+      return (
+        <div className="flex flex-col gap-3">
+          <Alert>
+            <AlertDescription>
+              The test call timed out. Check that your AI phone number is active and try again.
+            </AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => setCallState('calling')}
+            className="w-full min-h-[44px] bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] text-white shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all duration-150"
+          >
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col gap-6">
         <div>
