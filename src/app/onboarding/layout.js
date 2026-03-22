@@ -3,24 +3,24 @@
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { Progress } from '@/components/ui/progress';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
 function getStep(pathname) {
   if (pathname === '/onboarding') return 1;
-  if (pathname === '/onboarding/profile') return 2;
-  if (pathname === '/onboarding/services') return 3;
-  if (pathname === '/onboarding/contact') return 4;
-  if (pathname === '/onboarding/test-call') return 5;
+  if (pathname === '/onboarding/services') return 2;
+  if (pathname === '/onboarding/contact') return 3;
+  if (pathname === '/onboarding/test-call') return 4;
   return 1;
 }
+
+const TOTAL_STEPS = 4;
 
 export default function OnboardingLayout({ children }) {
   const pathname = usePathname();
   const t = useTranslations('onboarding');
   const currentStep = getStep(pathname);
-  const progressValue = (currentStep / 5) * 100;
+  const progressValue = (currentStep / TOTAL_STEPS) * 100;
 
   return (
     <div className="min-h-screen bg-[#F5F5F4] relative">
@@ -44,11 +44,11 @@ export default function OnboardingLayout({ children }) {
               </svg>
             </div>
             <span className="text-[#0F172A] font-semibold text-[15px] tracking-tight">
-              HomeService AI
+              Voco
             </span>
           </Link>
           <span className="text-sm text-[#475569]">
-            {t('step_counter', { step: currentStep, total: 5 })}
+            {t('step_counter', { step: currentStep, total: TOTAL_STEPS })}
           </span>
         </div>
 
@@ -58,7 +58,7 @@ export default function OnboardingLayout({ children }) {
           role="progressbar"
           aria-valuenow={currentStep}
           aria-valuemin={1}
-          aria-valuemax={5}
+          aria-valuemax={TOTAL_STEPS}
           aria-label="Onboarding progress"
         >
           <div

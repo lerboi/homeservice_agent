@@ -1,7 +1,5 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { AnimatedSection } from './AnimatedSection';
-import { ArrowRight } from 'lucide-react';
+import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
 
 export function FinalCTASection() {
   return (
@@ -24,16 +22,7 @@ export function FinalCTASection() {
           <p className="text-lg text-white/70 mb-10 max-w-md mx-auto leading-relaxed">
             Set up your AI receptionist in 5 minutes. No tech skills needed. No credit card required.
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="bg-[#0F172A] text-white hover:bg-[#0F172A]/90 min-h-[52px] px-8 text-base font-medium rounded-xl shadow-[0_4px_12px_0_rgba(0,0,0,0.3)] transition-all hover:shadow-[0_8px_24px_0_rgba(0,0,0,0.4)] hover:-translate-y-0.5 group"
-          >
-            <Link href="/onboarding">
-              Start My 5-Minute Setup
-              <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </Button>
+          <AuthAwareCTA variant="cta" />
         </AnimatedSection>
       </div>
     </section>

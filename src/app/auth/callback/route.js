@@ -4,7 +4,7 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') || '/onboarding/profile';
+  const next = searchParams.get('next') || '/onboarding';
   if (code) {
     const supabase = await createSupabaseServer();
     await supabase.auth.exchangeCodeForSession(code);

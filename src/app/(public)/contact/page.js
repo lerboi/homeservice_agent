@@ -2,8 +2,8 @@ import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { ContactForm } from './ContactForm';
 
 export const metadata = {
-  title: 'Contact - HomeService AI',
-  description: 'Get in touch with the HomeService AI team.',
+  title: 'Contact - Voco',
+  description: 'Get in touch with the Voco team.',
 };
 
 export default function ContactPage() {
@@ -18,7 +18,7 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="mt-6 text-lg text-white/60">
-              Have a question about HomeService AI? We&apos;d love to hear from you.
+              Have a question about Voco? We&apos;d love to hear from you.
             </p>
             <p className="mt-3 text-sm text-[#C2410C] font-medium">
               We respond within 24 hours

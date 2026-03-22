@@ -6,19 +6,16 @@ export async function POST(request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { phone, email } = await request.json();
+  const { phone } = await request.json();
 
-  // Save phone and email directly to tenant row (no OTP verification for now)
-  const updateFields = {};
+  // Always save the user's auth email; phone is optional
+  const updateFields = { owner_email: user.email };
   if (phone?.trim()) updateFields.owner_phone = phone.trim();
-  if (email?.trim()) updateFields.owner_email = email.trim();
 
-  if (Object.keys(updateFields).length > 0) {
-    await adminSupabase
-      .from('tenants')
-      .update(updateFields)
-      .eq('owner_id', user.id);
-  }
+  await adminSupabase
+    .from('tenants')
+    .update(updateFields)
+    .eq('owner_id', user.id);
 
   return Response.json({ saved: true });
 }

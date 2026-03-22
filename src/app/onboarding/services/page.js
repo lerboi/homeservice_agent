@@ -81,16 +81,19 @@ export default function OnboardingStep3Services() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
-        Your services
-      </h1>
-      <p className="mt-2 mb-6 text-base text-[#475569]">
-        Edit or add services -- your AI will know what you offer.
-      </p>
+    <div className="flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+      {/* Fixed header */}
+      <div className="shrink-0">
+        <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
+          Your services
+        </h1>
+        <p className="mt-2 mb-4 text-base text-[#475569]">
+          Edit or add services -- your AI will know what you offer.
+        </p>
+      </div>
 
-      {/* Service list */}
-      <div className="mb-8">
+      {/* Scrollable service list */}
+      <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 mb-4">
         {services.length === 0 ? (
           <p className="text-base text-[#475569] mb-3">
             No services yet. Add your first service below.
@@ -124,10 +127,13 @@ export default function OnboardingStep3Services() {
             ))}
           </AnimatedStagger>
         )}
+      </div>
 
+      {/* Fixed bottom: add service + nav */}
+      <div className="shrink-0">
         {/* Add service */}
         {addingService ? (
-          <form onSubmit={handleAddService} className="mt-3 flex gap-2">
+          <form onSubmit={handleAddService} className="flex gap-2 mb-4">
             <Input
               autoFocus
               type="text"
@@ -153,40 +159,40 @@ export default function OnboardingStep3Services() {
             type="button"
             onClick={() => setAddingService(true)}
             variant="outline"
-            className="mt-3 border-stone-200 text-[#475569] hover:bg-stone-50 min-h-11"
+            className="mb-4 border-stone-200 text-[#475569] hover:bg-stone-50 min-h-11"
           >
             <Plus size={16} className="mr-1" aria-hidden="true" />
             {t('add_service')}
           </Button>
         )}
-      </div>
 
-      {submitError && (
-        <p role="alert" className="mb-4 text-sm text-red-600">
-          {submitError}
-        </p>
-      )}
+        {submitError && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {submitError}
+          </p>
+        )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between mt-6">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => router.push('/onboarding/profile')}
-          disabled={loading}
-          className="text-[#475569] hover:text-[#0F172A] px-0 min-h-11"
-        >
-          {t('back')}
-        </Button>
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
-                     text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
-        >
-          {t('cta_step3')}
-        </Button>
+        {/* Navigation */}
+        <div className="flex items-center justify-between pt-2 border-t border-stone-100">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.push('/onboarding')}
+            disabled={loading}
+            className="text-[#475569] hover:text-[#0F172A] px-0 min-h-11"
+          >
+            {t('back')}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
+                       text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+          >
+            {t('cta_step3')}
+          </Button>
+        </div>
       </div>
     </div>
   );

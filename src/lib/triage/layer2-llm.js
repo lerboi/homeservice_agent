@@ -1,7 +1,7 @@
 /**
  * Layer 2: LLM-based urgency scorer for home service call triage.
  * Called only when Layer 1 is not confident (ambiguous transcripts).
- * Uses GPT-4o-mini for cost control — structured JSON output.
+ * Uses Groq (Llama 4 Scout) for fast, low-cost structured JSON output.
  */
 
 import OpenAI from 'openai';
@@ -9,20 +9,23 @@ import OpenAI from 'openai';
 let _client = null;
 function getClient() {
   if (!_client) {
-    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    _client = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.groq.com/openai/v1',
+    });
   }
   return _client;
 }
 
 /**
- * Score the urgency of a call transcript using GPT-4o-mini.
+ * Score the urgency of a call transcript using Groq (Llama 4 Scout).
  *
  * @param {string} transcript - The call transcript text.
  * @returns {Promise<{ urgency: 'emergency'|'routine'|'high_ticket', confidence: 'high'|'medium'|'low', reason: string }>}
  */
 export async function runLLMScorer(transcript) {
   const response = await getClient().chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
       {
         role: 'system',

@@ -8,7 +8,7 @@ import {
 } from '@/app/components/landing/AnimatedSection';
 
 export const metadata = {
-  title: 'About - HomeService AI',
+  title: 'About - Voco',
   description: 'Our mission: ensure no home service call goes unanswered.',
 };
 
@@ -25,7 +25,7 @@ export default function AboutPage() {
               <span className="text-[#C2410C]">By People Who Respect the Work.</span>
             </h1>
             <p className="mt-6 text-lg text-white/60 max-w-2xl mx-auto">
-              We started HomeService AI because we watched skilled tradespeople lose good jobs to voicemail. A plumber in the middle of a pipe repair shouldn&apos;t have to choose between the customer in front of them and the phone ringing in their pocket.
+              We started Voco because we watched skilled tradespeople lose good jobs to voicemail. A plumber in the middle of a pipe repair shouldn&apos;t have to choose between the customer in front of them and the phone ringing in their pocket.
             </p>
           </AnimatedSection>
         </div>
@@ -63,7 +63,7 @@ export default function AboutPage() {
                   <Wrench className="size-6 text-[#C2410C]" />
                 </div>
                 <h3 className="text-lg font-semibold text-[#0F172A] mb-2">Built for Trades, Not Tech</h3>
-                <p className="text-sm text-[#475569] leading-relaxed">5-minute setup. No IT department needed. If you can answer a phone call, you can set up HomeService AI.</p>
+                <p className="text-sm text-[#475569] leading-relaxed">5-minute setup. No IT department needed. If you can answer a phone call, you can set up Voco.</p>
               </div>
             </AnimatedItem>
 

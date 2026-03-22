@@ -46,7 +46,7 @@
     "cta_step3_provisioning": "Activando\u2026",
     "cta_activation": "Probar tu IA",
     "back": "Atras",
-    "step_counter": "Paso {step} de 3",
+    "step_counter": "Paso {step} de {total}",
     "business_name_label": "Nombre del negocio",
     "business_name_placeholder": "ej. Plomeria Smith",
     "tone_section_label": "Como debe sonar tu IA?",

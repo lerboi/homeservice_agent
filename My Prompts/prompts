@@ -1,0 +1,14 @@
+
+Confirm:
+Before making any changes, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know.    
+
+
+Improve UI:
+I want to improve the UI/UX for this page. You will refer to any relevant frontend design skills (frontend-design, web-design-guidelines, vercel-best-practices, ui-ux-pro-max).
+For the design, try to use icons with little text to convey information to keep it looking professional/minimalistic and not so cluttered (however, use text is it makes more sense UI/UX wise).
+It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design changes should be made
+
+
+Confirm the issues:
+Look through all the issues and gather all the context and code needed to fully and correctly reach a 100% certain conclusion that the issues are legit and not false positives. 
+Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 

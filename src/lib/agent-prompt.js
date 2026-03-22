@@ -20,7 +20,7 @@ const TONE_LABELS = {
  * @param {string} options.tone_preset - Tone preset: 'professional' | 'friendly' | 'local_expert'
  * @returns {string} Complete system prompt for Retell agent
  */
-export function buildSystemPrompt(locale, { business_name = 'HomeService', onboarding_complete = false, tone_preset = 'professional' } = {}) {
+export function buildSystemPrompt(locale, { business_name = 'Voco', onboarding_complete = false, tone_preset = 'professional' } = {}) {
   const t = (key) => {
     const parts = key.split('.');
     let val = messages[locale] || messages['en'];

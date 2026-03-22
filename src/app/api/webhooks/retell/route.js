@@ -97,7 +97,7 @@ async function handleInbound(payload) {
     // No tenant configured for this number — use defaults
     return Response.json({
       dynamic_variables: {
-        business_name: 'HomeService',
+        business_name: 'Voco',
         default_locale: 'en',
         onboarding_complete: false,
         caller_number: from_number,
@@ -164,7 +164,7 @@ async function handleInbound(payload) {
 
   return Response.json({
     dynamic_variables: {
-      business_name: tenant.business_name || 'HomeService',
+      business_name: tenant.business_name || 'Voco',
       default_locale: tenant.default_locale || 'en',
       onboarding_complete: tenant.onboarding_complete,
       caller_number: from_number,

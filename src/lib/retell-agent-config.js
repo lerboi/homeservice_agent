@@ -22,7 +22,7 @@ const TONE_PRESETS = {
  * @param {string} options.tone_preset - Tone preset: 'professional' | 'friendly' | 'local_expert'
  * @returns {object} Retell agent config object
  */
-export function getAgentConfig({ locale = 'en', business_name = 'HomeService', onboarding_complete = false, tone_preset = 'professional' } = {}) {
+export function getAgentConfig({ locale = 'en', business_name = 'Voco', onboarding_complete = false, tone_preset = 'professional' } = {}) {
   const preset = TONE_PRESETS[tone_preset] || TONE_PRESETS.professional;
 
   const functions = [

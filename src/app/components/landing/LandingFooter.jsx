@@ -11,7 +11,7 @@ export function LandingFooter() {
               <path d="M8 2v6M4 6l4-4 4 4M3 10h10M5 14h6" />
             </svg>
           </div>
-          <span className="text-white font-semibold text-[15px] tracking-tight">HomeService AI</span>
+          <span className="text-white font-semibold text-[15px] tracking-tight">Voco</span>
         </div>
         <p className="text-sm text-white/40 mb-10 ml-9">Every call answered. Every job booked.</p>
 
@@ -76,7 +76,7 @@ export function LandingFooter() {
 
         {/* Bottom: copyright */}
         <div className="border-t border-white/[0.06] pt-8">
-          <p className="text-xs text-white/20">&copy; {new Date().getFullYear()} HomeService AI. No call goes to voicemail.</p>
+          <p className="text-xs text-white/20">&copy; {new Date().getFullYear()} Voco. No call goes to voicemail.</p>
         </div>
       </div>
     </footer>

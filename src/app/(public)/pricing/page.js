@@ -6,7 +6,7 @@ import ComparisonTable from './ComparisonTable';
 import FAQSection from './FAQSection';
 
 export const metadata = {
-  title: 'Pricing - HomeService AI',
+  title: 'Pricing - Voco',
   description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
 };
 

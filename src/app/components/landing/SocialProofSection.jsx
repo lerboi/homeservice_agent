@@ -3,7 +3,7 @@ import { Star, Quote } from 'lucide-react';
 
 const testimonials = [
   {
-    quote: 'I was losing $4k a month in missed calls. First week with HomeService AI, I booked two emergency jobs at midnight.',
+    quote: 'I was losing $4k a month in missed calls. First week with Voco, I booked two emergency jobs at midnight.',
     name: 'Dave R.',
     role: 'Master Plumber',
     location: 'Auckland',

@@ -76,7 +76,7 @@ export function LandingNav() {
               </svg>
             </div>
             <span className="text-white font-semibold text-[15px] tracking-tight">
-              HomeService AI
+              Voco
             </span>
           </Link>
 

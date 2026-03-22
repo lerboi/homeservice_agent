@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BarChart3, Wrench, Calendar, Menu, X, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Wrench, Calendar, Menu, X, Settings, LogOut } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { supabase } from '@/lib/supabase-browser';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
@@ -45,6 +47,12 @@ function NavLink({ item, pathname }) {
 export default function DashboardSidebar({ businessName }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = '/auth/signin';
+  }
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -56,7 +64,7 @@ export default function DashboardSidebar({ businessName }) {
           </svg>
         </div>
         <span className="text-white font-semibold text-[15px] tracking-tight">
-          HomeService AI
+          Voco
         </span>
       </div>
 
@@ -75,7 +83,7 @@ export default function DashboardSidebar({ businessName }) {
         {/* Separator before Settings */}
         <Separator className="bg-white/[0.06] my-2" />
 
-        {/* Bottom nav (Settings) */}
+        {/* Bottom nav (Settings + Logout) */}
         <div className="space-y-1">
           {BOTTOM_NAV.map((item) => (
             <NavLink
@@ -84,6 +92,13 @@ export default function DashboardSidebar({ businessName }) {
               pathname={pathname}
             />
           ))}
+          <button
+            onClick={() => setShowLogoutDialog(true)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            Log Out
+          </button>
         </div>
       </nav>
 
@@ -141,6 +156,24 @@ export default function DashboardSidebar({ businessName }) {
           </aside>
         </>
       )}
+
+      {/* Logout confirmation */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to log out of your account?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} className="bg-[#C2410C] hover:bg-[#B53B0A]">
+              Log Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

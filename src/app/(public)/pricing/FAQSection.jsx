@@ -18,7 +18,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What is your refund policy?',
-    a: "We offer a 30-day money-back guarantee. If HomeService AI doesn't pay for itself within the first month, we'll refund your subscription -- no questions asked.",
+    a: "We offer a 30-day money-back guarantee. If Voco doesn't pay for itself within the first month, we'll refund your subscription -- no questions asked.",
   },
 ];
 

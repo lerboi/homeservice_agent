@@ -2,15 +2,42 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection } from './AnimatedSection';
-import { Phone, ArrowRight } from 'lucide-react';
+import { Phone } from 'lucide-react';
+import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import dynamic from 'next/dynamic';
+
+// 21st.dev animated-hero RotatingText — lazy loaded, SSR shows static fallback
+const RotatingText = dynamic(
+  () => import('./RotatingText').then((m) => m.RotatingText),
+  {
+    loading: () => <span className="text-[#C2410C]">Competitor</span>,
+  }
+);
+
+// 21st.dev serafim/splite Spline 3D scene — lazy loaded, heavy (~500KB)
+// Falls back to static dashboard image during load and on SSR
+const SplineScene = dynamic(
+  () => import('./SplineScene').then((m) => m.SplineScene),
+  {
+    loading: () => (
+      <div className="w-full aspect-[4/3] rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
+        <div className="size-8 border-2 border-[#C2410C]/40 border-t-[#C2410C] rounded-full animate-spin" />
+      </div>
+    ),
+  }
+);
+
+const SPLINE_SCENE_URL = 'https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode';
 
 export function HeroSection() {
   return (
     <section className="relative bg-[#0F172A] overflow-hidden">
-      {/* Subtle radial gradient overlay */}
+      {/* Radial gradient accent */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(194,65,12,0.08),transparent_70%)]" />
       {/* Grid texture */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+      {/* Floating orb */}
+      <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] rounded-full bg-[#C2410C]/[0.04] blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-6 pt-28 pb-20 md:pt-36 md:pb-28">
         <div className="md:grid md:grid-cols-12 md:gap-12 md:items-center">
@@ -27,25 +54,22 @@ export function HeroSection() {
 
               <h1 className="text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold text-white leading-[1.1] tracking-tight">
                 Every Call You Miss Is a Job Your{' '}
-                <span className="text-[#C2410C]">Competitor</span>{' '}
+                <RotatingText
+                  texts={['Competitor', 'Revenue', 'Customer']}
+                  rotationInterval={3000}
+                  staggerDuration={0.03}
+                  staggerFrom="first"
+                  className="text-[#C2410C]"
+                />{' '}
                 Just Won
               </h1>
 
               <p className="text-lg md:text-xl text-white/60 mt-5 mb-8 max-w-xl leading-relaxed">
-                HomeService AI answers every call, triages the emergency, and books the slot — while you&apos;re knee-deep in someone else&apos;s burst pipe.
+                Voco answers every call, triages the emergency, and books the slot — while you&apos;re knee-deep in someone else&apos;s burst pipe.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-[#C2410C] text-white hover:bg-[#C2410C]/90 min-h-[48px] px-6 text-[15px] font-medium rounded-xl shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all hover:shadow-[0_4px_16px_0_rgba(194,65,12,0.4)] hover:-translate-y-0.5 group"
-                >
-                  <Link href="/onboarding">
-                    Start My 5-Minute Setup
-                    <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                </Button>
+                <AuthAwareCTA variant="hero" />
                 <Button
                   asChild
                   variant="outline"
@@ -75,23 +99,31 @@ export function HeroSection() {
             </AnimatedSection>
           </div>
 
-          {/* Dashboard mockup */}
+          {/* Interactive 3D scene — replaces static dashboard mockup */}
           <div className="md:col-span-6 lg:col-span-5 mt-12 md:mt-0">
             <AnimatedSection delay={0.2} direction="right">
               <div className="relative">
-                {/* Glow behind image */}
+                {/* Glow behind scene */}
                 <div className="absolute -inset-4 bg-gradient-to-br from-[#C2410C]/20 via-transparent to-transparent rounded-2xl blur-2xl" />
-                <div className="relative rounded-xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
+
+                {/* Mobile: static image fallback for performance */}
+                <div className="block md:hidden relative rounded-xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40">
                   <Image
                     src="/images/dashboard-mockup.png"
-                    alt="HomeService AI dashboard showing live call triage and booking"
+                    alt="Voco dashboard showing live call triage and booking"
                     width={640}
                     height={400}
                     priority
                     className="w-full h-auto"
                   />
-                  {/* Overlay shimmer */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-transparent" />
+                </div>
+
+                {/* Desktop: interactive Spline 3D scene */}
+                <div className="hidden md:block relative rounded-xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-black/40 aspect-[4/3]">
+                  <SplineScene
+                    scene={SPLINE_SCENE_URL}
+                    className="rounded-xl"
+                  />
                 </div>
               </div>
             </AnimatedSection>

@@ -46,7 +46,7 @@
     "cta_step3_provisioning": "Activating\u2026",
     "cta_activation": "Test your AI",
     "back": "Back",
-    "step_counter": "Step {step} of 3",
+    "step_counter": "Step {step} of {total}",
     "business_name_label": "Business name",
     "business_name_placeholder": "e.g. Smith Plumbing",
     "tone_section_label": "How should your AI sound?",

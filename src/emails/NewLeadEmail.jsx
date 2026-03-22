@@ -70,7 +70,7 @@ export function NewLeadEmail({ lead, businessName, dashboardUrl }) {
           {/* Footer */}
           <Section style={footerStyle}>
             <Text style={footerTextStyle}>
-              Sent by HomeService.ai for {businessName}. To manage your
+              Sent by Voco for {businessName}. To manage your
               notification settings, visit your dashboard.
             </Text>
           </Section>
