@@ -1,15 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-const PROTECTED_PATHS = ['/onboarding', '/dashboard'];
+// Step 1 (/onboarding) is PUBLIC — it is the auth step itself.
+// Steps 2-5 and /dashboard require authentication.
+const AUTH_REQUIRED_PATHS = [
+  '/onboarding/profile',
+  '/onboarding/services',
+  '/onboarding/contact',
+  '/onboarding/test-call',
+  '/dashboard',
+];
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-
-  const isProtected = PROTECTED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
-  );
-  if (!isProtected) return NextResponse.next();
 
   let response = NextResponse.next({ request });
 
@@ -31,14 +34,58 @@ export async function middleware(request) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user) {
-    const signinUrl = new URL('/auth/signin', request.url);
-    signinUrl.searchParams.set('next', pathname);
-    return NextResponse.redirect(signinUrl);
+  const isAuthRequired = AUTH_REQUIRED_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  );
+
+  // Unauthenticated user trying to access protected paths → send to step 1
+  if (!user && isAuthRequired) {
+    return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
+  // Authenticated user on /onboarding (step 1) → check if already complete
+  if (user && pathname === '/onboarding') {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('onboarding_complete')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (tenant?.onboarding_complete === true) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Not complete (or no tenant yet) → allow through step 1
+    return response;
+  }
+
+  // Authenticated user on onboarding sub-paths → check if already complete
+  if (
+    user &&
+    (pathname.startsWith('/onboarding/profile') ||
+      pathname.startsWith('/onboarding/services') ||
+      pathname.startsWith('/onboarding/contact') ||
+      pathname.startsWith('/onboarding/test-call'))
+  ) {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('onboarding_complete')
+      .eq('owner_id', user.id)
+      .single();
+
+    if (tenant?.onboarding_complete === true) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    return response;
+  }
+
+  // /dashboard paths → auth already verified above (isAuthRequired check)
+  // No DB query needed for onboarding_complete on dashboard paths (avoid latency)
   return response;
 }
 
