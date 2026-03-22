@@ -9,8 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TRADE_TEMPLATES } from '@/lib/trade-templates';
 import { AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
-
-const TRADE_KEYS = Object.keys(TRADE_TEMPLATES);
+import { useWizardSession } from '@/hooks/useWizardSession';
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
@@ -24,51 +23,19 @@ const URGENCY_LABELS = {
   routine: 'Routine',
 };
 
-function TradeCard({ tradeKey, label, isSelected, onSelect }) {
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect(tradeKey);
-    }
-  }
-
-  return (
-    <div
-      role="radio"
-      aria-checked={isSelected}
-      tabIndex={0}
-      onClick={() => onSelect(tradeKey)}
-      onKeyDown={handleKeyDown}
-      className={`
-        flex flex-col items-center justify-center p-4 rounded-2xl border cursor-pointer min-h-[80px]
-        transition-all duration-200
-        focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1
-        ${isSelected
-          ? 'border-[#C2410C] bg-[#C2410C]/[0.04] shadow-[0_0_0_1px_rgba(194,65,12,0.15)]'
-          : 'border-stone-200 bg-[#F5F5F4] hover:bg-stone-100 hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] hover:-translate-y-0.5'
-        }
-      `}
-    >
-      <span className="text-base font-semibold text-[#0F172A] text-center">{label}</span>
-    </div>
-  );
-}
-
-export default function OnboardingStep2() {
+export default function OnboardingStep3Services() {
   const t = useTranslations('onboarding');
   const router = useRouter();
-  const [selectedTrade, setSelectedTrade] = useState(null);
-  const [services, setServices] = useState([]);
-  const [tradeError, setTradeError] = useState('');
+
+  const [trade] = useWizardSession('trade', null);
+  const [services, setServices] = useWizardSession(
+    'services',
+    trade ? (TRADE_TEMPLATES[trade]?.services || []).map((svc, idx) => ({ ...svc, id: idx })) : []
+  );
+  const [submitError, setSubmitError] = useState('');
   const [addingService, setAddingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [loading, setLoading] = useState(false);
-
-  function handleSelectTrade(tradeKey) {
-    setSelectedTrade(tradeKey);
-    setTradeError('');
-    setServices(TRADE_TEMPLATES[tradeKey].services.map((svc, idx) => ({ ...svc, id: idx })));
-  }
 
   function handleRemoveService(serviceId) {
     setServices((prev) => prev.filter((s) => s.id !== serviceId));
@@ -87,32 +54,28 @@ export default function OnboardingStep2() {
   }
 
   async function handleSubmit() {
-    if (!selectedTrade) {
-      setTradeError(t('error_no_trade'));
-      return;
-    }
-
+    setSubmitError('');
     setLoading(true);
     try {
       const res = await fetch('/api/onboarding/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trade_type: selectedTrade,
+          trade_type: trade,
           services: services.map(({ name, urgency_tag }) => ({ name, urgency_tag })),
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setTradeError(data.error || t('error_save_failed'));
+        setSubmitError(data.error || t('error_save_failed'));
         setLoading(false);
         return;
       }
 
-      router.push('/onboarding/verify');
+      router.push('/onboarding/contact');
     } catch {
-      setTradeError(t('error_save_failed'));
+      setSubmitError(t('error_save_failed'));
       setLoading(false);
     }
   }
@@ -120,107 +83,88 @@ export default function OnboardingStep2() {
   return (
     <div>
       <h1 className="text-3xl font-semibold text-[#0F172A] leading-tight tracking-tight">
-        {t('step2_heading')}
+        Your services
       </h1>
       <p className="mt-2 mb-6 text-base text-[#475569]">
-        {t('step2_subtext')}
+        Edit or add services -- your AI will know what you offer.
       </p>
 
-      {/* Trade template cards */}
-      <div className="mb-6">
-        <p className="text-base font-semibold text-[#0F172A] mb-3">
-          {t('trade_section_label')}
-        </p>
-        <AnimatedStagger className="grid grid-cols-2 gap-4" role="radiogroup" aria-label={t('trade_section_label')}>
-          {TRADE_KEYS.map((key) => (
-            <AnimatedItem key={key}>
-              <TradeCard
-                tradeKey={key}
-                label={TRADE_TEMPLATES[key].label}
-                isSelected={selectedTrade === key}
-                onSelect={handleSelectTrade}
-              />
-            </AnimatedItem>
-          ))}
-        </AnimatedStagger>
-        {tradeError && (
-          <p role="alert" className="mt-2 text-sm text-red-600">
-            {tradeError}
+      {/* Service list */}
+      <div className="mb-8">
+        {services.length === 0 ? (
+          <p className="text-base text-[#475569] mb-3">
+            No services yet. Add your first service below.
           </p>
+        ) : (
+          <AnimatedStagger className="space-y-2">
+            {services.map((svc) => (
+              <AnimatedItem key={svc.id}>
+                <li
+                  className="flex items-center justify-between gap-3 px-3 py-2 bg-[#F5F5F4]
+                             rounded-xl border border-stone-200 min-h-11 list-none"
+                >
+                  <span className="text-base text-[#0F172A] flex-1">{svc.name}</span>
+                  <Badge
+                    className={`text-sm font-normal ${URGENCY_BADGE_CLASSES[svc.urgency_tag] || URGENCY_BADGE_CLASSES.routine}`}
+                  >
+                    {URGENCY_LABELS[svc.urgency_tag] || 'Routine'}
+                  </Badge>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveService(svc.id)}
+                    aria-label={t('remove_service_aria', { serviceName: svc.name })}
+                    className="text-red-600 hover:text-red-700 p-1 rounded focus:outline-none
+                               focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1 min-h-[44px] min-w-[44px]
+                               flex items-center justify-center"
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </li>
+              </AnimatedItem>
+            ))}
+          </AnimatedStagger>
+        )}
+
+        {/* Add service */}
+        {addingService ? (
+          <form onSubmit={handleAddService} className="mt-3 flex gap-2">
+            <Input
+              autoFocus
+              type="text"
+              value={newServiceName}
+              onChange={(e) => setNewServiceName(e.target.value)}
+              placeholder="Service name"
+              className="flex-1 min-h-11 text-base border-stone-200"
+            />
+            <Button type="submit" className="min-h-11 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white">
+              <Plus size={16} aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              onClick={() => { setAddingService(false); setNewServiceName(''); }}
+              variant="outline"
+              className="min-h-11"
+            >
+              <X size={16} aria-hidden="true" />
+            </Button>
+          </form>
+        ) : (
+          <Button
+            type="button"
+            onClick={() => setAddingService(true)}
+            variant="outline"
+            className="mt-3 border-stone-200 text-[#475569] hover:bg-stone-50 min-h-11"
+          >
+            <Plus size={16} className="mr-1" aria-hidden="true" />
+            {t('add_service')}
+          </Button>
         )}
       </div>
 
-      {/* Service list */}
-      {services.length > 0 && (
-        <div className="mb-8">
-          <p className="text-base font-semibold text-[#0F172A] mb-1">
-            {t('services_section_label')}
-          </p>
-          <p className="text-sm text-[#475569] mb-3">
-            {t('services_section_helper')}
-          </p>
-          <ul className="space-y-2">
-            {services.map((svc) => (
-              <li
-                key={svc.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 bg-[#F5F5F4]
-                           rounded-xl border border-stone-200 min-h-11"
-              >
-                <span className="text-base text-[#0F172A] flex-1">{svc.name}</span>
-                <Badge
-                  className={`text-sm font-normal ${URGENCY_BADGE_CLASSES[svc.urgency_tag] || URGENCY_BADGE_CLASSES.routine}`}
-                >
-                  {URGENCY_LABELS[svc.urgency_tag] || 'Routine'}
-                </Badge>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveService(svc.id)}
-                  aria-label={t('remove_service_aria', { serviceName: svc.name })}
-                  className="text-red-600 hover:text-red-700 p-1 rounded focus:outline-none
-                             focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1 min-h-[44px] min-w-[44px]
-                             flex items-center justify-center"
-                >
-                  <X size={16} aria-hidden="true" />
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {/* Add service */}
-          {addingService ? (
-            <form onSubmit={handleAddService} className="mt-3 flex gap-2">
-              <Input
-                autoFocus
-                type="text"
-                value={newServiceName}
-                onChange={(e) => setNewServiceName(e.target.value)}
-                placeholder="Service name"
-                className="flex-1 min-h-11 text-base border-stone-200"
-              />
-              <Button type="submit" className="min-h-11 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white">
-                <Plus size={16} aria-hidden="true" />
-              </Button>
-              <Button
-                type="button"
-                onClick={() => { setAddingService(false); setNewServiceName(''); }}
-                variant="outline"
-                className="min-h-11"
-              >
-                <X size={16} aria-hidden="true" />
-              </Button>
-            </form>
-          ) : (
-            <Button
-              type="button"
-              onClick={() => setAddingService(true)}
-              variant="outline"
-              className="mt-3 border-stone-200 text-[#475569] hover:bg-stone-50 min-h-11"
-            >
-              <Plus size={16} className="mr-1" aria-hidden="true" />
-              {t('add_service')}
-            </Button>
-          )}
-        </div>
+      {submitError && (
+        <p role="alert" className="mb-4 text-sm text-red-600">
+          {submitError}
+        </p>
       )}
 
       {/* Navigation */}
@@ -228,7 +172,7 @@ export default function OnboardingStep2() {
         <Button
           type="button"
           variant="ghost"
-          onClick={() => router.push('/onboarding')}
+          onClick={() => router.push('/onboarding/profile')}
           disabled={loading}
           className="text-[#475569] hover:text-[#0F172A] px-0 min-h-11"
         >
@@ -241,7 +185,7 @@ export default function OnboardingStep2() {
           className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
                      text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
         >
-          {t('cta_step2')}
+          {t('cta_step3')}
         </Button>
       </div>
     </div>
