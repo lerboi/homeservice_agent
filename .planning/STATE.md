@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-22T10:44:03.643Z"
+stopped_at: Completed 07-04-PLAN.md (awaiting human verify checkpoint)
+last_updated: "2026-03-22T10:49:29.893Z"
 last_activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
 progress:
   total_phases: 10
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 31
-  completed_plans: 30
+  completed_plans: 31
   percent: 94
 ---
 
@@ -117,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase 07-02]: Step 1 OTP phase uses useState toggle (not router.push) — keeps user in wizard card, avoids layout re-mount and progress bar flicker
 - [Phase 07-02]: shouldCreateUser: false on signInWithOtp prevents duplicate user creation when OTP sent post-signUp (Research Pitfall 2)
 - [Phase 07-02]: Two sequential POST calls to /api/onboarding/start in Step 2: business_name+tone first creates tenant, then trade+services saved (depends on tenant existing)
+- [Phase 07-04]: TestCallPanel polling starts from both 'calling' and 'in_progress' states so a fast-completing call is caught even if in_progress transition hasn't occurred
+- [Phase 07-04]: CelebrationOverlay skips rendering radial pulse divs entirely (not just removes animation class) when prefers-reduced-motion is active — avoids layout artifacts
 
 ### Roadmap Evolution
 
@@ -138,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T10:44:03.638Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-03-22T10:49:24.767Z
+Stopped at: Completed 07-04-PLAN.md (awaiting human verify checkpoint)
 Resume file: None

@@ -146,7 +146,7 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 ### v1.1 Phase Checklist
 
 - [x] **Phase 6: Public Marketing Pages** - Pricing page (4 tiers, toggle, FAQ, comparison table), About page, Contact page, and nav/footer updated across all public pages (completed 2026-03-22)
-- [ ] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale
+- [x] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale (completed 2026-03-22)
 - [ ] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal
 - [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
 
@@ -178,7 +178,7 @@ Plans:
   4. A non-technical user who refreshes the page mid-wizard finds their previously entered data still present (sessionStorage persistence)
   5. The wizard finale triggers a live test call; the owner hears their configured AI receptionist answer before the wizard marks onboarding complete
   6. A returning user who has already completed onboarding bypasses the wizard entirely and goes directly to the dashboard
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 07-01-PLAN.md — Middleware rewrite, layout 5-step update, auth redirect, useWizardSession hook, celebration CSS
@@ -218,6 +218,6 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Public Marketing Pages | 4/4 | Complete   | 2026-03-22 |
-| 7. Unified Signup and Onboarding Wizard | 3/4 | In Progress|  |
+| 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
 | 8. Outlook Calendar Sync | 0/TBD | Not started | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
