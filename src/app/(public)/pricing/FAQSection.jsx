@@ -1,5 +1,5 @@
 'use client';
-import * as Accordion from 'radix-ui/react-accordion';
+import * as Accordion from '@radix-ui/react-accordion';
 import { ChevronDown } from 'lucide-react';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
