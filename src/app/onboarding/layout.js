@@ -9,8 +9,10 @@ import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
 function getStep(pathname) {
   if (pathname === '/onboarding') return 1;
-  if (pathname === '/onboarding/services') return 2;
-  if (pathname === '/onboarding/verify') return 3;
+  if (pathname === '/onboarding/profile') return 2;
+  if (pathname === '/onboarding/services') return 3;
+  if (pathname === '/onboarding/contact') return 4;
+  if (pathname === '/onboarding/test-call') return 5;
   return 1;
 }
 
@@ -18,7 +20,7 @@ export default function OnboardingLayout({ children }) {
   const pathname = usePathname();
   const t = useTranslations('onboarding');
   const currentStep = getStep(pathname);
-  const progressValue = (currentStep / 3) * 100;
+  const progressValue = (currentStep / 5) * 100;
 
   return (
     <div className="min-h-screen bg-[#F5F5F4] relative">
@@ -46,12 +48,19 @@ export default function OnboardingLayout({ children }) {
             </span>
           </Link>
           <span className="text-sm text-[#475569]">
-            {t('step_counter', { step: currentStep })}
+            {t('step_counter', { step: currentStep, total: 5 })}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="relative h-1 mb-8 rounded-full bg-[#0F172A]/[0.08] overflow-hidden">
+        <div
+          className="relative h-1 mb-8 rounded-full bg-[#0F172A]/[0.08] overflow-hidden"
+          role="progressbar"
+          aria-valuenow={currentStep}
+          aria-valuemin={1}
+          aria-valuemax={5}
+          aria-label="Onboarding progress"
+        >
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-[#C2410C] transition-all duration-500 ease-out"
             style={{ width: `${progressValue}%` }}

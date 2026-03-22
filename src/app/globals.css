@@ -71,6 +71,43 @@
   }
 }
 
+@keyframes draw-in {
+  from { stroke-dashoffset: var(--path-len); }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes radial-pulse {
+  from { transform: scale(1); opacity: var(--pulse-start-opacity); }
+  to { transform: scale(2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-draw-circle {
+    animation: draw-in 0.5s ease-out forwards;
+    --path-len: 283px;
+    stroke-dasharray: 283;
+    stroke-dashoffset: 283;
+  }
+  .animate-draw-check {
+    animation: draw-in 0.3s ease-out 0.4s forwards;
+    --path-len: 60px;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+  }
+  .animate-radial-pulse-1 {
+    animation: radial-pulse 0.8s ease-out forwards;
+    --pulse-start-opacity: 0.4;
+  }
+  .animate-radial-pulse-2 {
+    animation: radial-pulse 0.8s ease-out 0.2s forwards;
+    --pulse-start-opacity: 0.3;
+  }
+  .animate-radial-pulse-3 {
+    animation: radial-pulse 0.8s ease-out 0.4s forwards;
+    --pulse-start-opacity: 0.2;
+  }
+}
+
 :root {
   --radius: 0.5rem;
   --background: oklch(1 0 0);
