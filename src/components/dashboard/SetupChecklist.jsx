@@ -24,7 +24,7 @@ function ChecklistSkeleton() {
 // ─── Main checklist component ────────────────────────────────────────────────
 
 export default function SetupChecklist() {
-  const [checklistData, setChecklistData] = useState(null);
+  const [checklistData, setChecklistData] = useState(undefined); // undefined=loading, null=error/hidden
   const [dismissed, setDismissed] = useState(false);
   const prefersReduced = useReducedMotion();
 
@@ -35,14 +35,21 @@ export default function SetupChecklist() {
         if (data) {
           setChecklistData(data);
           setDismissed(data.dismissed);
+        } else {
+          setChecklistData(null);
         }
       })
-      .catch(() => {});
+      .catch(() => setChecklistData(null));
   }, []);
 
   // Loading
-  if (checklistData === null) {
+  if (checklistData === undefined) {
     return <ChecklistSkeleton />;
+  }
+
+  // Error or no data — hide checklist
+  if (checklistData === null) {
+    return null;
   }
 
   // Already dismissed

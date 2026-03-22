@@ -57,11 +57,25 @@ export async function GET() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: tenant } = await supabase
+  // Try with setup_checklist_dismissed column; fall back without it if migration hasn't run
+  let tenant;
+  const { data: tenantData, error: tenantError } = await supabase
     .from('tenants')
     .select('id, business_name, working_hours, onboarding_complete, retell_phone_number, setup_checklist_dismissed')
     .eq('owner_id', user.id)
     .single();
+
+  if (tenantData) {
+    tenant = tenantData;
+  } else if (tenantError) {
+    // Column doesn't exist yet — query without it
+    const { data: fallback } = await supabase
+      .from('tenants')
+      .select('id, business_name, working_hours, onboarding_complete, retell_phone_number')
+      .eq('owner_id', user.id)
+      .single();
+    tenant = fallback ? { ...fallback, setup_checklist_dismissed: false } : null;
+  }
 
   if (!tenant) {
     return Response.json({ error: 'Tenant not found' }, { status: 404 });
