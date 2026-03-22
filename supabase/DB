@@ -1,0 +1,179 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activity_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  event_type text NOT NULL,
+  lead_id uuid,
+  metadata jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT activity_log_pkey PRIMARY KEY (id),
+  CONSTRAINT activity_log_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT activity_log_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id)
+);
+CREATE TABLE public.appointments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  call_id uuid,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  service_address text NOT NULL,
+  caller_name text NOT NULL,
+  caller_phone text NOT NULL,
+  urgency text NOT NULL DEFAULT 'routine'::text CHECK (urgency = ANY (ARRAY['emergency'::text, 'routine'::text, 'high_ticket'::text])),
+  zone_id uuid,
+  status text NOT NULL DEFAULT 'confirmed'::text CHECK (status = ANY (ARRAY['confirmed'::text, 'cancelled'::text, 'completed'::text])),
+  booked_via text NOT NULL DEFAULT 'ai_call'::text CHECK (booked_via = ANY (ARRAY['ai_call'::text, 'manual'::text])),
+  google_event_id text,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT appointments_pkey PRIMARY KEY (id),
+  CONSTRAINT appointments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT appointments_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id),
+  CONSTRAINT appointments_zone_id_fkey FOREIGN KEY (zone_id) REFERENCES public.service_zones(id)
+);
+CREATE TABLE public.calendar_credentials (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  provider text NOT NULL DEFAULT 'google'::text CHECK (provider = ANY (ARRAY['google'::text, 'outlook'::text])),
+  access_token text NOT NULL,
+  refresh_token text NOT NULL,
+  expiry_date bigint,
+  calendar_id text NOT NULL DEFAULT 'primary'::text,
+  calendar_name text,
+  watch_channel_id text,
+  watch_resource_id text,
+  watch_expiration bigint,
+  last_sync_token text,
+  last_synced_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT calendar_credentials_pkey PRIMARY KEY (id),
+  CONSTRAINT calendar_credentials_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.calendar_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  provider text NOT NULL DEFAULT 'google'::text,
+  external_id text NOT NULL,
+  title text,
+  start_time timestamp with time zone,
+  end_time timestamp with time zone,
+  is_all_day boolean NOT NULL DEFAULT false,
+  appointment_id uuid,
+  conflict_dismissed boolean NOT NULL DEFAULT false,
+  synced_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT calendar_events_pkey PRIMARY KEY (id),
+  CONSTRAINT calendar_events_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT calendar_events_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
+);
+CREATE TABLE public.calls (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  retell_call_id text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  from_number text,
+  to_number text,
+  direction text DEFAULT 'inbound'::text,
+  status text NOT NULL DEFAULT 'started'::text,
+  disconnection_reason text,
+  start_timestamp bigint,
+  end_timestamp bigint,
+  duration_seconds integer DEFAULT 
+CASE
+    WHEN ((end_timestamp IS NOT NULL) AND (start_timestamp IS NOT NULL)) THEN (((end_timestamp - start_timestamp) / 1000))::integer
+    ELSE NULL::integer
+END,
+  recording_url text,
+  recording_storage_path text,
+  transcript_text text,
+  transcript_structured jsonb,
+  detected_language text,
+  language_barrier boolean DEFAULT false,
+  barrier_language text,
+  retell_metadata jsonb,
+  urgency_classification text CHECK (urgency_classification = ANY (ARRAY['emergency'::text, 'routine'::text, 'high_ticket'::text])),
+  urgency_confidence text CHECK (urgency_confidence = ANY (ARRAY['high'::text, 'medium'::text, 'low'::text])),
+  triage_layer_used text CHECK (triage_layer_used = ANY (ARRAY['layer1'::text, 'layer2'::text, 'layer3'::text])),
+  suggested_slots jsonb,
+  recovery_sms_sent_at timestamp with time zone,
+  CONSTRAINT calls_pkey PRIMARY KEY (id),
+  CONSTRAINT calls_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.lead_calls (
+  lead_id uuid NOT NULL,
+  call_id uuid NOT NULL,
+  CONSTRAINT lead_calls_pkey PRIMARY KEY (lead_id, call_id),
+  CONSTRAINT lead_calls_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
+  CONSTRAINT lead_calls_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id)
+);
+CREATE TABLE public.leads (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  from_number text NOT NULL,
+  caller_name text,
+  job_type text,
+  service_address text,
+  urgency text NOT NULL DEFAULT 'routine'::text CHECK (urgency = ANY (ARRAY['emergency'::text, 'routine'::text, 'high_ticket'::text])),
+  status text NOT NULL DEFAULT 'new'::text CHECK (status = ANY (ARRAY['new'::text, 'booked'::text, 'completed'::text, 'paid'::text, 'lost'::text])),
+  revenue_amount numeric,
+  primary_call_id uuid,
+  appointment_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT leads_pkey PRIMARY KEY (id),
+  CONSTRAINT leads_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT leads_primary_call_id_fkey FOREIGN KEY (primary_call_id) REFERENCES public.calls(id),
+  CONSTRAINT leads_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
+);
+CREATE TABLE public.service_zones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  name text NOT NULL,
+  postal_codes ARRAY NOT NULL DEFAULT '{}'::text[],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT service_zones_pkey PRIMARY KEY (id),
+  CONSTRAINT service_zones_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.services (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  name text NOT NULL,
+  urgency_tag text NOT NULL DEFAULT 'routine'::text CHECK (urgency_tag = ANY (ARRAY['emergency'::text, 'routine'::text, 'high_ticket'::text])),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT services_pkey PRIMARY KEY (id),
+  CONSTRAINT services_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.tenants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  owner_id uuid NOT NULL UNIQUE,
+  business_name text,
+  retell_phone_number text UNIQUE,
+  owner_phone text,
+  owner_email text,
+  default_locale text NOT NULL DEFAULT 'en'::text,
+  onboarding_complete boolean NOT NULL DEFAULT false,
+  tone_preset text NOT NULL DEFAULT 'professional'::text CHECK (tone_preset = ANY (ARRAY['professional'::text, 'friendly'::text, 'local_expert'::text])),
+  trade_type text,
+  test_call_completed boolean NOT NULL DEFAULT false,
+  working_hours jsonb,
+  tenant_timezone text NOT NULL DEFAULT 'America/Chicago'::text,
+  slot_duration_mins integer NOT NULL DEFAULT 60,
+  setup_checklist_dismissed boolean NOT NULL DEFAULT false,
+  CONSTRAINT tenants_pkey PRIMARY KEY (id),
+  CONSTRAINT tenants_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.zone_travel_buffers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  zone_a_id uuid NOT NULL,
+  zone_b_id uuid NOT NULL,
+  buffer_mins integer NOT NULL DEFAULT 30,
+  CONSTRAINT zone_travel_buffers_pkey PRIMARY KEY (id),
+  CONSTRAINT zone_travel_buffers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT zone_travel_buffers_zone_a_id_fkey FOREIGN KEY (zone_a_id) REFERENCES public.service_zones(id),
+  CONSTRAINT zone_travel_buffers_zone_b_id_fkey FOREIGN KEY (zone_b_id) REFERENCES public.service_zones(id)
+);
