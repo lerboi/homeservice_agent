@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: true
 preset: new-york / neutral / cssVariables
 created: 2026-03-23
+revised: 2026-03-23
 ---
 
 # Phase 10 — UI Design Contract
@@ -42,7 +43,7 @@ Declared values (multiples of 4):
 | 3xl | 64px | Page-level vertical spacing |
 
 Exceptions:
-- Nav link touch targets: `py-2.5` (10px vertical) — maintains existing sidebar pattern, minimum 44px effective height via flex alignment
+- Nav link touch targets: `py-2 min-h-[44px] flex items-center` — 8px vertical padding (grid-aligned), 44px minimum height enforced via `min-h-[44px]`
 - Checklist progress bar: 8px height (not on spacing scale, purely visual)
 - Activity feed icon bubble: 32px (h-8 w-8) — matches existing RecentActivityFeed pattern
 
@@ -55,13 +56,13 @@ Source: existing dashboard layout (`p-6`, `space-y-8`, `gap-4`) — no changes t
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (text-sm) | 400 (regular) | 1.5 (leading-snug for dense feed items) |
-| Label | 12px (text-xs) | 600 (semibold), uppercase tracking-wider | 1.4 |
+| Label | 14px (text-sm) | 600 (semibold), uppercase tracking-wider | 1.4 |
 | Heading | 20px (text-xl) | 600 (semibold) | 1.2 |
 | Display | 28px | 600 (semibold) | 1.15 (tabular-nums for stat widgets) |
 
 Notes:
-- Body at 14px with weight 400 is the established dashboard pattern (activity feed descriptions, checklist item text)
-- Label at 12px uppercase tracking-wider is the established stat widget label pattern (see `DashboardHomeStats`)
+- Body at 14px weight 400 is the established dashboard pattern (activity feed descriptions, checklist item text)
+- Label at 14px uppercase tracking-wider is the established stat widget label pattern (see `DashboardHomeStats`). Using 14px (not 12px) eliminates the fragile 2px size dependency — uppercase + tracking-wider provides sufficient visual distinction from body text without relying on a size difference.
 - Heading at 20px semibold matches `text-xl font-semibold` used on "Recent Activity" and settings page h1
 - Display at 28px semibold matches animated stat counter sizing (`text-[28px] font-semibold`)
 - Maximum 2 weights in use: 400 (regular) and 600 (semibold)
@@ -349,7 +350,7 @@ Source: existing `AnimatedSection` pattern, `globals.css` `draw-in` and `radial-
 - Phone number in settings: `aria-label="Your AI phone number"` on the pill container
 - All Lucide icons in informational positions: `aria-hidden="true"` with accompanying visible text
 - Focus ring: inherited from shadcn `outline-ring/50` base layer — no overrides needed
-- Touch targets: all clickable elements minimum 44px effective height (verified via `py-2.5` pattern on nav items, `py-3` on checklist rows)
+- Touch targets: all clickable elements minimum 44px effective height via `min-h-[44px]` on nav items and `py-3` (12px) on checklist rows
 - Color contrast: `#475569` on `#FFFFFF` = 5.07:1 (passes AA); `#0F172A` on `#FFFFFF` = 17.8:1; `#C2410C` on `#FFFFFF` = 4.6:1 (passes AA for large text and UI components)
 
 ---
@@ -382,6 +383,16 @@ No new shadcn components need to be added. All components required for Phase 10 
 4. **Settings page**: Convert from server component stub to `'use client'` component (needed for TestCallPanel polling state). WorkingHoursEditor and CalendarSyncCard already have their own client boundaries.
 
 5. **Checklist position on dashboard home**: Insert `<SetupChecklist />` as first child inside `<div className="p-6 space-y-8">`, above the stats `<section>`. The `space-y-8` gap handles separation automatically.
+
+---
+
+## Revision Log
+
+| Date | Changes |
+|------|---------|
+| 2026-03-23 | Initial draft |
+| 2026-03-23 | Fix: replaced `py-2.5` (10px, not on 4-point grid) with `py-2 min-h-[44px] flex items-center` on nav touch targets. Removed 10px from all declarations. |
+| 2026-03-23 | Fix: consolidated Label size from 12px to 14px — eliminates fragile 2px separation from Body; uppercase + tracking-wider treatment provides sufficient visual distinction. |
 
 ---
 
