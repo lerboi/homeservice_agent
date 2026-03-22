@@ -27,11 +27,11 @@ export async function POST(request) {
       },
     });
 
-    // Mark onboarding complete — set atomically with test call trigger
-    // Per Pitfall 5 in RESEARCH.md: set flag here, not on webhook callback
+    // Mark test call as triggered — onboarding_complete is set by the Retell webhook
+    // when the call actually completes, not at trigger time (avoids premature completion)
     await supabase
       .from('tenants')
-      .update({ test_call_completed: true, onboarding_complete: true })
+      .update({ test_call_completed: true })
       .eq('id', tenantId);
 
     return Response.json({ call_id: call.call_id });
