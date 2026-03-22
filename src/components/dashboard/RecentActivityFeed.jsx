@@ -1,6 +1,6 @@
 'use client';
 
-import { UserPlus, ArrowRight, Bell, CalendarCheck } from 'lucide-react';
+import { UserPlus, ArrowRight, Bell, CalendarCheck, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -120,8 +120,12 @@ export default function RecentActivityFeed({ activities, loading }) {
 
   if (!activities || activities.length === 0) {
     return (
-      <div className="py-8 text-center">
-        <p className="text-sm text-[#475569]">No recent activity</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Activity className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+        <h3 className="text-base font-semibold text-[#0F172A] mb-2">No recent activity</h3>
+        <p className="text-sm text-[#475569] max-w-sm">
+          Your AI&apos;s actions — new leads, bookings, and notifications — appear here as calls come in.
+        </p>
       </div>
     );
   }

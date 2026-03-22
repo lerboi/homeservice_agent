@@ -7,6 +7,7 @@ import LeadCard from '@/components/dashboard/LeadCard';
 import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
 import LeadFlyout from '@/components/dashboard/LeadFlyout';
 import KanbanBoard from '@/components/dashboard/KanbanBoard';
+import { EmptyStateLeads } from '@/components/dashboard/EmptyStateLeads';
 import { supabase } from '@/lib/supabase-browser';
 
 // ─── Realtime animation keyframe (injected once into document) ────────────────
@@ -258,14 +259,7 @@ export default function LeadsPage() {
       />
     );
   } else if (leads.length === 0 && !isFiltered) {
-    mainContent = (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-2">No leads yet</h2>
-        <p className="text-sm text-[#475569] max-w-sm">
-          Your AI receptionist will capture leads here as calls come in. New leads appear within seconds of a call ending.
-        </p>
-      </div>
-    );
+    mainContent = <EmptyStateLeads />;
   } else if (leads.length === 0 && isFiltered) {
     mainContent = (
       <div className="flex flex-col items-center justify-center py-16 text-center">

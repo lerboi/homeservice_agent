@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, CalendarOff } from 'lucide-react';
+import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
 import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
@@ -246,10 +247,14 @@ export default function CalendarPage() {
           </h2>
 
           {todayAppts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
-              <p className="text-sm text-[#475569]">No appointments today</p>
-            </div>
+            data.appointments.length === 0 ? (
+              <EmptyStateCalendar padding="py-8" />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
+                <p className="text-sm text-[#475569]">No appointments today</p>
+              </div>
+            )
           ) : (
             <div className="space-y-2">
               {todayAppts.map((appt) => {
