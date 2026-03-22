@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: planning
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-21T20:38:42.855Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-22T06:22:53.240Z"
 last_activity: 2026-03-22 — v1.1 roadmap created (Phases 6-9)
 progress:
   total_phases: 10
   completed_phases: 5
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 26
+  completed_plans: 24
   percent: 0
 ---
 
@@ -99,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase 04-06]: Counter animation uses requestAnimationFrame + ease-out cubic for smooth 600ms count-up; prefers-reduced-motion skips animation entirely
 - [Phase 04-06]: Supabase Realtime keyframe injected once into document.head via ensureSlideInKeyframe() — avoids CSS module complexity
 - [Phase 04-06]: LeadFlyout rendered outside card stack in leads page to avoid Sheet overlay stacking context issues
+- [Phase 06-01]: (public) route group layout wraps all public pages — LandingNav and LandingFooter not in page components
+- [Phase 06-01]: isRoot pattern for anchor links — sub-pages prefix / to navigate back and scroll
+- [Phase 06-01]: Wave 0 contact-api.test.js intentionally RED — stub for Plan 06-03 API route implementation
 
 ### Roadmap Evolution
 
@@ -120,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T20:38:42.850Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-public-marketing-pages/06-CONTEXT.md
+Last session: 2026-03-22T06:22:53.236Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

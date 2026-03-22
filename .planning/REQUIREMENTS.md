@@ -9,7 +9,7 @@
 
 - [ ] **PRICE-01**: User sees 4 pricing tiers (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls, Enterprise custom) with clear feature breakdown
 - [ ] **PRICE-02**: Growth tier is visually highlighted with "Most Popular" badge as the recommended option
-- [ ] **PRICE-03**: User can toggle between monthly and annual pricing display (display-only, no Stripe)
+- [x] **PRICE-03**: User can toggle between monthly and annual pricing display (display-only, no Stripe)
 - [ ] **PRICE-04**: User sees a feature comparison table below the fold showing what each tier includes
 - [ ] **PRICE-05**: User sees an FAQ section addressing cancellation, overages, trial availability, and refunds
 - [ ] **PRICE-06**: User sees ROI-framed hero copy that speaks in job revenue, not SaaS metrics
@@ -17,10 +17,10 @@
 
 ### Public Pages
 
-- [ ] **PAGE-01**: User can navigate to Pricing, About, and Contact pages from any public page via updated nav
+- [x] **PAGE-01**: User can navigate to Pricing, About, and Contact pages from any public page via updated nav
 - [ ] **PAGE-02**: User sees an About page with mission statement and founding story targeting trade owners
 - [ ] **PAGE-03**: User can submit a contact inquiry with segmented routes for sales, support, or partnerships
-- [ ] **PAGE-04**: Contact form submissions are delivered to ops inbox via Resend with spam protection
+- [x] **PAGE-04**: Contact form submissions are delivered to ops inbox via Resend with spam protection
 - [ ] **PAGE-05**: Contact page displays explicit response time SLA
 
 ### Unified Onboarding
@@ -180,15 +180,15 @@
 | ONBOARD-06 | Phase 2 | Complete |
 | PRICE-01 | Phase 6 | Pending |
 | PRICE-02 | Phase 6 | Pending |
-| PRICE-03 | Phase 6 | Pending |
+| PRICE-03 | Phase 6 | Complete |
 | PRICE-04 | Phase 6 | Pending |
 | PRICE-05 | Phase 6 | Pending |
 | PRICE-06 | Phase 6 | Pending |
 | PRICE-07 | Phase 6 | Pending |
-| PAGE-01 | Phase 6 | Pending |
+| PAGE-01 | Phase 6 | Complete |
 | PAGE-02 | Phase 6 | Pending |
 | PAGE-03 | Phase 6 | Pending |
-| PAGE-04 | Phase 6 | Pending |
+| PAGE-04 | Phase 6 | Complete |
 | PAGE-05 | Phase 6 | Pending |
 | WIZARD-01 | Phase 7 | Pending |
 | WIZARD-02 | Phase 7 | Pending |
