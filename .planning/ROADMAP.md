@@ -134,6 +134,24 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 | 4. CRM, Dashboard, and Notifications | 6/6 | Complete   | 2026-03-21 |
 | 5. Hardening and Launch | 0/TBD | Not started | - |
 
+### Phase 10: Dashboard Guided Setup and First-Run Experience
+**Goal**: A first-time user who lands on the dashboard after onboarding sees a guided setup checklist, contextual empty-state prompts, and a welcome message that walk them through every remaining configuration step — so they fully understand the product and complete setup without external help
+**Depends on**: Phase 7
+**Requirements**: SETUP-01, SETUP-02, SETUP-03, SETUP-04, SETUP-05
+**Success Criteria** (what must be TRUE):
+  1. A new owner who just completed onboarding lands on the dashboard and sees a setup checklist with clear next steps (connect calendar, configure working hours, make a test call) — each item links directly to the relevant action
+  2. Every dashboard page that has no data yet (leads, appointments, analytics) shows a helpful empty state explaining what will appear there and how to trigger it — not a blank page or generic "no data" message
+  3. The owner can trigger a test voice call from the dashboard and hear their AI receptionist answer — without needing to remember or look up their AI phone number
+  4. Checklist progress persists across sessions and the checklist dismisses itself once all items are complete or the owner manually dismisses it
+  5. A non-technical user visiting the dashboard for the first time can identify what each section does and what actions they need to take within 30 seconds — no guessing, no dead ends
+**Plans:** 4 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — DB migration + checklist API + SetupChecklist/ChecklistItem/SetupCompleteBar/WelcomeBanner + dashboard home integration
+- [ ] 10-02-PLAN.md — TestCallPanel context prop adaptation + Settings page rebuild (3 sections: AI Receptionist, Working Hours, Calendar)
+- [ ] 10-03-PLAN.md — Empty states for Leads, Calendar, Analytics, and Activity Feed pages
+- [ ] 10-04-PLAN.md — Human verification checkpoint for all Phase 10 UI
+
 ---
 
 ## Milestone v1.1 Phases
@@ -149,6 +167,7 @@ Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
 - [x] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale (completed 2026-03-22)
 - [ ] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal
 - [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
+- [ ] **Phase 10: Dashboard Guided Setup and First-Run Experience** - Setup checklist, empty states, test call from dashboard, contextual guidance for first-time users
 
 ### Phase 6: Public Marketing Pages
 **Goal**: Prospective customers can learn about the product, understand pricing relative to their own call volume, and contact the team — all from a polished public site that reflects a real product, not a placeholder
@@ -212,8 +231,8 @@ Plans:
 ## v1.1 Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 → 7 → 8 → 9
-(Note: Phase 7 and Phase 8 may execute in parallel as they share no implementation dependencies after Phase 6 is complete)
+Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
+(Note: Phase 8 and Phase 10 may execute in parallel as they share no implementation dependencies)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -221,3 +240,4 @@ Phases execute in numeric order: 6 → 7 → 8 → 9
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
 | 8. Outlook Calendar Sync | 0/TBD | Not started | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
+| 10. Dashboard Guided Setup | 0/4 | Planning complete | - |

@@ -1,6 +1,6 @@
 # Requirements: HomeService AI Agent
 
-**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1)
+**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-23 (Phase 10)
 **Core Value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
 ## v1.1 Requirements
@@ -47,6 +47,14 @@
 - [ ] **LAUNCH-03**: Slot-locking contention test proves exactly 1 booking from 20 simultaneous requests to the same slot
 - [ ] **LAUNCH-04**: 5-minute onboarding gate validated by a real non-technical SME user on staging
 - [ ] **LAUNCH-05**: Environment variable audit confirms no secrets in source and all production env vars are set
+
+### Dashboard Guided Setup
+
+- [ ] **SETUP-01**: New owner after onboarding sees a setup checklist with clear next steps (connect calendar, configure working hours, make a test call) — each item links to the relevant action
+- [ ] **SETUP-02**: Every dashboard page with no data shows a helpful empty state with icon, description, and actionable CTA — not a blank page or generic "no data" message
+- [ ] **SETUP-03**: Owner can trigger a test voice call from dashboard settings and hear their AI receptionist answer without looking up the phone number
+- [ ] **SETUP-04**: Checklist progress persists across sessions via DB; checklist auto-dismisses on full completion or manual dismiss
+- [ ] **SETUP-05**: Non-technical user can identify what each dashboard section does and what actions to take within 30 seconds
 
 ## v1 Requirements
 
@@ -206,19 +214,22 @@
 | LAUNCH-03 | Phase 9 | Pending |
 | LAUNCH-04 | Phase 9 | Pending |
 | LAUNCH-05 | Phase 9 | Pending |
+| SETUP-01 | Phase 10 | Pending |
+| SETUP-02 | Phase 10 | Pending |
+| SETUP-03 | Phase 10 | Pending |
+| SETUP-04 | Phase 10 | Pending |
+| SETUP-05 | Phase 10 | Pending |
 
 **v1.0 Coverage:**
 - v1.0 requirements: 38 total
 - Mapped to phases: 38
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 **v1.1 Coverage:**
-- v1.1 requirements: 28 total (PRICE-01–07, PAGE-01–05, WIZARD-01–07, OUTLOOK-01–04, LAUNCH-01–05)
-- Mapped to phases: 28 ✓
-- Unmapped: 0 ✓
-
-Note: REQUIREMENTS.md listed 24 v1.1 requirements but the actual requirement blocks contain 28 (7+5+7+4+5). All 28 are mapped. SCHED-03 (v1.0 requirement previously pending in Phase 5) has been reassigned to Phase 8 where Outlook Calendar sync is implemented.
+- v1.1 requirements: 33 total (PRICE-01-07, PAGE-01-05, WIZARD-01-07, OUTLOOK-01-04, LAUNCH-01-05, SETUP-01-05)
+- Mapped to phases: 33
+- Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1)*
-*Last updated: 2026-03-22 after v1.1 roadmap creation*
+*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-23 (Phase 10 SETUP requirements)*
+*Last updated: 2026-03-23 after Phase 10 planning*
