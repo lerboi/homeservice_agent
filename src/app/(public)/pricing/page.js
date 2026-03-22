@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function PricingPage() {
   return (
-    <main>
+    <>
       {/* Hero + Tiers (dark) */}
       <section className="relative bg-[#0F172A] pt-36 pb-24 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(194,65,12,0.08)_0%,_transparent_70%)]" />
@@ -77,6 +77,6 @@ export default function PricingPage() {
           </AnimatedSection>
         </div>
       </section>
-    </main>
+    </>
   );
 }
