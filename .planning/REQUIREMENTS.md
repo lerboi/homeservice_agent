@@ -18,10 +18,10 @@
 ### Public Pages
 
 - [x] **PAGE-01**: User can navigate to Pricing, About, and Contact pages from any public page via updated nav
-- [ ] **PAGE-02**: User sees an About page with mission statement and founding story targeting trade owners
-- [ ] **PAGE-03**: User can submit a contact inquiry with segmented routes for sales, support, or partnerships
+- [x] **PAGE-02**: User sees an About page with mission statement and founding story targeting trade owners
+- [x] **PAGE-03**: User can submit a contact inquiry with segmented routes for sales, support, or partnerships
 - [x] **PAGE-04**: Contact form submissions are delivered to ops inbox via Resend with spam protection
-- [ ] **PAGE-05**: Contact page displays explicit response time SLA
+- [x] **PAGE-05**: Contact page displays explicit response time SLA
 
 ### Unified Onboarding
 
@@ -186,10 +186,10 @@
 | PRICE-06 | Phase 6 | Pending |
 | PRICE-07 | Phase 6 | Pending |
 | PAGE-01 | Phase 6 | Complete |
-| PAGE-02 | Phase 6 | Pending |
-| PAGE-03 | Phase 6 | Pending |
+| PAGE-02 | Phase 6 | Complete |
+| PAGE-03 | Phase 6 | Complete |
 | PAGE-04 | Phase 6 | Complete |
-| PAGE-05 | Phase 6 | Pending |
+| PAGE-05 | Phase 6 | Complete |
 | WIZARD-01 | Phase 7 | Pending |
 | WIZARD-02 | Phase 7 | Pending |
 | WIZARD-03 | Phase 7 | Pending |

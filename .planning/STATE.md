@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: planning
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-22T06:22:53.240Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-03-22T06:28:34.988Z"
 last_activity: 2026-03-22 — v1.1 roadmap created (Phases 6-9)
 progress:
   total_phases: 10
   completed_phases: 5
   total_plans: 26
-  completed_plans: 24
-  percent: 0
+  completed_plans: 25
+  percent: 96
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 
 ## Current Position
 
-Phase: 6 — Public Marketing Pages (not started)
-Plan: —
-Status: Roadmap ready — awaiting phase planning
-Last activity: 2026-03-22 — v1.1 roadmap created (Phases 6-9)
+Phase: 6 — Public Marketing Pages (3/3 plans complete)
+Plan: 03 (complete)
+Status: Phase 6 complete — all 3 plans executed
+Last activity: 2026-03-22 — Completed Plan 06-03 (About page, Contact page, contact API route)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 96%
 
 ## Accumulated Context
 
@@ -102,6 +102,9 @@ Recent decisions affecting current work:
 - [Phase 06-01]: (public) route group layout wraps all public pages — LandingNav and LandingFooter not in page components
 - [Phase 06-01]: isRoot pattern for anchor links — sub-pages prefix / to navigate back and scroll
 - [Phase 06-01]: Wave 0 contact-api.test.js intentionally RED — stub for Plan 06-03 API route implementation
+- [Phase 06-03]: ContactForm named export (not default) -- consistent with component authoring pattern across the project
+- [Phase 06-03]: Resend instantiated per-request in API route handler -- correct for serverless/stateless execution per RESEARCH.md
+- [Phase 06-03]: Honeypot field returns 200 silently on fill -- avoids bot fingerprinting
 
 ### Roadmap Evolution
 
@@ -123,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T06:22:53.236Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-22T06:28:34.983Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
