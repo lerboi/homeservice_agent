@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: completed
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-22T06:29:22.785Z"
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-03-22T06:46:31.508Z"
 last_activity: 2026-03-22 — Completed Plan 06-03 (About page, Contact page, contact API route)
 progress:
   total_phases: 10
   completed_phases: 6
-  total_plans: 26
-  completed_plans: 26
+  total_plans: 27
+  completed_plans: 27
   percent: 96
 ---
 
@@ -106,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 06-03]: Resend instantiated per-request in API route handler -- correct for serverless/stateless execution per RESEARCH.md
 - [Phase 06-03]: Honeypot field returns 200 silently on fill -- avoids bot fingerprinting
 - [Phase 06]: [Phase 06-02]: @radix-ui/react-accordion is the correct import path — radix-ui/react-accordion subpath does not exist as a module
+- [Phase 06]: Accordion animation registered via --animate-* convention in @theme inline block (Tailwind v4 auto-generates animate-accordion-down utility)
+- [Phase 06]: height: var(--radix-accordion-content-height) for smooth accordion height transition — Radix sets this CSS variable automatically at runtime
 
 ### Roadmap Evolution
 
@@ -127,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T06:29:22.780Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-22T06:46:31.503Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None
