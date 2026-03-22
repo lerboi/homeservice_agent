@@ -167,7 +167,7 @@ Plans:
 - [x] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale (completed 2026-03-22)
 - [ ] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal
 - [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
-- [ ] **Phase 10: Dashboard Guided Setup and First-Run Experience** - Setup checklist, empty states, test call from dashboard, contextual guidance for first-time users
+- [x] **Phase 10: Dashboard Guided Setup and First-Run Experience** - Setup checklist, empty states, test call from dashboard, contextual guidance for first-time users (completed 2026-03-22)
 
 ### Phase 6: Public Marketing Pages
 **Goal**: Prospective customers can learn about the product, understand pricing relative to their own call volume, and contact the team — all from a polished public site that reflects a real product, not a placeholder
@@ -240,4 +240,4 @@ Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
 | 8. Outlook Calendar Sync | 0/TBD | Not started | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
-| 10. Dashboard Guided Setup | 4/4 | Complete   | 2026-03-22 |
+| 10. Dashboard Guided Setup | 4/4 | Complete    | 2026-03-22 |
