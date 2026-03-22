@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import DashboardHomeStats from '@/components/dashboard/DashboardHomeStats';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
+import SetupChecklist from '@/components/dashboard/SetupChecklist';
+import WelcomeBanner from '@/components/dashboard/WelcomeBanner';
 import { supabase } from '@/lib/supabase-browser';
 
 // ─── Stats skeleton ───────────────────────────────────────────────────────────
@@ -104,8 +106,23 @@ export default function DashboardPage() {
     load();
   }, []);
 
+  const showWelcome =
+    stats !== null &&
+    stats.newLeadsToday === 0 &&
+    stats.upcomingAppointments === 0 &&
+    stats.callsToday === 0 &&
+    stats.conversionRate === 0 &&
+    activities !== null &&
+    activities.length === 0;
+
   return (
     <div className="p-6 space-y-8">
+      {/* ── Setup checklist ─────────────────────────────────────────────── */}
+      <SetupChecklist />
+
+      {/* ── Welcome banner (shown when dashboard has no data) ───────────── */}
+      <WelcomeBanner visible={showWelcome} />
+
       {/* ── Stats section ───────────────────────────────────────────────── */}
       <section aria-label="Today's summary">
         {statsLoading ? (
