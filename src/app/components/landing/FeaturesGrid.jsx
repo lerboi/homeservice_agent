@@ -1,5 +1,5 @@
 'use client';
-import { Moon, Filter, Calendar, Bell } from 'lucide-react';
+import { Moon, Filter, Calendar, Bell, Globe } from 'lucide-react';
 import { AnimatedStagger, AnimatedItem, AnimatedSection } from './AnimatedSection';
 
 const features = [
@@ -34,6 +34,14 @@ const features = [
     justification: 'Be first on site. Not fastest to call back.',
     span: 'md:col-span-4',
     variant: 'wide',
+  },
+  {
+    icon: Globe,
+    title: 'Speaks Their Language',
+    body: "Your AI receptionist answers in Spanish, Singlish, or English — switching language the moment it hears the caller. No frustrated hang-ups, no lost leads.",
+    justification: 'Every caller heard. Every job captured.',
+    span: 'md:col-span-2',
+    variant: 'default',
   },
 ];
 
@@ -160,7 +168,7 @@ export function FeaturesGrid() {
             Why it pays for itself
           </p>
           <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
-            Four features. One question:
+            Five features. One question:
             <br className="hidden sm:block" />
             <span className="text-[#475569]">How much did your last missed call cost?</span>
           </h2>

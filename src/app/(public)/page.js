@@ -15,10 +15,13 @@ const HowItWorksSection = dynamic(
             <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
             <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
           </div>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
-            ))}
+          <div className="space-y-4">
+            <div className="flex gap-2 justify-center mb-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 w-16 rounded-lg bg-black/[0.04]" />
+              ))}
+            </div>
+            <div className="h-[280px] rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
           </div>
         </div>
       </section>
@@ -41,6 +44,7 @@ const FeaturesGrid = dynamic(
             <div className="md:col-span-2 h-40 rounded-2xl bg-white" />
             <div className="md:col-span-2 h-40 rounded-2xl bg-white" />
             <div className="md:col-span-4 h-40 rounded-2xl bg-white" />
+            <div className="md:col-span-2 h-40 rounded-2xl bg-white" />
           </div>
         </div>
       </section>
