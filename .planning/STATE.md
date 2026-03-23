@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-03-23T21:30:22.792Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-03-23T21:42:42.484Z"
 progress:
   total_phases: 13
   completed_phases: 8
   total_plans: 41
-  completed_plans: 38
+  completed_plans: 39
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 12 (dashboard-configurable-triage-and-call-escalation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -119,6 +119,7 @@ Recent decisions affecting current work:
 - [Phase 11]: HowItWorksSection rebuilt as Server Component with dynamic import of HowItWorksTabs for bundle splitting; 5th bento card uses variant=default consistent with cards 2 and 3
 - [Phase 12]: RLS policy on escalation_contacts uses tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()) matching services table pattern from 002 migration
 - [Phase 12]: PATCH reorder includes tenant_id in every upsert row — RLS WITH CHECK requires it (Pitfall 3 from RESEARCH.md)
+- [Phase 12-02]: @dnd-kit/sortable for drag-to-reorder (keyboard accessible); bulk tag bar shown at >=2 selected; patchServiceOrder guards against concurrent PATCH with isSavingOrder flag
 
 ### Roadmap Evolution
 
@@ -143,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:30:22.785Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-03-23T21:42:42.476Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
