@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-03-23T07:55:31.897Z"
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-23T07:57:43.807Z"
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 38
-  completed_plans: 36
+  completed_plans: 37
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 11 (landing-page-ui-ux-redesign) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -115,6 +115,8 @@ Recent decisions affecting current work:
 - [Phase 07-04]: CelebrationOverlay skips rendering radial pulse divs entirely (not just removes animation class) when prefers-reduced-motion is active — avoids layout artifacts
 - [Phase 11]: Hero Spline URL kept as TODO — D-03 community model prod URL requires manual Spline UI extraction before update
 - [Phase 11]: CTA animation uses CSS-only prefers-reduced-motion guard — FinalCTASection stays Server Component, no useReducedMotion hook
+- [Phase 11]: HowItWorksTabs uses roving tabindex per WAI-ARIA Tabs pattern; AnimatePresence mode=wait with key=active for sequential transitions
+- [Phase 11]: HowItWorksSection rebuilt as Server Component with dynamic import of HowItWorksTabs for bundle splitting; 5th bento card uses variant=default consistent with cards 2 and 3
 
 ### Roadmap Evolution
 
@@ -138,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T07:55:31.891Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-03-23T07:57:43.800Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
