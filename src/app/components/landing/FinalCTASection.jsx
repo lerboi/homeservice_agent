@@ -8,6 +8,8 @@ export function FinalCTASection() {
       <div className="absolute inset-0 bg-[#C2410C]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(0,0,0,0.15),transparent_60%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05),transparent_40%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.12),transparent_50%)] animate-cta-glow" />
 
       <div className="relative max-w-3xl mx-auto text-center px-6 py-20 md:py-28">
         <AnimatedSection>
