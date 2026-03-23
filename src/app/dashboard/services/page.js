@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import ZoneManager from '@/components/dashboard/ZoneManager';
+import { EscalationChainSection } from '@/components/dashboard/EscalationChainSection';
 import {
   DndContext,
   closestCenter,
@@ -312,6 +313,8 @@ export default function ServicesPage() {
         <CalendarSyncCard />
         <Separator className="my-6" />
         <ZoneManager />
+        <Separator className="my-6" />
+        <EscalationChainSection />
       </div>
     );
   }
@@ -424,6 +427,8 @@ export default function ServicesPage() {
       <CalendarSyncCard />
       <Separator className="my-6" />
       <ZoneManager />
+      <Separator className="my-6" />
+      <EscalationChainSection />
     </div>
   );
 }
