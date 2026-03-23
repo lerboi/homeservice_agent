@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: executing
-stopped_at: Phase 11 UI-SPEC approved
-last_updated: "2026-03-23T07:30:41.918Z"
-last_activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
+status: Ready to execute
+stopped_at: Completed 11-02-PLAN.md
+last_updated: "2026-03-23T07:55:31.897Z"
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 35
-  completed_plans: 35
-  percent: 94
+  total_plans: 38
+  completed_plans: 36
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Milestone v1.1 — Site Completeness & Launch Readiness
+**Current focus:** Phase 11 — landing-page-ui-ux-redesign
 
 ## Current Position
 
-Phase: 7 — Unified Signup and Onboarding Wizard (3/4 plans complete)
-Plan: 03 (complete)
-Status: Phase 7 in progress — steps 3-4 migrated, test-call-status polling endpoint added, onboarding_complete timing fixed
-Last activity: 2026-03-22 — Completed Plan 07-03 (services page step 3, contact page step 4, test-call-status endpoint, timing bug fix)
-
-Progress: [█████████░] 94%
+Phase: 11 (landing-page-ui-ux-redesign) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -119,6 +113,8 @@ Recent decisions affecting current work:
 - [Phase 07-02]: Two sequential POST calls to /api/onboarding/start in Step 2: business_name+tone first creates tenant, then trade+services saved (depends on tenant existing)
 - [Phase 07-04]: TestCallPanel polling starts from both 'calling' and 'in_progress' states so a fast-completing call is caught even if in_progress transition hasn't occurred
 - [Phase 07-04]: CelebrationOverlay skips rendering radial pulse divs entirely (not just removes animation class) when prefers-reduced-motion is active — avoids layout artifacts
+- [Phase 11]: Hero Spline URL kept as TODO — D-03 community model prod URL requires manual Spline UI extraction before update
+- [Phase 11]: CTA animation uses CSS-only prefers-reduced-motion guard — FinalCTASection stays Server Component, no useReducedMotion hook
 
 ### Roadmap Evolution
 
@@ -142,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T07:30:41.911Z
-Stopped at: Phase 11 UI-SPEC approved
-Resume file: .planning/phases/11-landing-page-ui-ux-redesign/11-UI-SPEC.md
+Last session: 2026-03-23T07:55:31.891Z
+Stopped at: Completed 11-02-PLAN.md
+Resume file: None
