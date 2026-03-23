@@ -27,6 +27,8 @@ const SplineScene = dynamic(
   }
 );
 
+// TODO: Update to D-03 community model once prod URL is extracted
+// Community URL: https://app.spline.design/community/file/2ce6351a-d7a5-4c4e-bf13-75bc9f841891
 const SPLINE_SCENE_URL = 'https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode';
 
 export function HeroSection() {

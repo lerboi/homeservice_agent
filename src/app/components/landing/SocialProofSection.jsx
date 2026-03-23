@@ -65,10 +65,10 @@ export function SocialProofSection() {
         <AnimatedStagger className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {testimonials.map((t) => (
             <AnimatedItem key={t.name}>
-              <div className="group h-full flex flex-col rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.1]">
+              <div className="group h-full flex flex-col rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.05] hover:border-white/[0.1] hover:-translate-y-1">
                 {/* Metric badge */}
                 <div className="px-6 pt-6 pb-0">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 mb-4">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 mb-4 transition-shadow duration-300 group-hover:shadow-[0_0_16px_rgba(22,101,52,0.2)]">
                     <div className="size-1 rounded-full bg-[#166534]" />
                     <span className="text-[11px] font-medium text-[#166534]">{t.metric}</span>
                   </div>
