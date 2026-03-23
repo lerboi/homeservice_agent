@@ -242,15 +242,30 @@ Source: Existing component copy (keep per D-04, D-05, D-06, D-12, D-17, D-19) + 
 | Registry | Blocks Used | Safety Gate |
 |----------|-------------|-------------|
 | shadcn official (ui.shadcn.com) | Button, Card, Badge | not required |
-| 21st.dev community | `serafim/splite` (Hero Spline wrapper), `aceternity/bento-grid` (Features layout reference) | View-and-diff required before implementation — executor must read component source at 21st.dev URLs listed in CONTEXT.md canonical refs before copying any code |
+| 21st.dev community | `serafim/splite` | view passed — no flags — 2026-03-23 |
+| 21st.dev community | `aceternity/bento-grid` | view passed — no flags — 2026-03-23 |
 
-Registry safety note: `serafim/splite` and `aceternity/bento-grid` are 21st.dev community components, not npm packages — they are copy-pasted source, not installed. The executor must view source at:
-- https://21st.dev/community/components/serafim/splite/default
-- https://21st.dev/community/components/aceternity/bento-grid/default
+### Vetting Evidence
 
-Scan for: `fetch(`, `XMLHttpRequest`, `navigator.sendBeacon`, `process.env`, `eval(`, `Function(`, dynamic imports from external URLs. If any flags found, surface to developer before including in codebase.
+**`serafim/splite` — inspected 2026-03-23**
 
-The Aceternity bento grid from 21st.dev is used as a **layout reference only** — the actual bento card components are project-built (BentoCard in FeaturesGrid.jsx). The executor inherits grid structure patterns, not blind copy-paste.
+Source retrieved from https://21st.dev/r/serafim/splite. The component is a thin React wrapper:
+
+```typescript
+'use client'
+import { Suspense, lazy } from 'react'
+const Spline = lazy(() => import('@splinetool/react-spline'))
+```
+
+Scanned for: `fetch(` — not found. `XMLHttpRequest` — not found. `navigator.sendBeacon` — not found. `process.env` — not found. `eval(` — not found. `Function(` — not found. Dynamic imports from external URLs — not found. The only dynamic import is `@splinetool/react-spline`, a declared npm package dependency. No flags.
+
+**`aceternity/bento-grid` — inspected 2026-03-23**
+
+Source retrieved from https://21st.dev/community/components/aceternity/bento-grid/default. Two files: `bento-grid.tsx` (BentoGrid + BentoCard components) and `demo.tsx`.
+
+Scanned for: `fetch(` — not found. `XMLHttpRequest` — not found. `navigator.sendBeacon` — not found. `process.env` — not found. `eval(` — not found. `Function(` — not found. Dynamic imports from external URLs — not found. Dependencies are `@radix-ui/react-icons`, `class-variance-authority`, and local `@/lib/utils` / `@/components/ui/button`. No flags.
+
+Note: `aceternity/bento-grid` is used as a **layout reference only** — the actual bento card components are project-built (BentoCard in FeaturesGrid.jsx). The executor inherits grid structure patterns, not blind copy-paste.
 
 ---
 
