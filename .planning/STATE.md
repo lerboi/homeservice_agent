@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Phase 12 context gathered
-last_updated: "2026-03-23T20:37:38.265Z"
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-03-23T21:30:22.792Z"
 progress:
   total_phases: 13
   completed_phases: 8
-  total_plans: 38
-  completed_plans: 37
+  total_plans: 41
+  completed_plans: 38
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 11 — landing-page-ui-ux-redesign
+**Current focus:** Phase 12 — dashboard-configurable-triage-and-call-escalation
 
 ## Current Position
 
-Phase: 11 (landing-page-ui-ux-redesign) — EXECUTING
-Plan: 3 of 3
+Phase: 12 (dashboard-configurable-triage-and-call-escalation) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -117,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase 11]: CTA animation uses CSS-only prefers-reduced-motion guard — FinalCTASection stays Server Component, no useReducedMotion hook
 - [Phase 11]: HowItWorksTabs uses roving tabindex per WAI-ARIA Tabs pattern; AnimatePresence mode=wait with key=active for sequential transitions
 - [Phase 11]: HowItWorksSection rebuilt as Server Component with dynamic import of HowItWorksTabs for bundle splitting; 5th bento card uses variant=default consistent with cards 2 and 3
+- [Phase 12]: RLS policy on escalation_contacts uses tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()) matching services table pattern from 002 migration
+- [Phase 12]: PATCH reorder includes tenant_id in every upsert row — RLS WITH CHECK requires it (Pitfall 3 from RESEARCH.md)
 
 ### Roadmap Evolution
 
@@ -141,6 +143,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T20:37:37.732Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-dashboard-configurable-triage-and-call-escalation/12-CONTEXT.md
+Last session: 2026-03-23T21:30:22.785Z
+Stopped at: Completed 12-01-PLAN.md
+Resume file: None

@@ -164,6 +164,16 @@ Plans:
 - [x] 11-02-PLAN.md — Hero Spline model URL + Social Proof hover polish + Final CTA gradient animation
 - [ ] 11-03-PLAN.md — Human verification checkpoint for all 5 sections
 
+### Phase 12: Dashboard-configurable triage and call escalation
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 1/3 plans executed
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)
+
 ---
 
 ## Milestone v1.1 Phases
