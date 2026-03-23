@@ -97,4 +97,4 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 | Monthly SaaS pricing | Predictable revenue, simple for SME owners to understand | — Pending |
 
 ---
-*Last updated: 2026-03-22 after milestone v1.1 initialization*
+*Last updated: 2026-03-24 after Phase 12 complete — dashboard-configurable triage and call escalation*
