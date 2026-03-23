@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-03-23T21:42:42.484Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-03-23T21:58:33.370Z"
 progress:
   total_phases: 13
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 41
-  completed_plans: 39
+  completed_plans: 40
 ---
 
 # Project State
@@ -120,6 +120,7 @@ Recent decisions affecting current work:
 - [Phase 12]: RLS policy on escalation_contacts uses tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()) matching services table pattern from 002 migration
 - [Phase 12]: PATCH reorder includes tenant_id in every upsert row — RLS WITH CHECK requires it (Pitfall 3 from RESEARCH.md)
 - [Phase 12-02]: @dnd-kit/sortable for drag-to-reorder (keyboard accessible); bulk tag bar shown at >=2 selected; patchServiceOrder guards against concurrent PATCH with isSavingOrder flag
+- [Phase 12]: SortableContactWrapper wraps useSortable inside EscalationChainSection — ContactCard stays clean and testable
 
 ### Roadmap Evolution
 
@@ -144,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:42:42.476Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-03-23T21:58:33.364Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None
