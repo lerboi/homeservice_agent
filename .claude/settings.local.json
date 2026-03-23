@@ -44,7 +44,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:mcp.harishgarg.com)",
       "mcp__magic__21st_magic_component_inspiration",
-      "mcp__magic__21st_magic_component_builder"
+      "mcp__magic__21st_magic_component_builder",
+      "WebFetch(domain:app.spline.design)",
+      "Bash(awk 'NR==6371' node_modules/@splinetool/runtime/build/runtime.js)",
+      "Bash(awk 'NR==8174' node_modules/@splinetool/runtime/build/runtime.js)",
+      "Bash(npx shadcn@latest add https://21st.dev/r/minhxthanh/sticky-scroll-cards-section)"
     ]
   }
 }

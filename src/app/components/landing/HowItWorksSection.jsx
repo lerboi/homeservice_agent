@@ -4,17 +4,14 @@ import { AnimatedSection } from './AnimatedSection';
 import { ArrowRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const HowItWorksTabs = dynamic(
-  () => import('./HowItWorksTabs').then((m) => m.HowItWorksTabs),
+const HowItWorksSticky = dynamic(
+  () => import('./HowItWorksSticky').then((m) => m.HowItWorksSticky),
   {
     loading: () => (
-      <div className="space-y-4">
-        <div className="flex gap-2 justify-center mb-8">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-12 w-16 rounded-lg bg-black/[0.04]" />
-          ))}
-        </div>
-        <div className="h-[280px] rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
+      <div className="space-y-8">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-[180px] rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
+        ))}
       </div>
     ),
   }
@@ -22,7 +19,7 @@ const HowItWorksTabs = dynamic(
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="relative bg-white py-20 md:py-28 px-6 overflow-hidden">
+    <section id="how-it-works" className="relative bg-white py-20 md:py-28 px-6">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.015)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
@@ -38,9 +35,9 @@ export function HowItWorksSection() {
           </h2>
         </AnimatedSection>
 
-        <HowItWorksTabs />
+        <HowItWorksSticky />
 
-        <AnimatedSection delay={0.3} className="flex justify-center mt-14">
+        <AnimatedSection delay={0.3} className="flex justify-center -mt-[19vh]">
           <Button
             asChild
             size="lg"
