@@ -48,7 +48,9 @@
       "WebFetch(domain:app.spline.design)",
       "Bash(awk 'NR==6371' node_modules/@splinetool/runtime/build/runtime.js)",
       "Bash(awk 'NR==8174' node_modules/@splinetool/runtime/build/runtime.js)",
-      "Bash(npx shadcn@latest add https://21st.dev/r/minhxthanh/sticky-scroll-cards-section)"
+      "Bash(npx shadcn@latest add https://21st.dev/r/minhxthanh/sticky-scroll-cards-section)",
+      "Bash(find /f/homeservice-agent -type f \\\\\\(-name *twilio* -o -name *voice* -o -name *call* \\\\\\))",
+      "Bash(npm list:*)"
     ]
   }
 }

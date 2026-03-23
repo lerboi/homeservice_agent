@@ -99,8 +99,8 @@ async function handleInbound(payload) {
       dynamic_variables: {
         business_name: 'Voco',
         default_locale: 'en',
-        onboarding_complete: false,
-        caller_number: from_number,
+        onboarding_complete: 'false',
+        caller_number: from_number || '',
         owner_phone: '',
         tone_preset: 'professional',
         available_slots: 'No available slots',
@@ -166,8 +166,8 @@ async function handleInbound(payload) {
     dynamic_variables: {
       business_name: tenant.business_name || 'Voco',
       default_locale: tenant.default_locale || 'en',
-      onboarding_complete: tenant.onboarding_complete,
-      caller_number: from_number,
+      onboarding_complete: String(tenant.onboarding_complete ?? false),
+      caller_number: from_number || '',
       tenant_id: tenant.id,
       owner_phone: tenant.owner_phone || '',
       tone_preset: tenant.tone_preset || 'professional',
