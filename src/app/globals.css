@@ -81,6 +81,11 @@
   to { transform: scale(2); opacity: 0; }
 }
 
+@keyframes cta-glow-shift {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .animate-draw-circle {
     animation: draw-in 0.5s ease-out forwards;
@@ -105,6 +110,9 @@
   .animate-radial-pulse-3 {
     animation: radial-pulse 0.8s ease-out 0.4s forwards;
     --pulse-start-opacity: 0.2;
+  }
+  .animate-cta-glow {
+    animation: cta-glow-shift 10s ease-in-out infinite;
   }
 }
 
