@@ -45,6 +45,9 @@
   --color-landing-accent: var(--color-landing-accent);
   --color-landing-muted: var(--color-landing-muted);
   --color-landing-success: var(--color-landing-success);
+  --color-landing-charcoal: var(--color-landing-charcoal);
+  --color-landing-light-text: var(--color-landing-light-text);
+  --color-landing-muted-text: var(--color-landing-muted-text);
   --animate-accordion-down: accordion-down 200ms ease-out;
   --animate-accordion-up: accordion-up 200ms ease-out;
 }
@@ -156,6 +159,9 @@
   --color-landing-success: #166534;
   --color-brand-orange: #C2410C;
   --color-warm-surface: #F5F5F4;
+  --color-landing-charcoal: #1E293B;
+  --color-landing-light-text: #F1F5F9;
+  --color-landing-muted-text: #94A3B8;
 }
 
 .dark {

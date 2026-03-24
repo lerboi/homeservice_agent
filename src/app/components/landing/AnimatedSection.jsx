@@ -20,7 +20,7 @@ export function AnimatedSection({ children, className, delay = 0, direction = 'u
       whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{
-        duration: 0.6,
+        duration: 0.2,
         ease: [0.22, 1, 0.36, 1],
         delay,
       }}
@@ -43,7 +43,7 @@ export function AnimatedStagger({ children, className }) {
         hidden: {},
         visible: {
           transition: {
-            staggerChildren: prefersReducedMotion ? 0 : 0.12,
+            staggerChildren: prefersReducedMotion ? 0 : 0.05,
           },
         },
       }}
@@ -64,7 +64,7 @@ export function AnimatedItem({ children, className }) {
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+          transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
         },
       }}
     >
