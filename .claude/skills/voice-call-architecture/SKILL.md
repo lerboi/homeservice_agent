@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-25
+**Last updated**: 2026-03-25 (Phase 15 — booking_outcome, notification_priority, caller SMS)
 
 ---
 
@@ -64,6 +64,7 @@ Caller dials Retell number
 | `messages/es.json` | Spanish agent utterances |
 | `supabase/migrations/003_scheduling.sql` | Scheduling schema + `book_appointment_atomic` function |
 | `supabase/migrations/004_leads_crm.sql` | Leads + activity_log schema |
+| `supabase/migrations/008_call_outcomes.sql` | booking_outcome, exception_reason, notification_priority columns |
 
 ---
 
@@ -299,15 +300,17 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 1. Resolve tenant from call record: `calls.select('id, tenant_id, from_number, start_timestamp').eq('retell_call_id', call_id)`
 2. Compute `durationSeconds` from `start_timestamp` to current time (avoids 15s short-call filter)
 3. Call `createOrMergeLead()` with all AI-provided fields
-4. Look up `business_name` for personalized confirmation message
-5. Return: `"I've saved your information. {bizName} will reach out soon."`
-6. On error: return `"I've noted your details and someone will follow up."`
+4. Write `booking_outcome: 'declined'` to calls record (D-02)
+5. Look up `business_name` for personalized confirmation message
+6. Return: `"I've saved your information. {bizName} will reach out soon."`
+7. On error: return `"I've noted your details and someone will follow up."`
 
 **`transfer_call`**:
 1. Look up call → tenant → `owner_phone` (two-hop query)
 2. Build whisper message via `buildWhisperMessage({ callerName, jobType, urgency, summary })` from AI-provided arguments
 3. Call `retell.call.transfer({ call_id, transfer_to: ownerPhone, whisper_message: whisperMsg })`
 4. Return `transfer_initiated` or graceful fallback if no phone configured
+5. Write `exception_reason` to calls record (`clarification_limit` or `caller_requested`, inferred from summary)
 
 **`book_appointment`**:
 1. Resolve tenant via calls → tenants
@@ -315,6 +318,9 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 3. On slot_taken: recalculate next available, return alternative speech
 4. On success: async push to Google Calendar via `after()`
 5. Return confirmation speech
+6. On success: async write `booking_outcome: 'booked'` via `after()`
+7. On success: async send caller SMS confirmation via `sendCallerSMS()` (locale from detected_language or tenant default_locale)
+8. On failure: async write `booking_outcome: 'attempted'` via `after()`
 
 ---
 
@@ -332,8 +338,10 @@ Heavy pipeline:
 3. Language barrier detection (check against `SUPPORTED_LANGUAGES: ['en', 'es']`)
 4. Triage classification via 3-layer pipeline
 5. Check if appointment exists for this call
-6. If routine + unbooked: calculate suggested slots (next 3 from tomorrow)
-7. Upsert `calls` with all analyzed data
+6. If unbooked (no appointment for this call, any urgency): calculate suggested slots (next 3 from tomorrow)
+7a. Compute notification_priority from urgency (emergency/high_ticket → 'high', routine → 'standard')
+7b. Upsert `calls` with all analyzed data including notification_priority (does NOT include booking_outcome)
+7c. Conditional update: set `booking_outcome='not_attempted'` where `booking_outcome IS NULL`
 8. Create/merge lead via `createOrMergeLead()`
 9. Send owner notifications (SMS + email) via `sendOwnerNotifications()`
 
@@ -406,6 +414,9 @@ Resend email with React Email template.
 ### `sendCallerRecoverySMS()`
 Warm text to unbooked callers: "Hi {name}, thanks for calling {business}. Book online at {link} or call back at {phone}."
 
+### `sendCallerSMS()`
+Booking confirmation SMS to caller: "Your appointment with {business_name} is confirmed for {date} at {time} at {address}." Multi-language (en/es) via direct JSON import of messages files. Fire-and-forget — errors logged but never thrown. Null guard on `to` prevents Twilio calls when no phone number.
+
 ### `sendOwnerNotifications()`
 Fires SMS + email in parallel via `Promise.allSettled()`.
 
@@ -455,7 +466,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 | Table | Purpose |
 |---|---|
 | `tenants` | Business config: phone, name, locale, hours, tone, timezone |
-| `calls` | Full call record: metadata, transcript, recording, triage, language flags |
+| `calls` | Full call record: metadata, transcript, recording, triage, language flags, booking_outcome, exception_reason, notification_priority |
 | `appointments` | Bookings. `UNIQUE(tenant_id, start_time)`. Links to call + Google Calendar |
 | `services` | Service catalog with `urgency_tag` for Layer 3 triage |
 | `service_zones` | Geographic zones for travel buffers |
@@ -504,6 +515,9 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Whisper message on transfer**: AI passes caller context; webhook builds structured whisper for receiving human (D-08)
 - **Mid-call lead capture**: `capture_lead` tool creates lead immediately during call — no post-call wait for declined callers (D-14, D-15)
 - **end_call bypasses Groq**: WebSocket handles end_call in handleToolResult before Groq call — sends end_call:true directly (D-14)
+- **booking_outcome set real-time**: booked/attempted/declined written during live call via `after()`; not_attempted defaulted post-call with conditional `WHERE IS NULL` update
+- **notification_priority decoupled from urgency**: separate column maps emergency/high_ticket→high, routine→standard; Phase 16 reads this column, not urgency directly
+- **Caller SMS confirmation**: sent via `after()` in handleBookAppointment after successful booking; locale from detected_language or tenant default_locale; uses i18n JSON templates
 
 ---
 
