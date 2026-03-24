@@ -60,9 +60,9 @@ export default function PricingTiers() {
           return (
             <AnimatedItem key={tier.id} className={orderClass}>
               <Card
-                className={`relative flex flex-col h-full hover:-translate-y-0.5 transition-all duration-200 hover:shadow-lg bg-white ${
+                className={`relative flex flex-col h-full bg-[#1E293B] border border-white/[0.06] rounded-xl transition-all duration-200 hover:border-[#C2410C]/40 hover:shadow-[0_0_20px_rgba(194,65,12,0.15)] hover:-translate-y-0.5 ${
                   isHighlighted
-                    ? 'ring-2 ring-[#C2410C] shadow-lg'
+                    ? 'ring-2 ring-[#C2410C]/60'
                     : ''
                 }`}
               >
@@ -70,44 +70,44 @@ export default function PricingTiers() {
                   {/* Badge */}
                   {tier.badge && (
                     <div className="mb-3">
-                      <Badge className="bg-[#C2410C] text-white text-xs">
+                      <Badge className="bg-[#C2410C] text-white text-xs font-semibold px-3 py-1 rounded-full">
                         {tier.badge}
                       </Badge>
                     </div>
                   )}
 
                   {/* Tier name */}
-                  <div className="text-xl font-semibold text-[#0F172A]">{tier.name}</div>
+                  <div className="text-xl font-semibold text-[#F1F5F9]">{tier.name}</div>
 
                   {/* Price */}
                   <div className="mt-3 flex items-baseline gap-1">
                     {tier.monthlyPrice === null ? (
-                      <span className="text-4xl font-semibold text-[#0F172A]">Custom</span>
+                      <span className="text-4xl font-semibold text-[#F1F5F9]">Custom</span>
                     ) : (
                       <>
-                        <span className="text-4xl font-semibold text-[#0F172A]">${price}</span>
-                        <span className="text-sm text-[#475569]">/mo</span>
+                        <span className="text-4xl font-semibold text-[#F1F5F9]">${price}</span>
+                        <span className="text-sm text-[#94A3B8]">/mo</span>
                       </>
                     )}
                   </div>
 
                   {/* Strikethrough for annual */}
                   {billing === 'annual' && tier.monthlyPrice !== null && (
-                    <span className="text-xs text-[#475569] line-through">
+                    <span className="text-xs text-[#94A3B8] line-through">
                       ${tier.monthlyPrice}/mo
                     </span>
                   )}
 
                   {/* Description */}
-                  <p className="text-sm text-[#475569] mt-2">{tier.description}</p>
+                  <p className="text-sm text-[#94A3B8] mt-2">{tier.description}</p>
                 </CardHeader>
 
                 <CardContent className="flex flex-col flex-1 pt-6">
                   {/* Feature list */}
                   <ul className="space-y-3 flex-1">
                     {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-[#0F172A]">
-                        <Check className="size-4 text-[#166534] shrink-0 mt-0.5" />
+                      <li key={feature} className="flex items-start gap-2 text-sm text-[#94A3B8]">
+                        <Check className="size-4 text-[#C2410C] shrink-0 mt-0.5" />
                         {feature}
                       </li>
                     ))}
@@ -120,7 +120,7 @@ export default function PricingTiers() {
                       className={`w-full min-h-[44px] ${
                         isHighlighted
                           ? 'bg-[#C2410C] text-white hover:bg-[#C2410C]/90 shadow-[0_4px_16px_0_rgba(194,65,12,0.4)]'
-                          : 'border border-[#0F172A] text-[#0F172A] hover:bg-[#0F172A]/5 bg-transparent'
+                          : 'bg-white/[0.06] text-[#F1F5F9] hover:bg-white/[0.1] border-0'
                       }`}
                     >
                       <Link href={tier.ctaHref}>{tier.cta}</Link>

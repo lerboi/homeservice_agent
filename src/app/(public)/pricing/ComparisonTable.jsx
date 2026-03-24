@@ -20,8 +20,8 @@ export default function ComparisonTable() {
             </tr>
           </thead>
           <tbody>
-            {COMPARISON_FEATURES.map((feature) => (
-              <tr key={feature.name} className="border-b border-[#0F172A]/5 hover:bg-[#F5F5F4]/60">
+            {COMPARISON_FEATURES.map((feature, rowIndex) => (
+              <tr key={feature.name} className={`border-b border-[#0F172A]/5 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-stone-50'}`}>
                 <th scope="row" className="py-4 text-left text-sm text-[#0F172A] font-medium">
                   {feature.name}
                 </th>
@@ -30,7 +30,7 @@ export default function ComparisonTable() {
                   return (
                     <td key={tierId} className="py-4 text-center text-sm">
                       {val === true ? (
-                        <Check className="size-4 text-[#166534] mx-auto" />
+                        <Check className="size-4 text-[#C2410C] mx-auto" />
                       ) : val === false ? (
                         <span className="text-[#475569]/40">&mdash;</span>
                       ) : (
