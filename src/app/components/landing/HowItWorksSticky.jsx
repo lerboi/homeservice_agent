@@ -64,11 +64,11 @@ export function HowItWorksSticky() {
         return (
           <div
             key={step.number}
-            className={`${step.borderColor} border rounded-3xl sticky min-h-[50vh] p-10 md:p-14 lg:p-16 shadow-lg ${step.shadowColor} overflow-hidden`}
+            className={`${step.borderColor} border rounded-3xl sticky min-h-[40vh] md:min-h-[50vh] p-6 md:p-14 lg:p-16 shadow-lg ${step.shadowColor} overflow-hidden`}
             style={{
-              top: '120px',
+              top: '80px',
               zIndex: index + 1,
-              marginBottom: isLast ? '2rem' : '33vh',
+              marginBottom: isLast ? '2rem' : '25vh',
               background: 'white',
             }}
           >
@@ -82,7 +82,7 @@ export function HowItWorksSticky() {
               {step.number}
             </span>
 
-            <div className="relative z-10 flex flex-col h-full justify-between min-h-[45vh]">
+            <div className="relative z-10 flex flex-col h-full justify-between min-h-[35vh] md:min-h-[45vh]">
               {/* Top: badge + icon row */}
               <div>
                 <div className="flex items-center justify-between mb-8">
