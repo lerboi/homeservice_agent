@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 13-05-PLAN.md
-last_updated: "2026-03-24T19:48:10.927Z"
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-03-24T20:04:41.143Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 13 (frontend-public-pages-redesign) — EXECUTING
-Plan: 4 of 7
+Plan: 6 of 7
 
 ### v2.0 Milestone Progress
 
@@ -158,6 +158,10 @@ Recent decisions affecting current work:
 - [Phase 14]: DECLINE_HANDLING gated by onboarding_complete — only active when booking protocol is active (consistent with D-16)
 - [Phase 13-05]: HowItWorksSection uses #F5F5F4 light background (user override of D-18 charcoal spec) — creates visual rhythm break between dark hero and dark features sections
 - [Phase 13-05]: LandingFooter requires use client for back-to-top scrollTo; newsletter form is display-only (no API wired) — visual upgrade deferred wiring
+- [Phase 16]: Emergency detection uses strict equality urgency === 'emergency' — high_ticket and undefined fall to routine path
+- [Phase 14]: end_call handler in WebSocket bypasses Groq entirely — sends end_call:true directly to Retell without continuation
+- [Phase 14]: capture_lead computes duration from start_timestamp to avoid 15s short-call filter mid-call (Pitfall 3)
+- [Phase 14]: whisper_message passed to retell.call.transfer() using AI-provided tool arguments (D-08)
 
 ### Roadmap Evolution
 
@@ -187,6 +191,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:48:10.919Z
-Stopped at: Completed 13-05-PLAN.md
+Last session: 2026-03-24T20:04:41.131Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None

@@ -298,9 +298,9 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 ### v2.0 Phase Checklist
 
-- [ ] **Phase 14: Booking-First Agent Behavior** - Agent prompt rewrite to booking-first dispatcher, intent detection, exception-only transfer, warm transfer context preservation, WebSocket tool updates
+- [x] **Phase 14: Booking-First Agent Behavior** - Agent prompt rewrite to booking-first dispatcher, intent detection, exception-only transfer, warm transfer context preservation, WebSocket tool updates (completed 2026-03-24)
 - [ ] **Phase 15: Call Processor and Triage Reclassification** - Schema migration (booking_outcome, exception_reason), call processor update removing isRoutineUnbooked guard, triage tags reclassified as notification priority, caller SMS confirmation
-- [ ] **Phase 16: Notification Priority System** - Priority-tiered SMS/email formatting driven by urgency tags, emergency notifications with EMERGENCY prefix, routine notifications via standard flow
+- [x] **Phase 16: Notification Priority System** - Priority-tiered SMS/email formatting driven by urgency tags, emergency notifications with EMERGENCY prefix, routine notifications via standard flow (completed 2026-03-24)
 - [ ] **Phase 17: Recovery SMS Enhancement** - Universal recovery SMS fallback for all failed bookings, urgency-aware content, delivery failure logging and retry
 - [ ] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring
 
@@ -314,12 +314,12 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
   3. A caller asking only for information ("how much does a water heater cost?") is NOT booked — the AI detects non-booking intent and provides information without forcing an appointment
   4. After 2 failed clarification attempts where the AI cannot determine the job type, the call is transferred to a human with a whisper message containing full caller details (name, phone, address, conversation summary)
   5. A caller who says "let me talk to a person" or "I want to speak to someone" is immediately transferred with full context — no pushback or re-prompting
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 14-01-PLAN.md — Test safety net: prompt snapshots, booking-first RED assertions, whisper message tests, capture_lead handler tests
 - [x] 14-02-PLAN.md — Modular prompt rewrite: booking-first protocol, decline handling, clarification limit, urgency-for-slots
-- [ ] 14-03-PLAN.md — WebSocket tool additions (end_call, capture_lead) + webhook handlers + whisper message transfer + skill file update
+- [x] 14-03-PLAN.md — WebSocket tool additions (end_call, capture_lead) + webhook handlers + whisper message transfer + skill file update
 
 ### Phase 15: Call Processor and Triage Reclassification
 **Goal**: The call processing pipeline treats every call as a booking attempt, urgency tags are retained on records but no longer determine call routing, and callers receive SMS confirmation after successful bookings
@@ -343,7 +343,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 16-01-PLAN.md — Priority-tiered SMS/email formatting (EMERGENCY prefix, red header badge) + 12 priority tests
+- [x] 16-01-PLAN.md — Priority-tiered SMS/email formatting (EMERGENCY prefix, red header badge) + 12 priority tests
 
 ### Phase 17: Recovery SMS Enhancement
 **Goal**: Every call path where booking fails has a safety net — the caller receives a recovery SMS with a manual booking link, and delivery failures are never silently swallowed
@@ -374,8 +374,8 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Booking-First Agent Behavior | 2/3 | In Progress|  |
+| 14. Booking-First Agent Behavior | 3/3 | Complete   | 2026-03-24 |
 | 15. Call Processor and Triage Reclassification | 0/TBD | Not started | - |
-| 16. Notification Priority System | 0/1 | Planning complete | - |
+| 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
