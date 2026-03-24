@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-03-24T19:40:12.818Z"
+stopped_at: Completed 13-06-PLAN.md
+last_updated: "2026-03-24T19:44:42.989Z"
 progress:
   total_phases: 14
   completed_phases: 10
   total_plans: 51
-  completed_plans: 47
+  completed_plans: 48
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 14 — booking-first-agent-behavior
+**Current focus:** Phase 13 — frontend-public-pages-redesign
 
 ## Current Position
 
-Phase: 14 (booking-first-agent-behavior) — EXECUTING
-Plan: 2 of 3
+Phase: 13 (frontend-public-pages-redesign) — EXECUTING
+Plan: 2 of 7
 
 ### v2.0 Milestone Progress
 
@@ -152,6 +152,8 @@ Recent decisions affecting current work:
 - [Phase 14]: Snapshot tests use node --experimental-vm-modules (package.json type:module + jest ESM requirement)
 - [Phase 14]: buildWhisperMessage placed in src/lib/ (not Railway repo) — consumed by main app transfer handler
 - [Phase 14]: Booking-first prompt.test.js assertions are deliberately failing RED — Plan 02 makes them GREEN
+- [Phase 13-06]: Auth signup left panel changed to bg-white per user override of D-31 — #334155 was dark-on-dark, not the intended contrast
+- [Phase 13-06]: OtpInput digit boxes use bg-stone-50 + border-stone-300 for white card context — copper focus ring preserved
 
 ### Roadmap Evolution
 
@@ -181,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:40:12.804Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-03-24T19:44:42.982Z
+Stopped at: Completed 13-06-PLAN.md
 Resume file: None
