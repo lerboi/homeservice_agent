@@ -374,7 +374,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Booking-First Agent Behavior | 3/3 | Complete   | 2026-03-24 |
+| 14. Booking-First Agent Behavior | 3/3 | Complete    | 2026-03-24 |
 | 15. Call Processor and Triage Reclassification | 0/TBD | Not started | - |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
