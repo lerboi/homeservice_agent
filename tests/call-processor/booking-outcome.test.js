@@ -12,8 +12,7 @@ import { jest } from '@jest/globals';
 
 const mockUpsert = jest.fn().mockResolvedValue({ data: null, error: null });
 const mockIs = jest.fn().mockResolvedValue({ data: null, error: null });
-const mockUpdateEqEq = jest.fn().mockReturnValue({ is: mockIs });
-const mockUpdateEq = jest.fn().mockReturnValue({ eq: mockUpdateEqEq });
+const mockUpdateEq = jest.fn().mockReturnValue({ is: mockIs });
 const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
 
 // Build a chainable mock for .select().eq().eq().single()/.maybeSingle()
@@ -22,14 +21,19 @@ function makeSelectChain(singleResult, maybeSingleResult) {
   const leaf = {
     single: jest.fn().mockResolvedValue(singleResult),
     maybeSingle: jest.fn().mockResolvedValue(maybeSingleResult),
+    data: [],
   };
-  // Allow arbitrary .eq() chaining
+  // Allow arbitrary .eq()/.neq() chaining and resolve with empty data array for non-terminal calls
   leaf.eq = jest.fn().mockReturnValue(leaf);
+  leaf.neq = jest.fn().mockReturnValue({ ...leaf, then: (resolve) => resolve({ data: [] }) });
+  // Make the chain itself thenable (Promise-like) for Promise.all usage
+  leaf.then = (resolve) => resolve({ data: [] });
   const firstEq = jest.fn().mockReturnValue(leaf);
   return {
     eq: firstEq,
     single: leaf.single,
     maybeSingle: leaf.maybeSingle,
+    then: leaf.then,
   };
 }
 

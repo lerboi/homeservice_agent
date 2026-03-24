@@ -166,12 +166,13 @@ export async function processCallAnalyzed(call) {
     appointmentExists = appt != null;
   }
 
-  // For routine/unbooked calls: calculate suggested slots for owner follow-up
+  // For any unbooked call: calculate suggested slots for owner follow-up
+  // Per D-04, D-05: expanded from routine-only to any unbooked call regardless of urgency
   // This allows the owner to see ready-to-offer times when reviewing leads in the dashboard
   let suggestedSlots = null;
-  const isRoutineUnbooked = triageResult.urgency === 'routine' && !appointmentExists;
+  const shouldCalculateSlots = !appointmentExists && tenantId;
 
-  if (isRoutineUnbooked && tenantId) {
+  if (shouldCalculateSlots) {
     try {
       // Load tenant scheduling config
       const { data: tenantScheduling } = await supabase
@@ -233,6 +234,12 @@ export async function processCallAnalyzed(call) {
     }
   }
 
+  // Notification priority derived from urgency — Phase 16 reads this for SMS/email formatting (D-11, D-12)
+  const notification_priority =
+    triageResult.urgency === 'emergency' || triageResult.urgency === 'high_ticket'
+      ? 'high'
+      : 'standard';
+
   // Upsert call record with full analyzed data
   await supabase.from('calls').upsert(
     {
@@ -256,10 +263,19 @@ export async function processCallAnalyzed(call) {
       urgency_classification: triageResult.urgency,
       urgency_confidence: triageResult.confidence,
       triage_layer_used: triageResult.layer,
+      notification_priority,
       suggested_slots: suggestedSlots,
     },
     { onConflict: 'retell_call_id' }
   );
+
+  // Default booking_outcome to 'not_attempted' for calls with no real-time booking activity (D-02)
+  // Uses conditional update to avoid overwriting values set during the live call (Pitfall 1)
+  await supabase
+    .from('calls')
+    .update({ booking_outcome: 'not_attempted' })
+    .eq('retell_call_id', call_id)
+    .is('booking_outcome', null);
 
   // === LEAD CREATION (Phase 4: CRM-01, CRM-03) ===
   // Create or merge lead after call record is persisted.
