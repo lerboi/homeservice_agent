@@ -10,7 +10,7 @@ const HowItWorksSticky = dynamic(
     loading: () => (
       <div className="space-y-8">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-[180px] rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
+          <div key={i} className="h-[180px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
         ))}
       </div>
     ),
@@ -43,19 +43,16 @@ const mobileSteps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="relative bg-[#1E293B] py-20 md:py-28 px-6">
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px]" />
-
+    <section id="how-it-works" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6">
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
           <p className="text-sm font-semibold text-[#C2410C] tracking-[0.15em] uppercase mb-3">
             How it works
           </p>
-          <h2 className="text-3xl md:text-4xl font-semibold text-[#F1F5F9] tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
             From missed call to booked job.
             <br className="hidden sm:block" />
-            <span className="text-[#94A3B8]">In under two minutes.</span>
+            <span className="text-[#475569]">In under two minutes.</span>
           </h2>
         </AnimatedSection>
 
@@ -66,7 +63,7 @@ export function HowItWorksSection() {
             return (
               <div
                 key={step.number}
-                className="rounded-2xl bg-[#0F172A] border border-white/[0.06] p-6"
+                className="rounded-2xl bg-white border border-stone-200/60 shadow-sm p-6"
               >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="size-10 rounded-xl bg-[#C2410C]/10 border border-[#C2410C]/20 flex items-center justify-center shrink-0">
@@ -76,13 +73,13 @@ export function HowItWorksSection() {
                     Step {step.number}
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold text-[#F1F5F9] mb-2 tracking-tight">
+                <h3 className="text-lg font-semibold text-[#0F172A] mb-2 tracking-tight">
                   {step.title}
                 </h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed mb-3">
+                <p className="text-sm text-[#475569] leading-relaxed mb-3">
                   {step.description}
                 </p>
-                <p className="text-xs text-[#94A3B8]/70 italic border-t border-white/[0.06] pt-3">
+                <p className="text-xs text-[#475569]/60 italic border-t border-stone-200/60 pt-3">
                   {step.detail}
                 </p>
               </div>
@@ -95,7 +92,7 @@ export function HowItWorksSection() {
           <HowItWorksSticky />
         </div>
 
-        <AnimatedSection delay={0.3} className="flex justify-center mt-16">
+        <AnimatedSection delay={0.3} className="flex justify-center mt-8">
           <Button
             asChild
             size="lg"

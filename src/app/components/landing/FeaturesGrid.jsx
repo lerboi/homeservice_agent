@@ -74,7 +74,7 @@ function MetricBar({ label, value, width }) {
         <span className="text-white/40">{label}</span>
         <span className="text-white/60 font-medium">{value}</span>
       </div>
-      <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
+      <div className="h-1 rounded-full bg-[#0F172A] overflow-hidden">
         <div className="h-full rounded-full bg-gradient-to-r from-[#C2410C]/60 to-[#C2410C]" style={{ width }} />
       </div>
     </div>
@@ -89,46 +89,27 @@ function BentoCard({ feature }) {
   return (
     <AnimatedItem className={feature.span}>
       <div
-        className={`group relative h-full rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ${
-          isHero
-            ? 'bg-[#0F172A] text-white p-7 md:p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] hover:shadow-[0_20px_50px_-15px_rgba(15,23,42,0.5)]'
-            : 'bg-white p-6 md:p-7 shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.12)]'
-        }`}
+        className="group relative h-full rounded-2xl overflow-hidden bg-[#1E293B] border border-white/[0.06] p-6 md:p-7 transition-all duration-300 hover:border-[#C2410C]/40 hover:shadow-[0_0_20px_rgba(194,65,12,0.15)] hover:-translate-y-0.5"
       >
-        {/* Subtle gradient overlay on hero card */}
+        {/* Subtle radial gradient overlay for hero card */}
         {isHero && (
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[radial-gradient(circle,rgba(194,65,12,0.12),transparent_70%)]" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle,rgba(194,65,12,0.14),transparent_70%)] pointer-events-none" />
         )}
-
-        {/* Hover glow effect — GPU-accelerated */}
-        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none ${
-          isHero
-            ? 'bg-gradient-to-br from-[#C2410C]/[0.06] to-transparent'
-            : 'bg-gradient-to-br from-[#C2410C]/[0.03] to-transparent'
-        }`} />
 
         <div className="relative">
           {/* Icon container */}
-          <div className={`inline-flex items-center justify-center rounded-xl mb-4 ${
-            isHero
-              ? 'size-12 bg-white/[0.06] border border-white/[0.08]'
-              : 'size-10 bg-[#0F172A]/[0.04]'
-          }`}>
+          <div className="inline-flex items-center justify-center rounded-xl mb-4 size-11 bg-white/[0.06] border border-white/[0.08]">
             <Icon
-              className={isHero ? 'size-5 text-[#C2410C]' : 'size-4.5 text-[#0F172A]/70'}
+              className="size-5 text-[#C2410C]"
               strokeWidth={1.75}
             />
           </div>
 
-          <h3 className={`font-semibold mb-2 ${isHero ? 'text-xl' : 'text-base'}`}>
+          <h3 className={`font-semibold mb-2 text-[#F1F5F9] ${isHero ? 'text-xl' : 'text-base'}`}>
             {feature.title}
           </h3>
 
-          <p className={`leading-relaxed ${
-            isHero
-              ? 'text-[15px] text-white/60 max-w-sm'
-              : 'text-sm text-[#475569]'
-          }`}>
+          <p className={`leading-relaxed text-[#94A3B8] ${isHero ? 'text-[15px] max-w-sm' : 'text-sm'}`}>
             {feature.body}
           </p>
 
@@ -144,12 +125,10 @@ function BentoCard({ feature }) {
             </div>
           )}
 
-          {/* Justification — revealed on hover via group-hover translate */}
-          <div className={`flex items-center gap-2 mt-4 pt-4 transition-all duration-300 ${
-            isHero ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.04]'
-          }`}>
+          {/* Justification */}
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/[0.06] transition-all duration-300">
             <div className="size-1.5 rounded-full bg-[#166534] shrink-0" />
-            <p className="text-sm font-medium text-[#166534]">
+            <p className="text-sm font-medium text-[#22C55E]">
               {feature.justification}
             </p>
           </div>
@@ -161,16 +140,19 @@ function BentoCard({ feature }) {
 
 export function FeaturesGrid() {
   return (
-    <section id="features" className="bg-[#F5F5F4] py-20 md:py-28 px-6">
-      <div className="max-w-5xl mx-auto">
+    <section id="features" className="relative bg-[#0F172A] py-20 md:py-28 px-6">
+      {/* Subtle grid texture */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
+
+      <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
           <p className="text-sm font-medium text-[#C2410C] tracking-wide uppercase mb-3">
             Why it pays for itself
           </p>
-          <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[#F1F5F9] tracking-tight">
             Five features. One question:
             <br className="hidden sm:block" />
-            <span className="text-[#475569]">How much did your last missed call cost?</span>
+            <span className="text-[#94A3B8]">How much did your last missed call cost?</span>
           </h2>
         </AnimatedSection>
 

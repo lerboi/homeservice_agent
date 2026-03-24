@@ -43,7 +43,7 @@ function StarRating() {
 
 export function SocialProofSection() {
   return (
-    <section id="testimonials" className="relative bg-[#0F172A] py-20 md:py-28 px-6 overflow-hidden">
+    <section id="testimonials" className="relative bg-[#1E293B] py-20 md:py-28 px-6 overflow-hidden">
       {/* Grid texture */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px]" />
       {/* Gradient accent */}
@@ -65,7 +65,7 @@ export function SocialProofSection() {
         <AnimatedStagger className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {testimonials.map((t) => (
             <AnimatedItem key={t.name}>
-              <div className="group h-full flex flex-col rounded-2xl bg-[#1E293B] border border-white/[0.06] transition-all duration-200 hover:border-[#C2410C]/40 hover:shadow-[0_0_20px_rgba(194,65,12,0.15)] hover:-translate-y-0.5">
+              <div className="group h-full flex flex-col rounded-2xl bg-[#0F172A]/60 border border-white/[0.06] transition-all duration-200 hover:border-[#C2410C]/40 hover:shadow-[0_0_20px_rgba(194,65,12,0.15)] hover:-translate-y-0.5">
                 {/* Metric badge */}
                 <div className="px-6 pt-6 pb-0">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 mb-4 transition-shadow duration-300 group-hover:shadow-[0_0_16px_rgba(22,101,52,0.2)]">
