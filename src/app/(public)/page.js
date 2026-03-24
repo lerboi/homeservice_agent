@@ -9,19 +9,19 @@ const HowItWorksSection = dynamic(
   () => import('@/app/components/landing/HowItWorksSection').then((m) => m.HowItWorksSection),
   {
     loading: () => (
-      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#1E293B] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
-            <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
+            <div className="h-4 w-24 bg-white/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-80 bg-white/10 rounded mx-auto" />
           </div>
           <div className="space-y-4">
             <div className="flex gap-2 justify-center mb-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 w-16 rounded-lg bg-black/[0.04]" />
+                <div key={i} className="h-12 w-16 rounded-lg bg-white/[0.04]" />
               ))}
             </div>
-            <div className="h-[280px] rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
+            <div className="h-[280px] rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection } from './AnimatedSection';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Phone, Brain, CalendarCheck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const HowItWorksSticky = dynamic(
@@ -10,34 +10,92 @@ const HowItWorksSticky = dynamic(
     loading: () => (
       <div className="space-y-8">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-[180px] rounded-2xl bg-[#F5F5F4]/50 border border-black/[0.04]" />
+          <div key={i} className="h-[180px] rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
         ))}
       </div>
     ),
   }
 );
 
+const mobileSteps = [
+  {
+    number: '01',
+    icon: Phone,
+    title: 'Call comes in',
+    description: 'A homeowner calls at 11 PM about a burst pipe. Your AI picks up in under a second.',
+    detail: 'No voicemail. No hold music. No missed revenue.',
+  },
+  {
+    number: '02',
+    icon: Brain,
+    title: 'AI triages instantly',
+    description: 'The call is classified as an emergency. Your AI shifts tone — faster, more direct.',
+    detail: '"I understand this is urgent. Let me get you scheduled right away."',
+  },
+  {
+    number: '03',
+    icon: CalendarCheck,
+    title: 'Job is booked',
+    description: 'First available morning slot is locked while the caller is still on the line.',
+    detail: 'You get a text. The homeowner gets confirmation. You sleep.',
+  },
+];
+
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="relative bg-white py-20 md:py-28 px-6">
+    <section id="how-it-works" className="relative bg-[#1E293B] py-20 md:py-28 px-6">
       {/* Subtle background pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.015)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
-          <p className="text-sm font-medium text-[#C2410C] tracking-wide uppercase mb-3">
+          <p className="text-sm font-semibold text-[#C2410C] tracking-[0.15em] uppercase mb-3">
             How it works
           </p>
-          <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[#F1F5F9] tracking-tight">
             From missed call to booked job.
             <br className="hidden sm:block" />
-            <span className="text-[#475569]">In under two minutes.</span>
+            <span className="text-[#94A3B8]">In under two minutes.</span>
           </h2>
         </AnimatedSection>
 
-        <HowItWorksSticky />
+        {/* Mobile: stacked steps (no JS tabs, no animation complexity) */}
+        <div className="block md:hidden space-y-4 mb-16">
+          {mobileSteps.map((step) => {
+            const Icon = step.icon;
+            return (
+              <div
+                key={step.number}
+                className="rounded-2xl bg-[#0F172A] border border-white/[0.06] p-6"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="size-10 rounded-xl bg-[#C2410C]/10 border border-[#C2410C]/20 flex items-center justify-center shrink-0">
+                    <Icon className="size-5 text-[#C2410C]" strokeWidth={1.75} />
+                  </div>
+                  <span className="text-xs font-semibold text-[#C2410C] tracking-[0.12em] uppercase">
+                    Step {step.number}
+                  </span>
+                </div>
+                <h3 className="text-lg font-semibold text-[#F1F5F9] mb-2 tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-[#94A3B8] leading-relaxed mb-3">
+                  {step.description}
+                </p>
+                <p className="text-xs text-[#94A3B8]/70 italic border-t border-white/[0.06] pt-3">
+                  {step.detail}
+                </p>
+              </div>
+            );
+          })}
+        </div>
 
-        <AnimatedSection delay={0.3} className="flex justify-center -mt-[19vh]">
+        {/* Desktop: sticky scroll component */}
+        <div className="hidden md:block">
+          <HowItWorksSticky />
+        </div>
+
+        <AnimatedSection delay={0.3} className="flex justify-center mt-16">
           <Button
             asChild
             size="lg"
