@@ -1,0 +1,323 @@
+import { supabase } from '@/lib/supabase';
+import { locales } from '@/i18n/routing';
+import { classifyCall } from '@/lib/triage/classifier';
+import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator';
+import { createOrMergeLead } from '@/lib/leads';
+import { sendOwnerNotifications } from '@/lib/notifications';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
+
+/** Supported languages — calls in any other language trigger a language barrier tag. */
+const SUPPORTED_LANGUAGES = new Set(locales); // ['en', 'es']
+
+/**
+ * Convert a zone_travel_buffers array into the format expected by calculateAvailableSlots.
+ * @param {Array<{zone_a_id: string, zone_b_id: string, buffer_mins: number}>} buffers
+ * @returns {Array<{zone_a_id: string, zone_b_id: string, buffer_mins: number}>}
+ */
+function formatBuffers(buffers) {
+  return buffers || [];
+}
+
+/**
+ * Format a Date object into a "YYYY-MM-DD" string in the given IANA timezone.
+ * @param {Date} date
+ * @param {string} timezone IANA timezone string
+ * @returns {string} "YYYY-MM-DD"
+ */
+function toLocalDateString(date, timezone) {
+  const zoned = toZonedTime(date, timezone || 'America/Chicago');
+  return format(zoned, 'yyyy-MM-dd');
+}
+
+/**
+ * Process call_ended event — create initial call record.
+ * Lightweight: no recording yet, just basic call metadata.
+ */
+export async function processCallEnded(call) {
+  const {
+    call_id,
+    from_number,
+    to_number,
+    direction,
+    disconnection_reason,
+    start_timestamp,
+    end_timestamp,
+    metadata,
+  } = call;
+
+  // Look up tenant by the number that was called
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('retell_phone_number', to_number)
+    .single();
+
+  const tenantId = tenant?.id || null;
+
+  // Upsert using retell_call_id as dedupe key
+  await supabase.from('calls').upsert(
+    {
+      retell_call_id: call_id,
+      tenant_id: tenantId,
+      from_number,
+      to_number,
+      direction: direction || 'inbound',
+      status: 'ended',
+      disconnection_reason,
+      start_timestamp,
+      end_timestamp,
+      retell_metadata: metadata || null,
+    },
+    { onConflict: 'retell_call_id' }
+  );
+}
+
+/**
+ * Process call_analyzed event — store recording, transcript, and detect language barriers.
+ * This is the heavy handler: fetch audio, upload to storage, write transcript,
+ * and tag calls with LANGUAGE_BARRIER if detected_language is not in supported set.
+ *
+ * Per locked decision: unsupported languages create a lead tagged with
+ * "LANGUAGE BARRIER: [Detected Language]" — implemented via language_barrier
+ * and barrier_language columns on the calls table.
+ *
+ * For routine calls that were not booked during the call, calculate and store
+ * suggested_slots so the owner can do manual follow-up with ready-to-offer times.
+ */
+export async function processCallAnalyzed(call) {
+  const {
+    call_id,
+    from_number,
+    to_number,
+    direction,
+    disconnection_reason,
+    start_timestamp,
+    end_timestamp,
+    recording_url,
+    transcript,
+    transcript_object,
+    call_analysis,
+    metadata,
+  } = call;
+
+  // Look up tenant
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('retell_phone_number', to_number)
+    .single();
+
+  const tenantId = tenant?.id || null;
+  let recordingStoragePath = null;
+
+  // Upload recording to Supabase Storage if available
+  if (recording_url) {
+    try {
+      const audioResponse = await fetch(recording_url);
+      const audioBuffer = await audioResponse.arrayBuffer();
+
+      const { data, error } = await supabase.storage
+        .from('call-recordings')
+        .upload(`${call_id}.wav`, audioBuffer, {
+          contentType: 'audio/wav',
+          upsert: true,
+        });
+
+      if (!error && data) {
+        recordingStoragePath = data.path;
+      } else {
+        console.error('Recording upload failed:', error);
+      }
+    } catch (err) {
+      console.error('Recording fetch/upload error:', err);
+    }
+  }
+
+  // Detect language barrier: if detected_language is not in SUPPORTED_LANGUAGES, tag it
+  const detectedLanguage = metadata?.detected_language || call_analysis?.detected_language || null;
+  const isLanguageBarrier = detectedLanguage != null && !SUPPORTED_LANGUAGES.has(detectedLanguage);
+
+  // Run triage classification on the transcript
+  let triageResult = { urgency: 'routine', confidence: 'low', layer: 'layer1' };
+  try {
+    triageResult = await classifyCall({
+      transcript: transcript || '',
+      tenant_id: tenantId,
+    });
+  } catch (err) {
+    console.error('Triage classification failed:', err);
+  }
+
+  // Emergency priority notification (lightweight, pre-Phase-4)
+  if (triageResult.urgency === 'emergency') {
+    console.warn(`EMERGENCY TRIAGE: call ${call_id} for tenant ${tenantId} — ${triageResult.reason || 'keyword match'}`);
+  }
+
+  // Check whether a booking was made during this call
+  let appointmentExists = false;
+  if (tenantId) {
+    const { data: appt } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('retell_call_id', call_id)
+      .maybeSingle();
+    appointmentExists = appt != null;
+  }
+
+  // For routine/unbooked calls: calculate suggested slots for owner follow-up
+  // This allows the owner to see ready-to-offer times when reviewing leads in the dashboard
+  let suggestedSlots = null;
+  const isRoutineUnbooked = triageResult.urgency === 'routine' && !appointmentExists;
+
+  if (isRoutineUnbooked && tenantId) {
+    try {
+      // Load tenant scheduling config
+      const { data: tenantScheduling } = await supabase
+        .from('tenants')
+        .select('id, working_hours, slot_duration_mins, tenant_timezone')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantScheduling?.working_hours) {
+        const tenantTimezone = tenantScheduling.tenant_timezone || 'America/Chicago';
+
+        // Load scheduling data in parallel
+        const [appointments, events, zones, buffers] = await Promise.all([
+          supabase
+            .from('appointments')
+            .select('start_time, end_time, zone_id')
+            .eq('tenant_id', tenantScheduling.id)
+            .neq('status', 'cancelled'),
+          supabase
+            .from('calendar_events')
+            .select('start_time, end_time')
+            .eq('tenant_id', tenantScheduling.id),
+          supabase
+            .from('service_zones')
+            .select('id, name, postal_codes')
+            .eq('tenant_id', tenantScheduling.id),
+          supabase
+            .from('zone_travel_buffers')
+            .select('zone_a_id, zone_b_id, buffer_mins')
+            .eq('tenant_id', tenantScheduling.id),
+        ]);
+
+        // Calculate next 3 available slots starting from tomorrow
+        const collectedSlots = [];
+        for (let d = 0; d < 3 && collectedSlots.length < 3; d++) {
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + d + 1); // start from tomorrow
+          const targetDateStr = toLocalDateString(targetDate, tenantTimezone);
+
+          const daySlots = calculateAvailableSlots({
+            workingHours: tenantScheduling.working_hours,
+            slotDurationMins: tenantScheduling.slot_duration_mins || 60,
+            existingBookings: appointments.data || [],
+            externalBlocks: events.data || [],
+            zones: zones.data || [],
+            zonePairBuffers: formatBuffers(buffers.data || []),
+            targetDate: targetDateStr,
+            tenantTimezone,
+            maxSlots: 3 - collectedSlots.length,
+          });
+          collectedSlots.push(...daySlots);
+        }
+
+        suggestedSlots = collectedSlots.length > 0 ? collectedSlots : null;
+      }
+    } catch (err) {
+      // Non-fatal: suggested_slots is an enhancement, not a core requirement
+      console.error('suggested_slots calculation failed:', err);
+    }
+  }
+
+  // Upsert call record with full analyzed data
+  await supabase.from('calls').upsert(
+    {
+      retell_call_id: call_id,
+      tenant_id: tenantId,
+      from_number,
+      to_number,
+      direction: direction || 'inbound',
+      status: 'analyzed',
+      disconnection_reason,
+      start_timestamp,
+      end_timestamp,
+      recording_url,
+      recording_storage_path: recordingStoragePath,
+      transcript_text: transcript || null,
+      transcript_structured: transcript_object || null,
+      detected_language: detectedLanguage,
+      language_barrier: isLanguageBarrier,
+      barrier_language: isLanguageBarrier ? detectedLanguage : null,
+      retell_metadata: { ...(metadata || {}), call_analysis: call_analysis || null },
+      urgency_classification: triageResult.urgency,
+      urgency_confidence: triageResult.confidence,
+      triage_layer_used: triageResult.layer,
+      suggested_slots: suggestedSlots,
+    },
+    { onConflict: 'retell_call_id' }
+  );
+
+  // === LEAD CREATION (Phase 4: CRM-01, CRM-03) ===
+  // Create or merge lead after call record is persisted.
+  // Short call filter (< 15s) is handled inside createOrMergeLead — returns null.
+  const callDuration = start_timestamp && end_timestamp
+    ? Math.round((new Date(end_timestamp) - new Date(start_timestamp)) / 1000)
+    : 0;
+
+  // Look up appointmentId for this call if a booking was made during the call
+  let appointmentId = null;
+  if (appointmentExists && tenantId) {
+    const { data: apptRow } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('retell_call_id', call_id)
+      .maybeSingle();
+    appointmentId = apptRow?.id || null;
+  }
+
+  let lead = null;
+  try {
+    lead = await createOrMergeLead({
+      tenantId,
+      callId: call_id,
+      fromNumber: from_number,
+      callerName: metadata?.caller_name || call_analysis?.caller_name || null,
+      jobType: metadata?.job_type || call_analysis?.job_type || null,
+      serviceAddress: metadata?.service_address || call_analysis?.service_address || null,
+      triageResult,
+      appointmentId,
+      callDuration,
+    });
+  } catch (err) {
+    console.error('Lead creation failed:', err);
+  }
+
+  // === OWNER NOTIFICATIONS (Phase 4: NOTIF-01, NOTIF-02) ===
+  // Fire-and-forget: notification failures are logged but never block the handler.
+  if (lead && tenantId) {
+    try {
+      const { data: tenantInfo } = await supabase
+        .from('tenants')
+        .select('business_name, owner_phone, owner_email')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantInfo) {
+        sendOwnerNotifications({
+          tenantId,
+          lead,
+          businessName: tenantInfo.business_name || 'Your Business',
+          ownerPhone: tenantInfo.owner_phone,
+          ownerEmail: tenantInfo.owner_email,
+        }).catch(err => console.error('Owner notification failed:', err));
+      }
+    } catch (err) {
+      console.error('Tenant lookup for notifications failed:', err);
+    }
+  }
+}
