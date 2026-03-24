@@ -59,7 +59,7 @@ describe('sendOwnerEmail', () => {
     expect(args[0].to).toBe('owner@example.com');
   });
 
-  it('email subject contains urgency and caller name', async () => {
+  it('emergency email subject starts with EMERGENCY: prefix and contains caller name', async () => {
     await sendOwnerEmail({
       to: 'owner@example.com',
       lead: { caller_name: 'John Smith', urgency: 'emergency' },
@@ -68,7 +68,7 @@ describe('sendOwnerEmail', () => {
     });
 
     const subject = mockSend.mock.calls[0][0].subject;
-    expect(subject).toContain('emergency');
+    expect(subject).toMatch(/^EMERGENCY:/);
     expect(subject).toContain('John Smith');
   });
 

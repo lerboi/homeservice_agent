@@ -64,7 +64,7 @@ describe('sendOwnerSMS', () => {
     expect(args[0].to).toBe('+15559998888');
   });
 
-  it('SMS body contains business name, urgency, caller name, job type, and address', async () => {
+  it('SMS body contains business name, EMERGENCY prefix, caller name, job type, and address', async () => {
     await sendOwnerSMS({
       to: '+15559998888',
       businessName: 'Acme Plumbing',
@@ -78,7 +78,7 @@ describe('sendOwnerSMS', () => {
 
     const body = mockCreate.mock.calls[0][0].body;
     expect(body).toContain('Acme Plumbing');
-    expect(body).toContain('emergency');
+    expect(body).toMatch(/^EMERGENCY:/);
     expect(body).toContain('Jane Doe');
     expect(body).toContain('Pipe repair');
     expect(body).toContain('123 Main St, Springfield');

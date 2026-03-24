@@ -49,11 +49,14 @@ export async function sendOwnerSMS({
   callbackLink,
   dashboardLink,
 }) {
-  const body =
-    `${businessName}: New ${urgency || 'routine'} lead -- ` +
-    `${callerName || 'Unknown'}, ${jobType || 'General inquiry'} ` +
-    `at ${address || 'No address'}. ` +
-    `Call back: ${callbackLink} | Dashboard: ${dashboardLink}`;
+  const isEmergency = urgency === 'emergency';
+  const name = callerName || 'Unknown';
+  const job = jobType || 'General inquiry';
+  const addr = address || 'No address';
+
+  const body = isEmergency
+    ? `EMERGENCY: ${businessName} — ${name} needs urgent ${job} at ${addr}. Call NOW: ${callbackLink} | Dashboard: ${dashboardLink}`
+    : `${businessName}: New booking — ${name}, ${job} at ${addr}. Callback: ${callbackLink} | Dashboard: ${dashboardLink}`;
 
   try {
     const result = await getTwilioClient().messages.create({
@@ -76,7 +79,13 @@ export async function sendOwnerSMS({
  * @param {{ to: string, lead: object, businessName: string, dashboardUrl: string }} params
  */
 export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
-  const subject = `New ${lead?.urgency || 'routine'} lead -- ${lead?.caller_name || 'Unknown caller'}`;
+  const urgency = lead?.urgency_classification || lead?.urgency || 'routine';
+  const isEmergency = urgency === 'emergency';
+  const callerName = lead?.caller_name || 'Unknown caller';
+
+  const subject = isEmergency
+    ? `EMERGENCY: New booking — ${callerName}`
+    : `New booking — ${callerName}`;
 
   try {
     const result = await getResendClient().emails.send({

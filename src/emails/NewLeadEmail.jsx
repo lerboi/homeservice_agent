@@ -21,6 +21,7 @@ import {
  */
 export function NewLeadEmail({ lead, businessName, dashboardUrl }) {
   const urgency = lead?.urgency_classification || lead?.urgency || 'routine';
+  const isEmergency = urgency === 'emergency';
   const callerName = lead?.caller_name || 'Unknown caller';
   const jobType = lead?.job_type || 'General inquiry';
   const address = lead?.address || 'No address provided';
@@ -32,14 +33,17 @@ export function NewLeadEmail({ lead, businessName, dashboardUrl }) {
       <Body style={bodyStyle}>
         <Container style={containerStyle}>
           {/* Header */}
-          <Section style={headerStyle}>
+          <Section style={{ ...headerStyle, backgroundColor: isEmergency ? '#DC2626' : '#0F172A' }}>
             <Text style={brandStyle}>{businessName}</Text>
+            {isEmergency && (
+              <Text style={emergencyBadgeStyle}>EMERGENCY BOOKING</Text>
+            )}
           </Section>
 
           {/* Main heading */}
           <Section style={sectionStyle}>
             <Heading style={headingStyle}>
-              New {urgency} lead &mdash; {callerName}
+              {isEmergency ? 'EMERGENCY booking' : 'New booking'} &mdash; {callerName}
             </Heading>
 
             <Text style={subheadStyle}>
@@ -120,6 +124,16 @@ const brandStyle = {
   fontSize: '16px',
   fontWeight: '700',
   margin: 0,
+};
+
+const emergencyBadgeStyle = {
+  color: '#ffffff',
+  fontSize: '11px',
+  fontWeight: '700',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  margin: '4px 0 0',
+  opacity: '0.9',
 };
 
 const sectionStyle = {
