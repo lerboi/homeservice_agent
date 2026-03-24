@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-24T21:17:20.727Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-03-24T21:27:24.160Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -164,6 +164,8 @@ Recent decisions affecting current work:
 - [Phase 14]: whisper_message passed to retell.call.transfer() using AI-provided tool arguments (D-08)
 - [Phase 15]: sendCallerSMS uses locale === 'es' check, falls back to en for all unknown locales — matches existing project locale pattern
 - [Phase 15]: booking-outcome.test.js 2 of 7 tests pass GREEN immediately because current code already satisfies guard constraints — expected and correct Wave 0 behavior
+- [Phase 15]: [Phase 15-02]: shouldCalculateSlots = !appointmentExists && tenantId replaces isRoutineUnbooked — all unbooked calls get suggested_slots regardless of urgency
+- [Phase 15]: [Phase 15-02]: booking_outcome written real-time via after() during live call (booked/attempted/declined), not_attempted set conditionally post-call with IS NULL guard
 
 ### Roadmap Evolution
 
@@ -193,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T21:17:20.718Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-03-24T21:27:24.150Z
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
