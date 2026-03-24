@@ -314,10 +314,10 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
   3. A caller asking only for information ("how much does a water heater cost?") is NOT booked — the AI detects non-booking intent and provides information without forcing an appointment
   4. After 2 failed clarification attempts where the AI cannot determine the job type, the call is transferred to a human with a whisper message containing full caller details (name, phone, address, conversation summary)
   5. A caller who says "let me talk to a person" or "I want to speak to someone" is immediately transferred with full context — no pushback or re-prompting
-**Plans:** 3/3 plans complete
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 14-01-PLAN.md — Test safety net: prompt snapshots, booking-first RED assertions, whisper message tests, capture_lead handler tests
+- [x] 14-01-PLAN.md — Test safety net: prompt snapshots, booking-first RED assertions, whisper message tests, capture_lead handler tests
 - [ ] 14-02-PLAN.md — Modular prompt rewrite: booking-first protocol, decline handling, clarification limit, urgency-for-slots
 - [ ] 14-03-PLAN.md — WebSocket tool additions (end_call, capture_lead) + webhook handlers + whisper message transfer + skill file update
 
@@ -340,7 +340,10 @@ Plans:
   1. An emergency booking triggers an SMS and email with "EMERGENCY" prefix, urgent formatting, and immediate delivery — visually distinct from routine notifications
   2. A routine booking triggers a standard SMS and email notification without urgency formatting — the owner can distinguish emergency from routine at a glance without opening the message
   3. Notification priority is driven by the urgency tag on the booking record, not by the call routing path — same notification system, different formatting
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 16-01-PLAN.md — Priority-tiered SMS/email formatting (EMERGENCY prefix, red header badge) + 12 priority tests
 
 ### Phase 17: Recovery SMS Enhancement
 **Goal**: Every call path where booking fails has a safety net — the caller receives a recovery SMS with a manual booking link, and delivery failures are never silently swallowed
@@ -371,8 +374,8 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Booking-First Agent Behavior | 0/3 | Planning complete | - |
+| 14. Booking-First Agent Behavior | 1/3 | In Progress|  |
 | 15. Call Processor and Triage Reclassification | 0/TBD | Not started | - |
-| 16. Notification Priority System | 0/TBD | Not started | - |
+| 16. Notification Priority System | 0/1 | Planning complete | - |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |

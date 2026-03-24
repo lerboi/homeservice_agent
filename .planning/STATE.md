@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-03-24T18:55:55.608Z"
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-24T19:40:12.818Z"
 progress:
   total_phases: 14
   completed_phases: 10
-  total_plans: 48
-  completed_plans: 46
+  total_plans: 51
+  completed_plans: 47
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 13 — frontend-public-pages-redesign
+**Current focus:** Phase 14 — booking-first-agent-behavior
 
 ## Current Position
 
-Phase: 13 (frontend-public-pages-redesign) — EXECUTING
-Plan: 4 of 4
+Phase: 14 (booking-first-agent-behavior) — EXECUTING
+Plan: 2 of 3
 
 ### v2.0 Milestone Progress
 
@@ -149,6 +149,9 @@ Recent decisions affecting current work:
 - [Phase 13-frontend-public-pages-redesign]: OtpInput: focus:border-[#C2410C] + focus:ring-[#C2410C]/30 without ring-offset eliminates white gap on dark backgrounds (Pitfall 7 avoidance)
 - [Phase 13]: HowItWorksSection mobile fallback uses inline mobileSteps data (same source as HowItWorksSticky) to avoid additional dynamic import complexity on mobile
 - [Phase 13]: ContactForm focus glow uses focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] arbitrary Tailwind value — avoids inline styles while expressing box-shadow correctly
+- [Phase 14]: Snapshot tests use node --experimental-vm-modules (package.json type:module + jest ESM requirement)
+- [Phase 14]: buildWhisperMessage placed in src/lib/ (not Railway repo) — consumed by main app transfer handler
+- [Phase 14]: Booking-first prompt.test.js assertions are deliberately failing RED — Plan 02 makes them GREEN
 
 ### Roadmap Evolution
 
@@ -178,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T18:55:55.600Z
-Stopped at: Completed 13-02-PLAN.md
+Last session: 2026-03-24T19:40:12.804Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
