@@ -7,21 +7,21 @@
 
 ### Booking-First Agent Behavior
 
-- [ ] **BOOK-01**: AI books every inbound call into the next available slot by default — emergencies get nearest same-day slot, routine calls get next available
-- [ ] **BOOK-02**: AI detects caller intent before initiating booking flow — distinguishes service appointment requests from information-only/quote calls
-- [ ] **BOOK-03**: AI transfers to human only on exception states: AI cannot understand the job after 2+ clarification attempts, or caller explicitly requests a person
-- [ ] **BOOK-04**: Caller receives SMS confirmation after booking with date, time, and service address
-- [ ] **BOOK-05**: AI preserves full call context on warm transfer via Retell whisper message so the receiving human has complete caller details
+- [x] **BOOK-01**: AI books every inbound call into the next available slot by default — emergencies get nearest same-day slot, routine calls get next available
+- [x] **BOOK-02**: AI detects caller intent before initiating booking flow — distinguishes service appointment requests from information-only/quote calls
+- [x] **BOOK-03**: AI transfers to human only on exception states: AI cannot understand the job after 2+ clarification attempts, or caller explicitly requests a person
+- [x] **BOOK-04**: Caller receives SMS confirmation after booking with date, time, and service address
+- [x] **BOOK-05**: AI preserves full call context on warm transfer via Retell whisper message so the receiving human has complete caller details
 
 ### Triage Reclassification
 
-- [ ] **TRIAGE-R01**: Urgency tags (emergency/routine/high_ticket) are retained on booking records but no longer route call handling
-- [ ] **TRIAGE-R02**: Triage pipeline output drives notification priority tier, not booking vs lead-capture decision
+- [x] **TRIAGE-R01**: Urgency tags (emergency/routine/high_ticket) are retained on booking records but no longer route call handling
+- [x] **TRIAGE-R02**: Triage pipeline output drives notification priority tier, not booking vs lead-capture decision
 
 ### Notification Priority
 
-- [ ] **NOTIF-P01**: Emergency bookings trigger high-priority SMS/email with EMERGENCY prefix and urgent formatting
-- [ ] **NOTIF-P02**: Routine bookings trigger standard notification flow without urgency formatting
+- [x] **NOTIF-P01**: Emergency bookings trigger high-priority SMS/email with EMERGENCY prefix and urgent formatting
+- [x] **NOTIF-P02**: Routine bookings trigger standard notification flow without urgency formatting
 
 ### Recovery & Fallback
 
@@ -258,15 +258,15 @@
 | SETUP-03 | Phase 10 | Pending |
 | SETUP-04 | Phase 10 | Pending |
 | SETUP-05 | Phase 10 | Pending |
-| BOOK-01 | Phase 14 | Pending |
-| BOOK-02 | Phase 14 | Pending |
-| BOOK-03 | Phase 14 | Pending |
-| BOOK-04 | Phase 15 | Pending |
-| BOOK-05 | Phase 14 | Pending |
-| TRIAGE-R01 | Phase 15 | Pending |
-| TRIAGE-R02 | Phase 15 | Pending |
-| NOTIF-P01 | Phase 16 | Pending |
-| NOTIF-P02 | Phase 16 | Pending |
+| BOOK-01 | Phase 14 | Complete |
+| BOOK-02 | Phase 14 | Complete |
+| BOOK-03 | Phase 14 | Complete |
+| BOOK-04 | Phase 15 | Complete |
+| BOOK-05 | Phase 14 | Complete |
+| TRIAGE-R01 | Phase 15 | Complete |
+| TRIAGE-R02 | Phase 15 | Complete |
+| NOTIF-P01 | Phase 16 | Complete |
+| NOTIF-P02 | Phase 16 | Complete |
 | RECOVER-01 | Phase 17 | Pending |
 | RECOVER-02 | Phase 17 | Pending |
 | RECOVER-03 | Phase 17 | Pending |

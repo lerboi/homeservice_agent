@@ -330,10 +330,10 @@ Plans:
   2. The `booking_outcome` column on the calls table accurately records whether each call resulted in booked, attempted (failed), or not_attempted (info-only call) — queryable for analytics
   3. After a successful booking, the caller receives an SMS within 60 seconds confirming date, time, and service address
   4. A routine call that was previously captured as an unbooked lead is now booked autonomously — the `isRoutineUnbooked` guard no longer prevents booking
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 15-01-PLAN.md — Schema migration (booking_outcome, exception_reason, notification_priority) + sendCallerSMS + i18n keys + Wave 0 test scaffolds
+- [x] 15-01-PLAN.md — Schema migration (booking_outcome, exception_reason, notification_priority) + sendCallerSMS + i18n keys + Wave 0 test scaffolds
 - [ ] 15-02-PLAN.md — Call-processor pipeline flatten + webhook booking_outcome writes + caller SMS trigger + skill file update
 
 ### Phase 16: Notification Priority System
@@ -379,7 +379,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 14. Booking-First Agent Behavior | 3/3 | Complete    | 2026-03-24 |
-| 15. Call Processor and Triage Reclassification | 0/2 | Planning complete | - |
+| 15. Call Processor and Triage Reclassification | 1/2 | In Progress|  |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |

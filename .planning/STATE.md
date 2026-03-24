@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 15 context gathered
-last_updated: "2026-03-24T20:46:20.713Z"
+status: Ready to execute
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-24T21:17:20.727Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 13 — frontend-public-pages-redesign
+**Current focus:** Phase 15 — call-processor-and-triage-reclassification
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
+Phase: 15 (call-processor-and-triage-reclassification) — EXECUTING
+Plan: 2 of 2
 
 ### v2.0 Milestone Progress
 
@@ -79,7 +79,7 @@ Recent decisions affecting current work:
 - [Phase 02-04]: onboarding_complete flag set atomically with test call trigger — not on Retell webhook callback
 - [Phase 02-04]: Wizard Step 3 uses 3 internal sub-states (phone, otp, provisioning) in one page component — avoids route flicker
 - [Phase 02-04]: Email collected alongside phone in sms-confirm — single round-trip saves owner_phone and owner_email
-- [Phase 02.1-01]: Tailwind v4 landing tokens use hex values (not oklch) — matches UI-SPEC exactly: #F5F5F4, #0F172A, #C2410C, #475569, #166534
+- [Phase 02.1-01]: Tailwind v4 landing tokens use hex values (not oklch) — updated palette: hero/footer #050505 (near-black), accent #F97316 (warm orange), light sections #F5F5F4, muted #475569, success #166534
 - [Phase 02.1-01]: AnimatedSection useReducedMotion with initial={false} skips animation state entirely when prefers-reduced-motion OS setting is active — Framer Motion v12 pattern
 - [Phase 02.1-02]: All section components are Server Components — no use client; client animation delegated to AnimatedSection from Plan 01 foundation
 - [Phase 02.1-02]: FinalCTASection uses inverted button (bg-landing-dark on bg-landing-accent) for contrast — dark button on copper background per UI-SPEC intent
@@ -146,9 +146,9 @@ Recent decisions affecting current work:
 - [Phase 08]: Optimistic UI for make-primary badge swap: instant swap, revert on server error
 - [Phase 13-01]: LandingNav backdrop-blur changed from backdrop-blur-xl to backdrop-blur-[12px] per D-08 spec — explicit value enforces design contract
 - [Phase 13-frontend-public-pages-redesign]: Auth page: Three conditional render branches for structurally distinct signup (split), signin (compact), and OTP (centered dark card) layouts — no tab/pill toggle
-- [Phase 13-frontend-public-pages-redesign]: OtpInput: focus:border-[#C2410C] + focus:ring-[#C2410C]/30 without ring-offset eliminates white gap on dark backgrounds (Pitfall 7 avoidance)
+- [Phase 13-frontend-public-pages-redesign]: OtpInput: focus:border-[#F97316] + focus:ring-[#F97316]/30 without ring-offset eliminates white gap on dark backgrounds (Pitfall 7 avoidance)
 - [Phase 13]: HowItWorksSection mobile fallback uses inline mobileSteps data (same source as HowItWorksSticky) to avoid additional dynamic import complexity on mobile
-- [Phase 13]: ContactForm focus glow uses focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] arbitrary Tailwind value — avoids inline styles while expressing box-shadow correctly
+- [Phase 13]: ContactForm focus glow uses focus:shadow-[0_0_0_3px_rgba(249,115,22,0.2)] arbitrary Tailwind value — avoids inline styles while expressing box-shadow correctly
 - [Phase 14]: Snapshot tests use node --experimental-vm-modules (package.json type:module + jest ESM requirement)
 - [Phase 14]: buildWhisperMessage placed in src/lib/ (not Railway repo) — consumed by main app transfer handler
 - [Phase 14]: Booking-first prompt.test.js assertions are deliberately failing RED — Plan 02 makes them GREEN
@@ -162,6 +162,8 @@ Recent decisions affecting current work:
 - [Phase 14]: end_call handler in WebSocket bypasses Groq entirely — sends end_call:true directly to Retell without continuation
 - [Phase 14]: capture_lead computes duration from start_timestamp to avoid 15s short-call filter mid-call (Pitfall 3)
 - [Phase 14]: whisper_message passed to retell.call.transfer() using AI-provided tool arguments (D-08)
+- [Phase 15]: sendCallerSMS uses locale === 'es' check, falls back to en for all unknown locales — matches existing project locale pattern
+- [Phase 15]: booking-outcome.test.js 2 of 7 tests pass GREEN immediately because current code already satisfies guard constraints — expected and correct Wave 0 behavior
 
 ### Roadmap Evolution
 
@@ -191,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T20:46:20.702Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-call-processor-and-triage-reclassification/15-CONTEXT.md
+Last session: 2026-03-24T21:17:20.718Z
+Stopped at: Completed 15-01-PLAN.md
+Resume file: None
