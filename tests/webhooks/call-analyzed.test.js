@@ -27,6 +27,7 @@ jest.unstable_mockModule('@/lib/notifications', () => ({
   sendOwnerSMS: jest.fn().mockResolvedValue(undefined),
   sendOwnerEmail: jest.fn().mockResolvedValue(undefined),
   sendCallerRecoverySMS: jest.fn().mockResolvedValue(undefined),
+  sendCallerSMS: jest.fn().mockResolvedValue({ sid: 'SM_test_mock' }),
 }));
 
 // Build a fresh supabase mock per test for isolation
@@ -57,9 +58,11 @@ const mockCallsQuery = {
   select: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
   neq: jest.fn().mockReturnThis(),
+  is: jest.fn().mockResolvedValue({ data: null, error: null }),
   gte: jest.fn().mockResolvedValue({ data: [], error: null }),
   maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
   upsert: mockUpsert,
+  update: jest.fn().mockReturnThis(),
 };
 
 const mockSupabase = {
