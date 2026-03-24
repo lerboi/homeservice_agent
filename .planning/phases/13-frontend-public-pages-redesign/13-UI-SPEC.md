@@ -55,15 +55,17 @@ Exceptions:
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 16px (text-base) | 400 (regular) | 1.5 |
-| Label / Nav / Caption | 14px (text-sm) | 500 (medium) | 1.4 |
+| Label / Nav / Caption | 14px (text-sm) | 400 (regular) | 1.4 |
 | Heading | 24px (text-2xl) | 600 (semibold) | 1.2 |
 | Display | 36–48px (text-4xl–text-5xl, responsive) | 600 (semibold) | 1.15 |
 
 Notes:
 - Tracking: `tracking-tight` on all headings and display text — established in existing components.
-- Subheadings/eyebrows: 11–12px, weight 600, `uppercase tracking-[0.15em]` — existing pattern (e.g., "AI-powered answering" in auth right panel).
-- Link text in nav and footer: 14px, weight 400/500 at rest.
+- Eyebrow/subheading style: 14px (Label role), weight 600, `uppercase tracking-[0.15em]` — existing pattern (e.g., "AI-powered answering" in auth right panel). Uses the Label size with semibold weight and uppercase tracking to visually distinguish from nav/caption usage of the same size.
+- Link text in nav and footer: 14px, weight 400 at rest.
 - All font sizes use existing Inter variable — no new font loading.
+
+**Declared weights: 400 (regular) and 600 (semibold) only. No weight 500.**
 
 **Source:** Observed from LandingNav.jsx, auth/signin/page.js, LandingFooter.jsx existing patterns.
 
@@ -109,7 +111,7 @@ Existing tokens retained:
 6. FAQ accordion expand icon
 7. Footer copper gradient top border line (`transparent → #C2410C → transparent`)
 8. Card hover border glow (`rgba(194,65,12,0.4)`) and box-shadow glow (`rgba(194,65,12,0.15)`)
-9. Eyebrow/label text above hero headlines (11px uppercase tracked)
+9. Eyebrow/label text above hero headlines (14px uppercase tracked)
 10. Submit button on contact form + auth form
 11. Logo icon background gradient (`from-[#C2410C] to-[#9A3412]`)
 12. Link hover color transition in footer columns
@@ -185,7 +187,7 @@ Source: D-17.
 - Right brand panel: `bg-[#0F172A]`, copper radial glow blobs, SELLING_POINTS chips, social proof strip. Width: `lg:w-[380px] xl:w-[420px]`.
 - Inputs: `bg-[#1E293B]` background, `border border-white/[0.12]`, light text `#F1F5F9`, copper focus glow.
 - Submit button: `bg-[#C2410C]` copper, full-width, 44px min-height.
-- Toggle link at bottom: "Already have an account? Sign in" — `text-[#C2410C] font-medium hover:underline`.
+- Toggle link at bottom: "Already have an account? Sign in" — `text-[#C2410C] font-semibold hover:underline`.
 Source: D-30, D-31, D-33, D-34.
 
 ### Auth Page — Signin View
@@ -193,7 +195,7 @@ Source: D-30, D-31, D-33, D-34.
 - Layout: Compact centered card. No split, no selling points. Dark page `bg-[#0F172A]`.
 - Card: `bg-[#1E293B]` centered, `max-w-[400px]`, `rounded-2xl`, copper accent on submit.
 - Content: Logo, heading ("Welcome back"), email, password, submit button. Minimal.
-- Toggle link at bottom: "Don't have an account? Get started" — `text-[#C2410C] font-medium hover:underline`.
+- Toggle link at bottom: "Don't have an account? Get started" — `text-[#C2410C] font-semibold hover:underline`.
 Source: D-32, D-33, D-34.
 
 ### Auth Page — OTP Verification
