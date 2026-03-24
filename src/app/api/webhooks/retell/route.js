@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { createOrMergeLead } from '@/lib/leads';
 import { buildWhisperMessage } from '@/lib/whisper-message';
+import { sendCallerSMS } from '@/lib/notifications';
 
 export async function POST(request) {
   const rawBody = await request.text();
@@ -224,6 +225,12 @@ async function handleFunctionCall(payload) {
         callDuration: durationSeconds,
       });
 
+      // Real-time booking_outcome write — declined (D-02)
+      await supabase.from('calls').upsert(
+        { retell_call_id: call_id, booking_outcome: 'declined' },
+        { onConflict: 'retell_call_id' }
+      );
+
       // Look up business name for the confirmation message
       const { data: tenant } = await supabase
         .from('tenants')
@@ -292,6 +299,20 @@ async function handleFunctionCall(payload) {
           transfer_to: ownerPhone,
           whisper_message: whisperMsg,
         });
+
+        // Real-time exception_reason write (D-03)
+        // Infer reason from summary: 'clarif' keyword → clarification_limit, else caller_requested
+        const transferReason =
+          (function_call.arguments?.summary || '').toLowerCase().includes('clarif')
+            ? 'clarification_limit'
+            : 'caller_requested';
+        after(async () => {
+          await supabase.from('calls').upsert(
+            { retell_call_id: call_id, exception_reason: transferReason },
+            { onConflict: 'retell_call_id' }
+          );
+        });
+
         return Response.json({ result: 'transfer_initiated' });
       } catch (err) {
         console.error('Transfer failed:', err);
@@ -341,10 +362,10 @@ async function handleBookAppointment(payload) {
     });
   }
 
-  // Fetch tenant timezone and scheduling config for formatting fallback slots
+  // Fetch tenant timezone, scheduling config, and business info for SMS confirmation
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('tenant_timezone, working_hours, slot_duration_mins')
+    .select('tenant_timezone, working_hours, slot_duration_mins, business_name, default_locale')
     .eq('id', call.tenant_id)
     .single();
 
@@ -386,6 +407,14 @@ async function handleBookAppointment(payload) {
         ? formatSlotForSpeech(new Date(nextSlots[0].start), tenantTimezone)
         : 'tomorrow morning';
 
+    // Real-time booking_outcome write — attempted (D-02)
+    after(async () => {
+      await supabase.from('calls').upsert(
+        { retell_call_id: call_id, booking_outcome: 'attempted' },
+        { onConflict: 'retell_call_id' }
+      );
+    });
+
     return Response.json({
       result: `That slot was just taken. The next available time is ${nextSlotText}. Would you like me to book that instead?`,
     });
@@ -394,6 +423,34 @@ async function handleBookAppointment(payload) {
   // Trigger async calendar sync — non-blocking, runs after response is sent
   after(async () => {
     await pushBookingToCalendar(call.tenant_id, result.appointment_id);
+  });
+
+  // Real-time booking_outcome write — booked (D-02)
+  after(async () => {
+    await supabase.from('calls').upsert(
+      { retell_call_id: call_id, booking_outcome: 'booked' },
+      { onConflict: 'retell_call_id' }
+    );
+  });
+
+  // Caller SMS confirmation — fire-and-forget (D-06, D-07, D-08, BOOK-04)
+  const callerPhone = payload.call?.from_number || null;
+  const { data: callLang } = await supabase
+    .from('calls')
+    .select('detected_language')
+    .eq('retell_call_id', call_id)
+    .maybeSingle();
+  const smsLocale = callLang?.detected_language || tenant?.default_locale || 'en';
+
+  after(async () => {
+    await sendCallerSMS({
+      to: callerPhone,
+      businessName: tenant?.business_name || 'Your service provider',
+      date: format(toZonedTime(startTime, tenantTimezone), 'EEEE, MMMM do'),
+      time: format(toZonedTime(startTime, tenantTimezone), 'h:mm a'),
+      address: args.service_address || '',
+      locale: smsLocale,
+    });
   });
 
   const formattedTime = formatSlotForSpeech(startTime, tenantTimezone);
