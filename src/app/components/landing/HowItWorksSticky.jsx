@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect, useRef } from 'react';
 import { Phone, Brain, CalendarCheck } from 'lucide-react';
 
 const steps = [
@@ -56,6 +57,26 @@ const steps = [
 ];
 
 export function HowItWorksSticky() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const cardRefs = useRef([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = cardRefs.current.indexOf(entry.target);
+            if (idx !== -1) setActiveIndex(idx);
+          }
+        });
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
+    );
+
+    cardRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="w-full">
       {steps.map((step, index) => {
@@ -64,6 +85,7 @@ export function HowItWorksSticky() {
         return (
           <div
             key={step.number}
+            ref={(el) => (cardRefs.current[index] = el)}
             className={`${step.borderColor} border rounded-3xl sticky min-h-[40vh] md:min-h-[50vh] p-6 md:p-14 lg:p-16 shadow-lg ${step.shadowColor} overflow-hidden`}
             style={{
               top: '80px',
@@ -118,11 +140,27 @@ export function HowItWorksSticky() {
                 </p>
               </div>
 
-              {/* Bottom: detail quote */}
-              <div className="mt-8 pt-6 border-t border-black/[0.06]">
+              {/* Bottom: detail quote + progress dots */}
+              <div className="mt-8 pt-6 border-t border-black/[0.06] flex items-center justify-between">
                 <p className="text-[15px] text-[#0F172A]/50 italic">
                   {step.detail}
                 </p>
+
+                {/* Minimal progress dots */}
+                <div className="flex items-center gap-1.5 shrink-0 ml-4">
+                  {steps.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === activeIndex
+                          ? 'w-5 h-1.5 bg-[#0F172A]/30'
+                          : i < activeIndex
+                            ? 'w-1.5 h-1.5 bg-[#0F172A]/20'
+                            : 'w-1.5 h-1.5 bg-[#0F172A]/10'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
