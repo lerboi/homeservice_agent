@@ -45,10 +45,10 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 ### Active
 
-- [ ] Agent prompt rewrite: booking-first dispatcher behavior for all call types
+- [x] Agent prompt rewrite: booking-first dispatcher behavior for all call types — v2.0 Phase 14
 - [ ] Triage reclassification: urgency tags as notification priority only
 - [ ] Booking flow universalization: all calls get booked autonomously
-- [ ] Exception state handling: escalation only when AI can't understand or caller requests human
+- [x] Exception state handling: escalation only when AI can't understand or caller requests human — v2.0 Phase 14
 - [ ] Notification priority system: urgency-driven SMS/email formatting and delivery priority
 - [ ] Recovery SMS universal fallback: failed bookings trigger recovery SMS
 - [ ] Multi-language end-to-end validation (voice → booking → notifications) — rewritten for booking-first
