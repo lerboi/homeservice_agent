@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-24
+**Last updated**: 2026-03-25
 
 ---
 
@@ -27,6 +27,11 @@ Caller dials Retell number
        ↓                               (tenant lookup, slot calc, returns dynamic_variables)
   Retell connects WebSocket → Railway wss://url/llm-websocket/{call_id}
        ↓                       (streams Groq responses back to Retell for TTS)
+       ↓  During call: AI uses 4 tools
+       ↓    capture_lead → webhook handler → createOrMergeLead() (mid-call lead)
+       ↓    end_call     → WebSocket sends end_call:true to Retell
+       ↓    transfer_call → webhook handler → retell.call.transfer() with whisper_message
+       ↓    book_appointment → webhook handler → atomicBookSlot()
   Call ends → call_ended webhook → processCallEnded()
        ↓
   ~Minutes later → call_analyzed webhook → processCallAnalyzed()
@@ -40,12 +45,10 @@ Caller dials Retell number
 
 | File | Role |
 |------|------|
-| `src/server/retell-llm-ws.js` | WebSocket LLM server (main codebase version) |
-| `retell-ws-server/server.js` | WebSocket LLM server (standalone deploy version) |
-| `retell-ws-server/agent-prompt.js` | Agent prompt builder (standalone deploy version) |
-| `src/lib/agent-prompt.js` | System prompt construction |
-| `src/lib/retell-agent-config.js` | Retell agent config + tool definitions |
+| `C:/Users/leheh/.Projects/Retell-ws-server/server.js` | WebSocket LLM server (Railway production) |
+| `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js` | Agent prompt builder (Railway production) |
 | `src/app/api/webhooks/retell/route.js` | All Retell webhook event handling |
+| `src/lib/whisper-message.js` | Whisper message builder for warm transfers |
 | `src/lib/call-processor.js` | Post-call pipeline (recording, triage, leads, notifications) |
 | `src/lib/triage/classifier.js` | Three-layer triage orchestrator |
 | `src/lib/triage/layer1-keywords.js` | Regex urgency detection |
@@ -66,7 +69,8 @@ Caller dials Retell number
 
 ## 1. WebSocket LLM Server
 
-**Files**: `src/server/retell-llm-ws.js` (dev), `retell-ws-server/server.js` (deploy)
+**File**: `C:/Users/leheh/.Projects/Retell-ws-server/server.js` (Railway production)
+**Prompt**: `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js`
 
 **How it works**: Retell connects via WebSocket for each call. The server receives conversation transcripts, sends them to Groq for inference, and streams response tokens back to Retell for text-to-speech.
 
@@ -76,7 +80,7 @@ Caller dials Retell number
 2. **Config sent** — `{ response_type: "config", config: { auto_reconnect: true, call_details: true } }`
 3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends greeting
 4. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
-5. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result
+5. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below)
 6. **Connection closes** — cleanup
 
 ### Message Types Handled
@@ -87,7 +91,7 @@ Caller dials Retell number
 | `call_details` | Build prompt, set tools, send greeting |
 | `response_required` | Call Groq with transcript, stream response |
 | `reminder_required` | Same as above + inject "caller silent" nudge |
-| `tool_call_result` | Continue conversation with tool result |
+| `tool_call_result` | Continue conversation with tool result (skip Groq for end_call) |
 | `update_only` | Ignored (transcript update, no response needed) |
 
 ### Groq Configuration
@@ -102,7 +106,22 @@ SDK: openai (Groq-compatible base URL)
 
 ### Tool Definitions
 
-**`transfer_call`** — Always available. No parameters. Transfers call to business owner.
+**`transfer_call`** — Always available. Optional parameters for whisper message context:
+- `caller_name` (string, optional) — caller full name if captured
+- `job_type` (string, optional) — type of job or service needed
+- `urgency` (enum: `emergency`|`routine`|`high_ticket`, optional) — urgency level
+- `summary` (string, optional) — 1-line summary for the receiving human
+- `required: []` — all parameters optional (AI provides whatever it has captured)
+
+**`capture_lead`** — Always available (NOT gated by onboarding_complete). Parameters:
+- `caller_name` (string, optional)
+- `phone` (string, optional)
+- `address` (string, optional)
+- `job_type` (string, optional)
+- `notes` (string, optional)
+- `required: []` — all parameters optional
+
+**`end_call`** — Always available (NOT gated by onboarding_complete). No parameters. Sends `end_call: true` to Retell — bypasses Groq continuation entirely.
 
 **`book_appointment`** — Only when `onboarding_complete === true`. Parameters:
 - `slot_start` (ISO 8601, required)
@@ -111,15 +130,30 @@ SDK: openai (Groq-compatible base URL)
 - `caller_name` (string, required)
 - `urgency` (enum: `emergency`|`routine`|`high_ticket`, required)
 
+**Tool ordering**: `transfer_call`, `capture_lead`, `end_call`, then conditionally `book_appointment`.
+
+### end_call Handler
+
+When `tool_call_result` arrives for `end_call`, the server skips Groq entirely and sends:
+```js
+{
+  response_type: 'response',
+  response_id: responseId,
+  content: 'Thank you for calling. Have a great day!',
+  content_complete: true,
+  end_call: true,
+}
+```
+
 ---
 
 ## 2. Agent System Prompt
 
-**File**: `src/lib/agent-prompt.js`
+**File**: `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js`
 
 ### `buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset })`
 
-The prompt is constructed dynamically based on tenant configuration. Here is the full structure:
+The prompt is constructed from modular section builder functions assembled per call. Each section is a separate builder function — composable and developer-controlled (not tenant-configurable from dashboard).
 
 ### Core Identity
 ```
@@ -149,32 +183,42 @@ Always states: "This call may be recorded for quality purposes."
 - Ask for name, service address, and issue description
 - Capture all details before attempting any action
 
-### Capabilities
-- **With booking**: Can capture info AND book appointments (follows BOOKING FLOW)
-- **Without booking**: Can only capture info, tells caller someone will follow up
+### BOOKING-FIRST PROTOCOL (only when onboarding_complete)
 
-### Booking Flow (only when onboarding_complete)
-8-step protocol:
-1. Identify need (service type + urgency)
-2. Offer 2-3 available slots from `available_slots` data
-3. Collect service address
-4. **Mandatory address read-back** — must wait for verbal "yes"
-5. Book appointment (only after slot selected + name + address confirmed)
-6. Confirm booking to caller
-7. Handle slot-taken (offer next available)
-8. Handle routine decline (save info, owner will follow up)
+The AI books every caller by default — no caller goes without a booking offer.
 
-Emergency calls: urgent tone, earliest slot. Routine calls: relaxed, no pressure.
+1. **Answer first, then pivot**: For info-only or quote calls, answer the question first, then naturally offer a slot ("I can get you on the schedule if you'd like")
+2. **Quote reframe**: "To give you an accurate quote, we'd need to see the space. Let me book a time for {owner} to come take a look."
+3. **Offer slots**: Present 2-3 available slots from `available_slots` data
+4. **Address read-back**: Mandatory — must wait for verbal "yes" before booking
+5. **Book**: Invoke `book_appointment` only after slot selected + name + address confirmed
 
-### Triage-Aware Behavior (only when onboarding_complete)
-- Emergency (flooding, gas, fire): faster, more direct speech
-- Routine: relaxed approach
+#### URGENCY DETECTION
+Urgency affects slot selection only — tone stays unified (no emergency/routine tone split):
+- Emergency cues ("pipe burst", "gas leak", "flooding"): offer same-day/nearest slots first
+- Routine cues ("next month", "no rush", "whenever"): offer next available in order
 
-### Call Transfer
-1. FIRST capture name, phone, issue
-2. Say "Let me transfer you to the team now."
-3. Invoke `transfer_call`
-4. If fails: "I've noted your information and someone from our team will follow up shortly."
+### DECLINE HANDLING (only when onboarding_complete)
+
+Two-strike decline pattern:
+- **First decline**: Soft re-offer — "No problem — if you change your mind, I can book anytime."
+- **Second explicit decline**: Invoke `capture_lead` with whatever info was gathered, confirm: "I've saved your info — {business_name} will reach out." Then invoke `end_call`.
+- Only explicit verbal decline counts ("no thanks", "not right now") — passive non-engagement is not a decline.
+
+### CALL TRANSFER
+
+Two exception states only (D-06, D-07):
+
+#### EXPLICIT REQUEST
+If caller says "let me talk to a person" or similar: instant transfer, zero friction.
+- AI says: "Absolutely, let me connect you now."
+- Invoke `transfer_call` immediately with whatever context is available.
+
+#### CLARIFICATION LIMIT
+After 3 failed clarification attempts (2 standard + 1 "Could you describe what you're seeing?"):
+- Invoke `transfer_call` with whatever context was captured.
+
+No other transfer triggers (no language barrier transfer, no emotional distress transfer).
 
 ### Call Duration
 - After 9 minutes: begin wrap-up
@@ -198,24 +242,20 @@ Only the `agent` section is used by the voice system:
 
 ---
 
-## 3. Agent Config
+## 3. Whisper Message Builder
 
-**File**: `src/lib/retell-agent-config.js`
+**File**: `src/lib/whisper-message.js`
 
-Used when creating/updating the Retell agent via API (not during live calls).
+### `buildWhisperMessage({ callerName, jobType, urgency, summary })`
 
-### Voice Settings by Tone Preset
-| Preset | voice_speed | responsiveness |
-|--------|------------|---------------|
-| professional | 0.95 | 0.75 |
-| friendly | 1.05 | 0.85 |
-| local_expert | 0.90 | 0.80 |
+Builds the D-08 whisper template for warm transfers: `"[Name] calling about [job type]. [Emergency/Routine]. [1-line summary]."`
 
-### Fixed Settings
-- `interruption_sensitivity`: 0.7
-- `ambient_sound`: "off"
-- `max_call_duration_ms`: 600000 (10 minutes)
-- `language`: "multilingual"
+All parameters are optional with graceful fallbacks:
+- Missing `callerName` → "Unknown caller"
+- Missing `jobType` → "unspecified job"
+- Missing `urgency` → treated as Routine
+- `urgency === 'emergency'` → "Emergency"; all others (routine, high_ticket) → "Routine"
+- Missing `summary` → omitted (no trailing space)
 
 ---
 
@@ -251,10 +291,23 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 
 ### Event: `call_function_invoked`
 
+**`end_call`**:
+- Safety guard — end_call is handled by WebSocket server (sends end_call:true).
+- If it reaches the webhook: return `{ result: 'Call ending.' }` and acknowledge.
+
+**`capture_lead`**:
+1. Resolve tenant from call record: `calls.select('id, tenant_id, from_number, start_timestamp').eq('retell_call_id', call_id)`
+2. Compute `durationSeconds` from `start_timestamp` to current time (avoids 15s short-call filter)
+3. Call `createOrMergeLead()` with all AI-provided fields
+4. Look up `business_name` for personalized confirmation message
+5. Return: `"I've saved your information. {bizName} will reach out soon."`
+6. On error: return `"I've noted your details and someone will follow up."`
+
 **`transfer_call`**:
-1. Look up call → tenant → `owner_phone`
-2. Call `retell.call.transfer({ call_id, transfer_to: ownerPhone })`
-3. Return success/failure speech text
+1. Look up call → tenant → `owner_phone` (two-hop query)
+2. Build whisper message via `buildWhisperMessage({ callerName, jobType, urgency, summary })` from AI-provided arguments
+3. Call `retell.call.transfer({ call_id, transfer_to: ownerPhone, whisper_message: whisperMsg })`
+4. Return `transfer_initiated` or graceful fallback if no phone configured
 
 **`book_appointment`**:
 1. Resolve tenant via calls → tenants
@@ -366,7 +419,7 @@ Runs every minute. Finds calls where: `status='analyzed'`, `recovery_sms_sent_at
 **File**: `src/lib/leads.js`
 
 ### `createOrMergeLead()` Flow
-1. Skip calls <15 seconds (misdial/voicemail)
+1. Skip calls <15 seconds (misdial/voicemail) — callDuration must be >= 15
 2. Check for open lead (same `tenant_id` + `from_number`, status `new` or `booked`)
 3. Repeat caller → attach to existing lead via `lead_calls` junction
 4. New caller → insert `leads` row (status: `booked` if appointment, else `new`)
@@ -374,21 +427,26 @@ Runs every minute. Finds calls where: `status='analyzed'`, `recovery_sms_sent_at
 
 Statuses: `new` → `booked` → `completed` → `paid` / `lost`
 
+**Mid-call invocation (capture_lead)**: When called from the `capture_lead` webhook handler, `callDuration` is computed from `start_timestamp` to current time — not from a post-call field — ensuring the 15s filter is satisfied for any real conversation.
+
 ---
 
 ## 10. End-to-End Call Flows
 
 ### Flow A: Booking
-Caller dials → `call_inbound` webhook (slot calc) → WebSocket connects → AI conversation → caller selects slot → `book_appointment` tool → atomic booking → Google Calendar sync → call ends → recording upload → triage → lead created (status: `booked`) → owner SMS + email
+Caller dials → `call_inbound` webhook (slot calc) → WebSocket connects → AI conversation (BOOKING-FIRST PROTOCOL) → caller selects slot → `book_appointment` tool → atomic booking → Google Calendar sync → call ends → recording upload → triage → lead created (status: `booked`) → owner SMS + email
 
 ### Flow B: Transfer to Owner
-Caller wants human → agent captures info first → `transfer_call` tool → Retell transfers → if fails, agent reassures caller → call ends → lead created (status: `new`) → owner notified
+Caller explicitly requests human (or 3 clarification attempts exhausted) → AI invokes `transfer_call` with caller context → webhook builds whisper message → Retell transfers with `whisper_message` → if fails, agent reassures caller → call ends → lead created (status: `new`) → owner notified
 
 ### Flow C: Language Barrier
 Unsupported language detected → agent apologizes → gathers what info possible → tags LANGUAGE_BARRIER → call ends → `language_barrier: true` stored → lead created → owner notified
 
 ### Flow D: Routine No-Book + Recovery
 Caller doesn't book → call ends → triage: routine → suggested slots calculated → lead created (status: `new`) → owner notified → ~60s later: recovery SMS sent to caller with booking link
+
+### Flow E: Decline → Lead Capture
+Caller declines booking first time → AI soft re-offer ("No problem — if you change your mind, I can book anytime") → caller declines again → AI invokes `capture_lead` with all gathered info → webhook handler creates lead immediately via `createOrMergeLead()` (duration computed from start_timestamp) → AI confirms "I've saved your information. {bizName} will reach out soon." → AI invokes `end_call` → WebSocket sends `end_call: true` to Retell → call ends
 
 ---
 
@@ -440,6 +498,12 @@ Caller doesn't book → call ends → triage: routine → suggested slots calcul
 - **Slot calculation is pure**: No DB access, fully testable
 - **Lead merge for repeat callers**: Same `from_number` → attach to existing open lead
 - **Service role client for webhooks**: Bypasses RLS for server-side cross-tenant access
+- **Booking-first AI**: Every caller gets a booking offer by default; info-only calls pivot after answering; quotes convert to site visits
+- **Two transfer triggers only**: Explicit human request + 3 clarification failures (D-06, D-07)
+- **Unified tone**: No emergency/routine tone split — urgency affects slot priority only (D-11, D-12)
+- **Whisper message on transfer**: AI passes caller context; webhook builds structured whisper for receiving human (D-08)
+- **Mid-call lead capture**: `capture_lead` tool creates lead immediately during call — no post-call wait for declined callers (D-14, D-15)
+- **end_call bypasses Groq**: WebSocket handles end_call in handleToolResult before Groq call — sends end_call:true directly (D-14)
 
 ---
 
