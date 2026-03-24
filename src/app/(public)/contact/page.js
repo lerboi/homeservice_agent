@@ -31,7 +31,9 @@ export default function ContactPage() {
       <section className="bg-[#F5F5F4] py-20">
         <div className="max-w-xl mx-auto px-6">
           <AnimatedSection>
-            <ContactForm />
+            <div className="bg-[#1E293B] rounded-2xl p-8 md:p-10">
+              <ContactForm />
+            </div>
           </AnimatedSection>
         </div>
       </section>

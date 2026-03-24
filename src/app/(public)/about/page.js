@@ -47,7 +47,7 @@ export default function AboutPage() {
           <AnimatedStagger className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Value 1: Never Miss a Call */}
             <AnimatedItem>
-              <div className="bg-white rounded-xl p-8 border border-[#0F172A]/5 shadow-sm">
+              <div className="bg-white rounded-xl p-8 border border-stone-200/60 shadow-sm">
                 <div className="size-12 rounded-lg bg-[#C2410C]/10 flex items-center justify-center mb-5">
                   <Phone className="size-6 text-[#C2410C]" />
                 </div>
@@ -58,7 +58,7 @@ export default function AboutPage() {
 
             {/* Value 2: Built for Trades, Not Tech */}
             <AnimatedItem>
-              <div className="bg-white rounded-xl p-8 border border-[#0F172A]/5 shadow-sm">
+              <div className="bg-white rounded-xl p-8 border border-stone-200/60 shadow-sm">
                 <div className="size-12 rounded-lg bg-[#C2410C]/10 flex items-center justify-center mb-5">
                   <Wrench className="size-6 text-[#C2410C]" />
                 </div>
@@ -69,7 +69,7 @@ export default function AboutPage() {
 
             {/* Value 3: Your Jobs, Your Revenue */}
             <AnimatedItem>
-              <div className="bg-white rounded-xl p-8 border border-[#0F172A]/5 shadow-sm">
+              <div className="bg-white rounded-xl p-8 border border-stone-200/60 shadow-sm">
                 <div className="size-12 rounded-lg bg-[#C2410C]/10 flex items-center justify-center mb-5">
                   <DollarSign className="size-6 text-[#C2410C]" />
                 </div>

@@ -62,59 +62,62 @@ export function ContactForm() {
 
       {/* Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-[#0F172A] mb-2">Name</label>
+        <label htmlFor="name" className="block text-sm font-medium text-[#F1F5F9] mb-2">Name</label>
         <input
           id="name"
           name="name"
           type="text"
           required
-          className="w-full rounded-lg border border-[#0F172A]/10 bg-white px-4 py-3 text-sm text-[#0F172A] placeholder:text-[#475569]/50 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 transition-shadow"
+          className="w-full rounded-lg border border-white/[0.12] bg-[#0F172A] px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#C2410C] focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] transition-all"
           placeholder="Your full name"
         />
       </div>
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-[#0F172A] mb-2">Email</label>
+        <label htmlFor="email" className="block text-sm font-medium text-[#F1F5F9] mb-2">Email</label>
         <input
           id="email"
           name="email"
           type="email"
           required
-          className="w-full rounded-lg border border-[#0F172A]/10 bg-white px-4 py-3 text-sm text-[#0F172A] placeholder:text-[#475569]/50 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 transition-shadow"
+          className="w-full rounded-lg border border-white/[0.12] bg-[#0F172A] px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#C2410C] focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] transition-all"
           placeholder="you@company.com"
         />
       </div>
 
       {/* Inquiry Type */}
       <div>
-        <label htmlFor="inquiryType" className="block text-sm font-medium text-[#0F172A] mb-2">Inquiry Type</label>
+        <label htmlFor="inquiryType" className="block text-sm font-medium text-[#F1F5F9] mb-2">Inquiry Type</label>
         <select
           id="inquiryType"
           name="inquiryType"
           required
           defaultValue=""
-          className="w-full rounded-lg border border-[#0F172A]/10 bg-white px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 transition-shadow appearance-none"
+          className="w-full rounded-lg border border-white/[0.12] bg-[#0F172A] px-4 py-3 text-sm text-[#F1F5F9] focus:outline-none focus:border-[#C2410C] focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] transition-all appearance-none"
         >
-          <option value="" disabled>Select an inquiry type</option>
-          <option value="sales">Sales</option>
-          <option value="support">Support</option>
-          <option value="partnerships">Partnerships</option>
+          <option value="" disabled className="text-[#94A3B8]">Select an inquiry type</option>
+          <option value="sales" className="text-[#F1F5F9] bg-[#0F172A]">Sales</option>
+          <option value="support" className="text-[#F1F5F9] bg-[#0F172A]">Support</option>
+          <option value="partnerships" className="text-[#F1F5F9] bg-[#0F172A]">Partnerships</option>
         </select>
       </div>
 
       {/* Message */}
       <div>
-        <label htmlFor="message" className="block text-sm font-medium text-[#0F172A] mb-2">Message</label>
+        <label htmlFor="message" className="block text-sm font-medium text-[#F1F5F9] mb-2">Message</label>
         <textarea
           id="message"
           name="message"
           required
           rows={5}
-          className="w-full rounded-lg border border-[#0F172A]/10 bg-white px-4 py-3 text-sm text-[#0F172A] placeholder:text-[#475569]/50 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 transition-shadow resize-y"
+          className="w-full rounded-lg border border-white/[0.12] bg-[#0F172A] px-4 py-3 text-sm text-[#F1F5F9] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#C2410C] focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] transition-all resize-y"
           placeholder="How can we help?"
         />
       </div>
+
+      {/* Response time SLA */}
+      <p className="text-sm text-[#94A3B8]">We respond within 1 business day.</p>
 
       {/* Submit */}
       <Button
