@@ -9,6 +9,8 @@
 import twilio from 'twilio';
 import { Resend } from 'resend';
 import { NewLeadEmail } from '@/emails/NewLeadEmail';
+import en from '../../messages/en.json' with { type: 'json' };
+import es from '../../messages/es.json' with { type: 'json' };
 
 // ─── Lazy-instantiated clients ────────────────────────────────────────────────
 
@@ -132,6 +134,55 @@ export async function sendCallerRecoverySMS({
     return result;
   } catch (err) {
     console.error('[notifications] Caller recovery SMS failed:', err?.message || err);
+  }
+}
+
+// ─── Interpolation helper ────────────────────────────────────────────────────
+
+/**
+ * Simple {key} placeholder interpolation. No external dependency —
+ * per Phase 01 P03 decision: direct JSON import, no next-intl runtime.
+ */
+function interpolate(template, vars) {
+  return Object.entries(vars).reduce(
+    (str, [key, val]) => str.replace(`{${key}}`, val ?? ''),
+    template
+  );
+}
+
+// ─── Caller booking confirmation SMS ─────────────────────────────────────────
+
+/**
+ * Send booking confirmation SMS to the caller in their detected language.
+ * Fire-and-forget pattern — errors logged but never thrown.
+ *
+ * @param {{ to: string, businessName: string, date: string, time: string,
+ *            address: string, locale: string }} params
+ */
+export async function sendCallerSMS({ to, businessName, date, time, address, locale }) {
+  if (!to) {
+    console.warn('[notifications] sendCallerSMS skipped: no phone number');
+    return;
+  }
+
+  const translations = locale === 'es' ? es : en;
+  const body = interpolate(translations.notifications.booking_confirmation, {
+    business_name: businessName || 'Your service provider',
+    date: date || '',
+    time: time || '',
+    address: address || '',
+  });
+
+  try {
+    const result = await getTwilioClient().messages.create({
+      body,
+      from: process.env.TWILIO_FROM_NUMBER,
+      to,
+    });
+    console.log('[notifications] Caller SMS sent:', result.sid);
+    return result;
+  } catch (err) {
+    console.error('[notifications] Caller SMS failed:', err?.message || err);
   }
 }
 

@@ -14,7 +14,8 @@
   },
   "notifications": {
     "new_lead": "New lead from {caller_name} - {job_type}",
-    "language_barrier_alert": "LANGUAGE BARRIER: Caller spoke {language}. Needs follow-up."
+    "language_barrier_alert": "LANGUAGE BARRIER: Caller spoke {language}. Needs follow-up.",
+    "booking_confirmation": "Your appointment with {business_name} is confirmed for {date} at {time} at {address}."
   },
   "status": {
     "processing_recording": "Recording is being processed...",

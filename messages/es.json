@@ -14,7 +14,8 @@
   },
   "notifications": {
     "new_lead": "Nuevo cliente potencial de {caller_name} - {job_type}",
-    "language_barrier_alert": "BARRERA DE IDIOMA: El cliente hablo {language}. Necesita seguimiento."
+    "language_barrier_alert": "BARRERA DE IDIOMA: El cliente hablo {language}. Necesita seguimiento.",
+    "booking_confirmation": "Su cita con {business_name} esta confirmada para el {date} a las {time} en {address}."
   },
   "status": {
     "processing_recording": "La grabacion se esta procesando...",
