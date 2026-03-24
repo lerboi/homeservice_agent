@@ -314,11 +314,11 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
   3. A caller asking only for information ("how much does a water heater cost?") is NOT booked — the AI detects non-booking intent and provides information without forcing an appointment
   4. After 2 failed clarification attempts where the AI cannot determine the job type, the call is transferred to a human with a whisper message containing full caller details (name, phone, address, conversation summary)
   5. A caller who says "let me talk to a person" or "I want to speak to someone" is immediately transferred with full context — no pushback or re-prompting
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 14-01-PLAN.md — Test safety net: prompt snapshots, booking-first RED assertions, whisper message tests, capture_lead handler tests
-- [ ] 14-02-PLAN.md — Modular prompt rewrite: booking-first protocol, decline handling, clarification limit, urgency-for-slots
+- [x] 14-02-PLAN.md — Modular prompt rewrite: booking-first protocol, decline handling, clarification limit, urgency-for-slots
 - [ ] 14-03-PLAN.md — WebSocket tool additions (end_call, capture_lead) + webhook handlers + whisper message transfer + skill file update
 
 ### Phase 15: Call Processor and Triage Reclassification
@@ -374,7 +374,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 14. Booking-First Agent Behavior | 1/3 | In Progress|  |
+| 14. Booking-First Agent Behavior | 2/3 | In Progress|  |
 | 15. Call Processor and Triage Reclassification | 0/TBD | Not started | - |
 | 16. Notification Priority System | 0/1 | Planning complete | - |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |

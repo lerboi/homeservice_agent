@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 13-06-PLAN.md
-last_updated: "2026-03-24T19:44:42.989Z"
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-03-24T19:45:25.428Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 13 (frontend-public-pages-redesign) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 
 ### v2.0 Milestone Progress
 
@@ -154,6 +154,8 @@ Recent decisions affecting current work:
 - [Phase 14]: Booking-first prompt.test.js assertions are deliberately failing RED — Plan 02 makes them GREEN
 - [Phase 13-06]: Auth signup left panel changed to bg-white per user override of D-31 — #334155 was dark-on-dark, not the intended contrast
 - [Phase 13-06]: OtpInput digit boxes use bg-stone-50 + border-stone-300 for white card context — copper focus ring preserved
+- [Phase 14]: agent-prompt.js section builders kept in single file per RESEARCH.md (no new files, avoids import complexity)
+- [Phase 14]: DECLINE_HANDLING gated by onboarding_complete — only active when booking protocol is active (consistent with D-16)
 
 ### Roadmap Evolution
 
@@ -183,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:44:42.982Z
-Stopped at: Completed 13-06-PLAN.md
+Last session: 2026-03-24T19:45:25.416Z
+Stopped at: Completed 14-02-PLAN.md
 Resume file: None
