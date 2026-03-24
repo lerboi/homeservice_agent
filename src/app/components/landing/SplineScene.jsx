@@ -1,23 +1,37 @@
 'use client';
 /**
- * Based on 21st.dev/serafim/splite — InteractiveRobotSpline component.
- * Uses React.lazy + Suspense to lazy-load the heavy Spline runtime.
+ * Spline 3D scene using @splinetool/runtime directly (skips React wrapper).
+ *
+ * Performance:
+ *  - Scene preloaded in <head> via layout
+ *  - CSS poster shown instantly while scene loads
+ *  - Watermark removed, audio muted, scroll-zoom disabled
  */
-import { Suspense, lazy, useCallback } from 'react';
-
-const Spline = lazy(() => import('@splinetool/react-spline'));
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 export function SplineScene({ scene, className = '' }) {
-  const handleLoad = useCallback((splineApp) => {
-    // Remove "Built with Spline" watermark (WebGL overlay, not DOM)
+  const canvasRef = useRef(null);
+  const appRef = useRef(null);
+  const [ready, setReady] = useState(false);
+
+  const initScene = useCallback(async () => {
+    if (!canvasRef.current || appRef.current) return;
+
+    const { Application } = await import('@splinetool/runtime');
+    const app = new Application(canvasRef.current);
+    appRef.current = app;
+
+    await app.load(scene);
+
+    // 1. Remove watermark
     try {
-      splineApp._renderer.pipeline.setWatermark(null);
-      splineApp.requestRender?.();
+      app._renderer.pipeline.setWatermark(null);
+      app.requestRender?.();
     } catch {
       // Silently ignore if internal API changes
     }
 
-    // Mute all Spline audio (uses Howler.js globally)
+    // 2. Mute audio
     try {
       if (typeof window !== 'undefined' && window.Howler) {
         window.Howler.mute(true);
@@ -26,33 +40,50 @@ export function SplineScene({ scene, className = '' }) {
       // Silently ignore
     }
 
-    // Disable scroll-zoom: intercept wheel on the canvas so Spline
-    // doesn't zoom, but DON'T preventDefault so the page still scrolls.
+    // 3. Fix scroll — stop Spline from eating wheel events
     try {
-      const canvas = splineApp._renderer?.domElement ||
-                     splineApp._canvas;
+      const canvas = canvasRef.current;
       if (canvas) {
         canvas.addEventListener('wheel', (e) => e.stopImmediatePropagation(), { capture: true });
       }
     } catch {
       // Silently ignore
     }
-  }, []);
+
+    setReady(true);
+  }, [scene]);
+
+  useEffect(() => {
+    initScene();
+    return () => {
+      if (appRef.current) {
+        appRef.current.dispose();
+        appRef.current = null;
+      }
+    };
+  }, [initScene]);
 
   return (
-    <div className={`relative ${className}`}>
-      <Suspense
-        fallback={
-          <div className="w-full h-full flex items-center justify-center bg-[#0F172A]">
-            <svg className="animate-spin h-5 w-5 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l2-2.647z" />
-            </svg>
-          </div>
-        }
+    <div className={`relative ${className}`} style={{ pointerEvents: 'none' }}>
+      {/* Poster: ambient glow placeholder — visible instantly */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-1000 ${
+          ready ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
       >
-        <Spline scene={scene} className="w-full h-full" onLoad={handleLoad} />
-      </Suspense>
+        <div className="absolute top-1/2 left-[55%] -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[radial-gradient(circle,rgba(249,115,22,0.18)_0%,rgba(251,146,60,0.08)_40%,transparent_70%)] blur-[20px]" />
+        <div className="absolute top-1/2 left-[55%] -translate-x-1/2 -translate-y-1/2 w-[240px] h-[240px] rounded-full bg-[radial-gradient(circle,rgba(253,186,116,0.12)_0%,transparent_60%)]" />
+        <div className="absolute top-[40%] left-[60%] w-[120px] h-[120px] rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.06)_0%,transparent_70%)] blur-[10px]" />
+      </div>
+
+      {/* Canvas — Spline renders directly onto this */}
+      <canvas
+        ref={canvasRef}
+        style={{ pointerEvents: 'auto' }}
+        className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ${
+          ready ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
     </div>
   );
 }

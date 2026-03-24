@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import Image from 'next/image';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
@@ -37,15 +38,15 @@ export default function OnboardingLayout({ children }) {
       <div className="relative max-w-lg mx-auto px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="size-8 rounded-lg bg-gradient-to-br from-[#C2410C] to-[#9A3412] flex items-center justify-center shadow-sm">
-              <svg viewBox="0 0 16 16" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M8 2v6M4 6l4-4 4 4M3 10h10M5 14h6" />
-              </svg>
-            </div>
-            <span className="text-[#0F172A] font-semibold text-[15px] tracking-tight">
-              Voco
-            </span>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/images/logos/VOCO%20Logo%20V1%20(no%20bg).png"
+              alt="Voco"
+              width={100}
+              height={32}
+              className="h-8 w-auto"
+              priority
+            />
           </Link>
           <span className="text-sm text-[#475569]">
             {t('step_counter', { step: currentStep, total: TOTAL_STEPS })}

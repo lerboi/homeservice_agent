@@ -15,6 +15,15 @@ export default async function RootLayout({ children }) {
   const messages = await getMessages();
   return (
     <html lang={locale} className={inter.variable}>
+      <head>
+        {/* Preload Spline scene file so 3D hero loads faster */}
+        <link
+          rel="preload"
+          href="https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode"
+          as="fetch"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           {children}

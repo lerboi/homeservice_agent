@@ -190,7 +190,7 @@ export default function OnboardingStep3Services() {
             className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
                        text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
           >
-            {t('cta_step3')}
+            {t('cta_step2')}
           </Button>
         </div>
       </div>

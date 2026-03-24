@@ -39,11 +39,9 @@ export function ScrollProgress() {
         const rect = el.getBoundingClientRect();
         if (rect.top <= trigger) {
           currentIndex = i;
-          // Progress within this section
           const sectionH = rect.height;
           const scrolled = trigger - rect.top;
           const sectionProgress = Math.min(Math.max(scrolled / sectionH, 0), 1);
-          // Overall progress: completed sections + current section progress
           currentProgress = (i + sectionProgress) / sections.length;
           break;
         }
@@ -68,7 +66,7 @@ export function ScrollProgress() {
     }
   };
 
-  // Desktop: fixed left sidebar roadmap
+  // Desktop: fixed left sidebar roadmap (on light sections)
   // Mobile: fixed bottom compact progress dots
   return (
     <>
@@ -83,7 +81,7 @@ export function ScrollProgress() {
           <div className="absolute left-[7px] top-[8px] bottom-[8px] w-[2px] bg-[#0F172A]/[0.1] rounded-full" />
           {/* Filled progress line */}
           <motion.div
-            className="absolute left-[7px] top-[8px] w-[2px] bg-[#C2410C] rounded-full origin-top"
+            className="absolute left-[7px] top-[8px] w-[2px] bg-[#F97316] rounded-full origin-top"
             style={{ height: `calc(${Math.max(progress * 100, 0)}% - 0px)` }}
             initial={false}
             animate={{ height: `${Math.max(progress * 100, 0)}%` }}
@@ -105,14 +103,14 @@ export function ScrollProgress() {
                 <div
                   className={`relative z-10 size-4 rounded-full border-2 transition-all duration-300 ${
                     isActive
-                      ? 'border-[#C2410C] bg-[#C2410C] shadow-[0_0_8px_rgba(194,65,12,0.4)]'
+                      ? 'border-[#F97316] bg-[#F97316] shadow-[0_0_8px_rgba(249,115,22,0.4)]'
                       : isPast
-                        ? 'border-[#C2410C] bg-[#C2410C]/80'
+                        ? 'border-[#F97316] bg-[#F97316]/80'
                         : 'border-[#0F172A]/20 bg-white group-hover:border-[#0F172A]/40'
                   }`}
                 >
                   {isActive && (
-                    <div className="absolute inset-0 rounded-full bg-[#C2410C] animate-ping opacity-20" />
+                    <div className="absolute inset-0 rounded-full bg-[#F97316] animate-ping opacity-20" />
                   )}
                 </div>
 
@@ -120,7 +118,7 @@ export function ScrollProgress() {
                 <span
                   className={`text-xs font-medium whitespace-nowrap transition-all duration-300 ${
                     isActive
-                      ? 'text-[#C2410C] translate-x-0.5'
+                      ? 'text-[#F97316] translate-x-0.5'
                       : isPast
                         ? 'text-[#0F172A]/50'
                         : 'text-[#0F172A]/25 group-hover:text-[#0F172A]/40'
@@ -141,7 +139,6 @@ export function ScrollProgress() {
         }`}
       >
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#0F172A]/90 backdrop-blur-md border border-white/[0.08] shadow-lg">
-          {/* Progress bar track */}
           <div className="relative flex items-center gap-2.5">
             {sections.map((section, i) => {
               const isActive = i === activeIndex;
@@ -157,13 +154,12 @@ export function ScrollProgress() {
                   <div
                     className={`size-2.5 rounded-full transition-all duration-300 ${
                       isActive
-                        ? 'bg-[#C2410C] shadow-[0_0_6px_rgba(194,65,12,0.5)] scale-125'
+                        ? 'bg-[#F97316] shadow-[0_0_6px_rgba(249,115,22,0.5)] scale-125'
                         : isPast
-                          ? 'bg-[#C2410C]/70'
+                          ? 'bg-[#F97316]/70'
                           : 'bg-white/20 group-hover:bg-white/30'
                     }`}
                   />
-                  {/* Tooltip on tap */}
                   <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-[#1E293B] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                     {section.label}
                   </span>

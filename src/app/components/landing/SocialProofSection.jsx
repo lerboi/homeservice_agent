@@ -46,7 +46,7 @@ export function SocialProofSection() {
     <section id="testimonials" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6 overflow-hidden">
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
-          <p className="text-sm font-medium text-[#C2410C] tracking-wide uppercase mb-3">
+          <p className="text-sm font-medium text-[#F97316] tracking-wide uppercase mb-3">
             From the field
           </p>
           <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
@@ -60,7 +60,7 @@ export function SocialProofSection() {
         <AnimatedStagger className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {testimonials.map((t) => (
             <AnimatedItem key={t.name}>
-              <div className="group h-full flex flex-col rounded-2xl bg-white border border-stone-200/60 shadow-sm transition-all duration-200 hover:border-[#C2410C]/30 hover:shadow-[0_4px_20px_rgba(194,65,12,0.1)] hover:-translate-y-0.5">
+              <div className="group h-full flex flex-col rounded-2xl bg-white border border-stone-200/60 shadow-sm transition-all duration-200 hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-0.5">
                 {/* Metric badge */}
                 <div className="px-6 pt-6 pb-0">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 mb-4 transition-shadow duration-300 group-hover:shadow-[0_0_16px_rgba(22,101,52,0.15)]">

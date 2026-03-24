@@ -22,7 +22,7 @@ export function HowItWorksSection() {
     <section id="how-it-works" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6">
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
-          <p className="text-sm font-semibold text-[#C2410C] tracking-[0.15em] uppercase mb-3">
+          <p className="text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
             How it works
           </p>
           <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
@@ -39,7 +39,7 @@ export function HowItWorksSection() {
           <Button
             asChild
             size="lg"
-            className="bg-[#C2410C] text-white hover:bg-[#C2410C]/90 min-h-[48px] px-6 text-[15px] font-medium rounded-xl shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all hover:shadow-[0_4px_16px_0_rgba(194,65,12,0.4)] hover:-translate-y-0.5 group"
+            className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[48px] px-6 text-[15px] font-medium rounded-xl shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all hover:shadow-[0_4px_16px_0_rgba(249,115,22,0.4)] hover:-translate-y-0.5 group"
           >
             <Link href="/onboarding">
               See It In Action

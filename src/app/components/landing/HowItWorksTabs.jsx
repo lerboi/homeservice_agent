@@ -52,7 +52,6 @@ export function HowItWorksTabs() {
     }
     e.preventDefault();
     setActive(next);
-    // Move focus to the newly activated tab
     const tabs = e.currentTarget.closest('[role="tablist"]').querySelectorAll('[role="tab"]');
     tabs[next]?.focus();
   }
@@ -74,9 +73,9 @@ export function HowItWorksTabs() {
             tabIndex={active === i ? 0 : -1}
             onClick={() => setActive(i)}
             onKeyDown={(e) => handleKeyDown(e, i)}
-            className={`min-h-[48px] px-5 rounded-lg text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C] focus-visible:ring-offset-2 ${
+            className={`min-h-[48px] px-5 rounded-lg text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F97316] focus-visible:ring-offset-2 ${
               active === i
-                ? 'bg-[#C2410C]/10 text-[#C2410C] border-b-2 border-[#C2410C]'
+                ? 'bg-[#F97316]/10 text-[#F97316] border-b-2 border-[#F97316]'
                 : 'text-[#475569]/60 hover:text-[#475569]'
             }`}
           >

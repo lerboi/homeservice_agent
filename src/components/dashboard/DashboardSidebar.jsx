@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { LayoutDashboard, Users, BarChart3, Wrench, Calendar, Menu, X, Settings, LogOut } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
@@ -57,15 +58,15 @@ export default function DashboardSidebar({ businessName }) {
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="px-4 h-16 flex items-center gap-2 shrink-0">
-        <div className="size-8 rounded-lg bg-gradient-to-br from-[#C2410C] to-[#9A3412] flex items-center justify-center shadow-sm">
-          <svg viewBox="0 0 16 16" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M8 2v6M4 6l4-4 4 4M3 10h10M5 14h6" />
-          </svg>
-        </div>
-        <span className="text-white font-semibold text-[15px] tracking-tight">
-          Voco
-        </span>
+      <div className="px-4 h-16 flex items-center shrink-0">
+        <Image
+          src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
+          alt="Voco"
+          width={100}
+          height={32}
+          className="h-8 w-auto"
+          priority
+        />
       </div>
 
       {/* Main navigation */}

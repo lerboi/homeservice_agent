@@ -44,26 +44,32 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
-  // Authenticated user on /auth/signin — allow through.
-  // The page handles post-auth navigation itself. Redirecting here would
-  // break the OTP flow (signInWithOtp sets cookies before OTP is verified).
-  if (user && pathname.startsWith('/auth/signin')) {
-    return response;
-  }
-
-  // Authenticated user on onboarding paths → check if already complete
-  if (user && pathname.startsWith('/onboarding')) {
+  // Authenticated user on a matched path → check onboarding status once
+  if (user) {
     const { data: tenant } = await supabase
       .from('tenants')
       .select('onboarding_complete')
       .eq('owner_id', user.id)
       .single();
 
-    if (tenant?.onboarding_complete === true) {
+    const onboarded = tenant?.onboarding_complete === true;
+
+    // Already signed in → route away from auth page
+    if (pathname.startsWith('/auth/signin')) {
+      return NextResponse.redirect(
+        new URL(onboarded ? '/dashboard' : '/onboarding', request.url)
+      );
+    }
+
+    // Finished onboarding → skip wizard, go to dashboard
+    if (pathname.startsWith('/onboarding') && onboarded) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    return response;
+    // Haven't onboarded yet → can't access dashboard
+    if (pathname.startsWith('/dashboard') && !onboarded) {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
   }
 
   return response;

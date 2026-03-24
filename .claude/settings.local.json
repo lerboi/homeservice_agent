@@ -60,7 +60,22 @@
       "Bash(test:*)",
       "Bash(FILE=\"src/components/dashboard/CalendarSyncCard.js\")",
       "Read(//c/Users/Leroy/Desktop/homeservice_agent-main/**)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Read(//c/Users/leheh/.Projects//**)",
+      "Read(//c/Users/leheh/**)",
+      "WebFetch(domain:www.retellai.com)",
+      "WebFetch(domain:docs.cartesia.ai)",
+      "WebFetch(domain:community.retellai.com)",
+      "Bash(rm src/server/retell-llm-ws.js)",
+      "Bash(rm src/lib/agent-prompt.js)",
+      "Bash(rm src/lib/retell-agent-config.js)",
+      "Bash(rm tests/agent/prompt.test.js)",
+      "Bash(rm tests/agent/retell-config.test.js)",
+      "Bash(cd:*)",
+      "Bash(node --experimental-vm-modules node_modules/jest-cli/bin/jest.js tests/notifications/ --no-coverage --testPathPattern=\"^\\(?!.*worktree\\)\")",
+      "Bash(npm run:*)",
+      "Bash(for branch:*)",
+      "Bash(taskkill //F //IM node.exe //FI 'WINDOWTITLE eq next*')"
     ]
   }
 }

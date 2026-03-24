@@ -2,17 +2,24 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const NAV_LINKS = [
+  { href: '/', label: 'Home', exact: true },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
-  const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
+  const isActive = (href, exact) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -20,12 +27,8 @@ export function LandingNav() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close drawer on route change
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
+  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
-  // Lock body scroll when drawer open
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
@@ -37,13 +40,14 @@ export function LandingNav() {
         aria-label="Navigation"
         className={`fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-500 ease-in-out border-b border-white/[0.06] ${
           scrolled
-            ? 'bg-[#0F172A]/95 backdrop-blur-[12px]'
+            ? 'bg-[#090807]/90 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
             : 'bg-transparent'
         }`}
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
-          {/* Logo (left) */}
-          <Link href="/" className="flex items-center group shrink-0">
+
+          {/* Logo — desktop only */}
+          <Link href="/" className="hidden md:flex items-center group shrink-0">
             <Image
               src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
               alt="Voco"
@@ -56,38 +60,28 @@ export function LandingNav() {
 
           {/* Desktop center links */}
           <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-            <Link href="/" className={`text-sm transition-colors relative pb-1 ${pathname === '/' ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-              Home
-              {pathname === '/' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-              )}
-            </Link>
-            <Link href="/pricing" className={`text-sm transition-colors relative pb-1 ${isActive('/pricing') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-              Pricing
-              {isActive('/pricing') && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-              )}
-            </Link>
-            <Link href="/about" className={`text-sm transition-colors relative pb-1 ${isActive('/about') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-              About
-              {isActive('/about') && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-              )}
-            </Link>
-            <Link href="/contact" className={`text-sm transition-colors relative pb-1 ${isActive('/contact') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-              Contact
-              {isActive('/contact') && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-              )}
-            </Link>
+            {NAV_LINKS.map(({ href, label, exact }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`text-sm transition-colors relative pb-1 ${
+                  isActive(href, exact) ? 'text-white' : 'text-white/50 hover:text-white'
+                }`}
+              >
+                {label}
+                {isActive(href, exact) && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F97316]" />
+                )}
+              </Link>
+            ))}
           </div>
 
           <div className="flex items-center gap-3">
-            {/* CTA button (desktop) */}
+            {/* CTA (desktop) */}
             <Button
               asChild
               size="sm"
-              className="hidden md:inline-flex bg-[#C2410C] text-white hover:bg-[#C2410C]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(194,65,12,0.4)]"
+              className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
             >
               <Link href="/onboarding">Start My 5-Minute Setup</Link>
             </Button>
@@ -105,64 +99,77 @@ export function LandingNav() {
         </div>
       </nav>
 
-      {/* Mobile drawer */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            {/* Backdrop overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-[#0F172A]/80 md:hidden"
-              onClick={() => setDrawerOpen(false)}
+      {/* Mobile drawer — CSS transitions only, no Framer Motion */}
+
+      {/* Backdrop */}
+      <div
+        onClick={() => setDrawerOpen(false)}
+        className={`md:hidden fixed inset-0 z-40 bg-black/70 transition-opacity duration-300 ${
+          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden="true"
+      />
+
+      {/* Drawer panel */}
+      <div
+        className={`md:hidden fixed top-0 right-0 bottom-0 z-50 w-72 bg-[#0D0D0D] flex flex-col
+          transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {/* Header */}
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06]">
+          <Link href="/" onClick={() => setDrawerOpen(false)}>
+            <Image
+              src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
+              alt="Voco"
+              width={100}
+              height={32}
+              className="h-8 w-auto"
             />
-            {/* Drawer panel */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[280px] bg-[#1E293B] border-l border-white/[0.06] md:hidden flex flex-col"
-            >
-              {/* Close button */}
-              <div className="h-16 flex items-center justify-end px-6">
-                <button
-                  onClick={() => setDrawerOpen(false)}
-                  className="flex items-center justify-center size-10 min-h-[44px] min-w-[44px] text-white/70 hover:text-white transition-colors"
-                  aria-label="Close menu"
-                >
-                  <X className="size-5" />
-                </button>
-              </div>
+          </Link>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="flex items-center justify-center size-9 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="size-4.5" />
+          </button>
+        </div>
 
-              {/* Nav links */}
-              <div className="flex-1 flex flex-col gap-1 px-6">
-                <Link href="/pricing" className={`block py-3 text-[15px] transition-colors ${isActive('/pricing') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
-                  Pricing
-                </Link>
-                <Link href="/about" className={`block py-3 text-[15px] transition-colors ${isActive('/about') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
-                  About
-                </Link>
-                <Link href="/contact" className={`block py-3 text-[15px] transition-colors ${isActive('/contact') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
-                  Contact
-                </Link>
-              </div>
+        {/* Nav links */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {NAV_LINKS.map(({ href, label, exact }) => {
+            const active = isActive(href, exact);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium transition-colors ${
+                  active
+                    ? 'bg-white/[0.08] text-white'
+                    : 'text-white/50 hover:text-white hover:bg-white/[0.04]'
+                }`}
+              >
+                {active && (
+                  <span className="w-1 h-4 rounded-full bg-[#F97316] shrink-0" aria-hidden="true" />
+                )}
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
 
-              {/* CTA pinned to bottom */}
-              <div className="p-6 border-t border-white/[0.06]">
-                <Button
-                  asChild
-                  className="w-full bg-[#C2410C] text-white hover:bg-[#C2410C]/90 min-h-[44px] font-medium rounded-lg"
-                >
-                  <Link href="/onboarding">Start My 5-Minute Setup</Link>
-                </Button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+        {/* CTA */}
+        <div className="p-4 border-t border-white/[0.06]">
+          <Link
+            href="/onboarding"
+            className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+          >
+            Start My 5-Minute Setup
+          </Link>
+          <p className="text-center text-xs text-white/25 mt-3">No credit card required</p>
+        </div>
+      </div>
     </>
   );
 }

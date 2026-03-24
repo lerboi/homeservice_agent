@@ -51,16 +51,16 @@ function ClockVisual() {
       <div className="relative mx-auto w-32 h-32">
         <svg viewBox="0 0 128 128" className="w-full h-full" aria-hidden="true">
           <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-stone-200" strokeWidth="1" />
-          <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-[#C2410C]/40" strokeWidth="2" strokeDasharray="365" strokeDashoffset="90" strokeLinecap="round" transform="rotate(-90 64 64)" />
+          <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-[#F97316]/40" strokeWidth="2" strokeDasharray="365" strokeDashoffset="90" strokeLinecap="round" transform="rotate(-90 64 64)" />
           {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
             <line key={deg} x1="64" y1="12" x2="64" y2="16" stroke="currentColor" className="text-stone-300" strokeWidth="1.5" strokeLinecap="round" transform={`rotate(${deg} 64 64)`} />
           ))}
-          <circle cx="64" cy="64" r="3" fill="currentColor" className="text-[#C2410C]" />
+          <circle cx="64" cy="64" r="3" fill="currentColor" className="text-[#F97316]" />
           <line x1="64" y1="64" x2="64" y2="34" stroke="currentColor" className="text-stone-500" strokeWidth="2.5" strokeLinecap="round" transform="rotate(30 64 64)" />
           <line x1="64" y1="64" x2="64" y2="24" stroke="currentColor" className="text-stone-400" strokeWidth="1.5" strokeLinecap="round" transform="rotate(180 64 64)" />
         </svg>
-        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[#C2410C]/10 border border-[#C2410C]/20">
-          <span className="text-[11px] font-medium text-[#C2410C]">24/7 ACTIVE</span>
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[#F97316]/10 border border-[#F97316]/20">
+          <span className="text-[11px] font-medium text-[#F97316]">24/7 ACTIVE</span>
         </div>
       </div>
     </div>
@@ -75,7 +75,7 @@ function MetricBar({ label, value, width }) {
         <span className="text-stone-600 font-medium">{value}</span>
       </div>
       <div className="h-1 rounded-full bg-stone-200 overflow-hidden">
-        <div className="h-full rounded-full bg-gradient-to-r from-[#C2410C]/60 to-[#C2410C]" style={{ width }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-[#F97316]/60 to-[#F97316]" style={{ width }} />
       </div>
     </div>
   );
@@ -89,18 +89,18 @@ function BentoCard({ feature }) {
   return (
     <AnimatedItem className={feature.span}>
       <div
-        className="group relative h-full rounded-2xl overflow-hidden bg-white border border-stone-200/60 shadow-sm p-6 md:p-7 transition-all duration-300 hover:border-[#C2410C]/30 hover:shadow-[0_4px_20px_rgba(194,65,12,0.1)] hover:-translate-y-0.5"
+        className="group relative h-full rounded-2xl overflow-hidden bg-white border border-stone-200/60 shadow-sm p-6 md:p-7 transition-all duration-300 hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-0.5"
       >
         {/* Subtle radial gradient overlay for hero card */}
         {isHero && (
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle,rgba(194,65,12,0.06),transparent_70%)] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle,rgba(249,115,22,0.06),transparent_70%)] pointer-events-none" />
         )}
 
         <div className="relative">
           {/* Icon container */}
-          <div className="inline-flex items-center justify-center rounded-xl mb-4 size-11 bg-[#C2410C]/[0.08] border border-[#C2410C]/[0.12]">
+          <div className="inline-flex items-center justify-center rounded-xl mb-4 size-11 bg-[#F97316]/[0.08] border border-[#F97316]/[0.12]">
             <Icon
-              className="size-5 text-[#C2410C]"
+              className="size-5 text-[#F97316]"
               strokeWidth={1.75}
             />
           </div>
@@ -143,7 +143,7 @@ export function FeaturesGrid() {
     <section id="features" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6">
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
-          <p className="text-sm font-medium text-[#C2410C] tracking-wide uppercase mb-3">
+          <p className="text-sm font-medium text-[#F97316] tracking-wide uppercase mb-3">
             Why it pays for itself
           </p>
           <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">

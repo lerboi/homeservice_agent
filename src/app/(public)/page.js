@@ -78,10 +78,10 @@ const FinalCTASection = dynamic(
   () => import('@/app/components/landing/FinalCTASection').then((m) => m.FinalCTASection),
   {
     loading: () => (
-      <section className="bg-[#C2410C] py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#1C1412] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="h-10 w-80 bg-white/20 rounded mx-auto mb-4" />
-          <div className="h-6 w-64 bg-white/10 rounded mx-auto" />
+          <div className="h-10 w-80 bg-white/[0.06] rounded mx-auto mb-4" />
+          <div className="h-6 w-64 bg-white/[0.04] rounded mx-auto" />
         </div>
       </section>
     ),
