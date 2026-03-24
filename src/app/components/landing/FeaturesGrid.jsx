@@ -50,14 +50,14 @@ function ClockVisual() {
     <div className="relative mt-6 mb-2">
       <div className="relative mx-auto w-32 h-32">
         <svg viewBox="0 0 128 128" className="w-full h-full" aria-hidden="true">
-          <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-white/[0.06]" strokeWidth="1" />
+          <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-stone-200" strokeWidth="1" />
           <circle cx="64" cy="64" r="58" fill="none" stroke="currentColor" className="text-[#C2410C]/40" strokeWidth="2" strokeDasharray="365" strokeDashoffset="90" strokeLinecap="round" transform="rotate(-90 64 64)" />
           {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
-            <line key={deg} x1="64" y1="12" x2="64" y2="16" stroke="currentColor" className="text-white/20" strokeWidth="1.5" strokeLinecap="round" transform={`rotate(${deg} 64 64)`} />
+            <line key={deg} x1="64" y1="12" x2="64" y2="16" stroke="currentColor" className="text-stone-300" strokeWidth="1.5" strokeLinecap="round" transform={`rotate(${deg} 64 64)`} />
           ))}
           <circle cx="64" cy="64" r="3" fill="currentColor" className="text-[#C2410C]" />
-          <line x1="64" y1="64" x2="64" y2="34" stroke="currentColor" className="text-white/60" strokeWidth="2.5" strokeLinecap="round" transform="rotate(30 64 64)" />
-          <line x1="64" y1="64" x2="64" y2="24" stroke="currentColor" className="text-white/40" strokeWidth="1.5" strokeLinecap="round" transform="rotate(180 64 64)" />
+          <line x1="64" y1="64" x2="64" y2="34" stroke="currentColor" className="text-stone-500" strokeWidth="2.5" strokeLinecap="round" transform="rotate(30 64 64)" />
+          <line x1="64" y1="64" x2="64" y2="24" stroke="currentColor" className="text-stone-400" strokeWidth="1.5" strokeLinecap="round" transform="rotate(180 64 64)" />
         </svg>
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[#C2410C]/10 border border-[#C2410C]/20">
           <span className="text-[11px] font-medium text-[#C2410C]">24/7 ACTIVE</span>
@@ -71,10 +71,10 @@ function MetricBar({ label, value, width }) {
   return (
     <div className="space-y-1.5">
       <div className="flex justify-between text-[11px]">
-        <span className="text-white/40">{label}</span>
-        <span className="text-white/60 font-medium">{value}</span>
+        <span className="text-stone-400">{label}</span>
+        <span className="text-stone-600 font-medium">{value}</span>
       </div>
-      <div className="h-1 rounded-full bg-[#0F172A] overflow-hidden">
+      <div className="h-1 rounded-full bg-stone-200 overflow-hidden">
         <div className="h-full rounded-full bg-gradient-to-r from-[#C2410C]/60 to-[#C2410C]" style={{ width }} />
       </div>
     </div>
@@ -89,27 +89,27 @@ function BentoCard({ feature }) {
   return (
     <AnimatedItem className={feature.span}>
       <div
-        className="group relative h-full rounded-2xl overflow-hidden bg-[#1E293B] border border-white/[0.06] p-6 md:p-7 transition-all duration-300 hover:border-[#C2410C]/40 hover:shadow-[0_0_20px_rgba(194,65,12,0.15)] hover:-translate-y-0.5"
+        className="group relative h-full rounded-2xl overflow-hidden bg-white border border-stone-200/60 shadow-sm p-6 md:p-7 transition-all duration-300 hover:border-[#C2410C]/30 hover:shadow-[0_4px_20px_rgba(194,65,12,0.1)] hover:-translate-y-0.5"
       >
         {/* Subtle radial gradient overlay for hero card */}
         {isHero && (
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle,rgba(194,65,12,0.14),transparent_70%)] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[radial-gradient(circle,rgba(194,65,12,0.06),transparent_70%)] pointer-events-none" />
         )}
 
         <div className="relative">
           {/* Icon container */}
-          <div className="inline-flex items-center justify-center rounded-xl mb-4 size-11 bg-white/[0.06] border border-white/[0.08]">
+          <div className="inline-flex items-center justify-center rounded-xl mb-4 size-11 bg-[#C2410C]/[0.08] border border-[#C2410C]/[0.12]">
             <Icon
               className="size-5 text-[#C2410C]"
               strokeWidth={1.75}
             />
           </div>
 
-          <h3 className={`font-semibold mb-2 text-[#F1F5F9] ${isHero ? 'text-xl' : 'text-base'}`}>
+          <h3 className={`font-semibold mb-2 text-[#0F172A] ${isHero ? 'text-xl' : 'text-base'}`}>
             {feature.title}
           </h3>
 
-          <p className={`leading-relaxed text-[#94A3B8] ${isHero ? 'text-[15px] max-w-sm' : 'text-sm'}`}>
+          <p className={`leading-relaxed text-[#475569] ${isHero ? 'text-[15px] max-w-sm' : 'text-sm'}`}>
             {feature.body}
           </p>
 
@@ -118,7 +118,7 @@ function BentoCard({ feature }) {
 
           {/* Metric bars for wide card */}
           {isWide && (
-            <div className="mt-5 p-4 rounded-xl bg-[#0F172A] space-y-3">
+            <div className="mt-5 p-4 rounded-xl bg-stone-50 border border-stone-100 space-y-3">
               <MetricBar label="Emergency calls answered" value="100%" width="100%" />
               <MetricBar label="Avg response time" value="0.8s" width="15%" />
               <MetricBar label="Leads captured" value="98.5%" width="98%" />
@@ -126,9 +126,9 @@ function BentoCard({ feature }) {
           )}
 
           {/* Justification */}
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/[0.06] transition-all duration-300">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-stone-200/60 transition-all duration-300">
             <div className="size-1.5 rounded-full bg-[#166534] shrink-0" />
-            <p className="text-sm font-medium text-[#22C55E]">
+            <p className="text-sm font-medium text-[#166534]">
               {feature.justification}
             </p>
           </div>
@@ -140,19 +140,16 @@ function BentoCard({ feature }) {
 
 export function FeaturesGrid() {
   return (
-    <section id="features" className="relative bg-[#0F172A] py-20 md:py-28 px-6">
-      {/* Subtle grid texture */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none" />
-
+    <section id="features" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6">
       <div className="relative max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
           <p className="text-sm font-medium text-[#C2410C] tracking-wide uppercase mb-3">
             Why it pays for itself
           </p>
-          <h2 className="text-3xl md:text-4xl font-semibold text-[#F1F5F9] tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
             Five features. One question:
             <br className="hidden sm:block" />
-            <span className="text-[#94A3B8]">How much did your last missed call cost?</span>
+            <span className="text-[#475569]">How much did your last missed call cost?</span>
           </h2>
         </AnimatedSection>
 

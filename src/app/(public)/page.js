@@ -34,18 +34,18 @@ const FeaturesGrid = dynamic(
   () => import('@/app/components/landing/FeaturesGrid').then((m) => m.FeaturesGrid),
   {
     loading: () => (
-      <section className="bg-[#0F172A] py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#F5F5F4] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <div className="h-4 w-32 bg-white/10 rounded mx-auto mb-3" />
-            <div className="h-10 w-96 bg-white/10 rounded mx-auto" />
+            <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-96 bg-black/10 rounded mx-auto" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div className="md:col-span-4 md:row-span-2 h-64 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
-            <div className="md:col-span-4 h-40 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
+            <div className="md:col-span-4 md:row-span-2 h-64 rounded-2xl bg-white border border-stone-200/60" />
+            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
+            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
+            <div className="md:col-span-4 h-40 rounded-2xl bg-white border border-stone-200/60" />
+            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
           </div>
         </div>
       </section>
@@ -57,15 +57,15 @@ const SocialProofSection = dynamic(
   () => import('@/app/components/landing/SocialProofSection').then((m) => m.SocialProofSection),
   {
     loading: () => (
-      <section className="bg-[#0F172A] py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#F5F5F4] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <div className="h-4 w-24 bg-white/10 rounded mx-auto mb-3" />
-            <div className="h-10 w-64 bg-white/10 rounded mx-auto" />
+            <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-64 bg-black/10 rounded mx-auto" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-2xl bg-white/[0.03] border border-white/[0.06]" />
+              <div key={i} className="h-64 rounded-2xl bg-white border border-stone-200/60" />
             ))}
           </div>
         </div>
