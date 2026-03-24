@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-03-24T18:48:24.670Z"
+stopped_at: Completed 13-03-PLAN.md
+last_updated: "2026-03-24T18:53:54.578Z"
 progress:
   total_phases: 14
   completed_phases: 10
   total_plans: 48
-  completed_plans: 44
+  completed_plans: 45
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 13 (frontend-public-pages-redesign) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ### v2.0 Milestone Progress
 
@@ -145,6 +145,8 @@ Recent decisions affecting current work:
 - [Phase 08]: PROVIDER_CONFIG map centralizes auth endpoints, icon colors, popup names per provider
 - [Phase 08]: Optimistic UI for make-primary badge swap: instant swap, revert on server error
 - [Phase 13-01]: LandingNav backdrop-blur changed from backdrop-blur-xl to backdrop-blur-[12px] per D-08 spec — explicit value enforces design contract
+- [Phase 13-frontend-public-pages-redesign]: Auth page: Three conditional render branches for structurally distinct signup (split), signin (compact), and OTP (centered dark card) layouts — no tab/pill toggle
+- [Phase 13-frontend-public-pages-redesign]: OtpInput: focus:border-[#C2410C] + focus:ring-[#C2410C]/30 without ring-offset eliminates white gap on dark backgrounds (Pitfall 7 avoidance)
 
 ### Roadmap Evolution
 
@@ -174,6 +176,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T18:48:24.664Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-03-24T18:53:54.570Z
+Stopped at: Completed 13-03-PLAN.md
 Resume file: None

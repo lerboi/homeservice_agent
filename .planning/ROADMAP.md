@@ -179,12 +179,12 @@ Plans:
 **Goal:** Redesign all public-facing pages (Home, Pricing, Contact, About) and shared components (Nav, Footer) with a Premium Dark SaaS design language — improving component-level design quality while preserving existing page structure and layout patterns. Performance-first: no backdrop-blur on large surfaces, transform/opacity-only animations, dynamic imports with loading skeletons, mobile lightweight fallbacks, Core Web Vitals optimized (LCP < 2.5s, CLS < 0.1, INP < 200ms). Use Next.js dynamic imports for lazy loading and aggressive code-splitting. Swap heavy interactive elements for lightweight static fallbacks on mobile.
 **Requirements**: D-01 through D-36 (36 locked design decisions from CONTEXT.md)
 **Depends on:** Phase 12
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [x] 13-01-PLAN.md — Foundation: CSS tokens, AnimatedSection timing, LandingNav restyle, LandingFooter restyle
 - [ ] 13-02-PLAN.md — Home page sections + Pricing page + About page + Contact page dark reskin
-- [ ] 13-03-PLAN.md — Auth page differentiated signup/signin/OTP layouts + OtpInput dark restyle
+- [x] 13-03-PLAN.md — Auth page differentiated signup/signin/OTP layouts + OtpInput dark restyle
 - [ ] 13-04-PLAN.md — Human verification checkpoint for all pages
 
 ---
