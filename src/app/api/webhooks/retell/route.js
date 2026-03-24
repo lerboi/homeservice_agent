@@ -8,6 +8,8 @@ import { atomicBookSlot } from '@/lib/scheduling/booking';
 import { pushBookingToCalendar } from '@/lib/scheduling/google-calendar';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { createOrMergeLead } from '@/lib/leads';
+import { buildWhisperMessage } from '@/lib/whisper-message';
 
 export async function POST(request) {
   const rawBody = await request.text();
@@ -184,6 +186,63 @@ async function handleInbound(payload) {
 async function handleFunctionCall(payload) {
   const { call_id, function_call } = payload;
 
+  if (function_call?.name === 'end_call') {
+    // end_call is handled by the WebSocket server (sends end_call:true to Retell).
+    // If it reaches the webhook, just acknowledge.
+    return Response.json({ result: 'Call ending.' });
+  }
+
+  if (function_call?.name === 'capture_lead') {
+    const args = function_call.arguments || {};
+
+    // Resolve tenant via call record (same two-hop as transfer_call)
+    const { data: call } = await supabase
+      .from('calls')
+      .select('id, tenant_id, from_number, start_timestamp')
+      .eq('retell_call_id', call_id)
+      .single();
+
+    if (!call?.tenant_id) {
+      return Response.json({ result: 'Lead capture unavailable.' });
+    }
+
+    // Compute mid-call duration from start_timestamp to avoid Pitfall 3 (15s filter)
+    const durationSeconds = call.start_timestamp
+      ? Math.round((Date.now() - new Date(call.start_timestamp).getTime()) / 1000)
+      : 999;
+
+    try {
+      await createOrMergeLead({
+        tenantId: call.tenant_id,
+        callId: call.id,
+        fromNumber: call.from_number || args.phone || '',
+        callerName: args.caller_name || null,
+        jobType: args.job_type || null,
+        serviceAddress: args.address || null,
+        triageResult: { urgency: 'routine' },
+        appointmentId: null,
+        callDuration: durationSeconds,
+      });
+
+      // Look up business name for the confirmation message
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('business_name')
+        .eq('id', call.tenant_id)
+        .single();
+
+      const bizName = tenant?.business_name || 'our team';
+      return Response.json({
+        result: `I've saved your information. ${bizName} will reach out soon.`,
+      });
+    } catch (err) {
+      console.error('capture_lead handler error:', err);
+      return Response.json({
+        result: "I've noted your details and someone will follow up.",
+      });
+    }
+  }
+
   if (function_call?.name === 'book_appointment') {
     return handleBookAppointment(payload);
   }
@@ -220,9 +279,18 @@ async function handleFunctionCall(payload) {
 
     if (ownerPhone) {
       try {
+        // Build whisper message from AI-provided arguments (D-08)
+        const whisperMsg = buildWhisperMessage({
+          callerName: function_call.arguments?.caller_name,
+          jobType: function_call.arguments?.job_type,
+          urgency: function_call.arguments?.urgency,
+          summary: function_call.arguments?.summary,
+        });
+
         await retell.call.transfer({
           call_id,
           transfer_to: ownerPhone,
+          whisper_message: whisperMsg,
         });
         return Response.json({ result: 'transfer_initiated' });
       } catch (err) {
