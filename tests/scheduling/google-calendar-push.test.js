@@ -185,7 +185,7 @@ describe('handleGoogleCalendarPush', () => {
         // Subsequent calls: update sync token
         return {
           update: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ error: null }),
+            eq: jest.fn().mockReturnThis(),
           }),
         };
       }
@@ -257,7 +257,7 @@ describe('syncCalendarEvents', () => {
         // subsequent calls for update
         return {
           update: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ error: null }),
+            eq: jest.fn().mockReturnThis(),
           }),
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),

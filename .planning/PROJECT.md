@@ -8,16 +8,19 @@ An all-in-one AI platform for home service SMEs (plumbers, HVAC, electricians, e
 
 Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
-## Current Milestone: v1.1 Site Completeness & Launch Readiness
+## Current Milestone: v2.0 Booking-First Digital Dispatcher
 
-**Goal:** Complete the public-facing site (pricing, contact, about), unify the signup+onboarding flow into a single wizard, and harden the platform for demo-ready launch.
+**Goal:** Pivot the AI from an emergency-triage escalation model to a booking-first dispatcher that autonomously schedules ALL calls — including emergencies — using urgency tags strictly for notification priority, with escalation reserved for exception states only.
 
 **Target features:**
-- Pricing page with 4 tiers (Starter/Growth/Scale/Enterprise)
-- Unified signup+onboarding wizard (CTA → account creation → business setup → test call)
-- Contact page (sales, support, partnerships)
-- About/Company page (team, mission, story)
-- Hardening & Launch (Outlook sync, multi-language E2E, concurrency QA, 5-min onboarding gate)
+- Agent prompt rewrite: AI books every call by default, no triage-based routing
+- Triage reclassification: urgency tags become notification priority, not call routing decisions
+- Booking flow universalization: all calls get booked (emergencies → nearest slot, routine → next available)
+- Exception state handling: transfer only when AI can't understand job or caller explicitly requests human
+- Notification priority system: urgency drives SMS/email formatting and delivery priority
+- Recovery SMS as universal fallback: any failed booking triggers recovery SMS with manual booking link
+- Dashboard visual parity: keep existing urgency badges, change backend meaning only
+- Hardening & Launch QA (folded from v1.1 Phases 5+9, rewritten for booking-first behavior)
 
 ## Requirements
 
@@ -42,13 +45,14 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 ### Active
 
-- [ ] Pricing page with tier comparison (Starter $99, Growth $249, Scale $599, Enterprise custom)
-- [ ] Unified signup+onboarding wizard replacing separate auth + onboarding flows
-- [ ] Contact page for sales, support, and partnership inquiries
-- [ ] About/Company page with team, mission, and story
-- [ ] Outlook Calendar bidirectional sync (deferred from v1.0)
-- [ ] Multi-language end-to-end validation (voice → triage → booking → notifications)
-- [ ] Concurrency QA and load testing
+- [ ] Agent prompt rewrite: booking-first dispatcher behavior for all call types
+- [ ] Triage reclassification: urgency tags as notification priority only
+- [ ] Booking flow universalization: all calls get booked autonomously
+- [ ] Exception state handling: escalation only when AI can't understand or caller requests human
+- [ ] Notification priority system: urgency-driven SMS/email formatting and delivery priority
+- [ ] Recovery SMS universal fallback: failed bookings trigger recovery SMS
+- [ ] Multi-language end-to-end validation (voice → booking → notifications) — rewritten for booking-first
+- [ ] Concurrency QA and load testing — rewritten for booking-first
 - [ ] 5-minute onboarding gate validation with non-technical user
 
 ### Out of Scope
@@ -67,10 +71,11 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 **Voice AI Approach:** Use Retell as the telephony + speech layer for low-latency, natural-sounding voice interactions. Retell handles STT/TTS and telephony infrastructure, letting us focus on the intelligence layer (triage, scheduling, CRM).
 
-**Triage Intelligence:** Three-layer system:
-1. **Keyword detection:** "flooding," "gas smell," "no heat" → emergency. "Quote," "next week," "remodel" → routine.
+**Triage Intelligence (v2.0 — Booking-First):** Three-layer system retained but repurposed:
+1. **Keyword detection:** "flooding," "gas smell," "no heat" → emergency tag. "Quote," "next week," "remodel" → routine tag.
 2. **Caller urgency signals:** Temporal cues ("happening right now" vs "sometime next month"), stress indicators.
-3. **Owner-configured rules:** Business defines which service types are emergency, which are high-ticket, custom escalation paths.
+3. **Owner-configured rules:** Business defines which service types are emergency, which are high-ticket.
+**Key change in v2.0:** Urgency tags no longer route calls (all calls get booked). Tags drive notification priority — emergency bookings trigger immediate high-priority SMS/email; routine bookings use standard notification flow.
 
 **Scheduling Logic:** Calendar must be the single source of truth. Slot locking must be atomic — if two calls come in simultaneously, one gets the slot and the other gets the next available. Travel time buffers and geographic zone grouping to be designed during phase planning.
 
@@ -95,6 +100,26 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 | Voice-first, defer chat channels | Calls are where the money is lost; chat can layer on later | — Pending |
 | Multi-language from day one | Global market = global languages; retrofitting is harder than building in | — Pending |
 | Monthly SaaS pricing | Predictable revenue, simple for SME owners to understand | — Pending |
+| Booking-first over escalation-first | AI books all calls autonomously; urgency used for notification priority not routing; reduces missed bookings, simplifies call flow | v2.0 |
+| Escalation as exception only | Transfer only on AI confusion or explicit caller request; reduces owner interruptions while ensuring no dead ends | v2.0 |
+| Universal recovery SMS fallback | Every failed booking triggers recovery SMS; no call path ends without a next step for the caller | v2.0 |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
-*Last updated: 2026-03-24 after Phase 12 complete — dashboard-configurable triage and call escalation*
+*Last updated: 2026-03-24 — Milestone v2.0 Booking-First Digital Dispatcher started*

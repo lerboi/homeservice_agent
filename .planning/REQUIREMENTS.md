@@ -1,7 +1,40 @@
 # Requirements: HomeService AI Agent
 
-**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-23 (Phase 10)
+**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0)
 **Core Value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
+
+## v2.0 Requirements
+
+### Booking-First Agent Behavior
+
+- [ ] **BOOK-01**: AI books every inbound call into the next available slot by default — emergencies get nearest same-day slot, routine calls get next available
+- [ ] **BOOK-02**: AI detects caller intent before initiating booking flow — distinguishes service appointment requests from information-only/quote calls
+- [ ] **BOOK-03**: AI transfers to human only on exception states: AI cannot understand the job after 2+ clarification attempts, or caller explicitly requests a person
+- [ ] **BOOK-04**: Caller receives SMS confirmation after booking with date, time, and service address
+- [ ] **BOOK-05**: AI preserves full call context on warm transfer via Retell whisper message so the receiving human has complete caller details
+
+### Triage Reclassification
+
+- [ ] **TRIAGE-R01**: Urgency tags (emergency/routine/high_ticket) are retained on booking records but no longer route call handling
+- [ ] **TRIAGE-R02**: Triage pipeline output drives notification priority tier, not booking vs lead-capture decision
+
+### Notification Priority
+
+- [ ] **NOTIF-P01**: Emergency bookings trigger high-priority SMS/email with EMERGENCY prefix and urgent formatting
+- [ ] **NOTIF-P02**: Routine bookings trigger standard notification flow without urgency formatting
+
+### Recovery & Fallback
+
+- [ ] **RECOVER-01**: Every call path where booking fails triggers recovery SMS with manual booking link within 60 seconds
+- [ ] **RECOVER-02**: Recovery SMS includes urgency-aware content (emergency recovery is more urgent in tone than routine)
+- [ ] **RECOVER-03**: Recovery SMS delivery failures are logged and retried, not silently swallowed
+
+### Hardening & QA
+
+- [ ] **HARDEN-01**: Spanish-language caller books autonomously, receives Spanish confirmation SMS, owner gets notification — validated E2E
+- [ ] **HARDEN-02**: 20 simultaneous booking requests to same slot produce exactly 1 confirmed booking and 19 next-available offers
+- [ ] **HARDEN-03**: Non-technical SME owner completes onboarding wizard and hears AI in under 5 minutes — revalidated for booking-first
+- [ ] **HARDEN-04**: Unhandled exceptions and API failures trigger Sentry alert with full stack trace within 60 seconds
 
 ## v1.1 Requirements
 
@@ -35,15 +68,15 @@
 
 ### Outlook Calendar
 
-- [ ] **OUTLOOK-01**: Owner can connect Outlook Calendar via Microsoft OAuth from dashboard settings
-- [ ] **OUTLOOK-02**: Outlook calendar events sync bidirectionally with local availability database
-- [ ] **OUTLOOK-03**: Outlook webhook subscriptions auto-renew before 3-day expiry via cron job
-- [ ] **OUTLOOK-04**: Owner can disconnect Outlook Calendar and revert to manual availability
+- [x] **OUTLOOK-01**: Owner can connect Outlook Calendar via Microsoft OAuth from dashboard settings
+- [x] **OUTLOOK-02**: Outlook calendar events sync bidirectionally with local availability database
+- [x] **OUTLOOK-03**: Outlook webhook subscriptions auto-renew before 3-day expiry via cron job
+- [x] **OUTLOOK-04**: Owner can disconnect Outlook Calendar and revert to manual availability
 
 ### Launch Hardening
 
 - [ ] **LAUNCH-01**: Sentry error monitoring captures unhandled exceptions and API failures in production
-- [ ] **LAUNCH-02**: Multi-language E2E validated through full pipeline (voice → triage → booking → notifications → dashboard)
+- [ ] **LAUNCH-02**: Multi-language E2E validated through full pipeline (voice -> triage -> booking -> notifications -> dashboard)
 - [ ] **LAUNCH-03**: Slot-locking contention test proves exactly 1 booking from 20 simultaneous requests to the same slot
 - [ ] **LAUNCH-04**: 5-minute onboarding gate validated by a real non-technical SME user on staging
 - [ ] **LAUNCH-05**: Environment variable audit confirms no secrets in source and all production env vars are set
@@ -72,7 +105,7 @@
 
 ### Triage Intelligence
 
-- [x] **TRIAGE-01**: Layer 1 — Keyword/regex detection classifies job type and urgency from transcript (e.g., "flooding", "gas smell" → emergency)
+- [x] **TRIAGE-01**: Layer 1 — Keyword/regex detection classifies job type and urgency from transcript (e.g., "flooding", "gas smell" -> emergency)
 - [x] **TRIAGE-02**: Layer 2 — LLM-based urgency scoring using temporal cues ("happening right now" vs "next week") and caller stress indicators
 - [x] **TRIAGE-03**: Layer 3 — Owner-configured rule table maps service types to emergency/routine/high-ticket classification
 - [x] **TRIAGE-04**: Emergency calls routed to instant booking workflow; routine calls captured as leads for owner confirmation
@@ -93,11 +126,11 @@
 
 ### Lead CRM
 
-- [x] **CRM-01**: Lead pipeline with statuses: New → Booked → Completed → Paid
+- [x] **CRM-01**: Lead pipeline with statuses: New -> Booked -> Completed -> Paid
 - [x] **CRM-02**: Each lead card shows: caller ID, job type, address, urgency score, call recording, transcript, triage label
 - [x] **CRM-03**: Phone number used as unique ID — repeat caller updates existing lead instead of creating duplicate
 - [x] **CRM-04**: Dashboard with filterable list view of all leads and calls
-- [x] **CRM-05**: Owner can see total revenue funneled through AI (booked → completed → paid tracking)
+- [x] **CRM-05**: Owner can see total revenue funneled through AI (booked -> completed -> paid tracking)
 
 ### Notifications
 
@@ -118,7 +151,7 @@
 
 ### Analytics & Insights
 
-- **ANALYTICS-01**: Lead conversion funnel: calls answered → leads captured → booked → completed
+- **ANALYTICS-01**: Lead conversion funnel: calls answered -> leads captured -> booked -> completed
 - **ANALYTICS-02**: Revenue attribution dashboard showing ROI of AI receptionist
 
 ### Omnichannel
@@ -143,6 +176,12 @@
 | Real-time live transcription display | Post-call transcript within 30 seconds is sufficient |
 | AI upselling during calls | Destroys "book fast" value prop; upsell via post-booking SMS |
 | Outbound robocall campaigns | TCPA compliance minefield; different product entirely |
+| Emergency auto-escalation to owner phone | Defeats booking-first premise; high-priority SMS is sufficient |
+| Caller sentiment-based escalation | Angry callers need booking, not transfer; only explicit request triggers transfer |
+| Owner veto on emergency bookings | Re-creates escalation-first model; owner cancels from dashboard instead |
+| Multi-technician dispatch / skill routing | FSM-level complexity; ServiceTitan/Jobber territory |
+| Booking guardrails (daily caps, rate limits) | Deferred to v2.1; evaluate after booking volume data collected |
+| Repeated notification escalation cadence | Deferred to v2.1; add after base priority tiers validated |
 
 ## Traceability
 
@@ -205,10 +244,10 @@
 | WIZARD-05 | Phase 7 | Complete |
 | WIZARD-06 | Phase 7 | Complete |
 | WIZARD-07 | Phase 7 | Complete |
-| OUTLOOK-01 | Phase 8 | Pending |
-| OUTLOOK-02 | Phase 8 | Pending |
-| OUTLOOK-03 | Phase 8 | Pending |
-| OUTLOOK-04 | Phase 8 | Pending |
+| OUTLOOK-01 | Phase 8 | Complete |
+| OUTLOOK-02 | Phase 8 | Complete |
+| OUTLOOK-03 | Phase 8 | Complete |
+| OUTLOOK-04 | Phase 8 | Complete |
 | LAUNCH-01 | Phase 9 | Pending |
 | LAUNCH-02 | Phase 9 | Pending |
 | LAUNCH-03 | Phase 9 | Pending |
@@ -219,6 +258,22 @@
 | SETUP-03 | Phase 10 | Pending |
 | SETUP-04 | Phase 10 | Pending |
 | SETUP-05 | Phase 10 | Pending |
+| BOOK-01 | Phase 14 | Pending |
+| BOOK-02 | Phase 14 | Pending |
+| BOOK-03 | Phase 14 | Pending |
+| BOOK-04 | Phase 15 | Pending |
+| BOOK-05 | Phase 14 | Pending |
+| TRIAGE-R01 | Phase 15 | Pending |
+| TRIAGE-R02 | Phase 15 | Pending |
+| NOTIF-P01 | Phase 16 | Pending |
+| NOTIF-P02 | Phase 16 | Pending |
+| RECOVER-01 | Phase 17 | Pending |
+| RECOVER-02 | Phase 17 | Pending |
+| RECOVER-03 | Phase 17 | Pending |
+| HARDEN-01 | Phase 18 | Pending |
+| HARDEN-02 | Phase 18 | Pending |
+| HARDEN-03 | Phase 18 | Pending |
+| HARDEN-04 | Phase 18 | Pending |
 
 **v1.0 Coverage:**
 - v1.0 requirements: 38 total
@@ -230,6 +285,11 @@
 - Mapped to phases: 33
 - Unmapped: 0
 
+**v2.0 Coverage:**
+- v2.0 requirements: 16 total (BOOK-01-05, TRIAGE-R01-02, NOTIF-P01-02, RECOVER-01-03, HARDEN-01-04)
+- Mapped to phases: 16
+- Unmapped: 0
+
 ---
-*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-23 (Phase 10 SETUP requirements)*
-*Last updated: 2026-03-23 after Phase 10 planning*
+*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0)*
+*Last updated: 2026-03-24 — v2.0 roadmap mapped all 16 requirements to Phases 14-18*

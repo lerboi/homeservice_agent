@@ -1,189 +1,199 @@
 # Project Research Summary
 
-**Project:** HomeService AI Agent — v1.1 Site Completeness & Launch Readiness
-**Domain:** AI voice receptionist + booking SaaS for home service SMEs
-**Researched:** 2026-03-22
-**Confidence:** MEDIUM-HIGH
+**Project:** HomeService AI Agent -- v2.0 Booking-First Digital Dispatcher Pivot
+**Domain:** Voice AI receptionist for home service SMEs
+**Researched:** 2026-03-24
+**Confidence:** HIGH
 
 ## Executive Summary
 
-The v1.1 milestone is an additive layer on top of a working v1.0 platform. The core voice, triage, scheduling, and CRM infrastructure is already built and validated. What is missing is the public-facing site completeness required to convert marketing traffic into paying customers: a pricing page, a unified signup-to-test-call onboarding wizard, a contact page, an about page, Outlook Calendar sync, and a QA hardening pass. These features share a clear dependency graph — the pricing page CTAs point to the wizard, the wizard depends on existing onboarding APIs, and the hardening phase gates on everything else being functional end-to-end.
+The v2.0 milestone pivots the AI voice receptionist from an escalation-first triage model (where emergencies are transferred to the owner and routine calls become passive leads) to a booking-first dispatcher model (where every call ends with a confirmed appointment or a recovery SMS). This is a behavioral pivot, not an infrastructure rebuild. The existing stack -- Next.js 16, Supabase, Retell voice, Groq/Llama 4 Scout via custom WebSocket LLM server, Google Calendar sync, Twilio SMS, Resend email -- remains unchanged. The only new dependency is Zod (already planned for v1.1) for validating structured LLM outputs during exception detection. The pivot is 90% prompt rewrite and call-flow logic, 10% notification formatting and recovery SMS expansion.
 
-The recommended build sequence runs from least risky to most risky: update shared nav/footer once, build the three static public pages (pricing, about, contact), then unify the onboarding wizard by adding an auth step as step 0, and finally add Outlook Calendar sync as the most complex independent integration. The wizard change is the highest-risk work because it touches middleware, auth callback routing, and the onboarding_complete flag that must be backfilled for existing users before any new redirect logic deploys. The Outlook integration is the most complex technical feature because Microsoft Graph's consent model, webhook validation handshake, and 3-day subscription TTL all differ significantly from the Google Calendar pattern it mirrors.
+The recommended approach is to rewrite the agent prompt to make booking the default action for all calls, demote urgency classification from a routing decision to a notification priority tag, and restrict human transfer to exception-only states (AI confusion, explicit caller request). This aligns with industry leaders like Sameday (92% booking rate) and Dispatchly, but goes further by not escalating emergencies to the owner's phone -- instead booking them into the nearest available slot and sending high-priority notifications. This "exception-only escalation" model is genuinely novel in home service AI and is the product's core differentiator.
 
-The biggest launch risk is not technical — it is activation quality. The 5-minute onboarding gate (CTA click to live AI answering the owner's phone in under 5 minutes) is the product's core promise. If the unified wizard does not deliver this, the pricing page becomes a liability rather than an asset. All hardening QA should be organized around validating that gate with a real non-technical SME user, not just internal team members.
+The key risks are prompt regression (old escalation language surviving the rewrite and causing unpredictable AI behavior), notification fatigue (owners getting SMS for every booking instead of just emergencies), calendar flooding (no guardrails on autonomous booking volume), and loss of human oversight for genuine emergencies (removing proactive transfer without adequately hardening the notification path). All are preventable with the measures outlined in the pitfalls research, and all must be addressed within the build phases rather than deferred.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The existing stack (Next.js 15/React 19, Tailwind v4, shadcn/ui, Supabase, Retell, Framer Motion, next-intl, Twilio, Resend, googleapis) needs only targeted additions for v1.1. Three new npm packages cover the wizard and Outlook sync. Load and E2E testing require two tooling additions. No payment library, no new state manager, and no wizard framework library should be added.
+No new core technologies are needed. The booking-first pivot is implemented entirely through modifications to existing code: agent prompt, WebSocket server tool definitions, notification formatting, call processor logic, and recovery SMS cron.
 
-**Core technology additions:**
-- `react-hook-form ^7.71.2` + `zod ^4.3.6` + `@hookform/resolvers ^5.2.2`: wizard form state with per-step Zod validation — the standard trio; RHF v7 is React 19 compatible; Zod v4 must be paired with resolvers v5 (do not mix versions — silent parse failures result)
-- `@azure/msal-node ^5.1.1`: Microsoft OAuth2 server-side token exchange for Outlook — mirrors the role of `google-auth-library` in the existing Google Calendar flow; use v5 (Node 20+ required; v3 is maintenance-only for Node < 18)
-- `@microsoft/microsoft-graph-client ^3.0.7`: Graph API REST client for Outlook Calendar CRUD and delta sync — the TypeScript SDK (`@microsoft/msgraph-sdk`) is still pre-release (1.0.0-preview.99) and must not be used in production
-- `@playwright/test ^1.58.2`: browser-level E2E for i18n flows and wizard navigation — Jest handles unit tests; Playwright handles multi-locale browser scenarios Jest cannot
-- `k6 ^1.6.1` (system binary, not npm): concurrent slot-locking load test — imperative JS scripting handles "20 VUs targeting the same slot simultaneously" scenarios that Artillery's declarative model makes awkward
+**Core technologies (unchanged):**
+- **Next.js 16 / React 19 / Tailwind v4** -- existing frontend and API routes
+- **Supabase (Postgres)** -- data persistence, advisory lock booking, existing schema
+- **Retell voice + custom LLM WebSocket server (Groq / Llama 4 Scout)** -- voice AI backbone
+- **Twilio SMS + Resend email** -- notification delivery (formatting changes only)
+- **Google Calendar** -- bidirectional sync (more bookings = more pushes, already async)
 
-**What not to add:** Stripe or any payment library (pricing is display-only), Formik (slower than RHF for multi-step wizards), opinionated wizard libraries (`react-stepzilla`, `react-multistep` — conflict with App Router routing), Exchange Web Services (EWS deprecated by Microsoft effective October 2026).
+**New dependency:**
+- **Zod ^4.3.6** -- runtime validation of structured LLM outputs (exception state JSON). Already planned for v1.1 wizard forms. Zero marginal cost.
 
-See `.planning/research/STACK.md` for full version compatibility matrix.
+**Explicitly rejected:** BullMQ/Redis (unnecessary at single-tenant scale), LangChain (over-engineering for one prompt), Retell Conversation Flow (loses custom LLM control), separate booking intent classifier (adds latency, unnecessary when booking is the default).
+
+See `.planning/research/STACK.md` for full version compatibility matrix and detailed alternatives analysis.
 
 ### Expected Features
 
-The full feature dependency graph and prioritization matrix are in `.planning/research/FEATURES.md`. Summary:
+**Must have (table stakes):**
+- Universal booking default -- AI books every call, not just emergencies
+- Emergency-to-nearest-slot routing -- urgent callers get same-day slots
+- Caller SMS confirmation after booking -- proof of appointment
+- Human transfer on explicit request -- "talk to a person" always honored
+- Human transfer on AI confusion -- 2+ failed clarification attempts trigger escalation
+- Context preservation on transfer -- Retell warm transfer with whisper messages
+- Graceful fallback when no slots available -- recovery SMS with booking link
+- Urgency tag retained on booking record -- drives notification priority
 
-**Must have (table stakes — v1.1 ships these):**
-- Pricing page with 4 tiers (Starter $99 / Growth $249 / Scale $599 / Enterprise custom), monthly/annual display toggle, "Most Popular" badge on Growth tier, and ROI-framed hero copy — no Stripe, display-only
-- Pricing FAQ section (5-7 questions: cancellation, overages, trials, refunds) and tier feature comparison table below the fold
-- Unified signup + onboarding wizard — collapses `/auth/signin` + 3-step `/onboarding` into one flow; auth becomes step 0; live test call is the final step and the activation moment
-- Contact page with three segmented inquiry routes (sales, support, partnerships), explicit response SLA copy, and backend wired to Resend ops inbox before ship
-- About page with mission statement and founding story targeting trade owners — no placeholder text in production
-- Error monitoring (Sentry or Axiom) — non-negotiable for a telephony product where silent failures are invisible
-- Outlook Calendar sync (SCHED-03 deferred from v1.0)
-- Environment variable audit before demo-ready declaration
+**Should have (differentiators):**
+- Notification priority tiers driven by urgency -- emergency bookings get high-priority formatting; routine bookings get standard delivery
+- No-dead-end guarantee via universal recovery SMS -- every failed booking path triggers recovery within 60 seconds
+- Exception-only escalation model -- reduces owner interruptions by 70-80% vs competitors
+- Dashboard urgency badges with booking-first semantics -- visual parity, meaning shift
 
-**Should have (competitive differentiators):**
-- Live test call finale inside the wizard — the activation "aha moment" that correlates with retention
-- Routing question at wizard start that pre-populates trade-specific service list — setup feels instant
-- ROI framing on pricing page ("pays for itself on day 1") rather than feature-list copy
-- Calendly/Cal.com embed on contact page for demo self-booking
-- Multi-language E2E validation (manual test script through full pipeline: voice → triage → booking → notifications → dashboard)
-- Concurrency/load QA with contention-specific test targeting the same slot, not just throughput
+**Defer (v2.x/v3+):**
+- Repeated notification escalation cadence (v2.x -- add after base tiers validated)
+- Booking conversion analytics by urgency tier (v2.x)
+- Multi-technician dispatch / skill-based routing (v3+ -- FSM-level complexity)
+- Outbound follow-up automation (v3+)
+- Caller slot preference negotiation (v3+)
 
-**Defer to v2+:**
-- Free trial tier (requires metered infra, abuse prevention, billing integration)
-- Per-seat pricing model (requires pricing architecture restructure)
-- Functional annual billing toggle with Stripe
-- GDPR/cookie consent banner (when EU market is targeted)
-- Full team page with professional headshots
-- Pricing page A/B testing (meaningful only after ~5,000 monthly unique visitors)
+See `.planning/research/FEATURES.md` for full competitor analysis, anti-features list, and dependency graph.
 
 ### Architecture Approach
 
-The existing codebase uses URL-based step routing for onboarding (each step is a real App Router route, not in-page state) and middleware protects `/onboarding/*` and `/dashboard/*`. The v1.1 changes are predominantly additive: three new public page routes, one new API route (`/api/contact`), a new onboarding sub-route (`/onboarding/setup`), a DB migration for the `calendar_credentials.provider` column, and a set of Outlook API routes that mirror the Google Calendar pattern. The wizard unification requires the minimum-diff approach: add step 0 at `/onboarding`, move existing step 1 content to `/onboarding/setup`, update middleware PROTECTED_PATHS accordingly. A full wizard rewrite is explicitly an anti-pattern — it risks breaking the working 3-step flow with large scope increase.
+The pivot narrows code paths rather than widening them. All calls follow one booking flow; urgency only affects slot selection order and notification formatting. The triage pipeline is untouched -- it remains a pure classifier whose output is consumed differently. Two additive database columns (`booking_outcome` and `exception_reason` on the `calls` table) are the only schema changes. No new tables, no new services, no new deploy targets.
 
-See `.planning/research/ARCHITECTURE.md` for the full file-change map (18 new files, 11 modified files).
+**Major components modified:**
+1. **Agent Prompt (`agent-prompt.js`)** -- full rewrite to booking-first behavior; single flow, no triage fork
+2. **WebSocket LLM Server (`retell-llm-ws.js`)** -- tool description updates, optional `flag_exception` tool, Zod validation
+3. **Notification System (`notifications.js`)** -- priority-based formatting, escalation contacts for emergencies
+4. **Call Processor (`call-processor.js`)** -- remove `isRoutineUnbooked` guard, add `booking_outcome` tracking
+5. **Recovery SMS Cron (`send-recovery-sms/route.js`)** -- urgency-aware content, universal trigger
+6. **Webhook Handler (`retell/route.js`)** -- increase slot count to 10 across 5 days, `flag_exception` handler
 
-**Major components and responsibilities:**
-1. **LandingNav + LandingFooter (modified)** — shared across all public pages; updated once with Pricing/About/Contact links and mobile menu; never copied per page
-2. **PricingSection + `src/lib/pricing-config.js`** — renders tier cards from static config; no API calls at build time or runtime; reusable on landing page
-3. **ContactForm + `/api/contact` route** — RHF + Zod form with inquiry type selector; POST to Resend via existing `notifications.js` pattern; no DB table needed for v1.1
-4. **Unified Wizard Step 0 (`/onboarding/page.js` replaced)** — public auth step (Supabase signUp or Google OAuth); subsequent steps `/onboarding/setup`, `/services`, `/verify` remain middleware-protected
-5. **`/api/onboarding/complete` route (new)** — sets `tenants.onboarding_complete = true`; this field exists in the schema (migration 001) but is currently never written; required for already-onboarded detection
-6. **`src/lib/scheduling/outlook-calendar.js` (new)** — MSAL client via `createMSALClient()`, Graph API event CRUD, delta sync with `@odata.deltaLink`, subscription management
-7. **Outlook webhook handler (`/api/webhooks/outlook-calendar`)** — must respond to Microsoft's validation token handshake (`text/plain` body, immediate response) before processing sync events; this pattern does not exist in the Google handler
-8. **CalendarSyncCard (modified)** — independent Outlook connect/disconnect panel alongside the existing Google panel; `/api/calendar-sync/status` extended to return both providers
-9. **Migration 005** — adds `provider` column to `calendar_credentials` with default `'google'` and a unique index on `(tenant_id, provider)`, enabling both Google and Outlook credentials per tenant
+**Explicitly unchanged:** Triage pipeline (all 3 layers), slot calculator, atomic booking function, Google Calendar sync, lead creation system.
+
+See `.planning/research/ARCHITECTURE.md` for component-by-component integration plan, data flow diagrams, and schema impact assessment.
 
 ### Critical Pitfalls
 
-1. **Breaking existing users when unifying auth+onboarding (Pitfall 8)** — The middleware redirect `if (!onboarding_complete) → /onboarding/setup` will trap existing users who have a `tenants` row but no `onboarding_complete` flag (the field was never written by current code). Mitigation: backfill `onboarding_complete = true` for all tenants with `business_name IS NOT NULL` as the very first migration step, before any frontend flow changes deploy to production. Verify existing tenant count post-backfill. Test explicitly: log in as an existing user, confirm redirect goes to `/dashboard`, not `/onboarding/setup`.
+1. **Prompt regression** -- old escalation language surviving the rewrite causes the AI to still transfer emergencies instead of booking them. Avoid by deleting the entire `TRIAGE-AWARE BEHAVIOR` section, adding explicit negative instructions ("Never transfer unless..."), and writing prompt snapshot tests.
 
-2. **Outlook webhook validation token deadlock (Pitfall 9)** — Microsoft sends a `?validationToken=...` POST to the webhook URL immediately upon subscription creation. The handler must respond with the token as a `Content-Type: text/plain` body within seconds. Processing a full sync before responding causes a timeout and silent subscription creation failure. Mitigation: check for `validationToken` query param at the top of the handler, respond immediately, then fire-and-forget sync.
+2. **Over-booking / ghost appointments** -- AI books callers who just want a price quote or information. Avoid by adding intent detection in the prompt before the booking flow ("First determine if the caller needs a service appointment") and requiring verbal confirmation before booking.
 
-3. **Wizard step state lost on refresh or email verification app-switch (Pitfall 11)** — The wizard uses URL-based routing which preserves context on refresh. The key risk is the email verification step: the user must leave the browser, click a link in their email, return, and resume. The `/auth/callback` route must carry `?next=/onboarding/setup` so the user lands at the correct step post-verification. Persist form data to `sessionStorage` on each step's `onBlur` as a safety net against accidental refresh.
+3. **Notification fatigue** -- every booking triggers an SMS, owner mutes notifications, misses the real emergency at 2 AM. Avoid by implementing priority tiers: emergency = immediate SMS/email, routine = standard or digest mode.
 
-4. **Pricing page lists features instead of selling outcomes (Pitfall 10)** — Feature comparison matrices fail with SME buyers who think in jobs and revenue. Each tier must lead with a customer persona and concrete outcome ("Solo plumber answering 20-50 calls/month — never miss a lead while on a job"). Feature comparison table belongs below the fold, not as primary content. The Growth tier at $249 must be visually prominent with the "Most Popular" badge — missing this costs 22% conversion according to 2025 UX research.
+4. **Calendar flooding** -- no guardrails on autonomous booking volume; spam callers or busy days fill the calendar beyond what is physically serviceable. Avoid by adding max-bookings-per-day limits, per-phone-number rate limiting, and enforcing travel buffers as hard constraints.
 
-5. **5-minute onboarding gate validated only by developers (Pitfall 14)** — Developers completing the wizard in 3 minutes proves nothing about real SME users. The gate must be validated with one actual home service business owner on staging, with timing starting from the public landing page CTA click. Common blockers for non-technical users: phone number format ambiguity ("+1 555..." vs "555..."), unclear distinction between "business phone" (where AI answers) and "notification phone" (where alerts go), email verification requiring app-switching mid-wizard.
+5. **Loss of emergency oversight** -- removing proactive transfer without hardening the notification path means a gas leak gets a booking and an SMS that the owner might not see for 30 minutes. Avoid by implementing escalation contact chains, delivery confirmation polling, and acknowledgment flows for emergency notifications.
 
-6. **Outlook admin consent blocking SMB users (Pitfall 9 extension)** — Many home service businesses use Microsoft 365 Business plans where an IT admin controls app consent. Register the Azure AD app with only delegated `Calendars.ReadWrite` and `offline_access` scopes — avoid application-level or Shared permissions which always require admin consent. Surface a "Your organization may require admin approval" error state with a mailto link for the admin consent URL.
-
-7. **Contention test mistaken for load test (Pitfall 12)** — A load test that distributes 50 concurrent users across different slots tests throughput, not slot-locking correctness. The contention test must deliberately fire 20 simultaneous requests at the exact same slot within a 100ms window and assert exactly 1 returns 201 and the rest return 409. This test must run in CI, not just locally during QA.
+See `.planning/research/PITFALLS.md` for all 10 pitfalls with codebase line references, warning signs, recovery strategies, and phase-to-pitfall mapping.
 
 ## Implications for Roadmap
 
-Based on the dependency graph and risk profile from combined research, four phases cover all v1.1 work:
+Based on research, the pivot decomposes into 6 build phases plus a hardening phase. The ordering is driven by dependency chains discovered in the architecture research and risk levels from the pitfalls research.
 
-### Phase 1: Public Marketing Pages
-**Rationale:** The three static public pages have zero integration risk, deliver immediate demo value, and share LandingNav/LandingFooter — updating those components once unlocks all three pages. This is the fastest path to something showable and the lowest-risk work in the milestone.
-**Delivers:** `/pricing`, `/about`, `/contact` pages; LandingNav updated with mobile menu and new links; LandingFooter updated with multi-column layout; contact form wired to Resend ops inbox; spam protection (honeypot or reCAPTCHA v3) added at build time
-**Addresses:** Pricing page (4 tiers, monthly/annual toggle, FAQ, comparison table, ROI hero copy, Most Popular badge); about page (mission + founding story, real beta count); contact page (segmented inquiry routes, response SLA, Calendly embed)
-**Avoids:** Pitfall 10 (tier cards lead with persona + outcome, not feature lists); Pitfall 15 (contact form backend wired before ship; real content in about page; both pages with title + meta description)
-**Stack:** Existing Tailwind/shadcn/Framer Motion; react-hook-form + zod for contact form; Resend (already installed); `src/lib/pricing-config.js` static config file
-**Research flag:** No deeper phase research needed — well-documented SaaS patterns; architecture file provides precise component and file plan
+### Phase 1: Agent Prompt Rewrite + Test Foundation
+**Rationale:** Everything depends on the AI actually booking first. The prompt is the keystone -- every other phase assumes the AI's behavior has changed. Tests must be written before the prompt changes (test-driven pivot) to prevent regression.
+**Delivers:** Booking-first agent behavior; exception-only transfer; intent detection for non-booking callers; prompt snapshot tests; new test assertions replacing old escalation tests.
+**Addresses:** Universal booking default, emergency-to-nearest-slot, human transfer on explicit request, human transfer on AI confusion, over-booking prevention (intent detection).
+**Avoids:** Pitfall 1 (prompt regression), Pitfall 3 (over-booking), Pitfall 8 (test suite regression).
 
-### Phase 2: Unified Signup + Onboarding Wizard
-**Rationale:** This is the highest-risk feature change — it touches middleware, auth callbacks, onboarding redirect logic, and requires a backfill migration for existing users. It must be E2E validated before pricing page CTAs go live. Building it second, after static pages are stable, keeps the risk isolated and allows Phase 1 to ship independently.
-**Delivers:** Single CTA-to-live-AI-receptionist wizard with auth as step 0; routing question pre-populates trade-specific services; 4-step progress indicator; email verification handled inline; live test call as finale; `tenants.onboarding_complete` properly set on wizard completion
-**Addresses:** Unified signup + onboarding wizard (P1); routing question at start; progress indicator; email verification inline; live test call finale (5-minute activation gate)
-**Avoids:** Pitfall 8 (backfill migration runs as the very first step before any frontend changes deploy); Pitfall 11 (URL-based step state, sessionStorage on blur, auth callback carries next param); Pitfall 14 (gate validated by real SME user, not developer, timing from landing page CTA)
-**Stack:** react-hook-form + zod for step forms; `useSearchParams` for URL-step navigation; Supabase browser client for step 0 auth; new `/api/onboarding/complete` route; middleware PROTECTED_PATHS updated
-**Research flag:** Medium risk but well-mapped — architecture file provides exact file-by-file change plan based on direct codebase inspection; no new external service; no phase research needed
+### Phase 2: WebSocket Server + Webhook Updates
+**Rationale:** Tool definitions must be coherent with the new prompt. The webhook handler needs to supply more slots (10 across 5 days) and handle the new `flag_exception` tool.
+**Delivers:** Updated tool descriptions restricting `transfer_call` to exceptions; `flag_exception` tool for AI confusion signaling; `reason` parameter on transfers; increased slot provisioning; Zod validation for structured LLM outputs.
+**Uses:** Zod (from STACK.md) for exception state validation.
+**Avoids:** Pitfall 10 (stale slot data -- more slots reduces staleness risk).
 
-### Phase 3: Outlook Calendar Sync
-**Rationale:** Outlook sync is fully independent of the wizard and public pages — it cannot block demo-readiness and its complexity warrants focused isolation. The MSAL setup, DB migration, webhook subscription model, and delta query pattern are all new territory meaningfully different from Google Calendar.
-**Delivers:** Outlook OAuth connect/disconnect in CalendarSyncCard settings; bidirectional calendar event sync via Graph delta query with `@odata.deltaLink`; webhook-driven incremental sync with validation token handshake; daily subscription renewal cron (3-day Graph TTL vs Google's 7-day); migration 005 adding `provider` column and per-tenant-provider unique index
-**Addresses:** Outlook Calendar sync (SCHED-03 deferred from v1.0); dual-provider CalendarSyncCard; admin consent UX
-**Avoids:** Pitfall 9 (validation token handshake implemented; delegated-only scopes registered; admin consent error state surfaced with mailto link; delta token persisted in DB not memory; webhook renewal as daily cron; tested with enterprise Office 365 account not just personal Outlook)
-**Stack:** `@azure/msal-node ^5.1.1`; `@microsoft/microsoft-graph-client ^3.0.7`; migration 005; `createMSALClient()` pattern mirroring `createOAuth2Client()` in existing Google module
-**Research flag:** HIGH — needs a focused phase research pass before writing implementation tasks; Microsoft Graph subscription model, admin consent vs delegated permission flows, delta query token lifecycle, and validation token handshake semantics have enough nuance to justify pre-task research
+### Phase 3: Notification Priority System
+**Rationale:** Can be parallelized with Phase 2 since it depends on data that already flows correctly (urgency tags on leads). Must ship before or with the prompt rewrite going live -- owners need to see emergency bookings surface with urgency to trust the new model.
+**Delivers:** Priority-tiered SMS/email formatting; escalation contacts wired in for emergencies; emergency acknowledgment flow.
+**Addresses:** Notification priority tiers (differentiator), emergency oversight.
+**Avoids:** Pitfall 4 (notification fatigue), Pitfall 7 (loss of emergency oversight).
 
-### Phase 4: Hardening & Launch QA
-**Rationale:** QA gates on all prior phases being complete. The hardening pass is not optional decoration — it is the difference between a product that looks done and one that is safe to hand to real customers.
-**Delivers:** Error monitoring (Sentry) with unhandled exception and API failure capture; environment variable audit; multi-language E2E validation (Spanish minimum, full pipeline chain: voice → triage → booking → SMS/email → dashboard display, not just voice layer); slot-locking contention test in CI (20 simultaneous requests to same slot, assert exactly 1 succeeds); 5-minute onboarding gate validated by real SME user on staging
-**Addresses:** Error monitoring (non-negotiable for telephony); multi-language E2E (manual test script); concurrency/load QA; env var audit; 5-minute activation gate
-**Avoids:** Pitfall 12 (contention test separate from throughput test; contention test in CI); Pitfall 13 (multi-language chain test covers all layers, not just Retell voice; UTF-8 preservation verified in SMS/email/dashboard); Pitfall 14 (5-minute gate tested by real SME owner, timer starts at landing page CTA)
-**Stack:** `@playwright/test ^1.58.2` with `test.use({ locale, timezoneId })` for i18n E2E; k6 CLI for slot-locking contention test; Sentry SDK
-**Research flag:** No phase research needed — Playwright, k6, and Sentry are mature tools with comprehensive documentation; execution is the bottleneck, not knowledge gaps
+### Phase 4: Call Processor + Schema Migration
+**Rationale:** Depends on notification system (Phase 3) for full effect. Removes the `isRoutineUnbooked` guard that is a live bug under the new model. Adds `booking_outcome` tracking for analytics and smarter recovery.
+**Delivers:** `booking_outcome` and `exception_reason` columns on calls table; suggested slots calculated for ALL unbooked calls; booking outcome tracking (booked / attempted / not_attempted).
+**Implements:** Schema migration (`007_booking_first.sql`), call processor updates.
+**Avoids:** Pitfall 2 (triage logic leaking into booking decisions).
+
+### Phase 5: Recovery SMS Enhancement + Booking Guardrails
+**Rationale:** Recovery SMS is the universal safety net. Must be hardened before the booking-first flow goes live. Booking guardrails (max daily bookings, per-number rate limits) prevent calendar flooding.
+**Delivers:** Urgency-aware recovery SMS content; delivery confirmation (not just API success); retry mechanism; max-bookings-per-day limit; per-phone-number rate limiting.
+**Addresses:** No-dead-end guarantee (differentiator), calendar flooding prevention.
+**Avoids:** Pitfall 5 (calendar flooding), Pitfall 6 (silent fallback chain failures).
+
+### Phase 6: Dashboard Updates
+**Rationale:** All backend changes must be deployed first. Dashboard is read-only over the new data model.
+**Delivers:** Updated badge labels (urgency to booking priority semantics); booking rate metric in analytics; booking outcome indicator on lead cards.
+**Addresses:** Dashboard visual parity (table stakes).
+**Avoids:** Pitfall 9 (stale urgency semantics confusing owners).
+
+### Phase 7: Hardening and QA
+**Rationale:** End-to-end validation across all call scenarios. The booking-first model has a narrower code path but higher stakes per call (every call is a booking attempt). Must validate concurrency, multi-language, edge cases.
+**Delivers:** E2E test coverage across full test matrix: emergency booking, routine booking, caller declines, exception transfer, concurrent bookings, non-English caller, no-slots-available, slot-taken recovery.
+**Addresses:** Multi-language E2E validation (differentiator), concurrency QA, onboarding gate revalidation.
 
 ### Phase Ordering Rationale
 
-- Phase 1 before Phase 2 because static pages are lower risk and produce demo-able output quickly; however, pricing page CTAs must not go live to real traffic until Phase 2 (wizard) is functional
-- Phase 2 before Phase 3 because the wizard is on the critical path for the 5-minute activation promise; Outlook sync is independent and must not delay that promise
-- Phase 3 before Phase 4 because hardening validates everything including the dual-provider calendar flow; starting Phase 4 before Outlook is functional leaves calendar QA incomplete
-- Backfill migration for `onboarding_complete` on existing tenants is a hard ordering constraint: it must deploy before any Phase 2 redirect logic reaches production
+- **Phase 1 first** because the prompt is the behavioral foundation. Architecture research confirms "Agent prompt rewrite is the keystone: everything flows from the behavioral change."
+- **Phases 2 and 3 can overlap** because they have no mutual dependencies. WebSocket/webhook changes and notification formatting are independent subsystems.
+- **Phase 4 after Phase 3** because the call processor's notification calls benefit from priority formatting already being in place.
+- **Phase 5 before go-live** because recovery SMS is the last safety net. Pitfalls research flags silent fallback failures as HIGH recovery cost.
+- **Phase 6 last among build phases** because the dashboard reads from data produced by all prior phases.
+- **Phase 7 is a gate, not optional.** The pitfalls research identifies 10 specific "looks done but isn't" items that must be verified end-to-end.
 
 ### Research Flags
 
-**Needs deeper research before task breakdown:**
-- **Phase 3 (Outlook Calendar Sync):** Microsoft Graph subscription lifecycle, admin consent vs delegated permission flows, delta query token management, and the validation token handshake are meaningfully different from Google's patterns. A focused research pass before writing Phase 3 implementation tasks will prevent mid-phase surprises.
+Phases likely needing deeper research during planning:
+- **Phase 1 (Agent Prompt Rewrite):** Prompt engineering for booking-first voice agents needs careful scenario testing. The exact wording of intent detection, exception triggers, and negative instructions will require iteration. Consider `/gsd:research-phase` for prompt patterns.
+- **Phase 3 (Notification Priority System):** Escalation contact chains and emergency acknowledgment flows are net-new features. The `escalation_contacts` table exists but is currently unused -- wiring it in needs API and delivery confirmation design.
+- **Phase 5 (Booking Guardrails):** Max-bookings-per-day and per-number rate limiting are not in the current codebase. Need to decide where constraints live (application layer vs. database function) and how to expose configuration.
 
-**Standard patterns, skip research-phase:**
-- **Phase 1 (Public Marketing Pages):** SaaS pricing page and static content patterns are well-documented; architecture file provides precise component plan; no unknowns.
-- **Phase 2 (Unified Wizard):** Architecture file provides exact file-by-file change plan based on direct codebase inspection; no new external service or unknown API.
-- **Phase 4 (Hardening):** Playwright, k6, and Sentry are mature with comprehensive docs; patterns are well-established.
+Phases with standard patterns (skip research-phase):
+- **Phase 2 (WebSocket + Webhook):** Well-documented Retell protocol. Tool definition changes are JSON schema updates. Zod validation is straightforward.
+- **Phase 4 (Call Processor + Migration):** Standard Supabase migration + conditional logic removal. No unknowns.
+- **Phase 6 (Dashboard):** Read-only UI changes over existing data. Standard React component updates.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM-HIGH | Core additions verified via npm search results and official docs; version numbers from search snippets (npm pages not directly fetched); MSAL and Graph client versions confirmed against official Microsoft docs; Zod v4 release confirmed against multiple sources |
-| Features | HIGH | Multiple live web sources (Userpilot, UserGuiding, DesignRevision, SaaSUI) with consistent recommendations; feature priorities align across sources; competitor analysis grounded in live product observation (Goodcall, Smith.ai, Ruby) |
-| Architecture | HIGH | Based on direct codebase inspection — file structure, middleware, DB schema, and existing API routes all read directly; no speculation; file-by-file change plan is concrete and tested against actual file contents |
-| Pitfalls | MEDIUM-HIGH | v1.0 pitfalls from training knowledge (MEDIUM); v1.1 pitfalls from live web search + codebase inspection (HIGH); Microsoft Graph subscription nuances confirmed against official Microsoft docs |
+| Stack | HIGH | No new infrastructure. Only dependency (Zod) is already validated. Sources include official Retell docs, npm packages, and direct codebase audit. |
+| Features | HIGH | Table stakes validated against 5 named competitors (Sameday, Dispatchly, Avoca, Jobber, Newo). Differentiators are clearly articulated. Anti-features are well-reasoned. |
+| Architecture | HIGH | Based on direct codebase audit of every affected file. Component boundaries are clean. Schema changes are minimal and additive. Build order is dependency-driven. |
+| Pitfalls | HIGH | 10 specific pitfalls identified with codebase line-number references. Prevention strategies are concrete and phase-mapped. Recovery costs are honestly assessed. |
 
-**Overall confidence:** MEDIUM-HIGH — sufficient to begin phase planning immediately. Only Phase 3 (Outlook sync) warrants a pre-task research pass.
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Outlook admin consent exact error shape:** Research confirms the risk and mitigation but the exact OAuth error response from Microsoft's token endpoint when admin consent is required should be verified against a live Azure AD response during Phase 3 research. The UX error state is designed; the trigger condition needs confirmation with a real Microsoft 365 Business account in a test tenant.
-- **`onboarding_complete` backfill safety:** The backfill `UPDATE tenants SET onboarding_complete = true WHERE business_name IS NOT NULL` is the recommended approach. Before running it in production, confirm the actual count of tenants with partial onboarding data (account created but `business_name` not set) to ensure no tenant is incorrectly marked complete.
-- **k6 availability in CI environment:** k6 is a system binary, not an npm package. Confirm whether the CI environment (GitHub Actions or equivalent) supports k6 binary installation before Phase 4 task scoping. If not, contention tests may need to run in a Docker-based CI step or locally as a required pre-merge gate.
-- **Calendly vs Cal.com embed:** Research recommends Cal.com for its self-hostable zero-dependency nature, but the contact page design should confirm which embed approach fits the existing page width and layout before either is committed to Phase 1 tasks.
+- **Emergency notification delivery guarantee:** The escalation contact chain and acknowledgment flow are designed but not prototyped. Twilio delivery status polling adds complexity -- validate that polling latency is acceptable for a 2-minute acknowledgment window during Phase 3 planning.
+- **Booking guardrail configuration UX:** Max-bookings-per-day and rate limits need an owner-facing settings interface. This was not deeply explored in any research file. Consider adding to Phase 6 (dashboard) or as a fast-follow.
+- **Intent detection effectiveness:** The prompt-based approach to distinguishing booking callers from information seekers is untested. If the LLM consistently fails at this, a lightweight intent classifier may be needed. Monitor during Phase 7 QA.
+- **TCPA compliance for recovery SMS:** The pitfalls research flags that recovery SMS to numbers without explicit opt-in may violate TCPA. Legal review needed before go-live. Not a technical gap but a compliance gate.
+- **Refresh-slots mid-call tool:** The pitfalls research recommends a `refresh_slots` tool for mid-call slot refreshing when all pre-calculated slots are stale. This is not in the architecture's build plan. Should be evaluated during Phase 2 planning -- may be unnecessary if 10 pre-calculated slots across 5 days provides sufficient buffer.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Direct codebase inspection (`src/app/`, `src/middleware.js`, `src/lib/scheduling/google-calendar.js`, `package.json`, `supabase/migrations/`) — architecture facts, existing integration patterns, current file structure
-- [Microsoft Graph delta query for calendar events](https://learn.microsoft.com/en-us/graph/delta-query-events) — official Microsoft docs
-- [Zod v4 release notes and dual-package export](https://zod.dev/v4) — version compatibility confirmed across multiple sources
+- [Retell AI LLM WebSocket docs](https://docs.retellai.com/api-references/llm-websocket) -- transfer_number field, end_call behavior, tool invocation protocol
+- [Retell AI Function Calling docs](https://docs.retellai.com/integrate-llm/integrate-function-calling) -- tool definition schema, call function invocation
+- [Zod v4.3.6](https://zod.dev/v4) -- runtime validation API, safeParse behavior
+- Direct codebase audit -- all files in `src/lib/`, `src/server/`, `src/app/api/`, `src/components/dashboard/`, `tests/`, `supabase/migrations/`
 
 ### Secondary (MEDIUM confidence)
-- npm search results (2026-03-22): react-hook-form 7.71.2, @hookform/resolvers 5.2.2, zod 4.3.6, @azure/msal-node 5.1.1, @playwright/test 1.58.2 — version numbers from search snippets, npm pages not directly fetched
-- [SaaS Pricing Page Best Practices 2026 — InfluenceFlow](https://influenceflow.io/resources/saas-pricing-page-best-practices-complete-guide-for-2026/)
-- [SaaS Pricing Page Best Practices — PipelineRoad](https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices)
-- [SaaS Onboarding Flows That Actually Convert in 2026 — SaaSUI](https://www.saasui.design/blog/saas-onboarding-flows-that-actually-convert-2026)
-- [What is an Onboarding Wizard — UserGuiding](https://userguiding.com/blog/what-is-an-onboarding-wizard-with-examples)
-- [Microsoft Graph webhook + delta query pattern — Voitanos](https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/)
-- [EWS deprecation October 2026](https://www.mckennaconsultants.com/ews-to-microsoft-graph-the-api-migration-every-outlook-add-in-developer-must-complete-by-october-2026/)
-- [k6 v1.6.1 February 2026](https://k6.io/)
+- [Sameday AI](https://www.gosameday.com/) -- booking-first patterns, 92% booking rate benchmark
+- [Dispatchly AI](https://www.dispatchlyai.com/) -- competitor feature set, escalation model
+- [Avoca AI](https://www.avoca.ai/) -- ServiceTitan integration patterns, AI workforce positioning
+- [Jobber AI Receptionist](https://www.getjobber.com/features/ai-receptionist/) -- keyword-based transfer, message-taking fallback
+- [Retell AI blog posts](https://www.retellai.com/blog/) -- warm transfer, prompt patterns, troubleshooting
+- [Leaping AI guides](https://leapingai.com/blog/) -- voice AI for home services, dispatch automation patterns
 
-### Tertiary (MEDIUM-LOW confidence)
-- [@microsoft/msgraph-sdk pre-release status](https://www.npmjs.com/package/@microsoft/msgraph-sdk) — 1.0.0-preview.99 as of ~Jan 2026; verified but snapshot in time; recheck before Phase 3 begins in case GA has shipped
+### Tertiary (LOW confidence)
+- Competitor implementation details (Sameday 92% rate, Dispatchly escalation model) -- marketing claims, not verified independently
 
 ---
-*Research completed: 2026-03-22*
+*Research completed: 2026-03-24*
 *Ready for roadmap: yes*

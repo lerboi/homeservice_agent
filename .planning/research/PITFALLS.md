@@ -1,581 +1,372 @@
 # Pitfalls Research
 
-**Domain:** AI voice receptionist + home service booking platform (SaaS)
-**Researched:** 2026-03-22 (updated — v1.1 milestone pitfalls appended)
-**Confidence:** MEDIUM-HIGH (v1.0 pitfalls: MEDIUM from training knowledge; v1.1 pitfalls: MEDIUM-HIGH from live web search + codebase inspection)
-
----
+**Domain:** Voice AI system pivot from escalation-first to booking-first digital dispatcher
+**Researched:** 2026-03-24
+**Confidence:** HIGH (derived from direct codebase analysis + domain knowledge of LLM-driven voice systems)
 
 ## Critical Pitfalls
 
-### Pitfall 1: Treating Latency as a Voice Quality Problem, Not a System Architecture Problem
+### Pitfall 1: Prompt Regression -- AI Still Tries to Escalate Instead of Book
 
 **What goes wrong:**
-Teams focus on picking the best TTS voice and lowest-latency STT model, but the real latency killer is the round-trip time of function calls (tool calls) during the conversation. When the AI needs to check calendar availability or look up a time slot mid-conversation, the user experiences a 2-4 second silence — which feels like the call dropped. Callers hang up or assume the system is broken.
+The current `agent-prompt.js` contains explicit triage-aware behavior that tells the AI to "respond with urgency" for emergencies and "take a relaxed approach" for routine calls. The booking flow section (lines 78-79) instructs: "For ROUTINE calls: Use relaxed tone. Offer booking but don't pressure -- create lead if they decline." This language teaches the AI that routine = optional booking. After the pivot, if these remnants remain, the AI will still create leads instead of booking for routine calls, and may still try to transfer emergency callers ("let me get someone to you right away" in the TRIAGE-AWARE BEHAVIOR section) instead of booking them into the nearest slot.
 
 **Why it happens:**
-Vapi and Retell both use function/tool calls to invoke external APIs during conversations. Developers build these as synchronous blocking calls to their own backend, which then calls Google Calendar or a database. Each hop adds latency: voice platform → your server → calendar API → your server → voice platform → TTS render. Even at 300ms per hop, four hops = 1.2 seconds of dead air. If calendar API is slow (Google Calendar can spike to 1-2s under load), total dead air hits 3-4 seconds.
+The system prompt is a single monolithic function (`buildSystemPrompt`) that mixes triage behavior with booking flow. Developers update the booking flow section but forget to remove or rewrite the triage behavior section. The LLM receives contradictory instructions: "book everyone" in one section vs. "respond with urgency and escalate" in another. LLMs resolve contradictions unpredictably -- sometimes they book, sometimes they escalate, depending on the conversation context.
 
 **How to avoid:**
-- Pre-load availability windows into a fast in-memory cache (Redis) at the start of each call
-- Use a slot reservation table in your own database — never query Google Calendar live during a call
-- Calendar sync runs async on a background job (poll every 60-120 seconds, or via webhook push)
-- Keep all function call responses under 800ms by measuring p95 latency in staging with realistic data
-- Use Vapi's `background_denoising` and filler audio (brief "let me check that for you") to mask unavoidable pauses
+1. Delete the entire `TRIAGE-AWARE BEHAVIOR` section from the prompt. Urgency detection should still happen (via `classifyCall`) but it must not appear in the voice prompt as behavioral routing.
+2. Rewrite the `BOOKING FLOW` section to remove the emergency/routine fork. Replace with a single flow: "Always book. For emergencies, book the earliest available slot. For routine, book the next convenient slot."
+3. Remove the "create lead if they decline" instruction for routine callers. Replace with: "If the caller declines booking, confirm you'll send a link to book online" (recovery SMS path).
+4. Explicitly add a negative instruction: "Never offer to transfer the call unless the caller explicitly asks to speak with a human or you cannot understand their request."
+5. Write prompt regression tests that assert the absence of escalation-routing language and the presence of booking-first language.
 
 **Warning signs:**
-- Function call round-trip exceeds 800ms in load testing
-- Average call duration is short (callers hanging up mid-booking flow)
-- "Silence felt weird" feedback in early user tests
-- Calendar availability queries hitting Google Calendar API directly from the function call handler
+- Test calls where the AI says "let me get someone to you right away" instead of offering slots
+- Routine callers being told "I'll save your information" instead of being offered appointment times
+- `transfer_call` function invocation rate not dropping after the prompt rewrite
+- Lead creation rate staying the same (should drop as bookings increase)
 
-**Phase to address:** Voice Infrastructure phase (earliest possible — establishes the async availability pattern before any booking logic is built on top of it)
+**Phase to address:**
+Phase 1 (Agent Prompt Rewrite) -- this is the foundation. Every other phase depends on the AI actually booking first.
 
 ---
 
-### Pitfall 2: Non-Atomic Slot Locking Creates Double-Bookings
+### Pitfall 2: Triage Logic Leaking Into Booking Decisions
 
 **What goes wrong:**
-Two calls arrive within seconds of each other. Both query available slots, both see 2pm Tuesday as open, both proceed to book it. The owner gets two jobs at the same time, one customer gets a no-show, and trust in the platform collapses. For home service owners, a double-booking isn't just an inconvenience — it's a broken promise to a customer who may have taken time off work to be home.
+The `classifyCall` pipeline (layer1-keywords -> layer2-llm -> layer3-rules) runs in `processCallAnalyzed` (call-processor.js, line 143-150) and stores `urgency_classification` on the call record. Currently, this urgency value flows into: (a) the `atomicBookSlot` call as the `urgency` parameter, (b) the `createOrMergeLead` call via `triageResult`, and (c) notification formatting. The risk is that developers wire urgency into booking-path decisions -- e.g., "if emergency, book immediately; if routine, create lead" -- recreating the old escalation model inside the new booking flow. The current `call-processor.js` already does this: line 172 has `const isRoutineUnbooked = triageResult.urgency === 'routine' && !appointmentExists;` which triggers `suggested_slots` calculation only for routine unbooked calls. This logic assumes routine calls won't be booked, which is the old model.
 
 **Why it happens:**
-The naive implementation reads available slots, picks the best one, then writes the booking as two separate operations. Between read and write, another concurrent booking can sneak in. This is a classic TOCTOU (time-of-check to time-of-use) race condition. It's especially likely at peak times (morning rush, after a weather event when emergency calls spike).
+The three-layer triage system is deeply embedded. It runs post-call, stores results on call records, and feeds into lead creation. Developers naturally branch on urgency because the data is right there. The mental model "emergency = special handling" is sticky -- even when the spec says urgency is just notification priority.
 
 **How to avoid:**
-- Implement optimistic locking with a slot reservation table: `SELECT ... FOR UPDATE` or equivalent atomic compare-and-swap
-- Use a two-phase commit pattern: (1) soft-reserve the slot with a short TTL (e.g., 90 seconds) at the start of the booking conversation, (2) hard-confirm on booking completion, (3) release reservation if call ends without confirmation
-- Never use application-level "check then write" — the lock must be at the database layer
-- For PostgreSQL: use `SELECT ... FOR UPDATE SKIP LOCKED` to safely claim a slot in a concurrent environment
-- Write an explicit concurrency test that fires 10 simultaneous booking attempts at a single slot and asserts exactly 1 succeeds
+1. Create a clear architectural boundary: triage output feeds ONLY into `sendOwnerNotifications` (formatting and delivery priority). It must not affect booking path, lead status, or slot selection.
+2. Remove the `isRoutineUnbooked` conditional in `call-processor.js`. After the pivot, ALL unbooked calls (regardless of urgency) should get suggested_slots and recovery SMS.
+3. Keep the `urgency` field on appointments for display purposes, but add a code comment: "Urgency is informational only -- it does not affect slot selection or booking eligibility."
+4. Add a lint rule or code review checklist item: "Does this code branch on urgency for anything other than notification formatting?"
 
 **Warning signs:**
-- No concurrency tests in the booking flow
-- Slot availability check and booking write are separate database calls with no transaction
-- Calendar sync reads and booking writes share the same lock scope (or no lock scope at all)
-- "Available slots" are computed in application code from raw calendar data rather than a dedicated reservation table
+- Any `if (urgency === 'emergency')` or `if (urgency === 'routine')` in booking or lead-creation code paths
+- Recovery SMS cron (`send-recovery-sms/route.js`) still skipping calls based on urgency
+- Dashboard showing different statuses for emergency vs. routine calls beyond badge color
+- Suggested slots only calculated for routine calls (current bug that must be fixed)
 
-**Phase to address:** Scheduling & Booking phase (must be designed atomically from day one — retrofitting locking logic into an existing booking flow is high risk)
+**Phase to address:**
+Phase 2 (Triage Reclassification) -- must be done immediately after prompt rewrite, before booking flow universalization. Otherwise the old triage-routing logic will conflict with new booking behavior.
 
 ---
 
-### Pitfall 3: Triage Logic That Works in Testing, Fails on Real Callers
+### Pitfall 3: Over-Booking -- AI Books Callers Who Don't Want a Booking
 
 **What goes wrong:**
-The keyword-based emergency detection works perfectly in scripted tests ("I have a gas leak") but misclassifies real callers who speak indirectly, use regional language, or describe symptoms without naming the emergency. A caller who says "my basement is completely underwater and I don't know what to do" doesn't say "flooding" — but it's an emergency. Conversely, a caller saying "I need this fixed urgently" for a non-urgent job gets over-triaged into an emergency slot, wasting the owner's premium availability.
+Booking-first means the AI defaults to booking everyone. But some callers have no intent to book: price shoppers ("How much do you charge for...?"), information seekers ("Do you service my area?"), existing customers checking on an existing appointment, salespeople, wrong numbers. If the AI aggressively pushes booking on these callers, it creates ghost appointments that waste the owner's time, damages caller experience, and fills the calendar with no-shows.
 
 **Why it happens:**
-Developers build against idealized test inputs. Real callers are stressed, speak in fragments, use non-standard vocabulary, describe context rather than label the problem, and mix urgency signals with routine requests. Keyword lists are brittle — they match what the developer imagined callers would say, not what callers actually say.
+The prompt says "book every call" and the LLM takes it literally. Without explicit carve-outs for non-booking intents, the AI will try to schedule a plumber for someone who just wants a price quote. The current prompt has no intent classification -- it jumps straight from information gathering to slot offering.
 
 **How to avoid:**
-- Use LLM-based intent classification for triage, not keyword matching alone — keywords can be a fast pre-filter but LLM should make the final call
-- Include a confidence threshold: below threshold, default to a clarifying question ("Is this something that needs immediate attention today, or can we schedule for later this week?")
-- Seed the triage prompt with real-world examples gathered from home service industry call recordings or operator feedback
-- Build an override path: callers can always say "this is an emergency" and override the classification
-- Log every triage decision with the reasoning so misclassifications can be reviewed and corrected
-- Run the triage prompt against a test set of 50+ realistic caller scenarios before shipping
+1. Add an explicit intent-detection step in the prompt before the booking flow: "First determine if the caller needs a service appointment. If they only want information (pricing, service area, hours), answer their question and then offer: 'Would you like me to schedule a visit while we're on the line?'"
+2. Define non-booking intents explicitly in the prompt: price inquiries, existing appointment inquiries, sales calls, complaints, wrong numbers. For each, define the correct handling.
+3. Add a `booking_offered` boolean to the call metadata so you can track how often the AI offers booking vs. how often it books. A high offer-to-book ratio is healthy; a low one means the AI is being too aggressive.
+4. Never auto-book without verbal confirmation from the caller. The current prompt already requires slot selection + address confirmation -- keep this gate.
 
 **Warning signs:**
-- Triage test cases are all clean, unambiguous sentences
-- No fallback question when confidence is low
-- Owner reports receiving wrong-urgency notifications in first week
-- No mechanism to review or correct past triage decisions
+- High appointment cancellation or no-show rate after going live
+- Caller complaints about being "forced to book"
+- Calendar filling up with appointments from callers who just had questions
+- Short call durations (< 2 min) resulting in bookings (suspicious -- not enough time for real booking flow)
 
-**Phase to address:** AI Intelligence / Triage phase — triage logic must be tested against realistic messy inputs, not idealized ones, before it's connected to real calendar slots
+**Phase to address:**
+Phase 1 (Agent Prompt Rewrite) -- intent detection must be part of the booking-first prompt, not bolted on later.
 
 ---
 
-### Pitfall 4: Google Calendar Sync as the Source of Truth
+### Pitfall 4: Notification Fatigue From Booking Every Call
 
 **What goes wrong:**
-The system treats Google Calendar as the authoritative availability database. When Google Calendar has a brief outage, rate-limits the API, revokes an OAuth token, or a calendar event is deleted outside the system, the booking platform either crashes, shows phantom availability, or silently stops syncing. Owners don't notice until they've received double-bookings or callers are told no slots are available during what should be open time.
+Currently, `sendOwnerNotifications` fires for every lead created (call-processor.js, line 302). If every call now creates a booking instead of just emergencies, the owner gets an SMS and email for every single call -- including the routine ones that previously were quiet leads. A plumber getting 15-20 calls/day now gets 15-20 SMS alerts. They mute notifications. Then they miss the genuine emergency at 2 AM.
 
 **Why it happens:**
-Google Calendar feels like the natural source of truth because the owner already lives in it. Teams build a direct-read architecture where every availability check queries the Calendar API, then discover that Calendar APIs have rate limits (10,000 requests/day on free tier, but still limited), OAuth tokens expire, and the API is not designed for sub-second booking confirmation queries.
+The v1.0 notification system was designed for a world where notifications meant "something important happened." In the booking-first model, every call is "important" by definition. The signal-to-noise ratio collapses. The current `sendOwnerSMS` function (notifications.js, line 53) formats every notification the same way, just with a different urgency label.
 
 **How to avoid:**
-- The platform's own database is the source of truth for availability, not Google Calendar
-- Google Calendar sync is a bidirectional background sync: your DB is authoritative, Calendar reflects it
-- Implement OAuth token refresh proactively with health monitoring — alert the owner if calendar sync breaks
-- Build a "sync health" indicator in the dashboard so owners can see if calendar is connected
-- Store the last sync timestamp; if stale by more than 5 minutes, surface a warning
-- Handle calendar API errors gracefully: fall back to last-known availability rather than crashing
+1. Implement tiered notification delivery based on urgency:
+   - Emergency bookings: immediate SMS + email + push (high-priority channel)
+   - High-ticket bookings: immediate email + push, SMS only during business hours
+   - Routine bookings: daily digest email, no SMS unless owner opts in
+2. Change the notification trigger: don't notify on every booking creation. Notify on: (a) emergency bookings always, (b) routine bookings via batched digest, (c) failed bookings always (owner needs to know).
+3. Add notification preferences to the onboarding/settings flow so owners can control their threshold.
+4. Use different SMS templates: emergency gets an urgent tone with action required; routine gets a calm confirmation.
 
 **Warning signs:**
-- Availability query logic reads directly from Google Calendar API
-- No sync health monitoring or alerting
-- OAuth token expiry causes silent sync failure
-- No retry/backoff logic on calendar API calls
+- Owners complaining about too many notifications
+- Owners unsubscribing from SMS (breaking the emergency notification channel)
+- Low dashboard engagement (owners stop checking because notifications are noise)
+- Response time to emergency notifications increasing (lost in the flood)
 
-**Phase to address:** Scheduling & Booking phase (architecture decision must be made before any calendar integration code is written)
+**Phase to address:**
+Phase 5 (Notification Priority System) -- but design the tiering in Phase 1 so the prompt rewrite knows what urgency tags are used for.
 
 ---
 
-### Pitfall 5: Voice AI Hallucinating Business Information
+### Pitfall 5: Calendar Flooding -- No Guardrails on Autonomous Booking Volume
 
 **What goes wrong:**
-The AI confidently tells callers incorrect information — wrong business hours, a service the business doesn't offer, a price range it invented, an address that's slightly wrong. The caller shows up at the wrong time, expects a service that isn't available, or loses trust. Worse, in regulated trades (gas fitting, electrical), an AI casually offering safety assessments or quoting compliance-related work can create liability.
+With the AI booking every call, a busy home service business could have 20+ appointments booked per day. Without maximum booking limits, buffer times between appointments, and geographic clustering, the owner arrives at the first job and realizes they have 6 appointments across town in the next 3 hours. The calendar becomes physically impossible to fulfill. Worse: if a competitor or spam caller repeatedly calls, the AI books fake appointments that consume real slots.
 
 **Why it happens:**
-LLMs have a strong tendency to fill knowledge gaps with plausible-sounding completions. If the system prompt doesn't explicitly constrain the AI to only speak from configured business data, the LLM will improvise when asked questions outside its configured scope. This is especially dangerous for specifics (prices, addresses, certifications, availability of specific technicians).
+The current `atomicBookSlot` only prevents double-booking of the same slot. It does not enforce: max bookings per day, minimum travel time between appointments (zone travel buffers exist in DB but are only used for slot calculation, not as hard constraints), or rate limiting per phone number. The system trusts every caller is legitimate.
 
 **How to avoid:**
-- System prompt must explicitly instruct: "If you don't know, say 'I'll have [owner name] call you back with that information' — never guess"
-- All business-specific facts (services, hours, service area, pricing ranges) must be injected as structured data into the prompt at call start — never rely on the LLM's training knowledge
-- Implement a "knowledge boundary" test: call the agent and ask 10 questions it shouldn't know — verify it defers rather than invents
-- For regulated trades: add explicit guardrails against providing safety diagnoses, compliance assessments, or permit advice
-- Review call transcripts in the first week specifically hunting for hallucinated facts
+1. Add a max-bookings-per-day limit per tenant (configurable, default 12). Once hit, the AI says "Our schedule is full for today, the next available is [tomorrow slot]."
+2. Enforce zone travel buffers as hard constraints in `atomicBookSlot`, not just soft preferences in slot calculation. If the previous appointment is in Zone A and the next request is in Zone B with a 30-min buffer, the booking should account for it.
+3. Add phone number rate limiting: max 2 bookings per phone number per week. Prevents spam/abuse.
+4. Add a "tentative" booking status for the first booking from a new phone number, auto-confirmed after 15 minutes (gives owner time to review if needed).
+5. Expose a daily booking cap and "pause new bookings" toggle in the dashboard.
 
 **Warning signs:**
-- System prompt allows open-ended responses without a fallback instruction
-- Business information isn't injected dynamically at call start
-- No transcript review process in early operation
-- Caller asks about pricing and AI quotes a specific number that doesn't come from configuration
+- Owners cancelling multiple bookings per day (physically impossible schedule)
+- Same phone number creating multiple bookings
+- No travel buffer between back-to-back appointments in different zones
+- Calendar showing 100% utilization (no room for emergencies)
 
-**Phase to address:** Voice Intelligence / Prompt Engineering phase — hallucination guardrails must be in the initial system prompt design, not added after complaints
+**Phase to address:**
+Phase 3 (Booking Flow Universalization) -- this is where the atomic booking logic needs hardening.
 
 ---
 
-### Pitfall 6: Multi-Language Support as an Afterthought
+### Pitfall 6: Silent Fallback Chain Failures
 
 **What goes wrong:**
-The system is built English-first with language support "to be added later." When multi-language is added, it requires restructuring the prompt system, the triage keyword lists (which are English-specific), the notification templates, the onboarding flow, and the voice model selection logic. The retrofit costs 3x more than building it in from the start, and the result is an inconsistent experience (English UI, Spanish voice, English SMS notifications).
+The booking-first model creates a longer chain of fallbacks: AI tries to book -> booking fails -> AI offers alternative slot -> that fails too -> call ends -> recovery SMS fires -> SMS delivery fails -> caller is lost. Each link in this chain can fail silently. The current `sendCallerRecoverySMS` (notifications.js, line 103) catches errors and logs them but returns undefined -- the cron job (send-recovery-sms/route.js) treats this as success and marks `recovery_sms_sent_at`. The caller never gets the SMS, and the system thinks it was sent.
 
 **Why it happens:**
-"We'll add Spanish later" is a common deferral that underestimates how deeply language assumptions are woven into every layer — not just the voice, but all text content, date/time formatting, address formats, and even the triage logic (emergency keywords vary by language).
+The v1.0 system had fewer fallback paths. Recovery SMS was only for unbooked callers, and notification failures were acceptable because the lead was captured anyway. In the booking-first model, recovery SMS is the last safety net -- if it fails silently, the caller has no way to book and no way to reach the business.
 
 **How to avoid:**
-- Design the language selection mechanism from day one: detect caller language in first 2-3 turns, or allow the owner to configure a default language
-- All user-facing text (prompts, notifications, UI labels) must be stored in translatable strings from the start — no hardcoded English strings
-- Triage keyword lists and urgency patterns must be language-aware
-- SMS/email notification templates must support multiple languages
-- Vapi/Retell voice model selection must be parameterized by language, not hardcoded to an English model
+1. Make `sendCallerRecoverySMS` return a success/failure boolean. Only mark `recovery_sms_sent_at` if the SMS was actually delivered (check Twilio message status, not just API call success).
+2. Add a retry mechanism: if recovery SMS fails, retry up to 3 times with exponential backoff before marking as permanently failed.
+3. Add a `recovery_sms_status` column (pending/sent/failed/delivered) instead of just a timestamp. Query for failed SMS in the dashboard.
+4. Add a dead-letter alert: if more than 5% of recovery SMS fail in a day, alert the system admin.
+5. Track the full fallback chain per call: `booking_attempted` -> `booking_succeeded` -> `recovery_sms_sent` -> `recovery_sms_delivered`. Surface broken chains in the dashboard.
 
 **Warning signs:**
-- All system prompts written as literal English strings in code
-- Notification templates with hardcoded English text
-- Triage keyword lists with no language parameter
-- "Language support" is listed as a later phase with no architecture placeholder
+- `recovery_sms_sent_at` is populated but Twilio delivery reports show failures
+- Callers calling back saying they never got a link
+- High `recovery_sms_sent_at` population but low click-through on booking links
+- The cron job processing calls but `sent` count is always 0 (silent failures)
 
-**Phase to address:** Voice Infrastructure phase — language abstraction layer must be in place before any language-specific content is written
+**Phase to address:**
+Phase 6 (Recovery SMS Universal Fallback) -- but the monitoring/observability should be designed in Phase 3 (booking flow).
 
 ---
 
-### Pitfall 7: Onboarding Complexity That Prevents Owner Activation
+### Pitfall 7: Loss of Human Oversight for Genuine Emergencies
 
 **What goes wrong:**
-The platform requires owners to configure 15+ fields before making their first call — services list, tiers, availability windows, greeting script, emergency keywords, notification preferences, calendar connection. Most SME owners are non-technical, pressed for time, and will abandon a multi-step setup without getting value first. The product dies in the onboarding funnel before anyone hears the AI's voice.
+In the old model, emergencies triggered proactive transfer to the owner. The owner was in the loop for every emergency. In the booking-first model, the AI autonomously books the emergency into the nearest slot and sends a high-priority notification. If the notification is delayed (SMS queue, email spam filter, owner's phone on silent), the owner doesn't know about the gas leak until they check the dashboard. A 30-minute delay for a gas leak is unacceptable.
 
 **Why it happens:**
-Developers build onboarding to match the system's internal data model rather than the owner's mental model. Every feature requires configuration, so developers expose every configuration field. The result is an enterprise-grade setup flow for a business owner who just wants calls answered.
+The pivot spec says "escalation only on exception states" and treats emergencies the same as routine calls for booking purposes. This is correct for the booking flow, but the notification path for emergencies must be upgraded to compensate for removing the proactive transfer. The current `sendOwnerNotifications` is fire-and-forget with no delivery confirmation or escalation on failure.
 
 **How to avoid:**
-- Design a "30-second onboarding" path: business name, phone number, business type (plumber/HVAC/electrician), and done — AI uses sensible defaults for everything else
-- Use business type to auto-populate a starter configuration (services list, emergency keywords, default availability template)
-- Defer all advanced configuration to a "settings" section — make it optional, not required
-- Show live demo capability immediately after minimal setup (call your number now, hear the AI answer)
-- Progressive disclosure: surface advanced settings only after the owner has completed their first call
+1. For emergency bookings: send notification through ALL channels simultaneously (SMS + email + push + phone call to owner if SMS unconfirmed after 2 minutes).
+2. Add delivery confirmation for emergency notifications: poll Twilio message status. If not delivered within 2 minutes, escalate to the next channel.
+3. Keep the `transfer_call` function available but only invoke it when: (a) the caller explicitly asks for a human, or (b) the emergency notification to the owner fails delivery within a timeout.
+4. Add an emergency acknowledgment flow: owner must tap a link in the SMS to acknowledge. If not acknowledged within 5 minutes, auto-call the owner's phone.
+5. Never remove emergency escalation contacts -- the `escalation_contacts` table exists for a reason. Use it as a backup chain when the primary owner doesn't acknowledge.
 
 **Warning signs:**
-- Onboarding flow requires calendar connection before first call can be made
-- No default/starter configurations by trade type
-- Setup has more than 5 required fields before a test call can be made
-- No guided tour or contextual help for non-technical owners
+- Emergency bookings with no owner acknowledgment within 5 minutes
+- Owner reporting they didn't know about an emergency until hours later
+- Emergency notification delivery rate below 99%
+- Escalation contacts table being ignored or deprioritized
 
-**Phase to address:** Onboarding & Dashboard phase — validate with real SME users that setup to first call takes under 5 minutes
+**Phase to address:**
+Phase 5 (Notification Priority System) -- emergency notification hardening must be in this phase. Do not ship booking-first without it.
 
 ---
 
-## v1.1 Milestone Pitfalls
+### Pitfall 8: Test Suite Regression -- Existing Tests Assert Old Behavior
 
-The following pitfalls are specific to adding the v1.1 feature set (pricing page, unified onboarding wizard, contact/about pages, Outlook sync, multi-language E2E, concurrency QA, 5-min gate) to the existing system. These are integration-addition pitfalls, not greenfield design pitfalls.
+**What goes wrong:**
+The existing test suite (`tests/agent/prompt.test.js`) has tests that assert the presence of escalation-era behavior: line 104 asserts `TRIAGE-AWARE BEHAVIOR` exists in the prompt, line 78 asserts `transfer_call` references. The booking test (`tests/scheduling/booking.test.js`) tests the atomic booking function but not the full booking-first flow. When the prompt is rewritten, these tests break -- but instead of updating them to assert new behavior, developers disable or delete them to make CI green. The result: no tests for the new behavior, and the old behavior could silently return in future prompt edits.
+
+**Why it happens:**
+When pivoting core behavior, the test suite becomes an obstacle rather than a safety net. Tests that assert "the AI says X" break because the AI now says "Y." Under deadline pressure, teams delete failing tests instead of rewriting them to assert new invariants.
+
+**How to avoid:**
+1. Before changing any code, write the NEW test suite first (test-driven pivot):
+   - Assert prompt contains "book every call" language
+   - Assert prompt does NOT contain "create lead if they decline" for routine callers
+   - Assert prompt does NOT contain proactive transfer instructions
+   - Assert `transfer_call` tool is still available (exception path) but prompt doesn't encourage it
+   - Assert booking function is called for both emergency and routine urgency values
+2. Keep old tests as "regression markers" -- rename them to `test.skip` with a comment: "Old escalation behavior -- verify this no longer applies."
+3. Add end-to-end tests that simulate a full call flow: inbound -> slot calculation -> booking attempt -> notification -> recovery SMS (if booking fails).
+4. Add prompt snapshot tests: store the full generated prompt as a snapshot, review diffs in PRs.
+
+**Warning signs:**
+- Test suite has fewer tests after the pivot than before
+- Tests that were previously passing are now skipped without replacement
+- No tests for the booking-first prompt behavior
+- CI passing but manual testing reveals the AI still escalates
+
+**Phase to address:**
+Phase 1 (Agent Prompt Rewrite) -- write new tests before changing the prompt. Every subsequent phase should add tests, never remove them.
 
 ---
 
-### Pitfall 8: Breaking Existing Users When Unifying the Auth+Onboarding Flow
+### Pitfall 9: Dashboard Showing Stale Urgency Semantics
 
 **What goes wrong:**
-The current system has two separate flows: `/auth/signin` creates a Supabase account, then redirects to `/onboarding` (3-step wizard: business name → services → contact details). Unifying means moving account creation INTO the wizard (CTA → enter email/password → business setup → test call). Existing users who have already completed `/auth/signin` and `/onboarding` have auth state and a partially-or-fully-seeded `tenants` row. If the new unified flow applies onboarding redirect logic to ALL authenticated users (including existing ones), every existing user gets looped back through onboarding on next login.
+PROJECT.md says "Dashboard visual parity: keep existing urgency badges, change backend meaning only." This means the dashboard shows "EMERGENCY" and "ROUTINE" badges that used to mean "transferred to owner" and "captured as lead" but now mean "high-priority notification" and "standard notification." If the dashboard isn't updated to explain the new meaning, owners see an "EMERGENCY" badge and wonder why nobody called them. Or they see a "ROUTINE" badge and assume it's just a lead, not a confirmed booking.
 
 **Why it happens:**
-The redirect guard logic checks `if (!user) → /auth/signin` but doesn't distinguish between a returning user with complete onboarding and a new user who just created an account. Middleware that says "if logged in and no onboarding_complete flag → /onboarding" traps existing users who don't have that flag set in the database (because the flag was added after they onboarded).
+"Visual parity" is interpreted as "don't change the UI." But the meaning of the data changed. Keeping the same visual creates a semantic mismatch that confuses users.
 
 **How to avoid:**
-- Add an `onboarding_completed_at` timestamp column to the `tenants` table (nullable = incomplete) before deploying any new flow logic
-- Backfill `onboarding_completed_at` for all existing tenants that have a `business_name` set — this is the safe migration step
-- New unified wizard sets `onboarding_completed_at` on final step; existing users already have it set
-- Auth callback redirect logic: `if (onboarding_completed_at IS NULL) → /signup-wizard ELSE → /dashboard`
-- Deploy backfill migration and verify existing user count matches before deploying new flow
-- Test explicitly: log in as an existing user, confirm they go to `/dashboard` not back through onboarding
+1. Update badge labels to reflect booking-first semantics: "EMERGENCY" -> "Urgent Booking" (red), "ROUTINE" -> "Booking" (green), "HIGH_TICKET" -> "High-Value Booking" (gold).
+2. Add booking status to the dashboard view: "Booked" / "Booking Failed" / "Declined to Book" -- this is the primary status now, not urgency.
+3. Move urgency from the primary badge to a secondary indicator (small icon or tooltip).
+4. Add a "Needs Attention" filter that shows: failed bookings, unacknowledged emergencies, callers who declined booking.
 
 **Warning signs:**
-- New redirect logic added before backfill migration runs
-- `onboarding_completed_at` column added but not backfilled for existing records
-- No E2E test that verifies existing-user login still lands on `/dashboard`
-- New unified wizard assumes `step=1` for any user that reaches it (including returning users)
+- Owners asking "why did nobody call me about this emergency?"
+- Owners ignoring routine bookings because they look like old-style leads
+- Dashboard click-through rate dropping after the pivot
+- Support tickets about badge meanings
 
-**Phase to address:** Unified Onboarding Wizard phase — run the backfill migration as the very first step, before any frontend changes ship to production
+**Phase to address:**
+Phase 7 (Dashboard Visual Parity) -- but the data model decisions should be made in Phase 2 (Triage Reclassification).
 
 ---
 
-### Pitfall 9: Outlook Calendar Sync is Significantly More Complex Than Google Calendar Sync
+### Pitfall 10: Retell Dynamic Variables Not Updated for Booking-First
 
 **What goes wrong:**
-Teams treat Outlook sync as "Google Calendar sync but for Microsoft." It is not. Outlook sync via Microsoft Graph API involves Azure AD app registration, multi-tenant OAuth consent flows, admin approval requirements that can block individual SMB users (many of whom use Office 365 Business accounts where their employer's IT admin controls app consent), delta token management for incremental sync, and subscription-based webhooks that expire and must be renewed every 3 days. A naive implementation that mirrors the Google Calendar integration will fail silently for a significant portion of SMB users who cannot grant consent without IT administrator involvement.
+The inbound webhook handler (`retell/route.js`, `handleInbound`) passes `available_slots` and `booking_enabled` as dynamic variables to Retell. The current system calculates slots for 3 days and limits to 6. In a booking-first world where every call gets booked, 6 slots may not be enough if the day is busy. The AI offers 6 slots, all are taken during the call, and the AI has no way to fetch fresh slots mid-conversation. The call ends without a booking.
 
 **Why it happens:**
-The Microsoft Graph API surface looks similar to Google's — OAuth2, access tokens, REST calendar endpoints. Developers assume the consent and permission model is the same. It is not: Microsoft's enterprise model distinguishes between personal Microsoft accounts (no admin) and Microsoft 365 work/school accounts (admin consent may be required), and many home service business owners who use Outlook are on Microsoft 365 business plans managed by an IT provider or Microsoft partner who controls app consent.
+Slot data is calculated once at call start and injected as static dynamic variables. During a busy day, slots can be taken between the time they're calculated and the time the AI offers them. The `atomicBookSlot` function handles the race condition (returns `slot_taken`), but the AI's recovery path ("that slot was just taken") only works if there are alternative slots to offer. If all 6 provided slots are stale, the AI loops on "slot taken" with no fresh data.
 
 **How to avoid:**
-- Register the Azure AD app as multi-tenant but request only `Calendars.ReadWrite` and `offline_access` delegated permissions — avoid any scopes requiring admin consent (like `Calendars.ReadWrite.Shared` or application-level permissions)
-- Surface a clear "Your organization may require admin approval" error state with a mailto link to forward the admin consent URL to their IT contact
-- Implement Microsoft Graph delta query with stored `@odata.deltaLink` for incremental calendar sync — do not poll full calendar on every sync cycle
-- Webhook subscriptions (change notifications) expire in 4230 minutes (approximately 3 days) and must be renewed proactively; build a background job that renews all active subscriptions before expiry
-- Store the delta token per tenant in the database; if a delta token is lost or expired, fall back to full re-sync of the calendar window (current day + next 30 days)
-- Test specifically with a Microsoft 365 Business account, not just a personal @outlook.com account — the consent flows are different
+1. Increase the slot window: calculate 10-12 slots across 5 days instead of 6 across 3. More slots = more likely at least one is still available.
+2. Add a `refresh_slots` tool function that the AI can invoke mid-call if it receives multiple "slot taken" responses. This fetches fresh availability in real-time.
+3. In the "slot taken" handler in `handleBookAppointment`, return not just the next single slot but the next 3 available slots, so the AI has alternatives to offer.
+4. Add a "no slots available" terminal path: "I'm unable to find an available time right now. I'll send you a link to book online where you can see live availability." -> trigger recovery SMS immediately.
 
 **Warning signs:**
-- Azure app registration requests application-level permissions instead of delegated permissions
-- No handling for "admin approval required" error response during OAuth consent
-- Webhook subscription renewal is not scheduled as a background job
-- Delta token stored only in memory (lost on server restart → full re-sync on every restart)
-- Only tested with personal @outlook.com accounts, not enterprise Office 365 accounts
+- Multiple "slot taken" responses in a single call
+- Calls ending without booking despite slots being available (stale data problem)
+- AI looping on slot offers with no resolution
+- High recovery SMS rate despite available calendar capacity
 
-**Phase to address:** Outlook Calendar Sync phase (Hardening & Launch) — treat this as a distinct integration from Google Calendar, not a copy-paste
-
----
-
-### Pitfall 10: Pricing Page That Lists Features Instead of Selling Outcomes
-
-**What goes wrong:**
-The pricing page renders a feature matrix ("10 call recordings/month", "API access", "Priority support") instead of communicating the value at each tier. Home service SMB owners don't know what "API access" means and can't reason about "10 call recordings" vs "unlimited." They abandon the page without converting because they can't figure out which tier fits them. The pricing page looks complete but converts poorly.
-
-**Why it happens:**
-Developers and product teams copy competitors' feature-comparison tables because they're straightforward to build and seem comprehensive. The table answers "what do you get?" but not "who is this for?" or "why should I pay more?"
-
-**How to avoid:**
-- Lead each tier with a customer persona, not a feature list: "Starter — Solo plumber answering 20-50 calls/month", "Growth — HVAC shop with 2-3 technicians"
-- The tier description should state the concrete outcome: "Never miss a lead when you're on a job"
-- Feature comparison table can exist below the fold but should not be the primary content
-- The recommended/hero tier ("Growth" at $249) should be visually prominent with a "Most Popular" badge — the center-stage effect drives middle-tier selection
-- Price anchoring: the Enterprise tier ($Custom) makes $599 (Scale) feel reasonable; the $99 (Starter) makes $249 (Growth) look like a bargain
-- For a product that isn't yet taking payment (display-only pricing per out-of-scope decision), the CTA should be "Start Free Trial" or "Get Started" — not a dead "Contact Sales" link with no next step
-
-**Warning signs:**
-- Pricing page primary content is a feature comparison table
-- No visual differentiation between the recommended tier and others
-- CTAs are the same across all tiers ("Get Started") without any behavioral difference
-- No social proof near pricing (testimonials, number of businesses using the platform)
-- Mobile view shows all 4 tiers horizontally, creating a scrolling mess
-
-**Phase to address:** Pricing Page phase — review against conversion principles before ship, not after
-
----
-
-### Pitfall 11: Unified Wizard Loses Step State on Page Refresh
-
-**What goes wrong:**
-The multi-step signup+onboarding wizard uses React component state (`useState`) to track which step the user is on and what data they've entered. If the user refreshes, navigates away, or the session expires mid-wizard, all state is lost and they restart from step 1. For a 5-step wizard (email entry → email verification → business name → services → test call), losing state at step 4 is a major drop-off point. This is especially bad for email verification flows where the user must leave the browser to click a link, come back, and resume.
-
-**Why it happens:**
-The current onboarding is split across URL routes (`/onboarding`, `/onboarding/services`, `/onboarding/verify`) which naturally persist step state via the URL and server-side session. Merging into a single-page wizard with client-side step management loses this property. Developers don't notice because they test by clicking through without refreshing.
-
-**How to avoid:**
-- Use URL-based step routing even within the wizard: `/signup/step/1`, `/signup/step/2`, etc. — or use query params `?step=business-name`
-- Alternatively, persist wizard progress to the database after each step: once step 1 (business name) is saved via `/api/onboarding/start`, the user can return and pick up at step 2
-- The wizard entry point should check for existing incomplete onboarding and resume at the correct step
-- For the email verification step specifically: after the user clicks the email link and is redirected back, the `/auth/callback` route must carry forward the wizard step context (e.g., via the `next` query param: `?next=/signup?step=verify`)
-- Test the refresh scenario explicitly at every step
-
-**Warning signs:**
-- Wizard step is tracked only in `useState` with no URL or DB persistence
-- No "resume where you left off" logic at wizard entry
-- `/auth/callback` redirects to `/onboarding` root without step context
-- No test for the email verification mid-wizard flow (user must leave browser to click link)
-
-**Phase to address:** Unified Onboarding Wizard phase — decide URL-vs-state persistence strategy as the first architectural decision, before building any wizard steps
-
----
-
-### Pitfall 12: Concurrency QA That Tests the Happy Path, Not Contention
-
-**What goes wrong:**
-The concurrency QA phase runs load tests that simulate 50 concurrent users booking slots — but all users book different slots. The test passes. In production, a weather event causes 12 calls to arrive in 30 seconds, all trying to book the next available emergency slot (which is the same slot). The database locking that "passed QA" was never actually contended. Double-bookings happen.
-
-**Why it happens:**
-Load test scripts are written to simulate realistic traffic distribution — different users, different times, different slots. This tests throughput but not contention. Testing actual atomic locking requires deliberately sending multiple concurrent requests for the exact same resource simultaneously, which feels artificial but is the only way to verify the lock works.
-
-**How to avoid:**
-- Write a dedicated contention test separate from the load test: fire 20 simultaneous POST requests to `/api/bookings` all targeting slot ID `X` within a 100ms window
-- Assert: exactly 1 request returns 201 Created; the rest return 409 Conflict with "slot already taken"
-- Run this test in CI so it cannot be skipped
-- Also test the soft-reservation TTL: reserve a slot, wait for TTL to expire without confirming, verify the slot becomes bookable again
-- For Supabase/PostgreSQL specifically: verify that `SELECT ... FOR UPDATE` or the equivalent RPC function actually acquires a row-level lock — test this by inspecting `pg_locks` during a slow transaction
-
-**Warning signs:**
-- Load test script distributes requests evenly across many different slots — no contention simulation
-- No test that deliberately fires concurrent requests at the same resource
-- Soft-reservation TTL is not tested for expiry and release
-- QA declared "passed" after throughput test but before contention test
-
-**Phase to address:** Hardening & Launch phase — add the contention test to CI as a non-optional check during this phase
-
----
-
-### Pitfall 13: Multi-Language E2E Testing That Stops at the Voice Layer
-
-**What goes wrong:**
-Multi-language E2E testing verifies that the Retell voice agent responds in Spanish when a Spanish-speaking caller calls. It does not verify that: (1) the triage output is language-aware (urgency classification for a Spanish emergency call), (2) the SMS notification to the owner includes the Spanish-language job description without garbling, (3) the booking confirmation SMS to the caller is in Spanish, and (4) the dashboard renders the Spanish transcript correctly without Unicode mangling. The "multi-language" test passes for voice but the non-English call still produces English notifications and garbled transcript text.
-
-**Why it happens:**
-Multi-language testing is scoped to "does the voice respond in Spanish?" because that's the obvious layer. The downstream chain — triage → booking → notification → dashboard display — is tested separately (if at all) and only in English.
-
-**How to avoid:**
-- Define multi-language E2E as a chain test that follows a call from inbound audio to dashboard display:
-  `Spanish audio → Retell STT → triage (Spanish classification) → booking → SMS notification (Spanish) → email notification (Spanish) → dashboard transcript display (UTF-8 preserved)`
-- Test each link in the chain explicitly, not just the first link
-- Use a realistic Spanish test scenario: a caller describing a plumbing emergency in Spanish colloquial language ("se me rompió una tubería y hay agua por todas partes")
-- Verify SMS and email notification bodies are in the caller's detected language, not the owner's UI language
-- Test Unicode edge cases: Portuguese accented characters (ã, õ, ç), Chinese characters, Arabic right-to-left text in transcript display
-
-**Warning signs:**
-- Multi-language test only tests the Retell layer in isolation
-- SMS notification templates have hardcoded English strings not passing through the i18n layer
-- No test for what happens when ASR detects language mid-call (code-switching: English-Spanish mix)
-- Dashboard transcript field is VARCHAR not TEXT — may truncate or corrupt long non-ASCII content
-
-**Phase to address:** Hardening & Launch phase — define the chain test as the acceptance criterion for multi-language E2E before the phase begins
-
----
-
-### Pitfall 14: 5-Minute Onboarding Gate Tested Only by Developers
-
-**What goes wrong:**
-The 5-minute onboarding gate ("a non-technical user can go from landing page → hearing their AI answer a test call in under 5 minutes") is validated by having a developer or teammate click through the wizard. Developers know what every field means, know to expect an email verification step, have a phone number ready, and complete the wizard in 3 minutes. A real SME owner (on a job site, unfamiliar with "AI agent," unsure what "business tone" means) takes 12 minutes, gets stuck on the phone number format, and never reaches the test call. The gate "passes" but the product fails real users.
-
-**Why it happens:**
-Convenience. Testing with a real non-technical user requires scheduling, a test environment, and willingness to observe awkward moments. Teams substitute their own judgment ("this is obvious") for user observation.
-
-**How to avoid:**
-- Recruit one actual home service SME owner (or someone who runs a small service business) to do a timed walkthrough on a staging environment
-- Observer should not help — watch where they pause, what they re-read, what they skip
-- Measure time-to-test-call from landing page CTA click, not from wizard step 1
-- If the walkthrough takes more than 5 minutes, treat it as a blocking bug, not a nice-to-have
-- Specific UX items that commonly block non-technical users: phone number format ambiguity ("+1 555..." vs "555..."), unclear distinction between "business phone" (where AI answers) and "owner notification phone" (where alerts go), multi-step email verification requiring app-switching
-
-**Warning signs:**
-- 5-minute gate tested only by people who built the product
-- No real user recruited before declaring gate passed
-- Time measurement starts at wizard step 1, not at the public landing page CTA
-- No observation of where users hesitate or re-read
-
-**Phase to address:** Hardening & Launch phase — schedule the non-technical user test before the phase is declared complete, not as an optional nice-to-have
-
----
-
-### Pitfall 15: Contact and About Pages Treated as "Just Static Content"
-
-**What goes wrong:**
-The contact page's form submissions are not routed anywhere (or route to an email inbox that nobody monitors). The about page has placeholder team bio text that ships to production. The contact form has no spam protection, generating hundreds of spam submissions per day within 48 hours of launch. None of these pages are included in the sitemap or have meta descriptions, limiting SEO value. These pages "look done" in a design review but are broken in the functional sense.
-
-**Why it happens:**
-Contact and about pages are low-effort UI work that get built in an afternoon and deprioritized in QA. The form backend plumbing (where do submissions go? which email? what confirmation does the submitter see?) is often deferred to "later" and forgotten. Spam protection is added reactively after the inbox floods.
-
-**How to avoid:**
-- Contact form backend must be wired before the page ships: decide the destination (Resend/SendGrid to an ops inbox, or a Supabase table for CRM tracking)
-- Add reCAPTCHA v3 or honeypot field at form build time, not after first spam wave
-- Confirm email back to the submitter (even a simple "We'll get back to you within 1 business day")
-- About page: ship with real (even minimal) content — a founder photo, one-paragraph mission statement, founding year — not placeholder "Lorem ipsum" or "Team bio coming soon"
-- Both pages need `<title>` and `<meta description>` before going live; these cannot be retrofitted without a new crawl cycle
-- Test: submit the contact form and verify the email arrives in the ops inbox within 60 seconds
-
-**Warning signs:**
-- Contact form `onSubmit` posts to an API route that returns 200 without actually sending email
-- About page content is still placeholder text at code review
-- No spam protection on the contact form
-- Pages are not listed in the sitemap or have `noindex` meta tag from a dev environment config that wasn't removed
-
-**Phase to address:** Contact & About Pages phase — treat form wiring and spam protection as acceptance criteria, not post-launch tasks
+**Phase to address:**
+Phase 3 (Booking Flow Universalization) -- slot data freshness is a booking infrastructure concern.
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Query Google Calendar directly per function call | No cache to maintain | Latency spikes, rate limits, silent failures | Never — build the async cache layer from the start |
-| Store triage rules as hardcoded keyword arrays | Fast to implement | Language brittle, hard to update per-owner, missed classifications | Only in a throwaway prototype, never in production |
-| English-only prompts and templates | Faster first version | Massive retrofit cost when multi-language needed; inconsistent UX | Never — use translatable strings from day one |
-| No soft-reservation TTL (book immediately) | Simpler flow | Race conditions under concurrent load | Never for a booking system |
-| Single-environment Vapi/Retell config | One less thing to manage | Can't test without hitting production webhook/phone number | Only in solo developer with no users; add staging before first external tester |
-| Store call recordings only in Vapi/Retell platform | No storage cost | Recordings lost if you switch platforms or account is suspended | Only in early dev; migrate to own storage before first real customer |
-| Track wizard step in React useState only | Simpler component code | State lost on refresh; email verification mid-wizard fails | Never for a multi-step wizard with an email verification step |
-| Outlook sync copy-pasted from Google Calendar sync | Faster implementation | Silent failures for enterprise M365 users; delta token drift; webhook subscription expiry | Never — Outlook Graph API has fundamentally different consent and sync mechanics |
-| Contact form without spam protection | Ship faster | Inbox flooded within 48 hours of public launch | Only behind an auth wall; never on a public page |
-| Backfill migration skipped for onboarding_completed_at | Avoid migration complexity | All existing users looped back through onboarding on next login | Never — backfill is 2 lines of SQL and must run before flow logic deploys |
-
----
+| Keeping triage sections in prompt but adding "ignore for routing" comments | Faster prompt rewrite, less risk of breaking things | LLM may still follow triage instructions despite comments; contradictory prompt | Never -- remove old behavior, don't comment it out |
+| Hardcoding notification tiers instead of making them configurable | Ship faster | Every tenant has different preferences; forced to revisit when first customer complains | MVP only -- add settings within 2 phases |
+| Using `recovery_sms_sent_at` timestamp as delivery confirmation | No Twilio status polling needed | False positives on delivery; callers fall through the cracks | Never after booking-first -- recovery SMS is critical path |
+| Skipping intent detection in prompt ("just book everyone") | Simpler prompt, fewer edge cases | Ghost appointments, calendar noise, angry callers | Never -- intent detection is minimal effort, high impact |
+| Running old and new tests in parallel without reconciling | CI stays green | Contradictory assertions; false confidence in test coverage | Only during the transition; reconcile within the same phase |
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services.
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Vapi/Retell webhook | Not validating webhook signatures — anyone can POST fake call events | Always verify HMAC signature on every inbound webhook before processing |
-| Google Calendar OAuth | Using a single OAuth token for all customer calendars in dev, not per-customer tokens in production | Each owner authorizes their own Google account; store per-owner refresh tokens encrypted |
-| Google Calendar API | Not handling `410 Gone` (deleted event) responses — causes phantom availability | Treat 410 as a sync signal: delete the local event record and re-sync |
-| Twilio/phone number provisioning | Buying a phone number but not configuring the webhook URL before first test | Configure webhook at number-purchase time; test with a call immediately after provisioning |
-| Vapi function calls | Returning errors as HTTP 500 — Vapi retries aggressively, causing duplicate bookings | Return HTTP 200 with an error payload; let the AI handle the error gracefully in the conversation |
-| Retell custom LLM endpoint | Using streaming responses without handling partial JSON — causes silent parse failures | Test streaming endpoint with a mock that sends partial chunks; verify assembly logic |
-| Google Calendar events | Creating events without a timezone — Calendar assumes UTC, owner sees wrong times | Always specify `timeZone` in every event create/update call, derived from owner's configured timezone |
-| SMS notifications (Twilio/etc.) | Not handling delivery failures — owner never knows a notification was lost | Implement delivery status webhooks; surface failed notifications in the dashboard |
-| Microsoft Graph API (Outlook) | Requesting application-level calendar permissions instead of delegated — blocks all personal and most SMB accounts | Use delegated permissions (`Calendars.ReadWrite` + `offline_access`) only; never application permissions for user-calendar access |
-| Microsoft Graph API (Outlook) | Not renewing webhook subscriptions before 3-day expiry — silent sync stoppage | Background job renews all active Graph subscriptions every 48 hours; alert on renewal failure |
-| Microsoft Graph API (Outlook) | Losing delta token on server restart — triggers full calendar re-sync on every deploy | Persist `@odata.deltaLink` per tenant in the database; read from DB, not memory, on every sync cycle |
-| Microsoft Graph API (Outlook) | Assuming SMB users can self-approve OAuth consent — many are on managed M365 plans requiring IT admin | Surface a clear "Your organization may need admin approval" error state with instructions for the admin consent URL |
-| Supabase auth / unified wizard | Auth callback `next` param only carries the path, not wizard step state | Encode wizard step into the `next` param: `/auth/callback?next=/signup%3Fstep%3Dverify` |
-
----
+| Retell dynamic variables | Assuming slot data is fresh for entire call duration | Pre-calculate generous slot count; add mid-call refresh tool; handle all-stale gracefully |
+| Retell `transfer_call` | Removing the transfer function entirely in booking-first mode | Keep it available for exception states; change prompt to deprioritize it, don't remove the capability |
+| Groq/LLM tool calls | Expecting the LLM to reliably choose `book_appointment` over `transfer_call` with contradictory prompt instructions | Resolve prompt contradictions first; LLMs follow the most recent/prominent instruction, not the "correct" one |
+| Twilio SMS | Treating API success (202 Accepted) as delivery confirmation | Poll message status or use status callbacks; 202 means queued, not delivered |
+| Supabase `book_appointment_atomic` | Assuming the RPC handles all booking constraints (max per day, travel buffers) | The RPC only prevents double-booking of the same slot; add application-level constraints before calling RPC |
+| Google Calendar push | Blocking on calendar sync during the call (latency hit) | Current code correctly uses `after()` for async push; do not regress this when adding booking-first logic |
 
 ## Performance Traps
 
-Patterns that work at small scale but fail as usage grows.
-
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Synchronous calendar availability check during voice function call | 2-4s dead air during booking conversation | Async cache with pre-loaded availability windows | At 1 concurrent call — it's always slow |
-| Loading all leads into dashboard with no pagination | Dashboard hangs for owners with 6+ months of history | Cursor-based pagination from day one | ~500 leads (common after 3 months for active business) |
-| Storing call transcripts as full text in the main CRM table | Full-text search and list queries slow | Store transcripts in separate object/blob storage; reference by ID in CRM | ~200 calls (transcripts are large) |
-| No database indexes on lead status + created_at | Lead pipeline queries slow | Add composite index (status, created_at, business_id) at migration time | ~1,000 leads |
-| Polling calendar sync every 5 seconds per connected business | DB and Calendar API hammering | Exponential backoff sync; use webhook push where available (Google Calendar push notifications) | ~20 connected businesses |
-| Logging every STT word event to the database | Write amplification, DB bloat | Buffer in memory, write completed transcripts only | ~50 concurrent calls |
-| Concurrency load test with no slot contention | False "pass" on locking correctness | Dedicated contention test: 20 concurrent requests targeting same slot ID | Discovered only in production under real emergency call surge |
-| Microsoft Graph delta query without stored token | Full calendar re-sync on every server restart | Persist delta link token per tenant in DB | Every deploy cycle (daily in active development) |
-
----
+| Slot calculation for every inbound call | Slow call pickup (> 1 second) when tenant has many appointments | Cache slot availability per tenant with 30-second TTL; invalidate on new booking | 50+ active appointments per tenant |
+| Recovery SMS cron processing all unbooked calls | Cron timeout; SMS delivery delays | After booking-first, most calls will be booked -- the cron should process fewer calls, not more. If cron is still processing high volume, bookings aren't working. | 100+ unbooked calls per minute (indicates booking failure, not scale) |
+| `processCallAnalyzed` doing serial DB lookups | Slow post-call processing; notification delays | Already uses Promise.all in places; ensure no new serial queries are added during the pivot | 20+ concurrent call_analyzed events |
+| Single-threaded WebSocket server | Dropped calls during high concurrency | Current `retell-llm-ws.js` handles one connection per call; ensure no shared state between connections | 50+ simultaneous calls (unlikely for SME, but possible during outage recovery) |
 
 ## Security Mistakes
 
-Domain-specific security issues beyond general web security.
-
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Exposing caller phone numbers in client-side API responses without auth | PII leak; caller data harvested by competitors | All caller PII behind authenticated API; no PII in public endpoints or logs |
-| Storing call recordings as publicly accessible URLs | Any person with the URL can listen to a private call | Store recordings in private object storage with signed/expiring URLs |
-| Not encrypting Google OAuth refresh tokens at rest | Compromised DB = attacker can access every connected owner's Google Calendar | Encrypt refresh tokens with app-level key (AES-256); never store plaintext |
-| Allowing Vapi/Retell webhooks without signature validation | Attacker can POST fake "call completed" events, inject fake bookings | Validate HMAC signatures on every webhook; reject unsigned requests |
-| Multi-tenant data leakage (missing business_id filter) | Owner A sees Owner B's leads | Every DB query must include business_id scoping; integration test for cross-tenant access |
-| Logging full call transcripts to application logs | Transcripts contain PII (caller name, address, phone) that appears in log aggregators | Never log transcript content; log metadata only (call ID, duration, outcome) |
-| Weak Vapi/Retell API key rotation policy | Leaked key = attacker can make calls billed to your account | Rotate API keys on any suspected exposure; store in secrets manager, not .env files in repo |
-| Microsoft Graph refresh token stored in plaintext | Compromised DB = attacker reads/modifies any connected owner's Outlook calendar | Encrypt Graph refresh tokens with the same AES-256 pattern used for Google OAuth tokens |
-| Contact form without CSRF protection or rate limiting | Bot abuse, spam inbox flooding, potential data injection | Add reCAPTCHA v3 or honeypot field; rate-limit submissions per IP to 5/hour |
-| Pricing page CTAs that link to an unauthenticated internal API to start trial | Bots can trigger account creation at scale | Rate-limit the signup endpoint; add email verification before tenant row is created |
-
----
+| No rate limiting on booking endpoint | Competitor spam-books all slots, DoS via calendar flooding | Add per-phone-number booking rate limit (2/week) and per-tenant daily cap |
+| Booking with unverified phone numbers | Fake bookings with spoofed numbers | The AI already collects phone from caller ID; consider SMS verification for first-time callers (adds friction, weigh carefully) |
+| Recovery SMS to any number without opt-in | TCPA compliance violation; SMS sent to numbers that never consented | Add TCPA consent language to the AI's recording disclosure; log consent per call |
+| Exposing booking link with tenant_id in URL | Tenant ID enumeration; unauthorized bookings via direct URL manipulation | Use opaque tokens instead of tenant UUIDs in public booking links |
 
 ## UX Pitfalls
 
-Common user experience mistakes in this domain.
-
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| AI says "I'll book you for [time]" before slot is actually confirmed | Caller told a time that later fails to book; creates broken promises | Only confirm a time slot after the database reservation is committed; say "checking availability" while doing so |
-| Greeting too long ("Hello, thank you for calling ABC Plumbing, your trusted local plumber since 1987, how can I help?") | Callers hang up in first 5 seconds; "just answer the call" frustration | Greeting under 5 words plus pause: "ABC Plumbing, go ahead." Callers speak immediately |
-| No way for caller to reach a human | Callers who want a real person feel trapped; creates distrust in AI | Always offer "press 0 or say 'operator' to leave a voicemail for [owner name]" as an escape hatch |
-| Dashboard notifications without context | Owner sees "New lead" with no job type, no address, no urgency — wastes time clicking in | Every notification includes: caller name, job type, urgency level, address, and a one-tap "call back" link |
-| No confirmation to the caller after booking | Caller hangs up uncertain — "did I actually get booked?" | End every booking with a verbal confirmation summary AND an SMS confirmation to the caller |
-| Owner can't listen to calls from the dashboard | Owner can't verify what was promised or coach on misclassifications | Call recordings accessible (1-click play) directly from the lead detail view |
-| Showing raw AI transcript without structure | Hard to scan; owner can't find the key info quickly | Lead detail shows extracted fields (job type, urgency, address, time slot) prominently; transcript is secondary/expandable |
-| Pricing page with 4 horizontal tiers on mobile | Tiny cards, hard to compare, high abandon rate | Stack tiers vertically on mobile; show recommended tier first with expand-to-compare |
-| Unified wizard that asks for email twice (in wizard and in existing verify step) | User confusion, perception of broken flow | Email collected once in step 1; verification happens in-flow via Supabase magic link or OTP, not a separate page |
-| About page with no real humans visible | Low trust for a product that handles sensitive business calls | Show at minimum one founder's name, photo, and one-line bio — even a LinkedIn link is better than nothing |
-
----
+| AI asks for information it already has (name from caller ID, address from previous call) | Caller frustration; longer call duration | Pre-fill known data and confirm: "I see you're calling from [number]. Is this [previous caller name]?" |
+| Offering slots in UTC or wrong timezone | Caller books 10 AM thinking local time, appointment is 10 AM UTC | Current code converts to tenant timezone -- ensure this also matches caller's timezone if different |
+| AI doesn't explain what booking means | Caller unsure if they're committed or just expressing interest | Add confirmation language: "This will reserve a [duration] appointment on [date]. The team will be at your address at that time. Does that work?" |
+| No way to cancel or reschedule via the AI | Caller calls back to cancel, AI tries to book them again | Add cancel/reschedule intent detection: "I'd like to cancel my appointment" should not trigger booking flow |
+| Recovery SMS sent to caller who already booked | Annoying; undermines trust | Current cron checks for existing appointment -- verify this check works with new booking flow (the `retell_call_id` join must match) |
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces.
-
-- [ ] **Voice agent answers calls:** Verify it handles mid-sentence interruptions (barge-in) without losing context — most demos show clean turn-by-turn only
-- [ ] **Calendar booking works:** Verify two simultaneous booking attempts for the same slot result in exactly one confirmation and one "next available" offer — concurrency test must exist
-- [ ] **Triage classifies emergencies:** Verify it correctly handles indirect emergency descriptions ("water everywhere in my garage" not "flooding") — test with 20+ realistic non-idealized phrases
-- [ ] **Google Calendar syncs:** Verify behavior when owner deletes an event in Google Calendar directly — does the slot re-open? Does a booking get orphaned?
-- [ ] **Outlook Calendar syncs:** Verify with a Microsoft 365 Business account (not personal @outlook.com) — consent flow, delta sync, and webhook subscription renewal all work
-- [ ] **Multi-language works (full chain):** Verify that a Spanish-speaking caller gets Spanish triage, Spanish SMS notifications, Spanish booking confirmation, and Spanish transcript stored without corruption — not just a Spanish voice response
-- [ ] **Owner notifications fire:** Verify SMS and email notifications work when the SMS provider has a temporary failure — do they retry? Does the owner get told?
-- [ ] **Call recordings are stored:** Verify recordings survive a Vapi/Retell account token rotation — are they in your storage or only in their platform?
-- [ ] **Unified onboarding works for existing users:** Verify that an existing user who completed onboarding before the wizard was deployed logs in and lands on `/dashboard`, not in the wizard
-- [ ] **Unified onboarding handles mid-wizard refresh:** Verify that refreshing the browser at step 3 of the wizard does not reset to step 1
-- [ ] **Unified onboarding handles email verification mid-flow:** Verify that clicking the email verification link, switching back to the browser, and continuing the wizard works end-to-end
-- [ ] **Pricing page converts:** Verify all CTA buttons link to the correct destinations; verify the page renders correctly on mobile (no horizontal overflow); verify the Enterprise "Contact Sales" CTA triggers an action (form/email), not a dead link
-- [ ] **Contact form actually delivers submissions:** Submit the form and verify the email arrives in the ops inbox — do not assume the API route works without end-to-end verification
-- [ ] **About page has no placeholder text:** Search codebase for "Lorem ipsum", "Coming soon", "TBD", "Team bio" strings before shipping
-- [ ] **Onboarding is complete (5-minute gate):** Verify with an actual non-technical user (not a developer or teammate) — measure time from public landing page CTA to hearing the test call, not from wizard step 1
-
----
+- [ ] **Prompt rewrite:** Often missing negative instructions -- verify the prompt explicitly says "do NOT transfer unless..." not just "book everyone"
+- [ ] **Triage reclassification:** Often missing the `call-processor.js` conditional that branches on urgency for `suggested_slots` -- verify `isRoutineUnbooked` logic is removed
+- [ ] **Booking universalization:** Often missing max-bookings-per-day guardrail -- verify `atomicBookSlot` or caller has a daily cap
+- [ ] **Recovery SMS universalization:** Often missing the delivery confirmation check -- verify `recovery_sms_sent_at` is only set after confirmed delivery, not after API call
+- [ ] **Notification priority:** Often missing the emergency acknowledgment flow -- verify owner must confirm receipt of emergency notifications
+- [ ] **Dashboard parity:** Often missing the semantic update -- verify badge labels reflect booking status, not just urgency
+- [ ] **Test suite:** Often missing new assertions -- verify test count is higher after pivot than before, not lower
+- [ ] **Exception state handling:** Often missing the "caller just wants info" path -- verify intent detection exists before booking flow
+- [ ] **Retell config:** Often missing the `transfer_call` function retention -- verify it's still registered even though prompt deprioritizes it
+- [ ] **End-to-end flow:** Often missing the "all slots stale" path -- verify there's a graceful terminal when no fresh slots are available
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Double-booking discovered | HIGH | (1) Contact both customers immediately, (2) manually re-slot one, (3) audit the slot locking code for the race condition, (4) replay recent bookings to check for other doubles, (5) write regression test |
-| Voice AI hallucinated business info to caller | MEDIUM | (1) Review transcript, (2) correct the system prompt with explicit constraints, (3) if caller was given wrong commitment, owner calls back to correct, (4) audit other calls for same pattern |
-| Google Calendar OAuth token expired silently | LOW-MEDIUM | (1) Alert owner to re-authorize, (2) replay missed sync window by pulling calendar events for last 24h, (3) check for bookings made in the gap against calendar events |
-| Triage misclassified emergency as routine | HIGH | (1) Owner calls back immediately, (2) review and update triage prompt, (3) add the misclassified phrase as a labeled example in the test set, (4) re-run full triage test suite |
-| Call recording lost (platform-only storage) | HIGH | (1) Contact Vapi/Retell support for recovery, (2) accept data loss for past calls, (3) immediately implement recording export to own storage, (4) communicate transparently to affected owners |
-| Multi-tenant data leak (owner sees wrong leads) | CRITICAL | (1) Immediately audit all API endpoints for missing business_id scoping, (2) notify affected owners, (3) rotate all API keys, (4) engage security review before reopening access |
-| Existing users looped back through onboarding after wizard deploy | HIGH | (1) Roll back the redirect logic, (2) run the backfill migration for onboarding_completed_at on all tenants with business_name set, (3) re-deploy with backfill verified, (4) monitor login success rate |
-| Outlook sync silently broken (webhook subscription expired) | MEDIUM | (1) Check subscription expiry timestamps in DB, (2) manually re-register all expired subscriptions, (3) deploy the background renewal job, (4) trigger a full re-sync for affected tenants |
-| Outlook admin consent blocking SMB user signup | MEDIUM | (1) Surface better error state ("Your IT admin needs to approve this app"), (2) provide admin consent URL for their IT contact, (3) consider offering Google Calendar as the primary path for affected users |
-| Contact form spam flooding ops inbox | LOW | (1) Add rate limiting at the API route (5 submissions/IP/hour), (2) add honeypot field to the form, (3) add reCAPTCHA v3 async, (4) delete spam submissions from inbox |
-
----
+| Prompt regression (AI still escalating) | LOW | Rewrite prompt, redeploy. No data migration needed. Test with 5 live calls. |
+| Triage logic in booking decisions | MEDIUM | Audit all `urgency` conditionals in codebase. Refactor to notification-only usage. Requires code changes across multiple files. |
+| Over-booking / ghost appointments | HIGH | Cancel invalid appointments, notify affected callers, add intent detection, rebuild owner trust. Calendar cleanup is manual. |
+| Notification fatigue | MEDIUM | Implement digest mode retroactively. Re-engage owners who muted notifications. Design notification preferences UI. |
+| Calendar flooding | HIGH | Purge spam bookings, add rate limits, potentially block numbers. Calendar recovery is manual and time-consuming. |
+| Silent fallback failures | HIGH | Audit all calls where recovery_sms_sent_at is set but caller never booked. Re-send SMS. Add monitoring. Retroactive fix is labor-intensive. |
+| Emergency oversight loss | CRITICAL | If an emergency was missed, there is no technical recovery -- only customer service recovery. Prevention is the only strategy. |
+| Test suite gaps | MEDIUM | Write missing tests retroactively. The risk is that bugs shipped during the gap period are already in production. |
+| Dashboard confusion | LOW | Update labels and add tooltips. Mostly a frontend change. |
+| Stale slot data | MEDIUM | Add refresh_slots tool, increase pre-calculated slot count. Requires Retell config update and webhook handler changes. |
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Voice latency (function call dead air) | Voice Infrastructure (Phase 1) | Function call p95 latency < 800ms in load test before connecting to booking |
-| Non-atomic slot locking | Scheduling & Booking (Phase 2) | Concurrency test: 10 simultaneous attempts on one slot → exactly 1 succeeds |
-| Triage misclassification | AI Intelligence / Triage (Phase 2-3) | Triage accuracy test set: 50+ realistic caller phrases, >90% correct classification |
-| Google Calendar as source of truth | Scheduling & Booking (Phase 2) | Architecture review: calendar sync is async background job; availability reads from own DB |
-| AI hallucinating business info | Voice Intelligence / Prompts (Phase 1-2) | Knowledge boundary test: 10 out-of-scope questions all result in "I'll have [owner] call you" |
-| Multi-language as afterthought | Voice Infrastructure (Phase 1) | All text content uses translatable string keys; switching language mid-config works end-to-end |
-| Onboarding complexity | Onboarding & Dashboard (Phase 3-4) | Non-technical user (not developer) completes setup to first test call in < 5 minutes |
-| Webhook signature not validated | Voice Infrastructure (Phase 1) | Unsigned webhook POST returns 401; duplicate event POST is idempotent |
-| Call recordings in platform-only storage | Voice Infrastructure (Phase 1) | Recordings stored in own object storage within 24h of call completion |
-| Multi-tenant data leakage | Any DB/API phase | Automated cross-tenant access test: Owner A's token cannot retrieve Owner B's leads |
-| Breaking existing users (wizard unification) | Unified Onboarding Wizard | Run backfill migration first; verify existing user login → /dashboard before any flow changes deploy |
-| Outlook sync complexity (consent, delta, webhooks) | Outlook Calendar Sync (Hardening) | Test with M365 Business account; verify delta token persists across restarts; webhook renewal scheduled |
-| Pricing page feature-list antipattern | Pricing Page phase | Outcome-led tier descriptions reviewed before ship; mobile render verified; all CTAs functional |
-| Wizard state lost on refresh | Unified Onboarding Wizard | Refresh-at-each-step test passes; email verification mid-flow E2E test passes |
-| Concurrency QA missing contention test | Hardening & Launch phase | Dedicated contention test (20 concurrent requests, same slot) in CI; exactly 1 succeeds |
-| Multi-language E2E stops at voice layer | Hardening & Launch phase | Full chain test: Spanish call → Spanish triage → Spanish SMS → dashboard UTF-8 intact |
-| 5-minute gate tested only by developers | Hardening & Launch phase | Non-technical user timed walkthrough on staging; time measured from landing page CTA |
-| Contact/about pages incomplete on ship | Contact & About Pages phase | Contact form email delivery verified; no placeholder text in about page; spam protection in place |
-
----
+| Prompt regression | Phase 1: Agent Prompt Rewrite | Prompt snapshot test; absence of escalation language; transfer_call invocation rate < 5% of calls |
+| Triage logic leaking | Phase 2: Triage Reclassification | Zero urgency-based conditionals in booking/lead code; grep audit passes |
+| Over-booking | Phase 1: Agent Prompt Rewrite | Intent detection in prompt; booking-offered vs. booking-completed ratio tracked |
+| Notification fatigue | Phase 5: Notification Priority System | Owner notification preferences exist; emergency vs. routine use different channels |
+| Calendar flooding | Phase 3: Booking Flow Universalization | Max daily bookings enforced; per-number rate limit active; zone buffers as hard constraints |
+| Silent fallback failures | Phase 6: Recovery SMS Universal Fallback | SMS delivery status tracked; failed SMS retried; dead-letter alerts configured |
+| Emergency oversight loss | Phase 5: Notification Priority System | Emergency acknowledgment flow active; escalation chain fires on timeout |
+| Test suite regression | Phase 1: Agent Prompt Rewrite (and every phase) | Test count increases per phase; old tests reconciled, not deleted |
+| Dashboard confusion | Phase 7: Dashboard Visual Parity | Badge labels updated; booking status is primary; urgency is secondary |
+| Stale slot data | Phase 3: Booking Flow Universalization | refresh_slots tool registered; all-stale terminal path exists |
 
 ## Sources
 
-- Microsoft Graph API documentation (Outlook Calendar, permissions reference, delta query, webhook subscriptions) — HIGH confidence [https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview](https://learn.microsoft.com/en-us/graph/outlook-calendar-concept-overview)
-- Microsoft Q&A: OAuth scope accumulation and admin consent pitfalls — MEDIUM confidence [https://learn.microsoft.com/en-us/answers/questions/2287394/issues-with-microsoft-graph-api-oauth-scope-handli](https://learn.microsoft.com/en-us/answers/questions/2287394/issues-with-microsoft-graph-api-oauth-scope-handli)
-- Microsoft Entra: multi-tenant consent requirements — HIGH confidence [https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/grant-admin-consent)
-- Microsoft Graph webhook best practices (delta token + subscription renewal) — HIGH confidence [https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/](https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/)
-- Supabase / PostgreSQL SERIALIZABLE isolation and race condition patterns — MEDIUM confidence [https://github.com/orgs/supabase/discussions/30334](https://github.com/orgs/supabase/discussions/30334)
-- PostgreSQL SELECT FOR UPDATE and SKIP LOCKED for booking contention — HIGH confidence [https://on-systems.tech/blog/128-preventing-read-committed-sql-concurrency-errors/](https://on-systems.tech/blog/128-preventing-read-committed-sql-concurrency-errors/)
-- Hamming AI: multilingual voice agent testing framework — MEDIUM confidence [https://hamming.ai/resources/multilingual-voice-agent-testing](https://hamming.ai/resources/multilingual-voice-agent-testing)
-- SaaS pricing page psychology and conversion (center-stage effect, anchor pricing) — MEDIUM confidence [https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices](https://pipelineroad.com/agency/blog/saas-pricing-page-best-practices)
-- Auth0: user onboarding strategies and existing user migration pitfalls — MEDIUM confidence [https://auth0.com/blog/user-onboarding-strategies-b2b-saas/](https://auth0.com/blog/user-onboarding-strategies-b2b-saas/)
-- SaaS launch checklist: contact/about page, analytics, accessibility oversights — MEDIUM confidence [https://designrevision.com/blog/saas-launch-checklist](https://designrevision.com/blog/saas-launch-checklist)
-- Codebase inspection: `/src/app/auth/signin/page.js`, `/src/app/onboarding/page.js`, `/src/app/auth/callback/route.js`, `/src/app/onboarding/layout.js` — HIGH confidence (direct code evidence)
+- Direct codebase analysis: `src/lib/agent-prompt.js`, `src/lib/scheduling/booking.js`, `src/lib/call-processor.js`, `src/lib/notifications.js`, `src/lib/triage/classifier.js`, `src/server/retell-llm-ws.js`, `src/app/api/webhooks/retell/route.js`, `src/app/api/cron/send-recovery-sms/route.js`
+- Test suite analysis: `tests/agent/prompt.test.js`, `tests/scheduling/booking.test.js`
+- PROJECT.md milestone specification and requirement changes
+- Domain knowledge: LLM prompt engineering for voice AI systems, Twilio SMS delivery semantics, calendar booking system design patterns
 
 ---
-*Pitfalls research for: AI voice receptionist + home service booking platform (v1.1: pricing, unified onboarding, Outlook sync, launch hardening)*
-*Researched: 2026-03-22*
+*Pitfalls research for: Booking-first digital dispatcher pivot*
+*Researched: 2026-03-24*

@@ -52,7 +52,15 @@
       "Bash(find /f/homeservice-agent -type f \\\\\\(-name *twilio* -o -name *voice* -o -name *call* \\\\\\))",
       "Bash(npm list:*)",
       "WebFetch(domain:www.twilio.com)",
-      "WebFetch(domain:help.twilio.com)"
+      "WebFetch(domain:help.twilio.com)",
+      "Skill(gsd:plan-phase)",
+      "Skill(gsd:new-milestone)",
+      "Bash(claude mcp:*)",
+      "Bash(find:*)",
+      "Bash(test:*)",
+      "Bash(FILE=\"src/components/dashboard/CalendarSyncCard.js\")",
+      "Read(//c/Users/Leroy/Desktop/homeservice_agent-main/**)",
+      "Bash(cat:*)"
     ]
   }
 }

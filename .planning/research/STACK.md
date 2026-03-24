@@ -1,136 +1,161 @@
 # Stack Research
 
-**Domain:** AI voice receptionist + scheduling CRM for home service SMEs — v1.1 milestone additions
-**Researched:** 2026-03-22
-**Confidence:** MEDIUM-HIGH (WebSearch verified; WebFetch blocked; version numbers sourced from npm search results and official sources)
+**Domain:** Booking-first digital dispatcher pivot (v2.0 milestone) for AI voice receptionist
+**Researched:** 2026-03-24
+**Confidence:** HIGH (primarily behavioral/prompt changes to existing stack; minimal new dependencies)
 
 ---
 
 ## Scope
 
-This document covers ONLY the stack additions needed for the v1.1 milestone. The existing stack (Next.js 15/React 19, Tailwind v4, shadcn/ui, Supabase, Retell, Framer Motion, next-intl, Twilio, Resend, Google Calendar via `googleapis`) is validated and unchanged.
+This document covers ONLY the stack additions/changes needed for the v2.0 booking-first dispatcher pivot. The existing stack is validated and unchanged:
+
+- Next.js 16 / React 19 / Tailwind v4
+- Supabase (Postgres) with advisory lock booking
+- Retell voice + custom LLM WebSocket server (Groq / Llama 4 Scout)
+- Three-layer triage classifier (keywords, LLM, owner rules)
+- Google Calendar bidirectional sync
+- Twilio SMS + Resend email notifications
+- Lead CRM with merge logic
+
+**Critical finding: The booking-first pivot is 90% behavioral (prompt rewrite + call flow logic) and 10% stack. No major new infrastructure is needed.**
 
 New capabilities required:
 
-1. **Pricing page** — display-only, 4 tiers, monthly/annual toggle (no Stripe — explicitly out of scope)
-2. **Unified onboarding wizard** — multi-step form replacing separate auth + onboarding flows
-3. **Contact page** — form that sends email via Resend (Resend already installed)
-4. **About/company page** — static marketing page (no new libraries needed)
-5. **Outlook Calendar sync** — Microsoft Graph API OAuth + bidirectional event sync
-6. **Multi-language E2E validation** — Playwright test suite covering i18n flows
-7. **Concurrency / load QA** — k6 load testing for slot-locking under concurrent calls
+1. **Agent prompt rewrite** — booking-first dispatcher behavior (no new libraries)
+2. **Triage reclassification** — urgency tags as notification priority (no new libraries)
+3. **Notification priority dispatch** — urgency-driven SMS/email formatting and delivery timing
+4. **Exception state detection** — AI recognizes confusion/caller-requests-human (prompt engineering)
+5. **Universal recovery SMS** — extend existing cron to cover all failed bookings (no new libraries)
+6. **Structured LLM output for exception detection** — reliable JSON extraction from Groq responses
 
 ---
 
-## Recommended Stack — New Additions
+## Recommended Stack -- New Additions
 
 ### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| `react-hook-form` | ^7.71.2 | Multi-step wizard form state, per-step validation | The standard for form management in React. Minimal re-renders, first-class Zod resolver integration, and `useFormContext` for sharing state across wizard steps without external state manager. Does not conflict with existing code — project has no forms today. |
-| `zod` | ^4.3.6 | Schema validation for wizard steps and contact form | Zod v4 (released July 2025) is production-stable and the current ecosystem standard. Use the `zod/v4` subpath export (Zod 4's dual-package design). Pairs with `@hookform/resolvers` for RHF integration. Each wizard step gets its own Zod schema for incremental validation. |
-| `@hookform/resolvers` | ^5.2.2 | Bridge between React Hook Form and Zod v4 | Required adapter — RHF does not consume Zod schemas natively. v5.x supports Zod v4. Do not install v3.x (Zod v3 only). |
-| `@azure/msal-node` | ^5.1.1 | Microsoft OAuth 2.0 auth code flow with PKCE for Outlook Calendar | The official Microsoft Authentication Library for Node.js server-side code. Handles the Azure Entra ID OAuth dance — authorization URL generation, token exchange, token refresh — mirroring exactly how `google-auth-library` handles Google OAuth today. v5.x is the current major; v3.x is a parallel maintenance branch. Use v5. |
-| `@microsoft/microsoft-graph-client` | ^3.0.7 | Microsoft Graph API client for Outlook Calendar CRUD + delta sync | The established stable client for Graph API. The TypeScript SDK (`@microsoft/msgraph-sdk`) is still in pre-release preview (1.0.0-preview.99) — do not use it yet. `microsoft-graph-client` v3.0.7 is the production-safe choice. Provides the same pattern as `googleapis`: authenticated client → calendar events CRUD + delta queries + webhook subscriptions. |
-| `@playwright/test` | ^1.58.2 | End-to-end multi-language test suite | Project uses Jest for unit tests. Playwright covers the browser-level E2E flows that Jest cannot test: i18n routing, locale switching, wizard step navigation, calendar OAuth redirect flows. v1.58.x includes first-class TypeScript support and native Next.js App Router support. |
-| `k6` (CLI, not npm) | ^1.6.1 | Concurrency and load testing for slot-locking and booking APIs | k6 is the industry-leading open-source load testing tool (29.9k GitHub stars, Feb 2026). Write test scripts in JavaScript. Tests the atomic slot-locking API (`/api/appointments`) under concurrent call load. Install as a system binary, not an npm package. |
+| None required | -- | -- | The booking-first pivot is a behavioral change to the existing WebSocket LLM server, agent prompt, call processor, and notification service. No new core frameworks, databases, or infrastructure components are needed. |
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| `@microsoft/microsoft-graph-types` | ^2.x | TypeScript type definitions for Graph API responses | Install alongside `microsoft-graph-client` when event and calendar types are needed in JS/TS code. Provides `MicrosoftGraph.Event`, `MicrosoftGraph.Calendar`, etc. |
-| `@hookform/resolvers` | ^5.2.2 | Already listed above — include in install block | — |
+| `zod` | ^4.3.6 | Runtime validation of structured LLM outputs (exception state JSON, booking intent JSON) | Already recommended in v1.1 STACK.md for wizard forms. Reuse here to validate the JSON objects that the Groq LLM returns when detecting exception states. Parse `{"exception": true, "reason": "caller_requests_human"}` safely instead of fragile string matching. |
+
+**That is the only new dependency.** Zod was already planned for v1.1 (wizard forms). The booking-first pivot reuses it for a second purpose: validating structured outputs from the LLM in the WebSocket server.
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| **k6 CLI** | Load testing `/api/appointments` booking endpoint under simulated concurrent Retell webhooks | Install via package manager or Docker: `brew install k6` / `choco install k6` / `docker run grafana/k6`. Write scripts in plain JS. Not a Node.js package. |
-| **Playwright browsers** | Browser binaries for E2E tests | After installing `@playwright/test`, run `npx playwright install chromium` — only Chromium needed for i18n/wizard E2E. |
+| k6 (already in v1.1 plan) | Load test the booking-first flow under concurrent calls | Same tool, new test scripts: simulate 10+ simultaneous callers all attempting to book (not just emergencies). Validates that the atomic slot locking holds when every call is a booking attempt. |
 
 ---
 
-## Pricing Page — No New Libraries Needed
+## What Changes -- Existing Code, Not New Libraries
 
-The pricing page (monthly/annual toggle, 4 tier cards) is built with existing stack:
+The pivot is implemented by modifying existing files, not adding new packages. Here is what changes and why no new library is needed for each:
 
-- `useState` for the billing toggle — a single boolean controlling price display
-- Framer Motion (already installed at ^12.38.0) for tier card animations
-- Tailwind v4 CSS Grid for the 4-column responsive layout
-- shadcn/ui `Badge` + `Button` for tier highlights and CTA buttons
+### 1. Agent Prompt (`src/lib/agent-prompt.js`)
 
-No charting, payment, or pricing library is needed. The page is display-only — payment processing is explicitly out of scope for v1.1.
+**Change:** Rewrite `buildSystemPrompt()` to make booking the default action for ALL calls. Remove the triage-based routing split ("For EMERGENCY calls... For ROUTINE calls..."). Replace with a single booking flow where urgency only affects slot selection strategy (emergency = earliest available, routine = next convenient).
 
----
+**No new library because:** This is pure string construction. The prompt template is already parameterized with `business_name`, `locale`, `tone_preset`, and `available_slots`. The behavioral shift is in the instructions, not the technology.
 
-## Contact Page — No New Libraries Needed
+**Key prompt engineering patterns for booking-first agents:**
+- **Default-to-action framing:** "Your primary goal is to book an appointment for every caller" instead of "Determine if this is an emergency or routine call"
+- **Slot selection by urgency:** "If the issue sounds urgent (flooding, gas leak, no heat), offer the earliest available slot first. For routine requests, offer the most convenient slots."
+- **Exception detection instructions:** "If you cannot understand what service the caller needs after 2 clarification attempts, OR if the caller explicitly says 'I want to talk to a person' / 'let me speak to someone', invoke the `end_call_with_transfer` function"
+- **Recovery guarantee:** "If booking fails for any reason, reassure the caller that someone will follow up within 15 minutes"
 
-The contact form sends an email via Resend (already installed at ^6.9.4). The contact form itself uses React Hook Form + Zod (new additions above). No additional library.
+### 2. Exception State Detection (WebSocket server + prompt)
 
----
+**Change:** Add a new tool definition `end_call_with_transfer` to the WebSocket server's tool list. The LLM decides when to invoke it based on prompt instructions (confusion detection, explicit human request). On invocation, the server uses Retell's `transfer_number` field in the WebSocket response to transfer the call.
 
-## About/Company Page — No New Libraries Needed
+**No new library because:** Retell's WebSocket protocol already supports `transfer_number` as a response field. The existing `transfer_call` tool already works. The change is:
+- Rename/refine the tool semantics: transfer is now an exception-only action, not a triage-based routing decision
+- Add `transfer_number` field to the WebSocket response (already supported by Retell, confirmed via docs)
+- The LLM's prompt instructions define when to trigger the exception (not a separate detection library)
 
-Static marketing page built with existing landing page patterns (AnimatedSection, Framer Motion, Tailwind). No new dependencies.
+**Exception state taxonomy (prompt-defined, not library-defined):**
 
----
+| Exception | Trigger | Action |
+|-----------|---------|--------|
+| AI confusion | 2+ failed clarification attempts | Transfer to owner + log `exception_type: 'ai_confusion'` |
+| Caller requests human | Explicit verbal request ("talk to a person") | Transfer to owner + log `exception_type: 'caller_requested_human'` |
+| Language barrier | Unsupported language detected | Already handled -- existing `LANGUAGE_BARRIER` tag system |
+| Booking system failure | `atomicBookSlot` throws error (not slot_taken) | Recovery SMS fallback + verbal apology |
 
-## Unified Onboarding Wizard — Pattern, Not a Library
+### 3. Notification Priority Dispatch (`src/lib/notifications.js`)
 
-The wizard is an application-level pattern, not a library install. The approach:
+**Change:** Modify `sendOwnerNotifications()` to accept urgency and format notifications differently based on priority level. Emergency bookings get immediate, high-urgency SMS/email. Routine bookings get standard notifications.
 
-1. A wizard state context holds accumulated form data across steps
-2. Each step renders a React Hook Form instance scoped to its Zod schema
-3. `useFormContext` shares field values across steps without lifting state to a global store
-4. URL-based step tracking (`/onboarding?step=2`) enables back-button navigation and deep linking
-5. Supabase Auth signup happens at step 1; subsequent steps write to the `tenants` table via existing `/api/onboarding/start` route
+**No new library because:** The existing Twilio and Resend clients already send synchronously within the call processor's `after()` block. Priority is implemented by:
+- **SMS formatting:** Emergency: prefix with "[URGENT]", include "IMMEDIATE RESPONSE NEEDED". Routine: current format unchanged.
+- **Email formatting:** Emergency: different React Email template with red urgency banner, subject prefix "[URGENT]". Routine: current template.
+- **Delivery timing:** All notifications already fire immediately via `Promise.allSettled`. No queue needed -- Twilio delivers SMS within seconds at this volume (single-tenant, ~50 calls/day max). Twilio's Traffic Shaping (beta) could add carrier-level priority later but is unnecessary now.
 
-The existing onboarding pages (`/onboarding`, `/onboarding/services`, `/onboarding/verify`, `/onboarding/complete`) are refactored into steps within the wizard, not replaced wholesale.
+**Why NOT add a queue (BullMQ, pg-boss):**
+- Current volume: 1 business = ~10-50 calls/day. That is 10-50 SMS + 10-50 emails per day.
+- Twilio API latency: ~200-500ms per SMS send. Already runs in `after()` (non-blocking background task).
+- Adding Redis (BullMQ) or a Postgres job queue (pg-boss) adds operational complexity (Redis hosting, worker processes) for zero user-facing benefit at this scale.
+- If the platform scales to 100+ tenants, revisit with pg-boss (Postgres-native, no Redis needed, uses SKIP LOCKED). But that is a v3+ concern.
 
----
+### 4. Triage Reclassification (`src/lib/triage/classifier.js` + `src/lib/call-processor.js`)
 
-## Outlook Calendar Sync — Implementation Pattern
+**Change:** The three-layer triage classifier stays. Its output (`urgency: 'emergency' | 'routine' | 'high_ticket'`) no longer drives call routing (all calls are booked). Instead, the urgency tag is attached to the booking record and drives notification priority.
 
-Mirrors the existing Google Calendar implementation exactly:
+**No new library because:** The classifier already returns `{ urgency, confidence, layer }`. The call processor already stores this on the `calls` table. The change is semantic: downstream consumers (notifications, dashboard badges) interpret urgency as priority, not routing.
 
-| Concern | Google (existing) | Outlook (new) |
-|---------|-------------------|---------------|
-| OAuth library | `google-auth-library` | `@azure/msal-node` |
-| API client | `googleapis` | `@microsoft/microsoft-graph-client` |
-| OAuth callback route | `/api/google-calendar/callback` | `/api/outlook-calendar/callback` |
-| Token storage | `calendar_integrations` table | Same table, new `provider = 'outlook'` row |
-| Delta sync | Google Calendar push notifications + `syncToken` | Graph API delta query + `@odata.deltaLink` |
-| Webhook subscription | Google Calendar watch channel | Graph `POST /subscriptions` (max 4230-min TTL, requires renewal cron) |
+### 5. Universal Recovery SMS (`src/app/api/cron/send-recovery-sms/route.js`)
 
-The Microsoft Graph delta query pattern:
-1. Initial sync: `GET /me/calendarView/delta?startDateTime=...&endDateTime=...` → paginate and store all events, save `@odata.deltaLink`
-2. Incremental sync triggered by Graph webhook: re-query with saved `deltaLink` → only changed events returned
-3. Webhook subscription renewal: existing cron job `renew-calendar-channels` extended to renew Microsoft Graph subscriptions before the 4230-minute expiry
+**Change:** The existing recovery SMS cron already sends SMS to callers who hung up without booking. In booking-first mode, every call is a booking attempt, so the cron's logic simplifies: any call without a confirmed appointment gets a recovery SMS (the "routine caller declines" path still exists but is now the minority case).
 
-Key difference from Google: Microsoft's tenant consent model requires the Azure app to be registered with appropriate Calendar scopes (`Calendars.ReadWrite`) and the user must be on Microsoft 365 (not just a personal Outlook.com account for organizational use cases). This affects onboarding UX — document clearly in settings page.
+**No new library because:** The cron already handles this exact flow. The change is removing the implicit assumption that routine callers might not want a booking.
+
+### 6. Structured LLM Output Parsing
+
+**Change:** When the LLM detects an exception state during a call, it should return structured data (not just free text) so the WebSocket server can take programmatic action. Use Zod to validate the LLM's JSON output.
+
+**Pattern (in the WebSocket server):**
+
+```javascript
+import { z } from 'zod/v4';
+
+const ExceptionSchema = z.object({
+  exception: z.literal(true),
+  reason: z.enum(['ai_confusion', 'caller_requested_human', 'booking_system_error']),
+  message_to_caller: z.string(),
+});
+
+// In handleResponseRequired, after LLM returns a tool call:
+function parseExceptionFromArgs(argsString) {
+  try {
+    const parsed = JSON.parse(argsString);
+    return ExceptionSchema.parse(parsed);
+  } catch {
+    return null; // Not an exception, proceed normally
+  }
+}
+```
+
+**Why Zod and not manual JSON.parse:** LLM outputs are inherently unreliable. Zod catches malformed fields, wrong types, and missing required properties. This prevents the WebSocket server from crashing on unexpected LLM output during a live call.
 
 ---
 
 ## Installation
 
 ```bash
-# Form state — wizard + contact form
-npm install react-hook-form zod @hookform/resolvers
+# Zod is the ONLY new dependency (may already be installed from v1.1 wizard work)
+npm install zod
 
-# Outlook Calendar sync
-npm install @azure/msal-node @microsoft/microsoft-graph-client @microsoft/microsoft-graph-types
-
-# E2E testing
-npm install -D @playwright/test
-npx playwright install chromium
-
-# Load testing (system binary — not npm)
-# macOS: brew install k6
-# Windows: choco install k6
-# Docker: docker run --rm -i grafana/k6 run -
+# No other packages needed for the booking-first pivot
 ```
+
+If Zod was already installed during v1.1, this is a zero-dependency milestone.
 
 ---
 
@@ -138,11 +163,12 @@ npx playwright install chromium
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| `react-hook-form` + `zod` for wizard | Zustand wizard store + manual validation | Use Zustand if wizard steps need to share non-form state (file uploads, async side-effects between steps). For this wizard (text fields, toggles, one phone number input), RHF is sufficient and avoids a new global store. |
-| `@azure/msal-node` v5 | `@azure/msal-node` v3 | v3 is a parallel maintenance branch for teams on Node < 18. This project is on Node 20+, use v5. |
-| `@microsoft/microsoft-graph-client` v3 | `@microsoft/msgraph-sdk` (TypeScript SDK) | The TypeScript SDK is still 1.0.0-preview.99 (pre-release, last published Jan 2026). It will be the recommended choice once stable. Switch on 1.0.0 GA. |
-| `@playwright/test` | Cypress | Cypress has historically better DX for component testing but Playwright is faster for full E2E, has better multi-locale/timezone support (`test.use({ locale, timezoneId })`), and the project already uses Jest for unit tests — Playwright for E2E avoids dual runner overhead. |
-| k6 for load testing | Artillery | Artillery supports declarative YAML config which is easier for non-developers. k6 is preferred here because the slot-locking tests require precise concurrency scripting (multiple virtual users hitting the same slot simultaneously) which k6's imperative JS model handles more naturally. |
+| Urgency-formatted SMS/email (no queue) | BullMQ + Redis priority queue for notifications | Use BullMQ if platform scales to 100+ concurrent tenants with thousands of daily notifications. At current single-tenant scale, a queue adds operational overhead (Redis hosting, worker process management) with no benefit. |
+| Urgency-formatted SMS/email (no queue) | pg-boss (Postgres-native job queue) | pg-boss is the right choice if you need a queue but want to avoid Redis. Uses Postgres SKIP LOCKED for exactly-once delivery. Consider at 50+ tenants. |
+| Prompt-based exception detection | Separate NLU classifier for exception states | Use a separate classifier if the LLM consistently fails to detect exception states from prompt instructions alone. In practice, LLMs are good at this -- "if you can't understand after 2 tries, escalate" is a clear instruction. Monitor in QA. |
+| Retell `transfer_number` WebSocket field | Retell SDK `call.transfer()` REST API | The REST API (`retell.call.transfer()`) is already used in the webhook handler for `call_function_invoked`. For the WebSocket server (live call), use the `transfer_number` field in the response instead -- it transfers after the agent finishes speaking, which is more natural. |
+| Single tool `book_appointment` + prompt logic | Separate tools per urgency (`book_emergency`, `book_routine`) | Separate tools are unnecessary. The existing `book_appointment` tool already accepts an `urgency` parameter. The LLM chooses the slot based on prompt instructions; the tool handles execution identically regardless of urgency. |
+| Zod for LLM output validation | Manual JSON.parse + type checks | Manual parsing works but is fragile. Zod's `.safeParse()` provides type-safe validation with meaningful error messages. Since Zod is already planned for the project (v1.1 forms), the marginal cost is zero. |
 
 ---
 
@@ -150,60 +176,78 @@ npx playwright install chromium
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Stripe or any payment library | Payment processing is explicitly out of scope for v1.1. The pricing page is display-only. Adding Stripe now couples PCI compliance concerns to a milestone that doesn't need it. | No library — build display-only tier cards with Tailwind |
-| `@microsoft/msgraph-sdk` (TypeScript SDK) | Still in pre-release (1.0.0-preview.99 as of Jan 2026). Breaking changes are likely before GA. Do not use pre-release SDKs in production booking logic. | `@microsoft/microsoft-graph-client` v3.0.7 (stable) |
-| `adal-node` (ADAL) | Microsoft deprecated the Azure Active Directory Authentication Library (ADAL) in June 2023. Using it for new integrations is a security and maintenance risk. | `@azure/msal-node` v5 |
-| `formik` | Formik is significantly slower than React Hook Form (re-renders entire form on every keystroke). With a 5-step wizard, this becomes noticeable. Also, Formik's Zod integration requires an adapter that's less maintained than `@hookform/resolvers`. | `react-hook-form` |
-| `react-stepzilla` / `react-multistep` | Opinionated wizard libraries that impose layout and routing structure. They conflict with the existing App Router URL-step pattern and shadcn/ui component system. | Application-level wizard pattern with RHF + `useFormContext` |
-| Exchange Web Services (EWS) | Microsoft has confirmed EWS will stop accepting connections from Outlook add-ins on 1 October 2026. Starting a new EWS integration now means a mandatory rewrite in months. | Microsoft Graph API |
-
----
-
-## Version Compatibility
-
-| Package A | Compatible With | Notes |
-|-----------|-----------------|-------|
-| `zod@^4.3.6` | `@hookform/resolvers@^5.2.2` | resolvers v5 added Zod v4 support. Do not pair zod v4 with resolvers v3 — the resolver will fail silently on schema parse. |
-| `react-hook-form@^7.71.2` | `react@^19.0.0` (project uses React 19) | RHF v7.x is compatible with React 19. No issues. |
-| `@azure/msal-node@^5.1.1` | Node.js 20+ | v5 requires Node 18+. Project is on Next.js 15/Node 20. Compatible. |
-| `@microsoft/microsoft-graph-client@^3.0.7` | `@azure/msal-node@^5.1.1` | microsoft-graph-client requires an `AuthenticationProvider` interface. Implement a thin adapter that calls `msal-node`'s `acquireTokenSilent` and returns the access token. This adapter is ~15 lines of code. |
-| `@playwright/test@^1.58.2` | `next@^16.1.7` | Playwright works with any Next.js version via `webServer` config in `playwright.config.js`. Specify `command: 'npm run dev'` and `port: 3000`. |
-| `zod@^4.3.6` | existing `next-intl@^4.8.3` | No conflict. next-intl does not depend on Zod. |
+| BullMQ / Redis for notification priority | Adds Redis as an infrastructure dependency for a single-tenant product doing 10-50 notifications/day. Operational complexity (Redis hosting, connection management, worker processes) vastly outweighs benefit at this scale. | Urgency-aware formatting in existing `sendOwnerNotifications()`. Add priority when sending (not queueing). |
+| LangChain / LlamaIndex for prompt management | The agent prompt is a single function (`buildSystemPrompt`) that returns a string. Adding a prompt framework for one prompt template is massive over-engineering. LangChain's abstractions would obscure the simple string construction and add hundreds of KB of dependencies. | Keep `buildSystemPrompt()` as a plain function. Parameterize with the new booking-first instructions directly. |
+| Retell Conversation Flow (no-code builder) | The project uses a custom LLM WebSocket server, which gives full control over the conversation. Retell's Conversation Flow is for their hosted LLM mode. Switching would mean losing the custom Groq/Llama integration and the fine-grained control over tool calls. | Keep the custom WebSocket LLM server. Implement booking-first logic in the prompt and tool handlers. |
+| Separate "booking intent classifier" microservice | Adding a separate service to classify whether a caller wants to book adds latency to every turn and architectural complexity. In booking-first mode, ALL callers want to book by default. The exception (caller doesn't want to book) is detected by the LLM from the conversation context. | Prompt the LLM to assume booking intent. Exception detection is a prompt instruction, not a separate service. |
+| OpenAI Structured Outputs (JSON mode) | Groq (the project's LLM provider) does not support OpenAI's `response_format: { type: "json_object" }` parameter for all models. Relying on structured output mode would lock the project to specific Groq model versions. | Use Zod to validate JSON from the LLM's tool call arguments. The tool call mechanism already returns structured JSON -- Zod validates it. |
 
 ---
 
 ## Stack Patterns by Variant
 
-**For the Outlook OAuth flow (App Router server-side):**
-- Use a Next.js API route (`/api/outlook-calendar/auth`) to generate the MSAL authorization URL and redirect the user — same pattern as the existing `/api/google-calendar/auth` route
-- Store the MSAL auth code flow instance in a server-side session (encrypted cookie via `@supabase/ssr`), not in the browser
-- Exchange code for tokens in `/api/outlook-calendar/callback`, store encrypted tokens in `calendar_integrations` table with `provider = 'outlook'`
+**For the booking-first prompt rewrite:**
+- Use a "booking-first preamble" that overrides the default behavior: "Your #1 job is to get the caller booked into an appointment. Every call should end with either a confirmed booking or a recovery SMS."
+- Urgency detection happens conversationally, not as a routing decision: "While booking, assess urgency from the caller's description. Tag as emergency/routine/high_ticket, but always book regardless."
+- Slot selection is urgency-aware: "For emergencies, always offer the earliest available slot first. For routine, offer the next 2-3 convenient slots."
 
-**For the wizard (App Router, client component):**
-- Wrap the wizard in a single `'use client'` boundary at the layout level
-- Keep each step as a separate file in `/app/onboarding/steps/` for code clarity
-- Use `useSearchParams` to read/write `?step=N` for bookmarkable navigation
-- Persist form data to `sessionStorage` on each step's `onBlur` to survive accidental refreshes
+**For exception-only escalation:**
+- Define a clear exception taxonomy in the prompt (see table above)
+- Use the existing `transfer_call` tool with Retell's `transfer_number` WebSocket response field for live-call transfers
+- Log exception type and reason on the `calls` table for dashboard reporting
+- After transfer attempt: if owner doesn't answer, the recovery SMS cron catches the unbooked call
 
-**For Playwright i18n E2E:**
-- Use `test.use({ locale: 'es', timezoneId: 'America/Los_Angeles' })` at the test file level for Spanish locale tests
-- Load `messages/es.json` directly in test helpers to assert UI text without hardcoding translated strings
-- Run two test projects in `playwright.config.js`: `{ name: 'en', use: { locale: 'en-US' } }` and `{ name: 'es', use: { locale: 'es-419' } }`
+**For notification priority formatting:**
+- Emergency bookings: `[URGENT] ${businessName}: Emergency booking confirmed -- ${callerName}, ${jobType} at ${address}. Slot: ${time}. ${dashboardLink}`
+- Routine bookings: `${businessName}: New booking confirmed -- ${callerName}, ${jobType}. Slot: ${time}. ${dashboardLink}`
+- Failed bookings (any urgency): `${businessName}: Call from ${callerName} about ${jobType} -- booking failed. Recovery SMS sent to caller. Review: ${dashboardLink}`
+
+**For the WebSocket server tool updates:**
+- Keep `book_appointment` tool as-is (already has urgency parameter)
+- Refine `transfer_call` tool description: "Transfer to business owner. Only invoke when: (1) you cannot determine the service needed after 2 clarification attempts, OR (2) the caller explicitly requests to speak with a human. Do NOT transfer for booking-related issues -- offer alternatives instead."
+- Add `end_call` capability via the `end_call: true` response field for graceful hang-ups after booking confirmation
+
+---
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| `zod@^4.3.6` | `openai@^6.32.0` (Groq client) | No conflict. Zod is used independently for output validation, not integrated with the OpenAI SDK. |
+| `zod@^4.3.6` | Node.js WebSocket server (`ws`) | No conflict. Zod runs in the same Node.js process as the WebSocket server. Import via `zod/v4` subpath. |
+| Existing `retell-sdk@^5.9.0` | Retell WebSocket `transfer_number` field | The `transfer_number` field is part of Retell's WebSocket protocol, not the SDK. The SDK is used for REST API calls (webhook verification, outbound calls). No version conflict. |
+
+---
+
+## Architecture Impact Summary
+
+| Component | Change Type | New Library? |
+|-----------|-------------|-------------|
+| `src/lib/agent-prompt.js` | Rewrite prompt template | No |
+| `src/server/retell-llm-ws.js` | Refine tool descriptions, add `transfer_number` response field, add Zod validation | Zod (reuse) |
+| `src/lib/triage/classifier.js` | No code change -- semantic reinterpretation of output | No |
+| `src/lib/call-processor.js` | Pass urgency to notification formatter | No |
+| `src/lib/notifications.js` | Add urgency-aware SMS/email formatting | No |
+| `src/app/api/cron/send-recovery-sms/route.js` | Simplify logic: all unbooked calls get recovery SMS | No |
+| `src/app/api/webhooks/retell/route.js` | No change -- already handles `book_appointment` and `transfer_call` | No |
+| Dashboard UI | Badge semantics change (urgency = priority, not routing) | No |
 
 ---
 
 ## Sources
 
-- npm search results (WebSearch, 2026-03-22): react-hook-form 7.71.2, @hookform/resolvers 5.2.2, zod 4.3.6, @azure/msal-node 5.1.1, @playwright/test 1.58.2 — MEDIUM confidence (npm page not directly fetched; version numbers from search snippets)
-- [Microsoft Graph delta query for calendar events](https://learn.microsoft.com/en-us/graph/delta-query-events) — official Microsoft docs — HIGH confidence
-- [Microsoft Graph webhook + delta query pattern](https://www.voitanos.io/blog/microsoft-graph-webhook-delta-query/) — MEDIUM confidence
-- [EWS deprecation October 2026](https://www.mckennaconsultants.com/ews-to-microsoft-graph-the-api-migration-every-outlook-add-in-developer-must-complete-by-october-2026/) — MEDIUM confidence (confirms Microsoft's official EWS deadline)
-- [k6 v1.6.1, February 2026](https://k6.io/) — MEDIUM confidence (from WebSearch snippet)
-- [Zod v4 release July 2025, latest 4.3.6](https://zod.dev/v4) — HIGH confidence (multiple sources agree)
-- [@microsoft/msgraph-sdk pre-release status](https://www.npmjs.com/package/@microsoft/msgraph-sdk) — HIGH confidence (1.0.0-preview.99 as of ~Jan 2026)
-- Existing codebase analysis (`google-calendar.js`, `package.json`, app route structure) — HIGH confidence (direct code read)
+- [Retell AI LLM WebSocket docs](https://docs.retellai.com/api-references/llm-websocket) -- HIGH confidence (official docs, verified `transfer_number` field and `end_call` behavior)
+- [Retell AI Function Calling docs](https://docs.retellai.com/integrate-llm/integrate-function-calling) -- HIGH confidence (official docs, confirmed tool invocation protocol)
+- [Retell AI Troubleshooting](https://www.retellai.com/blog/troubleshooting-common-issues-in-voice-agent-development) -- MEDIUM confidence (official blog)
+- [BullMQ v5.71.0](https://www.npmjs.com/package/bullmq) -- HIGH confidence (npm, evaluated and rejected for this scale)
+- [pg-boss v12.14.0](https://www.npmjs.com/package/pg-boss) -- HIGH confidence (npm, evaluated as future option)
+- [Twilio Traffic Shaping](https://www.twilio.com/docs/messaging/features/traffic-shaping) -- MEDIUM confidence (public beta, not needed at current scale)
+- [Zod v4.3.6](https://zod.dev/v4) -- HIGH confidence (already validated in v1.1 research)
+- Existing codebase analysis (agent-prompt.js, retell-llm-ws.js, notifications.js, call-processor.js, booking.js, classifier.js, send-recovery-sms cron) -- HIGH confidence (direct code read)
+- [Leaping AI - Voice AI for Home Services Guide](https://leapingai.com/blog/implementing-voice-ai-agents-for-home-services-complete-guide-2025) -- MEDIUM confidence (industry guide, booking-first patterns)
+- [Retell AI 5 Useful Prompts](https://www.retellai.com/blog/5-useful-prompts-for-building-ai-voice-agents-on-retell-ai) -- MEDIUM confidence (official blog, prompt patterns)
 
 ---
 
-*Stack research for: v1.1 milestone additions — pricing page, onboarding wizard, contact, about, Outlook sync, E2E/load QA*
-*Researched: 2026-03-22*
+*Stack research for: v2.0 booking-first digital dispatcher pivot*
+*Researched: 2026-03-24*

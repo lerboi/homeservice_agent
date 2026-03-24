@@ -97,7 +97,7 @@ Plans:
   3. A repeat caller's second call updates the existing lead record rather than creating a duplicate entry
   4. Within 60 seconds of a new booking, owner receives both an SMS and email with caller name, job type, urgency, address, and a one-tap callback link
   5. If a caller hangs up before booking completes, an auto-SMS is sent to the caller's number within 60 seconds
-  6. Owner can see cumulative revenue tracked through the AI pipeline (booked → completed → paid) on the dashboard
+  6. Owner can see cumulative revenue tracked through the AI pipeline (booked -> completed -> paid) on the dashboard
 **Plans:** 6/6 plans complete
 
 Plans:
@@ -123,7 +123,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 2.1 → 3 → 4 → 5
+Phases execute in numeric order: 1 -> 2 -> 2.1 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -174,13 +174,23 @@ Plans:
 Plans:
 - [x] TBD (run /gsd:plan-phase 12 to break down) (completed 2026-03-23)
 
+### Phase 13: Frontend Public Pages Redesign
+
+**Goal:** Redesign all public-facing pages (Home, Pricing, Contact, About) and shared components (Nav, Footer) with a Premium Dark SaaS design language — improving component-level design quality while preserving existing page structure and layout patterns. Performance-first: no backdrop-blur on large surfaces, transform/opacity-only animations, dynamic imports with loading skeletons, mobile lightweight fallbacks, Core Web Vitals optimized (LCP < 2.5s, CLS < 0.1, INP < 200ms). Use Next.js dynamic imports for lazy loading and aggressive code-splitting. Swap heavy interactive elements for lightweight static fallbacks on mobile.
+**Requirements**: TBD
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 13 to break down)
+
 ---
 
 ## Milestone v1.1 Phases
 
 **Milestone:** v1.1 — Site Completeness & Launch Readiness
 **Goal:** Complete the public-facing site (pricing, contact, about), unify the signup+onboarding flow into a single wizard, add Outlook Calendar sync, and harden the platform for demo-ready launch.
-**Phase range:** 6–9
+**Phase range:** 6-9
 **Requirements:** 28 v1.1 requirements (PRICE-01 through LAUNCH-05)
 
 ### v1.1 Phase Checklist
@@ -236,7 +246,12 @@ Plans:
   2. An event created directly in Outlook Calendar appears as a blocked slot in the platform availability database within 60 seconds; a booking made through the platform appears in Outlook Calendar within 60 seconds
   3. The Outlook webhook subscription renews automatically before its 3-day expiry; the owner never loses sync due to an expired subscription
   4. Owner clicks "Disconnect Outlook" and the platform stops syncing Outlook events; availability reverts to manual schedule management without requiring a re-onboard
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [x] 08-01-PLAN.md — DB migration (is_primary, external_event_id) + Google provider filter fixes (D-08) + Outlook Calendar module
+- [x] 08-02-PLAN.md — Outlook OAuth routes (auth + callback) + Graph webhook endpoint + push handler
+- [x] 08-03-PLAN.md — Dual-provider API routes (status, disconnect, set-primary, cron) + CalendarSyncCard rewrite + human verification
 
 ### Phase 9: Hardening and Launch QA
 **Goal**: Every critical failure mode is instrumented, monitored, and validated before the first real customer is handed a demo — including multi-language correctness end-to-end, slot-locking correctness under genuine contention, the 5-minute activation promise with a real SME user, and no secrets in source
@@ -253,13 +268,100 @@ Plans:
 ## v1.1 Progress
 
 **Execution Order:**
-Phases execute in numeric order: 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 (Note: Phase 8 and Phase 10 may execute in parallel as they share no implementation dependencies)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Public Marketing Pages | 4/4 | Complete   | 2026-03-22 |
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
-| 8. Outlook Calendar Sync | 0/TBD | Not started | - |
+| 8. Outlook Calendar Sync | 0/3 | Planning complete | - |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
 | 10. Dashboard Guided Setup | 4/4 | Complete    | 2026-03-22 |
+
+---
+
+## Milestone v2.0 Phases
+
+**Milestone:** v2.0 — Booking-First Digital Dispatcher
+**Goal:** Pivot the AI from an emergency-triage escalation model to a booking-first dispatcher that autonomously schedules ALL calls — including emergencies — using urgency tags strictly for notification priority, with escalation reserved for exception states only.
+**Phase range:** 14-18
+**Requirements:** 16 v2.0 requirements (BOOK-01-05, TRIAGE-R01-02, NOTIF-P01-02, RECOVER-01-03, HARDEN-01-04)
+
+**Key context:** This is a behavioral pivot, not an infrastructure rebuild. The existing stack (Next.js 16, Supabase, Retell, Groq/Llama 4 Scout, Google Calendar, Twilio SMS, Resend) remains unchanged. The pivot is 90% prompt rewrite and call-flow logic, 10% notification formatting and recovery SMS expansion. Two additive schema columns (`booking_outcome` and `exception_reason` on calls table) are the only data model changes.
+
+### v2.0 Phase Checklist
+
+- [ ] **Phase 14: Booking-First Agent Behavior** - Agent prompt rewrite to booking-first dispatcher, intent detection, exception-only transfer, warm transfer context preservation, WebSocket tool updates
+- [ ] **Phase 15: Call Processor and Triage Reclassification** - Schema migration (booking_outcome, exception_reason), call processor update removing isRoutineUnbooked guard, triage tags reclassified as notification priority, caller SMS confirmation
+- [ ] **Phase 16: Notification Priority System** - Priority-tiered SMS/email formatting driven by urgency tags, emergency notifications with EMERGENCY prefix, routine notifications via standard flow
+- [ ] **Phase 17: Recovery SMS Enhancement** - Universal recovery SMS fallback for all failed bookings, urgency-aware content, delivery failure logging and retry
+- [ ] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring
+
+### Phase 14: Booking-First Agent Behavior
+**Goal**: The AI books every inbound call by default — emergencies into the nearest same-day slot, routine calls into next available — with human transfer restricted to exception states only, and full call context preserved on any transfer
+**Depends on**: Phase 13 (existing codebase with escalation-first behavior)
+**Requirements**: BOOK-01, BOOK-02, BOOK-03, BOOK-05
+**Success Criteria** (what must be TRUE):
+  1. An emergency caller ("my pipe burst") is booked into the nearest same-day slot while still on the line — not transferred to the owner
+  2. A routine caller ("I need a quote for a bathroom remodel next month") is booked into the next available slot — not captured as a passive lead
+  3. A caller asking only for information ("how much does a water heater cost?") is NOT booked — the AI detects non-booking intent and provides information without forcing an appointment
+  4. After 2 failed clarification attempts where the AI cannot determine the job type, the call is transferred to a human with a whisper message containing full caller details (name, phone, address, conversation summary)
+  5. A caller who says "let me talk to a person" or "I want to speak to someone" is immediately transferred with full context — no pushback or re-prompting
+**Plans**: TBD
+
+### Phase 15: Call Processor and Triage Reclassification
+**Goal**: The call processing pipeline treats every call as a booking attempt, urgency tags are retained on records but no longer determine call routing, and callers receive SMS confirmation after successful bookings
+**Depends on**: Phase 14
+**Requirements**: TRIAGE-R01, TRIAGE-R02, BOOK-04
+**Success Criteria** (what must be TRUE):
+  1. An emergency-tagged booking and a routine-tagged booking both follow the same call processing path — the urgency tag appears on the booking record but does not change whether or how the call was booked
+  2. The `booking_outcome` column on the calls table accurately records whether each call resulted in booked, attempted (failed), or not_attempted (info-only call) — queryable for analytics
+  3. After a successful booking, the caller receives an SMS within 60 seconds confirming date, time, and service address
+  4. A routine call that was previously captured as an unbooked lead is now booked autonomously — the `isRoutineUnbooked` guard no longer prevents booking
+**Plans**: TBD
+
+### Phase 16: Notification Priority System
+**Goal**: Owners receive urgency-appropriate notifications — emergency bookings surface with high-priority formatting and immediate delivery, routine bookings arrive through standard notification flow without alarm
+**Depends on**: Phase 15 (booking_outcome data available)
+**Requirements**: NOTIF-P01, NOTIF-P02
+**Success Criteria** (what must be TRUE):
+  1. An emergency booking triggers an SMS and email with "EMERGENCY" prefix, urgent formatting, and immediate delivery — visually distinct from routine notifications
+  2. A routine booking triggers a standard SMS and email notification without urgency formatting — the owner can distinguish emergency from routine at a glance without opening the message
+  3. Notification priority is driven by the urgency tag on the booking record, not by the call routing path — same notification system, different formatting
+**Plans**: TBD
+
+### Phase 17: Recovery SMS Enhancement
+**Goal**: Every call path where booking fails has a safety net — the caller receives a recovery SMS with a manual booking link, and delivery failures are never silently swallowed
+**Depends on**: Phase 15 (booking_outcome tracking identifies failed bookings)
+**Requirements**: RECOVER-01, RECOVER-02, RECOVER-03
+**Success Criteria** (what must be TRUE):
+  1. A caller whose booking fails for any reason (no slots available, slot taken during call, AI confusion, caller hung up) receives a recovery SMS with a manual booking link within 60 seconds
+  2. Recovery SMS for emergency-tagged calls uses urgent tone ("We know this is urgent -- book your emergency appointment now") while routine recovery uses standard tone — matching the caller's situation
+  3. A recovery SMS that fails to deliver (Twilio error, invalid number) is logged with the failure reason and retried at least once — never silently dropped
+**Plans**: TBD
+
+### Phase 18: Booking-First Hardening and QA
+**Goal**: The booking-first dispatcher is validated end-to-end across all call scenarios — multi-language, concurrency, edge cases, and error monitoring — before any real customer traffic
+**Depends on**: Phase 14, Phase 15, Phase 16, Phase 17
+**Requirements**: HARDEN-01, HARDEN-02, HARDEN-03, HARDEN-04
+**Success Criteria** (what must be TRUE):
+  1. A Spanish-speaking caller books an appointment autonomously, receives a Spanish-language SMS confirmation, and the owner receives a notification — validated end-to-end by a human reviewer
+  2. A contention test firing 20 simultaneous booking requests at the same slot produces exactly 1 confirmed booking and 19 next-available offers — zero double-bookings, zero unhandled errors
+  3. A non-technical SME owner completes the onboarding wizard and hears their booking-first AI receptionist in under 5 minutes — revalidated for the new booking-first behavior (AI should attempt to book the test call, not just take a message)
+  4. An unhandled exception or API failure in the booking flow triggers a Sentry alert with full stack trace within 60 seconds — confirmed via deliberate test throw in staging
+**Plans**: TBD
+
+## v2.0 Progress
+
+**Execution Order:**
+Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
+(Note: Phase 16 and Phase 17 may execute in parallel as they share no implementation dependencies — both depend on Phase 15 but not on each other)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 14. Booking-First Agent Behavior | 0/TBD | Not started | - |
+| 15. Call Processor and Triage Reclassification | 0/TBD | Not started | - |
+| 16. Notification Priority System | 0/TBD | Not started | - |
+| 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
+| 18. Booking-First Hardening and QA | 0/TBD | Not started | - |

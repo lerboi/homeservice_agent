@@ -110,7 +110,8 @@ export async function registerWatch(tenantId, credentials) {
       watch_resource_id: watchData.resourceId,
       watch_expiration: watchData.expiration,
     })
-    .eq('tenant_id', tenantId);
+    .eq('tenant_id', tenantId)
+    .eq('provider', 'google');
 
   return watchData;
 }
@@ -127,6 +128,7 @@ export async function syncCalendarEvents(tenantId) {
     .from('calendar_credentials')
     .select('*')
     .eq('tenant_id', tenantId)
+    .eq('provider', 'google')
     .single();
 
   if (credError || !creds) {
@@ -208,7 +210,8 @@ export async function syncCalendarEvents(tenantId) {
         last_sync_token: nextSyncToken,
         last_synced_at: new Date().toISOString(),
       })
-      .eq('tenant_id', tenantId);
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'google');
   }
 }
 
@@ -232,14 +235,15 @@ export async function pushBookingToCalendar(tenantId, appointmentId) {
     return;
   }
 
-  // Load credentials
+  // Load credentials — push to primary calendar only (D-02)
   const { data: creds, error: credError } = await supabase
     .from('calendar_credentials')
     .select('*')
     .eq('tenant_id', tenantId)
+    .eq('is_primary', true)
     .single();
 
-  // Silently return if no calendar connected
+  // Silently return if no primary calendar connected
   if (credError || !creds) {
     return;
   }
@@ -250,10 +254,13 @@ export async function pushBookingToCalendar(tenantId, appointmentId) {
     appointment,
   });
 
-  // Store google_event_id on appointment
+  // Store external_event_id and provider on appointment (D-09)
   await supabase
     .from('appointments')
-    .update({ google_event_id: eventId })
+    .update({
+      external_event_id: eventId,
+      external_event_provider: creds.provider,
+    })
     .eq('id', appointmentId);
 }
 
@@ -267,6 +274,7 @@ export async function revokeAndDisconnect(tenantId) {
     .from('calendar_credentials')
     .select('*')
     .eq('tenant_id', tenantId)
+    .eq('provider', 'google')
     .single();
 
   if (!creds) return;
@@ -299,15 +307,17 @@ export async function revokeAndDisconnect(tenantId) {
     }
   }
 
-  // Delete credentials row
+  // Delete credentials row (Google only)
   await supabase
     .from('calendar_credentials')
     .delete()
-    .eq('tenant_id', tenantId);
+    .eq('tenant_id', tenantId)
+    .eq('provider', 'google');
 
-  // Delete all mirrored calendar events
+  // Delete mirrored Google calendar events only (not Outlook events)
   await supabase
     .from('calendar_events')
     .delete()
-    .eq('tenant_id', tenantId);
+    .eq('tenant_id', tenantId)
+    .eq('provider', 'google');
 }

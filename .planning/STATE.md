@@ -2,29 +2,41 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-03-23T22:04:32.247Z"
+status: Phase complete — ready for verification
+stopped_at: Phase 13 context updated (auth page added)
+last_updated: "2026-03-24T12:57:52.905Z"
 progress:
-  total_phases: 13
-  completed_phases: 9
-  total_plans: 41
-  completed_plans: 40
+  total_phases: 14
+  completed_phases: 10
+  total_plans: 44
+  completed_plans: 43
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-22)
+See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 12 — dashboard-configurable-triage-and-call-escalation
+**Current focus:** Phase 08 — outlook-calendar-sync
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 08 (outlook-calendar-sync) — EXECUTING
+Plan: 3 of 3
+
+### v2.0 Milestone Progress
+
+```
+Phase 14: Booking-First Agent Behavior      [ ] Not started
+Phase 15: Call Processor + Triage Reclass    [ ] Not started
+Phase 16: Notification Priority System       [ ] Not started
+Phase 17: Recovery SMS Enhancement           [ ] Not started
+Phase 18: Booking-First Hardening and QA     [ ] Not started
+```
+
+Progress: 0/5 v2.0 phases complete
 
 ## Accumulated Context
 
@@ -121,6 +133,17 @@ Recent decisions affecting current work:
 - [Phase 12]: PATCH reorder includes tenant_id in every upsert row — RLS WITH CHECK requires it (Pitfall 3 from RESEARCH.md)
 - [Phase 12-02]: @dnd-kit/sortable for drag-to-reorder (keyboard accessible); bulk tag bar shown at >=2 selected; patchServiceOrder guards against concurrent PATCH with isSavingOrder flag
 - [Phase 12]: SortableContactWrapper wraps useSortable inside EscalationChainSection — ContactCard stays clean and testable
+- [v2.0 Roadmap]: Booking-first pivot is behavioral, not infrastructure — no new dependencies except Zod (already planned)
+- [v2.0 Roadmap]: Triage pipeline UNCHANGED — consumers change (notification priority), not the pipeline itself
+- [v2.0 Roadmap]: Two additive schema columns only: booking_outcome and exception_reason on calls table
+- [v2.0 Roadmap]: Phase 16 and 17 can be parallelized — notification priority and recovery SMS are independent subsystems
+- [Phase 08]: Direct fetch to Graph /me for calendar display name in callback -- simpler than exporting graphFetch
+- [Phase 08]: Stub outlook-calendar.js for Plan 02 import resolution while Plan 01 runs in parallel
+- [Phase 08]: Direct fetch for Outlook token refresh instead of MSAL cache (serverless-safe)
+- [Phase 08]: pushBookingToCalendar queries by is_primary=true for primary calendar push (D-02)
+- [Phase 08]: Store full deltaLink URL as last_sync_token (Graph API anti-pattern avoidance)
+- [Phase 08]: PROVIDER_CONFIG map centralizes auth endpoints, icon colors, popup names per provider
+- [Phase 08]: Optimistic UI for make-primary badge swap: instant swap, revert on server error
 
 ### Roadmap Evolution
 
@@ -129,6 +152,8 @@ Recent decisions affecting current work:
 - Phase 10 added: Dashboard Guided Setup and First-Run Experience
 - Phase 11 added: Landing Page UI/UX Redesign
 - Phase 12 added: Dashboard-configurable triage and call escalation
+- Phase 13 added: Frontend Public Pages Redesign — Premium Dark SaaS design overhaul for Home, Pricing, Contact, About, Nav, Footer with performance-first constraints
+- Phases 14-18 added for milestone v2.0: Booking-First Digital Dispatcher (2026-03-24)
 
 ### Pending Todos
 
@@ -142,9 +167,12 @@ None yet.
 - [Phase 8]: Outlook admin consent exact error shape should be verified against a live Azure AD response during Phase 8 research — UX error state is designed but trigger condition needs confirmation with a real Microsoft 365 Business account
 - [Phase 8]: onboarding_complete backfill safety: verify count of tenants with partial onboarding (account created but business_name not set) before running backfill migration in production
 - [Phase 9]: k6 availability in CI environment must be confirmed — k6 is a system binary (not npm); may require Docker-based CI step or local pre-merge gate if CI environment does not support it
+- [Phase 14]: Prompt regression risk — old TRIAGE-AWARE BEHAVIOR section must be fully replaced, not partially patched; prompt snapshot tests needed before and after rewrite
+- [Phase 14]: Intent detection effectiveness untested — if LLM consistently fails to distinguish booking vs info-only callers, a lightweight intent classifier may be needed (monitor during Phase 18 QA)
+- [Phase 17]: TCPA compliance for recovery SMS to numbers without explicit opt-in — legal review needed before go-live
 
 ## Session Continuity
 
-Last session: 2026-03-23T21:58:33.364Z
-Stopped at: Completed 12-03-PLAN.md
-Resume file: None
+Last session: 2026-03-24T12:57:52.896Z
+Stopped at: Phase 13 context updated (auth page added)
+Resume file: .planning/phases/13-frontend-public-pages-redesign/13-CONTEXT.md

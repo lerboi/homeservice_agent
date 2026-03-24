@@ -8,22 +8,22 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('calendar_credentials')
-      .select('calendar_name, last_synced_at, created_at')
-      .eq('tenant_id', tenantId)
-      .eq('provider', 'google')
-      .maybeSingle();
+      .select('provider, calendar_name, last_synced_at, is_primary, created_at')
+      .eq('tenant_id', tenantId);
 
     if (error) return Response.json({ error: error.message }, { status: 500 });
 
-    if (!data) {
-      return Response.json({ connected: false });
+    const result = { google: null, outlook: null };
+    for (const row of (data || [])) {
+      result[row.provider] = {
+        connected: true,
+        calendar_name: row.calendar_name,
+        last_synced_at: row.last_synced_at,
+        is_primary: row.is_primary,
+      };
     }
 
-    return Response.json({
-      connected: true,
-      calendar_name: data.calendar_name,
-      last_synced_at: data.last_synced_at,
-    });
+    return Response.json(result);
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }
