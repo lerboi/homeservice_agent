@@ -42,40 +42,47 @@ export function LandingNav() {
         }`}
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
-          <Link href="/" className="flex items-center group">
+          {/* Logo (left) */}
+          <Link href="/" className="flex items-center group shrink-0">
             <Image
               src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
               alt="Voco"
-              width={100}
-              height={32}
-              className="h-8 w-auto"
+              width={140}
+              height={44}
+              className="h-11 w-auto"
               priority
             />
           </Link>
 
-          <div className="flex items-center gap-3">
-            {/* Desktop links */}
-            <div className="hidden md:flex items-center gap-6">
-              <Link href="/pricing" className={`text-sm transition-colors relative pb-1 ${isActive('/pricing') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-                Pricing
-                {isActive('/pricing') && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-                )}
-              </Link>
-              <Link href="/about" className={`text-sm transition-colors relative pb-1 ${isActive('/about') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-                About
-                {isActive('/about') && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-                )}
-              </Link>
-              <Link href="/contact" className={`text-sm transition-colors relative pb-1 ${isActive('/contact') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
-                Contact
-                {isActive('/contact') && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
-                )}
-              </Link>
-            </div>
+          {/* Desktop center links */}
+          <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+            <Link href="/" className={`text-sm transition-colors relative pb-1 ${pathname === '/' ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+              Home
+              {pathname === '/' && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+              )}
+            </Link>
+            <Link href="/pricing" className={`text-sm transition-colors relative pb-1 ${isActive('/pricing') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+              Pricing
+              {isActive('/pricing') && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+              )}
+            </Link>
+            <Link href="/about" className={`text-sm transition-colors relative pb-1 ${isActive('/about') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+              About
+              {isActive('/about') && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+              )}
+            </Link>
+            <Link href="/contact" className={`text-sm transition-colors relative pb-1 ${isActive('/contact') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+              Contact
+              {isActive('/contact') && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+              )}
+            </Link>
+          </div>
 
+          <div className="flex items-center gap-3">
             {/* CTA button (desktop) */}
             <Button
               asChild
