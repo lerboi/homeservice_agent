@@ -78,12 +78,12 @@ export function ScrollProgress() {
           visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
         }`}
       >
-        <div className="relative flex flex-col gap-0 px-3 py-2 rounded-2xl bg-[#0F172A]/80 backdrop-blur-md border border-white/[0.06]">
+        <div className="relative flex flex-col gap-0">
           {/* Vertical track line */}
-          <div className="absolute left-[19px] top-[16px] bottom-[16px] w-[2px] bg-white/[0.08] rounded-full" />
+          <div className="absolute left-[7px] top-[8px] bottom-[8px] w-[2px] bg-[#0F172A]/[0.1] rounded-full" />
           {/* Filled progress line */}
           <motion.div
-            className="absolute left-[19px] top-[16px] w-[2px] bg-[#C2410C] rounded-full origin-top"
+            className="absolute left-[7px] top-[8px] w-[2px] bg-[#C2410C] rounded-full origin-top"
             style={{ height: `calc(${Math.max(progress * 100, 0)}% - 0px)` }}
             initial={false}
             animate={{ height: `${Math.max(progress * 100, 0)}%` }}
@@ -108,7 +108,7 @@ export function ScrollProgress() {
                       ? 'border-[#C2410C] bg-[#C2410C] shadow-[0_0_8px_rgba(194,65,12,0.4)]'
                       : isPast
                         ? 'border-[#C2410C] bg-[#C2410C]/80'
-                        : 'border-white/20 bg-[#1E293B] group-hover:border-white/40'
+                        : 'border-[#0F172A]/20 bg-white group-hover:border-[#0F172A]/40'
                   }`}
                 >
                   {isActive && (
@@ -122,8 +122,8 @@ export function ScrollProgress() {
                     isActive
                       ? 'text-[#C2410C] translate-x-0.5'
                       : isPast
-                        ? 'text-white/50'
-                        : 'text-white/25 group-hover:text-white/40'
+                        ? 'text-[#0F172A]/50'
+                        : 'text-[#0F172A]/25 group-hover:text-[#0F172A]/40'
                   }`}
                 >
                   {section.label}
