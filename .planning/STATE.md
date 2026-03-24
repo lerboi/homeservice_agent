@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-24T19:45:25.428Z"
+stopped_at: Completed 13-05-PLAN.md
+last_updated: "2026-03-24T19:48:10.927Z"
 progress:
   total_phases: 14
   completed_phases: 10
   total_plans: 51
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 13 (frontend-public-pages-redesign) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 
 ### v2.0 Milestone Progress
 
@@ -156,6 +156,8 @@ Recent decisions affecting current work:
 - [Phase 13-06]: OtpInput digit boxes use bg-stone-50 + border-stone-300 for white card context — copper focus ring preserved
 - [Phase 14]: agent-prompt.js section builders kept in single file per RESEARCH.md (no new files, avoids import complexity)
 - [Phase 14]: DECLINE_HANDLING gated by onboarding_complete — only active when booking protocol is active (consistent with D-16)
+- [Phase 13-05]: HowItWorksSection uses #F5F5F4 light background (user override of D-18 charcoal spec) — creates visual rhythm break between dark hero and dark features sections
+- [Phase 13-05]: LandingFooter requires use client for back-to-top scrollTo; newsletter form is display-only (no API wired) — visual upgrade deferred wiring
 
 ### Roadmap Evolution
 
@@ -185,6 +187,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:45:25.416Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-03-24T19:48:10.919Z
+Stopped at: Completed 13-05-PLAN.md
 Resume file: None
