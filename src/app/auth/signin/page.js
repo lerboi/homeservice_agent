@@ -28,7 +28,7 @@ const SELLING_POINTS = [
   { icon: Shield, text: 'No credit card required' },
 ];
 
-function VocoLogo({ textColor = 'text-[#F1F5F9]' }) {
+function VocoLogo({ textColor = 'text-[#0F172A]' }) {
   return (
     <Link href="/" className="flex items-center gap-2 justify-center">
       <div className="size-8 rounded-lg bg-gradient-to-br from-[#C2410C] to-[#9A3412] flex items-center justify-center shadow-sm">
@@ -205,26 +205,26 @@ export default function AuthPage() {
   // ─── OTP View ─────────────────────────────────────────────────────────
   if (mode === 'otp') {
     return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[400px]">
           {/* Logo */}
           <div className="mb-8">
-            <VocoLogo />
+            <VocoLogo textColor="text-[#0F172A]" />
           </div>
 
           {/* Card */}
-          <div className="bg-[#1E293B] rounded-2xl p-8 sm:p-10 text-center">
+          <div className="bg-white rounded-2xl p-8 sm:p-10 text-center shadow-2xl">
             {/* Copper email icon */}
             <div className="flex justify-center mb-4">
               <Mail className="size-8 text-[#C2410C]" aria-hidden="true" />
             </div>
 
-            <h1 className="text-2xl font-semibold text-[#F1F5F9] tracking-tight mb-2">
+            <h1 className="text-2xl font-semibold text-[#0F172A] tracking-tight mb-2">
               Check your email
             </h1>
-            <p className="text-sm text-[#94A3B8] mb-6">
+            <p className="text-sm text-[#475569] mb-6">
               We sent a 6-digit code to{' '}
-              <span className="font-semibold text-[#F1F5F9]">{email}</span>
+              <span className="font-semibold text-[#0F172A]">{email}</span>
             </p>
 
             {error && (
@@ -243,10 +243,10 @@ export default function AuthPage() {
               </div>
             )}
 
-            <p className="text-sm text-[#94A3B8]">
+            <p className="text-sm text-[#475569]">
               Didn&apos;t receive it?{' '}
               {cooldown > 0 ? (
-                <span className="text-[#94A3B8]">Resend in {cooldown}s</span>
+                <span className="text-[#475569]">Resend in {cooldown}s</span>
               ) : (
                 <button
                   type="button"
@@ -263,7 +263,7 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={() => switchMode('signup')}
-            className="mt-6 flex items-center gap-1.5 text-sm text-[#94A3B8] hover:text-[#F1F5F9] transition-colors mx-auto"
+            className="mt-6 flex items-center gap-1.5 text-sm text-[#475569] hover:text-[#0F172A] transition-colors mx-auto"
           >
             <ArrowLeft className="size-3.5" />
             Back to sign up
@@ -276,17 +276,17 @@ export default function AuthPage() {
   // ─── Signin View — compact centered card ──────────────────────────────
   if (mode === 'signin') {
     return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-[400px]">
           {/* Logo */}
           <div className="mb-8">
-            <VocoLogo />
+            <VocoLogo textColor="text-[#0F172A]" />
           </div>
 
           {/* Card */}
-          <div className="bg-[#1E293B] rounded-2xl p-8 sm:p-10">
+          <div className="bg-white rounded-2xl p-8 sm:p-10 shadow-2xl">
             <div className="mb-6 text-center">
-              <h1 className="text-2xl font-semibold text-[#F1F5F9] tracking-tight">
+              <h1 className="text-2xl font-semibold text-[#0F172A] tracking-tight">
                 Welcome back
               </h1>
             </div>
@@ -302,7 +302,7 @@ export default function AuthPage() {
               type="button"
               onClick={handleGoogleOAuth}
               variant="outline"
-              className="w-full min-h-[44px] bg-transparent hover:bg-white/[0.04] text-[#F1F5F9] border border-white/[0.12] shadow-none font-semibold flex items-center gap-3 justify-center rounded-xl text-sm transition-colors"
+              className="w-full min-h-[44px] bg-white hover:bg-stone-50 text-[#0F172A] border border-stone-200 shadow-sm font-semibold flex items-center gap-3 justify-center rounded-xl text-sm transition-colors"
             >
               <GoogleIcon />
               Continue with Google
@@ -310,16 +310,16 @@ export default function AuthPage() {
 
             {/* Divider */}
             <div className="relative flex items-center my-5">
-              <div className="flex-1 border-t border-white/[0.08]" />
-              <span className="mx-4 text-xs text-[#94A3B8] select-none">or</span>
-              <div className="flex-1 border-t border-white/[0.08]" />
+              <div className="flex-1 border-t border-stone-200" />
+              <span className="mx-4 text-xs text-[#475569] select-none">or</span>
+              <div className="flex-1 border-t border-stone-200" />
             </div>
 
             {/* Email + password form */}
             <form onSubmit={handleSignin} noValidate>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="signin-email" className="text-sm text-[#F1F5F9] mb-1.5 block">
+                  <Label htmlFor="signin-email" className="text-sm text-[#0F172A] mb-1.5 block">
                     Email address
                   </Label>
                   <Input
@@ -330,12 +330,12 @@ export default function AuthPage() {
                     placeholder="you@company.com"
                     disabled={loading}
                     autoComplete="email"
-                    className="h-11 bg-[#0F172A] border border-white/[0.12] text-[#F1F5F9] rounded-xl text-sm placeholder:text-[#94A3B8] focus:border-[#C2410C] focus:outline-none focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)]"
+                    className="h-11 bg-white border border-stone-300 text-[#0F172A] rounded-xl text-sm placeholder:text-stone-400 focus:border-[#C2410C] focus:ring-2 focus:ring-[#C2410C]/20 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="signin-password" className="text-sm text-[#F1F5F9] mb-1.5 block">
+                  <Label htmlFor="signin-password" className="text-sm text-[#0F172A] mb-1.5 block">
                     Password
                   </Label>
                   <Input
@@ -346,7 +346,7 @@ export default function AuthPage() {
                     placeholder="Your password"
                     disabled={loading}
                     autoComplete="current-password"
-                    className="h-11 bg-[#0F172A] border border-white/[0.12] text-[#F1F5F9] rounded-xl text-sm placeholder:text-[#94A3B8] focus:border-[#C2410C] focus:outline-none focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)]"
+                    className="h-11 bg-white border border-stone-300 text-[#0F172A] rounded-xl text-sm placeholder:text-stone-400 focus:border-[#C2410C] focus:ring-2 focus:ring-[#C2410C]/20 focus:outline-none"
                   />
                 </div>
               </div>
@@ -365,7 +365,7 @@ export default function AuthPage() {
             </form>
 
             {/* Toggle link */}
-            <p className="mt-6 text-center text-sm text-[#94A3B8]">
+            <p className="mt-6 text-center text-sm text-[#475569]">
               Don&apos;t have an account?{' '}
               <button
                 type="button"
@@ -383,22 +383,22 @@ export default function AuthPage() {
 
   // ─── Signup View — split layout (default) ─────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-[960px]">
         {/* Card container */}
-        <div className="rounded-2xl overflow-hidden flex flex-col lg:flex-row">
+        <div className="rounded-2xl overflow-hidden flex flex-col lg:flex-row shadow-2xl">
 
-          {/* Left panel — form */}
-          <div className="flex-1 bg-[#334155] p-8 sm:p-10 lg:p-12">
+          {/* Left panel — form (WHITE) */}
+          <div className="flex-1 bg-white p-8 sm:p-10 lg:p-12">
             <div className="mb-6">
-              <VocoLogo />
+              <VocoLogo textColor="text-[#0F172A]" />
             </div>
 
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-[#F1F5F9] tracking-tight">
+              <h1 className="text-2xl font-semibold text-[#0F172A] tracking-tight">
                 Create your account
               </h1>
-              <p className="mt-1.5 text-sm text-[#94A3B8]">
+              <p className="mt-1.5 text-sm text-[#475569]">
                 Start your 5-minute setup
               </p>
             </div>
@@ -414,7 +414,7 @@ export default function AuthPage() {
               type="button"
               onClick={handleGoogleOAuth}
               variant="outline"
-              className="w-full min-h-[44px] bg-transparent hover:bg-white/[0.04] text-[#F1F5F9] border border-white/[0.12] shadow-none font-semibold flex items-center gap-3 justify-center rounded-xl text-sm transition-colors"
+              className="w-full min-h-[44px] bg-white hover:bg-stone-50 text-[#0F172A] border border-stone-200 shadow-sm font-semibold flex items-center gap-3 justify-center rounded-xl text-sm transition-colors"
             >
               <GoogleIcon />
               Continue with Google
@@ -422,16 +422,16 @@ export default function AuthPage() {
 
             {/* Divider */}
             <div className="relative flex items-center my-5">
-              <div className="flex-1 border-t border-white/[0.08]" />
-              <span className="mx-4 text-xs text-[#94A3B8] select-none">or</span>
-              <div className="flex-1 border-t border-white/[0.08]" />
+              <div className="flex-1 border-t border-stone-200" />
+              <span className="mx-4 text-xs text-[#475569] select-none">or</span>
+              <div className="flex-1 border-t border-stone-200" />
             </div>
 
             {/* Email + password form */}
             <form onSubmit={handleEmailAuth} noValidate>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="signup-email" className="text-sm font-semibold text-[#F1F5F9] mb-1.5 block">
+                  <Label htmlFor="signup-email" className="text-sm font-semibold text-[#0F172A] mb-1.5 block">
                     Email address
                   </Label>
                   <Input
@@ -442,12 +442,12 @@ export default function AuthPage() {
                     placeholder="you@company.com"
                     disabled={loading}
                     autoComplete="email"
-                    className="h-11 bg-[#1E293B] border border-white/[0.12] text-[#F1F5F9] rounded-xl text-sm placeholder:text-[#94A3B8] focus:border-[#C2410C] focus:outline-none focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)]"
+                    className="h-11 bg-white border border-stone-300 text-[#0F172A] rounded-xl text-sm placeholder:text-stone-400 focus:border-[#C2410C] focus:ring-2 focus:ring-[#C2410C]/20 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="signup-password" className="text-sm font-semibold text-[#F1F5F9] mb-1.5 block">
+                  <Label htmlFor="signup-password" className="text-sm font-semibold text-[#0F172A] mb-1.5 block">
                     Password
                   </Label>
                   <Input
@@ -458,7 +458,7 @@ export default function AuthPage() {
                     placeholder="Min. 6 characters"
                     disabled={loading}
                     autoComplete="new-password"
-                    className="h-11 bg-[#1E293B] border border-white/[0.12] text-[#F1F5F9] rounded-xl text-sm placeholder:text-[#94A3B8] focus:border-[#C2410C] focus:outline-none focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)]"
+                    className="h-11 bg-white border border-stone-300 text-[#0F172A] rounded-xl text-sm placeholder:text-stone-400 focus:border-[#C2410C] focus:ring-2 focus:ring-[#C2410C]/20 focus:outline-none"
                   />
                 </div>
               </div>
@@ -477,7 +477,7 @@ export default function AuthPage() {
             </form>
 
             {/* Toggle link */}
-            <p className="mt-6 text-center text-sm text-[#94A3B8]">
+            <p className="mt-6 text-center text-sm text-[#475569]">
               Already have an account?{' '}
               <button
                 type="button"
