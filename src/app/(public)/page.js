@@ -1,4 +1,5 @@
 import { HeroSection } from '@/app/components/landing/HeroSection';
+import { ScrollProgress } from '@/app/components/landing/ScrollProgress';
 import dynamic from 'next/dynamic';
 
 // Above-the-fold: HeroSection is statically imported for best LCP.
@@ -56,7 +57,7 @@ const SocialProofSection = dynamic(
   () => import('@/app/components/landing/SocialProofSection').then((m) => m.SocialProofSection),
   {
     loading: () => (
-      <section className="bg-[#1E293B] py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#0F172A] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <div className="h-4 w-24 bg-white/10 rounded mx-auto mb-3" />
@@ -90,6 +91,7 @@ const FinalCTASection = dynamic(
 export default function HomePage() {
   return (
     <>
+      <ScrollProgress />
       <HeroSection />
       <HowItWorksSection />
       <FeaturesGrid />

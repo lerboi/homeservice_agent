@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -10,7 +11,6 @@ export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
-  const isRoot = pathname === '/';
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
 
@@ -31,35 +31,6 @@ export function LandingNav() {
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
 
-  const anchorLink = (hash, label) =>
-    isRoot ? (
-      <a href={hash} className="text-sm text-white/60 hover:text-white transition-colors">
-        {label}
-      </a>
-    ) : (
-      <Link href={`/${hash}`} className="text-sm text-white/60 hover:text-white transition-colors">
-        {label}
-      </Link>
-    );
-
-  const anchorLinkMobile = (hash, label) =>
-    isRoot ? (
-      <a
-        href={hash}
-        className="block py-3 text-[15px] text-white/60 hover:text-white transition-colors"
-        onClick={() => setDrawerOpen(false)}
-      >
-        {label}
-      </a>
-    ) : (
-      <Link
-        href={`/${hash}`}
-        className="block py-3 text-[15px] text-white/60 hover:text-white transition-colors"
-      >
-        {label}
-      </Link>
-    );
-
   return (
     <>
       <nav
@@ -71,22 +42,20 @@ export function LandingNav() {
         }`}
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="size-8 rounded-lg bg-gradient-to-br from-[#C2410C] to-[#9A3412] flex items-center justify-center shadow-sm">
-              <svg viewBox="0 0 16 16" className="size-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M8 2v6M4 6l4-4 4 4M3 10h10M5 14h6" />
-              </svg>
-            </div>
-            <span className="text-white font-semibold text-[15px] tracking-tight">
-              Voco
-            </span>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
+              alt="Voco"
+              width={100}
+              height={32}
+              className="h-8 w-auto"
+              priority
+            />
           </Link>
 
           <div className="flex items-center gap-3">
             {/* Desktop links */}
             <div className="hidden md:flex items-center gap-6">
-              {anchorLink('#how-it-works', 'How it works')}
-              {anchorLink('#features', 'Features')}
               <Link href="/pricing" className={`text-sm transition-colors relative pb-1 ${isActive('/pricing') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
                 Pricing
                 {isActive('/pricing') && (
@@ -163,8 +132,6 @@ export function LandingNav() {
 
               {/* Nav links */}
               <div className="flex-1 flex flex-col gap-1 px-6">
-                {anchorLinkMobile('#how-it-works', 'How it works')}
-                {anchorLinkMobile('#features', 'Features')}
                 <Link href="/pricing" className={`block py-3 text-[15px] transition-colors ${isActive('/pricing') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
                   Pricing
                 </Link>

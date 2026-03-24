@@ -68,7 +68,7 @@ export function HowItWorksSticky() {
             style={{
               top: '120px',
               zIndex: index + 1,
-              marginBottom: '33vh',
+              marginBottom: isLast ? '2rem' : '33vh',
               background: 'white',
             }}
           >
