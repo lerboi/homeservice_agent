@@ -12,6 +12,8 @@ export function LandingNav() {
   const pathname = usePathname();
   const isRoot = pathname === '/';
 
+  const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -62,9 +64,9 @@ export function LandingNav() {
     <>
       <nav
         aria-label="Navigation"
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-500 ease-in-out border-b border-white/[0.06] ${
           scrolled
-            ? 'bg-[#0F172A]/95 backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.06)]'
+            ? 'bg-[#0F172A]/95 backdrop-blur-[12px]'
             : 'bg-transparent'
         }`}
       >
@@ -85,14 +87,23 @@ export function LandingNav() {
             <div className="hidden md:flex items-center gap-6">
               {anchorLink('#how-it-works', 'How it works')}
               {anchorLink('#features', 'Features')}
-              <Link href="/pricing" className="text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/pricing" className={`text-sm transition-colors relative pb-1 ${isActive('/pricing') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
                 Pricing
+                {isActive('/pricing') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+                )}
               </Link>
-              <Link href="/about" className="text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/about" className={`text-sm transition-colors relative pb-1 ${isActive('/about') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
                 About
+                {isActive('/about') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+                )}
               </Link>
-              <Link href="/contact" className="text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/contact" className={`text-sm transition-colors relative pb-1 ${isActive('/contact') ? 'text-white' : 'text-white/60 hover:text-white'}`}>
                 Contact
+                {isActive('/contact') && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#C2410C]" />
+                )}
               </Link>
             </div>
 
@@ -137,7 +148,7 @@ export function LandingNav() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[280px] bg-[#0F172A] border-l border-white/[0.06] md:hidden flex flex-col"
+              className="fixed top-0 right-0 bottom-0 z-50 w-[280px] bg-[#1E293B] border-l border-white/[0.06] md:hidden flex flex-col"
             >
               {/* Close button */}
               <div className="h-16 flex items-center justify-end px-6">
@@ -154,13 +165,13 @@ export function LandingNav() {
               <div className="flex-1 flex flex-col gap-1 px-6">
                 {anchorLinkMobile('#how-it-works', 'How it works')}
                 {anchorLinkMobile('#features', 'Features')}
-                <Link href="/pricing" className="block py-3 text-[15px] text-white/60 hover:text-white transition-colors">
+                <Link href="/pricing" className={`block py-3 text-[15px] transition-colors ${isActive('/pricing') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
                   Pricing
                 </Link>
-                <Link href="/about" className="block py-3 text-[15px] text-white/60 hover:text-white transition-colors">
+                <Link href="/about" className={`block py-3 text-[15px] transition-colors ${isActive('/about') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
                   About
                 </Link>
-                <Link href="/contact" className="block py-3 text-[15px] text-white/60 hover:text-white transition-colors">
+                <Link href="/contact" className={`block py-3 text-[15px] transition-colors ${isActive('/contact') ? 'text-[#C2410C]' : 'text-white/60 hover:text-white'}`}>
                   Contact
                 </Link>
               </div>
