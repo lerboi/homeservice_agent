@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-03-25T06:27:40.244Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-03-25T06:37:41.402Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -169,6 +169,9 @@ Recent decisions affecting current work:
 - [Phase 19-01]: scheduling-calendar-system SKILL.md created as complete architectural reference; follow voice-call-architecture template exactly for section structure and depth
 - [Phase 19]: dashboard-crm-system skill covers all 25 source files across dashboard pages, CRM components, API routes, DB migrations, and design system
 - [Phase 19]: onboarding-flow skill covers all 24 source files: actual 4-step wizard (not 7), auth at /auth/signin is Step 1 outside wizard layout
+- [Phase 19]: auth-database-multitenancy skill covers all 3 Supabase clients, getTenantId, middleware, RLS two-pattern design, and all 8 migrations with actual SQL
+- [Phase 19]: public-site-i18n skill covers all 25+ source files: landing sections, pricing, about, contact, i18n, email templates
+- [Phase 19]: CLAUDE.md maintenance directive updated from vague example to explicit list of all 6 skills
 
 ### Roadmap Evolution
 
@@ -199,6 +202,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T06:27:40.236Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-03-25T06:37:41.395Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
