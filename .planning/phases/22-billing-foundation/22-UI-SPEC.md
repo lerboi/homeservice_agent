@@ -1,7 +1,8 @@
 ---
 phase: 22
 slug: billing-foundation
-status: draft
+status: approved
+reviewed_at: 2026-03-26
 shadcn_initialized: true
 preset: new-york / neutral / cssVariables
 created: 2026-03-26
