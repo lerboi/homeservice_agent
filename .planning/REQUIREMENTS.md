@@ -25,9 +25,9 @@
 
 ### Recovery & Fallback
 
-- [ ] **RECOVER-01**: Every call path where booking fails triggers recovery SMS with manual booking link within 60 seconds
-- [ ] **RECOVER-02**: Recovery SMS includes urgency-aware content (emergency recovery is more urgent in tone than routine)
-- [ ] **RECOVER-03**: Recovery SMS delivery failures are logged and retried, not silently swallowed
+- [x] **RECOVER-01**: Every call path where booking fails triggers recovery SMS with manual booking link within 60 seconds
+- [x] **RECOVER-02**: Recovery SMS includes urgency-aware content (emergency recovery is more urgent in tone than routine)
+- [x] **RECOVER-03**: Recovery SMS delivery failures are logged and retried, not silently swallowed
 
 ### Hardening & QA
 
@@ -267,9 +267,9 @@
 | TRIAGE-R02 | Phase 15 | Complete |
 | NOTIF-P01 | Phase 16 | Complete |
 | NOTIF-P02 | Phase 16 | Complete |
-| RECOVER-01 | Phase 17 | Pending |
-| RECOVER-02 | Phase 17 | Pending |
-| RECOVER-03 | Phase 17 | Pending |
+| RECOVER-01 | Phase 17 | Complete |
+| RECOVER-02 | Phase 17 | Complete |
+| RECOVER-03 | Phase 17 | Complete |
 | HARDEN-01 | Phase 18 | Pending |
 | HARDEN-02 | Phase 18 | Pending |
 | HARDEN-03 | Phase 18 | Pending |
