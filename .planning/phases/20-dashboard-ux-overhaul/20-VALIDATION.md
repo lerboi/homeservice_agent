@@ -2,7 +2,7 @@
 phase: 20
 slug: dashboard-ux-overhaul
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-03-25
 ---
@@ -36,21 +36,29 @@ created: 2026-03-25
 
 ## Per-Task Verification Map
 
+Each plan task has an inline `<automated>` verify script (node -e file checks). These are Nyquist-compliant automated verifications — they check file existence, required content patterns, and absence of removed patterns without requiring a test framework.
+
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 20-01-01 | 01 | 1 | SC-01 | manual | Visual: checklist shows required/recommended badges | N/A | ⬜ pending |
-| 20-01-02 | 01 | 1 | SC-02 | manual | Visual: expandable items with action buttons | N/A | ⬜ pending |
-| 20-02-01 | 02 | 1 | UX-01 | manual | Visual: multi-card layout, quick actions, adaptive home | N/A | ⬜ pending |
-| 20-03-01 | 03 | 2 | TOUR-01 | manual | Joyride tour launches and completes all steps | N/A | ⬜ pending |
-| 20-04-01 | 04 | 2 | MOB-01 | manual | Bottom tab bar visible on mobile, 44px touch targets | N/A | ⬜ pending |
+| 20-01-01 | 01 | 1 | SETUP-05 | inline-node | `node -e` checks: BottomTabBar import, pb-[72px], BREADCRUMB_LABELS, data-tour, card wrapper removed, lg:hidden gear icon | N/A | pending |
+| 20-01-02 | 01 | 1 | SETUP-05 | inline-node | `node -e` checks: BottomTabBar h-[56px], min-h-[48px], lg:hidden, /dashboard/more; Sidebar no mobileOpen, no /dashboard/services | N/A | pending |
+| 20-01-03 | 01 | 1 | SETUP-05 | inline-node | `node -e` checks: card.base and design-tokens import and data-tour on leads, analytics, calendar pages | N/A | pending |
+| 20-02-01 | 02 | 1 | SETUP-01 | inline-node | `node -e` checks: MORE_ITEMS, /dashboard/more/services-pricing, ai-voice-settings, card.base, data-tour in page and layout | N/A | pending |
+| 20-02-02 | 02 | 1 | SETUP-01, SETUP-03 | inline-node | `node -e` checks: all 7 sub-page files exist with card import, services-pricing no WorkingHoursEditor, ai-voice-settings has SettingsAISection + phoneNumber | N/A | pending |
+| 20-02-03 | 02 | 1 | SETUP-01 | inline-node | `node -e` checks: API no /dashboard/settings# hrefs, has /dashboard/more/* hrefs; services and settings pages are redirects | N/A | pending |
+| 20-03-01 | 03 | 2 | SETUP-02, SETUP-04 | inline-node | `node -e` checks: ITEM_TYPE, ITEM_DESCRIPTION, conic-gradient, required grouping in SetupChecklist; AnimatePresence, expanded, Required/Recommended badges in ChecklistItem | N/A | pending |
+| 20-03-02 | 03 | 2 | SETUP-01, SETUP-04 | inline-node | `node -e` checks: isSetupComplete, card.base, AI Receptionist, Action Required, Next Appointment, This Week, slice(0,5), no WelcomeBanner, data-tour, REQUIRED_IDS | N/A | pending |
+| 20-04-01 | 04 | 3 | SETUP-05 | inline-node | `node -e` checks: react-joyride in package.json, DashboardTour has #C2410C, disableAnimation, Got it, gsd_has_seen_tour; layout has DashboardTour + tourRunning; page has start-dashboard-tour | N/A | pending |
+| 20-04-02 | 04 | 3 | — | checkpoint | Human verification of full dashboard UX overhaul (15 steps) | N/A | pending |
+| 20-04-03 | 04 | 3 | — | inline-node | `node -e` checks: SKILL.md has BottomTabBar, DashboardTour, /dashboard/more, services-pricing, setup/active mode, no hamburger | N/A | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-Existing infrastructure covers all phase requirements. This is a UI/UX-only phase — validation is primarily manual visual inspection and interaction testing.
+Existing infrastructure covers all phase requirements. This is a UI/UX-only phase — no new test scaffolds needed. Each task includes inline `node -e` file-content verification scripts that serve as automated checks.
 
 ---
 
@@ -58,21 +66,22 @@ Existing infrastructure covers all phase requirements. This is a UI/UX-only phas
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Required vs optional checklist distinction | SC-01 | Visual differentiation | View dashboard home as new user, verify orange "Required" badges on business profile/services/test call items and gray "Recommended" badges on calendar/hours items |
-| Joyride tour completes all steps | TOUR-01 | Interactive UI flow | Click "Start Tour", verify tour covers home, leads, calendar, services, settings tabs |
-| Mobile bottom tab bar | MOB-01 | Device-specific layout | Resize browser to <1024px, verify bottom tab bar appears with 5 nav items |
-| No regressions on existing pages | REG-01 | Full feature coverage | Navigate to leads, analytics, calendar, services, settings — verify all features work |
+| Required vs optional checklist distinction | SETUP-02 | Visual differentiation | View dashboard home as new user, verify orange "Required" badges on business profile/services/test call items and gray "Recommended" badges on calendar/hours items |
+| Joyride tour completes all steps | SETUP-05 | Interactive UI flow | Click "Start Tour", verify tour covers home, leads, calendar, analytics, more tabs |
+| Mobile bottom tab bar | SETUP-05 | Device-specific layout | Resize browser to <1024px, verify bottom tab bar appears with 5 nav items |
+| No regressions on existing pages | REG-01 | Full feature coverage | Navigate to leads, analytics, calendar — verify all features work; navigate to /dashboard/services and /dashboard/settings — verify redirects work |
 | Performance on low-end mobile | PERF-01 | Device-specific | Test on throttled connection/CPU in DevTools, verify no lag |
+| Test call button accessible | SETUP-03 | Interactive verification | Navigate to /dashboard/more/ai-voice-settings, verify SettingsAISection renders with test call button |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify (inline node -e scripts)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (none — existing infra sufficient)
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending

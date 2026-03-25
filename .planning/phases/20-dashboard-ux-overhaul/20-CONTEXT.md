@@ -31,7 +31,7 @@ Full structural redesign of the dashboard UI/UX — not just cosmetic polish but
 ### Setup Checklist Redesign
 - **D-10:** Split items into Required (business profile, services, test call) and Recommended (calendar sync, working hours, escalation contacts) with clear visual grouping and headers.
 - **D-11:** Required items use orange brand color treatment. Recommended items use softer stone/gray. Each item has a one-line description of WHY it matters and a direct action button that deep-links to the relevant settings page.
-- **D-12:** Progress shown as "X of Y complete" with a progress bar. Required items listed first. The checklist card disappears when all items are done (replaced by a brief celebration banner, then gone).
+- **D-12:** Progress shown as "X of Y complete" with a progress ring (conic-gradient). Required items listed first. The checklist card disappears when all items are done (replaced by a brief celebration banner, then gone).
 
 ### Guided Tour — Contextual Coachmarks + On-Demand Tour
 - **D-13:** Install `react-joyride`. Mount at layout level (not page level) so it persists across tab navigation. Tour covers all 5 tabs with 4-5 concise steps.
