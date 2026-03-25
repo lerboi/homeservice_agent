@@ -118,7 +118,11 @@ Plans:
   3. A caller saying "I need to speak to a real person" or "operator" reaches a voicemail fallback and does not loop back into the AI
   4. A load test firing 10 simultaneous calls at the same final available slot produces exactly 1 confirmed booking and 9 next-available-slot offers
   5. All concurrency and triage tests pass in CI against a staging environment with a live Retell webhook tunnel
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
+- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## Progress
 
@@ -269,7 +273,11 @@ Plans:
   3. A k6 contention test fires 20 simultaneous requests at the exact same availability slot within a 100ms window; exactly 1 request returns HTTP 201 and the remaining 19 return HTTP 409 — this test runs in CI and must pass before demo-ready is declared
   4. A real non-technical home service business owner completes the wizard on staging and hears their AI answer a test call in under 5 minutes, measured from the landing page CTA click — timing and result logged
   5. A full environment variable audit confirms zero secrets in source control and all required production env vars are set and non-empty — the audit checklist is saved as a file in the repository
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
+- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## v1.1 Progress
 
@@ -358,7 +366,11 @@ Plans:
   1. A caller whose booking fails for any reason (no slots available, slot taken during call, AI confusion, caller hung up) receives a recovery SMS with a manual booking link within 60 seconds
   2. Recovery SMS for emergency-tagged calls uses urgent tone ("We know this is urgent -- book your emergency appointment now") while routine recovery uses standard tone — matching the caller's situation
   3. A recovery SMS that fails to deliver (Twilio error, invalid number) is logged with the failure reason and retried at least once — never silently dropped
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
+- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ### Phase 18: Booking-First Hardening and QA
 **Goal**: The booking-first dispatcher is validated end-to-end across all call scenarios — multi-language, concurrency, edge cases, and error monitoring — before any real customer traffic
@@ -369,7 +381,11 @@ Plans:
   2. A contention test firing 20 simultaneous booking requests at the same slot produces exactly 1 confirmed booking and 19 next-available offers — zero double-bookings, zero unhandled errors
   3. A non-technical SME owner completes the onboarding wizard and hears their booking-first AI receptionist in under 5 minutes — revalidated for the new booking-first behavior (AI should attempt to book the test call, not just take a message)
   4. An unhandled exception or API failure in the booking flow triggers a Sentry alert with full stack trace within 60 seconds — confirmed via deliberate test throw in staging
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
+- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## v2.0 Progress
 
@@ -382,7 +398,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. Booking-First Agent Behavior | 3/3 | Complete    | 2026-03-24 |
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
-| 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
+| 17. Recovery SMS Enhancement | 0/2 | Planning complete | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
 | 19. Codebase Skill Files | 2/3 | In Progress|  |
 
