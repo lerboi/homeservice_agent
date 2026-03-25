@@ -34,7 +34,7 @@
 - [x] **HARDEN-01**: Spanish-language caller books autonomously, receives Spanish confirmation SMS, owner gets notification — validated E2E
 - [x] **HARDEN-02**: 20 simultaneous booking requests to same slot produce exactly 1 confirmed booking and 19 next-available offers
 - [x] **HARDEN-03**: Non-technical SME owner completes onboarding wizard and hears AI in under 5 minutes — revalidated for booking-first
-- [ ] **HARDEN-04**: Unhandled exceptions and API failures trigger Sentry alert with full stack trace within 60 seconds
+- [x] **HARDEN-04**: Unhandled exceptions and API failures trigger Sentry alert with full stack trace within 60 seconds
 
 ## v1.1 Requirements
 
@@ -273,7 +273,7 @@
 | HARDEN-01 | Phase 18 | Complete |
 | HARDEN-02 | Phase 18 | Complete |
 | HARDEN-03 | Phase 18 | Complete |
-| HARDEN-04 | Phase 18 | Pending |
+| HARDEN-04 | Phase 18 | Complete |
 
 **v1.0 Coverage:**
 - v1.0 requirements: 38 total

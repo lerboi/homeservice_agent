@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 18-03-PLAN.md
-last_updated: "2026-03-25T10:04:22.892Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-25T10:05:42.978Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -180,6 +180,7 @@ Recent decisions affecting current work:
 - [Phase 18-02]: testPathIgnorePatterns excludes /tests/integration/ from default npm test run — prevents misleading 0-tests output in CI without Supabase credentials (Pitfall 4 avoidance)
 - [Phase 18]: Auto-cancel fires in processCallEnded (call_ended event) — calendar clears immediately after test call, not minutes later
 - [Phase 18]: Test call lead reset: status='new' + appointment_id=null prevents dashboard showing 'booked' lead with no active appointment (Pitfall 6 avoidance)
+- [Phase 18-01]: @sentry/nextjs v10.45.0 installed for server-side only error monitoring; instrumentation.js hook + withSentryConfig wrapper; hidden POST /api/debug/test-error endpoint with flush(2000) for HARDEN-04
 
 ### Roadmap Evolution
 
@@ -210,6 +211,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T10:04:22.877Z
-Stopped at: Completed 18-03-PLAN.md
+Last session: 2026-03-25T10:05:42.967Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None

@@ -310,7 +310,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 15: Call Processor and Triage Reclassification** - Schema migration (booking_outcome, exception_reason), call processor update removing isRoutineUnbooked guard, triage tags reclassified as notification priority, caller SMS confirmation (completed 2026-03-24)
 - [x] **Phase 16: Notification Priority System** - Priority-tiered SMS/email formatting driven by urgency tags, emergency notifications with EMERGENCY prefix, routine notifications via standard flow (completed 2026-03-24)
 - [x] **Phase 17: Recovery SMS Enhancement** - Universal recovery SMS fallback for all failed bookings, urgency-aware content, delivery failure logging and retry (completed 2026-03-25)
-- [ ] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring
+- [x] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring (completed 2026-03-25)
 - [x] **Phase 19: Codebase Skill Files** - Create 5 comprehensive skill files as living architectural references, update CLAUDE.md for skill maintenance (completed 2026-03-25)
 
 ### Phase 14: Booking-First Agent Behavior
@@ -384,7 +384,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 18-01-PLAN.md — Sentry error monitoring setup (SDK install, server config, test error endpoint)
+- [x] 18-01-PLAN.md — Sentry error monitoring setup (SDK install, server config, test error endpoint)
 - [x] 18-02-PLAN.md — Concurrency integration test (20 simultaneous bookings via real Supabase)
 - [x] 18-03-PLAN.md — Test-call auto-cancel + manual E2E test scripts (English, Spanish, onboarding) + skill file update
 
@@ -400,7 +400,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
-| 18. Booking-First Hardening and QA | 2/3 | In Progress|  |
+| 18. Booking-First Hardening and QA | 3/3 | Complete   | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 | 20. Dashboard UX Overhaul | 0/TBD | Not started | - |
 
@@ -414,7 +414,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
   3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
   4. The existing voice-call-architecture skill remains unchanged (already complete)
   5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)
