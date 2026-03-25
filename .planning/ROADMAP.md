@@ -404,7 +404,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 18. Booking-First Hardening and QA | 3/3 | Complete    | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 | 20. Dashboard UX Overhaul | 4/4 | Complete   | 2026-03-25 |
-| 21. Pricing Page Redesign | 0/TBD | Not started | - |
+| 21. Pricing Page Redesign | 1/2 | In Progress|  |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
@@ -465,10 +465,10 @@ Plans:
   6. The FAQ section covers 6-8 questions across setup/onboarding, AI call quality, trial/billing, and data/security — replacing the current 4-question FAQ
   7. No money-back guarantee messaging and no "no credit card required" messaging appears anywhere on the page
   8. The pricing page renders correctly on mobile viewports (375px+) with tier cards stacking vertically and the comparison table scrolling horizontally
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 21-01-PLAN.md — Data layer (volume-based tiers), dark hero with dot-grid/blur-orb, trial banner, dark tier cards
+- [x] 21-01-PLAN.md — Data layer (volume-based tiers), dark hero with dot-grid/blur-orb, trial banner, dark tier cards
 - [ ] 21-02-PLAN.md — Comparison table with Growth highlight, testimonials, 8-question dark FAQ, Enterprise contact pre-selection, skill file update
 
 ---

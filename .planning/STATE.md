@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Executing Phase 21
-stopped_at: Phase 22 context gathered
-last_updated: "2026-03-25T20:25:14.840Z"
+status: Ready to execute
+stopped_at: Completed 21-pricing-page-redesign plan 01 — pricingData.js volume-based tiers, dark hero, trial banner, dark cards, FAQ updated
+last_updated: "2026-03-25T20:26:56.450Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 21 (pricing-page-redesign) — EXECUTING
-Plan: 1 of 2
+Plan: 2 of 2
 
 ## Accumulated Context
 
@@ -39,6 +39,7 @@ Recent decisions affecting current work:
 - [v3.0 Roadmap]: Billing cycle reset on invoice.paid webhook only — never a cron job (accuracy constraint)
 - [v3.0 Roadmap]: Stripe Customer Portal handles all self-serve management — no custom plan change UI
 - [v3.0 Roadmap]: Per-call overage billing (BILLF-02) deferred to future milestone
+- [Phase 21-pricing-page-redesign]: Volume-based differentiation: all paid tiers share same feature set; differentiation is call volume and support level only
 
 ### Roadmap Evolution
 
@@ -67,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:25:14.829Z
-Stopped at: Phase 22 context gathered
-Resume file: .planning/phases/22-billing-foundation/22-CONTEXT.md
+Last session: 2026-03-25T20:26:56.443Z
+Stopped at: Completed 21-pricing-page-redesign plan 01 — pricingData.js volume-based tiers, dark hero, trial banner, dark cards, FAQ updated
+Resume file: None
