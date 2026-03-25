@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-03-25T19:08:02.633Z"
+stopped_at: Completed 20-01-PLAN.md
+last_updated: "2026-03-25T19:09:52.750Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 20 (dashboard-ux-overhaul) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 
 ### v2.0 Milestone Progress
 
@@ -183,6 +183,8 @@ Recent decisions affecting current work:
 - [Phase 18-01]: @sentry/nextjs v10.45.0 installed for server-side only error monitoring; instrumentation.js hook + withSentryConfig wrapper; hidden POST /api/debug/test-error endpoint with flush(2000) for HARDEN-04
 - [Phase 20-02]: More menu consolidates Services + Settings into single config hub at /dashboard/more, making room for 5-tab nav structure
 - [Phase 20-02]: Sub-pages are thin wrappers — feature logic stays in existing components, no duplication; old /dashboard/services and /dashboard/settings replaced with Next.js redirect() calls
+- [Phase 20-01]: Layout removes card wrapper entirely — page-level card ownership established as the pattern for all dashboard pages going forward
+- [Phase 20-01]: BottomTabBar replaces mobile hamburger drawer entirely — 5 fixed tabs, h-[56px], min-h-[48px] touch targets, safe-area-inset support
 
 ### Roadmap Evolution
 
@@ -213,6 +215,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:08:02.626Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-03-25T19:09:52.739Z
+Stopped at: Completed 20-01-PLAN.md
 Resume file: None

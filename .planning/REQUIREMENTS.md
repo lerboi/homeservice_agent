@@ -87,7 +87,7 @@
 - [ ] **SETUP-02**: Every dashboard page with no data shows a helpful empty state with icon, description, and actionable CTA — not a blank page or generic "no data" message
 - [x] **SETUP-03**: Owner can trigger a test voice call from dashboard settings and hear their AI receptionist answer without looking up the phone number
 - [ ] **SETUP-04**: Checklist progress persists across sessions via DB; checklist auto-dismisses on full completion or manual dismiss
-- [ ] **SETUP-05**: Non-technical user can identify what each dashboard section does and what actions to take within 30 seconds
+- [x] **SETUP-05**: Non-technical user can identify what each dashboard section does and what actions to take within 30 seconds
 
 ## v1 Requirements
 
@@ -257,7 +257,7 @@
 | SETUP-02 | Phase 10 | Pending |
 | SETUP-03 | Phase 10 | Complete |
 | SETUP-04 | Phase 10 | Pending |
-| SETUP-05 | Phase 10 | Pending |
+| SETUP-05 | Phase 10 | Complete |
 | BOOK-01 | Phase 14 | Complete |
 | BOOK-02 | Phase 14 | Complete |
 | BOOK-03 | Phase 14 | Complete |
