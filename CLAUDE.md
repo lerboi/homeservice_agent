@@ -11,6 +11,6 @@ When asked to read a skill file and make changes to a specific architecture or s
 - `voice-call-architecture` — WebSocket LLM server, Retell webhooks, call-processor, triage, whisper messages
 - `scheduling-calendar-system` — Slot calculator, booking, Google + Outlook OAuth/sync/webhooks, cron jobs
 - `dashboard-crm-system` — Dashboard pages, lead lifecycle, Kanban, analytics, escalation chain, settings, design tokens
-- `onboarding-flow` — 7-step wizard, onboarding API routes, phone provisioning, SMS verify, test call
+- `onboarding-flow` — 4-step wizard, onboarding API routes, phone provisioning, SMS verify, test call
 - `auth-database-multitenancy` — Supabase Auth, middleware, RLS, all migrations, getTenantId
 - `public-site-i18n` — Landing, pricing, about, contact, Resend email, next-intl (en/es)
