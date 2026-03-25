@@ -9,6 +9,7 @@ import LeadFlyout from '@/components/dashboard/LeadFlyout';
 import KanbanBoard from '@/components/dashboard/KanbanBoard';
 import { EmptyStateLeads } from '@/components/dashboard/EmptyStateLeads';
 import { supabase } from '@/lib/supabase-browser';
+import { card } from '@/lib/design-tokens';
 
 // ─── Realtime animation keyframe (injected once into document) ────────────────
 
@@ -186,14 +187,16 @@ export default function LeadsPage() {
 
   if (error) {
     return (
-      <div className="p-6">
-        <LeadFilterBar
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onClear={handleClearFilters}
-        />
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-red-600">{error}</p>
+      <div className={`${card.base} p-0`} data-tour="leads-page">
+        <div className="p-6">
+          <LeadFilterBar
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClear={handleClearFilters}
+          />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
         </div>
       </div>
     );
@@ -293,7 +296,7 @@ export default function LeadsPage() {
 
   return (
     <>
-      <div>
+      <div className={`${card.base} p-0`} data-tour="leads-page">
         {pageHeader}
 
         <LeadFilterBar
