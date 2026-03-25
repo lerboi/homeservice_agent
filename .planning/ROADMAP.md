@@ -442,7 +442,10 @@ Plans:
   3. A first-time user can identify what needs to be configured before their first real call without reading documentation
   4. All existing dashboard features (leads, calendar, analytics, services, settings) remain fully functional with no regressions
   5. The setup checklist provides direct navigation links to the relevant settings page for each item
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 20 to break down)
+- [ ] 20-01-PLAN.md — Layout restructure, bottom tab bar, per-page card wrappers
+- [ ] 20-02-PLAN.md — Setup checklist redesign with required/optional badges and progress ring
+- [ ] 20-03-PLAN.md — Adaptive multi-card home page with quick action cards
+- [ ] 20-04-PLAN.md — Joyride guided tour and skill file update
