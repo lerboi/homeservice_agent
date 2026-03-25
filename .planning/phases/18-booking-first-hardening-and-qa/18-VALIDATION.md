@@ -40,9 +40,9 @@ created: 2026-03-25
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
 | 18-01-01 | 01 | 1 | HARDEN-04 | unit | `grep -c "Sentry.init" sentry.server.config.js` | ❌ W0 | ⬜ pending |
 | 18-01-02 | 01 | 1 | HARDEN-04 | unit | `grep -c "test-error" src/app/api/debug/test-error/route.js` | ❌ W0 | ⬜ pending |
-| 18-02-01 | 02 | 1 | HARDEN-02 | integration | `jest --testPathPattern=tests/integration/booking-contention` | ❌ W0 | ⬜ pending |
-| 18-03-01 | 03 | 2 | HARDEN-03 | unit | `grep -c "test_call" src/app/api/onboarding/test-call/route.js` | ✅ | ⬜ pending |
-| 18-03-02 | 03 | 2 | HARDEN-01 | manual | E2E test script review | N/A | ⬜ pending |
+| 18-02-01 | 02 | 1 | HARDEN-02 | integration | `jest --testPathPattern=tests/integration/atomic-booking-contention` | ❌ W0 | ⬜ pending |
+| 18-03-01 | 03 | 1 | HARDEN-03 | unit | `grep -c "test_call" src/app/api/onboarding/test-call/route.js` | ✅ | ⬜ pending |
+| 18-03-02 | 03 | 1 | HARDEN-01 | manual | E2E test script review | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -50,7 +50,7 @@ created: 2026-03-25
 
 ## Wave 0 Requirements
 
-- [ ] `tests/integration/booking-contention.test.js` — stub for HARDEN-02 concurrency test
+- [ ] `tests/integration/atomic-booking-contention.test.js` — stub for HARDEN-02 concurrency test
 - [ ] Sentry SDK installed (`@sentry/nextjs` in package.json)
 
 *Existing test infrastructure (jest, mocks) covers framework requirements.*
