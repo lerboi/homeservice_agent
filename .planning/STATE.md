@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to plan
-stopped_at: Phase 20 context gathered
-last_updated: "2026-03-25T10:25:18.674Z"
+status: Ready to execute
+stopped_at: Completed 20-02-PLAN.md
+last_updated: "2026-03-25T19:08:02.633Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 18 — booking-first-hardening-and-qa
+**Current focus:** Phase 20 — dashboard-ux-overhaul
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 20 (dashboard-ux-overhaul) — EXECUTING
+Plan: 2 of 4
 
 ### v2.0 Milestone Progress
 
@@ -181,6 +181,8 @@ Recent decisions affecting current work:
 - [Phase 18]: Auto-cancel fires in processCallEnded (call_ended event) — calendar clears immediately after test call, not minutes later
 - [Phase 18]: Test call lead reset: status='new' + appointment_id=null prevents dashboard showing 'booked' lead with no active appointment (Pitfall 6 avoidance)
 - [Phase 18-01]: @sentry/nextjs v10.45.0 installed for server-side only error monitoring; instrumentation.js hook + withSentryConfig wrapper; hidden POST /api/debug/test-error endpoint with flush(2000) for HARDEN-04
+- [Phase 20-02]: More menu consolidates Services + Settings into single config hub at /dashboard/more, making room for 5-tab nav structure
+- [Phase 20-02]: Sub-pages are thin wrappers — feature logic stays in existing components, no duplication; old /dashboard/services and /dashboard/settings replaced with Next.js redirect() calls
 
 ### Roadmap Evolution
 
@@ -211,6 +213,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T10:10:33.806Z
-Stopped at: Phase 20 context gathered
-Resume file: .planning/phases/20-dashboard-ux-overhaul/20-CONTEXT.md
+Last session: 2026-03-25T19:08:02.626Z
+Stopped at: Completed 20-02-PLAN.md
+Resume file: None

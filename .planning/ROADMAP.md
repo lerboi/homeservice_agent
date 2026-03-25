@@ -402,7 +402,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
 | 18. Booking-First Hardening and QA | 3/3 | Complete    | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
-| 20. Dashboard UX Overhaul | 0/TBD | Not started | - |
+| 20. Dashboard UX Overhaul | 1/4 | In Progress|  |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
@@ -442,10 +442,10 @@ Plans:
   3. A first-time user can identify what needs to be configured before their first real call without reading documentation
   4. All existing dashboard features (leads, calendar, analytics, services, settings) remain fully functional with no regressions
   5. The setup checklist provides direct navigation links to the relevant settings page for each item
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 - [ ] 20-01-PLAN.md — Layout restructure: remove card wrapper, bottom tab bar, sidebar 5-tab nav, per-page wrappers
-- [ ] 20-02-PLAN.md — More menu page + 7 sub-page routes, old pages redirect, checklist API href update
+- [x] 20-02-PLAN.md — More menu page + 7 sub-page routes, old pages redirect, checklist API href update
 - [ ] 20-03-PLAN.md — Setup checklist redesign (required/recommended, progress ring, expandable) + adaptive home page
 - [ ] 20-04-PLAN.md — Joyride guided tour, data-tour wiring, skill file update
