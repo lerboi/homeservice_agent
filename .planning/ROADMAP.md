@@ -291,7 +291,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 **Milestone:** v2.0 — Booking-First Digital Dispatcher
 **Goal:** Pivot the AI from an emergency-triage escalation model to a booking-first dispatcher that autonomously schedules ALL calls — including emergencies — using urgency tags strictly for notification priority, with escalation reserved for exception states only.
-**Phase range:** 14-18
+**Phase range:** 14-19
 **Requirements:** 16 v2.0 requirements (BOOK-01-05, TRIAGE-R01-02, NOTIF-P01-02, RECOVER-01-03, HARDEN-01-04)
 
 **Key context:** This is a behavioral pivot, not an infrastructure rebuild. The existing stack (Next.js 16, Supabase, Retell, Groq/Llama 4 Scout, Google Calendar, Twilio SMS, Resend) remains unchanged. The pivot is 90% prompt rewrite and call-flow logic, 10% notification formatting and recovery SMS expansion. Two additive schema columns (`booking_outcome` and `exception_reason` on calls table) are the only data model changes.
@@ -303,6 +303,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 16: Notification Priority System** - Priority-tiered SMS/email formatting driven by urgency tags, emergency notifications with EMERGENCY prefix, routine notifications via standard flow (completed 2026-03-24)
 - [ ] **Phase 17: Recovery SMS Enhancement** - Universal recovery SMS fallback for all failed bookings, urgency-aware content, delivery failure logging and retry
 - [ ] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring
+- [ ] **Phase 19: Codebase Skill Files** - Create 5 comprehensive skill files as living architectural references, update CLAUDE.md for skill maintenance
 
 ### Phase 14: Booking-First Agent Behavior
 **Goal**: The AI books every inbound call by default — emergencies into the nearest same-day slot, routine calls into next available — with human transfer restricted to exception states only, and full call context preserved on any transfer
@@ -383,3 +384,32 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
+| 19. Codebase Skill Files | 0/3 | Planning complete | - |
+
+### Phase 19: Codebase Skill Files for Full Architectural Reference
+**Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
+**Depends on**: None (documentation phase, can run anytime)
+**Requirements**: None (tooling/documentation)
+**Success Criteria** (what must be TRUE):
+  1. Each of the 5 skill files is created via skill-creator and accurately documents its domain's architecture, key files, data flow, and integration points
+  2. Reading any single skill file gives a developer (or AI) enough context to understand and modify that system without reading every source file
+  3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
+  4. The existing voice-call-architecture skill remains unchanged (already complete)
+  5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
+**Plans:** 3 plans
+
+Plans:
+- [ ] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)
+- [ ] 19-02-PLAN.md — dashboard-crm-system + onboarding-flow skills
+- [ ] 19-03-PLAN.md — auth-database-multitenancy + public-site-i18n skills + CLAUDE.md update
+
+### Skill Files to Create
+
+| # | Skill Name | Scope |
+|---|-----------|-------|
+| 1 | `voice-call-architecture` | **Exists** — Retell webhooks, call-processor, triage, whisper messages |
+| 2 | `scheduling-calendar-system` | Slot calculator, booking, Google + Outlook OAuth/sync/webhooks, cron jobs, conflict detection, travel buffers |
+| 3 | `dashboard-crm-system` | All dashboard pages + components, lead lifecycle/merging/revenue, Kanban board, analytics charts, flyouts, escalation chain, settings panels, design tokens |
+| 4 | `onboarding-flow` | 7-step wizard, all onboarding API routes, phone provisioning, SMS verify, test call, setup checklist |
+| 5 | `auth-database-multitenancy` | Supabase Auth, middleware, RLS, all migrations/tables/relationships, getTenantId, multi-tenant isolation |
+| 6 | `public-site-i18n` | Landing, pricing, about, contact form, Resend email, AuthAwareCTA, next-intl (en/es) |
