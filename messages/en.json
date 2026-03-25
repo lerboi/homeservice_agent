@@ -15,7 +15,9 @@
   "notifications": {
     "new_lead": "New lead from {caller_name} - {job_type}",
     "language_barrier_alert": "LANGUAGE BARRIER: Caller spoke {language}. Needs follow-up.",
-    "booking_confirmation": "Your appointment with {business_name} is confirmed for {date} at {time} at {address}."
+    "booking_confirmation": "Your appointment with {business_name} is confirmed for {date} at {time} at {address}.",
+    "recovery_sms_attempted_routine": "Hi {first_name}, we're sorry we couldn't get your appointment booked with {business_name}. We'll be in touch to get you scheduled.",
+    "recovery_sms_attempted_emergency": "Hi {first_name}, we understand your situation is time-sensitive. The {business_name} team is aware and will reach out to you right away."
   },
   "status": {
     "processing_recording": "Recording is being processed...",

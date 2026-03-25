@@ -15,7 +15,9 @@
   "notifications": {
     "new_lead": "Nuevo cliente potencial de {caller_name} - {job_type}",
     "language_barrier_alert": "BARRERA DE IDIOMA: El cliente hablo {language}. Necesita seguimiento.",
-    "booking_confirmation": "Su cita con {business_name} esta confirmada para el {date} a las {time} en {address}."
+    "booking_confirmation": "Su cita con {business_name} esta confirmada para el {date} a las {time} en {address}.",
+    "recovery_sms_attempted_routine": "Hola {first_name}, lamentamos no haber podido agendar tu cita con {business_name}. Nos pondremos en contacto para programarte.",
+    "recovery_sms_attempted_emergency": "Hola {first_name}, entendemos que tu situacion es urgente. El equipo de {business_name} esta al tanto y se comunicara contigo de inmediato."
   },
   "status": {
     "processing_recording": "La grabacion se esta procesando...",
