@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-03-25 (Phase 13 — premium dark SaaS redesign; Phase 11 — HowItWorksSection, FinalCTASection; Phase 6 — pricing, about, contact, FAQSection)
+**Last updated**: 2026-03-26 (Phase 21 — pricing page redesign: volume-based tiers, dark hero, testimonials, dark FAQ, contact pre-selection; Phase 13 — premium dark SaaS redesign)
 
 ---
 
@@ -267,16 +267,31 @@ Cross-domain: See auth-database-multitenancy skill for supabase-browser client d
 
 **File**: `src/app/(public)/pricing/page.js`
 
-Four sections: dark hero with `PricingTiers`, light `ComparisonTable`, light `FAQSection`, dark CTA banner.
+**Last updated**: 2026-03-26 (Phase 21 — volume-based tiers, dark redesign, testimonials, 8-question FAQ)
+
+Six sections in order: dark hero (`#050505`) → billing toggle + tier cards (dark) → comparison table (light `#F5F5F4`) → testimonials (dark `#1A1816`) → FAQ (dark `#050505`) → CTA banner (dark warm `#1C1412`).
+
+### Page Section Layout
+
+| # | Section | Background | Notes |
+|---|---------|-----------|-------|
+| 1 | Hero | `bg-[#050505]` | Dot-grid texture, blur orb, eyebrow pill with pulse dot |
+| 2 | Billing Toggle + Tier Cards | `bg-[#050505]` (continues) | Dark cards with copper glow hover |
+| 3 | Comparison Table | `bg-[#F5F5F4]` | Light "breath" break — intentional contrast |
+| 4 | Testimonials | `bg-[#1A1816]` | Two quotes inline in page.js (not a separate component) |
+| 5 | FAQ | `bg-[#050505]` | Heading: "Questions from the field" in `text-white` |
+| 6 | CTA Banner | `bg-[#1C1412]` | "Every missed call is a job your competitor booked." |
 
 ### `pricingData.js` — Tier Data Structure
 
+**Volume-based differentiation**: All paid tiers share the same 9 core features. Differentiation is call volume + support level only. No feature gating between Starter/Growth/Scale.
+
 ```js
 export const PRICING_TIERS = [
-  { id: 'starter', name: 'Starter', monthlyPrice: 99, callLimit: 40, highlighted: false, ... },
-  { id: 'growth',  name: 'Growth',  monthlyPrice: 249, callLimit: 120, highlighted: true, badge: 'Most Popular', ... },
-  { id: 'scale',   name: 'Scale',   monthlyPrice: 599, callLimit: 400, highlighted: false, ... },
-  { id: 'enterprise', name: 'Enterprise', monthlyPrice: null, callLimit: null, cta: 'Contact Us', ctaHref: '/contact', ... },
+  { id: 'starter',    name: 'Starter',    monthlyPrice: 99,  callLimit: 40,   cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: false, ... },
+  { id: 'growth',     name: 'Growth',     monthlyPrice: 249, callLimit: 120,  cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: true, badge: 'Most Popular', ... },
+  { id: 'scale',      name: 'Scale',      monthlyPrice: 599, callLimit: 400,  cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: false, ... },
+  { id: 'enterprise', name: 'Enterprise', monthlyPrice: null, callLimit: null, cta: 'Contact Us',       ctaHref: '/contact?type=sales', highlighted: false, ... },
 ];
 
 export function getAnnualPrice(monthlyPrice) {
@@ -284,30 +299,48 @@ export function getAnnualPrice(monthlyPrice) {
   return Math.round(monthlyPrice * 0.8); // 20% annual discount
 }
 
-export const COMPARISON_FEATURES = [ ... ]; // 14 feature rows
+export const COMPARISON_FEATURES = [ ... ]; // 13 rows — 3 volume/support rows (strings) + 9 all-true rows + 1 enterprise-only row
 ```
+
+**CTA labels**: "Start Free Trial" linking to `/onboarding` for Starter/Growth/Scale. "Contact Us" linking to `/contact?type=sales` for Enterprise.
+
+**Prohibited copy**: No "money-back guarantee", no "no credit card required", no "Get Started" on paid tiers.
 
 **Payment**: Stripe integration is out of scope for current milestone. Pricing page is display-only — CTAs link to `/onboarding` (not a checkout flow).
 
 ### `PricingTiers.jsx`
 
-Monthly/annual billing toggle (state in component). Maps over `PRICING_TIERS` to render cards. `highlighted: true` (Growth tier) gets "Most Popular" badge and elevated card styling.
+`'use client'` (billing toggle state). Monthly/annual billing toggle — defaults to annual (shows savings). Maps over `PRICING_TIERS` to render dark cards. `highlighted: true` (Growth tier) gets "Most Popular" badge and `ring-2 ring-[#F97316]/50` highlight ring.
+
+**Dark card treatment**: `bg-[#1A1816] border border-white/[0.06]`. Hover: `border-[rgba(249,115,22,0.3)] shadow-[0_0_20px_rgba(249,115,22,0.15)] -translate-y-0.5`. Text hierarchy: `text-white` (name/price), `text-white/50` (description), `text-white/70` (features), `text-white/40` (/mo suffix), `text-white/30` (annual strikethrough).
+
+Trial banner pill rendered above toggle: "14-Day Free Trial • Cancel Anytime" in `bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/80 rounded-full`.
 
 ### `ComparisonTable.jsx`
 
-Grid comparing all 14 `COMPARISON_FEATURES` across all 4 tiers. Boolean features render checkmark/dash icons. String values (call limits) render directly.
+Volume-based table comparing 13 `COMPARISON_FEATURES` across all 4 tiers. Server Component (no `'use client'`).
+
+**Growth column highlight**: Growth `<th>` header uses `text-[#F97316] font-semibold`. Growth `<td>` cells use `bg-[#FFF7ED]` (light orange tint) for vertical column highlight effect.
+
+Cell rendering: `true` → `Check` icon in `text-[#F97316]`; `false` → `—` dash in `text-[#94A3B8]`; string → `text-[#0F172A] font-medium`. Alternating row backgrounds: even rows `bg-stone-50/60`, odd rows default. Table has `overflow-x-auto` wrapper for mobile horizontal scroll.
+
+### Testimonials (inline in page.js)
+
+Dark section `bg-[#1A1816] py-16`. Two quotes side-by-side on `md+` using `AnimatedStagger`/`AnimatedItem`. Each card: `bg-white/[0.04] border border-white/[0.06] rounded-xl p-8`. Quote text: `text-xl text-white/80 italic`. Attribution: `text-sm text-white/50`.
+
+Quotes (verbatim):
+- "Before Voco, I was losing 3-4 calls every weekend. Now my phone's booked Monday before I've had coffee." — Mike R., HVAC contractor, Phoenix AZ
+- "Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup." — Sandra T., Plumbing company owner, Austin TX
 
 ### `FAQSection.jsx`
 
-```js
-import * as Accordion from '@radix-ui/react-accordion';
-```
+`'use client'` (Radix accordion interaction). 8 questions in 4 topic areas: setup (Q1-Q2), AI quality (Q3-Q4), trial/billing (Q5-Q7), data/security (Q8).
 
-Smooth height transition via Radix CSS variable:
-```css
-height: var(--radix-accordion-content-height)
-```
-Radix sets `--radix-accordion-content-height` at runtime. The Tailwind v4 convention registers the animation via `--animate-*` in `@theme` inline block (auto-generates `animate-accordion-down` utility).
+**Dark accordion styling**: Item border `border-b border-white/[0.08]`. Trigger text `text-white font-semibold text-lg`. Answer text `text-white/60 text-[15px] leading-relaxed`. ChevronDown `text-[#F97316]` with `group-data-[state=open]:rotate-180` rotation.
+
+Smooth height transition via Radix CSS variable (`--radix-accordion-content-height`). Animation classes: `data-[state=open]:animate-accordion-down`, `data-[state=closed]:animate-accordion-up`.
+
+**No prohibited copy**: FAQ does not contain "money-back guarantee", "no credit card required", or "refund policy" language.
 
 ---
 
@@ -461,6 +494,8 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 - **Language barrier uses routing.js locales as source of truth**: `locales = ['en', 'es']` is the authoritative list. The voice call system compares `detected_language` against this array. Adding a language = update routing.js + add messages file + test triage.
 
 - **ContactForm named export, honeypot 200, Resend per-request**: Named export matches project authoring convention. Honeypot returns 200 silently to not reveal detection to bots. Resend per-request is correct for serverless — module-level singletons may not persist.
+
+- **ContactForm useSearchParams pre-selection**: ContactForm uses `useSearchParams()` to read `?type=` URL param and pre-select the inquiry type dropdown. Enterprise CTA on pricing page links to `/contact?type=sales` to pre-select "Sales". ContactForm is wrapped in `<Suspense fallback={null}>` in contact/page.js — required by Next.js when using `useSearchParams` in a client component rendered from a Server Component page.
 
 - **AnimatedSection `initial={false}` for prefers-reduced-motion**: Framer Motion v12 pattern. Setting `initial={false}` skips the initial animation state entirely — does not just animate to the final state instantly. This avoids flash/jump for reduced-motion users.
 
