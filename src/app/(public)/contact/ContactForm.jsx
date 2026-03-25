@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 export function ContactForm() {
   const [isPending, setIsPending] = useState(false);
+  const searchParams = useSearchParams();
+  const preselectedType = searchParams.get('type') || '';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -93,7 +96,7 @@ export function ContactForm() {
           id="inquiryType"
           name="inquiryType"
           required
-          defaultValue=""
+          defaultValue={preselectedType}
           className="w-full rounded-lg border border-white/[0.12] bg-[#0F172A] px-4 py-3 text-sm text-[#F1F5F9] focus:outline-none focus:border-[#C2410C] focus:shadow-[0_0_0_3px_rgba(194,65,12,0.2)] transition-all appearance-none"
         >
           <option value="" disabled className="text-[#94A3B8]">Select an inquiry type</option>

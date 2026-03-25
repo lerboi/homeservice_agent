@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
+import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
 import PricingTiers from './PricingTiers';
 import ComparisonTable from './ComparisonTable';
 import FAQSection from './FAQSection';
@@ -59,12 +59,38 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* FAQ (light) */}
-      <section className="bg-[#F5F5F4] py-20 border-t border-stone-200/60">
+      {/* Testimonials (dark) */}
+      <section className="bg-[#1A1816] py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <AnimatedStagger className="grid md:grid-cols-2 gap-8">
+            <AnimatedItem>
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
+                <p className="text-6xl font-serif text-[#F97316]/30 leading-none mb-4">&ldquo;</p>
+                <p className="text-xl text-white/80 italic leading-relaxed">
+                  Before Voco, I was losing 3-4 calls every weekend. Now my phone&apos;s booked Monday before I&apos;ve had coffee.
+                </p>
+                <p className="text-sm text-white/50 mt-4">&mdash; Mike R., HVAC contractor, Phoenix AZ</p>
+              </div>
+            </AnimatedItem>
+            <AnimatedItem>
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
+                <p className="text-6xl font-serif text-[#F97316]/30 leading-none mb-4">&ldquo;</p>
+                <p className="text-xl text-white/80 italic leading-relaxed">
+                  Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup.
+                </p>
+                <p className="text-sm text-white/50 mt-4">&mdash; Sandra T., Plumbing company owner, Austin TX</p>
+              </div>
+            </AnimatedItem>
+          </AnimatedStagger>
+        </div>
+      </section>
+
+      {/* FAQ (dark) */}
+      <section className="bg-[#050505] py-20">
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection>
-            <h2 className="text-2xl font-semibold text-[#0F172A] text-center mb-12 tracking-tight leading-[1.3]">
-              Frequently Asked Questions
+            <h2 className="text-2xl font-semibold text-white text-center mb-12 tracking-tight leading-[1.3]">
+              Questions from the field
             </h2>
           </AnimatedSection>
           <FAQSection />
