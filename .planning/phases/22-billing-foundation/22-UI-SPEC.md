@@ -79,11 +79,11 @@ Inherits Inter from the shared layout. Four roles for these two screens:
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px | 400 (regular) | 1.5 | Feature list items, card descriptions, subheading body |
-| Label | 12px | 500 (medium) | 1.4 | "Most Popular" badge, price unit `/mo`, trial note |
+| Label | 12px | 600 (semibold) | 1.4 | "Most Popular" badge, price unit `/mo`, trial note |
 | Heading | 20px | 600 (semibold) | 1.2 | Wizard card step heading (e.g., "Choose your plan") |
 | Display | 30px | 600 (semibold) | 1.1 | Price amount on each plan card |
 
-Maximum 4 sizes. Maximum 2 declared weights (400 + 600). Label uses 500 only for badge legibility — it is treated as a variant of the regular weight tier, not a third weight declaration.
+Maximum 4 sizes. Maximum 2 declared weights (400 + 600). Label elements use semibold (600) for badge legibility and emphasis, consistent with the heading weight tier.
 
 ---
 
@@ -149,7 +149,7 @@ Centered, pill-shaped badge rendered between the wizard card and plan grid:
 
 Growth card is visually elevated with:
 - `ring-2 ring-[#C2410C]/40`
-- "Most Popular" badge: `bg-[#C2410C] text-white text-xs font-medium px-3 py-1 rounded-full`
+- "Most Popular" badge: `bg-[#C2410C] text-white text-xs font-semibold px-3 py-1 rounded-full`
 - CTA button: `bg-[#C2410C] text-white hover:bg-[#C2410C]/90 shadow-[0_4px_16px_rgba(194,65,12,0.25)] w-full min-h-[44px] rounded-lg`
 
 Starter and Scale CTA buttons: `bg-white border border-stone-300 text-[#0F172A] hover:bg-stone-50 w-full min-h-[44px] rounded-lg`
@@ -164,7 +164,7 @@ Starter and Scale CTA buttons: `bg-white border border-stone-300 text-[#0F172A] 
 | Card hover | `hover:-translate-y-0.5 hover:shadow-md` on non-highlighted cards |
 | CTA click | Calls `POST /api/stripe/checkout-session` with `planId`, shows loading spinner on button, disables all CTA buttons while loading |
 | Loading | Button shows `<Loader2 className="animate-spin size-4 mr-2" />` + "Redirecting..." label, `disabled` attribute on all 3 CTAs |
-| API error | Inline error message below the grid: "Something went wrong. Please try again." with a retry option (re-enables buttons) |
+| API error | Inline error message below the grid: "Something went wrong. Please try again, or [contact support](/contact?type=support)." with a retry option (re-enables buttons) |
 | Redirect | `window.location.href` to Stripe Checkout URL returned by API |
 
 ### Accessibility
@@ -211,7 +211,7 @@ Growth plan   Free until April 9, 2026
 ```
 
 - Container: `flex items-center justify-center gap-4 mt-4 p-3 rounded-lg bg-[#F0FDF4] border border-[#BBF7D0]`
-- Plan badge: `text-sm font-medium text-[#166534]`
+- Plan badge: `text-sm font-semibold text-[#166534]`
 - Trial date: `text-sm text-[#166534]`
 - Date format: "Free until [Month D, YYYY]" — computed from `trial_ends_at` returned by the server
 
@@ -251,7 +251,7 @@ The page performs a server-side fetch to verify the Stripe session before displa
 | Plan CTA (Growth, highlighted) | "Start Free Trial" | Plan Selection |
 | Plan CTA (Starter, Scale) | "Start Free Trial" | Plan Selection |
 | Loading CTA | "Redirecting..." | Plan Selection |
-| API error | "Something went wrong. Please try again." | Plan Selection |
+| API error | "Something went wrong. Please try again, or [contact support](/contact?type=support)." | Plan Selection |
 | Enterprise note | "Need more? Contact us for Enterprise." | Plan Selection |
 | Step 6 heading | "You're all set!" | Checkout Success |
 | Step 6 subheading | "Your 14-day free trial is active. No charges until [trial_end_date]." | Checkout Success |
