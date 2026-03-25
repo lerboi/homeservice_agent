@@ -14,7 +14,13 @@ export default function ComparisonTable() {
                   Feature
                 </th>
                 {PRICING_TIERS.map((tier) => (
-                  <th key={tier.id} scope="col" className="py-4 px-4 text-center text-sm font-semibold text-[#0F172A]">
+                  <th
+                    key={tier.id}
+                    scope="col"
+                    className={`py-4 px-4 text-center text-sm font-semibold ${
+                      tier.id === 'growth' ? 'text-[#F97316]' : 'text-[#0F172A]'
+                    }`}
+                  >
                     {tier.name}
                   </th>
                 ))}
@@ -29,11 +35,14 @@ export default function ComparisonTable() {
                   {['starter', 'growth', 'scale', 'enterprise'].map((tierId) => {
                     const val = feature[tierId];
                     return (
-                      <td key={tierId} className="py-3.5 px-4 text-center text-sm">
+                      <td
+                        key={tierId}
+                        className={`py-3.5 px-4 text-center text-sm${tierId === 'growth' ? ' bg-[#FFF7ED]' : ''}`}
+                      >
                         {val === true ? (
                           <Check className="size-4 text-[#F97316] mx-auto" />
                         ) : val === false ? (
-                          <span className="text-[#475569]/30">&mdash;</span>
+                          <span className="text-[#94A3B8]">&mdash;</span>
                         ) : (
                           <span className="text-[#0F172A] font-medium">{val}</span>
                         )}
