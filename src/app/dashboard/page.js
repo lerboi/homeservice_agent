@@ -201,7 +201,7 @@ export default function DashboardPage() {
               className="text-sm text-[#475569] hover:text-[#0F172A] underline underline-offset-2 transition-colors"
               onClick={() => {
                 if (typeof window !== 'undefined') {
-                  localStorage.setItem('gsd_has_seen_tour', '1');
+                  window.dispatchEvent(new CustomEvent('start-dashboard-tour'));
                   setShowTour(false);
                 }
               }}
