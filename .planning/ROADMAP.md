@@ -404,7 +404,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 18. Booking-First Hardening and QA | 3/3 | Complete    | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 | 20. Dashboard UX Overhaul | 4/4 | Complete   | 2026-03-25 |
-| 21. Pricing Page Redesign | 2/2 | Complete   | 2026-03-25 |
+| 21. Pricing Page Redesign | 2/2 | Complete    | 2026-03-25 |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
