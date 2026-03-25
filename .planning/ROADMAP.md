@@ -312,7 +312,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 17: Recovery SMS Enhancement** - Universal recovery SMS fallback for all failed bookings, urgency-aware content, delivery failure logging and retry (completed 2026-03-25)
 - [x] **Phase 18: Booking-First Hardening and QA** - Multi-language E2E revalidation for booking-first, concurrency QA at 20 simultaneous requests, onboarding gate revalidation, Sentry error monitoring (completed 2026-03-25)
 - [x] **Phase 19: Codebase Skill Files** - Create 5 comprehensive skill files as living architectural references, update CLAUDE.md for skill maintenance (completed 2026-03-25)
-- [ ] **Phase 21: Pricing Page Redesign and Stripe Integration** - Premium pricing page matching landing page design language, Stripe Checkout integration, accurate feature tiers, social proof, and trust signals
+- [ ] **Phase 21: Pricing Page Redesign** - Premium pricing page matching landing page design language, accurate feature tiers, 14-day trial messaging, social proof, expanded FAQ, dark SaaS visual upgrade
 
 ### Phase 14: Booking-First Agent Behavior
 **Goal**: The AI books every inbound call by default — emergencies into the nearest same-day slot, routine calls into next available — with human transfer restricted to exception states only, and full call context preserved on any transfer
@@ -404,7 +404,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 18. Booking-First Hardening and QA | 3/3 | Complete    | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 | 20. Dashboard UX Overhaul | 4/4 | Complete   | 2026-03-25 |
-| 21. Pricing Page Redesign and Stripe Integration | 0/TBD | Not started | - |
+| 21. Pricing Page Redesign | 0/TBD | Not started | - |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
@@ -452,17 +452,19 @@ Plans:
 - [x] 20-03-PLAN.md — Setup checklist redesign (required/recommended, progress ring, expandable) + adaptive home page
 - [x] 20-04-PLAN.md — Joyride guided tour, data-tour wiring, skill file update
 
-### Phase 21: Pricing Page Redesign and Stripe Integration
-**Goal**: Transform the pricing page from a display-only placeholder into a complete, conversion-optimized page that matches the premium dark SaaS design language of the landing page — with working Stripe Checkout for subscription payments, accurate feature tiers reflecting actual product capabilities, social proof elements, trust signals (money-back guarantee, no-contract badges), and a polished mobile experience
-**Depends on**: Phase 20 (dashboard UX overhaul complete — pricing CTAs need to route correctly post-restructure)
+### Phase 21: Pricing Page Redesign
+**Goal**: Transform the pricing page into a conversion-optimized page that matches the premium dark SaaS design language of the landing page — with accurate volume-based feature tiers reflecting actual product capabilities, 14-day free trial as the primary pull factor, social proof (testimonial), expanded FAQ covering setup/AI quality/billing/security, and a polished mobile experience. No Stripe integration (handled separately).
+**Depends on**: Phase 20 (dashboard UX overhaul complete)
 **Requirements**: TBD
 **Success Criteria** (what must be TRUE):
-  1. The pricing page uses the same premium dark SaaS design language as the landing page — dark hero with radial gradient accents, warm color palette (#050505, #F97316, #F5F5F4), animated sections, and consistent typography — not the current flat white card design
-  2. Each pricing tier's feature list accurately reflects actual product capabilities (e.g., calendar sync tiers match what Growth vs Scale actually support, call limits match real plan enforcement)
-  3. Clicking "Get Started" on any paid tier initiates a Stripe Checkout session for that tier's plan (monthly or annual based on toggle state) and redirects to Stripe's hosted payment page — returning the user to the onboarding wizard on success
+  1. The pricing page uses the same premium dark SaaS design language as the landing page — rich dark hero (#050505) with radial gradient accents, dot-grid texture, floating blur orb, dark tier cards with copper glow hover, and consistent typography
+  2. Each pricing tier's feature list accurately reflects only actually built product capabilities — volume-based tiers where all features are available on all paid plans, differentiated only by call volume and support level
+  3. 14-day free trial is prominently displayed as the primary conversion pull — visible banner near the top, all paid tier CTAs say "Start Free Trial"
   4. The Enterprise tier "Contact Us" CTA routes to the contact page with inquiry type pre-selected as "sales"
-  5. Social proof elements (testimonials, trust badges, money-back guarantee callout) are visible on the pricing page to reduce purchase friction
-  6. The pricing page renders correctly on mobile viewports (375px+) with tier cards stacking vertically and the comparison table scrolling horizontally
+  5. A testimonial section between the comparison table and CTA banner provides social proof from trades owners
+  6. The FAQ section covers 6-8 questions across setup/onboarding, AI call quality, trial/billing, and data/security — replacing the current 4-question FAQ
+  7. No money-back guarantee messaging and no "no credit card required" messaging appears anywhere on the page
+  8. The pricing page renders correctly on mobile viewports (375px+) with tier cards stacking vertically and the comparison table scrolling horizontally
 **Plans:** 0 plans
 
 Plans:

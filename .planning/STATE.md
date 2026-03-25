@@ -193,7 +193,7 @@ Recent decisions affecting current work:
 - Phases 14-18 added for milestone v2.0: Booking-First Digital Dispatcher (2026-03-24)
 - Phase 19 added: Codebase skill files for full architectural reference — 5 new skill files covering scheduling/calendar, dashboard/CRM, onboarding, auth/database, and public site/i18n
 - Phase 20 added: Dashboard UX Overhaul — 5-tab nav, adaptive home, More menu, checklist redesign, Joyride tour
-- Phase 21 added: Pricing Page Redesign and Stripe Integration — premium design matching landing page, Stripe Checkout, accurate feature tiers, social proof, trust signals
+- Phase 21 added: Pricing Page Redesign — premium dark SaaS design matching landing page, volume-based tiers with accurate features, 14-day trial messaging, testimonials, expanded FAQ (no Stripe — separate phase)
 
 ### Pending Todos
 
