@@ -8,19 +8,19 @@ An all-in-one AI platform for home service SMEs (plumbers, HVAC, electricians, e
 
 Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
-## Current Milestone: v2.0 Booking-First Digital Dispatcher
+## Current Milestone: v3.0 Subscription Billing & Usage Enforcement
 
-**Goal:** Pivot the AI from an emergency-triage escalation model to a booking-first dispatcher that autonomously schedules ALL calls — including emergencies — using urgency tags strictly for notification priority, with escalation reserved for exception states only.
+**Goal:** Turn the free platform into a revenue-generating SaaS by adding Stripe subscription billing, per-call usage tracking, plan limit enforcement, and a full billing management dashboard.
 
 **Target features:**
-- Agent prompt rewrite: AI books every call by default, no triage-based routing
-- Triage reclassification: urgency tags become notification priority, not call routing decisions
-- Booking flow universalization: all calls get booked (emergencies → nearest slot, routine → next available)
-- Exception state handling: transfer only when AI can't understand job or caller explicitly requests human
-- Notification priority system: urgency drives SMS/email formatting and delivery priority
-- Recovery SMS as universal fallback: any failed booking triggers recovery SMS with manual booking link
-- Dashboard visual parity: keep existing urgency badges, change backend meaning only
-- Hardening & Launch QA (folded from v1.1 Phases 5+9, rewritten for booking-first behavior)
+- Stripe integration (products, prices, Checkout Sessions, webhooks)
+- Subscription lifecycle (create, upgrade, downgrade, cancel, reactivate)
+- Per-call usage metering (increment on each call, reset on billing cycle)
+- Plan limit enforcement (hard paywall when trial expires, per-call overage billing beyond plan limit)
+- 14-day free trial (auto-starts after onboarding, no credit card required)
+- Billing dashboard page (current plan, usage meter, invoice history, upgrade/downgrade, cancel via Stripe Customer Portal)
+- Trial countdown and upgrade prompts in dashboard
+- Database schema (subscriptions, usage tracking, invoices)
 
 ## Requirements
 
@@ -60,7 +60,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 - Native mobile app — web-first, mobile-responsive (defer to v2)
 - Omnichannel chat (SMS, web widget, WhatsApp, Messenger) — voice-first, chat is a later add-on
 - Full CRM (invoicing, job costing, crew dispatch) — lead tracker only, not replacing ServiceTitan
-- Payment processing / Stripe integration — out of scope for v1.1, pricing page is display-only
+- Payment processing / Stripe integration — moved to v3.0 milestone (active)
 - Outbound calling / follow-up automation — inbound only for v1
 
 ## Context
@@ -122,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-25 — Phase 8 Outlook Calendar Sync complete (v1.1), v2.0 Booking-First Digital Dispatcher in progress*
+*Last updated: 2026-03-26 — v3.0 Subscription Billing & Usage Enforcement milestone started*

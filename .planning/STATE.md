@@ -1,42 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 20-03-PLAN.md
-last_updated: "2026-03-25T19:16:26.049Z"
+milestone: v3.0
+milestone_name: Subscription Billing & Usage Enforcement
+status: Defining requirements
+stopped_at: Milestone v3.0 started
+last_updated: "2026-03-26T00:00:00.000Z"
 progress:
-  total_phases: 14
-  completed_phases: 11
-  total_plans: 51
-  completed_plans: 50
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-24)
+See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 20 — dashboard-ux-overhaul
+**Current focus:** Milestone v3.0 — Subscription Billing & Usage Enforcement
 
 ## Current Position
 
-Phase: 20 (dashboard-ux-overhaul) — EXECUTING
-Plan: 4 of 4
-
-### v2.0 Milestone Progress
-
-```
-Phase 14: Booking-First Agent Behavior      [ ] Not started
-Phase 15: Call Processor + Triage Reclass    [ ] Not started
-Phase 16: Notification Priority System       [ ] Not started
-Phase 17: Recovery SMS Enhancement           [ ] Not started
-Phase 18: Booking-First Hardening and QA     [ ] Not started
-```
-
-Progress: 0/5 v2.0 phases complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-26 — Milestone v3.0 started
 
 ## Accumulated Context
 
