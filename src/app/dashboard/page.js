@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
@@ -74,17 +74,28 @@ export default function DashboardPage() {
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [activeLoading, setActiveLoading] = useState(true);
 
-  // Called by SetupChecklist when its fetch resolves — avoids double-fetch
-  const handleChecklistDataLoaded = useCallback((data) => {
-    setChecklistData(data);
-    if (data?.items) {
-      const setupComplete = data.items
-        .filter((i) => REQUIRED_IDS.includes(i.id))
-        .every((i) => i.complete);
-      setIsSetupComplete(setupComplete);
-    } else {
-      setIsSetupComplete(false);
+  // Fetch checklist data at page level to determine setup vs active mode
+  useEffect(() => {
+    async function loadChecklist() {
+      try {
+        const res = await fetch('/api/setup-checklist');
+        if (res.ok) {
+          const data = await res.json();
+          setChecklistData(data);
+          if (data?.items) {
+            const setupComplete = data.items
+              .filter((i) => REQUIRED_IDS.includes(i.id))
+              .every((i) => i.complete);
+            setIsSetupComplete(setupComplete);
+          }
+        } else {
+          setChecklistData(null);
+        }
+      } catch {
+        setChecklistData(null);
+      }
     }
+    loadChecklist();
   }, []);
 
   useEffect(() => {
@@ -190,7 +201,7 @@ export default function DashboardPage() {
         <AIStatusIndicator />
 
         {/* Checklist hero */}
-        <SetupChecklist onDataLoaded={handleChecklistDataLoaded} />
+        <SetupChecklist />
 
         {/* Tour button */}
         {showTour && (
