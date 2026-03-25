@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Settings } from 'lucide-react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import BottomTabBar from '@/components/dashboard/BottomTabBar';
+import DashboardTour from '@/components/dashboard/DashboardTour';
 import { GridTexture } from '@/components/ui/grid-texture';
 
 const BREADCRUMB_LABELS = {
@@ -54,6 +56,16 @@ function DashboardBreadcrumb() {
 }
 
 export default function DashboardLayout({ children }) {
+  const [tourRunning, setTourRunning] = useState(false);
+
+  useEffect(() => {
+    function handleStartTour() {
+      setTourRunning(true);
+    }
+    window.addEventListener('start-dashboard-tour', handleStartTour);
+    return () => window.removeEventListener('start-dashboard-tour', handleStartTour);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F5F5F4] relative">
       <GridTexture variant="light" />
@@ -83,6 +95,12 @@ export default function DashboardLayout({ children }) {
         {/* Bottom tab bar — mobile only */}
         <BottomTabBar />
       </div>
+
+      {/* Guided tour — mounted at layout level to persist across tab navigation */}
+      <DashboardTour
+        run={tourRunning}
+        onFinish={() => setTourRunning(false)}
+      />
     </div>
   );
 }
