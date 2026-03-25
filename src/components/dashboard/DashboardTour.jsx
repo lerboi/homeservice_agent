@@ -1,6 +1,6 @@
 'use client';
 
-import Joyride, { STATUS } from 'react-joyride';
+import { Joyride, STATUS } from 'react-joyride';
 import { useReducedMotion } from 'framer-motion';
 
 const STEPS = [
@@ -21,8 +21,8 @@ const STEPS = [
     placement: 'bottom',
   },
   {
-    target: '[href="/dashboard/analytics"]',
-    content: 'Track your conversion rates, revenue, and call volume over time.',
+    target: '[href="/dashboard/calls"]',
+    content: 'View every call your AI handled — duration, urgency, booking outcome, and more.',
     placement: 'bottom',
   },
   {

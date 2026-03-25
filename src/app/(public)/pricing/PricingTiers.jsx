@@ -13,6 +13,14 @@ export default function PricingTiers() {
 
   return (
     <div>
+      {/* Trial banner — per D-02 */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/80">
+          <span className="size-1.5 rounded-full bg-[#F97316]" />
+          14-Day Free Trial &bull; Cancel Anytime
+        </div>
+      </div>
+
       {/* Billing toggle */}
       <div className="flex items-center justify-center mb-10">
         <div className="flex items-center gap-0 rounded-full border border-white/[0.1] bg-white/[0.04] p-1">
@@ -60,7 +68,7 @@ export default function PricingTiers() {
           return (
             <AnimatedItem key={tier.id} className={orderClass}>
               <Card
-                className={`relative flex flex-col h-full bg-white border border-stone-200/60 rounded-xl transition-all duration-200 hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-0.5 ${
+                className={`relative flex flex-col h-full bg-[#1A1816] border border-white/[0.06] rounded-xl transition-all duration-200 hover:border-[rgba(249,115,22,0.3)] hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] hover:-translate-y-0.5 ${
                   isHighlighted
                     ? 'ring-2 ring-[#F97316]/50'
                     : ''
@@ -77,36 +85,36 @@ export default function PricingTiers() {
                   )}
 
                   {/* Tier name */}
-                  <div className="text-lg font-semibold text-[#0F172A]">{tier.name}</div>
+                  <div className="text-lg font-semibold text-white">{tier.name}</div>
 
                   {/* Price */}
                   <div className="mt-2 flex items-baseline gap-1">
                     {tier.monthlyPrice === null ? (
-                      <span className="text-3xl font-semibold text-[#0F172A]">Custom</span>
+                      <span className="text-3xl font-semibold text-white">Custom</span>
                     ) : (
                       <>
-                        <span className="text-3xl font-semibold text-[#0F172A]">${price}</span>
-                        <span className="text-sm text-[#475569]">/mo</span>
+                        <span className="text-3xl font-semibold text-white">${price}</span>
+                        <span className="text-sm text-white/40">/mo</span>
                       </>
                     )}
                   </div>
 
                   {/* Strikethrough for annual */}
                   {billing === 'annual' && tier.monthlyPrice !== null && (
-                    <span className="text-xs text-[#475569] line-through">
+                    <span className="text-xs text-white/30 line-through">
                       ${tier.monthlyPrice}/mo
                     </span>
                   )}
 
                   {/* Description */}
-                  <p className="text-sm text-[#475569] mt-2">{tier.description}</p>
+                  <p className="text-sm text-white/50 mt-2">{tier.description}</p>
                 </CardHeader>
 
                 <CardContent className="flex flex-col flex-1 pt-5">
                   {/* Feature list */}
                   <ul className="space-y-2.5 flex-1">
                     {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-[#475569]">
+                      <li key={feature} className="flex items-start gap-2 text-sm text-white/70">
                         <Check className="size-4 text-[#F97316] shrink-0 mt-0.5" />
                         {feature}
                       </li>
@@ -117,10 +125,10 @@ export default function PricingTiers() {
                   <div className="mt-5">
                     <Button
                       asChild
-                      className={`w-full min-h-[44px] ${
+                      className={`w-full min-h-[44px] rounded-lg text-sm font-medium ${
                         isHighlighted
-                          ? 'bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_4px_16px_0_rgba(249,115,22,0.3)]'
-                          : 'bg-[#0F172A] text-white hover:bg-[#0F172A]/90'
+                          ? 'bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_4px_16px_rgba(249,115,22,0.3)]'
+                          : 'bg-white/[0.08] border border-white/[0.1] text-white hover:bg-white/[0.12]'
                       }`}
                     >
                       <Link href={tier.ctaHref}>{tier.cta}</Link>

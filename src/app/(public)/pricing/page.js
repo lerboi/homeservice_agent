@@ -6,7 +6,7 @@ import ComparisonTable from './ComparisonTable';
 import FAQSection from './FAQSection';
 
 export const metadata = {
-  title: 'Pricing - Voco',
+  title: 'Pricing — Voco AI Receptionist',
   description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
 };
 
@@ -14,19 +14,32 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero + Tiers (dark) */}
-      <section className="relative bg-[#1A1816] pt-28 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(249,115,22,0.05)_0%,_transparent_70%)]" />
+      <section className="relative bg-[#050505] pt-28 pb-20 overflow-hidden">
+        {/* Radial gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.06),transparent_70%)] pointer-events-none" />
+        {/* Dot-grid texture */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        {/* Blur orb */}
+        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#F97316]/[0.03] blur-[100px] pointer-events-none" />
+
         <div className="relative max-w-6xl mx-auto px-6">
-          <div className="text-center mb-10">
+          {/* Hero content */}
+          <div className="max-w-4xl mx-auto text-center mb-10">
             <AnimatedSection>
-              <p className="text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
-                Simple, transparent pricing
-              </p>
-              <h1 className="text-[2rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white tracking-tight leading-[1.1]">
+              {/* Eyebrow pill */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.07]">
+                  <span className="size-1.5 rounded-full bg-[#F97316] animate-pulse" />
+                  <span className="text-xs font-semibold text-white/70 tracking-wide uppercase">AI Receptionist for Trades</span>
+                </div>
+              </div>
+              {/* Headline */}
+              <h1 className="text-[3rem] md:text-[3.5rem] lg:text-[3.75rem] font-semibold text-white tracking-tight leading-[1.1]">
                 Stop Losing <span className="text-[#F97316]">$1,000 Jobs</span> to Voicemail
               </h1>
-              <p className="mt-4 text-base text-white/50 max-w-2xl mx-auto">
-                Every tier pays for itself after one booked job. Pick the call volume that matches your crew.
+              {/* Subline */}
+              <p className="mt-4 text-lg text-white/50 max-w-xl mx-auto">
+                Every plan pays for itself after one booked job. Pick the volume that matches your crew.
               </p>
             </AnimatedSection>
           </div>
@@ -64,19 +77,20 @@ export default function PricingPage() {
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <AnimatedSection>
             <h2 className="text-2xl md:text-3xl font-semibold text-white tracking-tight leading-[1.3]">
-              Ready to stop losing jobs to voicemail?
+              Every missed call is a job your competitor booked.
             </h2>
             <p className="mt-4 text-white/50">
-              Your AI receptionist is 5 minutes away from answering every call.
+              Your AI receptionist is 5 minutes away.
             </p>
             <div className="mt-8">
               <Button
                 asChild
                 className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[44px] px-8 text-base font-medium rounded-lg shadow-[0_4px_12px_0_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] transition-all hover:-translate-y-0.5"
               >
-                <Link href="/onboarding">Get Started Free</Link>
+                <Link href="/onboarding">Start Free Trial</Link>
               </Button>
             </div>
+            <p className="text-sm text-white/40 mt-3">14-day free trial. Cancel anytime.</p>
           </AnimatedSection>
         </div>
       </section>
