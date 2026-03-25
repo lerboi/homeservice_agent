@@ -50,7 +50,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 - [ ] Booking flow universalization: all calls get booked autonomously
 - [x] Exception state handling: escalation only when AI can't understand or caller requests human — v2.0 Phase 14
 - [ ] Notification priority system: urgency-driven SMS/email formatting and delivery priority
-- [ ] Recovery SMS universal fallback: failed bookings trigger recovery SMS
+- [x] Recovery SMS universal fallback: failed bookings trigger recovery SMS — v2.0 Phase 17
 - [ ] Multi-language end-to-end validation (voice → booking → notifications) — rewritten for booking-first
 - [ ] Concurrency QA and load testing — rewritten for booking-first
 - [ ] 5-minute onboarding gate validation with non-technical user
