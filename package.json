@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "test": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --passWithNoTests",
-    "test:all": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --passWithNoTests"
+    "test:all": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js --passWithNoTests",
+    "test:integration": "node --experimental-vm-modules node_modules/jest-cli/bin/jest.js tests/integration/ --passWithNoTests"
   },
   "dependencies": {
     "@azure/msal-node": "^5.1.1",
