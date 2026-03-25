@@ -51,9 +51,9 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 - [x] Exception state handling: escalation only when AI can't understand or caller requests human — v2.0 Phase 14
 - [ ] Notification priority system: urgency-driven SMS/email formatting and delivery priority
 - [x] Recovery SMS universal fallback: failed bookings trigger recovery SMS — v2.0 Phase 17
-- [ ] Multi-language end-to-end validation (voice → booking → notifications) — rewritten for booking-first
-- [ ] Concurrency QA and load testing — rewritten for booking-first
-- [ ] 5-minute onboarding gate validation with non-technical user
+- [x] Multi-language end-to-end validation (voice → booking → notifications) — v2.0 Phase 18 (human UAT pending)
+- [x] Concurrency QA and load testing — v2.0 Phase 18 (integration test, human UAT pending)
+- [x] 5-minute onboarding gate validation with non-technical user — v2.0 Phase 18 (human UAT pending)
 
 ### Out of Scope
 
