@@ -46,14 +46,14 @@ export default function FAQSection() {
           <Accordion.Item
             key={index}
             value={`item-${index}`}
-            className="border-b border-[#0F172A]/10"
+            className="border-b border-white/[0.08]"
           >
-            <Accordion.Trigger className="flex items-center justify-between w-full py-5 text-left text-[#0F172A] font-semibold text-lg group min-h-[44px]">
+            <Accordion.Trigger className="flex items-center justify-between w-full py-5 text-left text-white font-semibold text-lg group min-h-[44px]">
               {item.q}
               <ChevronDown className="size-5 text-[#F97316] transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0 ml-4" />
             </Accordion.Trigger>
             <Accordion.Content className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              <p className="text-[#475569] text-[15px] leading-relaxed pb-5">
+              <p className="text-white/60 text-[15px] leading-relaxed pb-5">
                 {item.a}
               </p>
             </Accordion.Content>

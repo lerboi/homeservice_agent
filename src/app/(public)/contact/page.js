@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { ContactForm } from './ContactForm';
 
@@ -32,7 +33,9 @@ export default function ContactPage() {
         <div className="max-w-xl mx-auto px-6">
           <AnimatedSection>
             <div className="bg-[#1E293B] rounded-2xl p-8 md:p-10">
-              <ContactForm />
+              <Suspense fallback={null}>
+                <ContactForm />
+              </Suspense>
             </div>
           </AnimatedSection>
         </div>
