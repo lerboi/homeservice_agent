@@ -5,20 +5,36 @@ import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
 const FAQ_ITEMS = [
   {
+    q: 'How long does setup take?',
+    a: "Under 5 minutes. You'll enter your business name, choose your trade, and hear your AI receptionist answer a real call — all before your first coffee break. No technical skills needed.",
+  },
+  {
+    q: 'Do I need any technical skills to use Voco?',
+    a: "None at all. If you can fill out a form on your phone, you can set up Voco. We handle the AI, the phone number, and the call routing — you just show up for the jobs.",
+  },
+  {
+    q: 'Can callers tell they\'re talking to an AI?',
+    a: "Some might sense it, but most don't stop to ask. What matters is that your phone gets answered in one ring, every time, with your business name and a professional tone. Callers care more about being helped than who's helping.",
+  },
+  {
+    q: 'What if the AI gets confused on a call?',
+    a: "Voco is built for this. If a caller asks something outside the AI's scope, it captures their info and routes the call to you with a full summary. You never lose a lead — even on edge cases.",
+  },
+  {
+    q: 'How does the 14-day trial work?',
+    a: "Sign up, complete the 5-minute setup, and your AI receptionist starts answering calls immediately. You have 14 full days to evaluate Voco with real calls. No payment required to start.",
+  },
+  {
     q: 'Can I cancel anytime?',
-    a: "Absolutely. There are no lock-in contracts. Cancel from your dashboard settings at any time, and your service stops at the end of the current billing period. No cancellation fees, no hoops to jump through.",
+    a: "Yes. No lock-in contracts. Cancel from your dashboard settings at any time, and your service stops at the end of the current billing period. No cancellation fees.",
   },
   {
-    q: 'What happens if I exceed my call limit?',
-    a: "We don't cut you off mid-month. Calls beyond your plan limit are billed at a transparent per-call overage rate shown on your invoice. You can upgrade your plan anytime to get a better per-call rate.",
+    q: 'What happens if I go over my call limit?',
+    a: "We don't cut you off mid-month. Calls beyond your plan limit are charged at a transparent per-call overage rate shown on your invoice. You can upgrade anytime to get a better per-call rate.",
   },
   {
-    q: 'Is there a free trial?',
-    a: "Yes. Every plan comes with a 14-day free trial -- no credit card required. You'll have your AI receptionist answering calls within 5 minutes of signing up.",
-  },
-  {
-    q: 'What is your refund policy?',
-    a: "We offer a 30-day money-back guarantee. If Voco doesn't pay for itself within the first month, we'll refund your subscription -- no questions asked.",
+    q: 'Where are call recordings stored? Who can access them?',
+    a: "Recordings are stored on encrypted servers in the US. Only your account can access your recordings and transcripts — no one else sees your call data. Voco does not share or sell your data.",
   },
 ];
 
