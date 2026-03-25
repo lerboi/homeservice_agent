@@ -381,11 +381,12 @@ Plans:
   2. A contention test firing 20 simultaneous booking requests at the same slot produces exactly 1 confirmed booking and 19 next-available offers — zero double-bookings, zero unhandled errors
   3. A non-technical SME owner completes the onboarding wizard and hears their booking-first AI receptionist in under 5 minutes — revalidated for the new booking-first behavior (AI should attempt to book the test call, not just take a message)
   4. An unhandled exception or API failure in the booking flow triggers a Sentry alert with full stack trace within 60 seconds — confirmed via deliberate test throw in staging
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
-- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
+- [ ] 18-01-PLAN.md — Sentry error monitoring setup (SDK install, server config, test error endpoint)
+- [ ] 18-02-PLAN.md — Concurrency integration test (20 simultaneous bookings via real Supabase)
+- [ ] 18-03-PLAN.md — Test-call auto-cancel + manual E2E test scripts (English, Spanish, onboarding) + skill file update
 
 ## v2.0 Progress
 
@@ -399,7 +400,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
-| 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
+| 18. Booking-First Hardening and QA | 0/3 | Planning complete | - |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
