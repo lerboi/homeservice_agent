@@ -106,23 +106,40 @@ export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
 // ─── Caller recovery SMS ──────────────────────────────────────────────────────
 
 /**
- * Send warm recovery SMS to a caller who hung up without booking.
+ * Send urgency-aware recovery SMS to a caller whose booking failed.
+ * Returns structured result for delivery tracking (RECOVER-03).
  *
  * @param {{ to: string, callerName?: string, businessName: string,
- *            bookingLink: string, ownerPhone: string }} params
+ *           locale?: string, urgency?: string, bookingLink?: string }} params
+ * @returns {Promise<{ success: boolean, sid?: string, error?: { code: string|number, message: string } }>}
  */
 export async function sendCallerRecoverySMS({
   to,
   callerName,
   businessName,
-  bookingLink,
-  ownerPhone,
+  locale,
+  urgency,
+  bookingLink, // D-10: accepted but unused — placeholder for future SMS chatbot / booking page
 }) {
+  if (!to) {
+    console.warn('[notifications] sendCallerRecoverySMS skipped: no phone number');
+    return { success: false, error: { code: 'NO_PHONE', message: 'No phone number provided' } };
+  }
+
+  const translations = (locale === 'es') ? es : en;
+  const isEmergency = urgency === 'emergency';
   const firstName = callerName?.split(' ')[0] || 'there';
-  const body =
-    `Hi ${firstName}, thanks for calling ${businessName}. ` +
-    `We'd love to help -- book online at ${bookingLink} ` +
-    `or call us back anytime at ${ownerPhone}.`;
+
+  // D-06: emergency = empathetic urgency (warm, time-sensitive acknowledgement)
+  // D-07: routine = standard warm tone
+  const templateKey = isEmergency
+    ? 'recovery_sms_attempted_emergency'
+    : 'recovery_sms_attempted_routine';
+
+  const body = interpolate(translations.notifications[templateKey], {
+    business_name: businessName || 'Your service provider',
+    first_name: firstName,
+  });
 
   try {
     const result = await getTwilioClient().messages.create({
@@ -131,9 +148,12 @@ export async function sendCallerRecoverySMS({
       to,
     });
     console.log('[notifications] Caller recovery SMS sent:', result.sid);
-    return result;
+    return { success: true, sid: result.sid };
   } catch (err) {
-    console.error('[notifications] Caller recovery SMS failed:', err?.message || err);
+    const code = err?.code || 'UNKNOWN';
+    const message = err?.message || String(err);
+    console.error('[notifications] Caller recovery SMS failed:', message);
+    return { success: false, error: { code, message } };
   }
 }
 
