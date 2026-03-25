@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Calendar, BarChart3, MoreHorizontal } from 'lucide-react';
 
 const TABS = [
@@ -34,13 +35,20 @@ export default function BottomTabBar() {
               key={tab.href}
               href={tab.href}
               className={`
-                flex-1 flex flex-col items-center justify-center h-[56px] min-h-[48px] gap-1 text-xs font-medium transition-colors
+                relative flex-1 flex flex-col items-center justify-center h-[56px] min-h-[48px] gap-1 text-xs font-medium transition-colors duration-200
                 ${active
                   ? 'text-[#C2410C]'
                   : 'text-white/60 hover:text-white/80'
                 }
               `}
             >
+              {active && (
+                <motion.span
+                  layoutId="tab-indicator"
+                  className="absolute top-0 inset-x-3 h-[2px] bg-[#C2410C] rounded-full"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
               <Icon className="h-5 w-5" />
               <span>{tab.label}</span>
             </Link>

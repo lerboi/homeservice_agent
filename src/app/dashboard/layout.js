@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Settings } from 'lucide-react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import BottomTabBar from '@/components/dashboard/BottomTabBar';
@@ -28,34 +29,81 @@ function DashboardBreadcrumb() {
   const segments = pathname.replace(/\/$/, '').split('/').filter(Boolean);
   // segments: ['dashboard'] or ['dashboard', 'leads'] or ['dashboard', 'more', 'services-pricing']
 
+  // Home page — just show "Home"
   if (segments.length <= 1) {
     return (
       <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
-        <span className="text-[#0F172A] font-semibold">Dashboard</span>
+        <span className="text-[#0F172A] font-semibold">Home</span>
       </nav>
     );
   }
 
   const crumbs = segments.slice(1); // remove 'dashboard'
+
+  // Single segment like /dashboard/leads → just show "Leads" (no parent)
+  if (crumbs.length === 1) {
+    const label = BREADCRUMB_LABELS[crumbs[0]] || crumbs[0];
+    return (
+      <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={crumbs[0]}
+            className="text-[#0F172A] font-semibold"
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 4 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            {label}
+          </motion.span>
+        </AnimatePresence>
+      </nav>
+    );
+  }
+
+  // Nested like /dashboard/more/working-hours → "More › Working Hours" (clickable parent)
   return (
-    <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
-      <span>Dashboard</span>
-      {crumbs.map((seg, i) => {
-        const label = BREADCRUMB_LABELS[seg];
-        if (!label) return null;
-        const isLast = i === crumbs.length - 1;
-        return (
-          <span key={seg}>
-            <span className="mx-2 text-stone-300">&rsaquo;</span>
-            <span className={isLast ? 'text-[#0F172A] font-semibold' : ''}>{label}</span>
-          </span>
-        );
-      })}
+    <nav className="text-sm text-[#475569] flex items-center" aria-label="Breadcrumb">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={pathname}
+          className="flex items-center"
+          initial={{ opacity: 0, x: -4 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 4 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+        >
+          {crumbs.map((seg, i) => {
+            const label = BREADCRUMB_LABELS[seg];
+            if (!label) return null;
+            const isLast = i === crumbs.length - 1;
+            // Build href for this crumb: /dashboard + all segments up to and including this one
+            const href = '/dashboard/' + crumbs.slice(0, i + 1).join('/');
+
+            return (
+              <span key={seg} className="flex items-center">
+                {i > 0 && <span className="mx-2 text-stone-300">&rsaquo;</span>}
+                {isLast ? (
+                  <span className="text-[#0F172A] font-semibold">{label}</span>
+                ) : (
+                  <Link
+                    href={href}
+                    className="text-[#475569] hover:text-[#0F172A] transition-colors"
+                  >
+                    {label}
+                  </Link>
+                )}
+              </span>
+            );
+          })}
+        </motion.span>
+      </AnimatePresence>
     </nav>
   );
 }
 
 export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
   const [tourRunning, setTourRunning] = useState(false);
 
   useEffect(() => {
@@ -84,13 +132,20 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
 
-        {/* Main content — no card wrapper; each page controls its own card styling */}
-        <div
-          className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-[72px] lg:pb-6"
-          data-tour="dashboard-layout"
-        >
-          {children}
-        </div>
+        {/* Main content — subtle fade on route change */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={pathname}
+            className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-[72px] lg:pb-6"
+            data-tour="dashboard-layout"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
 
         {/* Bottom tab bar — mobile only */}
         <BottomTabBar />
