@@ -1,199 +1,256 @@
-# Project Research Summary
+# Research Summary: v3.0 Subscription Billing & Usage Enforcement
 
-**Project:** HomeService AI Agent -- v2.0 Booking-First Digital Dispatcher Pivot
-**Domain:** Voice AI receptionist for home service SMEs
-**Researched:** 2026-03-24
-**Confidence:** HIGH
+**Project:** HomeService AI Agent
+**Milestone:** v3.0 — Stripe subscription billing, per-call usage metering, plan limit enforcement
+**Synthesized:** 2026-03-26
+**Research Files:** STACK.md · FEATURES.md · ARCHITECTURE.md · PITFALLS.md
+
+---
 
 ## Executive Summary
 
-The v2.0 milestone pivots the AI voice receptionist from an escalation-first triage model (where emergencies are transferred to the owner and routine calls become passive leads) to a booking-first dispatcher model (where every call ends with a confirmed appointment or a recovery SMS). This is a behavioral pivot, not an infrastructure rebuild. The existing stack -- Next.js 16, Supabase, Retell voice, Groq/Llama 4 Scout via custom WebSocket LLM server, Google Calendar sync, Twilio SMS, Resend email -- remains unchanged. The only new dependency is Zod (already planned for v1.1) for validating structured LLM outputs during exception detection. The pivot is 90% prompt rewrite and call-flow logic, 10% notification formatting and recovery SMS expansion.
+The v3.0 milestone converts the HomeService AI Agent from a free platform into a monetized SaaS product. The core mechanic is straightforward: tenants start a 14-day free trial (no credit card required) when they complete onboarding, receive a hard paywall when the trial expires or their call quota is exhausted, and self-serve their billing via Stripe Customer Portal. The entire integration is additive — it wires into four defined seams of the existing architecture without restructuring any existing component. No new infrastructure services are required; all billing logic runs in Next.js API routes and Supabase.
 
-The recommended approach is to rewrite the agent prompt to make booking the default action for all calls, demote urgency classification from a routing decision to a notification priority tag, and restrict human transfer to exception-only states (AI confusion, explicit caller request). This aligns with industry leaders like Sameday (92% booking rate) and Dispatchly, but goes further by not escalating emergencies to the owner's phone -- instead booking them into the nearest available slot and sending high-priority notifications. This "exception-only escalation" model is genuinely novel in home service AI and is the product's core differentiator.
+The recommended approach is Stripe-first with Supabase as the enforcement cache. Stripe owns the subscription lifecycle and invoicing; the local `subscriptions` table mirrors Stripe state via webhooks and is the only data source consulted on the hot path (inbound call handling, dashboard page loads). This design keeps AI call pickup latency well under Retell's 1-second requirement while maintaining billing accuracy. Stripe Customer Portal handles all self-serve subscription management (plan changes, cancellation, invoices, payment method update), eliminating the need for any custom billing management UI.
 
-The key risks are prompt regression (old escalation language surviving the rewrite and causing unpredictable AI behavior), notification fatigue (owners getting SMS for every booking instead of just emergencies), calendar flooding (no guardrails on autonomous booking volume), and loss of human oversight for genuine emergencies (removing proactive transfer without adequately hardening the notification path). All are preventable with the measures outlined in the pitfalls research, and all must be addressed within the build phases rather than deferred.
+The highest-risk aspects of this integration are webhook idempotency (Stripe and Retell both deliver events more than once), enforcement gate latency (calling the Stripe API synchronously on the call path will break call pickup), and trial expiry leakage (failing to listen for `customer.subscription.deleted` after a no-CC trial allows indefinite free access). All three risks have clear, well-documented mitigations that must be built in Phase 1, before any enforcement logic is layered on top.
+
+---
 
 ## Key Findings
 
-### Recommended Stack
+### From STACK.md
 
-No new core technologies are needed. The booking-first pivot is implemented entirely through modifications to existing code: agent prompt, WebSocket server tool definitions, notification formatting, call processor logic, and recovery SMS cron.
+| Technology | Rationale |
+|------------|-----------|
+| `stripe` ^17.7.0 (server-side) | Latest stable non-preview SDK line. All Stripe API calls run server-side only via Server Actions and route handlers. Never expose the secret key to the client. |
+| `@stripe/stripe-js` ^5.x (client-side) | Required for Stripe Checkout redirect. Import via `@stripe/stripe-js/pure` to defer CDN load until the checkout page renders. No SSR conflict with React 19. |
+| Stripe Billing Meters API v2 | The only supported path for usage-based overage billing since the legacy usage records API was removed in Stripe API version `2025-03-31.basil`. Required only if overage billing is added in a future phase — not needed for flat-rate enforcement in v3.0. |
+| Supabase JS client (existing) | Billing tables use the same data access pattern as the rest of the project. No ORM to be added for billing. |
 
-**Core technologies (unchanged):**
-- **Next.js 16 / React 19 / Tailwind v4** -- existing frontend and API routes
-- **Supabase (Postgres)** -- data persistence, advisory lock booking, existing schema
-- **Retell voice + custom LLM WebSocket server (Groq / Llama 4 Scout)** -- voice AI backbone
-- **Twilio SMS + Resend email** -- notification delivery (formatting changes only)
-- **Google Calendar** -- bidirectional sync (more bookings = more pushes, already async)
+**Critical implementation detail:** The App Router webhook handler must use `request.text()` — not `request.json()` — to get the raw body for Stripe signature verification. Using the parsed body silently breaks signature verification and allows unsigned payloads through.
 
-**New dependency:**
-- **Zod ^4.3.6** -- runtime validation of structured LLM outputs (exception state JSON). Already planned for v1.1 wizard forms. Zero marginal cost.
+**Environment variables required:** `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, one Price ID per plan, and `STRIPE_METER_ID` (reserved for future overage billing).
 
-**Explicitly rejected:** BullMQ/Redis (unnecessary at single-tenant scale), LangChain (over-engineering for one prompt), Retell Conversation Flow (loses custom LLM control), separate booking intent classifier (adds latency, unnecessary when booking is the default).
+### From FEATURES.md
 
-See `.planning/research/STACK.md` for full version compatibility matrix and detailed alternatives analysis.
+**P0 — Blocking prerequisites (nothing else works without these):**
+- Stripe Products and Prices created for all three plans (Price IDs stored in env vars)
+- `subscriptions` database table as the billing source of truth per tenant
 
-### Expected Features
+**P1 — Must-ship for v3.0 launch:**
+- 14-day free trial via Stripe Checkout, no credit card required (`payment_method_collection: 'if_required'`)
+- Stripe webhook handler syncing all subscription lifecycle events to local DB
+- Per-call usage increment on `call_ended` webhook (with minimum 10-second duration filter; exclude test calls)
+- Hard limit enforcement: reject call if `calls_used >= calls_limit`
+- Subscription status middleware gate: block dashboard and AI service for `cancelled`/`paused` status
+- Trial countdown banner in dashboard ("X days left" with upgrade CTA)
+- Billing dashboard page at `/dashboard/more/billing` (plan, usage meter, renewal date, portal link)
+- Stripe Customer Portal integration (plan changes, cancellation, invoices, payment method)
+- Failed payment notification (SMS + email to owner on `invoice.payment_failed`)
+- Post-trial paywall page (`/billing/upgrade`) for expired and cancelled tenants
 
-**Must have (table stakes):**
-- Universal booking default -- AI books every call, not just emergencies
-- Emergency-to-nearest-slot routing -- urgent callers get same-day slots
-- Caller SMS confirmation after booking -- proof of appointment
-- Human transfer on explicit request -- "talk to a person" always honored
-- Human transfer on AI confusion -- 2+ failed clarification attempts trigger escalation
-- Context preservation on transfer -- Retell warm transfer with whisper messages
-- Graceful fallback when no slots available -- recovery SMS with booking link
-- Urgency tag retained on booking record -- drives notification priority
+**P2 — Add after v3.0 is stable:**
+- 80% usage alert (SMS + email when `calls_used >= 0.8 * calls_limit`; `usage_alert_sent` flag to prevent repeat)
+- Trial email series at day 7 and day 12 (Stripe only fires `trial_will_end` at day 11; custom cron needed)
+- Pause on trial end instead of cancel (reduces involuntary churn; adds `paused` state to enforcement)
 
-**Should have (differentiators):**
-- Notification priority tiers driven by urgency -- emergency bookings get high-priority formatting; routine bookings get standard delivery
-- No-dead-end guarantee via universal recovery SMS -- every failed booking path triggers recovery within 60 seconds
-- Exception-only escalation model -- reduces owner interruptions by 70-80% vs competitors
-- Dashboard urgency badges with booking-first semantics -- visual parity, meaning shift
+**P3 — Defer (high complexity, high revenue upside):**
+- Overage billing per-call beyond plan limit (requires Stripe Billing Meters v2 + metered price configuration)
 
-**Defer (v2.x/v3+):**
-- Repeated notification escalation cadence (v2.x -- add after base tiers validated)
-- Booking conversion analytics by urgency tier (v2.x)
-- Multi-technician dispatch / skill-based routing (v3+ -- FSM-level complexity)
-- Outbound follow-up automation (v3+)
-- Caller slot preference negotiation (v3+)
+**Explicitly deferred to v4+:** Admin MRR dashboard, annual billing, coupon/promo codes, Enterprise automated billing.
 
-See `.planning/research/FEATURES.md` for full competitor analysis, anti-features list, and dependency graph.
+**Anti-features to avoid:**
+- Custom card input form — use Stripe Checkout for PCI compliance and conversion
+- Soft limit with no enforcement — hard stop is required; soft warnings have no conversion pressure
+- Custom invoice PDF generator — Stripe Customer Portal handles this built-in
+- Immediate proration on downgrade — schedule at period end; upgrades prorate immediately
+- Billing for calls under 10 seconds or with failed call status
 
-### Architecture Approach
+### From ARCHITECTURE.md
 
-The pivot narrows code paths rather than widening them. All calls follow one booking flow; urgency only affects slot selection order and notification formatting. The triage pipeline is untouched -- it remains a pure classifier whose output is consumed differently. Two additive database columns (`booking_outcome` and `exception_reason` on the `calls` table) are the only schema changes. No new tables, no new services, no new deploy targets.
+**Integration philosophy:** Additive wiring, not structural change. Four defined seams into the existing codebase:
 
-**Major components modified:**
-1. **Agent Prompt (`agent-prompt.js`)** -- full rewrite to booking-first behavior; single flow, no triage fork
-2. **WebSocket LLM Server (`retell-llm-ws.js`)** -- tool description updates, optional `flag_exception` tool, Zod validation
-3. **Notification System (`notifications.js`)** -- priority-based formatting, escalation contacts for emergencies
-4. **Call Processor (`call-processor.js`)** -- remove `isRoutineUnbooked` guard, add `booking_outcome` tracking
-5. **Recovery SMS Cron (`send-recovery-sms/route.js`)** -- urgency-aware content, universal trigger
-6. **Webhook Handler (`retell/route.js`)** -- increase slot count to 10 across 5 days, `flag_exception` handler
+1. **`/api/stripe/webhook` (new route handler)** — Syncs all Stripe subscription lifecycle events into the `subscriptions` table. Uses `request.text()` for raw body, upserts on `stripe_subscription_id`, includes idempotency key table (`stripe_webhook_events`).
 
-**Explicitly unchanged:** Triage pipeline (all 3 layers), slot calculator, atomic booking function, Google Calendar sync, lead creation system.
+2. **`subscriptions` table (new Supabase table)** — One row per tenant. Key columns: `stripe_customer_id`, `stripe_subscription_id`, `status`, `plan_id`, `calls_limit`, `calls_used`, `trial_ends_at`, `current_period_start`, `current_period_end`, `cancel_at_period_end`. Indexed on `tenant_id` for the enforcement hot path. RLS: tenant can SELECT own row; INSERT/UPDATE only via service role (webhook handlers).
 
-See `.planning/research/ARCHITECTURE.md` for component-by-component integration plan, data flow diagrams, and schema impact assessment.
+3. **`handleInbound()` modification** — Adds subscription check to the parallel Supabase queries already running in the inbound Retell webhook handler. Single indexed query running in parallel with 4 existing queries — zero net latency increase. Gate logic: allow if `(active || trialing) && calls_used < calls_limit`; block with `booking_enabled: 'false'` and graceful caller message otherwise. `past_due` tenants get a 3-day grace window before blocking.
 
-### Critical Pitfalls
+4. **`processCallEnded()` modification** — Adds atomic increment via Postgres RPC (`increment_calls_used`) and `usage_events` insert after call completes. `call_id` is the idempotency key. Test calls are excluded.
 
-1. **Prompt regression** -- old escalation language surviving the rewrite causes the AI to still transfer emergencies instead of booking them. Avoid by deleting the entire `TRIAGE-AWARE BEHAVIOR` section, adding explicit negative instructions ("Never transfer unless..."), and writing prompt snapshot tests.
+**Trial auto-start:** `/api/onboarding/complete` is modified to synchronously create a Stripe customer and 14-day trial subscription, and immediately write the local `subscriptions` row on onboarding completion. Does not wait for the `customer.subscription.created` webhook — the webhook handler upserts idempotently when it arrives.
 
-2. **Over-booking / ghost appointments** -- AI books callers who just want a price quote or information. Avoid by adding intent detection in the prompt before the booking flow ("First determine if the caller needs a service appointment") and requiring verbal confirmation before booking.
+**Billing dashboard:** New page at `/dashboard/more/billing` under the existing More hub. Reads from `subscriptions` table; links to Stripe Customer Portal and Stripe Checkout via Server Actions (`createCheckoutSession`, `createPortalSession`).
 
-3. **Notification fatigue** -- every booking triggers an SMS, owner mutes notifications, misses the real emergency at 2 AM. Avoid by implementing priority tiers: emergency = immediate SMS/email, routine = standard or digest mode.
+### From PITFALLS.md
 
-4. **Calendar flooding** -- no guardrails on autonomous booking volume; spam callers or busy days fill the calendar beyond what is physically serviceable. Avoid by adding max-bookings-per-day limits, per-phone-number rate limiting, and enforcing travel buffers as hard constraints.
+**Critical pitfalls (cause data loss, free-access leakage, or broken enforcement):**
 
-5. **Loss of emergency oversight** -- removing proactive transfer without hardening the notification path means a gas leak gets a booking and an SMS that the owner might not see for 30 minutes. Avoid by implementing escalation contact chains, delivery confirmation polling, and acknowledgment flows for emergency notifications.
+| # | Pitfall | Prevention Summary |
+|---|---------|-------------------|
+| 1 | Webhook idempotency not enforced — double-counting subscriptions and usage | `stripe_webhook_events` table with UNIQUE on `event_id`; `usage_events.call_id` UNIQUE with `ON CONFLICT DO NOTHING`; wire usage increment to `call_analyzed` (fires exactly once per call) |
+| 2 | Enforcement gate calls Stripe API synchronously — breaks Retell 1-second call pickup | Never call Stripe API on the inbound call path; read only from local `subscriptions` table (single indexed query, 5–20ms); accept up to 30-second staleness on enforcement status |
+| 3 | Trial expiry without payment method grants indefinite free access | Listen for ALL subscription events including `customer.subscription.deleted` and `customer.subscription.paused`; map Stripe status to local status on every event; test with Stripe Test Clocks |
+| 4 | Race condition between concurrent calls corrupts usage counter | Atomic `UPDATE ... SET calls_used = calls_used + 1` (Postgres RPC); advisory lock or `SELECT FOR UPDATE` only when `calls_used >= plan_limit - 2` (near-limit zone) |
+| 9 | Out-of-order Stripe event delivery corrupts local subscription state | Add `stripe_updated_at` version column; only apply event if its timestamp is newer than stored value; fetch from Stripe API directly if a dependency row is missing |
 
-See `.planning/research/PITFALLS.md` for all 10 pitfalls with codebase line references, warning signs, recovery strategies, and phase-to-pitfall mapping.
+**Moderate pitfalls (incorrect behavior, not data loss):**
+- Enforcement wired to `call_started` instead of the inbound webhook (Pitfall 10) — the call is already live by `call_started`; enforce at the inbound handler only
+- Usage counter not initialized at onboarding (Pitfall 11) — creates a window of undefined enforcement; fix by creating the subscription row synchronously during onboarding
+- Billing cycle reset via cron instead of `invoice.paid` webhook (Pitfall 8) — cron drifts from actual Stripe billing cycle; always reset in response to `invoice.paid` where `billing_reason = 'subscription_cycle'`
+- `past_due` treated as immediately suspended (Pitfall 6) — causes involuntary churn; implement 7-day grace period with escalating dunning notifications before full suspension
+
+---
 
 ## Implications for Roadmap
 
-Based on research, the pivot decomposes into 6 build phases plus a hardening phase. The ordering is driven by dependency chains discovered in the architecture research and risk levels from the pitfalls research.
+The research points clearly to a 4-phase build structure, ordered by dependency and risk.
 
-### Phase 1: Agent Prompt Rewrite + Test Foundation
-**Rationale:** Everything depends on the AI actually booking first. The prompt is the keystone -- every other phase assumes the AI's behavior has changed. Tests must be written before the prompt changes (test-driven pivot) to prevent regression.
-**Delivers:** Booking-first agent behavior; exception-only transfer; intent detection for non-booking callers; prompt snapshot tests; new test assertions replacing old escalation tests.
-**Addresses:** Universal booking default, emergency-to-nearest-slot, human transfer on explicit request, human transfer on AI confusion, over-booking prevention (intent detection).
-**Avoids:** Pitfall 1 (prompt regression), Pitfall 3 (over-booking), Pitfall 8 (test suite regression).
+### Suggested Phase Structure
 
-### Phase 2: WebSocket Server + Webhook Updates
-**Rationale:** Tool definitions must be coherent with the new prompt. The webhook handler needs to supply more slots (10 across 5 days) and handle the new `flag_exception` tool.
-**Delivers:** Updated tool descriptions restricting `transfer_call` to exceptions; `flag_exception` tool for AI confusion signaling; `reason` parameter on transfers; increased slot provisioning; Zod validation for structured LLM outputs.
-**Uses:** Zod (from STACK.md) for exception state validation.
-**Avoids:** Pitfall 10 (stale slot data -- more slots reduces staleness risk).
+---
 
-### Phase 3: Notification Priority System
-**Rationale:** Can be parallelized with Phase 2 since it depends on data that already flows correctly (urgency tags on leads). Must ship before or with the prompt rewrite going live -- owners need to see emergency bookings surface with urgency to trust the new model.
-**Delivers:** Priority-tiered SMS/email formatting; escalation contacts wired in for emergencies; emergency acknowledgment flow.
-**Addresses:** Notification priority tiers (differentiator), emergency oversight.
-**Avoids:** Pitfall 4 (notification fatigue), Pitfall 7 (loss of emergency oversight).
+**Phase 1: Billing Foundation**
 
-### Phase 4: Call Processor + Schema Migration
-**Rationale:** Depends on notification system (Phase 3) for full effect. Removes the `isRoutineUnbooked` guard that is a live bug under the new model. Adds `booking_outcome` tracking for analytics and smarter recovery.
-**Delivers:** `booking_outcome` and `exception_reason` columns on calls table; suggested slots calculated for ALL unbooked calls; booking outcome tracking (booked / attempted / not_attempted).
-**Implements:** Schema migration (`007_booking_first.sql`), call processor updates.
-**Avoids:** Pitfall 2 (triage logic leaking into booking decisions).
+*Rationale:* Everything downstream depends on correct event processing and a reliable local subscription table. Idempotency, RLS policies, and out-of-order event protection must be built here — they cannot be retrofitted after production data is written without risking corruption or free-access leakage.
 
-### Phase 5: Recovery SMS Enhancement + Booking Guardrails
-**Rationale:** Recovery SMS is the universal safety net. Must be hardened before the booking-first flow goes live. Booking guardrails (max daily bookings, per-number rate limits) prevent calendar flooding.
-**Delivers:** Urgency-aware recovery SMS content; delivery confirmation (not just API success); retry mechanism; max-bookings-per-day limit; per-phone-number rate limiting.
-**Addresses:** No-dead-end guarantee (differentiator), calendar flooding prevention.
-**Avoids:** Pitfall 5 (calendar flooding), Pitfall 6 (silent fallback chain failures).
+Deliverables:
+- Stripe account setup: products, prices, Customer Portal configuration
+- `subscriptions` and `usage_events` database tables with correct RLS (SELECT only for authenticated users; INSERT/UPDATE only via service role)
+- `stripe_webhook_events` idempotency table (UNIQUE on `event_id`)
+- `/api/stripe/webhook` route handler with signature verification, idempotency check, and `stripe_updated_at` version protection
+- All subscription lifecycle events mapped to local status (including `deleted` and `paused`)
+- `/api/onboarding/complete` modified to synchronously create Stripe customer + trial subscription + local row
 
-### Phase 6: Dashboard Updates
-**Rationale:** All backend changes must be deployed first. Dashboard is read-only over the new data model.
-**Delivers:** Updated badge labels (urgency to booking priority semantics); booking rate metric in analytics; booking outcome indicator on lead cards.
-**Addresses:** Dashboard visual parity (table stakes).
-**Avoids:** Pitfall 9 (stale urgency semantics confusing owners).
+Features from FEATURES.md: Stripe Products and Prices (P0), `subscriptions` table (P0), Stripe webhook handler (P1), Trial auto-start (P1)
+Pitfalls addressed: #1 (idempotency), #3 (trial expiry leakage), #7 (RLS), #9 (out-of-order events), #11 (onboarding gap)
+Research flag: Standard Stripe patterns with official documentation. No additional research phase needed.
 
-### Phase 7: Hardening and QA
-**Rationale:** End-to-end validation across all call scenarios. The booking-first model has a narrower code path but higher stakes per call (every call is a booking attempt). Must validate concurrency, multi-language, edge cases.
-**Delivers:** E2E test coverage across full test matrix: emergency booking, routine booking, caller declines, exception transfer, concurrent bookings, non-English caller, no-slots-available, slot-taken recovery.
-**Addresses:** Multi-language E2E validation (differentiator), concurrency QA, onboarding gate revalidation.
+---
 
-### Phase Ordering Rationale
+**Phase 2: Usage Tracking**
 
-- **Phase 1 first** because the prompt is the behavioral foundation. Architecture research confirms "Agent prompt rewrite is the keystone: everything flows from the behavioral change."
-- **Phases 2 and 3 can overlap** because they have no mutual dependencies. WebSocket/webhook changes and notification formatting are independent subsystems.
-- **Phase 4 after Phase 3** because the call processor's notification calls benefit from priority formatting already being in place.
-- **Phase 5 before go-live** because recovery SMS is the last safety net. Pitfalls research flags silent fallback failures as HIGH recovery cost.
-- **Phase 6 last among build phases** because the dashboard reads from data produced by all prior phases.
-- **Phase 7 is a gate, not optional.** The pitfalls research identifies 10 specific "looks done but isn't" items that must be verified end-to-end.
+*Rationale:* Usage data must be reliable before the enforcement gate can be layered on top. The atomic increment pattern and correct metering point (`call_analyzed` vs `call_ended`) must be established before Phase 3 builds enforcement on top of this counter.
 
-### Research Flags
+Deliverables:
+- `increment_calls_used` Postgres RPC function for atomic counter increment
+- `processCallEnded()` modified to call the RPC and insert a `usage_events` row
+- `call_id` idempotency key on `usage_events` (ON CONFLICT DO NOTHING)
+- Test call exclusion (existing `isTestCall` check gates the increment)
+- `calls_used` reset triggered by `invoice.paid` webhook (not a cron job)
+- `billing_period_start` and `billing_period_end` stored on each usage row
 
-Phases likely needing deeper research during planning:
-- **Phase 1 (Agent Prompt Rewrite):** Prompt engineering for booking-first voice agents needs careful scenario testing. The exact wording of intent detection, exception triggers, and negative instructions will require iteration. Consider `/gsd:research-phase` for prompt patterns.
-- **Phase 3 (Notification Priority System):** Escalation contact chains and emergency acknowledgment flows are net-new features. The `escalation_contacts` table exists but is currently unused -- wiring it in needs API and delivery confirmation design.
-- **Phase 5 (Booking Guardrails):** Max-bookings-per-day and per-number rate limiting are not in the current codebase. Need to decide where constraints live (application layer vs. database function) and how to expose configuration.
+Features from FEATURES.md: Per-call usage increment (P1)
+Pitfalls addressed: #1 (Retell webhook idempotency), #4 (race condition on concurrent calls), #8 (billing cycle reset)
+Research flag: Standard Postgres atomic increment patterns. No additional research phase needed.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 2 (WebSocket + Webhook):** Well-documented Retell protocol. Tool definition changes are JSON schema updates. Zod validation is straightforward.
-- **Phase 4 (Call Processor + Migration):** Standard Supabase migration + conditional logic removal. No unknowns.
-- **Phase 6 (Dashboard):** Read-only UI changes over existing data. Standard React component updates.
+---
+
+**Phase 3: Subscription Lifecycle Management**
+
+*Rationale:* Trial expiry handling and failed payment dunning are the highest-churn-risk areas. The grace period for `past_due` and correct downgrade scheduling must be designed here — patching them after launch requires careful production state migrations.
+
+Deliverables:
+- Trial countdown banner in dashboard (reads `trial_ends_at`, shows days remaining with upgrade CTA)
+- Post-trial paywall page (`/billing/upgrade`) for expired and cancelled tenants
+- Subscription status middleware gate (blocks dashboard and AI service for `cancelled`/`paused`; redirects to `/billing/upgrade`)
+- `past_due` grace period (7 days; `past_due_grace_end` computed from webhook delivery timestamp)
+- Failed payment notification (SMS + email on `invoice.payment_failed` with payment update link)
+- Stripe Customer Portal integration (link from billing dashboard; handles all self-serve plan management)
+- Upgrade proration policy (`proration_behavior: 'always_invoice'` for upgrades, `'none'` with end-of-period scheduling for downgrades)
+
+Features from FEATURES.md: Hard paywall (P1), Subscription status middleware (P1), Trial countdown banner (P1), Customer Portal (P1), Failed payment notification (P1), Post-trial paywall (P1)
+Pitfalls addressed: #5 (proration confusion), #6 (dunning grace period and involuntary churn)
+Research flag: Dunning email copy, subject lines, and escalation schedule are not defined in research. Flag for content review during Phase 3 planning. Consider `/gsd:research-phase` for email sequence design.
+
+---
+
+**Phase 4: Enforcement Gate and Billing Dashboard**
+
+*Rationale:* The enforcement gate is the final monetization lock. It must be implemented after usage tracking (Phase 2) is reliable and subscription lifecycle (Phase 3) is stable. The billing dashboard surfaces all billing state to the tenant and closes the conversion loop.
+
+Deliverables:
+- `handleInbound()` modified with subscription check (added to parallel Supabase queries; zero net latency)
+- Block logic: expired subscription plays graceful caller message; quota exhausted plays graceful caller message
+- Billing dashboard page at `/dashboard/more/billing` (plan card, usage meter, renewal date, portal link)
+- Stripe Checkout flow (plan selection → Checkout Session → success redirect)
+- Usage meter UI component (optionally real-time via Supabase Realtime)
+- Trial-to-paid conversion path (Checkout reachable from trial countdown banner and billing page)
+
+Features from FEATURES.md: Hard limit enforcement (P1), Billing dashboard (P1), Stripe Checkout (P1), Usage meter (table stakes)
+Pitfalls addressed: #2 (enforcement latency — reads only from local DB), #10 (enforcement wired to correct webhook)
+Research flag: Standard patterns with clear architecture guidance. No additional research phase needed.
+
+---
+
+**Phase 5 (v3.x): Post-Launch Enhancements**
+
+Ship only after v3.0 is live, converting, and stable:
+- 80% usage alert (SMS + email; `usage_alert_sent` flag prevents duplicate alerts)
+- Trial email series at day 7 and day 12 (cron jobs; Resend templates)
+- Pause on trial end instead of cancel (reduces involuntary churn; adds `paused` state to enforcement gate)
+
+---
+
+### Dependency Order
+
+```
+Phase 1: Billing Foundation
+    — Phase 2: Usage Tracking
+        — Phase 3: Lifecycle Management
+            — Phase 4: Enforcement Gate + Dashboard
+                — Phase 5: Post-Launch Enhancements
+```
+
+Phases 3 and 4 can be partially parallelized: the billing dashboard read path (rendering plan info, linking to portal) does not depend on the enforcement gate. However, enforcement gate must be the last gate opened to avoid inadvertently blocking legitimate tenants during development testing.
+
+---
 
 ## Confidence Assessment
 
-| Area | Confidence | Notes |
+| Area | Confidence | Basis |
 |------|------------|-------|
-| Stack | HIGH | No new infrastructure. Only dependency (Zod) is already validated. Sources include official Retell docs, npm packages, and direct codebase audit. |
-| Features | HIGH | Table stakes validated against 5 named competitors (Sameday, Dispatchly, Avoca, Jobber, Newo). Differentiators are clearly articulated. Anti-features are well-reasoned. |
-| Architecture | HIGH | Based on direct codebase audit of every affected file. Component boundaries are clean. Schema changes are minimal and additive. Build order is dependency-driven. |
-| Pitfalls | HIGH | 10 specific pitfalls identified with codebase line-number references. Prevention strategies are concrete and phase-mapped. Recovery costs are honestly assessed. |
+| Stack | HIGH | All decisions backed by official Stripe docs and npm registry. Version recommendations are specific with documented rationale. The App Router `request.text()` pattern is verified against multiple community sources and confirmed against official docs. |
+| Features | HIGH | Stripe documentation is authoritative for all lifecycle event mechanics. UX conventions (trial countdown banner, usage meter design) are standard B2B SaaS patterns but lack a single citable source — treat as MEDIUM for specific UI decisions. |
+| Architecture | HIGH | Research includes actual codebase file paths and function names (`handleInbound`, `processCallEnded`, `call-processor.js`), meaning integration points are verified against real code, not assumed. The additive approach is low-risk. |
+| Pitfalls | HIGH | All critical pitfalls include specific Stripe API behavior, Retell webhook timing details, and Postgres concurrency implications. Mitigations are concrete and phase-mapped. |
 
-**Overall confidence:** HIGH
+**Overall: HIGH**
 
-### Gaps to Address
+### Gaps to Address During Planning
 
-- **Emergency notification delivery guarantee:** The escalation contact chain and acknowledgment flow are designed but not prototyped. Twilio delivery status polling adds complexity -- validate that polling latency is acceptable for a 2-minute acknowledgment window during Phase 3 planning.
-- **Booking guardrail configuration UX:** Max-bookings-per-day and rate limits need an owner-facing settings interface. This was not deeply explored in any research file. Consider adding to Phase 6 (dashboard) or as a fast-follow.
-- **Intent detection effectiveness:** The prompt-based approach to distinguishing booking callers from information seekers is untested. If the LLM consistently fails at this, a lightweight intent classifier may be needed. Monitor during Phase 7 QA.
-- **TCPA compliance for recovery SMS:** The pitfalls research flags that recovery SMS to numbers without explicit opt-in may violate TCPA. Legal review needed before go-live. Not a technical gap but a compliance gate.
-- **Refresh-slots mid-call tool:** The pitfalls research recommends a `refresh_slots` tool for mid-call slot refreshing when all pre-calculated slots are stale. This is not in the architecture's build plan. Should be evaluated during Phase 2 planning -- may be unnecessary if 10 pre-calculated slots across 5 days provides sufficient buffer.
+1. **Plan pricing and call limits conflict:** STACK.md references the existing marketing site pricing (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls) while ARCHITECTURE.md defines different limits (Starter 100, Growth 300, Pro 1000 at different price points). The actual Stripe Products, call limits, and Price IDs must be confirmed against the current live pricing page before Phase 1 begins.
 
-## Sources
+2. **`call_ended` vs `call_analyzed` for usage increment:** ARCHITECTURE.md recommends `call_ended` for faster dashboard updates; PITFALLS.md recommends `call_analyzed` because it fires exactly once. Recommended resolution: use `call_ended` with `call_id` idempotency (faster feedback, retries handled). Document this decision explicitly in Phase 2 plan.
 
-### Primary (HIGH confidence)
-- [Retell AI LLM WebSocket docs](https://docs.retellai.com/api-references/llm-websocket) -- transfer_number field, end_call behavior, tool invocation protocol
-- [Retell AI Function Calling docs](https://docs.retellai.com/integrate-llm/integrate-function-calling) -- tool definition schema, call function invocation
-- [Zod v4.3.6](https://zod.dev/v4) -- runtime validation API, safeParse behavior
-- Direct codebase audit -- all files in `src/lib/`, `src/server/`, `src/app/api/`, `src/components/dashboard/`, `tests/`, `supabase/migrations/`
+3. **Retell enforcement response format:** The exact dynamic variables payload that causes Retell to play a graceful "service unavailable" message (rather than silence) needs validation against the current Retell API contract. Confirm that `booking_enabled: 'false'` + `paywall_reason` fields are consumed by the LLM system prompt.
 
-### Secondary (MEDIUM confidence)
-- [Sameday AI](https://www.gosameday.com/) -- booking-first patterns, 92% booking rate benchmark
-- [Dispatchly AI](https://www.dispatchlyai.com/) -- competitor feature set, escalation model
-- [Avoca AI](https://www.avoca.ai/) -- ServiceTitan integration patterns, AI workforce positioning
-- [Jobber AI Receptionist](https://www.getjobber.com/features/ai-receptionist/) -- keyword-based transfer, message-taking fallback
-- [Retell AI blog posts](https://www.retellai.com/blog/) -- warm transfer, prompt patterns, troubleshooting
-- [Leaping AI guides](https://leapingai.com/blog/) -- voice AI for home services, dispatch automation patterns
-
-### Tertiary (LOW confidence)
-- Competitor implementation details (Sameday 92% rate, Dispatchly escalation model) -- marketing claims, not verified independently
+4. **Dunning email copy and schedule:** PITFALLS.md specifies Day 1/3/5/7 escalation for failed payments; FEATURES.md specifies Day 7/12 trial reminders. Exact Resend template copy, subject lines, and escalation timing are not defined. Flag for content review during Phase 3 planning.
 
 ---
-*Research completed: 2026-03-24*
+
+## Sources (Aggregated)
+
+**HIGH confidence — official documentation:**
+- Stripe Billing Meters Usage-Based Implementation Guide: https://docs.stripe.com/billing/subscriptions/usage-based/implementation-guide
+- Stripe Subscription Trials: https://docs.stripe.com/billing/subscriptions/trials
+- Stripe Checkout Free Trials: https://docs.stripe.com/payments/checkout/free-trials
+- Stripe Upgrade and Downgrade Subscriptions: https://docs.stripe.com/billing/subscriptions/upgrade-downgrade
+- Stripe Prorations: https://docs.stripe.com/billing/subscriptions/prorations
+- Stripe Webhooks with Subscriptions: https://docs.stripe.com/billing/subscriptions/webhooks
+- Stripe Customer Portal: https://docs.stripe.com/customer-management/integrate-customer-portal
+- Stripe Smart Retries: https://docs.stripe.com/billing/revenue-recovery/smart-retries
+- Stripe Node.js SDK Releases: https://github.com/stripe/stripe-node/releases
+- stripe npm package: https://www.npmjs.com/package/stripe
+
+**MEDIUM confidence — community guides verified against official docs:**
+- Stripe Checkout and Webhook in Next.js 15 (2025): https://medium.com/@gragson.john/stripe-checkout-and-webhook-in-a-next-js-15-2025-925d7529855e
+- Stripe + Next.js Complete Guide 2025: https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/
+- Stripe Subscription Lifecycle in Next.js 2026: https://dev.to/thekarlesi/stripe-subscription-lifecycle-in-nextjs-the-complete-developer-guide-2026-4l9d
+
+---
+
+*Research synthesized from: STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md*
+*Synthesis date: 2026-03-26*
 *Ready for roadmap: yes*

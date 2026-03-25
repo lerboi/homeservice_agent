@@ -1,253 +1,287 @@
-# Stack Research
+# Technology Stack
 
-**Domain:** Booking-first digital dispatcher pivot (v2.0 milestone) for AI voice receptionist
-**Researched:** 2026-03-24
-**Confidence:** HIGH (primarily behavioral/prompt changes to existing stack; minimal new dependencies)
+**Project:** HomeService AI Agent — v3.0 Subscription Billing & Usage Enforcement
+**Researched:** 2026-03-26
+**Confidence:** HIGH (Stripe SDK verified via npm; webhook/meter patterns verified via official Stripe docs)
 
 ---
 
 ## Scope
 
-This document covers ONLY the stack additions/changes needed for the v2.0 booking-first dispatcher pivot. The existing stack is validated and unchanged:
+This document covers ONLY the stack additions needed for v3.0 billing. The existing validated stack is unchanged:
 
-- Next.js 16 / React 19 / Tailwind v4
-- Supabase (Postgres) with advisory lock booking
-- Retell voice + custom LLM WebSocket server (Groq / Llama 4 Scout)
-- Three-layer triage classifier (keywords, LLM, owner rules)
-- Google Calendar bidirectional sync
-- Twilio SMS + Resend email notifications
-- Lead CRM with merge logic
-
-**Critical finding: The booking-first pivot is 90% behavioral (prompt rewrite + call flow logic) and 10% stack. No major new infrastructure is needed.**
+- Next.js 16 / React 19 (App Router, Server Components, Server Actions)
+- Supabase (Auth, Postgres, RLS, Realtime)
+- shadcn/ui + Tailwind v4
+- Resend (email)
+- Sentry (error monitoring)
 
 New capabilities required:
 
-1. **Agent prompt rewrite** — booking-first dispatcher behavior (no new libraries)
-2. **Triage reclassification** — urgency tags as notification priority (no new libraries)
-3. **Notification priority dispatch** — urgency-driven SMS/email formatting and delivery timing
-4. **Exception state detection** — AI recognizes confusion/caller-requests-human (prompt engineering)
-5. **Universal recovery SMS** — extend existing cron to cover all failed bookings (no new libraries)
-6. **Structured LLM output for exception detection** — reliable JSON extraction from Groq responses
+1. **Stripe subscription management** — Checkout Sessions, subscription lifecycle, Customer Portal
+2. **Stripe billing meters** — per-call usage metering and overage billing
+3. **Webhook handling** — subscription lifecycle events in Next.js App Router
+4. **14-day free trial** — trial management, countdown UI, trial expiration enforcement
+5. **Billing dashboard** — current plan, usage meter, invoice history, upgrade/downgrade UI
+6. **Database schema** — subscriptions, usage_events, plan limits tables
 
 ---
 
-## Recommended Stack -- New Additions
+## Recommended Stack — New Additions
 
-### Core Technologies
+### Core Libraries
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| None required | -- | -- | The booking-first pivot is a behavioral change to the existing WebSocket LLM server, agent prompt, call processor, and notification service. No new core frameworks, databases, or infrastructure components are needed. |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `stripe` | ^17.7.0 | Server-side Stripe API client | Latest major stable version (v17.x). Use server-side only — never expose secret key to client. Handles Checkout Sessions, subscription CRUD, Customer Portal sessions, billing meter events, invoice retrieval. |
+| `@stripe/stripe-js` | ^5.x | Client-side Stripe.js loader | Required for Stripe Checkout redirect and Stripe Elements if needed. Loaded lazily from Stripe's CDN for PCI compliance. Use `loadStripe()` from `@stripe/stripe-js/pure` to defer load until checkout page renders. |
 
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `zod` | ^4.3.6 | Runtime validation of structured LLM outputs (exception state JSON, booking intent JSON) | Already recommended in v1.1 STACK.md for wizard forms. Reuse here to validate the JSON objects that the Groq LLM returns when detecting exception states. Parse `{"exception": true, "reason": "caller_requests_human"}` safely instead of fragile string matching. |
-
-**That is the only new dependency.** Zod was already planned for v1.1 (wizard forms). The booking-first pivot reuses it for a second purpose: validating structured outputs from the LLM in the WebSocket server.
+**Note on stripe version:** npm shows 20.4.1 as very latest (March 2026), but that ships with Stripe API version `2026-02-25.preview` — a preview API. Use `^17.7.0` (the latest non-preview-pinned stable line) unless you want to opt into the 2026 preview API. The difference: preview APIs may have breaking changes before they graduate. For a new billing integration, stability matters more than cutting-edge. Verify with `npm show stripe versions` before installing and pick the latest non-preview release. If the team confirms v20.x is acceptable, use `^20.4.1` — the client code is identical, only the API version pin changes.
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| k6 (already in v1.1 plan) | Load test the booking-first flow under concurrent calls | Same tool, new test scripts: simulate 10+ simultaneous callers all attempting to book (not just emergencies). Validates that the atomic slot locking holds when every call is a booking attempt. |
+| Stripe CLI | Local webhook forwarding during development | `stripe listen --forward-to localhost:3000/api/webhooks/stripe` — provides a `STRIPE_WEBHOOK_SECRET` for local testing. Not a npm dependency; install system-wide via `brew install stripe/stripe-cli/stripe` or download from Stripe. |
 
 ---
 
-## What Changes -- Existing Code, Not New Libraries
+## Alternatives Considered
 
-The pivot is implemented by modifying existing files, not adding new packages. Here is what changes and why no new library is needed for each:
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Payment | Stripe | Paddle, Lemon Squeezy | Stripe has the deepest Next.js + Supabase ecosystem, best usage-based billing tooling (Billing Meters API), and is what home service SME owners expect. Paddle/LS are good for global tax handling but that's not the current constraint. |
+| Client-side Checkout | `@stripe/stripe-js` lazy load | Embed Stripe Elements in-page | Checkout redirect (hosted by Stripe) is faster to implement, PCI-compliant by default, and handles 3DS/SCA automatically. Build custom Elements later if conversion data shows need. |
+| Usage tracking | Stripe Billing Meters (v2 API) | Track usage in Supabase only, sync to Stripe | Stripe Meters are now the only supported usage-based billing path (legacy usage records API removed in Stripe version 2025-03-31.basil). Track in both Supabase (for real-time plan enforcement) AND send meter events to Stripe (for billing). |
+| Subscription DB | Raw Supabase tables (`subscriptions`, `usage_events`) | Prisma ORM | The project uses Supabase JS client directly everywhere. Introducing Prisma for one feature would fracture the data access pattern. Raw Supabase queries are sufficient; the schema is simple. |
+| Trial enforcement | Stripe trial fields + Supabase `trial_ends_at` | Third-party billing library (e.g., `@lemonsqueezy/lemonsqueezy.js`) | Stripe's native `trial_period_days` parameter handles the trial on the billing side. Mirror `trial_ends_at` to Supabase for fast enforcement checks without hitting the Stripe API on every request. |
 
-### 1. Agent Prompt (`src/lib/agent-prompt.js`)
+---
 
-**Change:** Rewrite `buildSystemPrompt()` to make booking the default action for ALL calls. Remove the triage-based routing split ("For EMERGENCY calls... For ROUTINE calls..."). Replace with a single booking flow where urgency only affects slot selection strategy (emergency = earliest available, routine = next convenient).
+## Integration Architecture
 
-**No new library because:** This is pure string construction. The prompt template is already parameterized with `business_name`, `locale`, `tone_preset`, and `available_slots`. The behavioral shift is in the instructions, not the technology.
+### What Goes Where
 
-**Key prompt engineering patterns for booking-first agents:**
-- **Default-to-action framing:** "Your primary goal is to book an appointment for every caller" instead of "Determine if this is an emergency or routine call"
-- **Slot selection by urgency:** "If the issue sounds urgent (flooding, gas leak, no heat), offer the earliest available slot first. For routine requests, offer the most convenient slots."
-- **Exception detection instructions:** "If you cannot understand what service the caller needs after 2 clarification attempts, OR if the caller explicitly says 'I want to talk to a person' / 'let me speak to someone', invoke the `end_call_with_transfer` function"
-- **Recovery guarantee:** "If booking fails for any reason, reassure the caller that someone will follow up within 15 minutes"
+```
+Client (Browser)
+  └─ @stripe/stripe-js        — loadStripe(), Checkout redirect, portal redirect
 
-### 2. Exception State Detection (WebSocket server + prompt)
+Server (Next.js App Router)
+  ├─ Server Actions            — createCheckoutSession(), createPortalSession(),
+  │                              cancelSubscription() — never expose Stripe secret to client
+  ├─ /api/webhooks/stripe      — route handler, raw body via request.text(),
+  │                              stripe.webhooks.constructEvent() verification
+  └─ stripe (server SDK)       — all Stripe API calls
 
-**Change:** Add a new tool definition `end_call_with_transfer` to the WebSocket server's tool list. The LLM decides when to invoke it based on prompt instructions (confusion detection, explicit human request). On invocation, the server uses Retell's `transfer_number` field in the WebSocket response to transfer the call.
+Supabase (Postgres)
+  ├─ subscriptions table       — stripe_customer_id, stripe_subscription_id,
+  │                              status, plan, trial_ends_at, current_period_end
+  ├─ usage_events table        — tenant_id, call_id, timestamp (local tracking)
+  └─ RLS policies              — tenants see only their own billing data
 
-**No new library because:** Retell's WebSocket protocol already supports `transfer_number` as a response field. The existing `transfer_call` tool already works. The change is:
-- Rename/refine the tool semantics: transfer is now an exception-only action, not a triage-based routing decision
-- Add `transfer_number` field to the WebSocket response (already supported by Retell, confirmed via docs)
-- The LLM's prompt instructions define when to trigger the exception (not a separate detection library)
+Stripe (External)
+  ├─ Billing Meters            — aggregate call events for metered overage billing
+  ├─ Customer Portal (hosted)  — upgrade/downgrade/cancel UI, no custom UI needed
+  └─ Webhooks → /api/webhooks/stripe
+```
 
-**Exception state taxonomy (prompt-defined, not library-defined):**
+### Webhook Handler Pattern (Next.js App Router)
 
-| Exception | Trigger | Action |
-|-----------|---------|--------|
-| AI confusion | 2+ failed clarification attempts | Transfer to owner + log `exception_type: 'ai_confusion'` |
-| Caller requests human | Explicit verbal request ("talk to a person") | Transfer to owner + log `exception_type: 'caller_requested_human'` |
-| Language barrier | Unsupported language detected | Already handled -- existing `LANGUAGE_BARRIER` tag system |
-| Booking system failure | `atomicBookSlot` throws error (not slot_taken) | Recovery SMS fallback + verbal apology |
+The critical implementation detail: App Router `Request` is a Web API object. Use `request.text()` — NOT `request.json()` or `request.body()` — to get the raw body for Stripe signature verification. `request.body()` is parsed and will cause signature verification to fail.
 
-### 3. Notification Priority Dispatch (`src/lib/notifications.js`)
+```typescript
+// app/api/webhooks/stripe/route.ts
+import { headers } from 'next/headers';
+import Stripe from 'stripe';
 
-**Change:** Modify `sendOwnerNotifications()` to accept urgency and format notifications differently based on priority level. Emergency bookings get immediate, high-urgency SMS/email. Routine bookings get standard notifications.
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-**No new library because:** The existing Twilio and Resend clients already send synchronously within the call processor's `after()` block. Priority is implemented by:
-- **SMS formatting:** Emergency: prefix with "[URGENT]", include "IMMEDIATE RESPONSE NEEDED". Routine: current format unchanged.
-- **Email formatting:** Emergency: different React Email template with red urgency banner, subject prefix "[URGENT]". Routine: current template.
-- **Delivery timing:** All notifications already fire immediately via `Promise.allSettled`. No queue needed -- Twilio delivers SMS within seconds at this volume (single-tenant, ~50 calls/day max). Twilio's Traffic Shaping (beta) could add carrier-level priority later but is unnecessary now.
+export async function POST(request: Request) {
+  const body = await request.text();           // raw body — required for sig verification
+  const headersList = await headers();
+  const sig = headersList.get('stripe-signature')!;
 
-**Why NOT add a queue (BullMQ, pg-boss):**
-- Current volume: 1 business = ~10-50 calls/day. That is 10-50 SMS + 10-50 emails per day.
-- Twilio API latency: ~200-500ms per SMS send. Already runs in `after()` (non-blocking background task).
-- Adding Redis (BullMQ) or a Postgres job queue (pg-boss) adds operational complexity (Redis hosting, worker processes) for zero user-facing benefit at this scale.
-- If the platform scales to 100+ tenants, revisit with pg-boss (Postgres-native, no Redis needed, uses SKIP LOCKED). But that is a v3+ concern.
-
-### 4. Triage Reclassification (`src/lib/triage/classifier.js` + `src/lib/call-processor.js`)
-
-**Change:** The three-layer triage classifier stays. Its output (`urgency: 'emergency' | 'routine' | 'high_ticket'`) no longer drives call routing (all calls are booked). Instead, the urgency tag is attached to the booking record and drives notification priority.
-
-**No new library because:** The classifier already returns `{ urgency, confidence, layer }`. The call processor already stores this on the `calls` table. The change is semantic: downstream consumers (notifications, dashboard badges) interpret urgency as priority, not routing.
-
-### 5. Universal Recovery SMS (`src/app/api/cron/send-recovery-sms/route.js`)
-
-**Change:** The existing recovery SMS cron already sends SMS to callers who hung up without booking. In booking-first mode, every call is a booking attempt, so the cron's logic simplifies: any call without a confirmed appointment gets a recovery SMS (the "routine caller declines" path still exists but is now the minority case).
-
-**No new library because:** The cron already handles this exact flow. The change is removing the implicit assumption that routine callers might not want a booking.
-
-### 6. Structured LLM Output Parsing
-
-**Change:** When the LLM detects an exception state during a call, it should return structured data (not just free text) so the WebSocket server can take programmatic action. Use Zod to validate the LLM's JSON output.
-
-**Pattern (in the WebSocket server):**
-
-```javascript
-import { z } from 'zod/v4';
-
-const ExceptionSchema = z.object({
-  exception: z.literal(true),
-  reason: z.enum(['ai_confusion', 'caller_requested_human', 'booking_system_error']),
-  message_to_caller: z.string(),
-});
-
-// In handleResponseRequired, after LLM returns a tool call:
-function parseExceptionFromArgs(argsString) {
+  let event: Stripe.Event;
   try {
-    const parsed = JSON.parse(argsString);
-    return ExceptionSchema.parse(parsed);
-  } catch {
-    return null; // Not an exception, proceed normally
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch (err) {
+    return Response.json({ error: 'Invalid signature' }, { status: 400 });
   }
+
+  // Handle events...
+  return Response.json({ received: true });
 }
 ```
 
-**Why Zod and not manual JSON.parse:** LLM outputs are inherently unreliable. Zod catches malformed fields, wrong types, and missing required properties. This prevents the WebSocket server from crashing on unexpected LLM output during a live call.
+Disable Next.js body parsing is NOT needed in App Router (it doesn't auto-parse route handlers — unlike Pages Router API routes). No `export const config = { api: { bodyParser: false } }` required.
+
+### Stripe Billing Meters — Per-Call Usage
+
+Stripe deprecated legacy usage records in API version 2025-03-31.basil. The current path is Billing Meters:
+
+1. Create a meter once in Stripe Dashboard or via API: `event_name: "ai_call"`, `default_aggregation.formula: "sum"`
+2. On each call completion (in the Retell webhook handler, after `call_ended`): send a meter event
+3. The meter event increments the usage counter for the billing period
+4. Metered price on the subscription charges overages at end of period
+
+```typescript
+// In Retell webhook handler, after a call ends:
+await stripe.billing.meterEvents.create({
+  event_name: 'ai_call',
+  payload: {
+    stripe_customer_id: tenant.stripe_customer_id,
+    value: '1',
+  },
+});
+```
+
+For plan limit enforcement (hard paywall before overage): check usage against the plan limit in Supabase's `usage_events` table first. Only bill overages for paid tiers; block free-tier users when they hit the plan cap.
+
+### Trial Management
+
+Stripe handles billing-side trial: `trial_period_days: 14` on `stripe.subscriptions.create()`. No credit card required for trial start (Stripe supports `payment_behavior: 'default_incomplete'`).
+
+Mirror trial state to Supabase for enforcement without hitting Stripe API on every request:
+
+```typescript
+// subscriptions table
+trial_ends_at: timestamptz   // set from Stripe webhook: subscription.trial_end
+status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
+```
+
+Webhook events to handle:
+- `customer.subscription.trial_will_end` — fires 3 days before trial ends: send upgrade prompt email via Resend
+- `customer.subscription.updated` — mirror status changes to Supabase
+- `customer.subscription.deleted` — revoke access, update status to `canceled`
+- `invoice.paid` — activate subscription, reset usage counter for new period
+- `invoice.payment_failed` — update status to `past_due`, notify via Resend
+- `invoice.payment_action_required` — prompt customer for 3DS authentication
+
+### Stripe Customer Portal
+
+Zero custom UI for subscription management. Create a portal session server-side and redirect:
+
+```typescript
+// Server Action: createPortalSession()
+const session = await stripe.billingPortal.sessions.create({
+  customer: tenant.stripe_customer_id,
+  return_url: `${process.env.NEXT_PUBLIC_URL}/dashboard/billing`,
+});
+redirect(session.url);
+```
+
+Configure in Stripe Dashboard: allowed plans for upgrade/downgrade, cancellation policy, invoice history visibility. This handles all subscription changes — the app just listens to the resulting webhooks and syncs state to Supabase.
 
 ---
 
 ## Installation
 
 ```bash
-# Zod is the ONLY new dependency (may already be installed from v1.1 wizard work)
-npm install zod
+# Server-side Stripe SDK — add to dependencies
+npm install stripe
 
-# No other packages needed for the booking-first pivot
+# Client-side Stripe.js — add to dependencies (lazy load on checkout page only)
+npm install @stripe/stripe-js
+
+# Stripe CLI — system-wide, not npm
+# macOS: brew install stripe/stripe-cli/stripe
+# Windows: https://docs.stripe.com/stripe-cli#install
+# Linux: https://docs.stripe.com/stripe-cli#install
 ```
 
-If Zod was already installed during v1.1, this is a zero-dependency milestone.
+### Environment Variables to Add
+
+```bash
+# .env.local
+STRIPE_SECRET_KEY=sk_test_...              # Server-side only, never expose to client
+STRIPE_PUBLISHABLE_KEY=pk_test_...         # Safe for client-side use
+STRIPE_WEBHOOK_SECRET=whsec_...            # From Stripe CLI (dev) or Stripe Dashboard (prod)
+STRIPE_PRICE_ID_STARTER=price_...         # Stripe Price ID for Starter plan
+STRIPE_PRICE_ID_GROWTH=price_...          # Stripe Price ID for Growth plan
+STRIPE_PRICE_ID_PRO=price_...             # Stripe Price ID for Pro plan
+STRIPE_METER_ID=mtr_...                   # Billing meter ID for ai_call events
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_... # Exposed to client for loadStripe()
+```
 
 ---
 
-## Alternatives Considered
-
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| Urgency-formatted SMS/email (no queue) | BullMQ + Redis priority queue for notifications | Use BullMQ if platform scales to 100+ concurrent tenants with thousands of daily notifications. At current single-tenant scale, a queue adds operational overhead (Redis hosting, worker process management) with no benefit. |
-| Urgency-formatted SMS/email (no queue) | pg-boss (Postgres-native job queue) | pg-boss is the right choice if you need a queue but want to avoid Redis. Uses Postgres SKIP LOCKED for exactly-once delivery. Consider at 50+ tenants. |
-| Prompt-based exception detection | Separate NLU classifier for exception states | Use a separate classifier if the LLM consistently fails to detect exception states from prompt instructions alone. In practice, LLMs are good at this -- "if you can't understand after 2 tries, escalate" is a clear instruction. Monitor in QA. |
-| Retell `transfer_number` WebSocket field | Retell SDK `call.transfer()` REST API | The REST API (`retell.call.transfer()`) is already used in the webhook handler for `call_function_invoked`. For the WebSocket server (live call), use the `transfer_number` field in the response instead -- it transfers after the agent finishes speaking, which is more natural. |
-| Single tool `book_appointment` + prompt logic | Separate tools per urgency (`book_emergency`, `book_routine`) | Separate tools are unnecessary. The existing `book_appointment` tool already accepts an `urgency` parameter. The LLM chooses the slot based on prompt instructions; the tool handles execution identically regardless of urgency. |
-| Zod for LLM output validation | Manual JSON.parse + type checks | Manual parsing works but is fragile. Zod's `.safeParse()` provides type-safe validation with meaningful error messages. Since Zod is already planned for the project (v1.1 forms), the marginal cost is zero. |
-
----
-
-## What NOT to Use
+## What NOT to Add
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| BullMQ / Redis for notification priority | Adds Redis as an infrastructure dependency for a single-tenant product doing 10-50 notifications/day. Operational complexity (Redis hosting, connection management, worker processes) vastly outweighs benefit at this scale. | Urgency-aware formatting in existing `sendOwnerNotifications()`. Add priority when sending (not queueing). |
-| LangChain / LlamaIndex for prompt management | The agent prompt is a single function (`buildSystemPrompt`) that returns a string. Adding a prompt framework for one prompt template is massive over-engineering. LangChain's abstractions would obscure the simple string construction and add hundreds of KB of dependencies. | Keep `buildSystemPrompt()` as a plain function. Parameterize with the new booking-first instructions directly. |
-| Retell Conversation Flow (no-code builder) | The project uses a custom LLM WebSocket server, which gives full control over the conversation. Retell's Conversation Flow is for their hosted LLM mode. Switching would mean losing the custom Groq/Llama integration and the fine-grained control over tool calls. | Keep the custom WebSocket LLM server. Implement booking-first logic in the prompt and tool handlers. |
-| Separate "booking intent classifier" microservice | Adding a separate service to classify whether a caller wants to book adds latency to every turn and architectural complexity. In booking-first mode, ALL callers want to book by default. The exception (caller doesn't want to book) is detected by the LLM from the conversation context. | Prompt the LLM to assume booking intent. Exception detection is a prompt instruction, not a separate service. |
-| OpenAI Structured Outputs (JSON mode) | Groq (the project's LLM provider) does not support OpenAI's `response_format: { type: "json_object" }` parameter for all models. Relying on structured output mode would lock the project to specific Groq model versions. | Use Zod to validate JSON from the LLM's tool call arguments. The tool call mechanism already returns structured JSON -- Zod validates it. |
+| `@stripe/react-stripe-js` | Only needed for Stripe Elements (embedded payment form). Checkout redirect covers all needs for plan subscription and doesn't require in-page Elements. | `@stripe/stripe-js` `loadStripe()` + redirect to Stripe Checkout |
+| Custom invoice rendering | Building a custom invoice PDF/HTML renderer is weeks of work. Stripe already generates hosted invoice pages with PDF download. | Link to `invoice.hosted_invoice_url` from Stripe webhook data |
+| Webhook queue (BullMQ/pg-boss) | At current scale (single tenant, <100 calls/day), webhook events arrive in-order and process in milliseconds. A queue adds Redis infrastructure for no user-facing benefit. | Direct Supabase update in webhook handler. If the project scales to 1,000+ tenants, revisit pg-boss. |
+| `stripe-webhook-middleware` / third-party webhook packages | These add abstraction over `stripe.webhooks.constructEvent()` that Next.js App Router doesn't need. The raw pattern with `request.text()` is 15 lines and well-documented. | Direct `stripe.webhooks.constructEvent()` call |
+| Prisma / Drizzle ORM | The project uses Supabase JS client everywhere. Adding an ORM for billing tables fragments the data access layer. | Supabase JS client with typed queries for billing tables |
+| `next-stripe` or `use-shopping-cart` | These are opinionated wrappers built for e-commerce, not SaaS subscriptions. They add abstraction without reducing code for a subscription billing model. | Direct Stripe SDK + Server Actions |
 
 ---
 
-## Stack Patterns by Variant
+## Database Schema (Supabase)
 
-**For the booking-first prompt rewrite:**
-- Use a "booking-first preamble" that overrides the default behavior: "Your #1 job is to get the caller booked into an appointment. Every call should end with either a confirmed booking or a recovery SMS."
-- Urgency detection happens conversationally, not as a routing decision: "While booking, assess urgency from the caller's description. Tag as emergency/routine/high_ticket, but always book regardless."
-- Slot selection is urgency-aware: "For emergencies, always offer the earliest available slot first. For routine, offer the next 2-3 convenient slots."
+No new npm packages needed for schema. These are Supabase SQL migrations.
 
-**For exception-only escalation:**
-- Define a clear exception taxonomy in the prompt (see table above)
-- Use the existing `transfer_call` tool with Retell's `transfer_number` WebSocket response field for live-call transfers
-- Log exception type and reason on the `calls` table for dashboard reporting
-- After transfer attempt: if owner doesn't answer, the recovery SMS cron catches the unbooked call
+```sql
+-- subscriptions: one row per tenant
+CREATE TABLE subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  stripe_customer_id text UNIQUE NOT NULL,
+  stripe_subscription_id text UNIQUE,
+  status text NOT NULL DEFAULT 'trialing',  -- trialing|active|past_due|canceled|paused
+  plan text NOT NULL DEFAULT 'trial',       -- trial|starter|growth|pro
+  plan_call_limit integer NOT NULL DEFAULT 50,  -- calls included in plan
+  trial_ends_at timestamptz,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-**For notification priority formatting:**
-- Emergency bookings: `[URGENT] ${businessName}: Emergency booking confirmed -- ${callerName}, ${jobType} at ${address}. Slot: ${time}. ${dashboardLink}`
-- Routine bookings: `${businessName}: New booking confirmed -- ${callerName}, ${jobType}. Slot: ${time}. ${dashboardLink}`
-- Failed bookings (any urgency): `${businessName}: Call from ${callerName} about ${jobType} -- booking failed. Recovery SMS sent to caller. Review: ${dashboardLink}`
+-- usage_events: one row per completed call (for real-time enforcement)
+CREATE TABLE usage_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  call_id text NOT NULL,
+  billing_period_start timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-**For the WebSocket server tool updates:**
-- Keep `book_appointment` tool as-is (already has urgency parameter)
-- Refine `transfer_call` tool description: "Transfer to business owner. Only invoke when: (1) you cannot determine the service needed after 2 clarification attempts, OR (2) the caller explicitly requests to speak with a human. Do NOT transfer for booking-related issues -- offer alternatives instead."
-- Add `end_call` capability via the `end_call: true` response field for graceful hang-ups after booking confirmation
+-- RLS: tenants see only their own data
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
+```
 
 ---
 
 ## Version Compatibility
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| `zod@^4.3.6` | `openai@^6.32.0` (Groq client) | No conflict. Zod is used independently for output validation, not integrated with the OpenAI SDK. |
-| `zod@^4.3.6` | Node.js WebSocket server (`ws`) | No conflict. Zod runs in the same Node.js process as the WebSocket server. Import via `zod/v4` subpath. |
-| Existing `retell-sdk@^5.9.0` | Retell WebSocket `transfer_number` field | The `transfer_number` field is part of Retell's WebSocket protocol, not the SDK. The SDK is used for REST API calls (webhook verification, outbound calls). No version conflict. |
-
----
-
-## Architecture Impact Summary
-
-| Component | Change Type | New Library? |
-|-----------|-------------|-------------|
-| `src/lib/agent-prompt.js` | Rewrite prompt template | No |
-| `src/server/retell-llm-ws.js` | Refine tool descriptions, add `transfer_number` response field, add Zod validation | Zod (reuse) |
-| `src/lib/triage/classifier.js` | No code change -- semantic reinterpretation of output | No |
-| `src/lib/call-processor.js` | Pass urgency to notification formatter | No |
-| `src/lib/notifications.js` | Add urgency-aware SMS/email formatting | No |
-| `src/app/api/cron/send-recovery-sms/route.js` | Simplify logic: all unbooked calls get recovery SMS | No |
-| `src/app/api/webhooks/retell/route.js` | No change -- already handles `book_appointment` and `transfer_call` | No |
-| Dashboard UI | Badge semantics change (urgency = priority, not routing) | No |
+| Package | Version | Compatible With | Notes |
+|---------|---------|-----------------|-------|
+| `stripe` | ^17.7.0 | Node.js 18+, Next.js 16 | Server-side only. Works with App Router Server Actions and route handlers. |
+| `@stripe/stripe-js` | ^5.x | React 19, Next.js 16 | Client-side. Import via `@stripe/stripe-js/pure` to defer load. No SSR conflict. |
+| Stripe Billing Meters | API 2024-09-30.acacia+ | stripe ^17.x | Meters API requires acacia or newer. v17.x ships with a recent non-preview API version. Confirm with `stripe.apiVersion` after install. |
 
 ---
 
 ## Sources
 
-- [Retell AI LLM WebSocket docs](https://docs.retellai.com/api-references/llm-websocket) -- HIGH confidence (official docs, verified `transfer_number` field and `end_call` behavior)
-- [Retell AI Function Calling docs](https://docs.retellai.com/integrate-llm/integrate-function-calling) -- HIGH confidence (official docs, confirmed tool invocation protocol)
-- [Retell AI Troubleshooting](https://www.retellai.com/blog/troubleshooting-common-issues-in-voice-agent-development) -- MEDIUM confidence (official blog)
-- [BullMQ v5.71.0](https://www.npmjs.com/package/bullmq) -- HIGH confidence (npm, evaluated and rejected for this scale)
-- [pg-boss v12.14.0](https://www.npmjs.com/package/pg-boss) -- HIGH confidence (npm, evaluated as future option)
-- [Twilio Traffic Shaping](https://www.twilio.com/docs/messaging/features/traffic-shaping) -- MEDIUM confidence (public beta, not needed at current scale)
-- [Zod v4.3.6](https://zod.dev/v4) -- HIGH confidence (already validated in v1.1 research)
-- Existing codebase analysis (agent-prompt.js, retell-llm-ws.js, notifications.js, call-processor.js, booking.js, classifier.js, send-recovery-sms cron) -- HIGH confidence (direct code read)
-- [Leaping AI - Voice AI for Home Services Guide](https://leapingai.com/blog/implementing-voice-ai-agents-for-home-services-complete-guide-2025) -- MEDIUM confidence (industry guide, booking-first patterns)
-- [Retell AI 5 Useful Prompts](https://www.retellai.com/blog/5-useful-prompts-for-building-ai-voice-agents-on-retell-ai) -- MEDIUM confidence (official blog, prompt patterns)
+- [stripe npm package — v20.4.1 latest](https://www.npmjs.com/package/stripe) — HIGH confidence (npm registry)
+- [Stripe Node.js SDK releases](https://github.com/stripe/stripe-node/releases) — HIGH confidence (official GitHub)
+- [Stripe Billing Meters — Usage-Based Implementation Guide](https://docs.stripe.com/billing/subscriptions/usage-based/implementation-guide) — HIGH confidence (official Stripe docs)
+- [Migrate to Billing Meters — Legacy Records Deprecated](https://docs.stripe.com/billing/subscriptions/usage-based-legacy/migration-guide) — HIGH confidence (official Stripe docs)
+- [Stripe Billing Meters API v2 — Meter Event Streams](https://docs.stripe.com/changelog/acacia/2024-09-30/usage-based-billing-v2-meter-events-api) — HIGH confidence (official Stripe changelog)
+- [Stripe Subscription Trials Documentation](https://docs.stripe.com/billing/subscriptions/trials) — HIGH confidence (official Stripe docs)
+- [Stripe Webhooks — Subscription Lifecycle Events](https://docs.stripe.com/billing/subscriptions/webhooks) — HIGH confidence (official Stripe docs)
+- [Stripe Customer Portal Integration](https://docs.stripe.com/customer-management/integrate-customer-portal) — HIGH confidence (official Stripe docs)
+- [Next.js App Router Stripe Webhook — raw body via request.text()](https://medium.com/@gragson.john/stripe-checkout-and-webhook-in-a-next-js-15-2025-925d7529855e) — MEDIUM confidence (community article, verified pattern against official docs)
+- [Stripe + Next.js 15 Complete Guide 2025](https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/) — MEDIUM confidence (community guide)
+- [Stripe Subscription Lifecycle in Next.js 2026](https://dev.to/thekarlesi/stripe-subscription-lifecycle-in-nextjs-the-complete-developer-guide-2026-4l9d) — MEDIUM confidence (community article, current patterns confirmed)
+- [Vercel Next.js Subscription Payments reference repo](https://github.com/vercel/nextjs-subscription-payments) — MEDIUM confidence (Vercel maintained, may not reflect latest App Router patterns)
 
 ---
 
-*Stack research for: v2.0 booking-first digital dispatcher pivot*
-*Researched: 2026-03-24*
+*Stack research for: v3.0 Subscription Billing & Usage Enforcement*
+*Researched: 2026-03-26*

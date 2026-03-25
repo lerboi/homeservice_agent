@@ -1,372 +1,501 @@
-# Pitfalls Research
+# Domain Pitfalls: Stripe Billing & Usage Enforcement
 
-**Domain:** Voice AI system pivot from escalation-first to booking-first digital dispatcher
-**Researched:** 2026-03-24
-**Confidence:** HIGH (derived from direct codebase analysis + domain knowledge of LLM-driven voice systems)
+**Domain:** Adding Stripe subscription billing and per-call usage metering to an existing multi-tenant voice AI platform (Next.js + Supabase + Retell)
+**Researched:** 2026-03-26
+**Confidence:** HIGH (Stripe official docs + Retell community findings + Supabase RLS patterns + codebase analysis)
+
+---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Prompt Regression -- AI Still Tries to Escalate Instead of Book
-
-**What goes wrong:**
-The current `agent-prompt.js` contains explicit triage-aware behavior that tells the AI to "respond with urgency" for emergencies and "take a relaxed approach" for routine calls. The booking flow section (lines 78-79) instructs: "For ROUTINE calls: Use relaxed tone. Offer booking but don't pressure -- create lead if they decline." This language teaches the AI that routine = optional booking. After the pivot, if these remnants remain, the AI will still create leads instead of booking for routine calls, and may still try to transfer emergency callers ("let me get someone to you right away" in the TRIAGE-AWARE BEHAVIOR section) instead of booking them into the nearest slot.
-
-**Why it happens:**
-The system prompt is a single monolithic function (`buildSystemPrompt`) that mixes triage behavior with booking flow. Developers update the booking flow section but forget to remove or rewrite the triage behavior section. The LLM receives contradictory instructions: "book everyone" in one section vs. "respond with urgency and escalate" in another. LLMs resolve contradictions unpredictably -- sometimes they book, sometimes they escalate, depending on the conversation context.
-
-**How to avoid:**
-1. Delete the entire `TRIAGE-AWARE BEHAVIOR` section from the prompt. Urgency detection should still happen (via `classifyCall`) but it must not appear in the voice prompt as behavioral routing.
-2. Rewrite the `BOOKING FLOW` section to remove the emergency/routine fork. Replace with a single flow: "Always book. For emergencies, book the earliest available slot. For routine, book the next convenient slot."
-3. Remove the "create lead if they decline" instruction for routine callers. Replace with: "If the caller declines booking, confirm you'll send a link to book online" (recovery SMS path).
-4. Explicitly add a negative instruction: "Never offer to transfer the call unless the caller explicitly asks to speak with a human or you cannot understand their request."
-5. Write prompt regression tests that assert the absence of escalation-routing language and the presence of booking-first language.
-
-**Warning signs:**
-- Test calls where the AI says "let me get someone to you right away" instead of offering slots
-- Routine callers being told "I'll save your information" instead of being offered appointment times
-- `transfer_call` function invocation rate not dropping after the prompt rewrite
-- Lead creation rate staying the same (should drop as bookings increase)
-
-**Phase to address:**
-Phase 1 (Agent Prompt Rewrite) -- this is the foundation. Every other phase depends on the AI actually booking first.
+Mistakes in this section cause data loss, double-charges, free access leakage, or require production migrations.
 
 ---
 
-### Pitfall 2: Triage Logic Leaking Into Booking Decisions
+### Pitfall 1: Stripe Webhook Idempotency Not Enforced — Double-Counting Subscriptions and Usage
 
 **What goes wrong:**
-The `classifyCall` pipeline (layer1-keywords -> layer2-llm -> layer3-rules) runs in `processCallAnalyzed` (call-processor.js, line 143-150) and stores `urgency_classification` on the call record. Currently, this urgency value flows into: (a) the `atomicBookSlot` call as the `urgency` parameter, (b) the `createOrMergeLead` call via `triageResult`, and (c) notification formatting. The risk is that developers wire urgency into booking-path decisions -- e.g., "if emergency, book immediately; if routine, create lead" -- recreating the old escalation model inside the new booking flow. The current `call-processor.js` already does this: line 172 has `const isRoutineUnbooked = triageResult.urgency === 'routine' && !appointmentExists;` which triggers `suggested_slots` calculation only for routine unbooked calls. This logic assumes routine calls won't be booked, which is the old model.
+Stripe guarantees at-least-once delivery of webhook events. The same `customer.subscription.updated`, `invoice.paid`, or `invoice.payment_failed` event will occasionally be delivered 2–3 times, typically during Stripe retry windows. If the webhook handler does not check whether it has already processed an event before acting on it, subscriptions get updated twice, usage resets happen twice, plan upgrades double-charge, and access revocations fire on already-revoked accounts.
+
+Retell webhooks have the same problem: `call_analyzed` fires once per call, but `call_ended` and `call_started` fire for the same call. If the usage increment is wired to `call_ended` instead of `call_analyzed`, or if the handler does not check for an existing record with the same `call_id`, each call gets counted 3 times.
 
 **Why it happens:**
-The three-layer triage system is deeply embedded. It runs post-call, stores results on call records, and feeds into lead creation. Developers naturally branch on urgency because the data is right there. The mental model "emergency = special handling" is sticky -- even when the spec says urgency is just notification priority.
+Developers test against Stripe's CLI (which delivers each event exactly once) and against Retell's test calls (which rarely retry). Duplicate delivery only surfaces in production under load or during brief network partitions. By the time it's discovered, usage counts are corrupted.
 
-**How to avoid:**
-1. Create a clear architectural boundary: triage output feeds ONLY into `sendOwnerNotifications` (formatting and delivery priority). It must not affect booking path, lead status, or slot selection.
-2. Remove the `isRoutineUnbooked` conditional in `call-processor.js`. After the pivot, ALL unbooked calls (regardless of urgency) should get suggested_slots and recovery SMS.
-3. Keep the `urgency` field on appointments for display purposes, but add a code comment: "Urgency is informational only -- it does not affect slot selection or booking eligibility."
-4. Add a lint rule or code review checklist item: "Does this code branch on urgency for anything other than notification formatting?"
+**Consequences:**
+- Usage counter inflated — tenants hit plan limits prematurely, see billing errors, churn
+- Subscription records toggled active/inactive rapidly — access flapping during high webhook delivery
+- Overage charges on calls that were already counted — chargebacks from tenants
 
-**Warning signs:**
-- Any `if (urgency === 'emergency')` or `if (urgency === 'routine')` in booking or lead-creation code paths
-- Recovery SMS cron (`send-recovery-sms/route.js`) still skipping calls based on urgency
-- Dashboard showing different statuses for emergency vs. routine calls beyond badge color
-- Suggested slots only calculated for routine calls (current bug that must be fixed)
+**Prevention:**
+1. Store processed Stripe event IDs in a `stripe_webhook_events` table with a `UNIQUE` constraint on `event_id`. Before processing any webhook, attempt an insert. If it fails (duplicate), return 200 immediately without processing. This is the database idempotency key pattern.
+2. For Retell call counting, use `call_id` as the idempotency key on the `usage_events` table. Use `INSERT ... ON CONFLICT (call_id) DO NOTHING` so retried Retell webhooks are silently ignored.
+3. Wire usage increment to `call_analyzed` only (not `call_started` or `call_ended`). `call_analyzed` fires exactly once per call with the complete record, making it the correct metering point.
+4. For Stripe meter events (if using Stripe's usage-based billing API), pass the `call_id` as the `identifier` field in the meter event — Stripe deduplicates meter events by identifier.
 
-**Phase to address:**
-Phase 2 (Triage Reclassification) -- must be done immediately after prompt rewrite, before booking flow universalization. Otherwise the old triage-routing logic will conflict with new booking behavior.
+**Detection:**
+- Usage counts that grow faster than call volume
+- Subscription records with `updated_at` changing twice within milliseconds
+- `stripe_webhook_events` table with duplicate `event_id` entries (before idempotency was added)
+
+**Phase to address:** v3.0 Phase 1 (Stripe Integration Foundation) — must be the first thing built, before any other billing logic. All subsequent phases depend on correct event processing.
 
 ---
 
-### Pitfall 3: Over-Booking -- AI Books Callers Who Don't Want a Booking
+### Pitfall 2: Enforcement Gate Adds Latency to Sub-Second Call Pickup
 
 **What goes wrong:**
-Booking-first means the AI defaults to booking everyone. But some callers have no intent to book: price shoppers ("How much do you charge for...?"), information seekers ("Do you service my area?"), existing customers checking on an existing appointment, salespeople, wrong numbers. If the AI aggressively pushes booking on these callers, it creates ghost appointments that waste the owner's time, damages caller experience, and fills the calendar with no-shows.
+Calls through Retell must be answered in under 1 second. The inbound webhook handler (`/api/webhooks/retell/route.js`) currently runs slot calculation, triage setup, and dynamic variable injection in that window. Adding a synchronous Stripe API call to check subscription status (`stripe.subscriptions.retrieve()`) in this path adds 200–500ms of Stripe API latency, pushing call pickup past 1 second and causing Retell to timeout.
+
+Even a synchronous Supabase query for subscription status adds 50–150ms round-trip from Railway to Supabase — acceptable in isolation, but stacked on top of existing operations it creates a latency cliff.
 
 **Why it happens:**
-The prompt says "book every call" and the LLM takes it literally. Without explicit carve-outs for non-booking intents, the AI will try to schedule a plumber for someone who just wants a price quote. The current prompt has no intent classification -- it jumps straight from information gathering to slot offering.
+The billing enforcement check feels natural to put at the call entry point: "Is this tenant allowed to take a call?" Developers reach for the most authoritative source (Stripe API) for that check, not realizing the latency budget is already spent by the time the webhook fires.
 
-**How to avoid:**
-1. Add an explicit intent-detection step in the prompt before the booking flow: "First determine if the caller needs a service appointment. If they only want information (pricing, service area, hours), answer their question and then offer: 'Would you like me to schedule a visit while we're on the line?'"
-2. Define non-booking intents explicitly in the prompt: price inquiries, existing appointment inquiries, sales calls, complaints, wrong numbers. For each, define the correct handling.
-3. Add a `booking_offered` boolean to the call metadata so you can track how often the AI offers booking vs. how often it books. A high offer-to-book ratio is healthy; a low one means the AI is being too aggressive.
-4. Never auto-book without verbal confirmation from the caller. The current prompt already requires slot selection + address confirmation -- keep this gate.
+**Consequences:**
+- Retell drops the call or answers with silence
+- The AI receptionist — the product's core value prop — fails at the moment of first caller contact
+- Callers hang up and call the competitor
 
-**Warning signs:**
-- High appointment cancellation or no-show rate after going live
-- Caller complaints about being "forced to book"
-- Calendar filling up with appointments from callers who just had questions
-- Short call durations (< 2 min) resulting in bookings (suspicious -- not enough time for real booking flow)
+**Prevention:**
+1. **Never call the Stripe API synchronously from the inbound call webhook.** The Stripe API is not a real-time enforcement endpoint.
+2. Maintain a `tenant_billing_status` field directly on the `tenants` table (or a `subscriptions` table with a direct row per tenant). This field (`active | trialing | past_due | suspended | cancelled`) is updated by Stripe webhook handlers asynchronously. The inbound webhook reads only from the local Supabase row — a single indexed query that costs 5–20ms.
+3. Keep the local `subscriptions` table in sync via Stripe webhooks: `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. The local cache is the enforcement source; Stripe is the source of truth for billing data only.
+4. Accept a maximum staleness of 30 seconds on the enforcement status. If Stripe's `invoice.payment_failed` webhook takes 30 seconds to deliver and update local state, the tenant gets 30 extra seconds of access. This is acceptable — it is not exploitable in real-time and is standard SaaS practice.
+5. For the actual `billing_status` check: use a Postgres function or indexed query on `tenant_id` only — do not join to other tables on this hot path.
 
-**Phase to address:**
-Phase 1 (Agent Prompt Rewrite) -- intent detection must be part of the booking-first prompt, not bolted on later.
+**Detection:**
+- Retell call pickup time > 800ms after adding billing enforcement
+- `customer_webhook_events` processing time exceeding 500ms in logs
+- Calls answered by silence followed by Retell timeout errors
+
+**Phase to address:** v3.0 Phase 1 (Foundation) and repeated in Phase 2 (Enforcement Gate). The cache-first pattern must be established in Phase 1 so enforcement in Phase 2 never touches the Stripe API on the call path.
 
 ---
 
-### Pitfall 4: Notification Fatigue From Booking Every Call
+### Pitfall 3: Trial Expiry Without Payment Method — Silent "Free Forever" Access
 
 **What goes wrong:**
-Currently, `sendOwnerNotifications` fires for every lead created (call-processor.js, line 302). If every call now creates a booking instead of just emergencies, the owner gets an SMS and email for every single call -- including the routine ones that previously were quiet leads. A plumber getting 15-20 calls/day now gets 15-20 SMS alerts. They mute notifications. Then they miss the genuine emergency at 2 AM.
+The 14-day free trial requires no credit card. When the trial ends, if the tenant has no payment method on file, Stripe either cancels or pauses the subscription (depending on `trial_settings.end_behavior.missing_payment_method`). Stripe sends `customer.subscription.trial_will_end` 3 days before, then `customer.subscription.deleted` or `customer.subscription.paused` at expiry.
+
+If the application only listens for `invoice.paid` to confirm active status, and never listens for `customer.subscription.deleted` or `customer.subscription.paused`, the local `billing_status` never updates on trial expiry without a payment method. The tenant continues receiving full service indefinitely.
 
 **Why it happens:**
-The v1.0 notification system was designed for a world where notifications meant "something important happened." In the booking-first model, every call is "important" by definition. The signal-to-noise ratio collapses. The current `sendOwnerSMS` function (notifications.js, line 53) formats every notification the same way, just with a different urgency label.
+Developers test the "happy path": tenant starts trial, adds card, pays first invoice, continues on paid plan. The no-card trial expiry path is never tested because it requires waiting 14 days or using Stripe's test clock (which many teams skip). The `customer.subscription.trial_will_end` event is only 3 days before expiry, so the bug isn't caught in manual testing.
 
-**How to avoid:**
-1. Implement tiered notification delivery based on urgency:
-   - Emergency bookings: immediate SMS + email + push (high-priority channel)
-   - High-ticket bookings: immediate email + push, SMS only during business hours
-   - Routine bookings: daily digest email, no SMS unless owner opts in
-2. Change the notification trigger: don't notify on every booking creation. Notify on: (a) emergency bookings always, (b) routine bookings via batched digest, (c) failed bookings always (owner needs to know).
-3. Add notification preferences to the onboarding/settings flow so owners can control their threshold.
-4. Use different SMS templates: emergency gets an urgent tone with action required; routine gets a calm confirmation.
+**Consequences:**
+- Free indefinite access leaking revenue
+- The hard paywall requirement ("trial expires = hard stop") is violated
+- Tenants never convert to paid because there's no enforcement pressure
 
-**Warning signs:**
-- Owners complaining about too many notifications
-- Owners unsubscribing from SMS (breaking the emergency notification channel)
-- Low dashboard engagement (owners stop checking because notifications are noise)
-- Response time to emergency notifications increasing (lost in the flood)
+**Prevention:**
+1. Listen for ALL subscription lifecycle events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.trial_will_end`, `customer.subscription.resumed`.
+2. Map Stripe subscription `status` directly to local `billing_status` on every event, not just on `invoice.paid`. The mapping: `trialing` → `trialing`, `active` → `active`, `past_due` → `past_due`, `paused` → `suspended`, `canceled` → `cancelled`, `incomplete_expired` → `cancelled`.
+3. Set `trial_settings.end_behavior.missing_payment_method = 'cancel'` (not `pause`). Cancellation sends a clear `customer.subscription.deleted` event and creates a simpler local state machine. Pause creates a third state (`suspended`) that needs its own enforcement logic.
+4. Test with Stripe Test Clocks. A Stripe Test Clock lets you advance time to trial end without waiting 14 days. This is non-negotiable for billing — never skip it.
+5. On `customer.subscription.trial_will_end` (3 days before): trigger in-app notification, email, and dashboard banner prompting card entry. Do not wait for the expiry event.
 
-**Phase to address:**
-Phase 5 (Notification Priority System) -- but design the tiering in Phase 1 so the prompt rewrite knows what urgency tags are used for.
+**Detection:**
+- Tenants with `trial_ends_at` in the past but `billing_status = 'trialing'` still in local DB
+- No `customer.subscription.deleted` events logged for tenants who started trials without cards
+- Dashboard showing "active trial" for tenants whose Stripe subscription status is `canceled`
+
+**Phase to address:** v3.0 Phase 1 (webhook listeners and status sync) + Phase 3 (trial enforcement hardening, test clock validation).
 
 ---
 
-### Pitfall 5: Calendar Flooding -- No Guardrails on Autonomous Booking Volume
+### Pitfall 4: Race Condition Between Call Completion and Usage Enforcement
 
 **What goes wrong:**
-With the AI booking every call, a busy home service business could have 20+ appointments booked per day. Without maximum booking limits, buffer times between appointments, and geographic clustering, the owner arrives at the first job and realizes they have 6 appointments across town in the next 3 hours. The calendar becomes physically impossible to fulfill. Worse: if a competitor or spam caller repeatedly calls, the AI books fake appointments that consume real slots.
+Two concurrent calls can both pass the enforcement gate simultaneously with `calls_used = 9` and `plan_limit = 10`. Both get approved. Both complete. Both increment the counter. The tenant ends up at `calls_used = 11` with 1 overage that was never shown or charged.
+
+A second variant: the enforcement gate reads `calls_used = 10`, `plan_limit = 10`, and blocks the new call. Simultaneously, a Retell webhook for a just-completed call is still in flight — it hasn't incremented the counter yet. The real count is 9, and the new call was blocked incorrectly.
 
 **Why it happens:**
-The current `atomicBookSlot` only prevents double-booking of the same slot. It does not enforce: max bookings per day, minimum travel time between appointments (zone travel buffers exist in DB but are only used for slot calculation, not as hard constraints), or rate limiting per phone number. The system trusts every caller is legitimate.
+Read-then-write patterns on usage counters are not atomic. Any gap between "read current usage" and "write new usage" creates a race window. At low call volumes (1-2 calls/day) this never happens. At peak (5-10 simultaneous calls), it's routine.
 
-**How to avoid:**
-1. Add a max-bookings-per-day limit per tenant (configurable, default 12). Once hit, the AI says "Our schedule is full for today, the next available is [tomorrow slot]."
-2. Enforce zone travel buffers as hard constraints in `atomicBookSlot`, not just soft preferences in slot calculation. If the previous appointment is in Zone A and the next request is in Zone B with a 30-min buffer, the booking should account for it.
-3. Add phone number rate limiting: max 2 bookings per phone number per week. Prevents spam/abuse.
-4. Add a "tentative" booking status for the first booking from a new phone number, auto-confirmed after 15 minutes (gives owner time to review if needed).
-5. Expose a daily booking cap and "pause new bookings" toggle in the dashboard.
+**Consequences:**
+- Overage not detected: lost revenue on per-call overage billing
+- False blocking: a paying tenant is told they've hit their limit when they haven't
+- Under-enforcement: usage limit is exceeded silently without overage charge or block
 
-**Warning signs:**
-- Owners cancelling multiple bookings per day (physically impossible schedule)
-- Same phone number creating multiple bookings
-- No travel buffer between back-to-back appointments in different zones
-- Calendar showing 100% utilization (no room for emergencies)
+**Prevention:**
+1. Use an atomic increment function in Postgres for usage tracking: `UPDATE usage_counters SET calls_used = calls_used + 1 WHERE tenant_id = $1 AND billing_period_start = $2 RETURNING calls_used`. The returned value is the authoritative post-increment count.
+2. For enforcement at call start, use a Postgres advisory lock or a `SELECT ... FOR UPDATE` on the usage row when the enforcement check and increment need to be atomic. For the common case (well below plan limit), skip the lock and accept minor over-delivery. Only lock when `calls_used >= plan_limit - 2` (the "near limit" zone).
+3. Never read usage from an application-layer cache for enforcement decisions. The cache can be stale by multiple increments. Always read from Postgres for the enforcement check.
+4. For the Retell-specific case: the enforcement check happens at `call_started` (webhook fires before AI responds). The increment happens at `call_analyzed` (call is complete). These events are seconds apart, not milliseconds — less concurrency risk, but still requires atomic increment.
+5. Use the `call_id` as the idempotency key for the increment (as covered in Pitfall 1) to ensure the increment fires exactly once regardless of webhook retries.
 
-**Phase to address:**
-Phase 3 (Booking Flow Universalization) -- this is where the atomic booking logic needs hardening.
+**Detection:**
+- `calls_used` exceeding `plan_limit` in the DB without a corresponding overage record
+- Tenants blocked when their `calls_used` is below the limit
+- Usage counter incrementing by 2 for single calls (duplicate increment)
+
+**Phase to address:** v3.0 Phase 2 (Usage Tracking Schema) and verified in Phase 4 (Enforcement Gate).
 
 ---
 
-### Pitfall 6: Silent Fallback Chain Failures
+### Pitfall 5: Proration Creates Unexpected Charges on Plan Downgrades
 
 **What goes wrong:**
-The booking-first model creates a longer chain of fallbacks: AI tries to book -> booking fails -> AI offers alternative slot -> that fails too -> call ends -> recovery SMS fires -> SMS delivery fails -> caller is lost. Each link in this chain can fail silently. The current `sendCallerRecoverySMS` (notifications.js, line 103) catches errors and logs them but returns undefined -- the cron job (send-recovery-sms/route.js) treats this as success and marks `recovery_sms_sent_at`. The caller never gets the SMS, and the system thinks it was sent.
+When a tenant upgrades mid-cycle, Stripe generates an immediate proration invoice. When they downgrade mid-cycle, Stripe generates a negative proration credit but does not automatically refund it — it applies to the next invoice. If the product grants the new (lower) plan limits immediately on downgrade, the tenant may be denied features they've technically paid for (they paid for the higher plan through the end of the cycle) while Stripe still has their money as a credit.
+
+A second problem: if downgrade is to a plan with a lower call limit and the tenant has already used more calls this cycle than the new plan allows, the enforcement gate needs to decide: block immediately (unfair — they paid for calls this cycle) or allow until cycle reset (creates an enforcement gap). Neither is right without a clear policy.
 
 **Why it happens:**
-The v1.0 system had fewer fallback paths. Recovery SMS was only for unbooked callers, and notification failures were acceptable because the lead was captured anyway. In the booking-first model, recovery SMS is the last safety net -- if it fails silently, the caller has no way to book and no way to reach the business.
+Proration behavior (`proration_behavior: 'create_prorations' | 'none' | 'always_invoice'`) is a Stripe API parameter that most tutorials gloss over. Developers use the default and discover the side effects when a real customer complains about an unexpected charge.
 
-**How to avoid:**
-1. Make `sendCallerRecoverySMS` return a success/failure boolean. Only mark `recovery_sms_sent_at` if the SMS was actually delivered (check Twilio message status, not just API call success).
-2. Add a retry mechanism: if recovery SMS fails, retry up to 3 times with exponential backoff before marking as permanently failed.
-3. Add a `recovery_sms_status` column (pending/sent/failed/delivered) instead of just a timestamp. Query for failed SMS in the dashboard.
-4. Add a dead-letter alert: if more than 5% of recovery SMS fail in a day, alert the system admin.
-5. Track the full fallback chain per call: `booking_attempted` -> `booking_succeeded` -> `recovery_sms_sent` -> `recovery_sms_delivered`. Surface broken chains in the dashboard.
+**Consequences:**
+- Tenant charged immediately on upgrade mid-cycle (expected), but also immediately loses credit on downgrade without a refund (unexpected to tenant)
+- Billing complaints and chargebacks
+- Enforcement gate behaving incorrectly in the cycle after a plan change
 
-**Warning signs:**
-- `recovery_sms_sent_at` is populated but Twilio delivery reports show failures
-- Callers calling back saying they never got a link
-- High `recovery_sms_sent_at` population but low click-through on booking links
-- The cron job processing calls but `sent` count is always 0 (silent failures)
+**Prevention:**
+1. **Upgrades:** Use `proration_behavior: 'always_invoice'` so the proration is charged immediately and the tenant gains new features right away. This is the least confusing behavior for upgrades.
+2. **Downgrades:** Use `proration_behavior: 'none'` and schedule the downgrade at the end of the current billing cycle using Stripe Subscription Schedules. The tenant keeps the current plan until cycle end, then drops to the lower plan. No mid-cycle proration charge or confusing credit.
+3. For usage limits on downgrade: grant the current cycle's limit at the current plan. On the next cycle start (Stripe sends `customer.subscription.updated` with the new price), enforce the new lower limit.
+4. Preview prorations before applying them: use `stripe.invoices.retrieveUpcoming()` to show the tenant exactly what they'll be charged before confirming a plan change. This eliminates surprise charges.
+5. Document the policy explicitly in the billing dashboard UI: "Upgrades take effect immediately. Downgrades take effect at the end of your current billing period."
 
-**Phase to address:**
-Phase 6 (Recovery SMS Universal Fallback) -- but the monitoring/observability should be designed in Phase 3 (booking flow).
+**Detection:**
+- Tenants complaining about unexpected charges after upgrading
+- Negative balance on Stripe customer account (credit sitting unused)
+- `calls_used` exceeding the new plan limit on the same day as a downgrade
+
+**Phase to address:** v3.0 Phase 3 (Subscription Lifecycle Management) and Phase 5 (Billing Dashboard).
 
 ---
 
-### Pitfall 7: Loss of Human Oversight for Genuine Emergencies
+### Pitfall 6: Failed Payment Dunning — Service Suspended Before Customer Can Fix It
 
 **What goes wrong:**
-In the old model, emergencies triggered proactive transfer to the owner. The owner was in the loop for every emergency. In the booking-first model, the AI autonomously books the emergency into the nearest slot and sends a high-priority notification. If the notification is delayed (SMS queue, email spam filter, owner's phone on silent), the owner doesn't know about the gas leak until they check the dashboard. A 30-minute delay for a gas leak is unacceptable.
+Stripe's Smart Retries will attempt a failed invoice payment multiple times over several days. The default Stripe configuration marks subscriptions as `past_due` during retry windows. If the enforcement gate treats `past_due` the same as `cancelled` and immediately suspends service, tenants who had a transient card decline (expired card, bank hold) lose service before they have a chance to update their payment method. This is the number-one churn cause for subscription SaaS — involuntary churn from payment failure accounts for 20-40% of cancellations.
 
 **Why it happens:**
-The pivot spec says "escalation only on exception states" and treats emergencies the same as routine calls for booking purposes. This is correct for the booking flow, but the notification path for emergencies must be upgraded to compensate for removing the proactive transfer. The current `sendOwnerNotifications` is fire-and-forget with no delivery confirmation or escalation on failure.
+The billing status state machine has three states: `active`, `past_due`, `cancelled`. The simplest enforcement logic is `active → allow, anything else → block`. This feels correct but is too aggressive.
 
-**How to avoid:**
-1. For emergency bookings: send notification through ALL channels simultaneously (SMS + email + push + phone call to owner if SMS unconfirmed after 2 minutes).
-2. Add delivery confirmation for emergency notifications: poll Twilio message status. If not delivered within 2 minutes, escalate to the next channel.
-3. Keep the `transfer_call` function available but only invoke it when: (a) the caller explicitly asks for a human, or (b) the emergency notification to the owner fails delivery within a timeout.
-4. Add an emergency acknowledgment flow: owner must tap a link in the SMS to acknowledge. If not acknowledged within 5 minutes, auto-call the owner's phone.
-5. Never remove emergency escalation contacts -- the `escalation_contacts` table exists for a reason. Use it as a backup chain when the primary owner doesn't acknowledge.
+**Consequences:**
+- Tenants in `past_due` (recoverable) lose service immediately
+- Their AI receptionist stops answering calls — they lose live leads during the grace period
+- They churn not because they wanted to cancel but because of a payment hiccup
+- High involuntary churn rate (industry average is 1-3%; hitting 10%+ means dunning logic is wrong)
 
-**Warning signs:**
-- Emergency bookings with no owner acknowledgment within 5 minutes
-- Owner reporting they didn't know about an emergency until hours later
-- Emergency notification delivery rate below 99%
-- Escalation contacts table being ignored or deprioritized
+**Prevention:**
+1. Implement a grace period: allow `past_due` tenants full service for a configurable grace period (default: 7 days for B2B SaaS). During this period, the enforcement gate treats them as `active`.
+2. After the grace period expires without payment, downgrade to a limited mode (not full suspension): allow incoming calls to be answered but do not process new bookings. This keeps the core promise (calls answered) while creating urgency to pay.
+3. Send escalating notifications during the grace period: Day 1 (email with payment link), Day 3 (email + SMS), Day 5 (in-app banner), Day 7 (final notice before suspension).
+4. Use Stripe's Customer Portal for payment method updates — do not build your own payment update form. The portal handles 3DS, card validation, and retry triggering automatically.
+5. On `invoice.payment_succeeded` after dunning: immediately restore full service and reset the grace period counter. Do not require a manual admin action to restore.
+6. Never immediately cancel on `invoice.payment_failed`. Wait for Stripe's retry cycle to complete (Smart Retries over 14 days) before moving from `past_due` to `cancelled`.
 
-**Phase to address:**
-Phase 5 (Notification Priority System) -- emergency notification hardening must be in this phase. Do not ship booking-first without it.
+**Detection:**
+- High involuntary churn rate (> 3% monthly)
+- Tenants complaining calls aren't being answered right after a declined card
+- `billing_status = 'past_due'` tenants with active usage counters (they're paying attention and using the product — they'll fix the payment)
+
+**Phase to address:** v3.0 Phase 3 (Dunning & Grace Periods) — must be designed alongside the enforcement gate, not added later.
 
 ---
 
-### Pitfall 8: Test Suite Regression -- Existing Tests Assert Old Behavior
+### Pitfall 7: Supabase RLS on Billing Tables — Service Role Bypass Silently Breaks Enforcement
 
 **What goes wrong:**
-The existing test suite (`tests/agent/prompt.test.js`) has tests that assert the presence of escalation-era behavior: line 104 asserts `TRIAGE-AWARE BEHAVIOR` exists in the prompt, line 78 asserts `transfer_call` references. The booking test (`tests/scheduling/booking.test.js`) tests the atomic booking function but not the full booking-first flow. When the prompt is rewritten, these tests break -- but instead of updating them to assert new behavior, developers disable or delete them to make CI green. The result: no tests for the new behavior, and the old behavior could silently return in future prompt edits.
+Supabase RLS policies enforce tenant isolation on data reads. Billing tables (`subscriptions`, `usage_counters`, `billing_events`) need to be readable by the tenant (for the dashboard) but writable only by server-side webhook handlers (Stripe webhooks, Retell webhooks). If RLS is not set up correctly, two failure modes occur:
+
+**Mode A (too permissive):** Tenant can `UPDATE` their own `subscriptions` row via the Supabase client SDK. A motivated tenant sets `billing_status = 'active'` and `plan_limit = 999` directly. There is no amount of application-level validation that catches this if the RLS policy has `USING (tenant_id = auth.uid())` on both SELECT and UPDATE.
+
+**Mode B (too restrictive):** Webhook handlers using the Supabase `service_role` key bypass RLS entirely. If developers assume RLS protects the billing tables and rely on it for authorization in the webhook handler itself, they may not add application-level tenant verification. A malicious actor who discovers the webhook endpoint can submit a crafted payload (without Stripe signature verification) and modify any tenant's billing status.
 
 **Why it happens:**
-When pivoting core behavior, the test suite becomes an obstacle rather than a safety net. Tests that assert "the AI says X" break because the AI now says "Y." Under deadline pressure, teams delete failing tests instead of rewriting them to assert new invariants.
+The existing codebase already has RLS on all tables (a valid pattern for this project). Developers add billing tables following the same pattern — RLS for tenant isolation — without recognizing that billing tables have a different trust boundary: they should be immutable from the client SDK but mutable from authenticated server-side processes only.
 
-**How to avoid:**
-1. Before changing any code, write the NEW test suite first (test-driven pivot):
-   - Assert prompt contains "book every call" language
-   - Assert prompt does NOT contain "create lead if they decline" for routine callers
-   - Assert prompt does NOT contain proactive transfer instructions
-   - Assert `transfer_call` tool is still available (exception path) but prompt doesn't encourage it
-   - Assert booking function is called for both emergency and routine urgency values
-2. Keep old tests as "regression markers" -- rename them to `test.skip` with a comment: "Old escalation behavior -- verify this no longer applies."
-3. Add end-to-end tests that simulate a full call flow: inbound -> slot calculation -> booking attempt -> notification -> recovery SMS (if booking fails).
-4. Add prompt snapshot tests: store the full generated prompt as a snapshot, review diffs in PRs.
+**Consequences:**
+- Mode A: Trivial billing bypass — any tenant can give themselves free access
+- Mode B: Stripe signature verification is the only gate; if it's skipped in testing or misconfigured, billing state becomes externally writable
+- Misconfigured RLS also causes Supabase RealTime subscription updates to broadcast billing data to wrong tenants
 
-**Warning signs:**
-- Test suite has fewer tests after the pivot than before
-- Tests that were previously passing are now skipped without replacement
-- No tests for the booking-first prompt behavior
-- CI passing but manual testing reveals the AI still escalates
+**Prevention:**
+1. **Billing tables must have `WITH CHECK (false)` on INSERT and UPDATE for authenticated users.** Only the `service_role` (used by server-side webhook handlers) can write to billing tables. Tenants can only read their own rows.
+2. RLS policy pattern for billing tables:
+   ```sql
+   -- SELECT: tenant can see their own billing status
+   CREATE POLICY "tenant_read_own_subscription"
+     ON subscriptions FOR SELECT
+     USING (tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid()));
 
-**Phase to address:**
-Phase 1 (Agent Prompt Rewrite) -- write new tests before changing the prompt. Every subsequent phase should add tests, never remove them.
+   -- INSERT/UPDATE/DELETE: only service_role (no policy = default deny for authenticated users)
+   -- service_role bypasses RLS entirely
+   ```
+3. Always verify Stripe webhook signatures with `stripe.webhooks.constructEvent()` before processing. Never skip this in any environment. The signature prevents forged webhook payloads.
+4. Never expose the `service_role` key to the browser. All Stripe webhook handlers and billing mutations run server-side only (Next.js API routes, not client-side SDK calls).
+5. Validate `tenant_id` from the Stripe customer metadata, not from the request body: `const tenantId = stripeCustomer.metadata.tenant_id` — then look up the subscription by that `tenant_id`. Don't trust any tenant identifier from the webhook payload without cross-referencing Stripe's customer object.
+
+**Detection:**
+- Supabase Dashboard: RLS policy test — try updating `billing_status` as an authenticated tenant user; the update should fail
+- `subscriptions` table audit log showing `UPDATE` operations with `auth.role() = 'authenticated'` (should not exist)
+- Stripe webhook handler processing events without checking `stripe.webhooks.constructEvent()` return value
+
+**Phase to address:** v3.0 Phase 1 (Database Schema) — RLS policies must be correct before any billing data is written to production.
 
 ---
 
-### Pitfall 9: Dashboard Showing Stale Urgency Semantics
+### Pitfall 8: Usage Counter Reset at Billing Cycle Boundary — Off-by-One and Race Conditions
 
 **What goes wrong:**
-PROJECT.md says "Dashboard visual parity: keep existing urgency badges, change backend meaning only." This means the dashboard shows "EMERGENCY" and "ROUTINE" badges that used to mean "transferred to owner" and "captured as lead" but now mean "high-priority notification" and "standard notification." If the dashboard isn't updated to explain the new meaning, owners see an "EMERGENCY" badge and wonder why nobody called them. Or they see a "ROUTINE" badge and assume it's just a lead, not a confirmed booking.
+Monthly billing cycles reset the call usage counter on the billing anniversary date (e.g., the 15th of each month). Two failure modes:
+
+**Mode A (wrong reset trigger):** Usage is reset by a cron job running on a fixed schedule (midnight UTC on the 1st, or "every 30 days"). Stripe's billing cycle is tied to the subscription's `current_period_start`, which is not necessarily the 1st and shifts when trials end, plans are changed, or invoices are manually generated. A cron-based reset drifts from the actual billing cycle, creating periods where tenants are over- or under-charged for usage.
+
+**Mode B (race during reset):** The usage counter is reset to 0 at cycle start. A call completes at the exact moment of reset. The increment fires, reads the fresh 0, increments to 1. Simultaneously, the reset job is also running and writes 0, erasing the just-completed call. The call is never counted.
 
 **Why it happens:**
-"Visual parity" is interpreted as "don't change the UI." But the meaning of the data changed. Keeping the same visual creates a semantic mismatch that confuses users.
+Usage reset feels like a simple cron task. The connection between Stripe's billing cycle and the reset trigger is not obvious from the Stripe docs, which recommend listening to `invoice.paid` for this purpose but many developers use cron instead because it's simpler.
 
-**How to avoid:**
-1. Update badge labels to reflect booking-first semantics: "EMERGENCY" -> "Urgent Booking" (red), "ROUTINE" -> "Booking" (green), "HIGH_TICKET" -> "High-Value Booking" (gold).
-2. Add booking status to the dashboard view: "Booked" / "Booking Failed" / "Declined to Book" -- this is the primary status now, not urgency.
-3. Move urgency from the primary badge to a secondary indicator (small icon or tooltip).
-4. Add a "Needs Attention" filter that shows: failed bookings, unacknowledged emergencies, callers who declined booking.
+**Consequences:**
+- Tenants get "free" extra calls when the reset fires early
+- Tenants hit limits prematurely when the reset fires late
+- Per-call overage billing is incorrect (overage calculated on a counter that's out of sync with the billing period)
 
-**Warning signs:**
-- Owners asking "why did nobody call me about this emergency?"
-- Owners ignoring routine bookings because they look like old-style leads
-- Dashboard click-through rate dropping after the pivot
-- Support tickets about badge meanings
+**Prevention:**
+1. Always reset usage counters in response to Stripe webhooks, not cron jobs. The correct event is `invoice.paid` for the subscription invoice (not a one-time invoice). On `invoice.paid`, check `invoice.subscription` is non-null and `invoice.billing_reason = 'subscription_cycle'`, then reset the counter for the period `invoice.period.start` to `invoice.period.end`.
+2. Store `billing_period_start` and `billing_period_end` on the `usage_counters` row, sourced from the Stripe invoice. This makes the counter period explicit and queryable.
+3. For the race condition: use `INSERT ... ON CONFLICT (tenant_id, billing_period_start) DO UPDATE SET calls_used = 0` for the reset, and `UPDATE usage_counters SET calls_used = calls_used + 1 WHERE tenant_id = $1 AND billing_period_start = $2` for increments. These are separate rows — the old period row is not overwritten when a new period starts.
+4. Keep the previous period's usage row (don't delete it). It's needed for invoice reconciliation and overage billing.
 
-**Phase to address:**
-Phase 7 (Dashboard Visual Parity) -- but the data model decisions should be made in Phase 2 (Triage Reclassification).
+**Detection:**
+- `usage_counters.calls_used` resetting to 0 on a fixed-date schedule that doesn't match `subscriptions.current_period_start`
+- Calls missing from usage count after a billing cycle rollover
+- Discrepancy between Stripe invoice line items and local `calls_used` counter
+
+**Phase to address:** v3.0 Phase 2 (Usage Tracking Schema) — the reset mechanism must be tied to `invoice.paid` from day one.
 
 ---
 
-### Pitfall 10: Retell Dynamic Variables Not Updated for Booking-First
+### Pitfall 9: Stripe Event Out-of-Order Delivery Corrupts Local State
 
 **What goes wrong:**
-The inbound webhook handler (`retell/route.js`, `handleInbound`) passes `available_slots` and `booking_enabled` as dynamic variables to Retell. The current system calculates slots for 3 days and limits to 6. In a booking-first world where every call gets booked, 6 slots may not be enough if the day is busy. The AI offers 6 slots, all are taken during the call, and the AI has no way to fetch fresh slots mid-conversation. The call ends without a booking.
+Stripe does not guarantee delivery order. `customer.subscription.updated` may arrive before `customer.subscription.created`. An `invoice.paid` for a renewed subscription can arrive before the `customer.subscription.updated` that changed the plan price. If the webhook handler blindly applies each event's embedded data to the local DB, events processed out of order overwrite newer state with older state.
+
+Example: `subscription.updated` (plan upgraded, `status = active`) arrives. Handler updates local DB. Then `subscription.created` (initial state, `status = trialing`) arrives and overwrites the active record with trialing status. Tenant is on a paid plan but local DB shows trialing.
 
 **Why it happens:**
-Slot data is calculated once at call start and injected as static dynamic variables. During a busy day, slots can be taken between the time they're calculated and the time the AI offers them. The `atomicBookSlot` function handles the race condition (returns `slot_taken`), but the AI's recovery path ("that slot was just taken") only works if there are alternative slots to offer. If all 6 provided slots are stale, the AI loops on "slot taken" with no fresh data.
+Webhook handlers are usually written as "take the event data, write to DB." Out-of-order delivery is not tested because Stripe's test webhook delivery is sequential, and this issue only manifests when Stripe's infrastructure has delivery delays across different event types.
 
-**How to avoid:**
-1. Increase the slot window: calculate 10-12 slots across 5 days instead of 6 across 3. More slots = more likely at least one is still available.
-2. Add a `refresh_slots` tool function that the AI can invoke mid-call if it receives multiple "slot taken" responses. This fetches fresh availability in real-time.
-3. In the "slot taken" handler in `handleBookAppointment`, return not just the next single slot but the next 3 available slots, so the AI has alternatives to offer.
-4. Add a "no slots available" terminal path: "I'm unable to find an available time right now. I'll send you a link to book online where you can see live availability." -> trigger recovery SMS immediately.
+**Consequences:**
+- Tenant on paid plan blocked as if still on trial
+- Tenant downgraded locally while still on upgraded plan in Stripe
+- `billing_status` oscillating between states
 
-**Warning signs:**
-- Multiple "slot taken" responses in a single call
-- Calls ending without booking despite slots being available (stale data problem)
-- AI looping on slot offers with no resolution
-- High recovery SMS rate despite available calendar capacity
+**Prevention:**
+1. Use `created` timestamps from Stripe event objects to version-protect writes: `UPDATE subscriptions SET status = $1, updated_at = $2 WHERE tenant_id = $3 AND stripe_updated_at < $2`. Only write if the incoming event's timestamp is newer than what's already stored.
+2. For subscription status, never apply `subscription.created` data if a `subscription.updated` with a later timestamp already exists. Check `stripe_updated_at` before writing.
+3. For missing-dependency scenarios (e.g., `invoice.paid` arrives before the subscription row exists locally): fetch the subscription from Stripe API directly (`stripe.subscriptions.retrieve(invoice.subscription)`) and create the local row, then process the invoice.
+4. Add a `stripe_event_id` and `stripe_created_at` column to the `subscriptions` table. This is the version vector — all updates must include these values and only apply if newer.
 
-**Phase to address:**
-Phase 3 (Booking Flow Universalization) -- slot data freshness is a booking infrastructure concern.
+**Detection:**
+- `subscriptions.billing_status` changing without a corresponding Stripe event log entry
+- Tenant reports being blocked while Stripe Dashboard shows active subscription
+- `stripe_event_id` log showing the same subscription receiving conflicting status events within milliseconds
+
+**Phase to address:** v3.0 Phase 1 (webhook processing infrastructure) — event ordering protection must be built in from the start, not added after state corruption is observed.
 
 ---
 
-## Technical Debt Patterns
+## Moderate Pitfalls
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Keeping triage sections in prompt but adding "ignore for routing" comments | Faster prompt rewrite, less risk of breaking things | LLM may still follow triage instructions despite comments; contradictory prompt | Never -- remove old behavior, don't comment it out |
-| Hardcoding notification tiers instead of making them configurable | Ship faster | Every tenant has different preferences; forced to revisit when first customer complains | MVP only -- add settings within 2 phases |
-| Using `recovery_sms_sent_at` timestamp as delivery confirmation | No Twilio status polling needed | False positives on delivery; callers fall through the cracks | Never after booking-first -- recovery SMS is critical path |
-| Skipping intent detection in prompt ("just book everyone") | Simpler prompt, fewer edge cases | Ghost appointments, calendar noise, angry callers | Never -- intent detection is minimal effort, high impact |
-| Running old and new tests in parallel without reconciling | CI stays green | Contradictory assertions; false confidence in test coverage | Only during the transition; reconcile within the same phase |
+Issues that create incorrect behavior or maintenance pain but don't require a rewrite.
 
-## Integration Gotchas
+---
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Retell dynamic variables | Assuming slot data is fresh for entire call duration | Pre-calculate generous slot count; add mid-call refresh tool; handle all-stale gracefully |
-| Retell `transfer_call` | Removing the transfer function entirely in booking-first mode | Keep it available for exception states; change prompt to deprioritize it, don't remove the capability |
-| Groq/LLM tool calls | Expecting the LLM to reliably choose `book_appointment` over `transfer_call` with contradictory prompt instructions | Resolve prompt contradictions first; LLMs follow the most recent/prominent instruction, not the "correct" one |
-| Twilio SMS | Treating API success (202 Accepted) as delivery confirmation | Poll message status or use status callbacks; 202 means queued, not delivered |
-| Supabase `book_appointment_atomic` | Assuming the RPC handles all booking constraints (max per day, travel buffers) | The RPC only prevents double-booking of the same slot; add application-level constraints before calling RPC |
-| Google Calendar push | Blocking on calendar sync during the call (latency hit) | Current code correctly uses `after()` for async push; do not regress this when adding booking-first logic |
+### Pitfall 10: Hard Paywall on `call_started` Webhook — Wrong Event for Enforcement
+
+**What goes wrong:**
+The enforcement gate fires at the moment Retell sends the `call_started` webhook to the application. This is before the AI has answered. If the enforcement check blocks the call, Retell has already connected the call — the caller hears silence or a hang-up, not a graceful "service unavailable" message.
+
+**Why it happens:**
+Developers wire enforcement to `call_started` because it fires first and seems like the right "entry gate." But Retell's `call_started` fires after the call is picked up. The only pre-answer hook is the inbound call webhook that Retell sends before connecting the call to the AI — this is the `POST /api/webhooks/retell` inbound handler.
+
+**Prevention:**
+The enforcement check (is this tenant `active` or `trialing`?) must happen in the inbound webhook handler, before Retell is told to connect the call to the LLM WebSocket server. If the tenant is suspended, respond with a Retell configuration that plays a pre-recorded "service unavailable" message instead of connecting to the AI. Never enforce in `call_started` — the call is already live.
+
+**Phase to address:** v3.0 Phase 4 (Enforcement Gate).
+
+---
+
+### Pitfall 11: Free Trial Counter Not Initialized at Onboarding
+
+**What goes wrong:**
+Tenants start their 14-day free trial during onboarding. If the `subscriptions` row and `usage_counters` row are not created during onboarding (relying on a Stripe `customer.subscription.created` webhook to trigger creation), there is a window between account creation and webhook delivery where:
+- The enforcement gate finds no subscription row and either blocks all calls (overly restrictive) or allows all calls (too permissive)
+- Usage increments fail because there's no `usage_counters` row to update
+
+**Prevention:**
+1. During onboarding completion, synchronously create the Stripe customer (`stripe.customers.create()`), create the trial subscription (`stripe.subscriptions.create()` with `trial_period_days: 14`), and immediately write the local `subscriptions` and `usage_counters` rows — do not wait for the webhook.
+2. The webhook handler for `customer.subscription.created` should use `INSERT ... ON CONFLICT DO NOTHING` to handle the case where the row already exists (created synchronously at onboarding).
+3. The enforcement gate default for "no subscription row found" must be `trialing` (allow calls), not `suspended`. Stripe webhooks can take seconds to arrive; the absence of a local row immediately after onboarding is expected.
+
+**Phase to address:** v3.0 Phase 1 (Foundation) and Phase 3 (Trial Management).
+
+---
+
+### Pitfall 12: Billing Dashboard Showing Stale Usage — Counter vs. Real-Time Accuracy
+
+**What goes wrong:**
+The billing dashboard shows `calls_used` from the `usage_counters` table. Calls are incremented by the Retell `call_analyzed` webhook. If `call_analyzed` takes 30–60 seconds to fire after a call ends (Retell's analysis pipeline), the dashboard shows a count that's 1-2 calls behind the real usage. Tenants think they have more budget left than they do. This is especially visible as they approach their plan limit.
+
+**Prevention:**
+1. Use Supabase Realtime to push live updates to the billing dashboard when `usage_counters` changes. The tenant sees the counter increment in real time without polling.
+2. Consider incrementing the counter optimistically at `call_ended` (faster, ~5 seconds after call) and reconciling at `call_analyzed`. Mark `call_analyzed` as the source of truth. This gives the dashboard near-real-time accuracy.
+3. Display the billing period boundary clearly: "X of Y calls used this period (resets [date])." Tenants need to know the reset date to understand their budget.
+
+**Phase to address:** v3.0 Phase 5 (Billing Dashboard).
+
+---
+
+### Pitfall 13: Stripe Customer Portal Not Configured — Cancellation and Card Updates Broken
+
+**What goes wrong:**
+Stripe's Customer Portal handles cancellations, card updates, and subscription upgrades/downgrades. If the portal is not configured in the Stripe Dashboard (it requires explicit product/price registration, allowed features, and redirect URLs), the portal link throws a Stripe API error when clicked by tenants. Many developers discover this in production when a real customer tries to cancel.
+
+**Prevention:**
+1. Configure the Customer Portal in the Stripe Dashboard (not via API) before any billing goes live. Required settings: allowed products/prices, cancelation flow (immediate vs. end of period), allowed updates (upgrade/downgrade pricing).
+2. Set `return_url` to the billing dashboard page in the application — not to the homepage. After portal actions, the tenant should land back in the billing context.
+3. Test the portal in Stripe test mode before going live. The portal URL is generated via `stripe.billingPortal.sessions.create()` — test that the entire flow (cancel, update card, upgrade) works end-to-end.
+
+**Phase to address:** v3.0 Phase 5 (Billing Dashboard).
+
+---
+
+## Minor Pitfalls
+
+---
+
+### Pitfall 14: `invoice.payment_action_required` Not Handled — 3DS Payments Silently Fail
+
+**What goes wrong:**
+European tenants often have Stripe Radar rules or bank requirements that mandate 3D Secure authentication on subscription renewals. When a renewal requires 3DS and the tenant is not present to authenticate, Stripe sends `invoice.payment_action_required`. If the handler ignores this event, the invoice stays unpaid, the subscription moves to `past_due`, and the tenant gets no notification about why.
+
+**Prevention:**
+Listen for `invoice.payment_action_required` and send the tenant a link to authenticate: the `hosted_invoice_url` or `payment_intent.next_action.redirect_to_url` from the invoice. Without this, European tenants silently go delinquent.
+
+**Phase to address:** v3.0 Phase 3 (Dunning & Grace Periods).
+
+---
+
+### Pitfall 15: Overage Billing Not Idempotent — Double-Charged at Cycle End
+
+**What goes wrong:**
+Per-call overage is billed by creating a Stripe invoice item for excess calls at the end of the billing period. If the overage calculation job runs twice (cron retried, duplicate `invoice.paid` event processed), two identical invoice items are created. The tenant is double-charged for overage.
+
+**Prevention:**
+Use Stripe's idempotency keys when creating invoice items for overage: `stripe.invoiceItems.create({ ... }, { idempotencyKey: \`overage-${tenantId}-${periodStart}\` })`. The `periodStart` makes the key unique per billing cycle and prevents duplicate creation.
+
+**Phase to address:** v3.0 Phase 4 (Overage Billing).
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| Stripe schema setup | Adding billing tables without correct RLS write-protection | Pitfall 7: `WITH CHECK (false)` on all billing table mutations for authenticated users |
+| Webhook handler | First Stripe `invoice.paid` processed before `subscription.created` | Pitfall 9: fetch subscription from Stripe API when dependency is missing |
+| Usage tracking | Retell `call_ended` firing 3 times per call | Pitfall 1: use `call_analyzed` only; deduplicate on `call_id` |
+| Enforcement gate | Synchronous Stripe API call on call pickup path | Pitfall 2: local cache-first, webhook-updated, never Stripe API on hot path |
+| Trial management | Trial expires without card, no `subscription.deleted` listener | Pitfall 3: listen to all 7 subscription lifecycle events |
+| Plan changes | Mid-cycle downgrade with immediate limit enforcement | Pitfall 5: schedule downgrade at cycle end, keep current limits until then |
+| Dunning | `past_due` treated as `suspended` | Pitfall 6: 7-day grace period, limited mode not full suspension |
+| Usage reset | Cron-based reset drifting from Stripe billing cycle | Pitfall 8: reset only on `invoice.paid` with `billing_reason = 'subscription_cycle'` |
+| Overage billing | Duplicate overage invoice items | Pitfall 15: idempotency key = `overage-${tenantId}-${periodStart}` |
+| Billing dashboard | Stale usage counter | Pitfall 12: Supabase Realtime push on counter changes |
+
+---
+
+## Integration-Specific Gotchas
+
+| Integration Point | Common Mistake | Correct Approach |
+|-------------------|----------------|------------------|
+| Stripe webhooks | Treating HTTP 200 response as "processed successfully" | Store event ID first, process async, mark complete after DB write succeeds |
+| Retell `call_analyzed` | Assuming it fires within 5 seconds of call end | It can take 30-60s; enforcement must tolerate this latency gap |
+| Retell inbound webhook | Adding enforcement after existing slot calculation | Enforcement reads a single indexed column; add before slot calculation, fail fast |
+| Supabase RLS | Using `auth.uid()` directly in billing table policies | tenant_id requires a join to profiles table; cache it in JWT custom claim |
+| Stripe Customer Portal | Assuming portal just works after `stripe.billingPortal.sessions.create()` | Portal must be configured in Stripe Dashboard UI first with allowed products |
+| Stripe Subscription Schedules | Not using schedules for end-of-cycle downgrades | Without schedules, downgrade takes effect immediately with proration charges |
+| Stripe Test Clocks | Testing trial expiry with real 14-day wait | Always use Test Clocks for billing cycle testing; this is not optional |
+| Stripe Meter Events | Using Stripe meter events without an `identifier` field | Without `identifier`, Stripe cannot deduplicate — use Retell `call_id` as identifier |
+
+---
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Slot calculation for every inbound call | Slow call pickup (> 1 second) when tenant has many appointments | Cache slot availability per tenant with 30-second TTL; invalidate on new booking | 50+ active appointments per tenant |
-| Recovery SMS cron processing all unbooked calls | Cron timeout; SMS delivery delays | After booking-first, most calls will be booked -- the cron should process fewer calls, not more. If cron is still processing high volume, bookings aren't working. | 100+ unbooked calls per minute (indicates booking failure, not scale) |
-| `processCallAnalyzed` doing serial DB lookups | Slow post-call processing; notification delays | Already uses Promise.all in places; ensure no new serial queries are added during the pivot | 20+ concurrent call_analyzed events |
-| Single-threaded WebSocket server | Dropped calls during high concurrency | Current `retell-llm-ws.js` handles one connection per call; ensure no shared state between connections | 50+ simultaneous calls (unlikely for SME, but possible during outage recovery) |
+| Stripe API call on inbound webhook | Call pickup > 1 second; Retell timeouts | Cache billing_status locally; never call Stripe on hot path | Every call after billing enforcement added |
+| RLS policies joining profiles table on usage queries | Slow usage counter reads; dashboard lag | Cache tenant_id in JWT custom claim; keep RLS policies join-free | 50+ tenants with active calls simultaneously |
+| Counting all Retell event types for usage | 3x overcounting; premature plan limit hits | Filter to `call_analyzed` events only | From day one of usage counting |
+| Cron-based usage reset without idempotency | Counter reset twice; lost usage data | Webhook-triggered reset with `ON CONFLICT DO NOTHING` | First time Stripe retries the `invoice.paid` event |
+
+---
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| No rate limiting on booking endpoint | Competitor spam-books all slots, DoS via calendar flooding | Add per-phone-number booking rate limit (2/week) and per-tenant daily cap |
-| Booking with unverified phone numbers | Fake bookings with spoofed numbers | The AI already collects phone from caller ID; consider SMS verification for first-time callers (adds friction, weigh carefully) |
-| Recovery SMS to any number without opt-in | TCPA compliance violation; SMS sent to numbers that never consented | Add TCPA consent language to the AI's recording disclosure; log consent per call |
-| Exposing booking link with tenant_id in URL | Tenant ID enumeration; unauthorized bookings via direct URL manipulation | Use opaque tokens instead of tenant UUIDs in public booking links |
+| No Stripe signature verification | Forged webhooks can set any tenant to `active` | `stripe.webhooks.constructEvent()` on every incoming event, no exceptions |
+| Tenant can write to own subscriptions row via SDK | Trivial billing bypass | RLS: SELECT allowed, INSERT/UPDATE blocked for authenticated role on billing tables |
+| Exposing Stripe secret key to client | Full account takeover | Stripe key only in server-side env vars; never in `NEXT_PUBLIC_*` |
+| Using tenant ID from webhook body without verification | Tenant spoofing | Derive tenant_id from `stripe.customers.retrieve(event.data.object.customer).metadata.tenant_id` |
+| `service_role` key used in client-side code | RLS bypass from browser | service_role only in server API routes; anon key for client SDK |
 
-## UX Pitfalls
-
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| AI asks for information it already has (name from caller ID, address from previous call) | Caller frustration; longer call duration | Pre-fill known data and confirm: "I see you're calling from [number]. Is this [previous caller name]?" |
-| Offering slots in UTC or wrong timezone | Caller books 10 AM thinking local time, appointment is 10 AM UTC | Current code converts to tenant timezone -- ensure this also matches caller's timezone if different |
-| AI doesn't explain what booking means | Caller unsure if they're committed or just expressing interest | Add confirmation language: "This will reserve a [duration] appointment on [date]. The team will be at your address at that time. Does that work?" |
-| No way to cancel or reschedule via the AI | Caller calls back to cancel, AI tries to book them again | Add cancel/reschedule intent detection: "I'd like to cancel my appointment" should not trigger booking flow |
-| Recovery SMS sent to caller who already booked | Annoying; undermines trust | Current cron checks for existing appointment -- verify this check works with new booking flow (the `retell_call_id` join must match) |
+---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Prompt rewrite:** Often missing negative instructions -- verify the prompt explicitly says "do NOT transfer unless..." not just "book everyone"
-- [ ] **Triage reclassification:** Often missing the `call-processor.js` conditional that branches on urgency for `suggested_slots` -- verify `isRoutineUnbooked` logic is removed
-- [ ] **Booking universalization:** Often missing max-bookings-per-day guardrail -- verify `atomicBookSlot` or caller has a daily cap
-- [ ] **Recovery SMS universalization:** Often missing the delivery confirmation check -- verify `recovery_sms_sent_at` is only set after confirmed delivery, not after API call
-- [ ] **Notification priority:** Often missing the emergency acknowledgment flow -- verify owner must confirm receipt of emergency notifications
-- [ ] **Dashboard parity:** Often missing the semantic update -- verify badge labels reflect booking status, not just urgency
-- [ ] **Test suite:** Often missing new assertions -- verify test count is higher after pivot than before, not lower
-- [ ] **Exception state handling:** Often missing the "caller just wants info" path -- verify intent detection exists before booking flow
-- [ ] **Retell config:** Often missing the `transfer_call` function retention -- verify it's still registered even though prompt deprioritizes it
-- [ ] **End-to-end flow:** Often missing the "all slots stale" path -- verify there's a graceful terminal when no fresh slots are available
+- [ ] **Webhook idempotency:** Check that `stripe_webhook_events` table has `UNIQUE(event_id)` — not just an app-level check
+- [ ] **Retell usage dedup:** Verify only `call_analyzed` triggers increment — grep for any increment on `call_started` or `call_ended`
+- [ ] **Enforcement latency:** Measure inbound webhook response time with enforcement gate active — must be < 400ms total
+- [ ] **Trial expiry no-card path:** Run a Stripe Test Clock through a trial that expires with no payment method — local DB must update
+- [ ] **Downgrade cycle end:** Verify downgrade is scheduled at cycle end, not applied immediately with proration
+- [ ] **Grace period active:** `past_due` status allows calls for grace period days — verify enforcement code has this branch
+- [ ] **Usage reset on invoice.paid:** Grep for cron-based usage reset — it must not exist; only `invoice.paid` webhook triggers reset
+- [ ] **RLS write protection:** Attempt `UPDATE subscriptions SET billing_status = 'active'` via authenticated Supabase client — must be rejected
+- [ ] **Out-of-order protection:** Webhook handler checks `stripe_updated_at` before overwriting — verify with out-of-order test delivery
+- [ ] **Overage idempotency key:** `stripe.invoiceItems.create()` call includes idempotency key `overage-${tenantId}-${periodStart}`
+- [ ] **Customer Portal configured:** Test the portal in Stripe test mode — portal session creation must succeed and portal must show correct products
+- [ ] **`call_started` not used for enforcement:** Enforcement fires in the inbound webhook handler before call connection, not in `call_started` handler
+
+---
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Prompt regression (AI still escalating) | LOW | Rewrite prompt, redeploy. No data migration needed. Test with 5 live calls. |
-| Triage logic in booking decisions | MEDIUM | Audit all `urgency` conditionals in codebase. Refactor to notification-only usage. Requires code changes across multiple files. |
-| Over-booking / ghost appointments | HIGH | Cancel invalid appointments, notify affected callers, add intent detection, rebuild owner trust. Calendar cleanup is manual. |
-| Notification fatigue | MEDIUM | Implement digest mode retroactively. Re-engage owners who muted notifications. Design notification preferences UI. |
-| Calendar flooding | HIGH | Purge spam bookings, add rate limits, potentially block numbers. Calendar recovery is manual and time-consuming. |
-| Silent fallback failures | HIGH | Audit all calls where recovery_sms_sent_at is set but caller never booked. Re-send SMS. Add monitoring. Retroactive fix is labor-intensive. |
-| Emergency oversight loss | CRITICAL | If an emergency was missed, there is no technical recovery -- only customer service recovery. Prevention is the only strategy. |
-| Test suite gaps | MEDIUM | Write missing tests retroactively. The risk is that bugs shipped during the gap period are already in production. |
-| Dashboard confusion | LOW | Update labels and add tooltips. Mostly a frontend change. |
-| Stale slot data | MEDIUM | Add refresh_slots tool, increase pre-calculated slot count. Requires Retell config update and webhook handler changes. |
+| Duplicate webhook processing (usage inflated) | HIGH | Audit `usage_events` for duplicate `call_id` entries. Recalculate correct count. Issue Stripe credit memos for tenants overcharged on overage. Manual tenant communication. |
+| Enforcement gate latency causing call failures | MEDIUM | Roll back enforcement to async-only mode. Move check to post-call audit. Redesign to local cache. No data loss but temporary service degradation. |
+| Trial expiry silent free access | MEDIUM | Stripe Dashboard audit: find all `canceled` subscriptions with active local accounts. Bulk-update local `billing_status`. Notify affected tenants. |
+| Billing table RLS bypass | CRITICAL | Audit all `subscriptions` rows for anomalous data. Lock table. Reset from Stripe API as source of truth. Fix RLS. Force re-auth for all sessions. |
+| Usage counter out of sync with billing period | MEDIUM | Re-derive `calls_used` from `call_events` table for the billing period. Cross-reference with Stripe invoice data. Manual correction per tenant. |
+| Double overage charges | MEDIUM | Stripe Dashboard: void duplicate invoice items. Issue refunds. Add idempotency keys retroactively. Tenants need individual communication. |
 
-## Pitfall-to-Phase Mapping
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Prompt regression | Phase 1: Agent Prompt Rewrite | Prompt snapshot test; absence of escalation language; transfer_call invocation rate < 5% of calls |
-| Triage logic leaking | Phase 2: Triage Reclassification | Zero urgency-based conditionals in booking/lead code; grep audit passes |
-| Over-booking | Phase 1: Agent Prompt Rewrite | Intent detection in prompt; booking-offered vs. booking-completed ratio tracked |
-| Notification fatigue | Phase 5: Notification Priority System | Owner notification preferences exist; emergency vs. routine use different channels |
-| Calendar flooding | Phase 3: Booking Flow Universalization | Max daily bookings enforced; per-number rate limit active; zone buffers as hard constraints |
-| Silent fallback failures | Phase 6: Recovery SMS Universal Fallback | SMS delivery status tracked; failed SMS retried; dead-letter alerts configured |
-| Emergency oversight loss | Phase 5: Notification Priority System | Emergency acknowledgment flow active; escalation chain fires on timeout |
-| Test suite regression | Phase 1: Agent Prompt Rewrite (and every phase) | Test count increases per phase; old tests reconciled, not deleted |
-| Dashboard confusion | Phase 7: Dashboard Visual Parity | Badge labels updated; booking status is primary; urgency is secondary |
-| Stale slot data | Phase 3: Booking Flow Universalization | refresh_slots tool registered; all-stale terminal path exists |
+---
 
 ## Sources
 
-- Direct codebase analysis: `src/lib/agent-prompt.js`, `src/lib/scheduling/booking.js`, `src/lib/call-processor.js`, `src/lib/notifications.js`, `src/lib/triage/classifier.js`, `src/server/retell-llm-ws.js`, `src/app/api/webhooks/retell/route.js`, `src/app/api/cron/send-recovery-sms/route.js`
-- Test suite analysis: `tests/agent/prompt.test.js`, `tests/scheduling/booking.test.js`
-- PROJECT.md milestone specification and requirement changes
-- Domain knowledge: LLM prompt engineering for voice AI systems, Twilio SMS delivery semantics, calendar booking system design patterns
+- [Stripe: Idempotent requests](https://docs.stripe.com/api/idempotent_requests) — HIGH confidence (official docs)
+- [Stripe: Use trial periods on subscriptions](https://docs.stripe.com/billing/subscriptions/trials) — HIGH confidence (official docs)
+- [Stripe: Prorations](https://docs.stripe.com/billing/subscriptions/prorations) — HIGH confidence (official docs)
+- [Stripe: Record usage for billing (Meters API)](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage-api) — HIGH confidence (official docs)
+- [Stripe: Automate payment retries (Smart Retries)](https://docs.stripe.com/billing/revenue-recovery/smart-retries) — HIGH confidence (official docs)
+- [Stripe: Optimizing API performance with caching](https://stripe.dev/blog/optimizing-stripe-api-performance-lambda-caching-elasticache-dynamodb) — HIGH confidence (Stripe official blog)
+- [Stigg: Best practices for integrating Stripe webhooks](https://www.stigg.io/blog-posts/best-practices-i-wish-we-knew-when-integrating-stripe-webhooks) — MEDIUM confidence (practitioner post-mortem)
+- [Retell AI: Webhook documentation](https://docs.retellai.com/features/webhook) — HIGH confidence (official docs)
+- [Retell community: call_ended webhook not firing](https://community.retellai.com/t/call-ended-webhook-not-firing-for-ivr-forwarded-calls-to-retell-twilio-number/2074) — MEDIUM confidence (community report)
+- [n8n community: Retell triggering multiple executions per call](https://community.n8n.io/t/my-retell-ai-voice-agent-webhook-is-triggering-multiple-n8n-executions-per-call-and-i-only-want-one-execution-from-the-final-analyzed-event-to-run-my-automation/215323) — MEDIUM confidence (community, confirms 3-events-per-call pattern)
+- [Supabase: RLS Best Practices](https://makerkit.dev/blog/tutorials/supabase-rls-best-practices) — MEDIUM confidence (practitioner guide, verified against official RLS docs)
+- [MakerKit: Multi-tenant Supabase RLS patterns](https://makerkit.dev/blog/tutorials/supabase-rls-best-practices) — MEDIUM confidence (established Next.js + Supabase SaaS boilerplate author)
+- Direct codebase analysis: `src/app/api/webhooks/retell/route.js`, `src/lib/call-processor.js`, existing `subscriptions` table patterns — HIGH confidence
 
 ---
-*Pitfalls research for: Booking-first digital dispatcher pivot*
-*Researched: 2026-03-24*
+
+*Pitfalls research for: v3.0 Stripe Subscription Billing & Usage Enforcement*
+*Researched: 2026-03-26*
