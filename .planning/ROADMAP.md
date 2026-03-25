@@ -433,7 +433,7 @@ Plans:
 | 6 | `public-site-i18n` | Landing, pricing, about, contact form, Resend email, AuthAwareCTA, next-intl (en/es) |
 
 ### Phase 20: Dashboard UX Overhaul
-**Goal**: Restructure the dashboard UI/UX so that new users clearly understand what to set up first, what is required vs optional, and can navigate confidently through a guided tour. All existing features remain — this is a pure UI/UX improvement with no backend changes.
+**Goal**: Full structural redesign of the dashboard — 5-tab bottom nav (Home, Leads, Calendar, Analytics, More), adaptive home page (setup checklist hero vs active command center), More menu consolidating Services+Settings into sub-pages, redesigned checklist with required/recommended badges, and Joyride guided tour. All existing features remain functional at new routes.
 **Depends on**: Phase 19 (skill files provide implementation context)
 **Requirements**: None (UX improvement)
 **Success Criteria** (what must be TRUE):
@@ -445,7 +445,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 20-01-PLAN.md — Layout restructure, bottom tab bar, per-page card wrappers
-- [ ] 20-02-PLAN.md — Setup checklist redesign with required/optional badges and progress ring
-- [ ] 20-03-PLAN.md — Adaptive multi-card home page with quick action cards
-- [ ] 20-04-PLAN.md — Joyride guided tour and skill file update
+- [ ] 20-01-PLAN.md — Layout restructure: remove card wrapper, bottom tab bar, sidebar 5-tab nav, per-page wrappers
+- [ ] 20-02-PLAN.md — More menu page + 7 sub-page routes, old pages redirect, checklist API href update
+- [ ] 20-03-PLAN.md — Setup checklist redesign (required/recommended, progress ring, expandable) + adaptive home page
+- [ ] 20-04-PLAN.md — Joyride guided tour, data-tour wiring, skill file update
