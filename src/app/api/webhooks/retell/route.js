@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { createOrMergeLead } from '@/lib/leads';
 import { buildWhisperMessage } from '@/lib/whisper-message';
-import { sendCallerSMS } from '@/lib/notifications';
+import { sendCallerSMS, sendCallerRecoverySMS } from '@/lib/notifications';
 
 export async function POST(request) {
   const rawBody = await request.text();
@@ -413,6 +413,72 @@ async function handleBookAppointment(payload) {
         { retell_call_id: call_id, booking_outcome: 'attempted' },
         { onConflict: 'retell_call_id' }
       );
+    });
+
+    // Phase 17 — Real-time recovery SMS for failed booking (RECOVER-01, D-04)
+    after(async () => {
+      try {
+        // Locale lookup — same pattern as caller SMS confirmation at lines 438-443
+        // Pitfall 5: detected_language may be null during live call, fall back to tenant default
+        const { data: callRecord } = await supabase
+          .from('calls')
+          .select('detected_language, from_number')
+          .eq('retell_call_id', call_id)
+          .maybeSingle();
+
+        const locale = callRecord?.detected_language || tenant?.default_locale || 'en';
+        // Pitfall 1: use args.urgency from AI tool invocation, NOT calls.urgency_classification
+        // (processCallAnalyzed hasn't run yet during live call)
+        const urgency = args.urgency || 'routine';
+        const callerPhone = payload.call?.from_number || callRecord?.from_number || null;
+        const callerName = args.caller_name || null;
+
+        // Write pending status before attempt
+        await supabase.from('calls').upsert(
+          {
+            retell_call_id: call_id,
+            recovery_sms_status: 'pending',
+            recovery_sms_last_attempt_at: new Date().toISOString(),
+          },
+          { onConflict: 'retell_call_id' }
+        );
+
+        const deliveryResult = await sendCallerRecoverySMS({
+          to: callerPhone,
+          callerName,
+          businessName: tenant?.business_name || 'Your service provider',
+          locale,
+          urgency,
+        });
+
+        // Write delivery result — success or retrying for cron pickup
+        await supabase.from('calls').upsert(
+          {
+            retell_call_id: call_id,
+            recovery_sms_status: deliveryResult.success ? 'sent' : 'retrying',
+            recovery_sms_retry_count: deliveryResult.success ? 0 : 1,
+            recovery_sms_last_error: deliveryResult.success
+              ? null
+              : `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
+            recovery_sms_last_attempt_at: new Date().toISOString(),
+            recovery_sms_sent_at: deliveryResult.success ? new Date().toISOString() : null,
+          },
+          { onConflict: 'retell_call_id' }
+        );
+      } catch (err) {
+        console.error('[webhook] Recovery SMS after() failed:', err?.message || err);
+        // Write error state for cron retry pickup
+        await supabase.from('calls').upsert(
+          {
+            retell_call_id: call_id,
+            recovery_sms_status: 'retrying',
+            recovery_sms_retry_count: 1,
+            recovery_sms_last_error: `AFTER_ERROR: ${err?.message || String(err)}`,
+            recovery_sms_last_attempt_at: new Date().toISOString(),
+          },
+          { onConflict: 'retell_call_id' }
+        ).catch(() => {}); // last-resort swallow
+      }
     });
 
     return Response.json({
