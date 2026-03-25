@@ -19,8 +19,8 @@ const HowItWorksSticky = dynamic(
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6">
-      <div className="relative max-w-5xl mx-auto">
+    <section id="how-it-works" className="bg-[#F5F5F4] py-20 md:py-28 px-6">
+      <div className="relative z-[1] max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
           <p className="text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
             How it works

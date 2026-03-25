@@ -43,8 +43,8 @@ function StarRating() {
 
 export function SocialProofSection() {
   return (
-    <section id="testimonials" className="relative bg-[#F5F5F4] py-20 md:py-28 px-6 overflow-hidden">
-      <div className="relative max-w-5xl mx-auto">
+    <section id="testimonials" className="bg-[#F5F5F4] py-20 md:py-28 px-6 overflow-hidden">
+      <div className="relative z-[1] max-w-5xl mx-auto">
         <AnimatedSection className="text-center mb-16">
           <p className="text-sm font-medium text-[#F97316] tracking-wide uppercase mb-3">
             From the field

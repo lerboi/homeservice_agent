@@ -1,5 +1,6 @@
 import { HeroSection } from '@/app/components/landing/HeroSection';
 import { ScrollProgress } from '@/app/components/landing/ScrollProgress';
+import { ScrollLinePath } from '@/app/components/landing/ScrollLinePath';
 import dynamic from 'next/dynamic';
 
 // Above-the-fold: HeroSection is statically imported for best LCP.
@@ -34,18 +35,18 @@ const FeaturesGrid = dynamic(
   () => import('@/app/components/landing/FeaturesGrid').then((m) => m.FeaturesGrid),
   {
     loading: () => (
-      <section className="bg-[#F5F5F4] py-20 md:py-28 px-6" aria-hidden="true">
+      <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
             <div className="h-10 w-96 bg-black/10 rounded mx-auto" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div className="md:col-span-4 md:row-span-2 h-64 rounded-2xl bg-white border border-stone-200/60" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
-            <div className="md:col-span-4 h-40 rounded-2xl bg-white border border-stone-200/60" />
-            <div className="md:col-span-2 h-40 rounded-2xl bg-white border border-stone-200/60" />
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-px bg-stone-200/80 rounded-2xl overflow-hidden">
+            <div className="sm:col-span-3 h-64 bg-white" />
+            <div className="sm:col-span-2 h-64 bg-white" />
+            <div className="sm:col-span-2 h-48 bg-white" />
+            <div className="sm:col-span-3 h-48 bg-white" />
+            <div className="sm:col-span-5 h-24 bg-white" />
           </div>
         </div>
       </section>
@@ -93,9 +94,11 @@ export default function HomePage() {
     <>
       <ScrollProgress />
       <HeroSection />
-      <HowItWorksSection />
-      <FeaturesGrid />
-      <SocialProofSection />
+      <ScrollLinePath>
+        <HowItWorksSection />
+        <FeaturesGrid />
+        <SocialProofSection />
+      </ScrollLinePath>
       <FinalCTASection />
     </>
   );
