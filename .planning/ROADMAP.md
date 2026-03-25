@@ -386,7 +386,7 @@ Plans:
 Plans:
 - [ ] 18-01-PLAN.md — Sentry error monitoring setup (SDK install, server config, test error endpoint)
 - [x] 18-02-PLAN.md — Concurrency integration test (20 simultaneous bookings via real Supabase)
-- [ ] 18-03-PLAN.md — Test-call auto-cancel + manual E2E test scripts (English, Spanish, onboarding) + skill file update
+- [x] 18-03-PLAN.md — Test-call auto-cancel + manual E2E test scripts (English, Spanish, onboarding) + skill file update
 
 ## v2.0 Progress
 
@@ -400,7 +400,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
-| 18. Booking-First Hardening and QA | 1/3 | In Progress|  |
+| 18. Booking-First Hardening and QA | 2/3 | In Progress|  |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 | 20. Dashboard UX Overhaul | 0/TBD | Not started | - |
 
@@ -414,7 +414,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
   3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
   4. The existing voice-call-architecture skill remains unchanged (already complete)
   5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)

@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-25 (Phase 17 — recovery SMS urgency-aware content, delivery tracking, exponential backoff retry)
+**Last updated**: 2026-03-25 (Phase 18 — test call auto-cancel: test_call flag in dynamic variables, processCallEnded auto-cancel logic)
 
 ---
 
@@ -61,6 +61,7 @@ Caller dials Retell number
 | `src/lib/leads.js` | Lead creation and merge logic |
 | `src/lib/notifications.js` | SMS (Twilio) + Email (Resend) dispatch |
 | `src/app/api/cron/send-recovery-sms/route.js` | Recovery SMS cron job |
+| `src/app/api/onboarding/test-call/route.js` | Onboarding test call trigger — passes `test_call: 'true'` in dynamic variables |
 | `messages/en.json` | English agent utterances |
 | `messages/es.json` | Spanish agent utterances |
 | `supabase/migrations/003_scheduling.sql` | Scheduling schema + `book_appointment_atomic` function |
@@ -81,10 +82,11 @@ Caller dials Retell number
 
 1. **Connection opens** — server extracts `call_id` from URL path `/llm-websocket/{call_id}`
 2. **Config sent** — `{ response_type: "config", config: { auto_reconnect: true, call_details: true } }`
-3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends greeting
-4. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
-5. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below)
-6. **Connection closes** — cleanup
+3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends greeting, starts 5s TTS guard
+4. **Greeting TTS guard** — `response_required`/`reminder_required` messages are suppressed for 5 seconds after greeting is sent. Without this, ambient noise triggers Groq during TTS playback and Retell cuts off the greeting mid-sentence.
+5. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
+6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below)
+7. **Connection closes** — cleanup
 
 ### Message Types Handled
 
@@ -334,6 +336,13 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 ### `processCallEnded(call)`
 Lightweight. Upserts `calls` row with: `from_number`, `to_number`, `direction`, `disconnection_reason`, timestamps, `retell_metadata`.
 
+**Test call auto-cancel (Phase 18 D-08):** After the upsert, checks `metadata?.test_call === 'true'` OR `metadata?.retell_llm_dynamic_variables?.test_call === 'true'`. If `isTestCall && tenantId`:
+1. Queries `appointments` for a row with matching `retell_call_id` and `tenant_id`.
+2. If found: sets `appointments.status = 'cancelled'`.
+3. Resets associated `leads.status = 'new'` and nullifies `leads.appointment_id` (prevents dashboard showing "booked" lead with no active calendar appointment — Pitfall 6).
+
+The `test_call: 'true'` flag is set in `test-call/route.js` as a `retell_llm_dynamic_variables` entry when triggering the onboarding test call. Auto-cancel fires at `call_ended` (not `call_analyzed`) so the calendar clears immediately after the call, not minutes later.
+
 ### `processCallAnalyzed(call)`
 Heavy pipeline:
 1. Tenant lookup by `to_number`
@@ -542,6 +551,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Recovery SMS structured return**: `{ success, sid?, error? }` enables real-time delivery status writes to DB (pending → sent/retrying); cron retries on 'retrying' status
 - **Recovery SMS exponential backoff**: 30s before 2nd attempt, 120s before 3rd; max 3 total attempts; permanent 'failed' after exhaustion (D-14)
 - **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
+- **Test call auto-cancel**: `test-call/route.js` passes `test_call: 'true'` in `retell_llm_dynamic_variables`; `processCallEnded` checks this flag and cancels any appointment + resets lead status — owner experiences booking-first flow during onboarding without cluttering the real calendar (D-07, D-08)
 
 ---
 

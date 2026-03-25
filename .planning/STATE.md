@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-03-25T10:00:41.767Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-03-25T10:04:22.892Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 18 (booking-first-hardening-and-qa) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ### v2.0 Milestone Progress
 
@@ -178,6 +178,8 @@ Recent decisions affecting current work:
 - [Phase 17]: Cron Branch A filters by booking_outcome IN ['not_attempted'] only — attempted calls handled by webhook trigger, not cron
 - [Phase 18-02]: Handle both advisory lock rejection and UNIQUE constraint violation as valid contention outcomes — RPC has no EXCEPTION handler for UNIQUE violations, so r.error != null is an accepted contention signal
 - [Phase 18-02]: testPathIgnorePatterns excludes /tests/integration/ from default npm test run — prevents misleading 0-tests output in CI without Supabase credentials (Pitfall 4 avoidance)
+- [Phase 18]: Auto-cancel fires in processCallEnded (call_ended event) — calendar clears immediately after test call, not minutes later
+- [Phase 18]: Test call lead reset: status='new' + appointment_id=null prevents dashboard showing 'booked' lead with no active appointment (Pitfall 6 avoidance)
 
 ### Roadmap Evolution
 
@@ -208,6 +210,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T10:00:41.759Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-03-25T10:04:22.877Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None
