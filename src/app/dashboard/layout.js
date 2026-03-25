@@ -22,6 +22,7 @@ const BREADCRUMB_LABELS = {
   'escalation-contacts': 'Escalation Contacts',
   'ai-voice-settings': 'AI & Voice Settings',
   'account': 'Account',
+  'call-logs': 'Call Logs',
 };
 
 function DashboardBreadcrumb() {
