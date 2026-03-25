@@ -398,7 +398,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. Booking-First Agent Behavior | 3/3 | Complete    | 2026-03-24 |
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
-| 17. Recovery SMS Enhancement | 2/2 | Complete   | 2026-03-25 |
+| 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 
