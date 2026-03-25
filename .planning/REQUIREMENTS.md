@@ -322,6 +322,29 @@
 | HARDEN-02 | Phase 18 | Complete |
 | HARDEN-03 | Phase 18 | Complete |
 | HARDEN-04 | Phase 18 | Complete |
+| BILL-01 | Phase 22 | Pending |
+| BILL-02 | Phase 22 | Pending |
+| BILL-03 | Phase 22 | Pending |
+| BILL-04 | Phase 22 | Pending |
+| BILL-05 | Phase 22 | Pending |
+| BILL-06 | Phase 22 | Pending |
+| USAGE-01 | Phase 23 | Pending |
+| USAGE-02 | Phase 23 | Pending |
+| USAGE-03 | Phase 23 | Pending |
+| ENFORCE-03 | Phase 24 | Pending |
+| ENFORCE-04 | Phase 24 | Pending |
+| BILLNOTIF-01 | Phase 24 | Pending |
+| BILLNOTIF-02 | Phase 24 | Pending |
+| BILLNOTIF-03 | Phase 24 | Pending |
+| ENFORCE-01 | Phase 25 | Pending |
+| ENFORCE-02 | Phase 25 | Pending |
+| BILLUI-01 | Phase 25 | Pending |
+| BILLUI-02 | Phase 25 | Pending |
+| BILLUI-03 | Phase 25 | Pending |
+| BILLUI-04 | Phase 25 | Pending |
+| BILLUI-05 | Phase 25 | Pending |
+| BILLDOC-01 | Phase 26 | Pending |
+| BILLDOC-02 | Phase 26 | Pending |
 
 **v1.0 Coverage:**
 - v1.0 requirements: 38 total
@@ -339,10 +362,10 @@
 - Unmapped: 0
 
 **v3.0 Coverage:**
-- v3.0 requirements: 22 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02)
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 22
+- v3.0 requirements: 23 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02)
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0)*
-*Last updated: 2026-03-26 — v3.0 requirements defined (22 requirements across 6 categories)*
+*Last updated: 2026-03-26 — v3.0 traceability complete (23 requirements mapped to phases 22-26)*

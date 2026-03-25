@@ -469,3 +469,99 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 21 to break down)
+
+---
+
+## Milestone v3.0 Phases
+
+**Milestone:** v3.0 — Subscription Billing & Usage Enforcement
+**Goal:** Turn the free platform into a revenue-generating SaaS by wiring Stripe subscription billing, per-call usage tracking, plan limit enforcement, and a billing management dashboard — additive integration into four defined seams of the existing architecture without restructuring any existing component.
+**Phase range:** 22-26
+**Requirements:** 23 v3.0 requirements (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02)
+
+**Key decisions locked for this milestone:**
+- CC required for 14-day trial (payment_method_collection: always)
+- Past_due grace period is 3 days (not 7)
+- Enforcement reads only from local subscriptions table — never calls Stripe API on the call path
+- Billing cycle reset triggered by invoice.paid webhook — not a cron job
+- Stripe Customer Portal handles all self-serve plan management — no custom plan change UI
+- Per-call overage billing (BILLF-02) is deferred to a future milestone
+
+### v3.0 Phase Checklist
+
+- [ ] **Phase 22: Billing Foundation** - Stripe products/prices, subscriptions and usage_events DB tables, webhook handler with idempotency, trial auto-start at onboarding completion
+- [ ] **Phase 23: Usage Tracking** - Atomic per-call increment via Postgres RPC, usage_events idempotency, billing cycle reset on invoice.paid
+- [ ] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification
+- [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
+- [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
+
+### Phase 22: Billing Foundation
+**Goal**: The Stripe integration backbone is live — products and prices exist in Stripe, the subscriptions table is the authoritative local mirror, the webhook handler processes all lifecycle events idempotently, and every new tenant starts a 14-day trial with CC required at onboarding completion
+**Depends on**: Phase 21 (pricing page complete; Stripe products must match displayed pricing)
+**Requirements**: BILL-01, BILL-02, BILL-03, BILL-04, BILL-05, BILL-06
+**Success Criteria** (what must be TRUE):
+  1. Completing the onboarding wizard creates a Stripe customer and a 14-day trialing subscription — the subscriptions table row is written synchronously before the onboarding complete response returns
+  2. A Stripe test webhook for customer.subscription.updated arrives at /api/stripe/webhook, passes signature verification, and is reflected in the local subscriptions table within 5 seconds — duplicate delivery of the same event_id produces no second DB write
+  3. Sending customer.subscription.deleted via Stripe test webhook sets the local subscription status to cancelled — the tenant cannot get indefinite free access by letting a trial expire without a payment method
+  4. Out-of-order webhook delivery (an older event arriving after a newer one) does not overwrite newer subscription state — stripe_updated_at version protection is observed
+**Plans**: TBD
+
+### Phase 23: Usage Tracking
+**Goal**: Every completed call increments the tenant's usage counter exactly once — atomic, idempotent, and reset precisely on billing cycle rollover — so enforcement in the next phase can trust the counter as a reliable source of truth
+**Depends on**: Phase 22 (subscriptions table must exist before usage can be tracked against it)
+**Requirements**: USAGE-01, USAGE-02, USAGE-03
+**Success Criteria** (what must be TRUE):
+  1. A completed call over 10 seconds increments calls_used by exactly 1 in the subscriptions table; a call under 10 seconds or marked as a test call produces no increment
+  2. Retell delivering the same call_ended webhook twice (retry scenario) results in calls_used incrementing by 1, not 2 — the usage_events idempotency key prevents double-counting
+  3. After an invoice.paid webhook arrives with billing_reason = subscription_cycle, calls_used resets to 0 — the reset does not happen at midnight, on a cron tick, or on any other trigger
+  4. Two calls completing simultaneously increment calls_used by exactly 2 — no race condition drops or doubles an increment
+**Plans**: TBD
+
+### Phase 24: Subscription Lifecycle and Notifications
+**Goal**: Tenants in degraded subscription states (past_due, trial expiring) are handled gracefully — owners have 3 days on past_due before blocking, receive email and SMS when payment fails, get trial reminder emails at day 7 and 12, and the dashboard is gated appropriately for cancelled or expired tenants
+**Depends on**: Phase 23 (reliable usage counter; subscriptions table fully populated via Phase 22 webhook handler)
+**Requirements**: ENFORCE-03, ENFORCE-04, BILLNOTIF-01, BILLNOTIF-02, BILLNOTIF-03
+**Success Criteria** (what must be TRUE):
+  1. When a payment fails (invoice.payment_failed), the owner receives both an SMS and an email within 2 minutes containing a direct link to update their payment method via Stripe Customer Portal
+  2. A tenant whose subscription transitions to past_due can still receive calls for 3 days — the enforcement gate does not block them immediately; after the 3-day grace window the gate blocks as if cancelled
+  3. A tenant in cancelled or expired status who navigates to any dashboard route is redirected to /billing/upgrade — they cannot access the main dashboard
+  4. A trial started on day 0 triggers a trial reminder email on day 7 and another on day 12 — neither fires more than once regardless of cron re-execution
+  5. A customer.subscription.trial_will_end webhook (fired 3 days before trial expiry) triggers a notification to the owner prompting them to upgrade before their trial ends
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 25: Enforcement Gate and Billing Dashboard
+**Goal**: Calls are blocked at the inbound handler when the subscription is expired or quota is exhausted — with zero latency impact — and owners have a full billing self-service dashboard to view their plan, usage, and manage their subscription
+**Depends on**: Phase 24 (lifecycle states and grace period logic must be stable before the gate opens; middleware gate from Phase 24 ensures the billing page is reachable for expired tenants)
+**Requirements**: ENFORCE-01, ENFORCE-02, BILLUI-01, BILLUI-02, BILLUI-03, BILLUI-04, BILLUI-05
+**Success Criteria** (what must be TRUE):
+  1. A call arriving at handleInbound() for a tenant with a cancelled subscription plays a graceful "service unavailable" message to the caller — the call is never silently dropped, and no Stripe API call is made during this check
+  2. A call arriving for a tenant with calls_used >= calls_limit plays a graceful "call volume limit reached" message — the tenant's callers are not left with silence or an error
+  3. The billing dashboard page at /dashboard/more/billing shows the current plan name, calls_used / calls_limit as a usage meter, the next renewal date or trial end date, and a link to Stripe Customer Portal
+  4. The trial countdown banner is visible on every dashboard page and shows the correct number of days remaining — clicking the upgrade CTA opens Stripe Checkout for the selected plan
+  5. A tenant visiting /billing/upgrade sees a plan comparison with Stripe Checkout links, selects a plan, completes Checkout with a test card, and is redirected back to the dashboard with their subscription now active
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 26: Billing Documentation
+**Goal**: The complete billing and payment architecture is captured in a skill file that gives any developer or AI full context for the Stripe integration, DB tables, webhook handling, enforcement logic, and subscription lifecycle — and CLAUDE.md enforces that this skill file stays in sync with code changes
+**Depends on**: Phase 25 (all billing code must exist before it can be documented accurately)
+**Requirements**: BILLDOC-01, BILLDOC-02
+**Success Criteria** (what must be TRUE):
+  1. Reading the billing-payment skill file alone gives enough context to understand the full Stripe integration — DB schema, webhook handler design, enforcement gate placement, subscription lifecycle state machine, and UI integration points — without needing to read source files
+  2. CLAUDE.md lists billing-payment in the architecture skill files section with the same sync requirement as the other 6 skills — any future code change to the billing system triggers a skill file update
+**Plans**: TBD
+
+## v3.0 Progress
+
+**Execution Order:**
+Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26
+(Note: Phase 24 lifecycle notifications and Phase 25 billing dashboard read path can be partially parallelized, but the enforcement gate in Phase 25 must not open until Phase 24 grace period logic is complete)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 22. Billing Foundation | 0/TBD | Not started | - |
+| 23. Usage Tracking | 0/TBD | Not started | - |
+| 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
+| 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
+| 26. Billing Documentation | 0/TBD | Not started | - |
