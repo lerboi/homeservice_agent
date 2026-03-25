@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-03-25T19:09:52.750Z"
+stopped_at: Completed 20-03-PLAN.md
+last_updated: "2026-03-25T19:16:26.049Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 20 (dashboard-ux-overhaul) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ### v2.0 Milestone Progress
 
@@ -185,6 +185,9 @@ Recent decisions affecting current work:
 - [Phase 20-02]: Sub-pages are thin wrappers — feature logic stays in existing components, no duplication; old /dashboard/services and /dashboard/settings replaced with Next.js redirect() calls
 - [Phase 20-01]: Layout removes card wrapper entirely — page-level card ownership established as the pattern for all dashboard pages going forward
 - [Phase 20-01]: BottomTabBar replaces mobile hamburger drawer entirely — 5 fixed tabs, h-[56px], min-h-[48px] touch targets, safe-area-inset support
+- [Phase 20-03]: ITEM_TYPE classification is frontend-only — no API changes; checklist API returns same shape as before
+- [Phase 20-03]: onDataLoaded callback used to lift checklist data to page — avoids double-fetching /api/setup-checklist
+- [Phase 20-03]: Appointments API does not exist yet — nextAppointment set to null with graceful fallback, no crash
 
 ### Roadmap Evolution
 
@@ -196,6 +199,8 @@ Recent decisions affecting current work:
 - Phase 13 added: Frontend Public Pages Redesign — Premium Dark SaaS design overhaul for Home, Pricing, Contact, About, Nav, Footer with performance-first constraints
 - Phases 14-18 added for milestone v2.0: Booking-First Digital Dispatcher (2026-03-24)
 - Phase 19 added: Codebase skill files for full architectural reference — 5 new skill files covering scheduling/calendar, dashboard/CRM, onboarding, auth/database, and public site/i18n
+- Phase 20 added: Dashboard UX Overhaul — 5-tab nav, adaptive home, More menu, checklist redesign, Joyride tour
+- Phase 21 added: Pricing Page Redesign and Stripe Integration — premium design matching landing page, Stripe Checkout, accurate feature tiers, social proof, trust signals
 
 ### Pending Todos
 
@@ -215,6 +220,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:09:52.739Z
-Stopped at: Completed 20-01-PLAN.md
+Last session: 2026-03-25T19:16:26.042Z
+Stopped at: Completed 20-03-PLAN.md
 Resume file: None
