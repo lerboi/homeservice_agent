@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, BarChart3, Wrench, Calendar, Menu, X, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Calendar, MoreHorizontal, LogOut } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -13,13 +13,9 @@ import { supabase } from '@/lib/supabase-browser';
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/dashboard/services', label: 'Services', icon: Wrench },
-];
-
-const BOTTOM_NAV = [
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 
 function NavLink({ item, pathname }) {
@@ -47,7 +43,6 @@ function NavLink({ item, pathname }) {
 
 export default function DashboardSidebar({ businessName }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   async function handleLogout() {
@@ -81,18 +76,11 @@ export default function DashboardSidebar({ businessName }) {
           ))}
         </div>
 
-        {/* Separator before Settings */}
+        {/* Separator before Logout */}
         <Separator className="bg-white/[0.06] my-2" />
 
-        {/* Bottom nav (Settings + Logout) */}
+        {/* Logout */}
         <div className="space-y-1">
-          {BOTTOM_NAV.map((item) => (
-            <NavLink
-              key={item.href}
-              item={item}
-              pathname={pathname}
-            />
-          ))}
           <button
             onClick={() => setShowLogoutDialog(true)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full"
@@ -115,48 +103,15 @@ export default function DashboardSidebar({ businessName }) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex-col bg-[#0F172A] z-30 overflow-hidden">
+      <aside
+        className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex-col bg-[#0F172A] z-30 overflow-hidden"
+        data-tour="sidebar-nav"
+      >
         <GridTexture variant="dark" />
         <div className="relative z-10 h-full">
           {sidebarContent}
         </div>
       </aside>
-
-      {/* Mobile menu button */}
-      <button
-        type="button"
-        className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-[#0F172A] text-white shadow-lg"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <>
-          <div
-            className="lg:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="lg:hidden fixed inset-y-0 left-0 w-60 bg-[#0F172A] z-50 overflow-hidden">
-            <GridTexture variant="dark" />
-            <div className="relative z-10 h-full">
-              <button
-                type="button"
-                className="absolute top-4 right-4 p-1 text-white/60 hover:text-white"
-                onClick={() => setMobileOpen(false)}
-                aria-label="Close menu"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <div onClick={() => setMobileOpen(false)}>
-                {sidebarContent}
-              </div>
-            </div>
-          </aside>
-        </>
-      )}
 
       {/* Logout confirmation */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

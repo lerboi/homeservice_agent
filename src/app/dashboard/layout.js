@@ -1,25 +1,32 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Settings } from 'lucide-react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
+import BottomTabBar from '@/components/dashboard/BottomTabBar';
 import { GridTexture } from '@/components/ui/grid-texture';
-import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 
 const BREADCRUMB_LABELS = {
-  services: 'Services',
-  calendar: 'Calendar',
-  settings: 'Settings',
   leads: 'Leads',
+  calendar: 'Calendar',
   analytics: 'Analytics',
+  more: 'More',
+  'services-pricing': 'Services & Pricing',
+  'working-hours': 'Working Hours',
+  'calendar-connections': 'Calendar Connections',
+  'service-zones': 'Service Zones & Travel',
+  'escalation-contacts': 'Escalation Contacts',
+  'ai-voice-settings': 'AI & Voice Settings',
+  'account': 'Account',
 };
 
 function DashboardBreadcrumb() {
   const pathname = usePathname();
   const segments = pathname.replace(/\/$/, '').split('/').filter(Boolean);
-  const lastSegment = segments[segments.length - 1];
-  const label = BREADCRUMB_LABELS[lastSegment];
+  // segments: ['dashboard'] or ['dashboard', 'leads'] or ['dashboard', 'more', 'services-pricing']
 
-  if (!label || lastSegment === 'dashboard') {
+  if (segments.length <= 1) {
     return (
       <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
         <span className="text-[#0F172A] font-semibold">Dashboard</span>
@@ -27,11 +34,21 @@ function DashboardBreadcrumb() {
     );
   }
 
+  const crumbs = segments.slice(1); // remove 'dashboard'
   return (
     <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
       <span>Dashboard</span>
-      <span className="mx-2 text-stone-300">&rsaquo;</span>
-      <span className="text-[#0F172A] font-semibold">{label}</span>
+      {crumbs.map((seg, i) => {
+        const label = BREADCRUMB_LABELS[seg];
+        if (!label) return null;
+        const isLast = i === crumbs.length - 1;
+        return (
+          <span key={seg}>
+            <span className="mx-2 text-stone-300">&rsaquo;</span>
+            <span className={isLast ? 'text-[#0F172A] font-semibold' : ''}>{label}</span>
+          </span>
+        );
+      })}
     </nav>
   );
 }
@@ -45,20 +62,26 @@ export default function DashboardLayout({ children }) {
       <div className="relative lg:pl-60">
         {/* Top bar */}
         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-stone-200/60 px-4 lg:px-8">
-          <div className="max-w-6xl mx-auto h-14 flex items-center">
-            <div className="lg:hidden w-10" /> {/* Spacer for mobile menu button */}
+          <div className="max-w-6xl mx-auto h-14 flex items-center justify-between">
+            <div className="lg:hidden w-10" /> {/* Spacer for mobile layout */}
             <DashboardBreadcrumb />
+            {/* Mobile settings gear icon — links to More hub (D-10) */}
+            <Link href="/dashboard/more" className="lg:hidden p-2 text-stone-500 hover:text-[#0F172A]">
+              <Settings className="h-5 w-5" />
+            </Link>
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6">
-          <AnimatedSection>
-            <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.04),0_1px_2px_-1px_rgba(0,0,0,0.03)] border border-stone-200/60">
-              {children}
-            </div>
-          </AnimatedSection>
+        {/* Main content — no card wrapper; each page controls its own card styling */}
+        <div
+          className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-[72px] lg:pb-6"
+          data-tour="dashboard-layout"
+        >
+          {children}
         </div>
+
+        {/* Bottom tab bar — mobile only */}
+        <BottomTabBar />
       </div>
     </div>
   );
