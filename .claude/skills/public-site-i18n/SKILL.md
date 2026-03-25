@@ -288,9 +288,9 @@ Six sections in order: dark hero (`#050505`) → billing toggle + tier cards (da
 
 ```js
 export const PRICING_TIERS = [
-  { id: 'starter',    name: 'Starter',    monthlyPrice: 99,  callLimit: 40,   cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: false, ... },
-  { id: 'growth',     name: 'Growth',     monthlyPrice: 249, callLimit: 120,  cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: true, badge: 'Most Popular', ... },
-  { id: 'scale',      name: 'Scale',      monthlyPrice: 599, callLimit: 400,  cta: 'Start Free Trial', ctaHref: '/onboarding',         highlighted: false, ... },
+  { id: 'starter',    name: 'Starter',    monthlyPrice: 99,  callLimit: 40,   cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: false, ... },
+  { id: 'growth',     name: 'Growth',     monthlyPrice: 249, callLimit: 120,  cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: true, badge: 'Most Popular', ... },
+  { id: 'scale',      name: 'Scale',      monthlyPrice: 599, callLimit: 400,  cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: false, ... },
   { id: 'enterprise', name: 'Enterprise', monthlyPrice: null, callLimit: null, cta: 'Contact Us',       ctaHref: '/contact?type=sales', highlighted: false, ... },
 ];
 
@@ -302,7 +302,7 @@ export function getAnnualPrice(monthlyPrice) {
 export const COMPARISON_FEATURES = [ ... ]; // 13 rows — 3 volume/support rows (strings) + 9 all-true rows + 1 enterprise-only row
 ```
 
-**CTA labels**: "Start Free Trial" linking to `/onboarding` for Starter/Growth/Scale. "Contact Us" linking to `/contact?type=sales` for Enterprise.
+**CTA labels**: "Start Free Trial" → `/onboarding` for Starter/Growth/Scale. "Contact Us" → `/contact?type=sales` for Enterprise.
 
 **Prohibited copy**: No "money-back guarantee", no "no credit card required", no "Get Started" on paid tiers.
 

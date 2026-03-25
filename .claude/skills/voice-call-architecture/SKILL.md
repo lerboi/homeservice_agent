@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-25 (Post-Phase 18 hardening: chained tool call handling in handleToolResult, localized greeting, slot-taken recalculation with real bookings, transfer_call reason parameter, book_appointment error fallback)
+**Last updated**: 2026-03-26 (Fix: processCallAnalyzed now chains .select('id').single() on calls upsert to retrieve Supabase UUID — previously passed Retell string call_id to createOrMergeLead, causing 22P02 UUID parse errors on leads and lead_calls inserts)
 
 ---
 
@@ -353,9 +353,9 @@ Heavy pipeline:
 5. Check if appointment exists for this call
 6. If unbooked (no appointment for this call, any urgency): calculate suggested slots (next 3 from tomorrow)
 7a. Compute notification_priority from urgency (emergency/high_ticket → 'high', routine → 'standard')
-7b. Upsert `calls` with all analyzed data including notification_priority (does NOT include booking_outcome)
+7b. Upsert `calls` with all analyzed data including notification_priority (does NOT include booking_outcome) — chains `.select('id').single()` to retrieve the Supabase UUID (`callUuid`) for downstream lead creation
 7c. Conditional update: set `booking_outcome='not_attempted'` where `booking_outcome IS NULL`
-8. Create/merge lead via `createOrMergeLead()`
+8. Create/merge lead via `createOrMergeLead()` using `callUuid` (NOT the Retell string `call_id`) — guarded: skips lead creation if UUID retrieval failed
 9. Send owner notifications (SMS + email) via `sendOwnerNotifications()`
 
 ---
@@ -558,6 +558,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Recovery SMS structured return**: `{ success, sid?, error? }` enables real-time delivery status writes to DB (pending → sent/retrying); cron retries on 'retrying' status
 - **Recovery SMS exponential backoff**: 30s before 2nd attempt, 120s before 3rd; max 3 total attempts; permanent 'failed' after exhaustion (D-14)
 - **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
+- **processCallAnalyzed UUID retrieval**: The calls upsert chains `.select('id').single()` to get the Supabase UUID (`callUuid`). This is critical because the Retell `call_id` (e.g., "call_337593af...") is a text string, not a UUID — passing it to `createOrMergeLead` would fail with `22P02` on `leads.primary_call_id` and `lead_calls.call_id` (both UUID FK columns). The webhook handlers (`capture_lead`, `book_appointment`) already do this correctly via a separate query; `processCallAnalyzed` now matches that pattern.
 - **Test call auto-cancel**: `test-call/route.js` passes `test_call: 'true'` in `retell_llm_dynamic_variables`; `processCallEnded` checks this flag and cancels any appointment + resets lead status — owner experiences booking-first flow during onboarding without cluttering the real calendar (D-07, D-08)
 
 ---

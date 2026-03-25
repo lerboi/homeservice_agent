@@ -73,7 +73,7 @@ Each task was committed atomically:
 1. **Task 1: Update jest.config.js and add test:integration script** - `df4bac8` (chore)
 2. **Task 2: Create atomic booking contention integration test** - `95c9ff1` (test)
 
-**Plan metadata:** (docs commit — see below)
+**Plan metadata:** `a4792e5` (docs: complete plan)
 
 ## Files Created/Modified
 

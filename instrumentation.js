@@ -3,5 +3,3 @@ export async function register() {
     await import('./sentry.server.config');
   }
 }
-
-export { onRequestError } from '@sentry/nextjs';

@@ -272,8 +272,9 @@ export async function processCallAnalyzed(call) {
       ? 'high'
       : 'standard';
 
-  // Upsert call record with full analyzed data
-  await supabase.from('calls').upsert(
+  // Upsert call record with full analyzed data — chain .select('id') to get the Supabase UUID
+  // (call_id from Retell is a string like "call_337593af...", NOT a UUID)
+  const { data: callRecord } = await supabase.from('calls').upsert(
     {
       retell_call_id: call_id,
       tenant_id: tenantId,
@@ -299,7 +300,9 @@ export async function processCallAnalyzed(call) {
       suggested_slots: suggestedSlots,
     },
     { onConflict: 'retell_call_id' }
-  );
+  ).select('id').single();
+
+  const callUuid = callRecord?.id;
 
   // Default booking_outcome to 'not_attempted' for calls with no real-time booking activity (D-02)
   // Uses conditional update to avoid overwriting values set during the live call (Pitfall 1)
@@ -329,10 +332,13 @@ export async function processCallAnalyzed(call) {
   }
 
   let lead = null;
+  if (!callUuid) {
+    console.error('processCallAnalyzed: failed to retrieve call UUID after upsert — skipping lead creation');
+  }
   try {
-    lead = await createOrMergeLead({
+    lead = callUuid ? await createOrMergeLead({
       tenantId,
-      callId: call_id,
+      callId: callUuid,
       fromNumber: from_number,
       callerName: metadata?.caller_name || call_analysis?.caller_name || null,
       jobType: metadata?.job_type || call_analysis?.job_type || null,
@@ -340,7 +346,7 @@ export async function processCallAnalyzed(call) {
       triageResult,
       appointmentId,
       callDuration,
-    });
+    }) : null;
   } catch (err) {
     console.error('Lead creation failed:', err);
   }

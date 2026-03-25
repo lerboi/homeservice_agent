@@ -152,7 +152,7 @@ export function ContactCard({
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {t('escalation.remove_title').replace('{name}', contact.name)}
+                {t('escalation.remove_title', { name: contact.name })}
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {t('escalation.remove_description')}

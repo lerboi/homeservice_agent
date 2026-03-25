@@ -1,16 +1,1 @@
-See how you can use this in the Hero section
-https://21st.dev/community/components/tommyjepsen/animated-hero/default
-
-The below 2 interactive 3d scenes can be in th ehero section and replace that placeholder image.
-https://21st.dev/community/components/serafim/splite/default
-https://app.spline.design/community/file/2ce6351a-d7a5-4c4e-bf13-75bc9f841891
-
-See ho you can use these in the features section maybe
-https://21st.dev/community/components/Codehagen/display-cards/default
-https://21st.dev/community/components/aceternity/bento-grid/default
-
-
-When implementing components from 21st.dev, especially the interactive or 3D ones, you need to be very firm about "performance-first" architecture.
-
-Here is a 1-sentence prompt you can use:
-
+I now want to redesign the entire Dashboard with a new GSD phase. Currently, the dashboard feels very confusing for new users who just signed up and onboarded. I want to redesign only the UI/UX, especially the UX, to make it such that when a new onboarded user arrive sin the home dashboard, they have a clear idea of what to do, what to setup, what is necesarry to start accepting calls and bookings, what are some nice to have setups that are recommended but now compulsory, etc. Maybe add a tour guide butotn somewhere that starts a Joyride guide on the essentials on what the onboarded person needs to know. You can redesign the entire dashboard and move everything around to ensure that the UI/UX is vastly improved. To do this correctly, you would also need to understand what the business is and what the core functionalities are etc.  Read the relevant skill files that explain the entire project, so that you can make educated and informed decisions to change and improve the UI/UX for the entire dashboard. The dashboard should have a nice modern feel, smooth, very nice lightly interactive UI with very outstanding UX. everything should also be built extremely mobile responsive, and no design choices you make shuold negatively impact performance on lower end mobile devices. Make sure you dont use any design choices that will cause lag on the website. Follow all the best practice website designs and alll the frontend design skills you have.
