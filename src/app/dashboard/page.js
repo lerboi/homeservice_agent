@@ -249,7 +249,9 @@ export default function DashboardPage() {
             <div className={`${card.base} ${card.hover} p-5`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-red-600">Action Required</p>
+                  <p className={`text-sm font-semibold ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-[#475569]'}`}>
+                    {(stats?.newLeadsToday ?? 0) > 0 ? 'Action Required' : 'No Actions Needed'}
+                  </p>
                   <p className="text-2xl font-bold text-[#0F172A]">{stats?.newLeadsToday ?? 0}</p>
                   <p className="text-sm text-[#475569]">new leads need response</p>
                 </div>
