@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-25 (Phase 15 — booking_outcome, notification_priority, caller SMS)
+**Last updated**: 2026-03-25 (Phase 17 — recovery SMS urgency-aware content, delivery tracking, exponential backoff retry)
 
 ---
 
@@ -36,7 +36,8 @@ Caller dials Retell number
        ↓
   ~Minutes later → call_analyzed webhook → processCallAnalyzed()
        ↓                                    (recording upload, triage, lead creation, notifications)
-  ~60s after call → Recovery SMS cron (for unbooked callers)
+  ~60s after call → Recovery SMS cron (urgency-aware, delivery tracking, exponential backoff retry)
+  During call (slot taken) → Real-time recovery SMS via after() in handleBookAppointment
 ```
 
 ---
@@ -65,6 +66,7 @@ Caller dials Retell number
 | `supabase/migrations/003_scheduling.sql` | Scheduling schema + `book_appointment_atomic` function |
 | `supabase/migrations/004_leads_crm.sql` | Leads + activity_log schema |
 | `supabase/migrations/008_call_outcomes.sql` | booking_outcome, exception_reason, notification_priority columns |
+| `supabase/migrations/009_recovery_sms_tracking.sql` | Recovery SMS delivery tracking columns (recovery_sms_status, recovery_sms_retry_count, recovery_sms_last_error, recovery_sms_last_attempt_at) |
 
 ---
 
@@ -321,6 +323,7 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 6. On success: async write `booking_outcome: 'booked'` via `after()`
 7. On success: async send caller SMS confirmation via `sendCallerSMS()` (locale from detected_language or tenant default_locale)
 8. On failure: async write `booking_outcome: 'attempted'` via `after()`
+9. On failure: async send real-time recovery SMS via `sendCallerRecoverySMS()` in second `after()` block (Phase 17 RECOVER-01)
 
 ---
 
@@ -406,13 +409,19 @@ Secondary defense: `UNIQUE (tenant_id, start_time)` constraint.
 **File**: `src/lib/notifications.js`
 
 ### `sendOwnerSMS()`
-Twilio SMS to owner: "{businessName}: New {urgency} lead -- {callerName}, {jobType} at {address}..."
+Twilio SMS to owner. Emergency format: `"EMERGENCY: {businessName} — {name} needs urgent {job} at {addr}. Call NOW: {callbackLink} | Dashboard: {dashboardLink}"`. Non-emergency: `"{businessName}: New booking — {name}, {job} at {addr}. Callback: {callbackLink} | Dashboard: {dashboardLink}"`.
 
 ### `sendOwnerEmail()`
 Resend email with React Email template.
 
-### `sendCallerRecoverySMS()`
-Warm text to unbooked callers: "Hi {name}, thanks for calling {business}. Book online at {link} or call back at {phone}."
+### `sendCallerRecoverySMS({ to, callerName, businessName, locale, urgency, bookingLink })`
+Urgency-aware recovery SMS to callers whose booking failed. Phase 17:
+- **Signature**: accepts `locale` ('en'|'es'), `urgency` ('emergency'|'routine'|'high_ticket'), `bookingLink` (D-10 placeholder — accepted but unused). `ownerPhone` removed per D-09.
+- **Returns**: `{ success: boolean, sid?: string, error?: { code: string|number, message: string } }` — structured return, not fire-and-forget
+- **Emergency**: `recovery_sms_attempted_emergency` template — empathetic urgency tone ("your situation is time-sensitive")
+- **Routine/other**: `recovery_sms_attempted_routine` template — standard warm tone ("sorry we couldn't get your appointment booked")
+- **i18n**: `locale === 'es'` selects Spanish templates via `interpolate()` + JSON import; falls back to 'en' for unknown locales
+- **Null guard**: `to` missing → `{ success: false, error: { code: 'NO_PHONE' } }` without calling Twilio
 
 ### `sendCallerSMS()`
 Booking confirmation SMS to caller: "Your appointment with {business_name} is confirmed for {date} at {time} at {address}." Multi-language (en/es) via direct JSON import of messages files. Fire-and-forget — errors logged but never thrown. Null guard on `to` prevents Twilio calls when no phone number.
@@ -421,7 +430,17 @@ Booking confirmation SMS to caller: "Your appointment with {business_name} is co
 Fires SMS + email in parallel via `Promise.allSettled()`.
 
 ### Recovery SMS Cron (`src/app/api/cron/send-recovery-sms/route.js`)
-Runs every minute. Finds calls where: `status='analyzed'`, `recovery_sms_sent_at IS NULL`, ended >60s ago. Skips calls <15s and booked calls. Sends recovery SMS to `from_number`.
+Runs every minute. Phase 17 two-branch design:
+
+**Branch A — First-send for not_attempted / legacy calls:**
+Finds `status='analyzed'`, `recovery_sms_sent_at IS NULL`, `recovery_sms_status IS NULL`, ended >60s ago, `booking_outcome = 'not_attempted'` (Pitfall 4: only not_attempted). Skips calls <15s and booked calls. Sends urgency-aware recovery SMS (uses `urgency_classification` + `detected_language` from calls row — Pitfall 2). Writes delivery status: `pending` → `sent` or `retrying`.
+
+**Branch B — Retry for failed deliveries:**
+Finds `recovery_sms_status = 'retrying'` with `recovery_sms_retry_count < 3`. Respects exponential backoff: 30s before 2nd attempt, 120s before 3rd. After 3 total attempts, sets `recovery_sms_status = 'failed'` permanently (D-14).
+
+**DB columns (migration 009):** `recovery_sms_status` (pending/sent/failed/retrying), `recovery_sms_retry_count`, `recovery_sms_last_error`, `recovery_sms_last_attempt_at`.
+
+**Real-time trigger**: `handleBookAppointment` in webhook route fires recovery SMS via `after()` when `atomicBookSlot` fails (slot taken). Uses `args.urgency` from AI tool args (not DB field — Pitfall 1). Writes `pending` → `sent`/`retrying` status to DB. On exception, writes `retrying` for cron pickup.
 
 ---
 
@@ -518,6 +537,11 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **booking_outcome set real-time**: booked/attempted/declined written during live call via `after()`; not_attempted defaulted post-call with conditional `WHERE IS NULL` update
 - **notification_priority decoupled from urgency**: separate column maps emergency/high_ticket→high, routine→standard; Phase 16 reads this column, not urgency directly
 - **Caller SMS confirmation**: sent via `after()` in handleBookAppointment after successful booking; locale from detected_language or tenant default_locale; uses i18n JSON templates
+- **Recovery SMS real-time trigger**: second `after()` in handleBookAppointment slot-taken branch fires recovery SMS immediately; uses `args.urgency` NOT `calls.urgency_classification` (processCallAnalyzed hasn't run yet — Pitfall 1)
+- **Recovery SMS urgency-aware**: emergency → empathetic-urgency template; routine/other → warm standard template; locale fallback chain: detected_language → tenant.default_locale → 'en'
+- **Recovery SMS structured return**: `{ success, sid?, error? }` enables real-time delivery status writes to DB (pending → sent/retrying); cron retries on 'retrying' status
+- **Recovery SMS exponential backoff**: 30s before 2nd attempt, 120s before 3rd; max 3 total attempts; permanent 'failed' after exhaustion (D-14)
+- **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
 
 ---
 
