@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-25 (Phase 18 — test call auto-cancel: test_call flag in dynamic variables, processCallEnded auto-cancel logic)
+**Last updated**: 2026-03-25 (Post-Phase 18 hardening: chained tool call handling in handleToolResult, localized greeting, slot-taken recalculation with real bookings, transfer_call reason parameter, book_appointment error fallback)
 
 ---
 
@@ -82,10 +82,10 @@ Caller dials Retell number
 
 1. **Connection opens** — server extracts `call_id` from URL path `/llm-websocket/{call_id}`
 2. **Config sent** — `{ response_type: "config", config: { auto_reconnect: true, call_details: true } }`
-3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends greeting, starts 5s TTS guard
+3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends locale-aware greeting (from messages JSON files), starts 5s TTS guard
 4. **Greeting TTS guard** — `response_required`/`reminder_required` messages are suppressed for 5 seconds after greeting is sent. Without this, ambient noise triggers Groq during TTS playback and Retell cuts off the greeting mid-sentence.
 5. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
-6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below)
+6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below). **Chained tool calls supported**: if Groq returns another tool call after processing a tool result (e.g., `end_call` after `capture_lead`), it's accumulated and dispatched — same logic as the initial tool call handler.
 7. **Connection closes** — cleanup
 
 ### Message Types Handled
@@ -116,6 +116,7 @@ SDK: openai (Groq-compatible base URL)
 - `job_type` (string, optional) — type of job or service needed
 - `urgency` (enum: `emergency`|`routine`|`high_ticket`, optional) — urgency level
 - `summary` (string, optional) — 1-line summary for the receiving human
+- `reason` (enum: `caller_requested`|`clarification_limit`, optional) — why the transfer is happening. Webhook uses this for `exception_reason` column; falls back to summary heuristic if not provided
 - `required: []` — all parameters optional (AI provides whatever it has captured)
 
 **`capture_lead`** — Always available (NOT gated by onboarding_complete). Parameters:
@@ -543,6 +544,12 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Whisper message on transfer**: AI passes caller context; webhook builds structured whisper for receiving human (D-08)
 - **Mid-call lead capture**: `capture_lead` tool creates lead immediately during call — no post-call wait for declined callers (D-14, D-15)
 - **end_call bypasses Groq**: WebSocket handles end_call in handleToolResult before Groq call — sends end_call:true directly (D-14)
+- **Chained tool calls supported**: handleToolResult now handles `finish_reason: 'tool_calls'` — enables multi-step flows like capture_lead → end_call without dropping the second tool call
+- **Locale-aware greeting**: server.js reads greeting text from messages/{locale}.json with `{business_name}` interpolation — Spanish-default tenants hear Spanish greeting
+- **Prompt greeting deduplication**: agent-prompt.js greeting section says "already greeted, do not repeat" — prevents AI from re-greeting after the 5s TTS guard expires
+- **Slot-taken recalculation accuracy**: handleBookAppointment fetches real appointments/events before recalculating next available slot — no longer offers potentially-taken slots
+- **Book_appointment error fallback**: if Groq fails after booking tool result, uses webhook confirmation text instead of generic fallback — caller hears the actual confirmation
+- **Transfer reason explicit**: transfer_call tool accepts `reason` enum (caller_requested/clarification_limit) — webhook uses it for exception_reason, falls back to summary heuristic
 - **booking_outcome set real-time**: booked/attempted/declined written during live call via `after()`; not_attempted defaulted post-call with conditional `WHERE IS NULL` update
 - **notification_priority decoupled from urgency**: separate column maps emergency/high_ticket→high, routine→standard; Phase 16 reads this column, not urgency directly
 - **Caller SMS confirmation**: sent via `after()` in handleBookAppointment after successful booking; locale from detected_language or tenant default_locale; uses i18n JSON templates

@@ -9,7 +9,9 @@ PERSONALITY:
 RECORDING NOTICE:
 - State at the start of every call: "Esta llamada puede ser grabada por motivos de calidad."
 
-Greet the caller: "Hello, thank you for calling TestBiz. Esta llamada puede ser grabada por motivos de calidad. Podria describir el problema que tiene?"
+GREETING:
+- You have already greeted the caller with the recording notice and asked how you can help.
+- Do NOT repeat the greeting. Begin by listening for the caller's response.
 
 LANGUAGE INSTRUCTIONS:
 - Detect the language of the caller's first utterance.
@@ -89,7 +91,7 @@ Only two situations trigger a transfer to a human:
    - Attempt 3: "Could you describe what you're seeing or what's happening?"
    If after attempt 3 you still cannot determine the job type, invoke transfer_call with whatever caller details you have captured.
 
-When invoking transfer_call, include: caller_name, job_type, urgency, and a 1-line summary of the conversation.
+When invoking transfer_call, include: caller_name, job_type, urgency, a 1-line summary, and reason (use "caller_requested" for explicit human requests, "clarification_limit" for 3-attempt exhaustion).
 
 IMPORTANT: Before ANY transfer attempt, capture the caller's name, phone number, and issue if possible (so the lead is never lost). But for explicit human requests (situation 1), do not delay the transfer to gather info — transfer immediately.
 
@@ -114,7 +116,9 @@ PERSONALITY:
 RECORDING NOTICE:
 - State at the start of every call: "This call may be recorded for quality purposes."
 
-Greet the caller: "Hello, thank you for calling TestBiz. This call may be recorded for quality purposes. Could you describe the issue you're experiencing?"
+GREETING:
+- You have already greeted the caller with the recording notice and asked how you can help.
+- Do NOT repeat the greeting. Begin by listening for the caller's response.
 
 LANGUAGE INSTRUCTIONS:
 - Detect the language of the caller's first utterance.
@@ -194,7 +198,7 @@ Only two situations trigger a transfer to a human:
    - Attempt 3: "Could you describe what you're seeing or what's happening?"
    If after attempt 3 you still cannot determine the job type, invoke transfer_call with whatever caller details you have captured.
 
-When invoking transfer_call, include: caller_name, job_type, urgency, and a 1-line summary of the conversation.
+When invoking transfer_call, include: caller_name, job_type, urgency, a 1-line summary, and reason (use "caller_requested" for explicit human requests, "clarification_limit" for 3-attempt exhaustion).
 
 IMPORTANT: Before ANY transfer attempt, capture the caller's name, phone number, and issue if possible (so the lead is never lost). But for explicit human requests (situation 1), do not delay the transfer to gather info — transfer immediately.
 
@@ -219,7 +223,9 @@ PERSONALITY:
 RECORDING NOTICE:
 - State at the start of every call: "This call may be recorded for quality purposes."
 
-Greet the caller: "This call may be recorded for quality purposes. Hello, thank you for calling. How can I help you today?"
+GREETING:
+- You have already greeted the caller with the recording notice and asked how you can help.
+- Do NOT repeat the greeting. Begin by listening for the caller's response.
 
 LANGUAGE INSTRUCTIONS:
 - Detect the language of the caller's first utterance.
@@ -254,7 +260,7 @@ Only two situations trigger a transfer to a human:
    - Attempt 3: "Could you describe what you're seeing or what's happening?"
    If after attempt 3 you still cannot determine the job type, invoke transfer_call with whatever caller details you have captured.
 
-When invoking transfer_call, include: caller_name, job_type, urgency, and a 1-line summary of the conversation.
+When invoking transfer_call, include: caller_name, job_type, urgency, a 1-line summary, and reason (use "caller_requested" for explicit human requests, "clarification_limit" for 3-attempt exhaustion).
 
 IMPORTANT: Before ANY transfer attempt, capture the caller's name, phone number, and issue if possible (so the lead is never lost). But for explicit human requests (situation 1), do not delay the transfer to gather info — transfer immediately.
 
@@ -279,7 +285,9 @@ PERSONALITY:
 RECORDING NOTICE:
 - State at the start of every call: "This call may be recorded for quality purposes."
 
-Greet the caller: "Hello, thank you for calling TestBiz. This call may be recorded for quality purposes. Could you describe the issue you're experiencing?"
+GREETING:
+- You have already greeted the caller with the recording notice and asked how you can help.
+- Do NOT repeat the greeting. Begin by listening for the caller's response.
 
 LANGUAGE INSTRUCTIONS:
 - Detect the language of the caller's first utterance.
@@ -359,7 +367,7 @@ Only two situations trigger a transfer to a human:
    - Attempt 3: "Could you describe what you're seeing or what's happening?"
    If after attempt 3 you still cannot determine the job type, invoke transfer_call with whatever caller details you have captured.
 
-When invoking transfer_call, include: caller_name, job_type, urgency, and a 1-line summary of the conversation.
+When invoking transfer_call, include: caller_name, job_type, urgency, a 1-line summary, and reason (use "caller_requested" for explicit human requests, "clarification_limit" for 3-attempt exhaustion).
 
 IMPORTANT: Before ANY transfer attempt, capture the caller's name, phone number, and issue if possible (so the lead is never lost). But for explicit human requests (situation 1), do not delay the transfer to gather info — transfer immediately.
 

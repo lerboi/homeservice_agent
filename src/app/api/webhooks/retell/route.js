@@ -301,11 +301,11 @@ async function handleFunctionCall(payload) {
         });
 
         // Real-time exception_reason write (D-03)
-        // Infer reason from summary: 'clarif' keyword → clarification_limit, else caller_requested
-        const transferReason =
-          (function_call.arguments?.summary || '').toLowerCase().includes('clarif')
+        // Use explicit reason from AI if provided, fall back to summary heuristic
+        const transferReason = function_call.arguments?.reason
+          || ((function_call.arguments?.summary || '').toLowerCase().includes('clarif')
             ? 'clarification_limit'
-            : 'caller_requested';
+            : 'caller_requested');
         after(async () => {
           await supabase.from('calls').upsert(
             { retell_call_id: call_id, exception_reason: transferReason },
@@ -388,13 +388,27 @@ async function handleBookAppointment(payload) {
   });
 
   if (!result.success) {
-    // Slot was taken — find the next available slot to offer
+    // Slot was taken — fetch current bookings/events before recalculating
+    const [currentBookings, currentEvents] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('start_time, end_time, zone_id')
+        .eq('tenant_id', call.tenant_id)
+        .neq('status', 'cancelled')
+        .gte('end_time', new Date().toISOString()),
+      supabase
+        .from('calendar_events')
+        .select('start_time, end_time')
+        .eq('tenant_id', call.tenant_id)
+        .gte('end_time', new Date().toISOString()),
+    ]);
+
     const endDateStr = toLocalDateString(endTime, tenantTimezone);
     const nextSlots = calculateAvailableSlots({
       workingHours: tenant?.working_hours || {},
       slotDurationMins: tenant?.slot_duration_mins || 60,
-      existingBookings: [],
-      externalBlocks: [],
+      existingBookings: currentBookings.data || [],
+      externalBlocks: currentEvents.data || [],
       zones: [],
       zonePairBuffers: [],
       targetDate: endDateStr,
