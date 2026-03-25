@@ -71,6 +71,38 @@ export async function processCallEnded(call) {
     },
     { onConflict: 'retell_call_id' }
   );
+
+  // Auto-cancel test call bookings (D-08) — clean up calendar after onboarding test call
+  // test_call: 'true' is passed as a Retell dynamic variable from test-call/route.js
+  // Retell echoes dynamic_variables back in call_ended metadata under retell_llm_dynamic_variables
+  const isTestCall =
+    metadata?.test_call === 'true' ||
+    metadata?.retell_llm_dynamic_variables?.test_call === 'true';
+
+  if (isTestCall && tenantId) {
+    // Cancel any appointment created during this test call
+    const { data: testAppt } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('retell_call_id', call_id)
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+
+    if (testAppt) {
+      // Cancel the appointment so it does not clutter the real calendar
+      await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', testAppt.id);
+
+      // Reset associated lead from 'booked' back to 'new' (Pitfall 6: must also reset lead)
+      await supabase
+        .from('leads')
+        .update({ status: 'new', appointment_id: null })
+        .eq('appointment_id', testAppt.id)
+        .eq('tenant_id', tenantId);
+    }
+  }
 }
 
 /**

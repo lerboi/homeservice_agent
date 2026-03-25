@@ -24,6 +24,7 @@ export async function POST(request) {
         business_name: tenant.business_name,
         onboarding_complete: true,
         tone_preset: tenant.tone_preset,
+        test_call: 'true',  // D-08: triggers auto-cancel in post-call processor
       },
     });
 
