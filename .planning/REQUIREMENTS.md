@@ -1,7 +1,55 @@
 # Requirements: HomeService AI Agent
 
-**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0)
+**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0)
 **Core Value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
+
+## v3.0 Requirements
+
+### Billing Foundation
+
+- [ ] **BILL-01**: Stripe products and prices created for Starter ($99/mo, 40 calls), Growth ($249/mo, 120 calls), Scale ($599/mo, 400 calls) with Price IDs stored in env vars
+- [ ] **BILL-02**: Subscriptions database table with tenant_id, stripe_customer_id, stripe_subscription_id, status, plan_id, calls_limit, calls_used, trial_ends_at, current_period_start/end, cancel_at_period_end — RLS: SELECT for authenticated, INSERT/UPDATE only via service_role
+- [ ] **BILL-03**: Usage events table with call_id idempotency key (ON CONFLICT DO NOTHING) and stripe_webhook_events table with UNIQUE on event_id
+- [ ] **BILL-04**: Stripe webhook handler at /api/stripe/webhook with request.text() signature verification, idempotency check, and stripe_updated_at version protection for out-of-order events
+- [ ] **BILL-05**: All subscription lifecycle events synced to local DB (created, updated, deleted, paused, resumed, trial_will_end)
+- [ ] **BILL-06**: Trial auto-start at onboarding completion — creates Stripe customer + 14-day trial subscription with CC required, writes local subscriptions row synchronously
+
+### Usage Tracking
+
+- [ ] **USAGE-01**: Per-call usage increment via atomic Postgres RPC (increment_calls_used) on call_ended webhook — minimum 10-second duration filter, test call exclusion
+- [ ] **USAGE-02**: Usage events row inserted per call with call_id as idempotency key — prevents double-counting from webhook retries
+- [ ] **USAGE-03**: Calls_used reset to 0 triggered by invoice.paid webhook with billing_reason = subscription_cycle — not a cron job
+
+### Enforcement
+
+- [ ] **ENFORCE-01**: Subscription check added to handleInbound() as parallel Supabase query — zero net latency increase on call pickup
+- [ ] **ENFORCE-02**: Block call if subscription status is cancelled/paused/expired OR calls_used >= calls_limit — play graceful caller message via AI prompt dynamic variable
+- [ ] **ENFORCE-03**: Past_due status gets 3-day grace window before blocking — owner continues receiving calls while payment retries happen
+- [ ] **ENFORCE-04**: Subscription status middleware gates dashboard routes — cancelled/paused/expired redirects to /billing/upgrade
+
+### Billing UI
+
+- [ ] **BILLUI-01**: Billing dashboard page at /dashboard/more/billing — current plan card, usage meter (X of Y calls), renewal/trial-end date, Stripe Customer Portal link
+- [ ] **BILLUI-02**: Trial countdown banner in dashboard layout — shows "X days left in trial" with upgrade CTA, visible across all dashboard pages
+- [ ] **BILLUI-03**: Post-trial paywall page at /billing/upgrade — plan comparison, Stripe Checkout links for each tier, shown to expired/cancelled tenants
+- [ ] **BILLUI-04**: Stripe Checkout flow — plan selection, Checkout Session in subscription mode with CC required, success redirect to dashboard
+- [ ] **BILLUI-05**: Stripe Customer Portal integration — plan changes, cancellation, invoice history, payment method update; linked from billing page
+
+### Billing Notifications
+
+- [ ] **BILLNOTIF-01**: Failed payment SMS + email to owner on invoice.payment_failed with payment update link (Stripe Customer Portal URL)
+- [ ] **BILLNOTIF-02**: Trial reminder email at day 7 and day 12 via cron job + Resend template
+- [ ] **BILLNOTIF-03**: Trial-will-end notification triggered by customer.subscription.trial_will_end webhook (3 days before expiry)
+
+### Billing Documentation
+
+- [ ] **BILLDOC-01**: Billing/payment architecture skill file created — covers full Stripe integration, DB tables, webhook handling, enforcement logic, subscription lifecycle
+- [ ] **BILLDOC-02**: CLAUDE.md updated to include billing-payment skill in the architecture skill files list with sync requirement
+
+### Future Requirements (Deferred)
+
+- [ ] **BILLF-01**: 80% usage alert — SMS + email to owner when calls_used >= 0.8 * calls_limit with usage_alert_sent flag to prevent repeats
+- [ ] **BILLF-02**: Per-call overage billing beyond plan limit via Stripe Billing Meters v2 — requires metered price configuration
 
 ## v2.0 Requirements
 
@@ -171,7 +219,7 @@
 |---------|--------|
 | Native iOS/Android app | Web-first, mobile-responsive; defer until retention proven |
 | Full CRM (invoicing, job costing, dispatch) | Lead tracker only — don't compete with ServiceTitan/Jobber |
-| Payment processing / deposit collection | PCI compliance scope too large for v1 |
+| Payment processing / deposit collection | PCI compliance scope too large for v1; Stripe Checkout handles PCI in v3.0 |
 | Crew dispatch and GPS tracking | Integrate with existing FSM tools via webhook, don't replace |
 | Real-time live transcription display | Post-call transcript within 30 seconds is sufficient |
 | AI upselling during calls | Destroys "book fast" value prop; upsell via post-booking SMS |
@@ -290,6 +338,11 @@
 - Mapped to phases: 16
 - Unmapped: 0
 
+**v3.0 Coverage:**
+- v3.0 requirements: 22 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02)
+- Mapped to phases: 0 (pending roadmap)
+- Unmapped: 22
+
 ---
-*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0)*
-*Last updated: 2026-03-24 — v2.0 roadmap mapped all 16 requirements to Phases 14-18*
+*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0)*
+*Last updated: 2026-03-26 — v3.0 requirements defined (22 requirements across 6 categories)*
