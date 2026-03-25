@@ -11,12 +11,10 @@ import {
   PhoneCall,
   Bot,
   UserCircle,
-  BarChart3,
   ChevronRight,
 } from 'lucide-react';
 
 const MORE_ITEMS = [
-  { href: '/dashboard/analytics', label: 'Analytics', description: 'Track conversion rates, revenue, and call volume', icon: BarChart3 },
   { href: '/dashboard/more/services-pricing', label: 'Services & Pricing', description: 'Manage your service list and urgency tags', icon: Wrench },
   { href: '/dashboard/more/working-hours', label: 'Working Hours', description: 'Set your weekly availability schedule', icon: Clock },
   { href: '/dashboard/more/calendar-connections', label: 'Calendar Connections', description: 'Connect Google or Outlook calendars', icon: CalendarDays },
