@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-03-26 (Phase 20 — 5-tab nav, More menu, adaptive home, checklist redesign, Joyride tour)
+**Last updated**: 2026-03-26 (Phase 20 — 6-tab desktop nav, 5-tab mobile nav, call logs, More menu, adaptive home, checklist redesign, Joyride tour)
 
 ---
 
@@ -17,7 +17,7 @@ This document is the single source of truth for the entire dashboard and CRM sys
 |-------|-------|---------|
 | **Dashboard Pages** | `src/app/dashboard/` | All page routes nested under layout |
 | **CRM Components** | `src/components/dashboard/` | Kanban, flyouts, charts, stats, editors, tour |
-| **API Routes** | `src/app/api/leads/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/` | Lead CRUD, escalation CRUD, checklist state |
+| **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/` | Lead CRUD, call logs, escalation CRUD, checklist state |
 | **Business Logic** | `src/lib/leads.js` | Lead creation and repeat-caller merge |
 | **Design System** | `src/lib/design-tokens.js` | Shared color palette and component tokens |
 | **Realtime** | Supabase `supabase_realtime` publication | Live lead updates to dashboard via WebSocket |
@@ -40,8 +40,9 @@ Call ends → call_analyzed webhook → call-processor.js → createOrMergeLead(
 layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour
   ├── page.js (/)                ← Adaptive home: setup mode (checklist hero) OR active mode (command center)
   ├── leads/page.js              ← Filter bar + list/kanban toggle + LeadFlyout
-  ├── analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut)
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
+  ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
+  ├── analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut)
   └── more/page.js               ← Config hub: 7 section links
       ├── more/services-pricing/page.js    ← Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/page.js       ← WorkingHoursEditor
@@ -63,6 +64,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/layout.js` | Layout wrapper: sidebar (desktop), BottomTabBar (mobile), breadcrumb, DashboardTour |
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
 | `src/app/dashboard/leads/page.js` | Leads page: filter bar, list/kanban toggle, Realtime subscription |
+| `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
 | `src/app/dashboard/analytics/page.js` | Analytics page: fetches all leads, renders AnalyticsCharts |
 | `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner |
 | `src/app/dashboard/more/page.js` | Config hub list: 7 section links with icons, labels, descriptions |
@@ -76,9 +78,11 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/more/account/page.js` | Placeholder stub — account management future plan |
 | `src/app/dashboard/services/page.js` | redirect() to /dashboard/more/services-pricing |
 | `src/app/dashboard/settings/page.js` | redirect() to /dashboard/more |
-| `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 5 nav items, no mobile drawer |
-| `src/components/dashboard/BottomTabBar.jsx` | Mobile-only fixed bottom nav: 5 tabs, h-[56px], lg:hidden |
-| `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 5 steps, brand-themed, layout-mounted |
+| `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 6 nav items (Home, Leads, Calendar, Calls, Analytics, More), no mobile drawer |
+| `src/components/dashboard/BottomTabBar.jsx` | Mobile-only fixed bottom nav: 5 tabs (Home, Leads, Calendar, Calls, Analytics — no More), h-[56px], lg:hidden, animated orange indicator |
+| `src/components/dashboard/MoreBackButton.jsx` | "← Back to More" link shown on More sub-pages via more/layout.js |
+| `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 6 steps, brand-themed, layout-mounted |
+| `src/app/api/calls/route.js` | GET calls (filtered by date, urgency, booking_outcome, phone search) |
 | `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript |
 | `src/components/dashboard/KanbanBoard.jsx` | 5-column pipeline board (new/booked/completed/paid/lost) |
 | `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
@@ -131,13 +135,14 @@ useEffect(() => {
 
 **`DashboardSidebar({ businessName })`** — `src/components/dashboard/DashboardSidebar.jsx`
 
-5-item desktop-only nav. Desktop only (lg+). Mobile navigation is handled by BottomTabBar.
+6-item desktop-only nav. Desktop only (lg+). Mobile navigation is handled by BottomTabBar.
 
 ```js
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
@@ -147,17 +152,18 @@ Active state: `border-l-2 border-[#C2410C]` left orange border. Desktop: `lg:fix
 
 **`BottomTabBar`** — `src/components/dashboard/BottomTabBar.jsx`
 
-Mobile-only fixed bottom nav. `lg:hidden`. Same 5 tabs as sidebar. Tab active state: `text-[#C2410C]` for active, `text-white/60` for inactive. Height: `h-[56px] min-h-[48px]` per tab for 48px touch targets. Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)`. Has `data-tour="bottom-nav"`.
+Mobile-only fixed bottom nav. `lg:hidden`. 5 tabs (no More — accessible via gear icon in top bar). Animated orange indicator line (`layoutId="tab-indicator"`) slides between active tabs via framer-motion spring. Tab active state: `text-[#C2410C]` for active, `text-white/60` for inactive. Height: `h-[56px] min-h-[48px]` per tab for 48px touch targets. Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)`. Has `data-tour="bottom-nav"`.
 
 ```js
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 // Active: tab.exact ? pathname === tab.href : pathname.startsWith(tab.href)
+// More tab omitted on mobile — settings gear icon (top-right) links to /dashboard/more
 ```
 
 ---
@@ -701,11 +707,13 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 ## 16. Key Design Decisions
 
-- **5-tab navigation (Phase 20)**: Home, Leads, Calendar, Analytics, More. Services and Settings consolidated into More menu. Desktop uses DashboardSidebar (fixed left sidebar); mobile uses BottomTabBar (fixed bottom bar). No mobile drawer pattern.
+- **6-tab desktop / 5-tab mobile navigation (Phase 20)**: Desktop sidebar: Home, Leads, Calendar, Calls, Analytics, More. Mobile bottom bar: Home, Leads, Calendar, Calls, Analytics (no More — gear icon in top bar links to /dashboard/more). Services and Settings consolidated into More menu. No mobile drawer pattern.
 
 - **Page-level card ownership (Phase 20)**: Layout no longer wraps children in a card. Each page controls its own `card.base` wrapper. Prevents double-card stacking and gives each page independent padding control.
 
-- **BottomTabBar as mobile nav (Phase 20)**: `h-[56px]`, `min-h-[48px]` touch targets, `safe-area-inset-bottom`, `z-40`, `bg-[#0F172A]`. `pb-[72px]` on main content div to clear the bar. Mobile-only (`lg:hidden`).
+- **BottomTabBar as mobile nav (Phase 20)**: 5 tabs (no More), `h-[56px]`, `min-h-[48px]` touch targets, `safe-area-inset-bottom`, `z-40`, `bg-[#0F172A]`. Animated orange indicator via `layoutId="tab-indicator"` (framer-motion spring). `pb-[72px]` on main content div to clear the bar. Mobile-only (`lg:hidden`). More accessible via gear icon in top bar.
+- **Call logs page (Phase 20)**: `/dashboard/calls` — queries `GET /api/calls` (calls table directly, not through leads). Date-grouped expandable cards with urgency border, summary stats bar, search by phone, expandable filters (time range, urgency, booking outcome). Tap to expand detail panel (duration, urgency, booking, language, recording, SMS status, triage info). Short calls (<15s) dimmed with "missed" tag.
+- **Page transitions (Phase 20)**: framer-motion `AnimatePresence` on layout content area — `opacity: 0→1, y: 6→0` on route change. Breadcrumb shows tab name directly ("Leads" not "Dashboard > Leads"), animated text swap. More sub-pages show clickable "More > Sub-page" breadcrumb. `MoreBackButton` injected via `more/layout.js` on all sub-pages.
 
 - **More menu as config hub (Phase 20)**: 7 sub-pages under `/dashboard/more/*` wrap existing components (thin wrappers). Old `/dashboard/services` and `/dashboard/settings` redirect to new routes — bookmarks preserved.
 
