@@ -1,15 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.0
-milestone_name: Subscription Billing & Usage Enforcement
+milestone: v1.1
+milestone_name: Phases
 status: Defining requirements
-stopped_at: Milestone v3.0 started
-last_updated: "2026-03-26T00:00:00.000Z"
+stopped_at: Completed 20-04-PLAN.md
+last_updated: "2026-03-25T19:30:37.636Z"
+last_activity: 2026-03-26 — Milestone v3.0 started
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 14
+  completed_phases: 11
+  total_plans: 51
+  completed_plans: 50
 ---
 
 # Project State
@@ -178,6 +179,8 @@ Recent decisions affecting current work:
 - [Phase 20-03]: ITEM_TYPE classification is frontend-only — no API changes; checklist API returns same shape as before
 - [Phase 20-03]: onDataLoaded callback used to lift checklist data to page — avoids double-fetching /api/setup-checklist
 - [Phase 20-03]: Appointments API does not exist yet — nextAppointment set to null with graceful fallback, no crash
+- [Phase 20]: CustomEvent bus (start-dashboard-tour) decouples tour trigger (page.js) from tour state (layout.js) — avoids prop drilling through Next.js layout boundary
+- [Phase 20]: DashboardTour mounted at layout level — persists across tab navigation, tour does not unmount on route change
 
 ### Roadmap Evolution
 
@@ -210,6 +213,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T19:16:26.042Z
-Stopped at: Completed 20-03-PLAN.md
+Last session: 2026-03-25T19:30:37.626Z
+Stopped at: Completed 20-04-PLAN.md
 Resume file: None

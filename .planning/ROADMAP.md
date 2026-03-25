@@ -403,7 +403,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
 | 18. Booking-First Hardening and QA | 3/3 | Complete    | 2026-03-25 |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
-| 20. Dashboard UX Overhaul | 3/4 | In Progress|  |
+| 20. Dashboard UX Overhaul | 4/4 | Complete   | 2026-03-25 |
 | 21. Pricing Page Redesign and Stripe Integration | 0/TBD | Not started | - |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
@@ -444,13 +444,13 @@ Plans:
   3. A first-time user can identify what needs to be configured before their first real call without reading documentation
   4. All existing dashboard features (leads, calendar, analytics, services, settings) remain fully functional with no regressions
   5. The setup checklist provides direct navigation links to the relevant settings page for each item
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 20-01-PLAN.md — Layout restructure: remove card wrapper, bottom tab bar, sidebar 5-tab nav, per-page wrappers
 - [x] 20-02-PLAN.md — More menu page + 7 sub-page routes, old pages redirect, checklist API href update
 - [x] 20-03-PLAN.md — Setup checklist redesign (required/recommended, progress ring, expandable) + adaptive home page
-- [ ] 20-04-PLAN.md — Joyride guided tour, data-tour wiring, skill file update
+- [x] 20-04-PLAN.md — Joyride guided tour, data-tour wiring, skill file update
 
 ### Phase 21: Pricing Page Redesign and Stripe Integration
 **Goal**: Transform the pricing page from a display-only placeholder into a complete, conversion-optimized page that matches the premium dark SaaS design language of the landing page — with working Stripe Checkout for subscription payments, accurate feature tiers reflecting actual product capabilities, social proof elements, trust signals (money-back guarantee, no-contract badges), and a polished mobile experience
