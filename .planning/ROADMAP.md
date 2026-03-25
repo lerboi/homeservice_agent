@@ -161,7 +161,7 @@ Plans:
 **Goal:** The public landing page is redesigned with premium, handcrafted quality — How It Works uses a tabbed interface, Features has 5 bento cards including multi-language, Hero uses the cursor-reactive Spline 3D model, and Social Proof + Final CTA have polished hover effects and gradient animations
 **Requirements**: REDESIGN-HERO, REDESIGN-HIW, REDESIGN-FEAT, REDESIGN-SOCIAL, REDESIGN-CTA
 **Depends on:** Phase 10
-**Plans:** 2/3 plans executed
+**Plans:** 2/3 plans complete
 
 Plans:
 - [x] 11-01-PLAN.md — How It Works tabbed rebuild (HowItWorksTabs.jsx) + Features 5th card + page.js skeleton updates
