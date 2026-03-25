@@ -455,7 +455,7 @@ Plans:
 ### Phase 21: Pricing Page Redesign
 **Goal**: Transform the pricing page into a conversion-optimized page that matches the premium dark SaaS design language of the landing page — with accurate volume-based feature tiers reflecting actual product capabilities, 14-day free trial as the primary pull factor, social proof (testimonial), expanded FAQ covering setup/AI quality/billing/security, and a polished mobile experience. No Stripe integration (handled separately).
 **Depends on**: Phase 20 (dashboard UX overhaul complete)
-**Requirements**: TBD
+**Requirements**: PR21-01, PR21-02, PR21-03, PR21-04, PR21-05, PR21-06, PR21-07, PR21-08
 **Success Criteria** (what must be TRUE):
   1. The pricing page uses the same premium dark SaaS design language as the landing page — rich dark hero (#050505) with radial gradient accents, dot-grid texture, floating blur orb, dark tier cards with copper glow hover, and consistent typography
   2. Each pricing tier's feature list accurately reflects only actually built product capabilities — volume-based tiers where all features are available on all paid plans, differentiated only by call volume and support level
@@ -465,10 +465,11 @@ Plans:
   6. The FAQ section covers 6-8 questions across setup/onboarding, AI call quality, trial/billing, and data/security — replacing the current 4-question FAQ
   7. No money-back guarantee messaging and no "no credit card required" messaging appears anywhere on the page
   8. The pricing page renders correctly on mobile viewports (375px+) with tier cards stacking vertically and the comparison table scrolling horizontally
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 21 to break down)
+- [ ] 21-01-PLAN.md — Data layer (volume-based tiers), dark hero with dot-grid/blur-orb, trial banner, dark tier cards
+- [ ] 21-02-PLAN.md — Comparison table with Growth highlight, testimonials, 8-question dark FAQ, Enterprise contact pre-selection, skill file update
 
 ---
 
