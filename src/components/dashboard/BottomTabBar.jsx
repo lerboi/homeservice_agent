@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Calendar, Phone, BarChart3, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Phone, BarChart3 } from 'lucide-react';
 
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
@@ -11,7 +11,6 @@ const TABS = [
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 
 export default function BottomTabBar() {
