@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-03-25T06:24:27.725Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-03-25T06:27:40.244Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 19 (codebase-skill-files) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ### v2.0 Milestone Progress
 
@@ -167,6 +167,8 @@ Recent decisions affecting current work:
 - [Phase 15]: [Phase 15-02]: shouldCalculateSlots = !appointmentExists && tenantId replaces isRoutineUnbooked — all unbooked calls get suggested_slots regardless of urgency
 - [Phase 15]: [Phase 15-02]: booking_outcome written real-time via after() during live call (booked/attempted/declined), not_attempted set conditionally post-call with IS NULL guard
 - [Phase 19-01]: scheduling-calendar-system SKILL.md created as complete architectural reference; follow voice-call-architecture template exactly for section structure and depth
+- [Phase 19]: dashboard-crm-system skill covers all 25 source files across dashboard pages, CRM components, API routes, DB migrations, and design system
+- [Phase 19]: onboarding-flow skill covers all 24 source files: actual 4-step wizard (not 7), auth at /auth/signin is Step 1 outside wizard layout
 
 ### Roadmap Evolution
 
@@ -197,6 +199,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T06:24:27.711Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-03-25T06:27:40.236Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None

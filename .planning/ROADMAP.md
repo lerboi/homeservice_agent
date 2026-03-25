@@ -384,7 +384,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 0/TBD | Not started | - |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
-| 19. Codebase Skill Files | 1/3 | In Progress|  |
+| 19. Codebase Skill Files | 2/3 | In Progress|  |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
@@ -396,11 +396,11 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
   3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
   4. The existing voice-call-architecture skill remains unchanged (already complete)
   5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)
-- [ ] 19-02-PLAN.md — dashboard-crm-system + onboarding-flow skills
+- [x] 19-02-PLAN.md — dashboard-crm-system + onboarding-flow skills
 - [ ] 19-03-PLAN.md — auth-database-multitenancy + public-site-i18n skills + CLAUDE.md update
 
 ### Skill Files to Create
