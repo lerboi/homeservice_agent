@@ -28,21 +28,21 @@ function deriveChecklistItems(tenant, serviceCount, calendarConnected) {
       label: 'Connect Google Calendar',
       complete: calendarConnected,
       locked: false,
-      href: '/dashboard/settings#calendar',
+      href: '/dashboard/more/calendar-connections',
     },
     {
       id: 'configure_hours',
       label: 'Configure working hours',
       complete: !!tenant.working_hours,
       locked: false,
-      href: '/dashboard/settings#hours',
+      href: '/dashboard/more/working-hours',
     },
     {
       id: 'make_test_call',
       label: 'Make a test call',
       complete: !!tenant.onboarding_complete,
       locked: false,
-      href: '/dashboard/settings#ai',
+      href: '/dashboard/more/ai-voice-settings',
     },
   ];
 }
