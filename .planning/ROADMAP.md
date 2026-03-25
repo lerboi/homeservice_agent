@@ -385,7 +385,7 @@ Plans:
 
 Plans:
 - [ ] 18-01-PLAN.md — Sentry error monitoring setup (SDK install, server config, test error endpoint)
-- [ ] 18-02-PLAN.md — Concurrency integration test (20 simultaneous bookings via real Supabase)
+- [x] 18-02-PLAN.md — Concurrency integration test (20 simultaneous bookings via real Supabase)
 - [ ] 18-03-PLAN.md — Test-call auto-cancel + manual E2E test scripts (English, Spanish, onboarding) + skill file update
 
 ## v2.0 Progress
@@ -400,8 +400,9 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
 | 17. Recovery SMS Enhancement | 2/2 | Complete    | 2026-03-25 |
-| 18. Booking-First Hardening and QA | 0/3 | Planning complete | - |
+| 18. Booking-First Hardening and QA | 1/3 | In Progress|  |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
+| 20. Dashboard UX Overhaul | 0/TBD | Not started | - |
 
 ### Phase 19: Codebase Skill Files for Full Architectural Reference
 **Goal**: Create 5 comprehensive skill files (scheduling-calendar-system, dashboard-crm-system, onboarding-flow, auth-database-multitenancy, public-site-i18n) that serve as living architectural references for the entire codebase, enabling instant context loading for any section of the project. Update CLAUDE.md to enforce skill file maintenance after code changes.
@@ -413,7 +414,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
   3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
   4. The existing voice-call-architecture skill remains unchanged (already complete)
   5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
-**Plans:** 2/2 plans complete
+**Plans:** 1/3 plans executed
 
 Plans:
 - [x] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)
@@ -430,3 +431,18 @@ Plans:
 | 4 | `onboarding-flow` | 7-step wizard, all onboarding API routes, phone provisioning, SMS verify, test call, setup checklist |
 | 5 | `auth-database-multitenancy` | Supabase Auth, middleware, RLS, all migrations/tables/relationships, getTenantId, multi-tenant isolation |
 | 6 | `public-site-i18n` | Landing, pricing, about, contact form, Resend email, AuthAwareCTA, next-intl (en/es) |
+
+### Phase 20: Dashboard UX Overhaul
+**Goal**: Restructure the dashboard UI/UX so that new users clearly understand what to set up first, what is required vs optional, and can navigate confidently through a guided tour. All existing features remain — this is a pure UI/UX improvement with no backend changes.
+**Depends on**: Phase 19 (skill files provide implementation context)
+**Requirements**: None (UX improvement)
+**Success Criteria** (what must be TRUE):
+  1. The setup checklist on the dashboard home clearly distinguishes required items (minimum for calls to work) from optional but recommended items, with visual differentiation (e.g., badges, color coding)
+  2. A "Start Tour" button launches a Joyride-powered guided tutorial that walks the user through the main dashboard tabs and key actions
+  3. A first-time user can identify what needs to be configured before their first real call without reading documentation
+  4. All existing dashboard features (leads, calendar, analytics, services, settings) remain fully functional with no regressions
+  5. The setup checklist provides direct navigation links to the relevant settings page for each item
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 20 to break down)

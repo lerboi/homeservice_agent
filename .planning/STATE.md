@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 18 context gathered
-last_updated: "2026-03-25T09:32:13.997Z"
+status: Ready to execute
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-03-25T10:00:41.767Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-24)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 17 — recovery-sms-enhancement
+**Current focus:** Phase 18 — booking-first-hardening-and-qa
 
 ## Current Position
 
-Phase: 13
-Plan: Not started
+Phase: 18 (booking-first-hardening-and-qa) — EXECUTING
+Plan: 2 of 3
 
 ### v2.0 Milestone Progress
 
@@ -176,6 +176,8 @@ Recent decisions affecting current work:
 - [Phase 17]: Emergency urgency uses empathetic-urgency template; bookingLink accepted but unused (D-10 placeholder)
 - [Phase 17]: Real-time recovery SMS uses args.urgency from AI tool invocation (not DB field) — processCallAnalyzed has not run yet during live call
 - [Phase 17]: Cron Branch A filters by booking_outcome IN ['not_attempted'] only — attempted calls handled by webhook trigger, not cron
+- [Phase 18-02]: Handle both advisory lock rejection and UNIQUE constraint violation as valid contention outcomes — RPC has no EXCEPTION handler for UNIQUE violations, so r.error != null is an accepted contention signal
+- [Phase 18-02]: testPathIgnorePatterns excludes /tests/integration/ from default npm test run — prevents misleading 0-tests output in CI without Supabase credentials (Pitfall 4 avoidance)
 
 ### Roadmap Evolution
 
@@ -206,6 +208,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T09:24:17.314Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-booking-first-hardening-and-qa/18-CONTEXT.md
+Last session: 2026-03-25T10:00:41.759Z
+Stopped at: Completed 18-02-PLAN.md
+Resume file: None

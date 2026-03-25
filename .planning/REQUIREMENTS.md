@@ -32,7 +32,7 @@
 ### Hardening & QA
 
 - [ ] **HARDEN-01**: Spanish-language caller books autonomously, receives Spanish confirmation SMS, owner gets notification — validated E2E
-- [ ] **HARDEN-02**: 20 simultaneous booking requests to same slot produce exactly 1 confirmed booking and 19 next-available offers
+- [x] **HARDEN-02**: 20 simultaneous booking requests to same slot produce exactly 1 confirmed booking and 19 next-available offers
 - [ ] **HARDEN-03**: Non-technical SME owner completes onboarding wizard and hears AI in under 5 minutes — revalidated for booking-first
 - [ ] **HARDEN-04**: Unhandled exceptions and API failures trigger Sentry alert with full stack trace within 60 seconds
 
@@ -271,7 +271,7 @@
 | RECOVER-02 | Phase 17 | Complete |
 | RECOVER-03 | Phase 17 | Complete |
 | HARDEN-01 | Phase 18 | Pending |
-| HARDEN-02 | Phase 18 | Pending |
+| HARDEN-02 | Phase 18 | Complete |
 | HARDEN-03 | Phase 18 | Pending |
 | HARDEN-04 | Phase 18 | Pending |
 
