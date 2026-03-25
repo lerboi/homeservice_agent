@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Milestone complete
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-25T06:44:43.781Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-03-25T08:39:04.972Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -174,6 +174,8 @@ Recent decisions affecting current work:
 - [Phase 19]: CLAUDE.md maintenance directive updated from vague example to explicit list of all 6 skills
 - [Phase 17]: sendCallerRecoverySMS returns structured { success, sid, error } — Plan 02 webhook trigger writes recovery_sms_status based on this return
 - [Phase 17]: Emergency urgency uses empathetic-urgency template; bookingLink accepted but unused (D-10 placeholder)
+- [Phase 17]: Real-time recovery SMS uses args.urgency from AI tool invocation (not DB field) — processCallAnalyzed has not run yet during live call
+- [Phase 17]: Cron Branch A filters by booking_outcome IN ['not_attempted'] only — attempted calls handled by webhook trigger, not cron
 
 ### Roadmap Evolution
 
@@ -204,6 +206,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T06:44:43.774Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-03-25T08:39:04.961Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None
