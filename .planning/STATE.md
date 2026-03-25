@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Milestone complete
-stopped_at: Completed 19-03-PLAN.md
-last_updated: "2026-03-25T06:41:39.139Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-25T06:44:43.781Z"
 progress:
   total_phases: 14
   completed_phases: 10
@@ -172,6 +172,8 @@ Recent decisions affecting current work:
 - [Phase 19]: auth-database-multitenancy skill covers all 3 Supabase clients, getTenantId, middleware, RLS two-pattern design, and all 8 migrations with actual SQL
 - [Phase 19]: public-site-i18n skill covers all 25+ source files: landing sections, pricing, about, contact, i18n, email templates
 - [Phase 19]: CLAUDE.md maintenance directive updated from vague example to explicit list of all 6 skills
+- [Phase 17]: sendCallerRecoverySMS returns structured { success, sid, error } — Plan 02 webhook trigger writes recovery_sms_status based on this return
+- [Phase 17]: Emergency urgency uses empathetic-urgency template; bookingLink accepted but unused (D-10 placeholder)
 
 ### Roadmap Evolution
 
@@ -202,6 +204,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T06:37:41.395Z
-Stopped at: Completed 19-03-PLAN.md
+Last session: 2026-03-25T06:44:43.774Z
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None

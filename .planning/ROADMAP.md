@@ -121,7 +121,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
+- [x] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
 - [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## Progress
@@ -398,7 +398,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. Booking-First Agent Behavior | 3/3 | Complete    | 2026-03-24 |
 | 15. Call Processor and Triage Reclassification | 2/2 | Complete    | 2026-03-24 |
 | 16. Notification Priority System | 1/1 | Complete   | 2026-03-24 |
-| 17. Recovery SMS Enhancement | 0/2 | Planning complete | - |
+| 17. Recovery SMS Enhancement | 1/2 | In Progress|  |
 | 18. Booking-First Hardening and QA | 0/TBD | Not started | - |
 | 19. Codebase Skill Files | 3/3 | Complete    | 2026-03-25 |
 
@@ -412,7 +412,7 @@ Phases execute in order: 14 -> 15 -> 16 -> 17 -> 18
   3. CLAUDE.md is updated to require skill file updates after changes to any covered system — not just voice-call-architecture
   4. The existing voice-call-architecture skill remains unchanged (already complete)
   5. All 6 skills together (existing + 5 new) cover every major system in the codebase with no significant gaps
-**Plans:** 3/3 plans complete
+**Plans:** 1/2 plans executed
 
 Plans:
 - [x] 19-01-PLAN.md — scheduling-calendar-system skill (slot calculator, booking, dual-provider calendar sync)
