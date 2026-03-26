@@ -2,6 +2,8 @@ import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { retell } from '@/lib/retell';
 import twilio from 'twilio';
+import { PaymentFailedEmail } from '@/emails/PaymentFailedEmail';
+import { TrialReminderEmail } from '@/emails/TrialReminderEmail';
 
 let twilioClient = null;
 function getTwilioClient() {
@@ -12,6 +14,15 @@ function getTwilioClient() {
     );
   }
   return twilioClient;
+}
+
+let resendClient = null;
+function getResendClient() {
+  if (!resendClient) {
+    const { Resend } = require('resend');
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
 }
 
 /**
@@ -352,17 +363,167 @@ async function handleInvoicePaid(invoice) {
 }
 
 /**
- * Handle customer.subscription.trial_will_end — log for now.
- * Phase 24 will add notification logic.
+ * Handle customer.subscription.trial_will_end — send email + SMS notification.
+ * Phase 24: BILLNOTIF-03
+ * Idempotency via billing_notifications table (D-07).
+ * Notification failures are logged but never thrown (Pitfall 3 in RESEARCH.md).
  */
 async function handleTrialWillEnd(subscription) {
-  console.log('Trial ending soon for tenant:', subscription.metadata?.tenant_id);
+  try {
+    const tenantId = subscription.metadata?.tenant_id;
+    if (!tenantId) {
+      console.warn('[stripe/webhook] handleTrialWillEnd: missing tenant_id in metadata');
+      return;
+    }
+
+    // Idempotency check — prevent duplicate notifications on Stripe retries (Pitfall 4)
+    const { data: existing } = await supabase
+      .from('billing_notifications')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('notification_type', 'trial_will_end')
+      .maybeSingle();
+
+    if (existing) {
+      console.log('[stripe/webhook] Trial-will-end already sent for tenant:', tenantId);
+      return;
+    }
+
+    // Lookup tenant for owner contact info
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('business_name, owner_email, owner_phone')
+      .eq('id', tenantId)
+      .single();
+
+    if (!tenant) {
+      console.warn('[stripe/webhook] handleTrialWillEnd: tenant not found:', tenantId);
+      return;
+    }
+
+    // Lookup subscription for usage stats
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('calls_used, calls_limit, trial_ends_at')
+      .eq('tenant_id', tenantId)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    const upgradeUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/more/billing`;
+
+    // Send email + SMS via Promise.allSettled — failures logged, never thrown (Pitfall 3)
+    const [emailResult, smsResult] = await Promise.allSettled([
+      getResendClient().emails.send({
+        from: 'Voco <notifications@getvoco.ai>',
+        to: tenant.owner_email,
+        subject: 'Your Voco trial ends in 3 days',
+        react: TrialReminderEmail({
+          businessName: tenant.business_name,
+          daysUsed: 11,
+          daysRemaining: 3,
+          callsUsed: sub?.calls_used || 0,
+          callsLimit: sub?.calls_limit || 0,
+          upgradeUrl,
+        }),
+      }),
+      getTwilioClient().messages.create({
+        body: `Voco: Your trial ends in 3 days. Upgrade now to keep your calls answered: ${upgradeUrl}`,
+        to: tenant.owner_phone,
+        from: process.env.TWILIO_FROM_NUMBER,
+      }),
+    ]);
+
+    const emailStatus = emailResult.status === 'fulfilled' ? 'ok' : `failed: ${emailResult.reason?.message}`;
+    const smsStatus = smsResult.status === 'fulfilled' ? 'ok' : `failed: ${smsResult.reason?.message}`;
+    console.log(`[stripe/webhook] Trial-will-end notifications: email=${emailStatus}, sms=${smsStatus}`);
+
+    // Record send in billing_notifications for idempotency
+    const { error: insertError } = await supabase.from('billing_notifications').insert({
+      tenant_id: tenantId,
+      notification_type: 'trial_will_end',
+      metadata: { trial_end: subscription.trial_end },
+    });
+
+    if (insertError) {
+      console.error('[stripe/webhook] Failed to insert billing_notification row:', insertError);
+    }
+
+    console.log('[stripe/webhook] Trial-will-end notification sent for tenant:', tenantId);
+  } catch (err) {
+    console.error('[stripe/webhook] handleTrialWillEnd error:', err);
+    // Do NOT rethrow — notification failure must not cause Stripe retry (Pitfall 3)
+  }
 }
 
 /**
- * Handle invoice.payment_failed — log for now.
- * Phase 24 will add notification logic.
+ * Handle invoice.payment_failed — send SMS + email with Stripe Customer Portal URL.
+ * Phase 24: BILLNOTIF-01
+ * Uses Promise.allSettled — notification failures never crash the handler (Pitfall 3).
  */
 async function handleInvoicePaymentFailed(invoice) {
-  console.log('Payment failed for subscription:', invoice.subscription);
+  try {
+    const subscriptionId = invoice.subscription;
+    if (!subscriptionId) {
+      console.warn('[stripe/webhook] handleInvoicePaymentFailed: no subscription on invoice');
+      return;
+    }
+
+    // Lookup subscription to get tenant_id
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('tenant_id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    if (!sub?.tenant_id) {
+      console.warn('[stripe/webhook] handleInvoicePaymentFailed: no subscription found for:', subscriptionId);
+      return;
+    }
+
+    // Lookup tenant for owner contact info
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('business_name, owner_email, owner_phone')
+      .eq('id', sub.tenant_id)
+      .single();
+
+    if (!tenant) {
+      console.warn('[stripe/webhook] handleInvoicePaymentFailed: tenant not found:', sub.tenant_id);
+      return;
+    }
+
+    // Generate Stripe Customer Portal URL for direct payment method update (D-05)
+    const session = await stripe.billingPortal.sessions.create({
+      customer: invoice.customer,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+    });
+
+    // Send SMS + email in parallel via Promise.allSettled — failures logged, never thrown (Pitfall 3)
+    const [smsResult, emailResult] = await Promise.allSettled([
+      getTwilioClient().messages.create({
+        body: `Voco: Your payment failed. Update your card to keep your calls answered: ${session.url}`,
+        to: tenant.owner_phone,
+        from: process.env.TWILIO_FROM_NUMBER,
+      }),
+      getResendClient().emails.send({
+        from: 'Voco <notifications@getvoco.ai>',
+        to: tenant.owner_email,
+        subject: 'Action needed: Voco payment failed',
+        react: PaymentFailedEmail({
+          businessName: tenant.business_name,
+          ownerName: tenant.business_name,
+          portalUrl: session.url,
+        }),
+      }),
+    ]);
+
+    const smsStatus = smsResult.status === 'fulfilled' ? 'ok' : `failed: ${smsResult.reason?.message}`;
+    const emailStatus = emailResult.status === 'fulfilled' ? 'ok' : `failed: ${emailResult.reason?.message}`;
+    console.log(`[stripe/webhook] Payment failed notifications: sms=${smsStatus}, email=${emailStatus}`);
+    console.log('[stripe/webhook] Payment failed notification sent for tenant:', sub.tenant_id);
+  } catch (err) {
+    console.error('[stripe/webhook] handleInvoicePaymentFailed error:', err);
+    // Do NOT rethrow — notification failure must not cause Stripe retry (Pitfall 3)
+  }
 }
