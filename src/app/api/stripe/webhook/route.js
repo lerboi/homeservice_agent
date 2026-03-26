@@ -1,11 +1,105 @@
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
+import { retell } from '@/lib/retell';
+import twilio from 'twilio';
 
-// Price ID -> plan mapping (D-12)
+let twilioClient = null;
+function getTwilioClient() {
+  if (!twilioClient) {
+    twilioClient = twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+  }
+  return twilioClient;
+}
+
+/**
+ * Provision a phone number based on tenant's country.
+ * SG: Assign from phone_inventory via atomic RPC.
+ * US/CA: Purchase via Twilio API, then import into Retell (per D-12 — Twilio-direct for future SMS access).
+ *
+ * Returns the provisioned phone number string, or null on failure.
+ */
+async function provisionPhoneNumber(tenantId, country) {
+  try {
+    if (country === 'SG') {
+      // Atomic assignment from pre-purchased inventory (D-11)
+      const { data, error } = await supabase.rpc('assign_sg_number', {
+        p_tenant_id: tenantId,
+      });
+
+      if (error) {
+        console.error('[stripe/webhook] SG assignment RPC error:', error);
+        return null;
+      }
+
+      // data is an array of { phone_number } rows; empty = no available numbers
+      if (!data || data.length === 0) {
+        console.warn('[stripe/webhook] No SG numbers available for tenant:', tenantId);
+        return null;
+      }
+
+      return data[0].phone_number;
+    } else if (country === 'US' || country === 'CA') {
+      // Step 1: Purchase number via Twilio API (D-12 — direct Twilio, not Retell)
+      // This gives us ownership of the number for future SMS capabilities
+      const client = getTwilioClient();
+      const purchasedNumber = await client.incomingPhoneNumbers.create({
+        phoneNumberType: 'local',
+        countryCode: country,
+      });
+      const phoneNumber = purchasedNumber.phoneNumber; // E.164 format
+
+      console.log(`[stripe/webhook] Purchased Twilio number ${phoneNumber} (${country}) for tenant ${tenantId}`);
+
+      // Step 2: Import the Twilio-purchased number into Retell for voice AI
+      // Retell needs the number imported with SIP trunk config to handle inbound calls
+      try {
+        await retell.phoneNumber.import({
+          phone_number: phoneNumber,
+          termination_uri: process.env.RETELL_SIP_TRUNK_TERMINATION_URI || undefined,
+        });
+        console.log(`[stripe/webhook] Imported ${phoneNumber} into Retell for tenant ${tenantId}`);
+      } catch (importErr) {
+        // Number is purchased but Retell import failed — log but still return the number
+        // The number is usable; Retell import can be retried manually
+        console.error(`[stripe/webhook] Retell import failed for ${phoneNumber}:`, importErr);
+      }
+
+      return phoneNumber;
+    } else {
+      // Fallback: treat as US (legacy behavior)
+      console.warn('[stripe/webhook] Unknown country for tenant:', tenantId, country);
+      const client = getTwilioClient();
+      const purchasedNumber = await client.incomingPhoneNumbers.create({
+        phoneNumberType: 'local',
+        countryCode: 'US',
+      });
+      const phoneNumber = purchasedNumber.phoneNumber;
+
+      try {
+        await retell.phoneNumber.import({ phone_number: phoneNumber });
+      } catch (importErr) {
+        console.error(`[stripe/webhook] Retell import failed for fallback ${phoneNumber}:`, importErr);
+      }
+
+      return phoneNumber;
+    }
+  } catch (err) {
+    console.error('[stripe/webhook] Provisioning failed for tenant:', tenantId, err);
+    return null;
+  }
+}
+
+// Price ID -> plan mapping (D-12) — includes both monthly and annual prices
 const PLAN_MAP = {
-  [process.env.STRIPE_PRICE_STARTER]: { plan_id: 'starter', calls_limit: 40 },
-  [process.env.STRIPE_PRICE_GROWTH]:  { plan_id: 'growth',  calls_limit: 120 },
-  [process.env.STRIPE_PRICE_SCALE]:   { plan_id: 'scale',   calls_limit: 400 },
+  [process.env.STRIPE_PRICE_STARTER]:        { plan_id: 'starter', calls_limit: 40 },
+  [process.env.STRIPE_PRICE_STARTER_ANNUAL]: { plan_id: 'starter', calls_limit: 40 },
+  [process.env.STRIPE_PRICE_GROWTH]:         { plan_id: 'growth',  calls_limit: 120 },
+  [process.env.STRIPE_PRICE_GROWTH_ANNUAL]:  { plan_id: 'growth',  calls_limit: 120 },
+  [process.env.STRIPE_PRICE_SCALE]:          { plan_id: 'scale',   calls_limit: 400 },
+  [process.env.STRIPE_PRICE_SCALE_ANNUAL]:   { plan_id: 'scale',   calls_limit: 400 },
 };
 
 /**
@@ -72,7 +166,7 @@ export async function POST(request) {
       await handleInvoicePaymentFailed(event.data.object);
     } else {
       // Unknown event type — log and return 200 (D-07)
-      console.log('[stripe/webhook] Unhandled event type:', event.type);
+      console.log('Unhandled event type:', event.type);
     }
   } catch (err) {
     console.error(`[stripe/webhook] Error handling ${event.type}:`, err);
@@ -103,6 +197,32 @@ async function handleCheckoutCompleted(session) {
 
   if (tenantError) {
     console.error('[stripe/webhook] Failed to set onboarding_complete:', tenantError);
+  }
+
+  // Provision phone number based on tenant's country (Phase 27)
+  const { data: tenantRow } = await supabase
+    .from('tenants')
+    .select('country, retell_phone_number')
+    .eq('id', tenantId)
+    .single();
+
+  if (tenantRow && !tenantRow.retell_phone_number) {
+    const provisionedNumber = await provisionPhoneNumber(tenantId, tenantRow.country);
+
+    if (provisionedNumber) {
+      await supabase
+        .from('tenants')
+        .update({ retell_phone_number: provisionedNumber })
+        .eq('id', tenantId);
+      console.log(`[stripe/webhook] Provisioned ${provisionedNumber} for tenant ${tenantId} (${tenantRow.country})`);
+    } else {
+      // Mark provisioning as failed for admin follow-up (Pitfall 4 from RESEARCH.md)
+      await supabase
+        .from('tenants')
+        .update({ provisioning_failed: true })
+        .eq('id', tenantId);
+      console.error(`[stripe/webhook] Provisioning failed for tenant ${tenantId} (${tenantRow.country}) — flagged for admin`);
+    }
   }
 
   // Retrieve the full subscription from Stripe and sync locally
@@ -137,7 +257,7 @@ async function handleSubscriptionEvent(subscription) {
 
   if (currentRow?.stripe_updated_at && currentRow.stripe_updated_at >= stripeUpdatedAt) {
     // Stale event — skip
-    console.log('[stripe/webhook] Skipping stale event for subscription:', subscription.id);
+    console.log('Skipping stale event for subscription:', subscription.id);
     return;
   }
 
@@ -234,7 +354,7 @@ async function handleInvoicePaid(invoice) {
  * Phase 24 will add notification logic.
  */
 async function handleTrialWillEnd(subscription) {
-  console.log('[stripe/webhook] Trial ending soon for tenant:', subscription.metadata?.tenant_id);
+  console.log('Trial ending soon for tenant:', subscription.metadata?.tenant_id);
 }
 
 /**
@@ -242,5 +362,5 @@ async function handleTrialWillEnd(subscription) {
  * Phase 24 will add notification logic.
  */
 async function handleInvoicePaymentFailed(invoice) {
-  console.log('[stripe/webhook] Payment failed for subscription:', invoice.subscription);
+  console.log('Payment failed for subscription:', invoice.subscription);
 }
