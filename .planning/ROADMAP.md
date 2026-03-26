@@ -493,7 +493,7 @@ Plans:
 ### v3.0 Phase Checklist
 
 - [x] **Phase 22: Billing Foundation** - Stripe products/prices, subscriptions and usage_events DB tables, webhook handler with idempotency, trial auto-start at onboarding completion (completed 2026-03-26, Plan 04 skipped — UI handled elsewhere)
-- [ ] **Phase 23: Usage Tracking** - Atomic per-call increment via Postgres RPC, usage_events idempotency, billing cycle reset on invoice.paid
+- [x] **Phase 23: Usage Tracking** - Atomic per-call increment via Postgres RPC, usage_events idempotency, billing cycle reset on invoice.paid (completed 2026-03-26)
 - [ ] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification
 - [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
@@ -527,7 +527,7 @@ Plans:
   4. Two calls completing simultaneously increment calls_used by exactly 2 — no race condition drops or doubles an increment
 **Plans**: 1 plan
 Plans:
-- [ ] 23-01-PLAN.md — Usage events migration, increment RPC, and processCallEnded integration
+- [x] 23-01-PLAN.md — Usage events migration, increment RPC, and processCallEnded integration
 
 ### Phase 24: Subscription Lifecycle and Notifications
 **Goal**: Tenants in degraded subscription states (past_due, trial expiring) are handled gracefully — owners have 3 days on past_due before blocking, receive email and SMS when payment fails, get trial reminder emails at day 7 and 12, and the dashboard is gated appropriately for cancelled or expired tenants
@@ -574,7 +574,7 @@ Plans:
   3. When all Singapore numbers are assigned (none with status 'available'), a new SG user sees a waitlist UI and cannot proceed with onboarding
   4. A US or Canada user gets a phone number provisioned dynamically via Retell API after checkout success
   5. The wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success) — test call step is removed from the wizard flow
-**Plans:** 3/3 plans complete
+**Plans:** 1/1 plans complete
 Plans:
 - [x] 27-01-PLAN.md — DB migration (phone_inventory, waitlist, tenants columns, assign_sg_number RPC) + SG availability and waitlist APIs
 - [x] 27-02-PLAN.md — "Your Details" step (name, phone, country) + layout update + sms-confirm extension
@@ -625,7 +625,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
-| 23. Usage Tracking | 0/1 | Planned | - |
+| 23. Usage Tracking | 1/1 | Complete   | 2026-03-26 |
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |

@@ -120,7 +120,9 @@
       "Bash(find C:/Users/leheh/.Projects/homeservice_agent/app -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx \\\\\\))",
       "Bash(find C:/Users/leheh/.Projects/homeservice_agent/src -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx \\\\\\))",
       "Bash(pip show:*)",
-      "Bash(where stripe:*)"
+      "Bash(where stripe:*)",
+      "Bash(for wt:*)",
+      "Bash(do git:*)"
     ]
   }
 }

@@ -16,9 +16,9 @@
 
 ### Usage Tracking
 
-- [ ] **USAGE-01**: Per-call usage increment via atomic Postgres RPC (increment_calls_used) on call_ended webhook — minimum 10-second duration filter, test call exclusion
-- [ ] **USAGE-02**: Usage events row inserted per call with call_id as idempotency key — prevents double-counting from webhook retries
-- [ ] **USAGE-03**: Calls_used reset to 0 triggered by invoice.paid webhook with billing_reason = subscription_cycle — not a cron job
+- [x] **USAGE-01**: Per-call usage increment via atomic Postgres RPC (increment_calls_used) on call_ended webhook — minimum 10-second duration filter, test call exclusion
+- [x] **USAGE-02**: Usage events row inserted per call with call_id as idempotency key — prevents double-counting from webhook retries
+- [x] **USAGE-03**: Calls_used reset to 0 triggered by invoice.paid webhook with billing_reason = subscription_cycle — not a cron job
 
 ### Enforcement
 
@@ -346,9 +346,9 @@
 | BILL-04 | Phase 22 | Complete |
 | BILL-05 | Phase 22 | Complete |
 | BILL-06 | Phase 22 | Complete |
-| USAGE-01 | Phase 23 | Pending |
-| USAGE-02 | Phase 23 | Pending |
-| USAGE-03 | Phase 23 | Pending |
+| USAGE-01 | Phase 23 | Complete |
+| USAGE-02 | Phase 23 | Complete |
+| USAGE-03 | Phase 23 | Complete |
 | ENFORCE-03 | Phase 24 | Pending |
 | ENFORCE-04 | Phase 24 | Pending |
 | BILLNOTIF-01 | Phase 24 | Pending |

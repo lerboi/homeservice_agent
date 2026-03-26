@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Completed 28-admin-dashboard 28-03-PLAN.md
-last_updated: "2026-03-26T11:55:22.147Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 23-usage-tracking 23-01-PLAN.md
+last_updated: "2026-03-26T12:54:44.367Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 28 — admin-dashboard
+**Current focus:** Phase 23 — usage-tracking
 
 ## Current Position
 
-Phase: 28
-Plan: Not started
+Phase: 23 (usage-tracking) — EXECUTING
+Plan: 1 of 1
 
 ## Accumulated Context
 
@@ -63,6 +63,8 @@ Recent decisions affecting current work:
 - [Phase 28-admin-dashboard]: Duplicate number shows inline error text (not toast) per UI-SPEC copywriting contract
 - [Phase 28-admin-dashboard]: Admin re-provisioning (POST /api/admin/tenants/[id]) does NOT call Retell/Twilio — only assigns SG number from inventory; Retell agent association is a separate operational step
 - [Phase 28-admin-dashboard]: Tenant name passed via impersonate_name query param to dashboard layout to avoid an extra API call during impersonation
+- [Phase 23]: Migration renumbered 012→013 (012_admin_users.sql already exists from Phase 28)
+- [Phase 23]: No SECURITY DEFINER on increment_calls_used — service_role client bypasses RLS automatically
 
 ### Roadmap Evolution
 
@@ -94,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T11:48:27.373Z
-Stopped at: Completed 28-admin-dashboard 28-03-PLAN.md
+Last session: 2026-03-26T12:54:44.357Z
+Stopped at: Completed 23-usage-tracking 23-01-PLAN.md
 Resume file: None
