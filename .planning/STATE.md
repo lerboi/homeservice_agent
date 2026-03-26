@@ -89,6 +89,7 @@ Recent decisions affecting current work:
 - Phase 28 added: Admin Dashboard (2026-03-26)
 - Phase 29 added: Hero Section Interactive Demo (2026-03-26)
 - Phase 30 added: Voice Agent Prompt Optimization (2026-03-27)
+- Phase 31 added: Voice Call Feature Showcase PDF (2026-03-27)
 
 ### Pending Todos
 

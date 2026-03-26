@@ -303,6 +303,16 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 Plans:
 - [ ] TBD (run /gsd:plan-phase 30 to break down)
 
+### Phase 31: Voice Call Feature Showcase PDF
+
+**Goal:** Generate a non-technical, sales-ready PDF showcasing all voice call features and capabilities. Output to `docs/` directory. Covers: AI receptionist capabilities, booking flow, triage, transfer, recovery SMS, calendar sync, multi-language support, and all smart features from Phase 30.
+**Requirements**: TBD
+**Depends on:** Phase 30
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 31 to break down)
+
 ---
 
 ## Milestone v2.0 Phases
