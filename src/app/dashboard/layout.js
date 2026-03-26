@@ -10,6 +10,7 @@ import BottomTabBar from '@/components/dashboard/BottomTabBar';
 import DashboardTour from '@/components/dashboard/DashboardTour';
 import { GridTexture } from '@/components/ui/grid-texture';
 import ImpersonationBanner from './ImpersonationBanner';
+import BillingWarningBanner from './BillingWarningBanner';
 
 const BREADCRUMB_LABELS = {
   leads: 'Leads',
@@ -126,6 +127,9 @@ function DashboardLayoutInner({ children }) {
       {impersonateTenantId && (
         <ImpersonationBanner tenantName={impersonateName || 'Unknown Tenant'} />
       )}
+
+      {/* Billing warning banner — amber past_due countdown, shown below ImpersonationBanner when not impersonating */}
+      {!impersonateTenantId && <BillingWarningBanner />}
 
       {/* Main layout — wrapped in pointer-events-none when impersonating to disable all actions */}
       <div className={impersonateTenantId ? 'pointer-events-none opacity-60' : ''}>

@@ -76,7 +76,7 @@ export async function middleware(request) {
   if (user) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('onboarding_complete')
+      .select('onboarding_complete, id')
       .eq('owner_id', user.id)
       .single();
 
@@ -101,6 +101,25 @@ export async function middleware(request) {
     // Haven't onboarded yet → can't access dashboard
     if (pathname.startsWith('/dashboard') && !onboarded) {
       return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
+
+    // ── Subscription gate (ENFORCE-04, D-09, D-10) ────────────────────────────
+    // Check subscription status for dashboard routes. /billing/* is NOT in the
+    // matcher config, so those paths are automatically exempt per D-10.
+    const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+
+    if (isDashboardPath && tenant) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('tenant_id', tenant.id)
+        .eq('is_current', true)
+        .maybeSingle();
+
+      const blockedStatuses = ['canceled', 'paused', 'incomplete'];
+      if (sub && blockedStatuses.includes(sub.status)) {
+        return NextResponse.redirect(new URL('/billing/upgrade', request.url));
+      }
     }
   }
 
