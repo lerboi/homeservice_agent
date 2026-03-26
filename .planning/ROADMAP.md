@@ -506,9 +506,9 @@ Plans:
   3. Sending customer.subscription.deleted via Stripe test webhook sets the local subscription status to cancelled — the tenant cannot get indefinite free access by letting a trial expire without a payment method
   4. Out-of-order webhook delivery (an older event arriving after a newer one) does not overwrite newer subscription state — stripe_updated_at version protection is observed
 **Plans:**
-2/4 plans executed
+3/4 plans executed
 - [x] 22-02-PLAN.md — Stripe webhook handler with idempotency and version protection
-- [ ] 22-03-PLAN.md — Checkout Session API and onboarding flow rewiring
+- [x] 22-03-PLAN.md — Checkout Session API and onboarding flow rewiring
 - [ ] 22-04-PLAN.md — Plan selection UI and post-checkout celebration screens
 
 ### Phase 23: Usage Tracking
@@ -565,7 +565,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Billing Foundation | 2/4 | In Progress|  |
+| 22. Billing Foundation | 3/4 | In Progress|  |
 | 23. Usage Tracking | 0/TBD | Not started | - |
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |

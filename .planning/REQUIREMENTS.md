@@ -12,7 +12,7 @@
 - [x] **BILL-03**: Usage events table with call_id idempotency key (ON CONFLICT DO NOTHING) and stripe_webhook_events table with UNIQUE on event_id
 - [x] **BILL-04**: Stripe webhook handler at /api/stripe/webhook with request.text() signature verification, idempotency check, and stripe_updated_at version protection for out-of-order events
 - [x] **BILL-05**: All subscription lifecycle events synced to local DB (created, updated, deleted, paused, resumed, trial_will_end)
-- [ ] **BILL-06**: Trial auto-start at onboarding completion — creates Stripe customer + 14-day trial subscription with CC required, writes local subscriptions row synchronously
+- [x] **BILL-06**: Trial auto-start at onboarding completion — creates Stripe customer + 14-day trial subscription with CC required, writes local subscriptions row synchronously
 
 ### Usage Tracking
 
@@ -327,7 +327,7 @@
 | BILL-03 | Phase 22 | Complete |
 | BILL-04 | Phase 22 | Complete |
 | BILL-05 | Phase 22 | Complete |
-| BILL-06 | Phase 22 | Pending |
+| BILL-06 | Phase 22 | Complete |
 | USAGE-01 | Phase 23 | Pending |
 | USAGE-02 | Phase 23 | Pending |
 | USAGE-03 | Phase 23 | Pending |

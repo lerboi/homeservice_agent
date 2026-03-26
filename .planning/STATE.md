@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-03-26T06:01:40.658Z"
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-03-26T06:04:13.892Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 22 (billing-foundation) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Accumulated Context
 
@@ -43,6 +43,8 @@ Recent decisions affecting current work:
 - [Phase 22]: Minimal Stripe singleton — no client-side code in stripe.js
 - [Phase 22]: Subscription write-protection via RLS — authenticated SELECT-only, all writes through service_role webhook handlers
 - [Phase 22]: Return 500 on webhook handler errors so Stripe retries automatically
+- [Phase 22]: tenant_id set on both Checkout Session metadata and subscription_data metadata for webhook reliability
+- [Phase 22]: onboarding_complete no longer set by test-call flow — deferred to checkout.session.completed webhook
 
 ### Roadmap Evolution
 
@@ -71,6 +73,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T06:01:40.650Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-03-26T06:04:13.884Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
