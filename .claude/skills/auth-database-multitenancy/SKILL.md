@@ -7,7 +7,7 @@ description: "Complete architectural reference for authentication, database sche
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-03-26 (Phase 22 — 10 migrations, 3 Supabase clients, middleware, getTenantId, Stripe SDK)
+**Last updated**: 2026-03-26 (Phase 28-01 — 11 migrations, admin_users table, middleware admin gate, verifyAdmin helper)
 
 ---
 
@@ -21,13 +21,19 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 8 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 11 sequential migrations building full schema |
+| **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
 HTTP Request arrives
        ↓
   middleware.js (uses ANON KEY + cookie store)
-       ↓  AUTH_REQUIRED_PATHS check
+       ↓  getUser() then path-based routing
+  /admin/* path?
+    → No user → redirect /auth/signin?redirect=...
+    → User, no admin_users row → rewrite /admin/forbidden (403)
+    → User, has admin_users row → return response (skip tenant/onboarding logic)
+  AUTH_REQUIRED_PATHS check (/onboarding, /dashboard)
   Unauthenticated → redirect /auth/signin
   Authenticated → check onboarding_complete for /onboarding* paths
        ↓
@@ -37,9 +43,13 @@ HTTP Request arrives
        ├── createSupabaseServer() — SSR cookie-based client (anon key)
        │     auth.getUser() → verifies session
        │
-       └── getTenantId() pattern
-             createSupabaseServer().auth.getUser() → user.id
-             supabase (service role).from('tenants').eq('owner_id', user.id) → tenant.id
+       ├── getTenantId() pattern
+       │     createSupabaseServer().auth.getUser() → user.id
+       │     supabase (service role).from('tenants').eq('owner_id', user.id) → tenant.id
+       │
+       └── verifyAdmin() pattern (admin API routes)
+             createSupabaseServer().auth.getUser() → user
+             supabase (service role).from('admin_users').eq('user_id', user.id) → returns user if admin
 
 Webhook path (Retell, cron jobs):
   Retell webhook → supabase (service role client) → bypasses RLS for cross-tenant writes
@@ -54,11 +64,12 @@ Realtime subscriptions (browser):
 
 | File | Role |
 |------|------|
-| `src/middleware.js` | Auth guard middleware — cookie-based auth, onboarding redirect, AUTH_REQUIRED_PATHS |
+| `src/middleware.js` | Auth guard middleware — cookie-based auth, onboarding redirect, AUTH_REQUIRED_PATHS, admin gate |
 | `src/lib/supabase.js` | Service role client — bypasses RLS, used by webhooks and server-side API routes |
 | `src/lib/supabase-server.js` | `createSupabaseServer()` factory — SSR cookie-based client for server components |
 | `src/lib/supabase-browser.js` | Browser client — anon key, client components and Realtime |
 | `src/lib/get-tenant-id.js` | `getTenantId()` — user → tenant_id resolution via tenants table |
+| `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check; used by all /api/admin/* routes |
 | `supabase/migrations/001_initial_schema.sql` | tenants, calls tables + RLS + service_role bypass |
 | `supabase/migrations/002_onboarding_triage.sql` | services table, triage columns on calls, working_hours stub |
 | `supabase/migrations/003_scheduling.sql` | appointments, service_zones, zone_travel_buffers, calendar_credentials, calendar_events, book_appointment_atomic RPC |
@@ -69,6 +80,8 @@ Realtime subscriptions (browser):
 | `supabase/migrations/008_call_outcomes.sql` | calls.booking_outcome, exception_reason, notification_priority |
 | `supabase/migrations/009_recovery_sms_tracking.sql` | calls.recovery_sms_status, retry_count, last_error, last_attempt_at |
 | `supabase/migrations/010_billing_schema.sql` | subscriptions, stripe_webhook_events tables + RLS |
+| `supabase/migrations/011_country_provisioning.sql` | phone_inventory, phone_inventory_waitlist tables + assign_sg_number RPC |
+| `supabase/migrations/012_admin_users.sql` | admin_users table + RLS self-read policy |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -180,12 +193,15 @@ return tenant?.id || null;
 const AUTH_REQUIRED_PATHS = [
   '/onboarding',
   '/dashboard',
+  '/admin',
 ];
 ```
 
 Matching: `pathname === p || pathname.startsWith(p + '/')` — exact path OR subpaths.
 
 `/auth/signin` is NOT in the list — it's the public auth entry point.
+
+**Note**: `/admin` is in `AUTH_REQUIRED_PATHS` but its auth is handled by the dedicated admin gate block (before the generic auth check). The admin gate includes its own unauthenticated redirect, admin_users lookup, and 403 rewrite. The `/admin` entry in AUTH_REQUIRED_PATHS exists as a safety fallback only.
 
 ### Client Used in Middleware
 
@@ -212,11 +228,37 @@ const supabase = createServerClient(
 
 **Optimization**: Onboarding check is only run for `/onboarding*` and `/dashboard*` paths. Not run on every request to avoid unnecessary DB queries.
 
+### Admin Gate (added Phase 28-01)
+
+After `getUser()`, before the generic `isAuthRequired` check, the middleware handles `/admin/*` paths:
+
+```js
+const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
+
+if (isAdminPath) {
+  if (!user) {
+    // Redirect to /auth/signin?redirect=<attempted path>
+  }
+  // Query admin_users using anon key client (user's own session respects RLS policy)
+  const { data: adminRecord } = await supabase
+    .from('admin_users').select('id').eq('user_id', user.id).single();
+
+  if (!adminRecord) {
+    return NextResponse.rewrite(new URL('/admin/forbidden', request.url)); // 403
+  }
+  return response; // Early return — skips tenant/onboarding logic for admins
+}
+```
+
+**CRITICAL**: The early `return response` is intentional — admins may not have a `tenants` row (they're platform operators, not tenants). Without early return, the middleware would try to look up their tenant and redirect them to `/onboarding`.
+
+**403 page**: `src/app/admin/forbidden/page.js` — shown when user is authenticated but not in admin_users. URL stays at the attempted path (rewrite, not redirect).
+
 ### Matcher Config
 
 ```js
 export const config = {
-  matcher: ['/onboarding/:path*', '/onboarding', '/dashboard/:path*', '/dashboard', '/auth/signin'],
+  matcher: ['/onboarding/:path*', '/onboarding', '/dashboard/:path*', '/dashboard', '/admin/:path*', '/admin', '/auth/signin'],
 };
 ```
 
@@ -277,7 +319,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 10 migrations are applied sequentially. FK dependencies require this order.
+All 12 migrations are applied sequentially. FK dependencies require this order.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -500,6 +542,43 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 
 ---
 
+### 011_country_provisioning.sql — Country-Aware Provisioning
+
+**Extends tenants**: `owner_name` (text nullable), `country` (text nullable), `provisioning_failed` (boolean DEFAULT false)
+
+**Tables created**: `phone_inventory`, `phone_inventory_waitlist`
+
+**phone_inventory columns**: `id` (uuid PK), `phone_number` (text UNIQUE NOT NULL), `country` (text NOT NULL DEFAULT 'SG'), `status` (CHECK available|assigned|retired DEFAULT available), `assigned_tenant_id` (FK → tenants nullable), `created_at`
+
+**phone_inventory_waitlist columns**: `id`, `email` (text NOT NULL), `country` (text NOT NULL DEFAULT 'SG'), `created_at`, `notified_at` (timestamptz nullable)
+
+**`assign_sg_number` RPC** (SECURITY DEFINER): Atomically assigns a Singapore phone number to a tenant using `FOR UPDATE SKIP LOCKED` for race-safety. Returns `phone_number` or empty if no inventory.
+
+**RLS**: phone_inventory: RLS enabled, no authenticated policies (all access via service_role or SECURITY DEFINER RPC). phone_inventory_waitlist: INSERT allowed for anon+authenticated (anyone can join). Index: `idx_phone_inventory_available` on (country, status) WHERE status = 'available'.
+
+---
+
+### 012_admin_users.sql — Admin Dashboard Auth Gate (Phase 28-01)
+
+**Tables created**: `admin_users`
+
+**admin_users columns**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | gen_random_uuid() |
+| `user_id` | uuid UNIQUE | FK → auth.users(id) |
+| `role` | text | NOT NULL DEFAULT 'admin' |
+| `created_at` | timestamptz | NOT NULL DEFAULT now() |
+
+**RLS**: Enabled. Single SELECT policy: "Authenticated can read own admin row" — `auth.uid() = user_id`. Authenticated users can only read their own admin status row. No INSERT/UPDATE/DELETE policies — admin user management is exclusively via service_role (Supabase CLI or direct DB insert). No service_role bypass policy needed because service_role bypasses RLS by default.
+
+**Bootstrap**: To make a user an admin, insert directly via Supabase CLI:
+```sql
+INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
+```
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -518,11 +597,15 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 | `escalation_contacts` | 006 | Owner-configured escalation chain | Tenant child |
 | `subscriptions` | 010 | Stripe subscription state per tenant | Tenant child (SELECT-own only) |
 | `stripe_webhook_events` | 010 | Webhook idempotency (UNIQUE event_id) | Service role only |
+| `phone_inventory` | 011 | Singapore phone number pool for tenant assignment | Service role only (no authenticated policies) |
+| `phone_inventory_waitlist` | 011 | Email waitlist for SG number availability | INSERT for anon+authenticated |
+| `admin_users` | 012 | Platform admin users — gates /admin/* routes | Authenticated SELECT-own only (user_id = auth.uid()) |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
 - 003: `tenant_timezone`, `slot_duration_mins`
 - 005: `setup_checklist_dismissed`
+- 011: `owner_name`, `country`, `provisioning_failed`
 
 ---
 
@@ -557,6 +640,12 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 - **REPLICA IDENTITY FULL for Realtime**: Required on `leads` table so Supabase Realtime can emit old+new row data for tenant-filtered subscriptions. Standard identity only sends the PK on change events, breaking RLS-aware filtering.
 
 - **Migration ordering matters (FK dependencies)**: 001 (tenants, calls) must run before 002 (services FK tenants). 003 adds appointment FK to service_zones (added in same migration). 004 adds leads FK to calls and appointments. All FK dependencies flow downward in migration order.
+
+- **Admin gate returns early from middleware**: The `/admin/*` check returns response immediately after verifying admin status — before the tenant/onboarding redirect logic. Admin users are platform operators who may not have a `tenants` row. Without early return, the middleware would redirect them to `/onboarding`.
+
+- **verifyAdmin uses service_role for admin_users lookup**: Unlike `getTenantId()`, `verifyAdmin()` uses the service-role client for the admin_users query rather than the anon-key session client. This ensures consistent behavior regardless of RLS policy changes. The session client is used only for `auth.getUser()`.
+
+- **admin_users has no service_role bypass policy**: Service role bypasses RLS by default in Supabase — no explicit policy is needed. The single SELECT policy allows authenticated users to check their own admin status (used by middleware). All writes (INSERT/UPDATE/DELETE) are done directly via service_role (Supabase CLI or SQL editor) — there are intentionally no INSERT policies.
 
 - **Middleware uses anon key for cookie-based auth**: The middleware creates a `createServerClient` with `NEXT_PUBLIC_SUPABASE_ANON_KEY` (not service_role). Using service_role in middleware would bypass the cookie-based session check entirely — the middleware would never see unauthenticated users.
 
