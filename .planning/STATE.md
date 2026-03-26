@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 29-02-PLAN.md
-last_updated: "2026-03-26T09:37:24.697Z"
+stopped_at: Completed 29-03-PLAN.md
+last_updated: "2026-03-26T09:50:33.546Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 29 (hero-section-interactive-demo) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 - [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
 - [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
+- [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
 
 ### Roadmap Evolution
 
@@ -86,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T09:37:24.687Z
-Stopped at: Completed 29-02-PLAN.md
+Last session: 2026-03-26T09:50:33.531Z
+Stopped at: Completed 29-03-PLAN.md
 Resume file: None

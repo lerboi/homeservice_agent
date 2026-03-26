@@ -59,7 +59,7 @@
 ### Hero Section Interactive Demo
 
 - [x] **DEMO-01**: Hero section shows business name input field instead of CTA buttons — no eyebrow pill, no social proof, no Watch Demo button
-- [ ] **DEMO-02**: After entering business name and clicking "Listen to Your Demo", audio player replaces input bar in-place with waveform visualizer and play/pause controls
+- [x] **DEMO-02**: After entering business name and clicking "Listen to Your Demo", audio player replaces input bar in-place with waveform visualizer and play/pause controls
 - [x] **DEMO-03**: Audio plays scripted HVAC conversation with visitor's business name dynamically inserted via ElevenLabs TTS
 - [x] **DEMO-04**: Hero title is shorter than current version and RotatingText component adjusts width responsively to match cycling word length
 - [x] **DEMO-05**: Demo audio loads and begins playing within 3 seconds of button click
@@ -387,7 +387,7 @@
 | COUNTRY-06 | Phase 27 | Complete |
 | COUNTRY-07 | Phase 27 | Complete |
 n| DEMO-01 | Phase 29 | Complete |
-| DEMO-02 | Phase 29 | Pending |
+| DEMO-02 | Phase 29 | Complete |
 | DEMO-03 | Phase 29 | Complete |
 | DEMO-04 | Phase 29 | Complete |
 | DEMO-05 | Phase 29 | Complete |
