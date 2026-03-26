@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Phase 29 context updated (interactive)
-last_updated: "2026-03-26T07:51:20.978Z"
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-03-26T07:57:49.229Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 22 — billing-foundation
+**Current focus:** Phase 27 — country-aware-onboarding-and-number-provisioning
 
 ## Current Position
 
-Phase: 22 (billing-foundation) — EXECUTING
-Plan: 4 of 4
+Phase: 27 (country-aware-onboarding-and-number-provisioning) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - [Phase 22]: tenant_id set on both Checkout Session metadata and subscription_data metadata for webhook reliability
 - [Phase 22]: onboarding_complete no longer set by test-call flow — deferred to checkout.session.completed webhook
 - [Phase 22]: Light-surface plan cards with negative margin breakout from wizard card for wider grid
+- [Phase 27]: SECURITY DEFINER on assign_sg_number RPC for atomic race-safe SG number assignment via FOR UPDATE SKIP LOCKED
+- [Phase 27]: provisioning_failed flag on tenants enables admin follow-up when SG inventory exhausted at checkout time
 
 ### Roadmap Evolution
 
@@ -77,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T07:51:20.971Z
-Stopped at: Phase 29 context updated (interactive)
-Resume file: .planning/phases/29-hero-section-interactive-demo/29-CONTEXT.md
+Last session: 2026-03-26T07:57:49.220Z
+Stopped at: Completed 27-01-PLAN.md
+Resume file: None
