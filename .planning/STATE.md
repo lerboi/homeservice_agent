@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Phase 28 planned — 3 plans in 2 waves
-last_updated: "2026-03-26T11:22:04.352Z"
+stopped_at: Phase 23 planned — ready to execute
+last_updated: "2026-03-26T11:44:22.880Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 29 — hero-section-interactive-demo
+**Current focus:** Phase 28 — admin-dashboard
 
 ## Current Position
 
-Phase: 29 (hero-section-interactive-demo) — EXECUTING
-Plan: 4 of 4
+Phase: 28 (admin-dashboard) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
 - [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
 - [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
+- [Phase 28-admin-dashboard]: Admin gate returns early from middleware after successful check — admins may not have a tenants row
+- [Phase 28-admin-dashboard]: admin_users has no INSERT policies — all admin user management via service_role CLI/direct DB to prevent self-escalation
 
 ### Roadmap Evolution
 
@@ -88,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T11:22:04.344Z
-Stopped at: Phase 28 planned — 3 plans in 2 waves
-Resume file: .planning/phases/28-admin-dashboard/28-01-PLAN.md
+Last session: 2026-03-26T11:44:22.862Z
+Stopped at: Phase 23 planned — ready to execute
+Resume file: .planning/phases/23-usage-tracking/23-01-PLAN.md

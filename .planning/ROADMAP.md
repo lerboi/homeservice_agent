@@ -625,10 +625,10 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
-| 23. Usage Tracking | 0/TBD | Not started | - |
+| 23. Usage Tracking | 0/1 | Planned | - |
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
-| 28. Admin Dashboard | 0/TBD | Not started | - |
+| 28. Admin Dashboard | 0/3 | Planned    |  |
 | 29. Hero Section Interactive Demo | 4/4 | Complete   | 2026-03-26 |
