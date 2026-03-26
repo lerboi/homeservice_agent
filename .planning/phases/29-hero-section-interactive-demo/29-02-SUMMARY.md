@@ -29,6 +29,9 @@ key-files:
     - src/app/api/demo-voice/route.js
     - scripts/generate-demo-audio.js
     - public/audio/.gitkeep
+    - public/audio/demo-intro.mp3
+    - public/audio/demo-mid.mp3
+    - public/audio/demo-outro.mp3
   modified: []
 
 key-decisions:
@@ -57,11 +60,11 @@ completed: 2026-03-26
 
 ## Performance
 
-- **Duration:** ~2 min
+- **Duration:** ~2 min (automated) + human ElevenLabs setup
 - **Started:** 2026-03-26T09:11:14Z
-- **Completed:** 2026-03-26T09:12:59Z
-- **Tasks:** 2 of 3 completed (Task 3 is a human-action checkpoint — awaiting ElevenLabs setup)
-- **Files modified:** 3 created
+- **Completed:** 2026-03-26
+- **Tasks:** 3 of 3 completed
+- **Files modified:** 6 created
 
 ## Accomplishments
 
@@ -75,13 +78,16 @@ Each task was committed atomically:
 
 1. **Task 1: Create /api/demo-voice TTS route with rate limiting** - `04b9c6a` (feat)
 2. **Task 2: Create pre-render script and generate static demo audio files** - `8954b67` (feat)
-3. **Task 3: User sets up ElevenLabs API key and runs pre-render script** - CHECKPOINT (human-action, pending)
+3. **Task 3: User sets up ElevenLabs API key and runs pre-render script** - `40e5615` (feat — MP3 files committed after human setup)
 
 ## Files Created/Modified
 
 - `src/app/api/demo-voice/route.js` - POST handler with ElevenLabs TTS call, IP rate limiting, audio/mpeg response
 - `scripts/generate-demo-audio.js` - Node.js pre-render script for static demo segments (3 segments, 4 TTS calls for demo-mid)
-- `public/audio/.gitkeep` - Tracks the public/audio/ directory in git ahead of MP3 file generation
+- `public/audio/.gitkeep` - Tracks the public/audio/ directory in git
+- `public/audio/demo-intro.mp3` - Caller opening line (55KB, generated via ElevenLabs caller voice)
+- `public/audio/demo-mid.mp3` - Multi-voice conversation segment (149KB, 4 TTS calls concatenated)
+- `public/audio/demo-outro.mp3` - AI booking confirmation (84KB, generated via ElevenLabs AI voice)
 
 ## Decisions Made
 
@@ -117,9 +123,18 @@ None - plan executed exactly as written.
 ## Next Phase Readiness
 
 - /api/demo-voice route is ready for plan 03 (HeroDemoInput component will call it)
-- public/audio/ directory exists and is tracked; MP3 files will be added after user runs pre-render script
-- Plan 03 (HeroDemoInput) and plan 04 (HeroDemoPlayer) both depend on these artifacts
+- Three static MP3 demo segments committed to `public/audio/` — ready for HeroDemoPlayer
+- Plan 03 (HeroDemoInput) and plan 04 (HeroDemoPlayer) both have their required audio artifacts
+
+## Self-Check: PASSED
+
+- src/app/api/demo-voice/route.js: exists
+- scripts/generate-demo-audio.js: exists
+- public/audio/demo-intro.mp3: exists (55KB)
+- public/audio/demo-mid.mp3: exists (149KB)
+- public/audio/demo-outro.mp3: exists (84KB)
+- Commits: 04b9c6a (TTS route), 8954b67 (pre-render script), 40e5615 (MP3 files) — all verified
 
 ---
 *Phase: 29-hero-section-interactive-demo*
-*Completed: 2026-03-26 (paused at Task 3 checkpoint)*
+*Completed: 2026-03-26*
