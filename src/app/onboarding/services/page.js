@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { X, Plus } from 'lucide-react';
@@ -28,10 +28,17 @@ export default function OnboardingStep3Services() {
   const router = useRouter();
 
   const [trade] = useWizardSession('trade', null);
-  const [services, setServices] = useWizardSession(
-    'services',
-    trade ? (TRADE_TEMPLATES[trade]?.services || []).map((svc, idx) => ({ ...svc, id: idx })) : []
-  );
+  const [services, setServices] = useWizardSession('services', []);
+
+  // Auto-fill services from trade template when trade is loaded but services are empty
+  useEffect(() => {
+    if (trade && services.length === 0) {
+      const template = TRADE_TEMPLATES[trade]?.services || [];
+      if (template.length > 0) {
+        setServices(template.map((svc, idx) => ({ ...svc, id: idx })));
+      }
+    }
+  }, [trade, services.length, setServices]);
   const [submitError, setSubmitError] = useState('');
   const [addingService, setAddingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');

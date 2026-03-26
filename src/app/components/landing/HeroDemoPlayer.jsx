@@ -69,8 +69,9 @@ export function HeroDemoPlayer({ audioBuffers }) {
   }, []);
 
   const playFromOffset = useCallback((audioCtx, buffer, offsetSeconds) => {
-    // Cancel any existing source
+    // Detach old source's onended before stopping to prevent stale callbacks
     if (sourceRef.current) {
+      sourceRef.current.onended = null;
       try { sourceRef.current.stop(); } catch {}
     }
     cancelAnimationFrame(rafRef.current);
@@ -82,8 +83,8 @@ export function HeroDemoPlayer({ audioBuffers }) {
     startTimeRef.current = audioCtx.currentTime - offsetSeconds;
 
     source.onended = () => {
-      // Natural end only (not pause-triggered)
-      if (!pausedAtRef.current) {
+      // Only fire for the current source (not a stale one)
+      if (sourceRef.current === source && !pausedAtRef.current) {
         setPlayerState('ended');
         setProgress(1);
         cancelAnimationFrame(rafRef.current);
@@ -94,6 +95,44 @@ export function HeroDemoPlayer({ audioBuffers }) {
     setPlayerState('playing');
     trackProgress(audioCtx, buffer.duration);
   }, [trackProgress]);
+
+  // Generate a phone ringtone using Web Audio API oscillators
+  // US phone ring: 440Hz + 480Hz dual tone, 2s on / 4s off pattern
+  const generateRingtone = useCallback((audioCtx, rings = 1) => {
+    const sampleRate = audioCtx.sampleRate;
+    const ringOn = 0.8;  // seconds of ring
+    const ringOff = 0.3; // seconds of silence between rings
+    const cycleLen = ringOn + ringOff;
+    const totalDuration = rings * cycleLen - ringOff; // no trailing silence
+    const totalSamples = Math.floor(totalDuration * sampleRate);
+    const buffer = audioCtx.createBuffer(1, totalSamples, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < totalSamples; i++) {
+      const t = i / sampleRate;
+      const cyclePos = t % cycleLen;
+
+      if (cyclePos < ringOn) {
+        // Dual tone (440 + 480 Hz) with envelope
+        const envelope = Math.min(1, cyclePos / 0.02) * Math.min(1, (ringOn - cyclePos) / 0.02);
+        const sample =
+          0.3 * Math.sin(2 * Math.PI * 440 * t) +
+          0.3 * Math.sin(2 * Math.PI * 480 * t);
+        data[i] = sample * envelope * 0.4; // Overall volume
+      } else {
+        data[i] = 0;
+      }
+    }
+
+    return buffer;
+  }, []);
+
+  // Create a silence buffer of a given duration
+  const createSilence = useCallback((audioCtx, durationSeconds) => {
+    const sampleRate = audioCtx.sampleRate;
+    const samples = Math.floor(durationSeconds * sampleRate);
+    return audioCtx.createBuffer(1, samples, sampleRate);
+  }, []);
 
   // Audio stitching + autoplay on mount
   useEffect(() => {
@@ -108,22 +147,50 @@ export function HeroDemoPlayer({ audioBuffers }) {
         await audioCtx.resume();
       }
 
-      // Decode all buffers (.slice() avoids ArrayBuffer detachment issues)
+      // Decode all speech buffers (.slice() avoids ArrayBuffer detachment issues)
+      // Order: [intro (caller), name greeting (AI), mid conversation, outro (AI)]
       const decoded = await Promise.all(
         audioBuffers.map((ab) => audioCtx.decodeAudioData(ab.slice()))
       );
 
-      // Concatenate into a single AudioBuffer
-      const totalLength = decoded.reduce((sum, b) => sum + b.length, 0);
-      const sampleRate = decoded[0].sampleRate;
-      const channels = decoded[0].numberOfChannels;
-      const combined = audioCtx.createBuffer(channels, totalLength, sampleRate);
+      // Generate ringtone and silence gaps for natural feel
+      const ringtone = generateRingtone(audioCtx, 1);
+      const pickupPause = createSilence(audioCtx, 0.8);
+      const turnGapShort = createSilence(audioCtx, 0.6);
+      const turnGapLong = createSilence(audioCtx, 0.9);
+
+      // Sequence: ringtone → pause → AI greeting (name) → short gap → caller intro → gap → mid → gap → outro
+      const sequence = [
+        ringtone,
+        pickupPause,
+        decoded[1],    // AI greeting with business name (dynamic)
+        turnGapShort,
+        decoded[0],    // Caller: "Hey, yeah, I'd like to get my AC serviced..."
+        turnGapLong,
+        decoded[2],    // Mid-conversation (multi-voice)
+        turnGapShort,
+        decoded[3],    // Outro (AI booking confirmation)
+      ];
+
+      // Concatenate all into a single AudioBuffer
+      const sampleRate = audioCtx.sampleRate;
+      const totalLength = sequence.reduce((sum, b) => {
+        // Resample mono/stereo mismatch: use channel 0 length
+        return sum + b.length;
+      }, 0);
+      const combined = audioCtx.createBuffer(1, totalLength, sampleRate);
+      const output = combined.getChannelData(0);
       let offset = 0;
-      for (const buf of decoded) {
-        for (let ch = 0; ch < channels; ch++) {
-          combined.getChannelData(ch).set(buf.getChannelData(ch), offset);
-        }
+      for (const buf of sequence) {
+        const channelData = buf.getChannelData(0);
+        output.set(channelData, offset);
         offset += buf.length;
+      }
+
+      // Add subtle phone line noise for realism
+      // Low-level filtered noise simulating a phone connection
+      for (let i = 0; i < totalLength; i++) {
+        output[i] += (Math.random() * 2 - 1) * 0.0005;
       }
 
       combinedBufferRef.current = combined;
@@ -142,7 +209,7 @@ export function HeroDemoPlayer({ audioBuffers }) {
       cancelled = true;
       cleanup();
     };
-  }, [audioBuffers, playFromOffset, cleanup]);
+  }, [audioBuffers, playFromOffset, cleanup, generateRingtone, createSilence]);
 
   const handlePlayPause = useCallback(() => {
     const audioCtx = audioCtxRef.current;
@@ -195,10 +262,23 @@ export function HeroDemoPlayer({ audioBuffers }) {
           )}
         </button>
 
-        {/* Waveform bars */}
+        {/* Waveform bars — clickable to seek */}
         <div
-          className="flex-1 flex items-center gap-[4px] h-10"
+          className="flex-1 flex items-center gap-[4px] h-10 cursor-pointer"
           aria-hidden="true"
+          onClick={(e) => {
+            const audioCtx = audioCtxRef.current;
+            const combined = combinedBufferRef.current;
+            if (!audioCtx || !combined) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const seekRatio = Math.max(0, Math.min(1, clickX / rect.width));
+            const seekTime = seekRatio * combined.duration;
+            pausedAtRef.current = 0;
+            setProgress(seekRatio);
+            setElapsed(seekTime);
+            playFromOffset(audioCtx, combined, seekTime);
+          }}
         >
           {AMPLITUDE.slice(0, barCount).map((amp, i) => {
             const isActive = i / barCount < progress;
@@ -224,14 +304,15 @@ export function HeroDemoPlayer({ audioBuffers }) {
         </span>
       </div>
 
-      {/* Post-play CTA — appears after audio ends */}
-      {playerState === 'ended' && (
-        <div className="mt-4 animate-in fade-in duration-200">
+      {/* CTA — always visible once player is mounted */}
+      {(
+        <div className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <Link
             href="/onboarding"
-            className="block w-full max-w-xl bg-[#F97316] text-white text-sm font-medium px-6 py-2.5 rounded-lg text-center hover:bg-[#F97316]/90 transition-colors"
+            className="inline-flex items-center gap-2 bg-[#F97316] text-white text-sm font-semibold px-8 py-2.5 rounded-lg text-center hover:bg-[#EA580C] hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-200"
           >
             Start Your Free Trial
+            <span aria-hidden="true">&rarr;</span>
           </Link>
         </div>
       )}

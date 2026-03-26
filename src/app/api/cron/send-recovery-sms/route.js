@@ -23,6 +23,7 @@ const MAX_ATTEMPTS = 3; // D-14: 3 total attempts then permanent failure
 export async function GET(request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

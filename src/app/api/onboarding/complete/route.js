@@ -4,7 +4,10 @@ import { supabase as adminSupabase } from '@/lib/supabase';
 export async function POST() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   await adminSupabase
     .from('tenants')

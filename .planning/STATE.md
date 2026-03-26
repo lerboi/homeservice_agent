@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Phase 23 planned — ready to execute
-last_updated: "2026-03-26T11:44:22.880Z"
+status: Milestone complete
+stopped_at: Completed 28-admin-dashboard 28-03-PLAN.md
+last_updated: "2026-03-26T11:55:22.147Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 28 (admin-dashboard) — EXECUTING
-Plan: 2 of 3
+Phase: 28
+Plan: Not started
 
 ## Accumulated Context
 
@@ -59,6 +59,10 @@ Recent decisions affecting current work:
 - [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
 - [Phase 28-admin-dashboard]: Admin gate returns early from middleware after successful check — admins may not have a tenants row
 - [Phase 28-admin-dashboard]: admin_users has no INSERT policies — all admin user management via service_role CLI/direct DB to prevent self-escalation
+- [Phase 28-admin-dashboard]: Admin layout uses top-tab navigation (not sidebar) to visually differentiate admin from tenant context
+- [Phase 28-admin-dashboard]: Duplicate number shows inline error text (not toast) per UI-SPEC copywriting contract
+- [Phase 28-admin-dashboard]: Admin re-provisioning (POST /api/admin/tenants/[id]) does NOT call Retell/Twilio — only assigns SG number from inventory; Retell agent association is a separate operational step
+- [Phase 28-admin-dashboard]: Tenant name passed via impersonate_name query param to dashboard layout to avoid an extra API call during impersonation
 
 ### Roadmap Evolution
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T11:44:22.862Z
-Stopped at: Phase 23 planned — ready to execute
-Resume file: .planning/phases/23-usage-tracking/23-01-PLAN.md
+Last session: 2026-03-26T11:48:27.373Z
+Stopped at: Completed 28-admin-dashboard 28-03-PLAN.md
+Resume file: None

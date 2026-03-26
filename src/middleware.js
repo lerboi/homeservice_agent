@@ -65,8 +65,11 @@ export async function middleware(request) {
   );
 
   // Unauthenticated user trying to access protected paths → send to sign in
+  // Preserve the original URL so we can redirect back after auth
   if (!user && isAuthRequired) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
+    const signInUrl = new URL('/auth/signin', request.url);
+    signInUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
+    return NextResponse.redirect(signInUrl);
   }
 
   // Authenticated user on a matched path → check onboarding status once
@@ -87,8 +90,12 @@ export async function middleware(request) {
     }
 
     // Finished onboarding → skip wizard, go to dashboard
+    // Exception: allow /onboarding/checkout with session_id (returning from Stripe to show celebration)
     if (pathname.startsWith('/onboarding') && onboarded) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      const isCheckoutReturn = pathname === '/onboarding/checkout' && request.nextUrl.searchParams.has('session_id');
+      if (!isCheckoutReturn) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
 
     // Haven't onboarded yet → can't access dashboard

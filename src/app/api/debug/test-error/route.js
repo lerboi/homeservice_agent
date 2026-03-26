@@ -5,6 +5,7 @@ export async function POST(request) {
   const isNonProd = process.env.NODE_ENV !== 'production';
 
   if (!isNonProd && authHeader !== process.env.SENTRY_TEST_SECRET) {
+    console.log('403: Forbidden');
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
 

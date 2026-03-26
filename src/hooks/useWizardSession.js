@@ -4,23 +4,31 @@ import { useEffect, useState } from 'react';
 export function useWizardSession(key, defaultValue) {
   const storageKey = `gsd_onboarding_${key}`;
 
-  const [value, setValue] = useState(() => {
-    if (typeof window === 'undefined') return defaultValue;
+  const [value, setValue] = useState(defaultValue);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Sync from sessionStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
     try {
       const stored = sessionStorage.getItem(storageKey);
-      return stored ? JSON.parse(stored) : defaultValue;
+      if (stored !== null) {
+        setValue(JSON.parse(stored));
+      }
     } catch {
-      return defaultValue;
+      // sessionStorage unavailable
     }
-  });
+    setHydrated(true);
+  }, [storageKey]);
 
+  // Persist to sessionStorage on change (only after initial hydration)
   useEffect(() => {
+    if (!hydrated) return;
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(value));
     } catch {
-      // sessionStorage unavailable — degrade gracefully
+      // sessionStorage unavailable
     }
-  }, [value, storageKey]);
+  }, [value, storageKey, hydrated]);
 
   return [value, setValue];
 }

@@ -6,6 +6,7 @@ export async function POST(request) {
   const serverSupabase = await createSupabaseServer();
   const { data: { user } } = await serverSupabase.auth.getUser();
   if (!user) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -28,6 +29,7 @@ export async function POST(request) {
       .single();
 
     if (error) {
+      console.log('500:', error.message);
       return Response.json({ error: error.message }, { status: 500 });
     }
     return Response.json({ tenant_id: data.id });
@@ -43,6 +45,7 @@ export async function POST(request) {
       .single();
 
     if (tenantError || !tenant) {
+      console.log('400:', 'Tenant not found. Complete step 1 first.');
       return Response.json({ error: 'Tenant not found. Complete step 1 first.' }, { status: 400 });
     }
 
@@ -53,6 +56,7 @@ export async function POST(request) {
       .eq('id', tenant.id);
 
     if (updateError) {
+      console.log('500:', updateError.message);
       return Response.json({ error: updateError.message }, { status: 500 });
     }
 
@@ -75,6 +79,7 @@ export async function POST(request) {
         .insert(serviceRows);
 
       if (servicesError) {
+        console.log('500:', servicesError.message);
         return Response.json({ error: servicesError.message }, { status: 500 });
       }
     }
@@ -82,5 +87,6 @@ export async function POST(request) {
     return Response.json({ tenant_id: tenant.id });
   }
 
+  console.log('400:', 'No valid data provided');
   return Response.json({ error: 'No valid data provided' }, { status: 400 });
 }

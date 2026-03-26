@@ -71,6 +71,11 @@ export default function AuthPage() {
 
   const isSignin = mode === 'signin';
 
+  // Preserve redirect destination from middleware (e.g. /onboarding?plan=growth&interval=annual)
+  const redirectTo = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('redirect') || '/onboarding'
+    : '/onboarding';
+
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
@@ -87,7 +92,7 @@ export default function AuthPage() {
         redirectTo:
           window.location.origin +
           '/auth/callback?next=' +
-          encodeURIComponent('/onboarding'),
+          encodeURIComponent(redirectTo),
       },
     });
   }
@@ -101,9 +106,16 @@ export default function AuthPage() {
     }
     setLoading(true);
 
+    console.log('[auth] signUp started', { email: email.trim() });
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+    });
+    console.log('[auth] signUp result', {
+      userId: signUpData?.user?.id,
+      identities: signUpData?.user?.identities?.length,
+      confirmationSentAt: signUpData?.user?.confirmation_sent_at,
+      error: signUpError ? { message: signUpError.message, status: signUpError.status } : null,
     });
     if (signUpError) {
       setError(
@@ -115,25 +127,15 @@ export default function AuthPage() {
       return;
     }
     if (signUpData?.user?.identities?.length === 0) {
+      console.log('[auth] user already exists (0 identities)');
       setError('An account with this email already exists. Sign in instead.');
       setLoading(false);
       return;
     }
 
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: false },
-    });
-    if (otpError) {
-      setError(
-        otpError.message.toLowerCase().includes('after')
-          ? 'Please wait a moment before trying again.'
-          : otpError.message || 'Something went wrong. Please try again.'
-      );
-      setLoading(false);
-      return;
-    }
-
+    // signUp already sends the OTP email — no need to call signInWithOtp here
+    // (doing so triggers Supabase rate limiting and shows "Please wait" error)
+    console.log('[auth] signUp sent OTP email, switching to verification view');
     setCooldown(30);
     setMode('otp');
     setLoading(false);
@@ -157,17 +159,22 @@ export default function AuthPage() {
       setLoading(false);
       return;
     }
-    window.location.href = '/onboarding';
+    window.location.href = redirectTo;
     setLoading(false);
   }
 
   async function handleVerifyOtp(code) {
     setVerifying(true);
     setError('');
-    const { error: verifyError } = await supabase.auth.verifyOtp({
+    console.log('[auth] verifyOtp started', { email: email.trim(), codeLength: code.length });
+    const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
       email: email.trim(),
       token: code,
       type: 'email',
+    });
+    console.log('[auth] verifyOtp result', {
+      session: verifyData?.session ? 'present' : 'missing',
+      error: verifyError ? { message: verifyError.message, status: verifyError.status } : null,
     });
     if (verifyError) {
       setError(
@@ -178,16 +185,21 @@ export default function AuthPage() {
       setVerifying(false);
       return;
     }
-    window.location.href = '/onboarding';
+    window.location.href = redirectTo;
     setVerifying(false);
   }
 
   async function handleResendOtp() {
     if (cooldown > 0) return;
     setError('');
-    const { error: resendError } = await supabase.auth.signInWithOtp({
+    console.log('[auth] resendOtp started', { email: email.trim() });
+    const { data: resendData, error: resendError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { shouldCreateUser: true },
+    });
+    console.log('[auth] resendOtp result', {
+      data: resendData,
+      error: resendError ? { message: resendError.message, status: resendError.status } : null,
     });
     if (resendError) {
       setError(

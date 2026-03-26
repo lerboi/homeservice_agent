@@ -91,7 +91,7 @@ export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
 
   try {
     const result = await getResendClient().emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'alerts@homeservice.ai',
+      from: process.env.RESEND_FROM_EMAIL || 'alerts@getvoco.ai',
       to,
       subject,
       react: NewLeadEmail({ lead, businessName, dashboardUrl }),

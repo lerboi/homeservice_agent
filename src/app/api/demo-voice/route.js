@@ -47,8 +47,8 @@ export async function POST(request) {
       return Response.json({ error: 'Please wait before trying again' }, { status: 429 });
     }
 
-    // Build TTS text
-    const text = `Thanks for calling ${clean}! This is your AI receptionist — I can get that scheduled for you right away.`;
+    // Build TTS text — natural receptionist greeting with business name
+    const text = `Hi there, this is John from ${clean}... how can I help you today?`;
 
     const voiceId = process.env.ELEVENLABS_VOICE_ID_AI;
     const apiKey = process.env.ELEVENLABS_API_KEY;
@@ -66,7 +66,7 @@ export async function POST(request) {
         body: JSON.stringify({
           text,
           model_id: 'eleven_multilingual_v2',
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          voice_settings: { stability: 0.55, similarity_boost: 0.75, speed: 0.9 },
         }),
       }
     );

@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     // Provision a new Retell phone number

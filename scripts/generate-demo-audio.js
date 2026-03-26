@@ -18,12 +18,14 @@
  *   public/audio/demo-outro.mp3   — Booking confirmation closing (AI voice)
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load env vars from .env.local
 try {
-  require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
+  const dotenv = await import('dotenv');
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 } catch {
   // dotenv not available — rely on environment variables being set externally
   console.warn('[generate-demo-audio] dotenv not found — using existing process.env');
@@ -46,17 +48,20 @@ if (!ELEVENLABS_API_KEY || !VOICE_ID_AI || !VOICE_ID_CALLER) {
 const OUTPUT_DIR = path.resolve(process.cwd(), 'public/audio');
 
 // Demo script segments
-// Segment 1: Caller opening line (caller voice)
-// Segment 2 (dynamic): AI greeting with business name — generated at runtime via /api/demo-voice
-// Segment 3: Mid-conversation (multi-voice — AI + caller interleaved)
-// Segment 4: Booking confirmation closing (AI voice)
+// Playback order: [ringtone] → [silence] → [dynamic AI greeting] → [mid conversation] → [outro]
+// The ringtone is generated programmatically in the player via Web Audio API, not here.
+// Segment 1 (dynamic): AI greeting with business name — generated at runtime via /api/demo-voice
+//   "Hi, I'm John from {businessName}, how can I help you today?"
+// Segment 2: Mid-conversation (caller responds, then multi-voice back-and-forth)
+// Segment 3: Booking confirmation closing (AI voice)
 const SEGMENTS = [
   {
     name: 'demo-intro',
+    // Caller's first response after the AI greeting
     parts: [
       {
         voiceId: VOICE_ID_CALLER,
-        text: "Hey, I'd like to get my AC serviced before summer hits.",
+        text: "Hey... yeah, I was hoping to get my AC serviced before summer hits.",
       },
     ],
   },
@@ -67,19 +72,27 @@ const SEGMENTS = [
     parts: [
       {
         voiceId: VOICE_ID_AI,
-        text: "What's a good address for the service?",
+        text: "Of course... I can definitely help with that. What's your address?",
       },
       {
         voiceId: VOICE_ID_CALLER,
-        text: "214 Oak Street.",
+        text: "It's 214 Oak Street.",
       },
       {
         voiceId: VOICE_ID_AI,
-        text: "Got it. I have a slot open this Thursday at 2 PM. Want me to book that?",
+        text: "Great... and when works best for you?",
       },
       {
         voiceId: VOICE_ID_CALLER,
-        text: "That works, yeah.",
+        text: "Um, sometime Thursday afternoon if possible.",
+      },
+      {
+        voiceId: VOICE_ID_AI,
+        text: "Let me check the calendar for you... Yep, Thursday at 2 PM is open. I'll go ahead and book that in.",
+      },
+      {
+        voiceId: VOICE_ID_CALLER,
+        text: "Oh perfect, thanks.",
       },
     ],
   },
@@ -88,7 +101,7 @@ const SEGMENTS = [
     parts: [
       {
         voiceId: VOICE_ID_AI,
-        text: "You're all set — Thursday at 2 PM. We'll text you a reminder. Have a great day!",
+        text: "You're all set... Thursday at 2 PM at 214 Oak Street. We'll send you a reminder beforehand. Have a great day!",
       },
     ],
   },
@@ -110,7 +123,7 @@ async function generateTTS(text, voiceId) {
     body: JSON.stringify({
       text,
       model_id: 'eleven_multilingual_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      voice_settings: { stability: 0.55, similarity_boost: 0.75, speed: 0.9 },
     }),
   });
 

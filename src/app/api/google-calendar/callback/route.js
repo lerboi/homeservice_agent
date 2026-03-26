@@ -16,6 +16,7 @@ export async function GET(request) {
   const tenantId = searchParams.get('state');
 
   if (!code || !tenantId) {
+    console.log('400:', 'Missing code or tenantId');
     return Response.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=error`
     );

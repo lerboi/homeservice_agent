@@ -23,10 +23,10 @@ export function ScrollProgress() {
       const viewportH = window.innerHeight;
       const trigger = viewportH * 0.4;
 
-      // Show after scrolling past hero, hide at CTA section
-      const heroEl = document.getElementById('how-it-works');
+      // Show only after hero section is fully scrolled past, hide at CTA section
+      const heroSection = document.querySelector('section:first-of-type');
       const ctaEl = document.getElementById('cta');
-      const pastHero = heroEl ? heroEl.getBoundingClientRect().top < viewportH * 0.8 : false;
+      const pastHero = heroSection ? heroSection.getBoundingClientRect().bottom < viewportH * 0.5 : false;
       const atCta = ctaEl ? ctaEl.getBoundingClientRect().top < viewportH * 0.6 : false;
       setVisible(pastHero && !atCta);
 

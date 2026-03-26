@@ -97,8 +97,27 @@ END,
   triage_layer_used text CHECK (triage_layer_used = ANY (ARRAY['layer1'::text, 'layer2'::text, 'layer3'::text])),
   suggested_slots jsonb,
   recovery_sms_sent_at timestamp with time zone,
+  booking_outcome text CHECK (booking_outcome = ANY (ARRAY['booked'::text, 'attempted'::text, 'declined'::text, 'not_attempted'::text])),
+  exception_reason text CHECK (exception_reason = ANY (ARRAY['clarification_limit'::text, 'caller_requested'::text])),
+  notification_priority text CHECK (notification_priority = ANY (ARRAY['high'::text, 'standard'::text])),
   CONSTRAINT calls_pkey PRIMARY KEY (id),
   CONSTRAINT calls_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.escalation_contacts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  name text NOT NULL,
+  role text,
+  phone text,
+  email text,
+  notification_pref text NOT NULL DEFAULT 'both'::text CHECK (notification_pref = ANY (ARRAY['sms'::text, 'email'::text, 'both'::text])),
+  timeout_seconds integer NOT NULL DEFAULT 30 CHECK (timeout_seconds = ANY (ARRAY[15, 30, 45, 60])),
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT escalation_contacts_pkey PRIMARY KEY (id),
+  CONSTRAINT escalation_contacts_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 CREATE TABLE public.lead_calls (
   lead_id uuid NOT NULL,
@@ -126,6 +145,24 @@ CREATE TABLE public.leads (
   CONSTRAINT leads_primary_call_id_fkey FOREIGN KEY (primary_call_id) REFERENCES public.calls(id),
   CONSTRAINT leads_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
 );
+CREATE TABLE public.phone_inventory (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  phone_number text NOT NULL UNIQUE,
+  country text NOT NULL DEFAULT 'SG'::text,
+  status text NOT NULL DEFAULT 'available'::text CHECK (status = ANY (ARRAY['available'::text, 'assigned'::text, 'retired'::text])),
+  assigned_tenant_id uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT phone_inventory_pkey PRIMARY KEY (id),
+  CONSTRAINT phone_inventory_assigned_tenant_id_fkey FOREIGN KEY (assigned_tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.phone_inventory_waitlist (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL,
+  country text NOT NULL DEFAULT 'SG'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  notified_at timestamp with time zone,
+  CONSTRAINT phone_inventory_waitlist_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.service_zones (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
@@ -142,8 +179,36 @@ CREATE TABLE public.services (
   urgency_tag text NOT NULL DEFAULT 'routine'::text CHECK (urgency_tag = ANY (ARRAY['emergency'::text, 'routine'::text, 'high_ticket'::text])),
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  sort_order integer NOT NULL DEFAULT 0,
   CONSTRAINT services_pkey PRIMARY KEY (id),
   CONSTRAINT services_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.stripe_webhook_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  event_id text NOT NULL UNIQUE,
+  event_type text NOT NULL,
+  processed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT stripe_webhook_events_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  stripe_customer_id text NOT NULL,
+  stripe_subscription_id text NOT NULL,
+  stripe_price_id text,
+  plan_id text NOT NULL CHECK (plan_id = ANY (ARRAY['starter'::text, 'growth'::text, 'scale'::text])),
+  status text NOT NULL CHECK (status = ANY (ARRAY['trialing'::text, 'active'::text, 'past_due'::text, 'canceled'::text, 'paused'::text, 'incomplete'::text])),
+  calls_limit integer NOT NULL,
+  calls_used integer NOT NULL DEFAULT 0,
+  trial_ends_at timestamp with time zone,
+  current_period_start timestamp with time zone,
+  current_period_end timestamp with time zone,
+  cancel_at_period_end boolean NOT NULL DEFAULT false,
+  stripe_updated_at timestamp with time zone,
+  is_current boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT subscriptions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 CREATE TABLE public.tenants (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -162,7 +227,10 @@ CREATE TABLE public.tenants (
   working_hours jsonb,
   tenant_timezone text NOT NULL DEFAULT 'America/Chicago'::text,
   slot_duration_mins integer NOT NULL DEFAULT 60,
-  setup_checklist_dismissed boolean NOT NULL DEFAULT false,
+  setup_checklist_dismissed boolean DEFAULT false,
+  owner_name text,
+  country text,
+  provisioning_failed boolean DEFAULT false,
   CONSTRAINT tenants_pkey PRIMARY KEY (id),
   CONSTRAINT tenants_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
 );

@@ -57,7 +57,7 @@ export function HeroDemoInput({ onAudioReady }) {
     <div className="w-full max-w-xl mx-auto">
       <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
         {/* Input + button container — pill shape */}
-        <div className="flex flex-col sm:flex-row bg-white/[0.06] border border-white/[0.07] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316] transition-shadow">
+        <div className="flex flex-col sm:flex-row bg-white/[0.10] border border-white/[0.12] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316] transition-shadow">
           <input
             type="text"
             value={businessName}

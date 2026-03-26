@@ -31,17 +31,20 @@ export async function GET(request) {
       errorDescription.includes('AADSTS90094');
 
     if (isAdminConsentError) {
+      console.log('400:', 'Admin consent required');
       return Response.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=admin_consent`
       );
     }
 
+    console.log('400:', 'OAuth error:', error, errorDescription);
     return Response.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
     );
   }
 
   if (!code || !tenantId) {
+    console.log('400:', 'Missing code or tenantId');
     return Response.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
     );

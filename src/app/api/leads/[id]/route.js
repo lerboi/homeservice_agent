@@ -8,7 +8,10 @@ import { getTenantId } from '@/lib/get-tenant-id';
  */
 export async function GET(request, { params }) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { id } = await params;
 
@@ -30,7 +33,10 @@ export async function GET(request, { params }) {
     .eq('tenant_id', tenantId)
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 404 });
+  if (error) {
+    console.log('404:', error.message);
+    return Response.json({ error: error.message }, { status: 404 });
+  }
   return Response.json({ lead: data });
 }
 
@@ -42,7 +48,10 @@ export async function GET(request, { params }) {
  */
 export async function PATCH(request, { params }) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { id } = await params;
   const body = await request.json();
@@ -50,6 +59,7 @@ export async function PATCH(request, { params }) {
 
   // Validate: Paid status requires revenue_amount
   if (status === 'paid' && (revenue_amount === null || revenue_amount === undefined || revenue_amount === '')) {
+    console.log('422: revenue_amount required for Paid status');
     return Response.json({ error: 'revenue_amount required for Paid status' }, { status: 422 });
   }
 
@@ -65,7 +75,10 @@ export async function PATCH(request, { params }) {
     .select()
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 
   // Log activity — fire-and-forget, never block the response
   (async () => {

@@ -1,0 +1,390 @@
+2026-03-26 11:06:18.689 call_ab276a44c618b271f9cdab6edb4 info: triggering inbound call_inbound webhook
+2026-03-26 11:06:20.643 call_ab276a44c618b271f9cdab6edb4 info: inbound call_inbound webhook response: {
+  dynamic_variables: {
+    business_name: 'Voco',
+    default_locale: 'en',
+    onboarding_complete: 'false',
+    caller_number: '',
+    owner_phone: '',
+    tone_preset: 'professional',
+    available_slots: 'No available slots',
+    booking_enabled: 'false'
+  }
+}
+2026-03-26 11:06:21.235 call_ab276a44c618b271f9cdab6edb4 info: Starting call: call_ab276a44c618b271f9cdab6edb4
+2026-03-26 11:06:21.245 call_ab276a44c618b271f9cdab6edb4 info: LLM Ws init attempt 0
+2026-03-26 11:06:21.784 call_ab276a44c618b271f9cdab6edb4 info: LLM ws open:
+2026-03-26 11:06:21.785 call_ab276a44c618b271f9cdab6edb4 verbose: LLM ws config event received {
+  response_type: 'config',
+  config: { auto_reconnect: true, call_details: true }
+}
+2026-03-26 11:06:22.002 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: 'Hello, this call may be recorded for quality purposes. How can I help you today?',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 11:06:23.176 call_ab276a44c618b271f9cdab6edb4 info: Webhook triggered for call_started
+2026-03-26 11:06:23.464 call_ab276a44c618b271f9cdab6edb4 info: Webhook response received for call_started
+2026-03-26 11:06:23.835 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:23.967 call_ab276a44c618b271f9cdab6edb4 verbose: LLM pingpong event received
+2026-03-26 11:06:24.236 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:24.638 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:25.041 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:25.449 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may be ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:25.853 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:25.945 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:25.993 call_ab276a44c618b271f9cdab6edb4 verbose: LLM pingpong event received
+2026-03-26 11:06:26.255 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:26.255 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. This call ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:26.256 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. This call ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'user_turn'
+}
+2026-03-26 11:06:26.561 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:27.085 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:27.172 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be recorded ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:27.481 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:27.705 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be recorded for calling ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:27.969 call_ab276a44c618b271f9cdab6edb4 verbose: LLM pingpong event received
+2026-03-26 11:06:29.342 call_ab276a44c618b271f9cdab6edb4 verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 1,
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be recorded for calling ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'response_required'
+}
+2026-03-26 11:06:29.983 call_ab276a44c618b271f9cdab6edb4 verbose: LLM pingpong event received
+2026-03-26 11:06:30.435 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'call may be recorded for calling ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-26 11:06:30.771 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: 'quality',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.771 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' purposes',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.773 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.776 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' How',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.779 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.781 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.784 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' help',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.787 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.790 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' today',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.791 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 11:06:30.917 call_ab276a44c618b271f9cdab6edb4 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 11:06:30.958 call_ab276a44c618b271f9cdab6edb4 info: Latency for response_id: 1 - e2e: 3384 asr: 131 llm: 1432 tts: 170
+2026-03-26 11:06:31.404 call_ab276a44c618b271f9cdab6edb4 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'call may be recorded for calling ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'quality ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 11:06:31.741 call_ab276a44c618b271f9cdab6edb4 info: Ending call: call_ab276a44c618b271f9cdab6edb4
+2026-03-26 11:06:31.743 call_ab276a44c618b271f9cdab6edb4 info: Closing LLM ws as requested.
+2026-03-26 11:06:33.412 call_ab276a44c618b271f9cdab6edb4 info: Webhook triggered for call_ended
+2026-03-26 11:06:33.419 call_ab276a44c618b271f9cdab6edb4 info: Webhook triggered for call_analyzed
+2026-03-26 11:06:33.605 call_ab276a44c618b271f9cdab6edb4 info: Webhook response received for call_analyzed
+2026-03-26 11:06:34.932 call_ab276a44c618b271f9cdab6edb4 info: Webhook response received for call_ended

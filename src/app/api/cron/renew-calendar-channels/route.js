@@ -16,6 +16,7 @@ export async function POST(request) {
   const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
 
   if (!authHeader || authHeader !== expectedToken) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

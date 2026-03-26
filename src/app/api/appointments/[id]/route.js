@@ -7,7 +7,10 @@ import { supabase } from '@/lib/supabase';
  */
 export async function GET(request, { params }) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { id } = await params;
 
   const { data: appointment, error } = await supabase
@@ -26,8 +29,10 @@ export async function GET(request, { params }) {
 
   if (error) {
     if (error.code === 'PGRST116') {
+      console.log('404: Not found');
       return Response.json({ error: 'Appointment not found' }, { status: 404 });
     }
+    console.log('500:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 
@@ -42,7 +47,10 @@ export async function GET(request, { params }) {
  */
 export async function PATCH(request, { params }) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { id } = await params;
   const body = await request.json();
 
@@ -57,6 +65,7 @@ export async function PATCH(request, { params }) {
       .single();
 
     if (eventError) {
+      console.log('500:', eventError.message);
       return Response.json({ error: eventError.message }, { status: 500 });
     }
 
@@ -75,8 +84,10 @@ export async function PATCH(request, { params }) {
 
     if (fetchError) {
       if (fetchError.code === 'PGRST116') {
+        console.log('404: Not found');
         return Response.json({ error: 'Appointment not found' }, { status: 404 });
       }
+      console.log('500:', fetchError.message);
       return Response.json({ error: fetchError.message }, { status: 500 });
     }
 
@@ -90,6 +101,7 @@ export async function PATCH(request, { params }) {
       .single();
 
     if (updateError) {
+      console.log('500:', updateError.message);
       return Response.json({ error: updateError.message }, { status: 500 });
     }
 
@@ -104,5 +116,6 @@ export async function PATCH(request, { params }) {
     return Response.json({ appointment: updated });
   }
 
+  console.log('400: Invalid patch body');
   return Response.json({ error: 'Invalid patch body' }, { status: 400 });
 }

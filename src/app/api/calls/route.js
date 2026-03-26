@@ -3,7 +3,10 @@ import { getTenantId } from '@/lib/get-tenant-id';
 
 export async function GET(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { searchParams } = new URL(request.url);
   const dateFrom = searchParams.get('date_from');
@@ -35,7 +38,10 @@ export async function GET(request) {
   query = query.order('created_at', { ascending: false }).limit(200);
 
   const { data, error } = await query;
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 
   return Response.json({ calls: data });
 }

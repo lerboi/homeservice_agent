@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,24 @@ import { TRADE_TEMPLATES } from '@/lib/trade-templates';
 
 export default function OnboardingProfile() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [trade, setTrade] = useWizardSession('trade', null);
   const [businessName, setBusinessName] = useWizardSession('business_name', '');
+  const [selectedPlan, setSelectedPlan] = useWizardSession('selected_plan', null);
+  const [selectedInterval, setSelectedInterval] = useWizardSession('selected_interval', null);
+
+  // Capture plan selection from pricing page URL params
+  useEffect(() => {
+    const plan = searchParams.get('plan');
+    const interval = searchParams.get('interval');
+
+    if (plan && ['starter', 'growth', 'scale'].includes(plan)) {
+      setSelectedPlan(plan);
+      setSelectedInterval(interval === 'annual' ? 'annual' : 'monthly');
+    }
+    // No redirect if plan is missing — user may have come directly
+  }, [searchParams, setSelectedPlan, setSelectedInterval]);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

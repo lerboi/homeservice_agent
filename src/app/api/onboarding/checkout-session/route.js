@@ -4,9 +4,18 @@ import { supabase as adminSupabase } from '@/lib/supabase';
 import { stripe } from '@/lib/stripe';
 
 const PRICE_MAP = {
-  starter: process.env.STRIPE_PRICE_STARTER,
-  growth: process.env.STRIPE_PRICE_GROWTH,
-  scale: process.env.STRIPE_PRICE_SCALE,
+  starter: {
+    monthly: process.env.STRIPE_PRICE_STARTER,
+    annual: process.env.STRIPE_PRICE_STARTER_ANNUAL,
+  },
+  growth: {
+    monthly: process.env.STRIPE_PRICE_GROWTH,
+    annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL,
+  },
+  scale: {
+    monthly: process.env.STRIPE_PRICE_SCALE,
+    annual: process.env.STRIPE_PRICE_SCALE_ANNUAL,
+  },
 };
 
 export async function POST(request) {
@@ -20,13 +29,20 @@ export async function POST(request) {
     }
 
     // 2. Parse request body
-    const { plan } = await request.json();
+    const { plan, interval = 'monthly', embedded = false } = await request.json();
 
     // 3. Look up price ID from env var map
-    const priceId = PRICE_MAP[plan];
-    if (!priceId) {
+    const planPrices = PRICE_MAP[plan];
+    if (!planPrices) {
       return NextResponse.json(
         { error: 'Invalid plan. Must be one of: starter, growth, scale' },
+        { status: 400 }
+      );
+    }
+    const priceId = interval === 'annual' ? planPrices.annual : planPrices.monthly;
+    if (!priceId) {
+      return NextResponse.json(
+        { error: `No ${interval} price configured for ${plan} plan` },
         { status: 400 }
       );
     }
@@ -46,7 +62,7 @@ export async function POST(request) {
     }
 
     // 5. Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       mode: 'subscription',
       payment_method_collection: 'always', // D-03: CC required
       line_items: [{ price: priceId, quantity: 1 }],
@@ -56,11 +72,24 @@ export async function POST(request) {
       },
       customer_email: tenant.owner_email,
       metadata: { tenant_id: tenant.id }, // On session too for checkout.session.completed
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/plan`,
-    });
+    };
 
-    // 6. Return Checkout URL
+    if (embedded) {
+      // Embedded checkout — returns client_secret, uses return_url
+      sessionConfig.ui_mode = 'embedded_page';
+      sessionConfig.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout?session_id={CHECKOUT_SESSION_ID}`;
+    } else {
+      // Hosted checkout — returns url, uses success_url/cancel_url
+      sessionConfig.success_url = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout?session_id={CHECKOUT_SESSION_ID}`;
+      sessionConfig.cancel_url = `${process.env.NEXT_PUBLIC_APP_URL}/pricing`;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
+
+    // 6. Return appropriate response
+    if (embedded) {
+      return NextResponse.json({ clientSecret: session.client_secret });
+    }
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error('Failed to create checkout session:', error);

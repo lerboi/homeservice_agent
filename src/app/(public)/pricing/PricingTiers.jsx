@@ -131,7 +131,9 @@ export default function PricingTiers() {
                           : 'bg-white/[0.08] border border-white/[0.1] text-white hover:bg-white/[0.12]'
                       }`}
                     >
-                      <Link href={tier.ctaHref}>{tier.cta}</Link>
+                      <Link href={tier.id === 'enterprise' ? tier.ctaHref : `/onboarding?plan=${tier.id}&interval=${billing}`}>
+                        {tier.cta}
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

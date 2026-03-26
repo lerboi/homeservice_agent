@@ -5,6 +5,7 @@ export async function GET() {
   const serverSupabase = await createSupabaseServer();
   const { data: { user } } = await serverSupabase.auth.getUser();
   if (!user) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -15,6 +16,7 @@ export async function GET() {
     .single();
 
   if (!tenant) {
+    console.log('404: Not found');
     return Response.json({ error: 'Tenant not found' }, { status: 404 });
   }
 

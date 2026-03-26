@@ -498,7 +498,7 @@ Plans:
 - [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
 - [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI (completed 2026-03-26)
-- [ ] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview
+- [x] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview (completed 2026-03-26)
 - [x] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text (completed 2026-03-26)
 
 ### Phase 22: Billing Foundation
@@ -593,7 +593,7 @@ Plans:
   5. A non-admin user cannot access any admin routes — they are redirected or shown a 403 error
 **Plans**: 3 plans
 Plans:
-- [ ] 28-01-PLAN.md — Foundation: admin_users migration, middleware gate, verifyAdmin helper, deps
+- [x] 28-01-PLAN.md — Foundation: admin_users migration, middleware gate, verifyAdmin helper, deps
 - [ ] 28-02-PLAN.md — Admin layout + phone inventory management page (CRUD + bulk CSV)
 - [ ] 28-03-PLAN.md — Tenant overview page + impersonation banner
 **UI hint**: yes
@@ -630,5 +630,5 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
-| 28. Admin Dashboard | 0/3 | Planned    |  |
+| 28. Admin Dashboard | 1/3 | Complete    | 2026-03-26 |
 | 29. Hero Section Interactive Demo | 4/4 | Complete   | 2026-03-26 |

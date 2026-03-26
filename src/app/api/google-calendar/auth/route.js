@@ -12,6 +12,7 @@ export async function GET(request) {
   const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
 
   if (authError || !user) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -23,6 +24,7 @@ export async function GET(request) {
     .single();
 
   if (!tenant) {
+    console.log('404: Not found');
     return Response.json({ error: 'Tenant not found' }, { status: 404 });
   }
 

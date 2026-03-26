@@ -37,17 +37,15 @@ export default function TestCallPage() {
   }, []);
 
   function handleComplete() {
-    // Don't clear wizard session yet — user still has plan selection + checkout
-    // Session will be cleared after checkout success
+    // Test call done — proceed to checkout
   }
 
   function handleGoToDashboard() {
-    router.push('/onboarding/plan');
+    router.push('/onboarding/checkout');
   }
 
-  async function handleSkipToDashboard() {
-    // Skip test call but still require plan selection + checkout
-    router.push('/onboarding/plan');
+  function handleSkipToDashboard() {
+    router.push('/onboarding/checkout');
   }
 
   if (loading) {
@@ -74,7 +72,6 @@ export default function TestCallPage() {
           </p>
           <Button
             onClick={handleSkipToDashboard}
-
             className="bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95 text-white min-h-12 px-8 rounded-xl text-[15px] font-medium shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all duration-150"
           >
             Continue

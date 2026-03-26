@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 export async function GET() {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data, error } = await supabase
       .from('tenants')
@@ -12,7 +15,10 @@ export async function GET() {
       .eq('id', tenantId)
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.log('500:', error.message);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
 
     return Response.json({
       working_hours: data.working_hours,
@@ -20,6 +26,7 @@ export async function GET() {
       tenant_timezone: data.tenant_timezone,
     });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
@@ -27,7 +34,10 @@ export async function GET() {
 export async function PUT(request) {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { working_hours, slot_duration_mins, tenant_timezone } = await request.json();
 
@@ -43,7 +53,10 @@ export async function PUT(request) {
       .select('working_hours, slot_duration_mins, tenant_timezone')
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.log('500:', error.message);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
 
     return Response.json({
       working_hours: data.working_hours,
@@ -51,6 +64,7 @@ export async function PUT(request) {
       tenant_timezone: data.tenant_timezone,
     });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

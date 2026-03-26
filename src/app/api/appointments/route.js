@@ -93,13 +93,17 @@ function detectConflicts(appointments, calendarEvents) {
 
 export async function GET(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
 
   const start = searchParams.get('start');
   const end = searchParams.get('end');
 
   if (!start || !end) {
+    console.log('400: Missing start/end query params');
     return Response.json({ error: 'start and end query params required' }, { status: 400 });
   }
 
@@ -120,6 +124,7 @@ export async function GET(request) {
     .order('start_time', { ascending: true });
 
   if (apptError) {
+    console.log('500:', apptError.message);
     return Response.json({ error: apptError.message }, { status: 500 });
   }
 
@@ -131,6 +136,7 @@ export async function GET(request) {
     .or(`and(start_time.gte.${start},start_time.lte.${end}),is_all_day.eq.true`);
 
   if (eventsError) {
+    console.log('500:', eventsError.message);
     return Response.json({ error: eventsError.message }, { status: 500 });
   }
 

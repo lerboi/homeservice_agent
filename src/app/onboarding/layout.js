@@ -12,7 +12,7 @@ function getStep(pathname) {
   if (pathname === '/onboarding') return 1;
   if (pathname === '/onboarding/services') return 2;
   if (pathname === '/onboarding/contact') return 3;
-  if (pathname === '/onboarding/plan') return 4;
+  if (pathname === '/onboarding/test-call') return 4;
   if (pathname === '/onboarding/checkout') return 5;
   return 1;
 }

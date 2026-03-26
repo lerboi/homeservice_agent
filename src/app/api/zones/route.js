@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 export async function GET() {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { data: zones, error: zonesError } = await supabase
       .from('service_zones')
@@ -12,7 +15,10 @@ export async function GET() {
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: true });
 
-    if (zonesError) return Response.json({ error: zonesError.message }, { status: 500 });
+    if (zonesError) {
+      console.log('500:', zonesError.message);
+      return Response.json({ error: zonesError.message }, { status: 500 });
+    }
 
     const zoneIds = (zones || []).map((z) => z.id);
     let travelBuffers = [];
@@ -23,12 +29,16 @@ export async function GET() {
         .select('id, zone_a_id, zone_b_id, buffer_mins')
         .eq('tenant_id', tenantId);
 
-      if (buffersError) return Response.json({ error: buffersError.message }, { status: 500 });
+      if (buffersError) {
+        console.log('500:', buffersError.message);
+        return Response.json({ error: buffersError.message }, { status: 500 });
+      }
       travelBuffers = buffers || [];
     }
 
     return Response.json({ zones: zones || [], travelBuffers });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
@@ -36,11 +46,15 @@ export async function GET() {
 export async function POST(request) {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { name, postal_codes } = await request.json();
 
     if (!name?.trim()) {
+      console.log('400: Zone name is required');
       return Response.json({ error: 'Zone name is required' }, { status: 400 });
     }
 
@@ -50,8 +64,12 @@ export async function POST(request) {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId);
 
-    if (countError) return Response.json({ error: countError.message }, { status: 500 });
+    if (countError) {
+      console.log('500:', countError.message);
+      return Response.json({ error: countError.message }, { status: 500 });
+    }
     if (count >= 5) {
+      console.log('400: Maximum of 5 service zones allowed');
       return Response.json({ error: 'Maximum of 5 service zones allowed' }, { status: 400 });
     }
 
@@ -65,9 +83,13 @@ export async function POST(request) {
       .select('id, name, postal_codes, created_at')
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.log('500:', error.message);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
     return Response.json({ zone: data }, { status: 201 });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
@@ -76,11 +98,15 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { buffers } = await request.json();
 
     if (!Array.isArray(buffers)) {
+      console.log('400: buffers must be an array');
       return Response.json({ error: 'buffers must be an array' }, { status: 400 });
     }
 
@@ -96,9 +122,13 @@ export async function PUT(request) {
       .upsert(rows, { onConflict: 'zone_a_id,zone_b_id' })
       .select('id, zone_a_id, zone_b_id, buffer_mins');
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.log('500:', error.message);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
     return Response.json({ travelBuffers: data });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

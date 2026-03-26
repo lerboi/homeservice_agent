@@ -225,11 +225,6 @@ async function handleCheckoutCompleted(session) {
     }
   }
 
-  // Retrieve the full subscription from Stripe and sync locally
-  if (session.subscription) {
-    const subscription = await stripe.subscriptions.retrieve(session.subscription);
-    await handleSubscriptionEvent(subscription);
-  }
 }
 
 /**
@@ -255,10 +250,17 @@ async function handleSubscriptionEvent(subscription) {
     .eq('is_current', true)
     .maybeSingle();
 
-  if (currentRow?.stripe_updated_at && currentRow.stripe_updated_at >= stripeUpdatedAt) {
-    // Stale event — skip
-    console.log('Skipping stale event for subscription:', subscription.id);
-    return;
+  if (currentRow?.stripe_updated_at) {
+    if (currentRow.stripe_updated_at > stripeUpdatedAt) {
+      // Stale event — skip
+      console.log('[stripe/webhook] Skipping stale event for subscription:', subscription.id);
+      return;
+    }
+    if (currentRow.stripe_updated_at === stripeUpdatedAt) {
+      // Duplicate event with same timestamp — skip to prevent double rows
+      console.log('[stripe/webhook] Skipping duplicate event for subscription:', subscription.id);
+      return;
+    }
   }
 
   // Price-to-plan mapping (D-12)

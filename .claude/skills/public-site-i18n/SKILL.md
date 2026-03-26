@@ -141,7 +141,7 @@ The `Toaster` (from sonner) is placed in the root layout so ContactForm toast no
 
 Each loading skeleton has hardcoded `min-height` values that match the section's expected height, preventing layout shift during hydration.
 
-**`ScrollProgress`**: Thin orange progress bar at top of page showing scroll position.
+**`ScrollProgress`**: Milestone dot nav (desktop left sidebar + mobile bottom dots). Hidden while hero section is visible — only appears after hero's bottom edge scrolls past 50% viewport. Hides again at CTA section.
 
 ---
 
@@ -152,9 +152,9 @@ Each loading skeleton has hardcoded `min-height` values that match the section's
 Server Component with client sub-components (Phase 29 — stripped to focus attention on demo input):
 - **Spline 3D scene**: `SplineScene` (dynamic import, CDN web component, zero bundle impact). URL: `https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode`. Desktop-only (hidden on mobile).
 - **Mobile fallback**: Static `<Image>` of dashboard mockup — `priority` for LCP. Rendered below hero content.
-- **RotatingText**: 21st.dev animated component, rotates `['Competitor', 'Rival', 'Neighbor']` at 3s interval. Title: "Every Missed Call Is a Job Your {RotatingText} Just Booked". **Phase 29 width behavior**: `useRef` + `getBoundingClientRect()` + `useLayoutEffect` measures current word width on each `currentIndex` change, sets `width` via inline style with `transition: width 200ms ease`. Replaced the invisible sizer span approach.
+- **RotatingText**: 21st.dev animated component, rotates `['Competitor', 'Rival', 'Neighbor']` at 3s interval. Title uses forced `<br />` tags to lock line breaks: "Every Missed Call Is a Job Your / {RotatingText} Just / Booked" — prevents shorter words from reflowing lines. **Width behavior**: `useRef` + `getBoundingClientRect()` + `useLayoutEffect` measures current word width, container animates via `transition-[width] duration-200`. In-flow invisible measurement span provides height; animated text is absolutely positioned on top.
 - **HeroDemoBlock**: Client component (dynamic, ssr:false) managing the input-to-player demo experience. Replaces the old `AuthAwareCTA` + "Watch Demo" buttons.
-- **Background**: `bg-[#050505]` near-black, radial gradient orange accent, dot grid texture, floating blur orb.
+- **Background**: `bg-[#050505]` near-black with `min-h-[600px] md:min-h-[700px]` fixed height, radial gradient orange accent, dot grid texture, floating blur orb.
 - **Removed in Phase 29**: Eyebrow pill, "Watch Demo" button, social proof row, `AuthAwareCTA` from hero. Attention fully on demo input bar.
 
 ### HeroDemoBlock (`src/app/components/landing/HeroDemoBlock.jsx`)
@@ -173,17 +173,17 @@ On submit: fires 4 parallel fetch calls — `POST /api/demo-voice` + `fetch('/au
 
 Auth-aware skip link: dynamically imports supabase-browser in `useEffect`, calls `getUser()`. Shows "Go to Dashboard" if logged in, "Skip the demo — Start your free trial" → `/onboarding` if not.
 
-Input bar: `flex-col sm:flex-row` (stacks on mobile), `bg-white/[0.06] border border-white/[0.07] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316]`. Button loading state: `<Loader2 className="animate-spin size-4" /> Generating...`.
+Input bar: `flex-col sm:flex-row` (stacks on mobile), `bg-white/[0.10] border border-white/[0.12] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316]`. Button loading state: `<Loader2 className="animate-spin size-4" /> Generating...`.
 
 ### HeroDemoPlayer (`src/app/components/landing/HeroDemoPlayer.jsx`)
 
 `'use client'`. Props: `audioBuffers: ArrayBuffer[]` (order: `[intro, name, mid, outro]`).
 
-Web Audio API: `AudioContext`, decodes all buffers via `decodeAudioData()`, concatenates into single `AudioBuffer`. Autoplay on mount. Play/pause/replay via `AudioBufferSourceNode`. Progress tracked via `requestAnimationFrame`.
+Web Audio API: `AudioContext`, decodes all buffers via `decodeAudioData()`. Stitches sequence: `[ringtone] → [pause] → [AI greeting] → [gap] → [caller] → [gap] → [mid conversation] → [gap] → [outro]` with programmatic ringtone (440+480Hz dual tone, 0.8s) and silence gaps (0.6-0.9s) for natural pacing. Subtle phone line noise (`amplitude 0.0005`) mixed into combined buffer. Autoplay on mount. Play/pause/replay via `AudioBufferSourceNode`. Progress tracked via `requestAnimationFrame`.
 
-Waveform: 40 bars (desktop) / 28 bars (mobile via `matchMedia`). Pre-computed `AMPLITUDE` envelope (sine wave, deterministic). Active bars (`position < playhead`): `bg-[#F97316]`. Inactive: `bg-white/[0.15]`. Elapsed time: `M:SS` via `tabular-nums`. Reduced motion: flat bars at 40% height.
+Waveform: 40 bars (desktop) / 28 bars (mobile via `matchMedia`). Pre-computed `AMPLITUDE` envelope (sine wave, deterministic). **Seekable**: clicking on waveform container seeks to that position via `getBoundingClientRect()` ratio. Active bars (`position < playhead`): `bg-[#F97316]`. Inactive: `bg-white/[0.15]`. Elapsed time: `M:SS` via `tabular-nums`. Reduced motion: flat bars at 40% height.
 
-Post-play: `playerState === 'ended'` → renders "Start Your Free Trial" link → `/onboarding` with `animate-in fade-in duration-200`.
+CTA: "Start Your Free Trial" link → `/onboarding` always visible once player mounts, left-aligned with `rounded-lg`, arrow icon, orange glow hover.
 
 ### FeaturesGrid (`src/app/components/landing/FeaturesGrid.jsx`)
 

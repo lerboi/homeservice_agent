@@ -1,0 +1,803 @@
+2026-03-26 10:04:03.669 call_7b7323e7687fc007463b3ae0309 info: triggering inbound call_inbound webhook
+2026-03-26 10:04:07.431 call_7b7323e7687fc007463b3ae0309 info: inbound call_inbound webhook response: {
+  dynamic_variables: {
+    business_name: 'Voco',
+    default_locale: 'en',
+    onboarding_complete: 'false',
+    caller_number: '',
+    owner_phone: '',
+    tone_preset: 'professional',
+    available_slots: 'No available slots',
+    booking_enabled: 'false'
+  }
+}
+2026-03-26 10:04:10.258 call_7b7323e7687fc007463b3ae0309 info: Starting call: call_7b7323e7687fc007463b3ae0309
+2026-03-26 10:04:10.266 call_7b7323e7687fc007463b3ae0309 info: LLM Ws init attempt 0
+2026-03-26 10:04:10.887 call_7b7323e7687fc007463b3ae0309 info: LLM ws open:
+2026-03-26 10:04:10.891 call_7b7323e7687fc007463b3ae0309 verbose: LLM ws config event received {
+  response_type: 'config',
+  config: { auto_reconnect: true, call_details: true }
+}
+2026-03-26 10:04:11.348 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: 'Hello, this call may be recorded for quality purposes. How can I help you today?',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 10:04:12.250 call_7b7323e7687fc007463b3ae0309 info: Webhook triggered for call_started
+2026-03-26 10:04:12.466 call_7b7323e7687fc007463b3ae0309 info: Webhook response received for call_started
+2026-03-26 10:04:12.999 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:13.072 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:13.399 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:13.800 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:14.200 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:14.566 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may be ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:14.967 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, this call may be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:15.005 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:15.072 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:15.118 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello. ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:15.329 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:15.329 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'user_turn'
+}
+2026-03-26 10:04:15.646 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call may be ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:15.969 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call may be recorded ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:16.276 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:17.076 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:18.811 call_7b7323e7687fc007463b3ae0309 verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 1,
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'response_required'
+}
+2026-03-26 10:04:19.074 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:19.665 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: 'quality',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.665 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' purposes',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.666 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.666 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' How',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.668 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.670 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.673 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' help',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.676 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.677 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: ' today',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.679 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:19.811 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 1 Received Response: {
+  response_type: 'response',
+  response_id: 1,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 10:04:19.817 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for quality purposes. ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-26 10:04:19.854 call_7b7323e7687fc007463b3ae0309 info: Latency for response_id: 1 - e2e: 3761 asr: 183 llm: 856 tts: 179
+2026-03-26 10:04:20.285 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'quality ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:20.685 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'quality purposes.',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:21.074 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:21.586 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'quality purposes. How ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:21.987 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'This call may be recorded for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'quality purposes. How can ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:22.269 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'quality purposes. How can ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:22.338 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:22.338 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'user_turn'
+}
+2026-03-26 10:04:22.739 call_7b7323e7687fc007463b3ae0309 verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 2,
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'response_required'
+}
+2026-03-26 10:04:23.073 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:23.097 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 10:04:24.100 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-26 10:04:25.073 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:26.901 call_7b7323e7687fc007463b3ae0309 info: LLM ws closed: 1006 
+2026-03-26 10:04:26.901 call_7b7323e7687fc007463b3ae0309 verbose: Got 1006 and reconnecting. Reconnection count: 1
+2026-03-26 10:04:26.907 call_7b7323e7687fc007463b3ae0309 info: LLM Ws init attempt 0
+2026-03-26 10:04:27.330 call_7b7323e7687fc007463b3ae0309 info: LLM ws open:
+2026-03-26 10:04:27.331 call_7b7323e7687fc007463b3ae0309 verbose: LLM ws config event received {
+  response_type: 'config',
+  config: { auto_reconnect: true, call_details: true }
+}
+2026-03-26 10:04:27.480 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: undefined Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: 'Hello, this call may be recorded for quality purposes. How can I help you today?',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 10:04:29.481 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:31.480 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:33.479 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:34.168 call_7b7323e7687fc007463b3ae0309 verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 3,
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'reminder_required'
+}
+2026-03-26 10:04:34.169 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Hello? ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-26 10:04:34.424 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: 'Hello',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.424 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.426 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' Are',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.427 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.454 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' still',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.455 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' there',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.455 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.455 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' Can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.455 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.455 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' assist',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.547 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.548 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' with',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.549 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' anything',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.550 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-26 10:04:34.550 call_7b7323e7687fc007463b3ae0309 verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-26 10:04:35.045 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:35.480 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:35.648 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:36.048 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:36.398 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:36.800 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? Can ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:37.200 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? Can I ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:37.512 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:37.561 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? Can I assist ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:37.863 call_7b7323e7687fc007463b3ae0309 verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? Can I assist you with anything?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-26 10:04:39.480 call_7b7323e7687fc007463b3ae0309 verbose: LLM pingpong event received
+2026-03-26 10:04:39.752 call_7b7323e7687fc007463b3ae0309 info: Ending call: call_7b7323e7687fc007463b3ae0309
+2026-03-26 10:04:39.753 call_7b7323e7687fc007463b3ae0309 info: Closing LLM ws as requested.
+2026-03-26 10:04:40.385 call_7b7323e7687fc007463b3ae0309 info: Webhook triggered for call_ended
+2026-03-26 10:04:41.198 call_7b7323e7687fc007463b3ae0309 info: Webhook response received for call_ended
+2026-03-26 10:04:41.556 call_7b7323e7687fc007463b3ae0309 info: Webhook triggered for call_analyzed
+2026-03-26 10:04:41.739 call_7b7323e7687fc007463b3ae0309 info: Webhook response received for call_analyzed

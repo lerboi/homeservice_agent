@@ -4,10 +4,14 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request) {
   try {
     const tenantId = await getTenantId();
-    if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!tenantId) {
+      console.log('401: Unauthorized');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const { provider } = await request.json();
     if (!provider || !['google', 'outlook'].includes(provider)) {
+      console.log('400: Invalid provider');
       return Response.json({ error: 'Invalid provider' }, { status: 400 });
     }
 
@@ -55,6 +59,7 @@ export async function POST(request) {
 
     return Response.json({ disconnected: true });
   } catch (err) {
+    console.log('500:', err.message, err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

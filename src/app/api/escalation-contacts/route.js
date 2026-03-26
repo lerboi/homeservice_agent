@@ -43,7 +43,10 @@ function validateContactBody({ name, phone, email, notification_pref, timeout_se
 
 export async function GET() {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized (GET)');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { data, error } = await supabase
     .from('escalation_contacts')
@@ -52,19 +55,26 @@ export async function GET() {
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ contacts: data });
 }
 
 export async function POST(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized (POST)');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const body = await request.json();
   const { name, role, phone, email, notification_pref = 'both', timeout_seconds = 30 } = body;
 
   const validation = validateContactBody({ name, phone, email, notification_pref, timeout_seconds });
   if (!validation.valid) {
+    console.log('' + validation.status + ':', validation.error);
     return Response.json({ error: validation.error }, { status: validation.status });
   }
 
@@ -75,8 +85,12 @@ export async function POST(request) {
     .eq('tenant_id', tenantId)
     .eq('is_active', true);
 
-  if (countError) return Response.json({ error: countError.message }, { status: 500 });
+  if (countError) {
+    console.log('500:', countError.message);
+    return Response.json({ error: countError.message }, { status: 500 });
+  }
   if (count >= MAX_ACTIVE_CONTACTS) {
+    console.log('400: Maximum 5 escalation contacts allowed');
     return Response.json({ error: 'Maximum 5 escalation contacts allowed' }, { status: 400 });
   }
 
@@ -107,21 +121,31 @@ export async function POST(request) {
     .select('id, name, role, phone, email, notification_pref, timeout_seconds, sort_order, is_active, created_at, updated_at')
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ contact: data }, { status: 201 });
 }
 
 export async function PUT(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized (PUT)');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const body = await request.json();
   const { id, name, role, phone, email, notification_pref = 'both', timeout_seconds = 30 } = body;
 
-  if (!id) return Response.json({ error: 'id is required' }, { status: 400 });
+  if (!id) {
+    console.log('400: id is required (PUT)');
+    return Response.json({ error: 'id is required' }, { status: 400 });
+  }
 
   const validation = validateContactBody({ name, phone, email, notification_pref, timeout_seconds });
   if (!validation.valid) {
+    console.log('' + validation.status + ':', validation.error);
     return Response.json({ error: validation.error }, { status: validation.status });
   }
 
@@ -141,16 +165,25 @@ export async function PUT(request) {
     .select('id, name, role, phone, email, notification_pref, timeout_seconds, sort_order, is_active, created_at, updated_at')
     .single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ contact: data });
 }
 
 export async function DELETE(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized (DELETE)');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { id } = await request.json();
-  if (!id) return Response.json({ error: 'id is required' }, { status: 400 });
+  if (!id) {
+    console.log('400: id is required (DELETE)');
+    return Response.json({ error: 'id is required' }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from('escalation_contacts')
@@ -158,16 +191,23 @@ export async function DELETE(request) {
     .eq('id', id)
     .eq('tenant_id', tenantId);
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ deleted: true });
 }
 
 export async function PATCH(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized (PATCH)');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { order } = await request.json();
   if (!Array.isArray(order)) {
+    console.log('400: order must be an array');
     return Response.json({ error: 'order must be an array of { id, sort_order }' }, { status: 400 });
   }
 
@@ -179,6 +219,9 @@ export async function PATCH(request) {
       { onConflict: 'id' }
     );
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.log('500:', error.message);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
   return Response.json({ ok: true });
 }

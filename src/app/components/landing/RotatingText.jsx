@@ -26,6 +26,7 @@ export function RotatingText({
   const containerRef = useRef(null);
   const measureRef = useRef(null);
 
+  // Size container to current word width with animated transition
   useLayoutEffect(() => {
     if (!measureRef.current || !containerRef.current || prefersReducedMotion) return;
     const width = measureRef.current.getBoundingClientRect().width;
@@ -72,10 +73,10 @@ export function RotatingText({
       className={`relative inline-flex overflow-hidden whitespace-nowrap align-baseline transition-[width] duration-200 ease-in-out ${className}`}
       {...rest}
     >
-      {/* Hidden measurement span — measures current word width for dynamic container sizing */}
+      {/* In-flow measurement span — provides height and current word width */}
       <span
         ref={measureRef}
-        className="invisible absolute pointer-events-none whitespace-nowrap"
+        className="invisible pointer-events-none whitespace-nowrap"
         aria-hidden="true"
       >
         {texts[currentIndex]}

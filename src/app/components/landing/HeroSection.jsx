@@ -28,7 +28,7 @@ const SPLINE_SCENE_URL = 'https://prod.spline.design/CN1NeDZqows-DMX0/scene.spli
 
 export function HeroSection() {
   return (
-    <section className="relative bg-[#050505] overflow-hidden">
+    <section className="relative bg-[#050505] overflow-hidden min-h-[600px] md:min-h-[700px]">
       {/* Spline 3D scene — full-bleed canvas, centered */}
       <div className="absolute inset-0 hidden md:block">
         <SplineScene
@@ -49,6 +49,7 @@ export function HeroSection() {
           <AnimatedSection>
             <h1 className="text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold text-white leading-[1.1] tracking-tight">
               Every Missed Call Is a Job Your{' '}
+              <br />
               <RotatingText
                 texts={['Competitor', 'Rival', 'Neighbor']}
                 rotationInterval={3000}
@@ -56,7 +57,7 @@ export function HeroSection() {
                 staggerFrom="first"
                 className="text-[#F97316]"
               />{' '}
-              Just Booked
+              Just<br /> Booked
             </h1>
 
             <p className="text-lg md:text-xl text-white/50 mt-5 mb-8 max-w-xl leading-relaxed">

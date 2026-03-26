@@ -4,7 +4,10 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
   const tenantId = await getTenantId();
-  if (!tenantId) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!tenantId) {
+    console.log('401: Unauthorized');
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   const { data: tenant } = await supabase
     .from('tenants')
@@ -13,6 +16,7 @@ export async function POST(request) {
     .single();
 
   if (!tenant?.retell_phone_number || !tenant?.owner_phone) {
+    console.log('400:', 'Phone numbers not configured');
     return Response.json({ error: 'Phone numbers not configured' }, { status: 400 });
   }
 
