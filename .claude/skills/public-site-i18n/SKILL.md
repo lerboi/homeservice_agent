@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-03-26 (Phase 21 — pricing page redesign: volume-based tiers, dark hero, testimonials, dark FAQ, contact pre-selection; Phase 13 — premium dark SaaS redesign)
+**Last updated**: 2026-03-26 (Phase 29 — hero section interactive demo: business name input, ElevenLabs TTS demo player, RotatingText dynamic width; Phase 21 — pricing page redesign: volume-based tiers, dark hero, testimonials, dark FAQ, contact pre-selection; Phase 13 — premium dark SaaS redesign)
 
 ---
 
@@ -20,6 +20,11 @@ This document is the single source of truth for the public marketing site, landi
 | **Landing Page** | `src/app/(public)/page.js` | Homepage: HeroSection + dynamically imported below-fold sections |
 | **Landing Sections** | `src/app/components/landing/` | All landing section components + AnimatedSection + LandingNav + LandingFooter |
 | **Shared Components** | `src/components/landing/AuthAwareCTA.js` | Auth-aware CTA button (authenticated vs unauthenticated routing) |
+| **Hero Demo Block** | `src/app/components/landing/HeroDemoBlock.jsx` | Client wrapper managing input-to-player state transition (dynamic, ssr:false) |
+| **Hero Demo Input** | `src/app/components/landing/HeroDemoInput.jsx` | Client component: business name input + loading state + auth-aware skip link |
+| **Hero Demo Player** | `src/app/components/landing/HeroDemoPlayer.jsx` | Client component: waveform player with Web Audio API playback + post-play CTA |
+| **Demo Voice API** | `src/app/api/demo-voice/route.js` | POST: ElevenLabs TTS for dynamic business name segment; IP rate-limiting (10s) |
+| **Static Audio** | `public/audio/demo-{intro,mid,outro}.mp3` | Pre-rendered ElevenLabs demo conversation segments (caller + AI) |
 | **Pricing** | `src/app/(public)/pricing/` | Pricing page + tier data + PricingTiers + ComparisonTable + FAQSection |
 | **About** | `src/app/(public)/about/page.js` | Mission, problem, values, "why Voco" sections |
 | **Contact** | `src/app/(public)/contact/` | Contact page + ContactForm.jsx |
@@ -45,6 +50,16 @@ User visits public URL (/, /pricing, /about, /contact)
 AuthAwareCTA ("use client"):
   supabase.auth.getUser() → if logged in → /dashboard
                           → if not logged in → /onboarding
+
+Hero Demo Flow (Phase 29):
+  HeroSection (Server) → HeroDemoBlock (Client, dynamic ssr:false)
+    → HeroDemoInput: user enters business name (2+ chars)
+        → onClick: POST /api/demo-voice (ElevenLabs TTS for name segment)
+                 + fetch /audio/demo-{intro,mid,outro}.mp3 in parallel
+        → onAudioReady({ audioBuffers: [intro, name, mid, outro] })
+    → HeroDemoPlayer: Web Audio API stitches buffers into single AudioBuffer
+        → autoplay, waveform bars progress, elapsed time M:SS
+        → on ended: "Start Your Free Trial" CTA appears
 ```
 
 ---
@@ -66,7 +81,14 @@ AuthAwareCTA ("use client"):
 | `src/app/api/contact/route.js` | POST /api/contact — Resend per-request, honeypot check, inquiry routing |
 | `src/app/components/landing/LandingNav.jsx` | Fixed top nav — transparent → blur on scroll, mobile drawer |
 | `src/app/components/landing/LandingFooter.jsx` | Footer — newsletter display, 3-col links, back-to-top button |
-| `src/app/components/landing/HeroSection.jsx` | Hero — Spline 3D scene (desktop), RotatingText, AuthAwareCTA, mobile image fallback |
+| `src/app/components/landing/HeroSection.jsx` | Hero — Spline 3D scene (desktop), RotatingText h1, subtitle, HeroDemoBlock, mobile image fallback |
+| `src/app/components/landing/HeroDemoBlock.jsx` | Client wrapper: manages audioBuffers state; renders HeroDemoInput → HeroDemoPlayer transition |
+| `src/app/components/landing/HeroDemoInput.jsx` | Business name input bar + "Listen to Your Demo" orange CTA; fetches TTS + static MP3s; auth-aware skip link |
+| `src/app/components/landing/HeroDemoPlayer.jsx` | Waveform player: Web Audio API stitching, play/pause, elapsed time, post-play "Start Your Free Trial" |
+| `src/app/api/demo-voice/route.js` | POST /api/demo-voice — ElevenLabs TTS for business name segment; validates name; IP rate-limits 10s |
+| `public/audio/demo-intro.mp3` | Pre-rendered caller opening line: "Hey, I'd like to get my AC serviced..." |
+| `public/audio/demo-mid.mp3` | Pre-rendered mid-conversation: address, slot offer, caller acceptance |
+| `public/audio/demo-outro.mp3` | Pre-rendered AI closing: "You're all set — Thursday at 2 PM..." |
 | `src/app/components/landing/FeaturesGrid.jsx` | Bento grid layout for feature highlights |
 | `src/app/components/landing/SocialProofSection.jsx` | Testimonial / social proof cards |
 | `src/app/components/landing/HowItWorksSection.jsx` | Server Component — HowItWorksSticky via dynamic import |
@@ -127,12 +149,41 @@ Each loading skeleton has hardcoded `min-height` values that match the section's
 
 ### HeroSection (`src/app/components/landing/HeroSection.jsx`)
 
-Server Component with client sub-components:
+Server Component with client sub-components (Phase 29 — stripped to focus attention on demo input):
 - **Spline 3D scene**: `SplineScene` (dynamic import, CDN web component, zero bundle impact). URL: `https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode`. Desktop-only (hidden on mobile).
-- **Mobile fallback**: Static `<Image>` of dashboard mockup — `priority` for LCP.
-- **RotatingText**: 21st.dev animated component, rotates "Competitor/Revenue/Customer" at 3s interval.
-- **AuthAwareCTA**: Routes authenticated users to `/dashboard`, new users to `/onboarding`.
+- **Mobile fallback**: Static `<Image>` of dashboard mockup — `priority` for LCP. Rendered below hero content.
+- **RotatingText**: 21st.dev animated component, rotates `['Competitor', 'Rival', 'Neighbor']` at 3s interval. Title: "Every Missed Call Is a Job Your {RotatingText} Just Booked". **Phase 29 width behavior**: `useRef` + `getBoundingClientRect()` + `useLayoutEffect` measures current word width on each `currentIndex` change, sets `width` via inline style with `transition: width 200ms ease`. Replaced the invisible sizer span approach.
+- **HeroDemoBlock**: Client component (dynamic, ssr:false) managing the input-to-player demo experience. Replaces the old `AuthAwareCTA` + "Watch Demo" buttons.
 - **Background**: `bg-[#050505]` near-black, radial gradient orange accent, dot grid texture, floating blur orb.
+- **Removed in Phase 29**: Eyebrow pill, "Watch Demo" button, social proof row, `AuthAwareCTA` from hero. Attention fully on demo input bar.
+
+### HeroDemoBlock (`src/app/components/landing/HeroDemoBlock.jsx`)
+
+`'use client'`, loaded via `dynamic()` with `ssr: false` from HeroSection.
+
+Manages `audioBuffers` state (`null` or `ArrayBuffer[]`). When `null`, renders `HeroDemoInput`. When populated, unmounts input and renders `HeroDemoPlayer` with `animate-in fade-in slide-in-from-bottom-2 duration-200`. Transition is React state-based (no Framer Motion), satisfying D-12/D-13 (player replaces input in-place, same position).
+
+### HeroDemoInput (`src/app/components/landing/HeroDemoInput.jsx`)
+
+`'use client'`. Props: `onAudioReady({ audioBuffers: ArrayBuffer[] })`.
+
+States: `'idle'` | `'loading'`. Business name validated `>= 2 chars` to enable the CTA button.
+
+On submit: fires 4 parallel fetch calls — `POST /api/demo-voice` + `fetch('/audio/demo-intro.mp3')` + `fetch('/audio/demo-mid.mp3')` + `fetch('/audio/demo-outro.mp3')`. On success, calls `onAudioReady({ audioBuffers: [introBuf, nameBuf, midBuf, outroBuf] })`.
+
+Auth-aware skip link: dynamically imports supabase-browser in `useEffect`, calls `getUser()`. Shows "Go to Dashboard" if logged in, "Skip the demo — Start your free trial" → `/onboarding` if not.
+
+Input bar: `flex-col sm:flex-row` (stacks on mobile), `bg-white/[0.06] border border-white/[0.07] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316]`. Button loading state: `<Loader2 className="animate-spin size-4" /> Generating...`.
+
+### HeroDemoPlayer (`src/app/components/landing/HeroDemoPlayer.jsx`)
+
+`'use client'`. Props: `audioBuffers: ArrayBuffer[]` (order: `[intro, name, mid, outro]`).
+
+Web Audio API: `AudioContext`, decodes all buffers via `decodeAudioData()`, concatenates into single `AudioBuffer`. Autoplay on mount. Play/pause/replay via `AudioBufferSourceNode`. Progress tracked via `requestAnimationFrame`.
+
+Waveform: 40 bars (desktop) / 28 bars (mobile via `matchMedia`). Pre-computed `AMPLITUDE` envelope (sine wave, deterministic). Active bars (`position < playhead`): `bg-[#F97316]`. Inactive: `bg-white/[0.15]`. Elapsed time: `M:SS` via `tabular-nums`. Reduced motion: flat bars at 40% height.
+
+Post-play: `playerState === 'ended'` → renders "Start Your Free Trial" link → `/onboarding` with `animate-in fade-in duration-200`.
 
 ### FeaturesGrid (`src/app/components/landing/FeaturesGrid.jsx`)
 
@@ -510,6 +561,30 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 - **LandingFooter requires `'use client'` for back-to-top**: `window.scrollTo({ top: 0, behavior: 'smooth' })` requires browser API. Newsletter form is display-only — no API wired, intentional UX stub.
 
 - **HeroSection Spline URL is live**: `https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode` — production CDN URL. Desktop only, hidden on mobile via `hidden md:block` wrapper.
+
+- **Hero demo uses HeroDemoBlock wrapper (Phase 29)**: Rather than wiring HeroDemoInput and HeroDemoPlayer directly into HeroSection, a HeroDemoBlock client wrapper manages the `audioBuffers` state and transition. This keeps HeroSection a Server Component — it only needs to dynamically import `HeroDemoBlock` once, not multiple client components.
+
+- **Direct fetch() to ElevenLabs REST API (Phase 29)**: `/api/demo-voice` calls ElevenLabs directly via `fetch()` rather than using the `elevenlabs` npm SDK. Single-endpoint use case; no SDK overhead. Uses `eleven_multilingual_v2` model with `mp3_44100_128` output format.
+
+- **IP-based rate limiting on demo-voice (Phase 29)**: `demo-voice` route applies a 10-second per-IP rate limit using a module-level `Map`. Prevents rapid repeated demo calls from abusing ElevenLabs quota. Cleanup removes entries older than 60 seconds to prevent memory leak.
+
+- **RotatingText dynamic width via getBoundingClientRect (Phase 29)**: RotatingText now measures the current word's rendered width (not the longest word) via `useRef` on a hidden measurement span + `getBoundingClientRect()` in `useLayoutEffect`. Container width animates with `transition: width 200ms ease`. Words `['Competitor', 'Rival', 'Neighbor']` — all 8 chars — ensure small delta between width states. Replaces the invisible sizer span that caused fixed-width container.
+
+---
+
+## 14. Environment Variables
+
+| Variable | Used By | Description |
+|----------|---------|-------------|
+| `ELEVENLABS_API_KEY` | `src/app/api/demo-voice/route.js` | ElevenLabs TTS API key (server-side only, never exposed to client) |
+| `ELEVENLABS_VOICE_ID_AI` | `src/app/api/demo-voice/route.js` | Voice ID for AI receptionist dynamic name segment |
+| `ELEVENLABS_VOICE_ID_CALLER` | Pre-render only | Voice ID for caller (used when pre-rendering static MP3 segments; not used at runtime) |
+| `RESEND_API_KEY` | `src/app/api/contact/route.js` | Resend API key for contact form email dispatch |
+| `RESEND_FROM_EMAIL` | `src/app/api/contact/route.js` | Sender email address |
+| `CONTACT_EMAIL_SALES` | `src/app/api/contact/route.js` | Recipient for sales inquiry type |
+| `CONTACT_EMAIL_SUPPORT` | `src/app/api/contact/route.js` | Recipient for support inquiry type |
+| `CONTACT_EMAIL_PARTNERSHIPS` | `src/app/api/contact/route.js` | Recipient for partnerships inquiry type |
+| `CONTACT_EMAIL_FALLBACK` | `src/app/api/contact/route.js` | Fallback recipient when no type-specific address configured |
 
 ---
 
