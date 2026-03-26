@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
-// All onboarding and dashboard paths require authentication.
+// All onboarding, dashboard, and admin paths require authentication.
 // Auth pages (/auth/signin) are public.
 const AUTH_REQUIRED_PATHS = [
   '/onboarding',
