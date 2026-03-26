@@ -38,7 +38,7 @@
 ### Billing Notifications
 
 - [x] **BILLNOTIF-01**: Failed payment SMS + email to owner on invoice.payment_failed with payment update link (Stripe Customer Portal URL)
-- [ ] **BILLNOTIF-02**: Trial reminder email at day 7 and day 12 via cron job + Resend template
+- [x] **BILLNOTIF-02**: Trial reminder email at day 7 and day 12 via cron job + Resend template
 - [x] **BILLNOTIF-03**: Trial-will-end notification triggered by customer.subscription.trial_will_end webhook (3 days before expiry)
 
 ### Billing Documentation
@@ -352,7 +352,7 @@
 | ENFORCE-03 | Phase 24 | Complete |
 | ENFORCE-04 | Phase 24 | Complete |
 | BILLNOTIF-01 | Phase 24 | Complete |
-| BILLNOTIF-02 | Phase 24 | Pending |
+| BILLNOTIF-02 | Phase 24 | Complete |
 | BILLNOTIF-03 | Phase 24 | Complete |
 | ENFORCE-01 | Phase 25 | Pending |
 | ENFORCE-02 | Phase 25 | Pending |
