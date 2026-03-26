@@ -46,6 +46,16 @@
 - [ ] **BILLDOC-01**: Billing/payment architecture skill file created — covers full Stripe integration, DB tables, webhook handling, enforcement logic, subscription lifecycle
 - [ ] **BILLDOC-02**: CLAUDE.md updated to include billing-payment skill in the architecture skill files list with sync requirement
 
+### Country-Aware Onboarding and Number Provisioning
+
+- [ ] **COUNTRY-01**: "Your Details" step collects full name, personal phone number, and country (SG/US/CA) — all three fields saved to tenants table with phone in E.164 format
+- [ ] **COUNTRY-02**: phone_inventory table with SG pre-purchased numbers, real-time availability count API, race-safe assign_sg_number RPC with FOR UPDATE SKIP LOCKED
+- [ ] **COUNTRY-03**: Singapore waitlist UI when zero numbers available — email capture + waitlist table, blocks onboarding progression
+- [ ] **COUNTRY-04**: Singapore number assigned from phone_inventory after checkout.session.completed webhook — atomic RPC prevents double-assignment
+- [ ] **COUNTRY-05**: US/Canada number provisioned via retell.phoneNumber.create({ country_code }) after checkout success — Retell handles Twilio internally
+- [ ] **COUNTRY-06**: Test call step removed from onboarding wizard, wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success)
+- [ ] **COUNTRY-07**: Onboarding-flow skill file updated to reflect 5-step wizard, country-aware provisioning, new API routes, deprecated routes
+
 ### Future Requirements (Deferred)
 
 - [ ] **BILLF-01**: 80% usage alert — SMS + email to owner when calls_used >= 0.8 * calls_limit with usage_alert_sent flag to prevent repeats
@@ -361,9 +371,17 @@
 - Mapped to phases: 16
 - Unmapped: 0
 
+| COUNTRY-01 | Phase 27 | Pending |
+| COUNTRY-02 | Phase 27 | Pending |
+| COUNTRY-03 | Phase 27 | Pending |
+| COUNTRY-04 | Phase 27 | Pending |
+| COUNTRY-05 | Phase 27 | Pending |
+| COUNTRY-06 | Phase 27 | Pending |
+| COUNTRY-07 | Phase 27 | Pending |
+
 **v3.0 Coverage:**
-- v3.0 requirements: 23 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02)
-- Mapped to phases: 23
+- v3.0 requirements: 30 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07)
+- Mapped to phases: 30
 - Unmapped: 0
 
 ---

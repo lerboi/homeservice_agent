@@ -563,16 +563,20 @@ Plans:
 **Plans**: TBD
 
 ### Phase 27: Country-Aware Onboarding and Number Provisioning
-**Goal**: The onboarding wizard collects user name, personal phone number, and country (Singapore/US/Canada) — country determines phone number provisioning strategy: Singapore assigns from a pre-purchased inventory table (limited slots), US/Canada provisions dynamically via Twilio API. The plan selection step is simplified to show only plan name, price, and call limit with a "See full features" link to the pricing page.
+**Goal**: The onboarding wizard collects user name, personal phone number, and country (Singapore/US/Canada) — country determines phone number provisioning strategy: Singapore assigns from a pre-purchased inventory table (limited slots with availability checking), US/Canada provisions dynamically via Retell API. The test call step is removed from the wizard, shortening it from 6 to 5 visible steps. Provisioning happens after checkout success, not during onboarding steps.
 **Depends on**: Phase 22 (billing foundation must be complete — Stripe checkout flow and subscriptions table required)
-**Requirements**: TBD
+**Requirements**: COUNTRY-01, COUNTRY-02, COUNTRY-03, COUNTRY-04, COUNTRY-05, COUNTRY-06, COUNTRY-07
 **Success Criteria** (what must be TRUE):
   1. A new user completing onboarding enters their name, personal phone number, and selects a country (SG/US/CA) — all three fields are saved to the tenants table
-  2. A Singapore user is assigned a phone number from the phone_inventory table — the number's status changes from 'available' to 'assigned' and the assigned_tenant_id is set
-  3. When all Singapore numbers are assigned (none with status 'available'), a new SG user sees a "no slots available" message and cannot proceed with onboarding
-  4. A US or Canada user gets a phone number provisioned dynamically via Twilio API (existing provisioning flow)
-  5. The plan selection step shows only plan name, price, and call limit — full feature lists are not displayed; a "See full features" link opens the /pricing page in a new tab
-**Plans**: TBD
+  2. A Singapore user is assigned a phone number from the phone_inventory table after checkout — the number's status changes from 'available' to 'assigned' and the assigned_tenant_id is set
+  3. When all Singapore numbers are assigned (none with status 'available'), a new SG user sees a waitlist UI and cannot proceed with onboarding
+  4. A US or Canada user gets a phone number provisioned dynamically via Retell API after checkout success
+  5. The wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success) — test call step is removed from the wizard flow
+**Plans:** 3 plans
+Plans:
+- [ ] 27-01-PLAN.md — DB migration (phone_inventory, waitlist, tenants columns, assign_sg_number RPC) + SG availability and waitlist APIs
+- [ ] 27-02-PLAN.md — "Your Details" step (name, phone, country) + layout update + sms-confirm extension
+- [ ] 27-03-PLAN.md — Stripe webhook provisioning (SG inventory + US/CA Retell) + onboarding-flow skill update
 **UI hint**: yes
 
 ### Phase 28: Admin Dashboard
@@ -614,6 +618,6 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
-| 27. Country-Aware Onboarding and Number Provisioning | 0/TBD | Not started | - |
+| 27. Country-Aware Onboarding and Number Provisioning | 0/3 | Not started | - |
 | 28. Admin Dashboard | 0/TBD | Not started | - |
 | 29. Hero Section Interactive Demo | 0/TBD | Not started | - |
