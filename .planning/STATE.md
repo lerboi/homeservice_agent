@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 24 plans verified
-last_updated: "2026-03-26T21:30:16.129Z"
+status: Ready to execute
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-03-26T21:40:00.446Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 23 — usage-tracking
+**Current focus:** Phase 24 — subscription-lifecycle-and-notifications
 
 ## Current Position
 
-Phase: 23
-Plan: Not started
+Phase: 24 (subscription-lifecycle-and-notifications) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -65,6 +65,9 @@ Recent decisions affecting current work:
 - [Phase 28-admin-dashboard]: Tenant name passed via impersonate_name query param to dashboard layout to avoid an extra API call during impersonation
 - [Phase 23]: Migration renumbered 012→013 (012_admin_users.sql already exists from Phase 28)
 - [Phase 23]: No SECURITY DEFINER on increment_calls_used — service_role client bypasses RLS automatically
+- [Phase 24-01]: Migration renumbered 015→016: 015_notification_preferences.sql already existed from prior phase
+- [Phase 24-01]: getResendClient() lazy init in webhook route uses require() to match synchronous getTwilioClient() pattern
+- [Phase 24-01]: handleInvoicePaymentFailed and handleTrialWillEnd both try/catch wrapped — notification failures never rethrown to prevent Stripe retry conflicts
 
 ### Roadmap Evolution
 
@@ -82,6 +85,7 @@ Recent decisions affecting current work:
 - Phase 27 added: Country-Aware Onboarding and Number Provisioning (2026-03-26)
 - Phase 28 added: Admin Dashboard (2026-03-26)
 - Phase 29 added: Hero Section Interactive Demo (2026-03-26)
+- Phase 14 added: Voice Agent Prompt Optimization (2026-03-27)
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T21:30:16.119Z
-Stopped at: Phase 24 plans verified
-Resume file: .planning/phases/24-subscription-lifecycle-and-notifications/24-01-PLAN.md
+Last session: 2026-03-26T21:40:00.439Z
+Stopped at: Completed 24-01-PLAN.md
+Resume file: None
