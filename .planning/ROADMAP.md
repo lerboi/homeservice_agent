@@ -525,7 +525,9 @@ Plans:
   2. Retell delivering the same call_ended webhook twice (retry scenario) results in calls_used incrementing by 1, not 2 — the usage_events idempotency key prevents double-counting
   3. After an invoice.paid webhook arrives with billing_reason = subscription_cycle, calls_used resets to 0 — the reset does not happen at midnight, on a cron tick, or on any other trigger
   4. Two calls completing simultaneously increment calls_used by exactly 2 — no race condition drops or doubles an increment
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 23-01-PLAN.md — Usage events migration, increment RPC, and processCallEnded integration
 
 ### Phase 24: Subscription Lifecycle and Notifications
 **Goal**: Tenants in degraded subscription states (past_due, trial expiring) are handled gracefully — owners have 3 days on past_due before blocking, receive email and SMS when payment fails, get trial reminder emails at day 7 and 12, and the dashboard is gated appropriately for cancelled or expired tenants
