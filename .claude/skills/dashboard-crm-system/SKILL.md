@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-03-26 (Phase 20 — 6-tab desktop nav, 5-tab mobile nav, call logs, More menu, adaptive home, checklist redesign, Joyride tour)
+**Last updated**: 2026-03-26 (Phase 28-03 — Admin impersonation banner, dashboard layout Suspense boundary for useSearchParams)
 
 ---
 
@@ -61,7 +61,8 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 
 | File | Role |
 |------|------|
-| `src/app/dashboard/layout.js` | Layout wrapper: sidebar (desktop), BottomTabBar (mobile), breadcrumb, DashboardTour |
+| `src/app/dashboard/layout.js` | Layout wrapper: sidebar (desktop), BottomTabBar (mobile), breadcrumb, DashboardTour. Exports Suspense-wrapped DashboardLayout with admin impersonation support via ImpersonationBanner |
+| `src/app/dashboard/ImpersonationBanner.js` | Amber sticky banner shown when admin impersonates a tenant — displays "Viewing as: {name} (read-only)" + Exit Impersonation link |
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
 | `src/app/dashboard/leads/page.js` | Leads page: filter bar, list/kanban toggle, Realtime subscription |
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
@@ -108,7 +109,10 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 
 **File**: `src/app/dashboard/layout.js`
 
-`DashboardLayout({ children })` — 'use client'. Wraps all dashboard pages with:
+`DashboardLayout({ children })` — 'use client'. Exported as a Suspense wrapper that renders `DashboardLayoutInner` to support `useSearchParams()` per Next.js requirements.
+
+`DashboardLayoutInner({ children })` — the actual layout. Wraps all dashboard pages with:
+- `ImpersonationBanner` — rendered ABOVE the main layout when `impersonate` query param is present (admin impersonation mode)
 - `DashboardSidebar` — desktop-only fixed left sidebar (lg+), no mobile drawer
 - `BottomTabBar` — mobile-only fixed bottom nav (hidden on lg+)
 - `DashboardTour` — Joyride guided tour mounted at layout level, persists across tab navigation
@@ -116,6 +120,25 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 - **No card wrapper** — each page controls its own card styling (page-level card ownership)
 
 **Important**: Main content div uses `pb-[72px] lg:pb-6` to clear the 56px mobile tab bar.
+
+### Admin Impersonation Support (Phase 28-03)
+
+When an admin clicks "View as" on the `/admin/tenants` page, they are navigated to:
+```
+/dashboard?impersonate={tenant_id}&impersonate_name={business_name}
+```
+
+The dashboard layout reads these query params via `useSearchParams()` and:
+1. Renders `ImpersonationBanner` above all layout content (outside `pointer-events-none` wrapper so it stays interactive)
+2. Wraps the entire layout (sidebar + main area) in `pointer-events-none opacity-60` to disable all interactions
+
+**Impersonation Banner** (`src/app/dashboard/ImpersonationBanner.js`):
+- Sticky, z-40, height h-11 (44px), `bg-amber-50 border-b border-amber-300`
+- Shows: Eye icon + "Viewing as: {tenantName} (read-only)"
+- "Exit Impersonation" link back to `/admin/tenants`
+- `border-amber-400 text-amber-800 hover:bg-amber-100` button style
+
+**Suspense boundary**: The exported `DashboardLayout` wraps `DashboardLayoutInner` in `<Suspense fallback={<div className="min-h-screen bg-[#F5F5F4]" />}>` to satisfy Next.js requirement for `useSearchParams()` in client components.
 
 **`DashboardBreadcrumb`** — reads `usePathname()`, supports 3-segment paths (e.g., Dashboard > More > Working Hours) via `crumbs.map()` loop over path segments.
 
