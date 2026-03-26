@@ -539,7 +539,11 @@ Plans:
   3. A tenant in cancelled or expired status who navigates to any dashboard route is redirected to /billing/upgrade â€” they cannot access the main dashboard
   4. A trial started on day 0 triggers a trial reminder email on day 7 and another on day 12 â€” neither fires more than once regardless of cron re-execution
   5. A customer.subscription.trial_will_end webhook (fired 3 days before trial expiry) triggers a notification to the owner prompting them to upgrade before their trial ends
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 24-01-PLAN.md — Billing notifications migration, email templates, webhook stubs (handleInvoicePaymentFailed, handleTrialWillEnd)
+- [ ] 24-02-PLAN.md — Middleware subscription gate, BillingWarningBanner for past_due grace period
+- [ ] 24-03-PLAN.md — Trial reminders cron job (day 7 and day 12 emails)
 **UI hint**: yes
 
 ### Phase 25: Enforcement Gate and Billing Dashboard
@@ -626,7 +630,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 |-------|----------------|--------|-----------|
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
 | 23. Usage Tracking | 1/1 | Complete    | 2026-03-26 |
-| 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
+| 24. Subscription Lifecycle and Notifications | 0/3 | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
