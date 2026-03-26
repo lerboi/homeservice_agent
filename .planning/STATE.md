@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Phase complete — ready for verification
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-03-26T08:07:44.259Z"
+status: Executing Phase 29
+stopped_at: "29-02 paused at Task 3 checkpoint (human-action: ElevenLabs setup)"
+last_updated: "2026-03-26T09:14:11.802Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 27 — country-aware-onboarding-and-number-provisioning
+**Current focus:** Phase 29 — hero-section-interactive-demo
 
 ## Current Position
 
-Phase: 27 (country-aware-onboarding-and-number-provisioning) — EXECUTING
-Plan: 3 of 3
+Phase: 29 (hero-section-interactive-demo) — EXECUTING
+Plan: 1 of 4
 
 ## Accumulated Context
 
@@ -52,6 +52,7 @@ Recent decisions affecting current work:
 - [Phase 27]: Server-side 409 gate in sms-confirm prevents direct API bypass of waitlist when SG inventory is 0
 - [Phase 27]: US/CA provisioning uses Twilio API direct purchase (not retell.phoneNumber.create) per D-12 — Twilio ownership enables future SMS access from tenant numbers
 - [Phase 27]: Provisioning failure (provisioning_failed flag) allows subscription creation to succeed even when phone assignment fails — user always gets their subscription after paying
+- [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
 
 ### Roadmap Evolution
 
@@ -83,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T08:07:44.251Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-03-26T09:14:00.058Z
+Stopped at: 29-02 paused at Task 3 checkpoint (human-action: ElevenLabs setup)
 Resume file: None

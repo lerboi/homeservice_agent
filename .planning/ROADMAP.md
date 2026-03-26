@@ -605,7 +605,7 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [ ] 29-01-PLAN.md — RotatingText dynamic width + hero copy update
-- [ ] 29-02-PLAN.md — ElevenLabs TTS API route + pre-render static audio segments
+- [x] 29-02-PLAN.md — ElevenLabs TTS API route + pre-render static audio segments
 - [ ] 29-03-PLAN.md — HeroDemoInput + HeroDemoPlayer client components
 - [ ] 29-04-PLAN.md — Wire components into HeroSection + skill file update + visual verification
 **UI hint**: yes
@@ -625,4 +625,4 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 0/TBD | Not started | - |
-| 29. Hero Section Interactive Demo | 0/TBD | Not started | - |
+| 29. Hero Section Interactive Demo | 1/4 | In Progress|  |
