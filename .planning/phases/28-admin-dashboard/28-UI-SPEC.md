@@ -130,7 +130,8 @@ Admin uses a **top-tab navigation** (not a sidebar) for the primary admin sectio
 
 Header: `bg-[#0F1F3D]`, height 56px, sticky top-0 z-30
 Header text: white
-"ADMIN" badge: 10px / 600 (semibold) / uppercase / `#1D4ED8` bg / white text / rounded-sm, positioned inline after logo
+"ADMIN" badge: Label token (12px / 600 / uppercase / tracking-wide) / `#1D4ED8` bg / white text / rounded-sm, positioned inline after logo — the uppercase + tracking-wide renders visually compact despite using the standard 12px Label size
+Primary focal point: the "Add Number" form card in the content area, positioned above the inventory table.
 
 ### Impersonation Banner
 
