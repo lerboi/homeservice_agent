@@ -103,6 +103,39 @@ export async function processCallEnded(call) {
         .eq('tenant_id', tenantId);
     }
   }
+
+  // --- Usage tracking (Phase 23: USAGE-01, USAGE-02) ---
+  // D-01: Fire-and-forget usage counting after call record upsert
+  // D-02: 10-second minimum duration filter (computed from raw timestamps, NOT duration_seconds generated column)
+  // D-03: Test call exclusion (reuses isTestCall already in scope at line 78)
+  const durationSeconds = (end_timestamp && start_timestamp)
+    ? Math.round((end_timestamp - start_timestamp) / 1000)
+    : 0;
+
+  if (!isTestCall && durationSeconds >= 10 && tenantId) {
+    try {
+      const { data: usageResult, error: usageError } = await supabase.rpc(
+        'increment_calls_used',
+        { p_tenant_id: tenantId, p_call_id: call_id }
+      );
+
+      if (usageError) {
+        // D-06: Log but never rethrow — billing counter glitch must not lose call data
+        console.error('[usage] increment_calls_used RPC error:', usageError);
+      } else if (usageResult?.[0]) {
+        // D-08: RPC returns { success, calls_used, calls_limit, limit_exceeded }
+        const { success, calls_used, calls_limit, limit_exceeded } = usageResult[0];
+        console.log(
+          `[usage] tenant=${tenantId} call=${call_id} ` +
+          `success=${success} used=${calls_used}/${calls_limit} ` +
+          `limit_exceeded=${limit_exceeded}`
+        );
+      }
+    } catch (err) {
+      // D-06: billing counter glitch must never lose call data
+      console.error('[usage] increment failed (non-fatal):', err);
+    }
+  }
 }
 
 /**
