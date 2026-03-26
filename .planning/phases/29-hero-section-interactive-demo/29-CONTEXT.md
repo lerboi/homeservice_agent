@@ -14,41 +14,45 @@ Replace the hero section's CTA buttons (AuthAwareCTA + Watch Demo) with an inter
 ## Implementation Decisions
 
 ### Voice Demo Approach
-- **D-01:** Pre-render the demo script as static audio segments (intro, mid-conversation, closing) using a high-quality TTS service at build/deploy time. Only the business name is generated dynamically via a lightweight TTS API call at runtime.
-- **D-02:** Use OpenAI TTS (`tts-1` or `tts-1-hd`) for the dynamic business name segment — $15/1M chars, ~0.5s latency, 6 voice options. Cost is essentially zero at landing page traffic volumes.
-- **D-03:** The demo script is a ~30-45 second conversation between an AI receptionist and a caller. Two distinct voices: one for the AI agent (confident, professional), one for the caller (casual homeowner). The script demonstrates: greeting with business name, understanding a service request, and booking an appointment.
-- **D-04:** Pre-rendered audio segments are stored as static files in `/public/audio/` — no CDN or external hosting needed. The dynamic name segment is generated via an API route (`/api/demo-voice`) and stitched client-side using the Web Audio API.
+- **D-01:** Pre-render the demo script as static audio segments using ElevenLabs at build/deploy time. Only the business name is generated dynamically via ElevenLabs TTS API at runtime.
+- **D-02:** Use ElevenLabs for everything — both the pre-rendered static segments and the dynamic business name. Same voice consistency across the entire demo. ElevenLabs Starter plan ($5/mo, 30k chars) covers ~1,500 demo plays/month for the dynamic name segment.
+- **D-03:** Pre-rendered audio segments stored as static files in `/public/audio/`. The dynamic name segment is generated via an API route (`/api/demo-voice`) and stitched client-side using the Web Audio API.
 
-### Audio Player UI
-- **D-05:** After the user clicks "Listen to Your Demo", the input bar transitions (fade/slide) into an audio player with a waveform visualizer, play/pause button, and progress indicator. Dark styling matching the `#050505` hero background.
-- **D-06:** The player replaces the input bar in-place — same horizontal footprint. No modal, no separate section. The transition should feel smooth and immediate.
-- **D-07:** A "Try another name" link below the player lets the user go back to the input state.
-
-### Hero Title and Copy
-- **D-08:** Shorten the main hero title. Current: "Every Call You Miss Is a Job Your {Rotating} Just Won". Make it punchier — something like "Every Missed Call Is a {Rotating} Lost" or similar. Keep the RotatingText component with the cycling words pattern.
-- **D-09:** Replace the subtitle text to direct the user to the input: something like "Enter your business name and hear your AI receptionist in action."
-- **D-10:** The eyebrow pill ("AI-Powered Answering for Trades") stays as-is.
+### Demo Script & Scenario
+- **D-04:** HVAC routine maintenance scenario — caller wants AC serviced before summer. AI greets with business name, captures details, offers next available slot. Shows the everyday booking value (not emergency drama).
+- **D-05:** Demo duration is 20-25 seconds — short and punchy. Greeting, quick request, slot offered, confirmed. Keeps visitor attention on a landing page.
+- **D-06:** Two distinct voices — AI receptionist voice + caller voice. Both pre-rendered via ElevenLabs with different voice IDs. Feels like a real phone call.
 
 ### Input Bar Design
-- **D-11:** Single-line text input with an inline "Listen to Your Demo" CTA button on the right side (inside or adjacent to the input). Replaces both the AuthAwareCTA and Watch Demo buttons.
-- **D-12:** Placeholder text: "Enter your business name..." — styled to match the dark hero (`bg-white/[0.06]` input background, white text, orange focus ring).
-- **D-13:** Validation: must have at least 2 characters. Button disabled/dimmed until valid input.
-- **D-14:** While generating the audio, show a loading state on the button (spinner + "Generating...").
-- **D-15:** Keep the social proof micro-line below the input/player.
-- **D-16:** Add a small "Start Free Trial" text link below the input bar for users who want to skip the demo and go straight to onboarding.
+- **D-07:** Single-line text input with an inline "Listen to Your Demo" CTA button on the right side. Replaces both the AuthAwareCTA and Watch Demo buttons.
+- **D-08:** Placeholder text: "Enter your business name..." — dark hero styling (`bg-white/[0.06]` input background, white text, orange focus ring).
+- **D-09:** Validation: must have at least 2 characters. Button disabled/dimmed until valid input.
+- **D-10:** While generating the audio, show a loading state on the button (spinner + "Generating...").
+- **D-11:** Add a "Start Free Trial" text link below the input bar for users who want to skip the demo.
+
+### Audio Player UI
+- **D-12:** After clicking "Listen to Your Demo", the input bar transitions into an audio player with a waveform visualizer (animated CSS bars), play/pause button, and progress indicator. Dark styling matching the `#050505` hero background.
+- **D-13:** The player replaces the input bar in-place — same horizontal footprint. No modal, no separate section.
+- **D-14:** After audio finishes: player stays visible with replay option. A "Start Free Trial" CTA button appears below the player to convert. No "Try another name" link — once they've heard the demo, keep them moving toward signup.
+
+### Hero Title and Copy
+- **D-15:** Shorten the main hero title (Claude's discretion). Keep the RotatingText component with cycling words pattern. Make it punchier than current.
+- **D-16:** Replace the subtitle to direct the user to the input — something like "Enter your business name and hear your AI receptionist in action."
+- **D-17:** Remove the eyebrow pill ("AI-Powered Answering for Trades") and the social proof micro-line ("Trusted by 500+ trades businesses"). Let the demo input be the sole focus.
 
 ### Responsive Rotating Text
-- **D-17:** Change the RotatingText component to dynamically adjust its width to match the currently displayed word, using a CSS transition (`transition: width 0.3s ease`) instead of the current invisible sizer that reserves the longest word's width. This makes the surrounding text reflow smoothly as words cycle.
-- **D-18:** The invisible sizer span (line 61-63 of RotatingText.jsx) should be replaced with a measured-width approach — either `useRef` + `offsetWidth` measurement or a CSS `width` transition on the container matching the current word's natural width.
+- **D-18:** Change the RotatingText component to dynamically adjust its width to match the currently displayed word, using a CSS transition instead of the current invisible sizer that reserves the longest word's width.
+- **D-19:** The invisible sizer span (line 61-63 of RotatingText.jsx) should be replaced with a measured-width approach — `useRef` + `getBoundingClientRect()` or similar.
 
 ### Claude's Discretion
 - Exact hero title wording (shorter, punchier, keeping rotating text pattern)
-- Demo script dialogue (specific lines, tone, scenario — should feel realistic for a plumbing/HVAC/electrical business)
-- Voice selection from OpenAI TTS voices (alloy, echo, fable, onyx, nova, shimmer)
+- Demo script dialogue (specific lines, tone — HVAC routine maintenance scenario)
+- ElevenLabs voice selection for both AI receptionist and caller voices
 - Waveform visualizer implementation (canvas-based, SVG, or CSS bars)
 - Web Audio API stitching approach for combining pre-rendered + dynamic segments
 - Exact transition animations between input state and player state
 - Mobile layout adjustments (input may need to stack vertically on small screens)
+- Post-play CTA button styling and placement
 
 </decisions>
 
@@ -60,7 +64,7 @@ Replace the hero section's CTA buttons (AuthAwareCTA + Watch Demo) with an inter
 ### Hero section (current implementation to modify)
 - `src/app/components/landing/HeroSection.jsx` — Current hero: Spline 3D, RotatingText, AuthAwareCTA + Watch Demo button
 - `src/app/components/landing/RotatingText.jsx` — Per-character animated text rotation with invisible sizer (lines 61-63 are the width reservation to change)
-- `src/components/landing/AuthAwareCTA.js` — Auth-aware CTA button (will be replaced by input bar, but auth routing pattern may be reused for the "Start Free Trial" link)
+- `src/components/landing/AuthAwareCTA.js` — Auth-aware CTA button (being replaced by input bar, but auth routing pattern reused for "Start Free Trial" link)
 
 ### Landing page structure
 - `src/app/(public)/page.js` — HeroSection is statically imported (above fold)
@@ -73,7 +77,6 @@ Replace the hero section's CTA buttons (AuthAwareCTA + Watch Demo) with an inter
 
 ### API patterns
 - `src/app/api/contact/route.js` — POST API route pattern to mirror for `/api/demo-voice`
-- `src/lib/supabase.js` — Service-role client (if needed for any server-side operations)
 
 </canonical_refs>
 
@@ -96,27 +99,29 @@ Replace the hero section's CTA buttons (AuthAwareCTA + Watch Demo) with an inter
 ### Integration Points
 - HeroSection.jsx — main file to modify (replace CTA section with input/player)
 - RotatingText.jsx — width behavior change
-- New API route: `src/app/api/demo-voice/route.js` — accepts business name, returns audio buffer
+- New API route: `src/app/api/demo-voice/route.js` — accepts business name, calls ElevenLabs TTS, returns audio buffer
 - New components: `HeroDemoInput.jsx` (client), `HeroDemoPlayer.jsx` (client)
-- Static audio files: `public/audio/demo-intro.mp3`, `demo-mid.mp3`, `demo-outro.mp3`
+- Static audio files: `public/audio/` — pre-rendered ElevenLabs segments
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- Pre-rendered segments + dynamic name splice approach gives instant playback for 95% of the audio with minimal latency
-- OpenAI TTS at $15/1M chars is essentially free for landing page volumes (a business name is ~20 chars = $0.0003 per demo play)
-- Web Audio API can stitch AudioBuffers seamlessly — load pre-rendered segments as ArrayBuffers, generate name segment via API, concatenate and play
+- ElevenLabs for both static and dynamic segments ensures consistent voice quality across the entire demo
+- $5/mo ElevenLabs Starter plan covers ~1,500 dynamic name generations/month (20 chars per name)
+- Web Audio API stitches AudioBuffers seamlessly — load pre-rendered segments as ArrayBuffers, generate name segment via API, concatenate and play
 - The input-to-player transition should feel like the input "transforms" into the player (same position, same width)
-- Demo script should showcase the core value prop: AI answers with business name, understands the service need, books an appointment — all in ~30-45 seconds
+- HVAC routine maintenance scenario is relatable to broad trade audience without being overdramatic
+- 20-25 seconds keeps attention while showing the full value prop: greeting → request → booking
+- Post-play CTA appears to capitalize on the "wow" moment right after hearing the demo
 
 </specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- ElevenLabs conversational API for fully dynamic two-voice demos (higher quality but $22+/mo and more latency)
+- ElevenLabs conversational API for fully dynamic two-voice demos
 - Allowing users to customize the demo scenario (e.g., emergency vs routine call)
 - Saving/sharing demo audio via unique URL
 - A/B testing different demo scripts for conversion optimization

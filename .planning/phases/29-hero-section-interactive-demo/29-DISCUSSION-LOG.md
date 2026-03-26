@@ -5,8 +5,8 @@
 
 **Date:** 2026-03-26
 **Phase:** 29-hero-section-interactive-demo
-**Areas discussed:** Voice demo approach, Audio player UI, Hero title/copy, Input bar design, Responsive rotating text
-**Mode:** --auto (all areas auto-selected, recommended defaults chosen)
+**Areas discussed:** Voice demo approach, Demo script & scenario, Input bar & player UI, Hero title & copy
+**Mode:** Interactive (user-selected all 4 areas)
 
 ---
 
@@ -14,75 +14,142 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Pre-rendered + dynamic name splice | Static audio segments + runtime TTS for business name only | ✓ |
-| Fully dynamic TTS | Generate entire conversation via API on each play | |
-| ElevenLabs conversational | Use ElevenLabs' conversational API for real-time two-voice generation | |
+| Pre-rendered + name splice | Static audio segments + runtime TTS for business name only | ✓ |
+| Fully dynamic generation | Generate entire conversation via TTS API on each play | |
+| Pre-rendered only (no dynamic name) | Generic placeholder, zero API cost | |
 
-**User's choice:** Pre-rendered + dynamic name splice (auto-selected: recommended for instant playback + minimal cost)
-**Notes:** User suggested this approach in pre-discussion. OpenAI TTS at $15/1M chars for the name segment. Pre-rendered segments stored as static files.
+**User's choice:** Pre-rendered + name splice
 
----
-
-## Audio Player UI
+### TTS Service
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Waveform visualizer | Visual waveform with play/pause, replacing input bar in-place | ✓ |
-| Simple play/pause | Minimal button with progress bar | |
-| Full audio card | Separate card below input with album-art style layout | |
+| OpenAI TTS | $15/1M chars, ~0.5s latency, 6 voices | |
+| ElevenLabs | $5/mo for 30k chars, best-in-class quality | ✓ |
+| Google Cloud TTS | Free tier 4M chars/mo, slightly robotic | |
 
-**User's choice:** Waveform visualizer (auto-selected: visually engaging, matches dark hero)
-**Notes:** Player replaces the input bar in the same position. "Try another name" link to return to input.
+**User's choice:** ElevenLabs
 
----
-
-## Hero Title/Copy
+### Pre-render Service
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Claude's Discretion | Shorten title while keeping rotating text pattern | ✓ |
-| User-specified | User provides exact wording | |
+| ElevenLabs for everything | Same voice consistency, generate static once | ✓ |
+| OpenAI for static, ElevenLabs for name | Cheaper but potential voice mismatch | |
 
-**User's choice:** Claude's Discretion (auto-selected: user requested "slightly shorter" without specific wording)
-**Notes:** User said "make the main title slightly shorter." Subtitle changes to direct user to input bar.
-
----
-
-## Input Bar Design
-
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Inline input + CTA | Single input with button on right side, replacing both current buttons | ✓ |
-| Stacked input + button | Input on one line, button below | |
-| Two-step (input then button) | Input auto-focuses, enter key triggers demo | |
-
-**User's choice:** Inline input + CTA (auto-selected: clean conversion-focused design)
-**Notes:** Dark hero styling. "Start Free Trial" text link below for skip-to-onboarding path.
+**User's choice:** ElevenLabs for everything
 
 ---
 
-## Responsive Rotating Text
+## Demo Script & Scenario
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| CSS width transition | Transition width to match current word, replace invisible sizer | ✓ |
-| Fixed width per word | Pre-calculate widths, set explicitly | |
-| Keep longest-word sizer | Current behavior (no change) | |
+| Plumbing emergency | Burst pipe, urgency triage, same-day booking | |
+| HVAC routine maintenance | AC service before summer, next-available slot | ✓ |
+| General/mixed | Generic scenario for any trade | |
 
-**User's choice:** CSS width transition (auto-selected: smooth reflow as words cycle)
-**Notes:** User specifically requested "make the text responsive and move according to the length of the text that is being cycled."
+**User's choice:** HVAC routine maintenance
+
+### Duration
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| 20-25 seconds | Short and punchy | ✓ |
+| 35-45 seconds | Longer, more capabilities shown | |
+| Under 15 seconds | Ultra-short | |
+
+**User's choice:** 20-25 seconds
+
+### Voices
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Two voices | AI receptionist + caller | ✓ |
+| AI voice only | Only AI speaks, caller lines as text | |
+
+**User's choice:** Two voices
+
+---
+
+## Input Bar & Player UI
+
+### Input Bar
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Input with inline button | Search-bar style, button flush right | ✓ |
+| Input above, button below | Full-width input, CTA centered below | |
+| Floating pill input | Rounded pill with integrated button | |
+
+**User's choice:** Input with inline button
+
+### Player
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Waveform bars + play/pause | Animated CSS bars, replaces input in-place | ✓ |
+| Simple progress bar + play/pause | Thin bar, minimal | |
+| Transcript + audio | Scrolling text synced to audio | |
+
+**User's choice:** Waveform bars + play/pause
+
+### Post-Play
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Player stays, CTA appears below | Replay available, signup CTA below | ✓ (modified) |
+| Auto-transition to CTA | Player fades, CTA takes its place | |
+| Player stays, no extra CTA | Just replay, minimal | |
+
+**User's choice:** Player stays, CTA appears below — but WITHOUT the "Try another name" link. Once they've heard the demo, keep them moving toward signup.
+
+---
+
+## Hero Title & Copy
+
+### Title
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Claude's discretion | Shorter, punchier, keep rotating text | ✓ |
+| Keep current title | No change | |
+| User-specified wording | User provides exact text | |
+
+**User's choice:** Claude's discretion
+
+### Subtitle
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Direct to input | Guide user to enter business name | ✓ |
+| Keep current subtitle | No change | |
+| Hybrid | Value prop + call-to-action | |
+
+**User's choice:** Direct to input
+
+### Eyebrow + Social Proof
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Keep both | Eyebrow pill and social proof stay | |
+| Keep eyebrow, remove social proof | Social proof may clash with input | |
+| Remove both | Let demo input be sole focus | ✓ |
+
+**User's choice:** Remove both
 
 ---
 
 ## Claude's Discretion
 
 - Exact hero title wording
-- Demo script dialogue content
-- OpenAI TTS voice selection
+- Demo script dialogue content (HVAC routine scenario)
+- ElevenLabs voice selection for both speakers
 - Waveform visualizer implementation
 - Web Audio API stitching approach
 - Transition animations
 - Mobile layout adjustments
+- Post-play CTA styling
 
 ## Deferred Ideas
 
