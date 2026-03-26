@@ -497,7 +497,7 @@ Plans:
 - [ ] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification
 - [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
-- [ ] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI
+- [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI (completed 2026-03-26)
 - [ ] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview
 - [ ] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text
 
@@ -572,11 +572,11 @@ Plans:
   3. When all Singapore numbers are assigned (none with status 'available'), a new SG user sees a waitlist UI and cannot proceed with onboarding
   4. A US or Canada user gets a phone number provisioned dynamically via Retell API after checkout success
   5. The wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success) — test call step is removed from the wizard flow
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 27-01-PLAN.md — DB migration (phone_inventory, waitlist, tenants columns, assign_sg_number RPC) + SG availability and waitlist APIs
 - [x] 27-02-PLAN.md — "Your Details" step (name, phone, country) + layout update + sms-confirm extension
-- [ ] 27-03-PLAN.md — Stripe webhook provisioning (SG inventory + US/CA Retell) + onboarding-flow skill update
+- [x] 27-03-PLAN.md — Stripe webhook provisioning (SG inventory + US/CA Retell) + onboarding-flow skill update
 **UI hint**: yes
 
 ### Phase 28: Admin Dashboard
@@ -618,6 +618,6 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
-| 27. Country-Aware Onboarding and Number Provisioning | 2/3 | In Progress|  |
+| 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 0/TBD | Not started | - |
 | 29. Hero Section Interactive Demo | 0/TBD | Not started | - |

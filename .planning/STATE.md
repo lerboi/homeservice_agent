@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-03-26T08:03:03.028Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-03-26T08:07:44.259Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -50,6 +50,8 @@ Recent decisions affecting current work:
 - [Phase 27]: provisioning_failed flag on tenants enables admin follow-up when SG inventory exhausted at checkout time
 - [Phase 27]: Phone prefix shown as non-editable span inside the input row, user types local digits only
 - [Phase 27]: Server-side 409 gate in sms-confirm prevents direct API bypass of waitlist when SG inventory is 0
+- [Phase 27]: US/CA provisioning uses Twilio API direct purchase (not retell.phoneNumber.create) per D-12 — Twilio ownership enables future SMS access from tenant numbers
+- [Phase 27]: Provisioning failure (provisioning_failed flag) allows subscription creation to succeed even when phone assignment fails — user always gets their subscription after paying
 
 ### Roadmap Evolution
 
@@ -81,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T08:03:03.020Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-03-26T08:07:44.251Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None
