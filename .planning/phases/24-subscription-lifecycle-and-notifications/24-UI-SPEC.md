@@ -50,14 +50,16 @@ Exceptions: Banner height is 44px (h-11) — matches ImpersonationBanner pattern
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 15px | 400 | 1.5 |
-| Label / Caption | 13px | 600 | 1.4 |
+| Label / Caption | 13px | 700 | 1.4 |
 | Heading (email) | 22px | 700 | 1.3 |
 | Banner text | 14px (text-sm) | 400 | 1.4 |
 
 Notes:
-- Banner strong/bold inline text uses weight 700 (same `<strong>` pattern as ImpersonationBanner)
-- Email template sizes match `NewLeadEmail.jsx` established pattern (13px labels, 15px values, 22px heading)
-- Dashboard UI uses Tailwind `text-sm` (14px) for banner copy, matching existing sidebar and breadcrumb patterns
+- Two weights only: 400 (body, banner prose) and 700 (labels, headings, emphasis). The 600 weight is not used in this phase.
+- Banner strong/bold inline text uses weight 700 (same `<strong>` pattern as ImpersonationBanner).
+- Email template sizes match `NewLeadEmail.jsx` established pattern (13px labels, 15px values, 22px heading).
+- Dashboard UI uses Tailwind `text-sm` (14px) for banner copy, matching existing sidebar and breadcrumb patterns.
+- 13px (email label) and 14px (banner) are intentionally distinct tokens. Email labels render in an HTML email context (uppercase, small-print detail rows); banner text renders in browser UI prose. Merging them would break alignment with the existing `NewLeadEmail.jsx` pattern. Both sizes are retained.
 
 ---
 
@@ -110,8 +112,8 @@ Follows `NewLeadEmail.jsx` structure exactly:
 - Header: navy (`#0F172A`) background, white Voco logotype text
 - Heading: 22px, weight 700, navy, line-height 1.3
 - Body text: 15px, weight 400, muted (`#475569`)
-- Detail rows: label 13px / 600 / uppercase / `#475569`, value 15px / navy
-- CTA button: `#C2410C` background, white text, 15px / 600, `12px 28px` padding, 8px border-radius, label "Upgrade Now"
+- Detail rows: label 13px / 700 / uppercase / `#475569`, value 15px / navy
+- CTA button: `#C2410C` background, white text, 15px / 700, `12px 28px` padding, 8px border-radius, label "Upgrade Now"
 - Footer: warmSurface background, 13px / `#94a3b8` footer text
 
 Content varies by trigger:
