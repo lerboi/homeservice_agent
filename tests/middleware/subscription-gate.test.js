@@ -116,10 +116,12 @@ function makeRequest(pathname, origin = 'http://localhost:3000') {
 }
 
 let middleware;
+let middlewareConfig;
 
 beforeAll(async () => {
   const mod = await import('../../src/middleware.js');
   middleware = mod.middleware;
+  middlewareConfig = mod.config;
 });
 
 beforeEach(() => {
@@ -229,10 +231,8 @@ describe('Subscription gate — exempt paths', () => {
   it('Test 8: /billing/upgrade is not in the middleware matcher so gate never runs', () => {
     // The middleware matcher only includes /dashboard/:path*, /onboarding, /admin, /auth/signin
     // /billing/* is NOT in the matcher — it is exempt automatically per D-10
-    // We verify this by inspecting the exported config
-    const { config } = require('../../src/middleware.js');
-    // billing paths should NOT appear in the matcher
-    const matcherStr = JSON.stringify(config.matcher);
+    // Verify by inspecting the exported config from the beforeAll import
+    const matcherStr = JSON.stringify(middlewareConfig.matcher);
     expect(matcherStr).not.toContain('/billing');
   });
 });
