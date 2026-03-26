@@ -51,10 +51,18 @@
 - [x] **COUNTRY-01**: "Your Details" step collects full name, personal phone number, and country (SG/US/CA) — all three fields saved to tenants table with phone in E.164 format
 - [x] **COUNTRY-02**: phone_inventory table with SG pre-purchased numbers, real-time availability count API, race-safe assign_sg_number RPC with FOR UPDATE SKIP LOCKED
 - [x] **COUNTRY-03**: Singapore waitlist UI when zero numbers available — email capture + waitlist table, blocks onboarding progression
-- [ ] **COUNTRY-04**: Singapore number assigned from phone_inventory after checkout.session.completed webhook — atomic RPC prevents double-assignment
-- [ ] **COUNTRY-05**: US/Canada number provisioned via retell.phoneNumber.create({ country_code }) after checkout success — Retell handles Twilio internally
+- [x] **COUNTRY-04**: Singapore number assigned from phone_inventory after checkout.session.completed webhook — atomic RPC prevents double-assignment
+- [x] **COUNTRY-05**: US/Canada number provisioned via retell.phoneNumber.create({ country_code }) after checkout success — Retell handles Twilio internally
 - [x] **COUNTRY-06**: Test call step removed from onboarding wizard, wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success)
-- [ ] **COUNTRY-07**: Onboarding-flow skill file updated to reflect 5-step wizard, country-aware provisioning, new API routes, deprecated routes
+- [x] **COUNTRY-07**: Onboarding-flow skill file updated to reflect 5-step wizard, country-aware provisioning, new API routes, deprecated routes
+
+### Hero Section Interactive Demo
+
+- [ ] **DEMO-01**: Hero section shows business name input field instead of CTA buttons — no eyebrow pill, no social proof, no Watch Demo button
+- [ ] **DEMO-02**: After entering business name and clicking "Listen to Your Demo", audio player replaces input bar in-place with waveform visualizer and play/pause controls
+- [ ] **DEMO-03**: Audio plays scripted HVAC conversation with visitor's business name dynamically inserted via ElevenLabs TTS
+- [ ] **DEMO-04**: Hero title is shorter than current version and RotatingText component adjusts width responsively to match cycling word length
+- [ ] **DEMO-05**: Demo audio loads and begins playing within 3 seconds of button click
 
 ### Future Requirements (Deferred)
 
@@ -374,14 +382,19 @@
 | COUNTRY-01 | Phase 27 | Complete |
 | COUNTRY-02 | Phase 27 | Complete |
 | COUNTRY-03 | Phase 27 | Complete |
-| COUNTRY-04 | Phase 27 | Pending |
-| COUNTRY-05 | Phase 27 | Pending |
+| COUNTRY-04 | Phase 27 | Complete |
+| COUNTRY-05 | Phase 27 | Complete |
 | COUNTRY-06 | Phase 27 | Complete |
-| COUNTRY-07 | Phase 27 | Pending |
+| COUNTRY-07 | Phase 27 | Complete |
+n| DEMO-01 | Phase 29 | Pending |
+| DEMO-02 | Phase 29 | Pending |
+| DEMO-03 | Phase 29 | Pending |
+| DEMO-04 | Phase 29 | Pending |
+| DEMO-05 | Phase 29 | Pending |
 
 **v3.0 Coverage:**
-- v3.0 requirements: 30 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07)
-- Mapped to phases: 30
+- v3.0 requirements: 35 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07, DEMO-01-05)
+- Mapped to phases: 35
 - Unmapped: 0
 
 ---

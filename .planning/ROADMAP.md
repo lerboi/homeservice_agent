@@ -595,14 +595,19 @@ Plans:
 ### Phase 29: Hero Section Interactive Demo
 **Goal**: Replace the hero section CTA buttons with a business name input and AI voice demo player — visitor enters their business name, clicks "Listen to Your Demo", and hears a pre-built AI receptionist script with their business name dynamically spliced in via TTS, demonstrating the product's value before signup
 **Depends on**: Phase 21 (pricing page redesign must be complete; hero section exists in current form)
-**Requirements**: TBD
+**Requirements**: [DEMO-01, DEMO-02, DEMO-03, DEMO-04, DEMO-05]
 **Success Criteria** (what must be TRUE):
   1. A visitor sees a business name input field in the hero section instead of the current CTA buttons
   2. After entering a business name and clicking "Listen to Your Demo", an audio player appears replacing the input bar
   3. The audio plays a scripted conversation between an AI receptionist and a caller, with the visitor's business name dynamically inserted
   4. The main hero title is shorter than the current version and the rotating text component adjusts its width responsively to match the cycling word length
   5. The demo audio loads and begins playing within 3 seconds of the button click
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 29-01-PLAN.md — RotatingText dynamic width + hero copy update
+- [ ] 29-02-PLAN.md — ElevenLabs TTS API route + pre-render static audio segments
+- [ ] 29-03-PLAN.md — HeroDemoInput + HeroDemoPlayer client components
+- [ ] 29-04-PLAN.md — Wire components into HeroSection + skill file update + visual verification
 **UI hint**: yes
 
 ## v3.0 Progress
