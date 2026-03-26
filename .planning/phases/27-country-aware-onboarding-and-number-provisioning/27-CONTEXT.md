@@ -32,6 +32,7 @@ Replace the current Contact step (Step 4) with a "Your Details" step collecting 
 - **D-12:** For US/Canada: checkout success webhook provisions a number directly via Twilio API (not Retell)
 - **D-13:** Test call step is REMOVED from the onboarding wizard — users can test their AI from dashboard settings after onboarding completes
 - **D-14:** New wizard flow: Auth → Profile → Services → Your Details → Plan Selection → Checkout → Dashboard (test call step removed, 5 visible steps instead of 6)
+- **D-15:** Wizard card width increased from `max-w-lg` (512px) to `max-w-2xl` (672px) — all existing onboarding steps (Profile, Services, Plan Selection, Checkout Success) must be reviewed and adjusted to look good at the wider width. The layout change is in `src/app/onboarding/layout.js`.
 
 ### Claude's Discretion
 - Waitlist implementation details (simple DB table or email service integration)
