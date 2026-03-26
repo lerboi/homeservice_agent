@@ -6,24 +6,25 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
+import { OnboardingProvider, useOnboarding } from './OnboardingContext';
 
 function getStep(pathname) {
   if (pathname === '/onboarding') return 1;
   if (pathname === '/onboarding/services') return 2;
   if (pathname === '/onboarding/contact') return 3;
-  if (pathname === '/onboarding/test-call') return 4;
-  if (pathname === '/onboarding/plan') return 5;
-  if (pathname === '/onboarding/checkout-success') return 6;
+  if (pathname === '/onboarding/plan') return 4;
+  if (pathname === '/onboarding/checkout') return 5;
   return 1;
 }
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 
-export default function OnboardingLayout({ children }) {
+function OnboardingLayoutInner({ children }) {
   const pathname = usePathname();
   const t = useTranslations('onboarding');
+  const { completed } = useOnboarding();
   const currentStep = getStep(pathname);
-  const progressValue = (currentStep / TOTAL_STEPS) * 100;
+  const progressValue = completed ? 100 : (currentStep / TOTAL_STEPS) * 100;
 
   return (
     <div className="min-h-screen bg-[#F5F5F4] relative">
@@ -37,7 +38,7 @@ export default function OnboardingLayout({ children }) {
         aria-hidden="true"
       />
 
-      <div className="relative max-w-lg mx-auto px-6 py-8 sm:py-12">
+      <div className="relative max-w-2xl mx-auto px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <Link href="/" className="flex items-center group">
@@ -50,8 +51,14 @@ export default function OnboardingLayout({ children }) {
               priority
             />
           </Link>
-          <span className="text-sm text-[#475569]">
-            {t('step_counter', { step: currentStep, total: TOTAL_STEPS })}
+          <span
+            className={`text-sm transition-colors duration-700 ${
+              completed ? 'text-[#166534] font-medium' : 'text-[#475569]'
+            }`}
+          >
+            {completed
+              ? (t.raw ? 'Done' : 'Done')
+              : t('step_counter', { step: currentStep, total: TOTAL_STEPS })}
           </span>
         </div>
 
@@ -59,13 +66,15 @@ export default function OnboardingLayout({ children }) {
         <div
           className="relative h-1 mb-8 rounded-full bg-[#0F172A]/[0.08] overflow-hidden"
           role="progressbar"
-          aria-valuenow={currentStep}
+          aria-valuenow={completed ? TOTAL_STEPS : currentStep}
           aria-valuemin={1}
           aria-valuemax={TOTAL_STEPS}
           aria-label="Onboarding progress"
         >
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-[#C2410C] transition-all duration-500 ease-out"
+            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${
+              completed ? 'bg-[#16a34a]' : 'bg-[#C2410C]'
+            }`}
             style={{ width: `${progressValue}%` }}
           />
         </div>
@@ -81,5 +90,13 @@ export default function OnboardingLayout({ children }) {
         </AnimatedSection>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingLayout({ children }) {
+  return (
+    <OnboardingProvider>
+      <OnboardingLayoutInner>{children}</OnboardingLayoutInner>
+    </OnboardingProvider>
   );
 }
