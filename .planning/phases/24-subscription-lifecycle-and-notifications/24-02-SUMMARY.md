@@ -113,3 +113,14 @@ None - all features fully implemented with live Supabase/Stripe calls.
 ---
 *Phase: 24-subscription-lifecycle-and-notifications*
 *Completed: 2026-03-26*
+
+## Self-Check: PASSED
+
+- FOUND: src/middleware.js
+- FOUND: src/app/dashboard/BillingWarningBanner.js
+- FOUND: src/app/api/billing/portal/route.js
+- FOUND: src/app/dashboard/layout.js
+- FOUND: tests/middleware/subscription-gate.test.js
+- FOUND: tests/billing/grace-period.test.js
+- FOUND: .planning/phases/24-subscription-lifecycle-and-notifications/24-02-SUMMARY.md
+- Commits verified: 54266ba, b00473c, 573fdc4, 8f0002b
