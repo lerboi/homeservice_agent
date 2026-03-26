@@ -57,16 +57,18 @@ Source: Derived from existing hero `pt-28 pb-20 md:pt-36 md:pb-28` and `min-h-[4
 |------|------|--------|-------------|-------|
 | Display | 40px / 52px / 60px (sm/md/lg breakpoints) | 600 (semibold) | 1.1 | Hero h1 with RotatingText |
 | Body | 18px / 20px (sm/md) | 400 (regular) | 1.6 | Hero subtitle |
-| Label | 15px | 500 (medium) | 1.0 | Input placeholder, button label, "Try another name" link |
-| Caption | 12px | 500 (medium) | 1.0 | Eyebrow pill text (uppercase tracked), social proof micro-line |
+| Label | 14px | 400 (regular) | 1.0 | Input placeholder, button label, "Try another name" link |
+| Caption | 12px | 400 (regular) | 1.0 | Eyebrow pill text (uppercase tracked), social proof micro-line |
 
 Exact Tailwind class mapping:
 - Display: `text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold leading-[1.1] tracking-tight`
 - Body: `text-lg md:text-xl text-white/50 leading-relaxed` (matches existing subtitle pattern)
-- Label: `text-[15px] font-medium` (matches existing button label pattern from `AuthAwareCTA.js`)
-- Caption: `text-xs font-medium tracking-wide uppercase` (eyebrow), `text-sm` (social proof)
+- Label: `text-sm` (14px, no weight override — inherits font-normal)
+- Caption: `text-xs tracking-wide uppercase` (eyebrow), `text-sm` (social proof)
 
-Source: `HeroSection.jsx` lines 54, 66, 49, 94 — pre-populated from existing component
+Note: Two weights only — 400 (regular) and 600 (semibold). Size contrast (12px vs 14px vs 18px+ vs 40px+) provides hierarchy on the dark background without needing a third weight.
+
+Source: `HeroSection.jsx` lines 54, 66, 49, 94 — pre-populated from existing component. Weights revised by checker (fix: collapse 3 weights to 2). Label size revised by checker (fix: collapse 15px to 14px).
 
 ---
 
@@ -99,7 +101,7 @@ Text color convention:
 - Primary text: `text-white`
 - Muted text (subtitle, social proof): `text-white/50`
 - Dimmed text (placeholder, "Try another name"): `text-white/30`
-- Social proof highlighted count: `text-white/50 font-medium`
+- Social proof highlighted count: `text-white/50 font-semibold`
 
 Source: `HeroSection.jsx`, `AuthAwareCTA.js`, `globals.css` CSS custom properties, CONTEXT.md D-05 / D-12
 
@@ -181,9 +183,9 @@ New: `useRef` + `getBoundingClientRect()` on a hidden measurement span, set `wid
 ### Input bar specs
 
 - Container: `flex items-center gap-0` — input and button share one pill-shaped border
-- Input: `flex-1 bg-transparent px-4 py-3 text-white placeholder:text-white/30 text-[15px] focus:outline-none`
+- Input: `flex-1 bg-transparent px-4 py-3 text-white placeholder:text-white/30 text-sm focus:outline-none`
 - Outer container: `bg-white/[0.06] border border-white/[0.07] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316]`
-- Button (right-inset): `bg-[#F97316] text-white font-medium text-[15px] px-5 py-3 rounded-r-xl` — shares pill with input, no left border-radius
+- Button (right-inset): `bg-[#F97316] text-white text-sm px-5 py-3 rounded-r-xl` — shares pill with input, no left border-radius
 - Button disabled: `opacity-40 cursor-not-allowed`
 - Button loading: replace label with `<Loader2 className="animate-spin size-4 mr-2" /> Generating...`
 - Max width of input+button bar: `max-w-xl` (same as subtitle constraint from existing hero)
