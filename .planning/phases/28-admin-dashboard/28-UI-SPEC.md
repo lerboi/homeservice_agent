@@ -65,15 +65,15 @@ Exceptions:
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 12px | 500 (medium) | 1.4 |
+| Label | 12px | 600 (semibold) | 1.4 |
 | Heading | 20px | 600 (semibold) | 1.2 |
-| Display | 28px | 700 (bold) | 1.15 |
+| Display | 28px | 600 (semibold) | 1.15 |
 
 Notes:
 - Table cell text uses Body (14px / 400)
-- Table column headers use Label (12px / 500 / uppercase tracking-wide)
+- Table column headers use Label (12px / 600 / uppercase tracking-wide)
 - Page section titles use Heading (20px / 600)
-- Stats/count callouts on overview use Display (28px / 700)
+- Stats/count callouts on overview use Display (28px / 600 — semibold provides sufficient visual dominance at 28px)
 - Font stack: `var(--font-inter), system-ui, sans-serif` (inherited from globals.css body rule)
 
 ---
@@ -130,7 +130,7 @@ Admin uses a **top-tab navigation** (not a sidebar) for the primary admin sectio
 
 Header: `bg-[#0F1F3D]`, height 56px, sticky top-0 z-30
 Header text: white
-"ADMIN" badge: 10px / 500 / uppercase / `#1D4ED8` bg / white text / rounded-sm, positioned inline after logo
+"ADMIN" badge: 10px / 600 (semibold) / uppercase / `#1D4ED8` bg / white text / rounded-sm, positioned inline after logo
 
 ### Impersonation Banner
 
