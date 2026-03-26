@@ -161,12 +161,12 @@ Plans:
 **Goal:** The public landing page is redesigned with premium, handcrafted quality — How It Works uses a tabbed interface, Features has 5 bento cards including multi-language, Hero uses the cursor-reactive Spline 3D model, and Social Proof + Final CTA have polished hover effects and gradient animations
 **Requirements**: REDESIGN-HERO, REDESIGN-HIW, REDESIGN-FEAT, REDESIGN-SOCIAL, REDESIGN-CTA
 **Depends on:** Phase 10
-**Plans:** 2/3 plans complete
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 11-01-PLAN.md — How It Works tabbed rebuild (HowItWorksTabs.jsx) + Features 5th card + page.js skeleton updates
 - [x] 11-02-PLAN.md — Hero Spline model URL + Social Proof hover polish + Final CTA gradient animation
-- [ ] 11-03-PLAN.md — Human verification checkpoint for all 5 sections
+- [x] 11-03-PLAN.md — Human verification checkpoint for all 5 sections (verified and passed 2026-03-26)
 
 ### Phase 12: Dashboard-configurable triage and call escalation
 
@@ -192,7 +192,7 @@ Plans:
 - [x] 13-04-PLAN.md — Human verification checkpoint (REJECTED — gap closure needed)
 - [x] 13-05-PLAN.md — Gap closure: HowItWorks light bg + FeaturesGrid dark rebuild + Footer dramatic upgrade
 - [x] 13-06-PLAN.md — Gap closure: Auth page complete redo — white left panel, lighter background
-- [ ] 13-07-PLAN.md — Gap closure: Human verification checkpoint
+- [x] 13-07-PLAN.md — Gap closure: Human verification checkpoint (verified and passed 2026-03-26)
 
 ---
 
@@ -207,7 +207,7 @@ Plans:
 
 - [x] **Phase 6: Public Marketing Pages** - Pricing page (4 tiers, toggle, FAQ, comparison table), About page, Contact page, and nav/footer updated across all public pages (completed 2026-03-22)
 - [x] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale (completed 2026-03-22)
-- [ ] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal
+- [x] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal (completed 2026-03-26)
 - [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
 - [x] **Phase 10: Dashboard Guided Setup and First-Run Experience** - Setup checklist, empty states, test call from dashboard, contextual guidance for first-time users (completed 2026-03-22)
 
@@ -256,7 +256,7 @@ Plans:
   2. An event created directly in Outlook Calendar appears as a blocked slot in the platform availability database within 60 seconds; a booking made through the platform appears in Outlook Calendar within 60 seconds
   3. The Outlook webhook subscription renews automatically before its 3-day expiry; the owner never loses sync due to an expired subscription
   4. Owner clicks "Disconnect Outlook" and the platform stops syncing Outlook events; availability reverts to manual schedule management without requiring a re-onboard
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 08-01-PLAN.md — DB migration (is_primary, external_event_id) + Google provider filter fixes (D-08) + Outlook Calendar module
@@ -289,7 +289,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 |-------|----------------|--------|-----------|
 | 6. Public Marketing Pages | 4/4 | Complete   | 2026-03-22 |
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
-| 8. Outlook Calendar Sync | 0/3 | Planning complete | - |
+| 8. Outlook Calendar Sync | 3/3 | Complete | 2026-03-26 |
 | 9. Hardening and Launch QA | 0/TBD | Not started | - |
 | 10. Dashboard Guided Setup | 4/4 | Complete    | 2026-03-22 |
 
@@ -505,7 +505,12 @@ Plans:
   2. A Stripe test webhook for customer.subscription.updated arrives at /api/stripe/webhook, passes signature verification, and is reflected in the local subscriptions table within 5 seconds — duplicate delivery of the same event_id produces no second DB write
   3. Sending customer.subscription.deleted via Stripe test webhook sets the local subscription status to cancelled — the tenant cannot get indefinite free access by letting a trial expire without a payment method
   4. Out-of-order webhook delivery (an older event arriving after a newer one) does not overwrite newer subscription state — stripe_updated_at version protection is observed
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 22-01-PLAN.md — Stripe packages, SDK singleton, billing database migration
+- [ ] 22-02-PLAN.md — Stripe webhook handler with idempotency and version protection
+- [ ] 22-03-PLAN.md — Checkout Session API and onboarding flow rewiring
+- [ ] 22-04-PLAN.md — Plan selection UI and post-checkout celebration screens
 
 ### Phase 23: Usage Tracking
 **Goal**: Every completed call increments the tenant's usage counter exactly once — atomic, idempotent, and reset precisely on billing cycle rollover — so enforcement in the next phase can trust the counter as a reliable source of truth
