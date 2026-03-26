@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Executing Phase 29
-stopped_at: "29-02 paused at Task 3 checkpoint (human-action: ElevenLabs setup)"
-last_updated: "2026-03-26T09:14:11.802Z"
+status: Ready to execute
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-03-26T09:14:50.591Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 29 (hero-section-interactive-demo) — EXECUTING
-Plan: 1 of 4
+Plan: 2 of 4
 
 ## Accumulated Context
 
@@ -53,6 +53,8 @@ Recent decisions affecting current work:
 - [Phase 27]: US/CA provisioning uses Twilio API direct purchase (not retell.phoneNumber.create) per D-12 — Twilio ownership enables future SMS access from tenant numbers
 - [Phase 27]: Provisioning failure (provisioning_failed flag) allows subscription creation to succeed even when phone assignment fails — user always gets their subscription after paying
 - [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
+- [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
+- [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
 
 ### Roadmap Evolution
 
@@ -84,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T09:14:00.058Z
-Stopped at: 29-02 paused at Task 3 checkpoint (human-action: ElevenLabs setup)
+Last session: 2026-03-26T09:14:50.582Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
