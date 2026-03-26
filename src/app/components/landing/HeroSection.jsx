@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import { AnimatedSection } from './AnimatedSection';
 import dynamic from 'next/dynamic';
@@ -14,6 +16,12 @@ const RotatingText = dynamic(
 // Poster placeholder is built into SplineScene, so no loading spinner needed.
 const SplineScene = dynamic(
   () => import('./SplineScene').then((m) => m.SplineScene),
+);
+
+// HeroDemoBlock — client component managing input-to-player transition (no SSR)
+const HeroDemoBlock = dynamic(
+  () => import('./HeroDemoBlock').then((m) => m.HeroDemoBlock),
+  { ssr: false }
 );
 
 const SPLINE_SCENE_URL = 'https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode';
@@ -55,9 +63,9 @@ export function HeroSection() {
               Enter your business name and hear your AI receptionist answer in 30 seconds.
             </p>
 
-            {/* Demo input/player — wired in Plan 04 */}
+            {/* Demo input/player — HeroDemoBlock manages input-to-player transition */}
             <div className="mt-8 pointer-events-auto">
-              {/* HeroDemoInput will be inserted here */}
+              <HeroDemoBlock />
             </div>
           </AnimatedSection>
 
