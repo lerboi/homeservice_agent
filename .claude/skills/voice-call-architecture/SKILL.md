@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-26 (Fix: processCallAnalyzed now chains .select('id').single() on calls upsert to retrieve Supabase UUID — previously passed Retell string call_id to createOrMergeLead, causing 22P02 UUID parse errors on leads and lead_calls inserts)
+**Last updated**: 2026-03-26 (Phase 23-01: processCallEnded now calls increment_calls_used RPC for real calls >= 10 seconds — usage tracking added after isTestCall block)
 
 ---
 
@@ -68,6 +68,7 @@ Caller dials Retell number
 | `supabase/migrations/004_leads_crm.sql` | Leads + activity_log schema |
 | `supabase/migrations/008_call_outcomes.sql` | booking_outcome, exception_reason, notification_priority columns |
 | `supabase/migrations/009_recovery_sms_tracking.sql` | Recovery SMS delivery tracking columns (recovery_sms_status, recovery_sms_retry_count, recovery_sms_last_error, recovery_sms_last_attempt_at) |
+| `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC (Phase 23) |
 
 ---
 
@@ -343,6 +344,16 @@ Lightweight. Upserts `calls` row with: `from_number`, `to_number`, `direction`, 
 3. Resets associated `leads.status = 'new'` and nullifies `leads.appointment_id` (prevents dashboard showing "booked" lead with no active calendar appointment — Pitfall 6).
 
 The `test_call: 'true'` flag is set in `test-call/route.js` as a `retell_llm_dynamic_variables` entry when triggering the onboarding test call. Auto-cancel fires at `call_ended` (not `call_analyzed`) so the calendar clears immediately after the call, not minutes later.
+
+**Usage Tracking (Phase 23):**
+After the test call auto-cancel block, `processCallEnded()` conditionally calls the `increment_calls_used` RPC:
+- **Duration filter**: `durationSeconds = Math.round((end_timestamp - start_timestamp) / 1000)` — computed from raw timestamps (NOT the `duration_seconds` generated column which isn't returned by the upsert). RPC only called when duration >= 10 seconds — short calls skip the RPC entirely.
+- **Test call exclusion**: Reuses `isTestCall` already in scope — no RPC call for test calls.
+- **Tenant guard**: Skipped if `tenantId` is null (no tenant found for this number).
+- **RPC call**: `supabase.rpc('increment_calls_used', { p_tenant_id: tenantId, p_call_id: call_id })`
+- **Error-resilient**: Entire block wrapped in try/catch — RPC failures logged (`[usage] increment_calls_used RPC error:` and `[usage] increment failed (non-fatal):`) but never thrown (D-06: billing counter glitch must not lose call data)
+- **Runs inside `after()` callback** — non-blocking to webhook response (D-01)
+- **RPC returns** `{ success, calls_used, calls_limit, limit_exceeded }` — logged for observability, not used for enforcement (Phase 25 will add enforcement)
 
 ### `processCallAnalyzed(call)`
 Heavy pipeline:

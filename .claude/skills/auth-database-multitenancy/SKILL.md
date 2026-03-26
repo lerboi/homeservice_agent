@@ -7,7 +7,7 @@ description: "Complete architectural reference for authentication, database sche
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-03-26 (Phase 28-01 — 11 migrations, admin_users table, middleware admin gate, verifyAdmin helper)
+**Last updated**: 2026-03-26 (Phase 23-01 — 13 migrations, usage_events table, increment_calls_used RPC)
 
 ---
 
@@ -82,6 +82,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/010_billing_schema.sql` | subscriptions, stripe_webhook_events tables + RLS |
 | `supabase/migrations/011_country_provisioning.sql` | phone_inventory, phone_inventory_waitlist tables + assign_sg_number RPC |
 | `supabase/migrations/012_admin_users.sql` | admin_users table + RLS self-read policy |
+| `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -319,7 +320,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 12 migrations are applied sequentially. FK dependencies require this order.
+All 13 migrations are applied sequentially. FK dependencies require this order.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -579,6 +580,30 @@ INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
 
 ---
 
+### 013_usage_events.sql — Per-Call Usage Tracking (Phase 23-01)
+
+**Tables created**: `usage_events`
+
+**usage_events columns**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `call_id` | text PK | Retell call ID — idempotency key, prevents double-counting on webhook retries |
+| `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
+| `created_at` | timestamptz | NOT NULL DEFAULT now() |
+
+**Index**: `idx_usage_events_tenant_id` on `(tenant_id)`
+
+**RLS**: Enabled. `service_role_all_usage_events` — service_role ALL (no authenticated user access). Webhook handlers write via service_role client.
+
+**`increment_calls_used(p_tenant_id uuid, p_call_id text)` RPC**:
+- Returns `TABLE(success boolean, calls_used int, calls_limit int, limit_exceeded boolean)`
+- Idempotency: `INSERT INTO usage_events ... ON CONFLICT (call_id) DO NOTHING` — if FOUND is false (duplicate), returns current state without incrementing
+- Atomic increment: `UPDATE subscriptions SET calls_used = calls_used + 1 WHERE tenant_id = p_tenant_id AND is_current = true` — Postgres atomicity guarantees no race conditions
+- No active subscription: returns `(false, 0, 0, false)`
+- No SECURITY DEFINER — service_role client bypasses RLS automatically
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -600,6 +625,7 @@ INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
 | `phone_inventory` | 011 | Singapore phone number pool for tenant assignment | Service role only (no authenticated policies) |
 | `phone_inventory_waitlist` | 011 | Email waitlist for SG number availability | INSERT for anon+authenticated |
 | `admin_users` | 012 | Platform admin users — gates /admin/* routes | Authenticated SELECT-own only (user_id = auth.uid()) |
+| `usage_events` | 013 | Per-call idempotency guard for usage counting (call_id PK) | Service role only |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
