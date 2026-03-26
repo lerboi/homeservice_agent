@@ -24,8 +24,8 @@
 
 - [ ] **ENFORCE-01**: Subscription check added to handleInbound() as parallel Supabase query — zero net latency increase on call pickup
 - [ ] **ENFORCE-02**: Block call if subscription status is cancelled/paused/expired OR calls_used >= calls_limit — play graceful caller message via AI prompt dynamic variable
-- [ ] **ENFORCE-03**: Past_due status gets 3-day grace window before blocking — owner continues receiving calls while payment retries happen
-- [ ] **ENFORCE-04**: Subscription status middleware gates dashboard routes — cancelled/paused/expired redirects to /billing/upgrade
+- [x] **ENFORCE-03**: Past_due status gets 3-day grace window before blocking — owner continues receiving calls while payment retries happen
+- [x] **ENFORCE-04**: Subscription status middleware gates dashboard routes — cancelled/paused/expired redirects to /billing/upgrade
 
 ### Billing UI
 
@@ -349,8 +349,8 @@
 | USAGE-01 | Phase 23 | Complete |
 | USAGE-02 | Phase 23 | Complete |
 | USAGE-03 | Phase 23 | Complete |
-| ENFORCE-03 | Phase 24 | Pending |
-| ENFORCE-04 | Phase 24 | Pending |
+| ENFORCE-03 | Phase 24 | Complete |
+| ENFORCE-04 | Phase 24 | Complete |
 | BILLNOTIF-01 | Phase 24 | Complete |
 | BILLNOTIF-02 | Phase 24 | Pending |
 | BILLNOTIF-03 | Phase 24 | Complete |

@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-03-26T21:40:00.446Z"
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-03-26T21:46:23.394Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 24 (subscription-lifecycle-and-notifications) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -68,6 +68,8 @@ Recent decisions affecting current work:
 - [Phase 24-01]: Migration renumbered 015→016: 015_notification_preferences.sql already existed from prior phase
 - [Phase 24-01]: getResendClient() lazy init in webhook route uses require() to match synchronous getTwilioClient() pattern
 - [Phase 24-01]: handleInvoicePaymentFailed and handleTrialWillEnd both try/catch wrapped — notification failures never rethrown to prevent Stripe retry conflicts
+- [Phase 24-subscription-lifecycle-and-notifications]: past_due excluded from blockedStatuses per D-03 — grace period grants full dashboard access with banner only
+- [Phase 24-subscription-lifecycle-and-notifications]: /billing/* exempt from subscription gate via middleware matcher config absence per D-10
 
 ### Roadmap Evolution
 
@@ -85,7 +87,7 @@ Recent decisions affecting current work:
 - Phase 27 added: Country-Aware Onboarding and Number Provisioning (2026-03-26)
 - Phase 28 added: Admin Dashboard (2026-03-26)
 - Phase 29 added: Hero Section Interactive Demo (2026-03-26)
-- Phase 14 added: Voice Agent Prompt Optimization (2026-03-27)
+- Phase 30 added: Voice Agent Prompt Optimization (2026-03-27)
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T21:40:00.439Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-03-26T21:46:23.386Z
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
