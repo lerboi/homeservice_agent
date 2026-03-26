@@ -492,14 +492,14 @@ Plans:
 
 ### v3.0 Phase Checklist
 
-- [ ] **Phase 22: Billing Foundation** - Stripe products/prices, subscriptions and usage_events DB tables, webhook handler with idempotency, trial auto-start at onboarding completion
+- [x] **Phase 22: Billing Foundation** - Stripe products/prices, subscriptions and usage_events DB tables, webhook handler with idempotency, trial auto-start at onboarding completion (completed 2026-03-26, Plan 04 skipped — UI handled elsewhere)
 - [ ] **Phase 23: Usage Tracking** - Atomic per-call increment via Postgres RPC, usage_events idempotency, billing cycle reset on invoice.paid
 - [ ] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification
 - [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
 - [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI (completed 2026-03-26)
 - [ ] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview
-- [ ] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text
+- [x] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text (completed 2026-03-26)
 
 ### Phase 22: Billing Foundation
 **Goal**: The Stripe integration backbone is live — products and prices exist in Stripe, the subscriptions table is the authoritative local mirror, the webhook handler processes all lifecycle events idempotently, and every new tenant starts a 14-day trial with CC required at onboarding completion
@@ -514,7 +514,7 @@ Plans:
 3/4 plans executed
 - [x] 22-02-PLAN.md — Stripe webhook handler with idempotency and version protection
 - [x] 22-03-PLAN.md — Checkout Session API and onboarding flow rewiring
-- [ ] 22-04-PLAN.md — Plan selection UI and post-checkout celebration screens
+- [~] 22-04-PLAN.md — Plan selection UI and post-checkout celebration screens (SKIPPED — handled by Phase 27 onboarding redesign)
 
 ### Phase 23: Usage Tracking
 **Goal**: Every completed call increments the tenant's usage counter exactly once — atomic, idempotent, and reset precisely on billing cycle rollover — so enforcement in the next phase can trust the counter as a reliable source of truth
@@ -582,14 +582,18 @@ Plans:
 ### Phase 28: Admin Dashboard
 **Goal**: A separate admin interface with its own authentication allows administrators to manage the Singapore phone number inventory (add/remove/view numbers and their assignment status) and view all tenant users with their country, assigned number, and subscription status
 **Depends on**: Phase 27 (phone_inventory table and country-aware provisioning must exist before admin can manage them)
-**Requirements**: TBD
+**Requirements**: [SC-1, SC-2, SC-3, SC-4, SC-5]
 **Success Criteria** (what must be TRUE):
   1. An admin can log in via a separate admin authentication flow (distinct from tenant user auth) and access the admin dashboard
   2. An admin can add a new Singapore phone number to the inventory — it appears with status 'available' and can be assigned during onboarding
   3. An admin can view all phone numbers with their status (available/assigned/retired) and which tenant each assigned number belongs to
   4. An admin can view all tenant users with their name, country, assigned phone number, and subscription status
   5. A non-admin user cannot access any admin routes — they are redirected or shown a 403 error
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 28-01-PLAN.md — Foundation: admin_users migration, middleware gate, verifyAdmin helper, deps
+- [ ] 28-02-PLAN.md — Admin layout + phone inventory management page (CRUD + bulk CSV)
+- [ ] 28-03-PLAN.md — Tenant overview page + impersonation banner
 **UI hint**: yes
 
 ### Phase 29: Hero Section Interactive Demo
@@ -607,7 +611,7 @@ Plans:
 - [x] 29-01-PLAN.md — RotatingText dynamic width + hero copy update
 - [x] 29-02-PLAN.md — ElevenLabs TTS API route + pre-render static audio segments
 - [x] 29-03-PLAN.md — HeroDemoInput + HeroDemoPlayer client components
-- [ ] 29-04-PLAN.md — Wire components into HeroSection + skill file update + visual verification
+- [x] 29-04-PLAN.md — Wire components into HeroSection + skill file update + visual verification
 **UI hint**: yes
 
 ## v3.0 Progress
@@ -618,11 +622,11 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Billing Foundation | 3/4 | In Progress|  |
+| 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
 | 23. Usage Tracking | 0/TBD | Not started | - |
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 0/TBD | Not started | - |
-| 29. Hero Section Interactive Demo | 3/4 | In Progress|  |
+| 29. Hero Section Interactive Demo | 4/4 | Complete   | 2026-03-26 |
