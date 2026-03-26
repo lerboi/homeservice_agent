@@ -17,6 +17,7 @@ export async function POST(request) {
   const signature = request.headers.get('x-retell-signature') || '';
 
   if (!Retell.verify(rawBody, process.env.RETELL_API_KEY, signature)) {
+    console.log('401: Unauthorized');
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -24,6 +25,7 @@ export async function POST(request) {
   const { event } = payload;
 
   if (event === 'call_inbound') {
+    console.log(`[retell-webhook] call_inbound: from=${payload.call_inbound?.from_number}, to=${payload.call_inbound?.to_number}`);
     return handleInbound(payload);
   }
 
@@ -86,7 +88,8 @@ function toLocalDateString(date, timezone) {
 }
 
 async function handleInbound(payload) {
-  const { from_number, to_number } = payload;
+  // call_inbound event nests call data under payload.call_inbound (not top-level)
+  const { from_number, to_number } = payload.call_inbound || {};
 
   // Look up tenant by the Retell phone number that was called
   // Include scheduling config fields for slot calculation
