@@ -471,7 +471,9 @@ Plans:
 - [x] 21-01-PLAN.md — Data layer (volume-based tiers), dark hero with dot-grid/blur-orb, trial banner, dark tier cards
 - [x] 21-02-PLAN.md — Comparison table with Growth highlight, testimonials, 8-question dark FAQ, Enterprise contact pre-selection, skill file update
 
----
+
+
+
 
 ## Milestone v3.0 Phases
 
@@ -495,6 +497,9 @@ Plans:
 - [ ] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification
 - [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
+- [ ] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI
+- [ ] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview
+- [ ] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text
 
 ### Phase 22: Billing Foundation
 **Goal**: The Stripe integration backbone is live — products and prices exist in Stripe, the subscriptions table is the authoritative local mirror, the webhook handler processes all lifecycle events idempotently, and every new tenant starts a 14-day trial with CC required at onboarding completion
@@ -557,11 +562,50 @@ Plans:
   2. CLAUDE.md lists billing-payment in the architecture skill files section with the same sync requirement as the other 6 skills — any future code change to the billing system triggers a skill file update
 **Plans**: TBD
 
+### Phase 27: Country-Aware Onboarding and Number Provisioning
+**Goal**: The onboarding wizard collects user name, personal phone number, and country (Singapore/US/Canada) — country determines phone number provisioning strategy: Singapore assigns from a pre-purchased inventory table (limited slots), US/Canada provisions dynamically via Twilio API. The plan selection step is simplified to show only plan name, price, and call limit with a "See full features" link to the pricing page.
+**Depends on**: Phase 22 (billing foundation must be complete — Stripe checkout flow and subscriptions table required)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. A new user completing onboarding enters their name, personal phone number, and selects a country (SG/US/CA) — all three fields are saved to the tenants table
+  2. A Singapore user is assigned a phone number from the phone_inventory table — the number's status changes from 'available' to 'assigned' and the assigned_tenant_id is set
+  3. When all Singapore numbers are assigned (none with status 'available'), a new SG user sees a "no slots available" message and cannot proceed with onboarding
+  4. A US or Canada user gets a phone number provisioned dynamically via Twilio API (existing provisioning flow)
+  5. The plan selection step shows only plan name, price, and call limit — full feature lists are not displayed; a "See full features" link opens the /pricing page in a new tab
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 28: Admin Dashboard
+**Goal**: A separate admin interface with its own authentication allows administrators to manage the Singapore phone number inventory (add/remove/view numbers and their assignment status) and view all tenant users with their country, assigned number, and subscription status
+**Depends on**: Phase 27 (phone_inventory table and country-aware provisioning must exist before admin can manage them)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. An admin can log in via a separate admin authentication flow (distinct from tenant user auth) and access the admin dashboard
+  2. An admin can add a new Singapore phone number to the inventory — it appears with status 'available' and can be assigned during onboarding
+  3. An admin can view all phone numbers with their status (available/assigned/retired) and which tenant each assigned number belongs to
+  4. An admin can view all tenant users with their name, country, assigned phone number, and subscription status
+  5. A non-admin user cannot access any admin routes — they are redirected or shown a 403 error
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 29: Hero Section Interactive Demo
+**Goal**: Replace the hero section CTA buttons with a business name input and AI voice demo player — visitor enters their business name, clicks "Listen to Your Demo", and hears a pre-built AI receptionist script with their business name dynamically spliced in via TTS, demonstrating the product's value before signup
+**Depends on**: Phase 21 (pricing page redesign must be complete; hero section exists in current form)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. A visitor sees a business name input field in the hero section instead of the current CTA buttons
+  2. After entering a business name and clicking "Listen to Your Demo", an audio player appears replacing the input bar
+  3. The audio plays a scripted conversation between an AI receptionist and a caller, with the visitor's business name dynamically inserted
+  4. The main hero title is shorter than the current version and the rotating text component adjusts its width responsively to match the cycling word length
+  5. The demo audio loads and begins playing within 3 seconds of the button click
+**Plans**: TBD
+**UI hint**: yes
+
 ## v3.0 Progress
 
 **Execution Order:**
-Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26
-(Note: Phase 24 lifecycle notifications and Phase 25 billing dashboard read path can be partially parallelized, but the enforcement gate in Phase 25 must not open until Phase 24 grace period logic is complete)
+Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
+(Note: Phase 24 lifecycle notifications and Phase 25 billing dashboard read path can be partially parallelized, but the enforcement gate in Phase 25 must not open until Phase 24 grace period logic is complete. Phase 27 depends on Phase 22 billing foundation. Phase 28 depends on Phase 27 phone inventory.)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -570,3 +614,6 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |
 | 26. Billing Documentation | 0/TBD | Not started | - |
+| 27. Country-Aware Onboarding and Number Provisioning | 0/TBD | Not started | - |
+| 28. Admin Dashboard | 0/TBD | Not started | - |
+| 29. Hero Section Interactive Demo | 0/TBD | Not started | - |
