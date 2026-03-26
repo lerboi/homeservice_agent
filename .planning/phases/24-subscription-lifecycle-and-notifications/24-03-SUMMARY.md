@@ -127,3 +127,13 @@ None — all functionality fully wired:
 ---
 *Phase: 24-subscription-lifecycle-and-notifications*
 *Completed: 2026-03-26*
+
+## Self-Check: PASSED
+
+- FOUND: `src/app/api/cron/trial-reminders/route.js`
+- FOUND: `tests/billing/trial-reminders.test.js`
+- FOUND: `.planning/phases/24-subscription-lifecycle-and-notifications/24-03-SUMMARY.md`
+- FOUND: commit `5aa3683` (RED tests)
+- FOUND: commit `02a6641` (GREEN implementation)
+- FOUND: commit `b60f44b` (vercel.json cron)
+- FOUND: commit `70a67b9` (docs/metadata)
