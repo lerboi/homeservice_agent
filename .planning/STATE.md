@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 27-01-PLAN.md
-last_updated: "2026-03-26T07:57:49.229Z"
+stopped_at: Completed 27-02-PLAN.md
+last_updated: "2026-03-26T08:03:03.028Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 27 (country-aware-onboarding-and-number-provisioning) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - [Phase 22]: Light-surface plan cards with negative margin breakout from wizard card for wider grid
 - [Phase 27]: SECURITY DEFINER on assign_sg_number RPC for atomic race-safe SG number assignment via FOR UPDATE SKIP LOCKED
 - [Phase 27]: provisioning_failed flag on tenants enables admin follow-up when SG inventory exhausted at checkout time
+- [Phase 27]: Phone prefix shown as non-editable span inside the input row, user types local digits only
+- [Phase 27]: Server-side 409 gate in sms-confirm prevents direct API bypass of waitlist when SG inventory is 0
 
 ### Roadmap Evolution
 
@@ -79,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T07:57:49.220Z
-Stopped at: Completed 27-01-PLAN.md
+Last session: 2026-03-26T08:03:03.020Z
+Stopped at: Completed 27-02-PLAN.md
 Resume file: None

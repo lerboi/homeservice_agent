@@ -48,12 +48,12 @@
 
 ### Country-Aware Onboarding and Number Provisioning
 
-- [ ] **COUNTRY-01**: "Your Details" step collects full name, personal phone number, and country (SG/US/CA) — all three fields saved to tenants table with phone in E.164 format
-- [ ] **COUNTRY-02**: phone_inventory table with SG pre-purchased numbers, real-time availability count API, race-safe assign_sg_number RPC with FOR UPDATE SKIP LOCKED
-- [ ] **COUNTRY-03**: Singapore waitlist UI when zero numbers available — email capture + waitlist table, blocks onboarding progression
+- [x] **COUNTRY-01**: "Your Details" step collects full name, personal phone number, and country (SG/US/CA) — all three fields saved to tenants table with phone in E.164 format
+- [x] **COUNTRY-02**: phone_inventory table with SG pre-purchased numbers, real-time availability count API, race-safe assign_sg_number RPC with FOR UPDATE SKIP LOCKED
+- [x] **COUNTRY-03**: Singapore waitlist UI when zero numbers available — email capture + waitlist table, blocks onboarding progression
 - [ ] **COUNTRY-04**: Singapore number assigned from phone_inventory after checkout.session.completed webhook — atomic RPC prevents double-assignment
 - [ ] **COUNTRY-05**: US/Canada number provisioned via retell.phoneNumber.create({ country_code }) after checkout success — Retell handles Twilio internally
-- [ ] **COUNTRY-06**: Test call step removed from onboarding wizard, wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success)
+- [x] **COUNTRY-06**: Test call step removed from onboarding wizard, wizard shows 5 steps (Profile, Services, Your Details, Plan Selection, Checkout Success)
 - [ ] **COUNTRY-07**: Onboarding-flow skill file updated to reflect 5-step wizard, country-aware provisioning, new API routes, deprecated routes
 
 ### Future Requirements (Deferred)
@@ -371,12 +371,12 @@
 - Mapped to phases: 16
 - Unmapped: 0
 
-| COUNTRY-01 | Phase 27 | Pending |
-| COUNTRY-02 | Phase 27 | Pending |
-| COUNTRY-03 | Phase 27 | Pending |
+| COUNTRY-01 | Phase 27 | Complete |
+| COUNTRY-02 | Phase 27 | Complete |
+| COUNTRY-03 | Phase 27 | Complete |
 | COUNTRY-04 | Phase 27 | Pending |
 | COUNTRY-05 | Phase 27 | Pending |
-| COUNTRY-06 | Phase 27 | Pending |
+| COUNTRY-06 | Phase 27 | Complete |
 | COUNTRY-07 | Phase 27 | Pending |
 
 **v3.0 Coverage:**
