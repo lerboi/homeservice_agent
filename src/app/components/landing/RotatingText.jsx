@@ -3,7 +3,7 @@
  * RotatingText — based on 21st.dev/tommyjepsen/animated-hero RotatingText component.
  * Uses AnimatePresence with per-character stagger for smooth text rotation.
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 export function RotatingText({
@@ -22,6 +22,17 @@ export function RotatingText({
 }) {
   const prefersReducedMotion = useReducedMotion();
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const containerRef = useRef(null);
+  const measureRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!measureRef.current || !containerRef.current || prefersReducedMotion) return;
+    const width = measureRef.current.getBoundingClientRect().width;
+    if (width > 0) {
+      containerRef.current.style.width = `${width}px`;
+    }
+  }, [currentIndex, prefersReducedMotion]);
 
   const advance = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % texts.length);
@@ -56,10 +67,18 @@ export function RotatingText({
   };
 
   return (
-    <span className={`relative inline-flex overflow-hidden whitespace-nowrap align-baseline ${className}`} {...rest}>
-      {/* Invisible sizer — prevents CLS by reserving width of longest word */}
-      <span className="invisible" aria-hidden="true">
-        {texts.reduce((a, b) => (a.length >= b.length ? a : b), '')}
+    <span
+      ref={containerRef}
+      className={`relative inline-flex overflow-hidden whitespace-nowrap align-baseline transition-[width] duration-200 ease-in-out ${className}`}
+      {...rest}
+    >
+      {/* Hidden measurement span — measures current word width for dynamic container sizing */}
+      <span
+        ref={measureRef}
+        className="invisible absolute pointer-events-none whitespace-nowrap"
+        aria-hidden="true"
+      >
+        {texts[currentIndex]}
       </span>
 
       <AnimatePresence mode={animatePresenceMode} initial={animatePresenceInitial}>
