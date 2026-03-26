@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 const AUTH_REQUIRED_PATHS = [
   '/onboarding',
   '/dashboard',
+  '/admin',
 ];
 
 export async function middleware(request) {
@@ -34,6 +35,30 @@ export async function middleware(request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Admin route gate — per D-03: middleware checks /admin/* by querying admin_users
+  const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
+
+  if (isAdminPath) {
+    if (!user) {
+      const signInUrl = new URL('/auth/signin', request.url);
+      signInUrl.searchParams.set('redirect', pathname + request.nextUrl.search);
+      return NextResponse.redirect(signInUrl);
+    }
+    // Check admin_users table — uses anon key client (user's own session)
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!adminRecord) {
+      // Rewrite to forbidden page — URL stays at attempted path (better UX)
+      return NextResponse.rewrite(new URL('/admin/forbidden', request.url));
+    }
+    // Admin verified — continue to requested admin page
+    return response;
+  }
 
   const isAuthRequired = AUTH_REQUIRED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + '/')
@@ -76,5 +101,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/onboarding/:path*', '/onboarding', '/dashboard/:path*', '/dashboard', '/auth/signin'],
+  matcher: ['/onboarding/:path*', '/onboarding', '/dashboard/:path*', '/dashboard', '/admin/:path*', '/admin', '/auth/signin'],
 };
