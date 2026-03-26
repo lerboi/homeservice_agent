@@ -12,10 +12,12 @@ function getStep(pathname) {
   if (pathname === '/onboarding/services') return 2;
   if (pathname === '/onboarding/contact') return 3;
   if (pathname === '/onboarding/test-call') return 4;
+  if (pathname === '/onboarding/plan') return 5;
+  if (pathname === '/onboarding/checkout-success') return 6;
   return 1;
 }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 
 export default function OnboardingLayout({ children }) {
   const pathname = usePathname();

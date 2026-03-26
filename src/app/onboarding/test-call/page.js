@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestCallPanel } from '@/components/onboarding/TestCallPanel';
-import { clearWizardSession } from '@/hooks/useWizardSession';
 import { Button } from '@/components/ui/button';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
@@ -12,7 +11,6 @@ export default function TestCallPage() {
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [noPhone, setNoPhone] = useState(false);
-  const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
     async function loadPhoneNumber() {
@@ -39,24 +37,17 @@ export default function TestCallPage() {
   }, []);
 
   function handleComplete() {
-    clearWizardSession();
+    // Don't clear wizard session yet — user still has plan selection + checkout
+    // Session will be cleared after checkout success
   }
 
   function handleGoToDashboard() {
-    clearWizardSession();
-    router.push('/dashboard');
+    router.push('/onboarding/plan');
   }
 
   async function handleSkipToDashboard() {
-    setCompleting(true);
-    try {
-      // Mark onboarding as complete even without test call
-      await fetch('/api/onboarding/complete', { method: 'POST' });
-    } catch {
-      // Continue to dashboard regardless
-    }
-    clearWizardSession();
-    router.push('/dashboard');
+    // Skip test call but still require plan selection + checkout
+    router.push('/onboarding/plan');
   }
 
   if (loading) {
@@ -83,10 +74,10 @@ export default function TestCallPage() {
           </p>
           <Button
             onClick={handleSkipToDashboard}
-            disabled={completing}
+
             className="bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95 text-white min-h-12 px-8 rounded-xl text-[15px] font-medium shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all duration-150"
           >
-            Go to Dashboard
+            Continue
             <ArrowRight className="ml-2 size-4" />
           </Button>
         </div>
