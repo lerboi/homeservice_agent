@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-03-26T06:04:13.892Z"
+stopped_at: Phase 27 context gathered
+last_updated: "2026-03-26T07:06:09.587Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -45,6 +45,7 @@ Recent decisions affecting current work:
 - [Phase 22]: Return 500 on webhook handler errors so Stripe retries automatically
 - [Phase 22]: tenant_id set on both Checkout Session metadata and subscription_data metadata for webhook reliability
 - [Phase 22]: onboarding_complete no longer set by test-call flow — deferred to checkout.session.completed webhook
+- [Phase 22]: Light-surface plan cards with negative margin breakout from wizard card for wider grid
 
 ### Roadmap Evolution
 
@@ -59,6 +60,8 @@ Recent decisions affecting current work:
 - Phase 20 added: Dashboard UX Overhaul
 - Phase 21 added: Pricing Page Redesign
 - Phases 22-26 added for milestone v3.0: Subscription Billing & Usage Enforcement (2026-03-26)
+- Phase 27 added: Country-Aware Onboarding and Number Provisioning (2026-03-26)
+- Phase 28 added: Admin Dashboard (2026-03-26)
 
 ### Pending Todos
 
@@ -73,6 +76,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T06:04:13.884Z
-Stopped at: Completed 22-03-PLAN.md
-Resume file: None
+Last session: 2026-03-26T07:06:09.578Z
+Stopped at: Phase 27 context gathered
+Resume file: .planning/phases/27-country-aware-onboarding-and-number-provisioning/27-CONTEXT.md
