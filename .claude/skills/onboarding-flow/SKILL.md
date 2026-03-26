@@ -1,13 +1,13 @@
 ---
 name: onboarding-flow
-description: "Complete architectural reference for the onboarding wizard — 4-step signup flow, all onboarding API routes, Retell phone provisioning, trade templates, test call, session persistence, and middleware auth guards. Use this skill whenever making changes to the onboarding wizard, signup flow, phone provisioning, trade templates, test call functionality, or wizard session management. Also use when the user asks about how onboarding works, wants to modify wizard steps, or needs to debug provisioning or OTP issues."
+description: "Complete architectural reference for the onboarding wizard — 6-step signup flow (profile, services, contact, test-call, plan selection, checkout success), all onboarding API routes, Retell phone provisioning, trade templates, test call, Stripe Checkout Session, session persistence, and middleware auth guards. Use this skill whenever making changes to the onboarding wizard, signup flow, phone provisioning, trade templates, test call functionality, billing checkout, or wizard session management. Also use when the user asks about how onboarding works, wants to modify wizard steps, or needs to debug provisioning or OTP issues."
 ---
 
 # Onboarding Flow — Complete Reference
 
 This document is the single source of truth for the onboarding wizard system. Read this before making any changes to onboarding pages, wizard session management, or provisioning routes.
 
-**Last updated**: 2026-03-25 (Phase 7 — unified signup and onboarding wizard, Phase 13 — auth page redesign)
+**Last updated**: 2026-03-26 (Phase 22 — billing foundation: 6-step wizard with plan selection + Stripe Checkout)
 
 ---
 
@@ -19,8 +19,9 @@ This document is the single source of truth for the onboarding wizard system. Re
 | **Step 2: Profile** | `/onboarding` (page.js) | Trade selector + business name + 2x POST to /start |
 | **Step 3: Services** | `/onboarding/services` | Edit pre-populated service list from TRADE_TEMPLATES |
 | **Step 4: Contact** | `/onboarding/contact` | Owner phone number → sms-confirm saves owner_phone |
-| **Step 5: Test Call** | `/onboarding/test-call` | TestCallPanel → Retell dials owner → webhook sets onboarding_complete |
-| **Step 6: Complete** | `/onboarding/complete` | Redirects to `/dashboard` |
+| **Step 5: Test Call** | `/onboarding/test-call` | TestCallPanel → Retell dials owner → routes to plan selection |
+| **Step 6: Plan Selection** | `/onboarding/plan` | Choose subscription tier (starter/growth/scale) |
+| **Step 7: Checkout Success** | `/onboarding/checkout-success` | Post-Stripe-Checkout confirmation, sets onboarding_complete via webhook |
 
 ```
 User lands on /auth/signin
@@ -40,12 +41,20 @@ User lands on /auth/signin
   /onboarding/test-call (Step 5: Test Call)
   → POST /api/onboarding/test-call → Retell dials owner_phone
   → Poll /api/onboarding/test-call-status (4s interval)
-  → Retell webhook fires on call completion → sets onboarding_complete = true
+  → On complete or skip → routes to /onboarding/plan (NOT /dashboard)
+       ↓
+  /onboarding/plan (Step 6: Plan Selection)
+  → User selects starter/growth/scale tier
+  → POST /api/onboarding/checkout-session → Stripe Checkout Session URL
+  → Redirect to Stripe Checkout (external)
+       ↓
+  /onboarding/checkout-success (Step 7: Checkout Success)
+  → checkout.session.completed webhook sets onboarding_complete = true
        ↓
   /dashboard
 ```
 
-Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter, orange progress bar, and wizard card.
+Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("Step X of 6"), orange progress bar, and wizard card.
 
 ---
 
@@ -57,8 +66,10 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter, o
 | `src/app/onboarding/page.js` | Step 2: Trade selector + business name (profile) |
 | `src/app/onboarding/services/page.js` | Step 3: Service list edit from TRADE_TEMPLATES |
 | `src/app/onboarding/contact/page.js` | Step 4: Owner phone number collection |
-| `src/app/onboarding/test-call/page.js` | Step 5: TestCallPanel + phone number display |
-| `src/app/onboarding/complete/page.js` | Redirect to /dashboard |
+| `src/app/onboarding/test-call/page.js` | Step 5: TestCallPanel + routes to /onboarding/plan on complete/skip |
+| `src/app/onboarding/plan/page.js` | Step 6: Plan selection (starter/growth/scale) |
+| `src/app/onboarding/checkout-success/page.js` | Step 7: Post-checkout confirmation |
+| `src/app/onboarding/complete/page.js` | Redirect to /dashboard (legacy, no longer called from test-call) |
 | `src/app/onboarding/profile/page.js` | Redirect to /onboarding (legacy URL compatibility) |
 | `src/app/onboarding/verify/page.js` | Redirect to /onboarding/contact (legacy URL compatibility) |
 | `src/app/auth/signin/page.js` | Step 1: Auth page (email signup + OTP) |
@@ -74,7 +85,8 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter, o
 | `src/app/api/onboarding/sms-verify/route.js` | POST: phone OTP verification (signInWithOtp) |
 | `src/app/api/onboarding/test-call/route.js` | POST: trigger Retell outbound test call |
 | `src/app/api/onboarding/test-call-status/route.js` | GET: poll for onboarding_complete + retell_phone_number |
-| `src/app/api/onboarding/complete/route.js` | POST: set onboarding_complete = true (manual fallback) |
+| `src/app/api/onboarding/complete/route.js` | POST: set onboarding_complete = true (legacy manual fallback, no longer called from test-call) |
+| `src/app/api/onboarding/checkout-session/route.js` | POST: create Stripe Checkout Session with 14-day trial + CC required |
 | `src/lib/trade-templates.js` | TRADE_TEMPLATES map (4 trades × ~10 services each) |
 | `src/middleware.js` | Auth guards, onboarding_complete redirect logic |
 
@@ -86,12 +98,12 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter, o
 
 `OnboardingLayout({ children })` — wraps all steps:
 - Logo link to `/`
-- Step counter: "Step X of 4" (4 tracked steps: / , /services, /contact, /test-call)
+- Step counter: "Step X of 6" (6 tracked steps: / , /services, /contact, /test-call, /plan, /checkout-success)
 - Orange progress bar: `width: (currentStep / TOTAL_STEPS) * 100%`, `transition-all duration-500 ease-out`
 - White wizard card: `bg-white rounded-2xl shadow-[...] border border-stone-200/60`
 - Mobile: full-width flat card (`max-sm:rounded-none max-sm:shadow-none max-sm:border-none`)
 
-`getStep(pathname)` maps path to 1–4 for progress bar.
+`getStep(pathname)` maps path to 1–6 for progress bar.
 
 ---
 
@@ -138,13 +150,21 @@ Collects `owner_phone` (optional). On submit: POST `/api/onboarding/sms-confirm`
 
 **File**: `src/app/onboarding/test-call/page.js`
 
-On mount: fetches `GET /api/onboarding/test-call-status` to get provisioned phone number. Shows phone number in display + `TestCallPanel`. If no phone provisioned, shows "You're all set" fallback with direct "Go to Dashboard" button (calls `/api/onboarding/complete` POST to set onboarding_complete).
+On mount: fetches `GET /api/onboarding/test-call-status` to get provisioned phone number. Shows phone number in display + `TestCallPanel`. If no phone provisioned, shows "You're all set" fallback with "Continue" button routing to `/onboarding/plan`.
 
-`handleComplete()` and `handleGoToDashboard()` both call `clearWizardSession()` to bulk-remove all `gsd_onboarding_*` keys from sessionStorage.
+`handleComplete()` is a no-op (wizard session persists through plan selection + checkout). `handleGoToDashboard()` and `handleSkipToDashboard()` both route to `/onboarding/plan`. Neither calls `clearWizardSession()` — session is cleared after checkout success. Neither calls `/api/onboarding/complete` — `onboarding_complete` is set by the `checkout.session.completed` webhook handler.
 
-### Step 6: Complete (`/onboarding/complete/page.js`)
+### Step 6: Plan Selection (`/onboarding/plan/page.js`)
 
-Simple redirect to `/dashboard`.
+User selects a subscription tier (starter/growth/scale). On selection, POSTs to `/api/onboarding/checkout-session` with `{ plan }`, receives `{ url }`, and redirects to the Stripe Checkout page.
+
+### Step 7: Checkout Success (`/onboarding/checkout-success/page.js`)
+
+Landing page after Stripe Checkout completes. The `checkout.session.completed` webhook fires server-side, creating the subscription record and setting `onboarding_complete = true`. Page redirects to `/dashboard`.
+
+### Legacy: Complete (`/onboarding/complete/page.js`)
+
+Simple redirect to `/dashboard`. No longer called from the test-call page flow.
 
 ---
 
@@ -241,7 +261,7 @@ export function clearWizardSession() {
 }
 ```
 
-Called from `test-call/page.js` when user completes or skips to dashboard.
+Called from `checkout-success/page.js` after Stripe Checkout completes (no longer called from test-call page).
 
 ---
 
@@ -310,11 +330,25 @@ Returns `{ call_id }`.
 
 Returns `{ complete: boolean, retell_phone_number: string | null }` from tenants row. Used by `TestCallPanel` polling (every 4s) and by test-call page on mount.
 
+### `POST /api/onboarding/checkout-session`
+
+**File**: `src/app/api/onboarding/checkout-session/route.js`
+
+Creates a Stripe Checkout Session for the selected plan. Request: `{ plan: 'starter' | 'growth' | 'scale' }`. Response: `{ url: string }`.
+
+- Authenticates user via `createSupabaseServer()` + `getUser()`
+- Looks up tenant via service role client (for `tenant_id`, `owner_email`)
+- Maps plan to price ID via env vars: `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE`
+- Creates Checkout Session with: `mode: 'subscription'`, `payment_method_collection: 'always'` (CC required), `trial_period_days: 14`
+- **Critical**: `metadata.tenant_id` set on BOTH the session and `subscription_data` — the webhook handler reads `subscription.metadata.tenant_id` to find which tenant the subscription belongs to
+- Success URL: `/onboarding/checkout-success?session_id={CHECKOUT_SESSION_ID}`
+- Cancel URL: `/onboarding/plan`
+
 ### `POST /api/onboarding/complete`
 
 **File**: `src/app/api/onboarding/complete/route.js`
 
-Manual fallback: sets `onboarding_complete = true` on tenants. Used when user skips test call (no phone provisioned) or bypasses wizard.
+Legacy manual fallback: sets `onboarding_complete = true` on tenants. No longer called from the test-call page — `onboarding_complete` is now set by the `checkout.session.completed` webhook handler.
 
 ---
 
@@ -404,6 +438,11 @@ Populated during Step 2 (profile) and optionally modified in Step 3 (services). 
 | `TWILIO_ACCOUNT_SID` | Twilio | SMS OTP (sms-verify route) |
 | `TWILIO_AUTH_TOKEN` | Twilio | SMS OTP |
 | `TWILIO_FROM_NUMBER` | Twilio | SMS sender |
+| `STRIPE_SECRET_KEY` | Stripe | Stripe SDK initialization (server-side only) |
+| `STRIPE_PRICE_STARTER` | Stripe | Price ID for Starter plan ($99/mo) |
+| `STRIPE_PRICE_GROWTH` | Stripe | Price ID for Growth plan ($249/mo) |
+| `STRIPE_PRICE_SCALE` | Stripe | Price ID for Scale plan ($599/mo) |
+| `NEXT_PUBLIC_APP_URL` | App | Base URL for Checkout success/cancel redirects |
 
 ---
 
