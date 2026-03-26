@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 22 UI-SPEC approved
-last_updated: "2026-03-25T20:54:41.764Z"
+status: Ready to execute
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-03-26T06:01:40.658Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 21 — pricing-page-redesign
+**Current focus:** Phase 22 — billing-foundation
 
 ## Current Position
 
-Phase: 21
-Plan: Not started
+Phase: 22 (billing-foundation) — EXECUTING
+Plan: 3 of 4
 
 ## Accumulated Context
 
@@ -40,6 +40,9 @@ Recent decisions affecting current work:
 - [v3.0 Roadmap]: Stripe Customer Portal handles all self-serve management — no custom plan change UI
 - [v3.0 Roadmap]: Per-call overage billing (BILLF-02) deferred to future milestone
 - [Phase 21-pricing-page-redesign]: Volume-based differentiation: all paid tiers share same feature set; differentiation is call volume and support level only
+- [Phase 22]: Minimal Stripe singleton — no client-side code in stripe.js
+- [Phase 22]: Subscription write-protection via RLS — authenticated SELECT-only, all writes through service_role webhook handlers
+- [Phase 22]: Return 500 on webhook handler errors so Stripe retries automatically
 
 ### Roadmap Evolution
 
@@ -68,6 +71,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T20:53:24.267Z
-Stopped at: Phase 22 UI-SPEC approved
-Resume file: .planning/phases/22-billing-foundation/22-UI-SPEC.md
+Last session: 2026-03-26T06:01:40.650Z
+Stopped at: Completed 22-02-PLAN.md
+Resume file: None

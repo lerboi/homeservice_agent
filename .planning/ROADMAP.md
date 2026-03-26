@@ -505,10 +505,9 @@ Plans:
   2. A Stripe test webhook for customer.subscription.updated arrives at /api/stripe/webhook, passes signature verification, and is reflected in the local subscriptions table within 5 seconds — duplicate delivery of the same event_id produces no second DB write
   3. Sending customer.subscription.deleted via Stripe test webhook sets the local subscription status to cancelled — the tenant cannot get indefinite free access by letting a trial expire without a payment method
   4. Out-of-order webhook delivery (an older event arriving after a newer one) does not overwrite newer subscription state — stripe_updated_at version protection is observed
-**Plans:** 4 plans
-Plans:
-- [ ] 22-01-PLAN.md — Stripe packages, SDK singleton, billing database migration
-- [ ] 22-02-PLAN.md — Stripe webhook handler with idempotency and version protection
+**Plans:**
+2/4 plans executed
+- [x] 22-02-PLAN.md — Stripe webhook handler with idempotency and version protection
 - [ ] 22-03-PLAN.md — Checkout Session API and onboarding flow rewiring
 - [ ] 22-04-PLAN.md — Plan selection UI and post-checkout celebration screens
 
@@ -566,7 +565,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 22. Billing Foundation | 0/TBD | Not started | - |
+| 22. Billing Foundation | 2/4 | In Progress|  |
 | 23. Usage Tracking | 0/TBD | Not started | - |
 | 24. Subscription Lifecycle and Notifications | 0/TBD | Not started | - |
 | 25. Enforcement Gate and Billing Dashboard | 0/TBD | Not started | - |

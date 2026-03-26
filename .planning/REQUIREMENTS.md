@@ -7,11 +7,11 @@
 
 ### Billing Foundation
 
-- [ ] **BILL-01**: Stripe products and prices created for Starter ($99/mo, 40 calls), Growth ($249/mo, 120 calls), Scale ($599/mo, 400 calls) with Price IDs stored in env vars
-- [ ] **BILL-02**: Subscriptions database table with tenant_id, stripe_customer_id, stripe_subscription_id, status, plan_id, calls_limit, calls_used, trial_ends_at, current_period_start/end, cancel_at_period_end — RLS: SELECT for authenticated, INSERT/UPDATE only via service_role
-- [ ] **BILL-03**: Usage events table with call_id idempotency key (ON CONFLICT DO NOTHING) and stripe_webhook_events table with UNIQUE on event_id
-- [ ] **BILL-04**: Stripe webhook handler at /api/stripe/webhook with request.text() signature verification, idempotency check, and stripe_updated_at version protection for out-of-order events
-- [ ] **BILL-05**: All subscription lifecycle events synced to local DB (created, updated, deleted, paused, resumed, trial_will_end)
+- [x] **BILL-01**: Stripe products and prices created for Starter ($99/mo, 40 calls), Growth ($249/mo, 120 calls), Scale ($599/mo, 400 calls) with Price IDs stored in env vars
+- [x] **BILL-02**: Subscriptions database table with tenant_id, stripe_customer_id, stripe_subscription_id, status, plan_id, calls_limit, calls_used, trial_ends_at, current_period_start/end, cancel_at_period_end — RLS: SELECT for authenticated, INSERT/UPDATE only via service_role
+- [x] **BILL-03**: Usage events table with call_id idempotency key (ON CONFLICT DO NOTHING) and stripe_webhook_events table with UNIQUE on event_id
+- [x] **BILL-04**: Stripe webhook handler at /api/stripe/webhook with request.text() signature verification, idempotency check, and stripe_updated_at version protection for out-of-order events
+- [x] **BILL-05**: All subscription lifecycle events synced to local DB (created, updated, deleted, paused, resumed, trial_will_end)
 - [ ] **BILL-06**: Trial auto-start at onboarding completion — creates Stripe customer + 14-day trial subscription with CC required, writes local subscriptions row synchronously
 
 ### Usage Tracking
@@ -322,11 +322,11 @@
 | HARDEN-02 | Phase 18 | Complete |
 | HARDEN-03 | Phase 18 | Complete |
 | HARDEN-04 | Phase 18 | Complete |
-| BILL-01 | Phase 22 | Pending |
-| BILL-02 | Phase 22 | Pending |
-| BILL-03 | Phase 22 | Pending |
-| BILL-04 | Phase 22 | Pending |
-| BILL-05 | Phase 22 | Pending |
+| BILL-01 | Phase 22 | Complete |
+| BILL-02 | Phase 22 | Complete |
+| BILL-03 | Phase 22 | Complete |
+| BILL-04 | Phase 22 | Complete |
+| BILL-05 | Phase 22 | Complete |
 | BILL-06 | Phase 22 | Pending |
 | USAGE-01 | Phase 23 | Pending |
 | USAGE-02 | Phase 23 | Pending |
