@@ -36,9 +36,9 @@ Declared values (multiples of 4 only):
 |-------|-------|-------|
 | xs | 4px | Icon gaps, pulse dot, inline gaps |
 | sm | 8px | Avatar overlap spacing, inline button padding delta |
-| md | 16px | Input horizontal padding, section gap between input and social proof |
+| md | 16px | Input horizontal padding, section gap between input and subtitle |
 | lg | 24px | Vertical gap between headline and subtitle; gap between subtitle and input bar |
-| xl | 32px | Social proof row margin-top (`mt-8` = 32px) |
+| xl | 32px | Row margin-top (`mt-8` = 32px) |
 | 2xl | 48px | Bottom padding adjustments on mobile |
 | 3xl | 64px | Section top padding delta on large screens |
 
@@ -57,14 +57,14 @@ Source: Derived from existing hero `pt-28 pb-20 md:pt-36 md:pb-28` and `min-h-[4
 |------|------|--------|-------------|-------|
 | Display | 40px / 52px / 60px (sm/md/lg breakpoints) | 600 (semibold) | 1.1 | Hero h1 with RotatingText |
 | Body | 18px / 20px (sm/md) | 400 (regular) | 1.6 | Hero subtitle |
-| Label | 14px | 400 (regular) | 1.0 | Input placeholder, button label, "Try another name" link |
-| Caption | 12px | 400 (regular) | 1.0 | Eyebrow pill text (uppercase tracked), social proof micro-line |
+| Label | 14px | 400 (regular) | 1.0 | Input placeholder, button label, secondary links |
+| Caption | 12px | 400 (regular) | 1.0 | Progress time display, decorative micro-labels |
 
 Exact Tailwind class mapping:
 - Display: `text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold leading-[1.1] tracking-tight`
 - Body: `text-lg md:text-xl text-white/50 leading-relaxed` (matches existing subtitle pattern)
 - Label: `text-sm` (14px, no weight override — inherits font-normal)
-- Caption: `text-xs tracking-wide uppercase` (eyebrow), `text-sm` (social proof)
+- Caption: `text-xs tabular-nums` (progress time)
 
 Note: Two weights only — 400 (regular) and 600 (semibold). Size contrast (12px vs 14px vs 18px+ vs 40px+) provides hierarchy on the dark background without needing a third weight.
 
@@ -79,18 +79,17 @@ The hero section operates in a dark-surface context. All color decisions are sco
 | Role | Value | Usage |
 |------|-------|-------|
 | Dominant (60%) | `#050505` | Hero section background — full bleed |
-| Secondary (30%) | `rgba(255,255,255,0.06)` (`bg-white/[0.06]`) | Input bar background, player container background, eyebrow pill background |
+| Secondary (30%) | `rgba(255,255,255,0.06)` (`bg-white/[0.06]`) | Input bar background, player container background |
 | Accent (10%) | `#F97316` | Reserved list below |
 | Destructive | n/a | No destructive actions in this phase |
 
 Accent (`#F97316`) reserved for:
 1. RotatingText words (cycling animated words in h1)
 2. "Listen to Your Demo" CTA button background
-3. Pulse dot inside eyebrow pill (`animate-pulse`)
-4. Focus ring on text input (`ring-[#F97316]` or `focus-visible:ring-[#F97316]`)
-5. Waveform active bar color during audio playback
+3. Focus ring on text input (`ring-[#F97316]` or `focus-visible:ring-[#F97316]`)
+4. Waveform active bar color during audio playback
 
-Accent must NOT be used for: player track background, border colors, player container, "Try another name" link, "Start Free Trial" link.
+Accent must NOT be used for: player track background, border colors, player container, "Start Free Trial" link.
 
 Border convention (carried from existing hero):
 - Input border idle: `border-white/[0.07]`
@@ -99,11 +98,16 @@ Border convention (carried from existing hero):
 
 Text color convention:
 - Primary text: `text-white`
-- Muted text (subtitle, social proof): `text-white/50`
-- Dimmed text (placeholder, "Try another name"): `text-white/30`
-- Social proof highlighted count: `text-white/50 font-semibold`
+- Muted text (subtitle): `text-white/50`
+- Dimmed text (placeholder, secondary links): `text-white/30`
 
 Source: `HeroSection.jsx`, `AuthAwareCTA.js`, `globals.css` CSS custom properties, CONTEXT.md D-05 / D-12
+
+---
+
+## Visual Focal Point
+
+Primary focal point: HeroDemoInput bar — the orange CTA button is the first element the eye should reach. The dark background (`#050505`) and absence of competing elements (no eyebrow pill, no social proof row) ensure the input bar + orange button receive undivided attention. Every other element — headline, subtitle, secondary link — is muted relative to the orange accent.
 
 ---
 
@@ -115,22 +119,22 @@ Source: `HeroSection.jsx`, `AuthAwareCTA.js`, `globals.css` CSS custom propertie
 |-----------|------|-------|
 | `AnimatedSection` | `src/app/components/landing/AnimatedSection.jsx` | Wrap input/player block with fade-up entrance |
 | `Button` | `@/components/ui/button` (shadcn) | Inline "Listen to Your Demo" CTA; play/pause toggle |
-| `RotatingText` | `src/app/components/landing/RotatingText.jsx` | Modify width behavior per D-17/D-18 |
+| `RotatingText` | `src/app/components/landing/RotatingText.jsx` | Modify width behavior per D-18/D-19 |
 
 ### New components (must be built)
 
 | Component | Path | Type | Description |
 |-----------|------|------|-------------|
 | `HeroDemoInput` | `src/app/components/landing/HeroDemoInput.jsx` | Client component | Text input + inline CTA button; loading state; "Start Free Trial" link |
-| `HeroDemoPlayer` | `src/app/components/landing/HeroDemoPlayer.jsx` | Client component | Waveform visualizer + play/pause + progress bar + "Try another name" link |
-| `/api/demo-voice` | `src/app/api/demo-voice/route.js` | API route | Accepts `businessName`, returns MP3 audio buffer for dynamic name segment |
+| `HeroDemoPlayer` | `src/app/components/landing/HeroDemoPlayer.jsx` | Client component | Waveform visualizer + play/pause + progress bar + post-play "Start Free Trial" CTA |
+| `/api/demo-voice` | `src/app/api/demo-voice/route.js` | API route | Accepts `businessName`, calls ElevenLabs TTS, returns MP3 audio buffer for dynamic name segment |
 
 ### Static assets
 
 | Asset | Path | Content |
 |-------|------|---------|
-| `demo-intro.mp3` | `public/audio/demo-intro.mp3` | Pre-rendered AI greeting up to business name |
-| `demo-mid.mp3` | `public/audio/demo-mid.mp3` | Mid-conversation: understanding service request |
+| `demo-intro.mp3` | `public/audio/demo-intro.mp3` | Pre-rendered caller opening line |
+| `demo-mid.mp3` | `public/audio/demo-mid.mp3` | Mid-conversation: capturing details, offering slot |
 | `demo-outro.mp3` | `public/audio/demo-outro.mp3` | Booking confirmation closing |
 
 ---
@@ -164,10 +168,14 @@ Source: `HeroSection.jsx`, `AuthAwareCTA.js`, `globals.css` CSS custom propertie
   Player transitions in (opacity 1, translateY 0, 200ms ease, 100ms delay)
   Autoplay begins immediately on transition complete
   Play/pause button, waveform bars, progress bar visible
-  "Try another name" link visible below player
 
-  On "Try another name" click:
-    -> [IDLE / INPUT STATE] (player out, input in, same transition reversed)
+  On audio end:
+    -> [POST-PLAY STATE]
+
+[POST-PLAY STATE]
+  Player stays visible with replay button active
+  "Start Free Trial" CTA button appears below player
+  No way to return to input state — forward conversion only
 
 [ERROR STATE]
   Sonner toast: error variant (see Copywriting Contract)
@@ -197,11 +205,11 @@ New: `useRef` + `getBoundingClientRect()` on a hidden measurement span, set `wid
 - Play/pause button: `size-10 min-w-[40px]` rounded-full, `bg-[#F97316]` when paused (shows Play icon), `bg-white/[0.1]` when playing (shows Pause icon)
 - Waveform: 40px tall, flex row of vertical bars. Bars: 3px wide, 4px gap. Active bars (position < playhead): `bg-[#F97316]`. Inactive bars: `bg-white/[0.15]`. Implementation: CSS bars driven by a static amplitude envelope array (pre-computed, not live FFT). Total bars: 40 bars across the waveform width.
 - Progress indicator: `text-sm text-white/30 tabular-nums min-w-[36px] text-right` — shows `M:SS` elapsed
-- "Try another name" link: `text-sm text-white/30 hover:text-white/50 underline underline-offset-2 mt-2 block text-center`
+- Post-play "Start Free Trial" CTA button: appears below player after audio ends. Style: `bg-[#F97316] text-white text-sm px-6 py-2.5 rounded-lg w-full max-w-xl`. Label: "Start Your Free Trial"
 
-### "Start Free Trial" secondary link
+### "Start Free Trial" secondary link (input state)
 
-- Positioned below input bar/player, always visible in both states
+- Positioned below input bar, visible in IDLE and LOADING states
 - Style: `text-sm text-white/30 hover:text-white/50 transition-colors`
 - Label: "Skip the demo — Start your free trial"
 - Routes to `/onboarding` (same as AuthAwareCTA pattern from `AuthAwareCTA.js`)
@@ -211,42 +219,40 @@ New: `useRef` + `getBoundingClientRect()` on a hidden measurement span, set `wid
 
 ## Hero Title Copy
 
-Per D-08 (Claude's Discretion — final wording):
+Per D-15 (Claude's Discretion — final wording):
 
 **New title:** "Every Missed Call Is a Job Your {RotatingText} Just Booked"
 
 Rotating words: `['Competitor', 'Rival', 'Neighbor']` — all 3 are trade-specific, comparable length (8-8-8 chars), ensuring RotatingText width transition is smooth with small deltas.
 
-**New subtitle (per D-09):** "Enter your business name and hear your AI receptionist answer in 30 seconds."
-
-Eyebrow pill copy (per D-10 — unchanged): "AI-Powered Answering for Trades"
+**New subtitle (per D-16):** "Enter your business name and hear your AI receptionist answer in 30 seconds."
 
 ---
 
 ## Demo Script (Audio Content Contract)
 
-Three-segment structure. Total target runtime: 35–40 seconds.
+Three-segment structure. Total target runtime: 20–25 seconds.
 
 **Voice casting:**
-- AI receptionist voice: OpenAI TTS `nova` — confident, warm, professional female voice
-- Caller voice: OpenAI TTS `echo` — casual, relaxed male voice
+- AI receptionist voice: ElevenLabs — [ElevenLabs voice ID - female professional]
+- Caller voice: ElevenLabs — [ElevenLabs voice ID - male casual]
+
+Voice IDs are placeholders — specific selections will be made during implementation. Both voices pre-rendered via ElevenLabs to ensure consistent voice quality across all segments (static and dynamic).
 
 **Segment 1 — `demo-intro.mp3` (pre-rendered, static):**
-> CALLER: "Hi, yeah, I've got a pipe that's been leaking under my sink, been dripping for a couple days now."
+> CALLER: "Hey, I'd like to get my AC serviced before summer hits."
 
 **Segment 2 — Dynamic name segment (generated via `/api/demo-voice` at runtime):**
-> AI: "Thank you for calling {businessName}! This is your AI receptionist. I can help get that taken care of right away."
+> AI: "Thanks for calling {businessName}! This is your AI receptionist — I can get that scheduled for you right away."
 
 **Segment 3 — `demo-mid.mp3` (pre-rendered, static):**
-> AI: "Can I get your address so I can check our nearest available slot?"
-> CALLER: "Sure — 214 Oak Street."
-> AI: "Perfect. I've got a plumber available tomorrow at 10 AM. Shall I lock that in for you?"
-> CALLER: "Yeah, that works."
+> AI: "What's a good address for the service?"
+> CALLER: "214 Oak Street."
+> AI: "Got it. I have a slot open this Thursday at 2 PM. Want me to book that?"
+> CALLER: "That works, yeah."
 
 **Segment 4 — `demo-outro.mp3` (pre-rendered, static):**
-> AI: "Done! You're booked for tomorrow at 10 AM. You'll get a confirmation text shortly. Anything else I can help with?"
-> CALLER: "No, that's it. Thanks!"
-> AI: "Have a great day!"
+> AI: "You're all set — Thursday at 2 PM. We'll text you a reminder. Have a great day!"
 
 Stitching order: `intro + name + mid + outro`. Web Audio API concatenates as ArrayBuffers before playback starts. All segments load in parallel; playback begins only when all buffers are ready.
 
@@ -259,9 +265,9 @@ Stitching order: `intro + name + mid + outro`. Web Audio API concatenates as Arr
 | Primary CTA (input button) | "Listen to Your Demo" |
 | Input placeholder | "Enter your business name..." |
 | Loading button label | "Generating..." |
-| Player "back" link | "Try another name" |
 | Secondary link (skip) | "Skip the demo — Start your free trial" |
 | Secondary link (logged in) | "Go to Dashboard" |
+| Post-play CTA button | "Start Your Free Trial" |
 | Empty state heading | n/a — input is always pre-focused, no empty state screen |
 | Error state (API failure) | "Couldn't generate your demo. Check your connection and try again." |
 | Error state (validation) | n/a — button is disabled until valid; no inline error message needed |
@@ -291,14 +297,12 @@ Source: CONTEXT.md D-12, D-13, D-14, D-15, D-16; defaults applied for error copy
 |------------|----------|--------|---------|
 | Input bar exit | 200ms | `ease` | Submit button click |
 | Player entrance | 200ms | `ease` | 100ms after input exit starts |
-| Input re-entrance | 200ms | `ease` | "Try another name" click |
-| Player exit | 200ms | `ease` | "Try another name" click |
 | RotatingText width | 200ms | `ease` | `currentIndex` change |
 | RotatingText chars | Spring damping 25, stiffness 300 | framer-motion spring | `currentIndex` change |
 | Button hover lift | 150ms | `transition-all` | hover |
 | Focus ring | 150ms | `transition` | `focus-visible` |
 | Waveform bar heights | none — static envelope | n/a | n/a |
-| Pulse dot (eyebrow) | `animate-pulse` (Tailwind) | n/a | always on |
+| Post-play CTA appear | 200ms fade-in | `ease` | audio `ended` event |
 
 Source: Existing `AnimatedSection` uses `duration: 0.2s, ease: [0.22, 1, 0.36, 1]`. Phase additions use simpler `ease` to keep transitions lightweight given audio loading complexity.
 
@@ -324,7 +328,7 @@ Breakpoint boundary: `sm` = 640px, `md` = 768px.
 | shadcn official | `button` (already installed) | not required |
 | None declared | — | n/a |
 
-No third-party registries. All new components are built from scratch or extend existing shadcn primitives. Web Audio API is native browser API — no package required. OpenAI TTS integration uses the existing `openai` npm package (check `package.json` for presence; if absent, add `openai` from the official npm registry only).
+No third-party registries. All new components are built from scratch or extend existing shadcn primitives. Web Audio API is native browser API — no package required. ElevenLabs TTS integration uses the ElevenLabs SDK or direct REST API calls — verify `elevenlabs` package presence in `package.json`; if absent, install from the official npm registry only.
 
 ---
 
