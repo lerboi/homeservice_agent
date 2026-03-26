@@ -7,7 +7,7 @@ description: "Complete architectural reference for authentication, database sche
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-03-25 (Phase 15 — 8 migrations, 3 Supabase clients, middleware, getTenantId)
+**Last updated**: 2026-03-26 (Phase 22 — 10 migrations, 3 Supabase clients, middleware, getTenantId, Stripe SDK)
 
 ---
 
@@ -67,6 +67,9 @@ Realtime subscriptions (browser):
 | `supabase/migrations/006_escalation_contacts.sql` | escalation_contacts table + services.sort_order column |
 | `supabase/migrations/007_outlook_calendar.sql` | calendar_credentials.is_primary + appointments.external_event_id/provider |
 | `supabase/migrations/008_call_outcomes.sql` | calls.booking_outcome, exception_reason, notification_priority |
+| `supabase/migrations/009_recovery_sms_tracking.sql` | calls.recovery_sms_status, retry_count, last_error, last_attempt_at |
+| `supabase/migrations/010_billing_schema.sql` | subscriptions, stripe_webhook_events tables + RLS |
+| `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
 
@@ -274,7 +277,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 8 migrations are applied sequentially. FK dependencies require this order.
+All 10 migrations are applied sequentially. FK dependencies require this order.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -441,6 +444,62 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 
 ---
 
+### 009_recovery_sms_tracking.sql — Recovery SMS Delivery Tracking
+
+**Extends calls**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `recovery_sms_status` | text | CHECK pending|sent|failed|retrying |
+| `recovery_sms_retry_count` | integer | NOT NULL DEFAULT 0 |
+| `recovery_sms_last_error` | text | nullable |
+| `recovery_sms_last_attempt_at` | timestamptz | nullable |
+
+**Indexes added**: Partial index `idx_calls_recovery_sms_retry` on `(tenant_id, recovery_sms_status, recovery_sms_last_attempt_at)` WHERE `recovery_sms_status = 'retrying'` — for cron retry queries.
+
+---
+
+### 010_billing_schema.sql — Billing Foundation (Subscriptions + Webhook Events)
+
+**Tables created**: `subscriptions`, `stripe_webhook_events`
+
+**subscriptions columns**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | gen_random_uuid() |
+| `tenant_id` | uuid | FK → tenants CASCADE |
+| `stripe_customer_id` | text | NOT NULL |
+| `stripe_subscription_id` | text | NOT NULL |
+| `stripe_price_id` | text | nullable |
+| `plan_id` | text | CHECK starter|growth|scale |
+| `status` | text | CHECK trialing|active|past_due|canceled|paused|incomplete |
+| `calls_limit` | int | NOT NULL |
+| `calls_used` | int | NOT NULL DEFAULT 0 |
+| `trial_ends_at` | timestamptz | nullable |
+| `current_period_start` | timestamptz | nullable |
+| `current_period_end` | timestamptz | nullable |
+| `cancel_at_period_end` | boolean | NOT NULL DEFAULT false |
+| `stripe_updated_at` | timestamptz | For out-of-order webhook protection |
+| `is_current` | boolean | NOT NULL DEFAULT true — active row lookup |
+| `created_at` | timestamptz | NOT NULL DEFAULT now() |
+
+**Indexes**: `idx_subscriptions_tenant_current (tenant_id, is_current)`, `idx_subscriptions_stripe_sub_id (stripe_subscription_id)`
+
+**stripe_webhook_events columns**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | gen_random_uuid() |
+| `event_id` | text | UNIQUE NOT NULL — idempotency key |
+| `event_type` | text | NOT NULL |
+| `processed_at` | timestamptz | NOT NULL DEFAULT now() |
+
+**RLS**: Both tables have RLS enabled.
+- `subscriptions`: authenticated SELECT-own (via tenants.owner_id), service_role ALL
+- `stripe_webhook_events`: service_role ALL only (no authenticated access)
+
+**Key design**: Authenticated users can only read subscriptions (no INSERT/UPDATE) — all writes go through service_role via webhook handlers. This is intentional write-protection.
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -457,6 +516,8 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 | `lead_calls` | 004 | Junction: many calls → one lead | Via leads.tenant_id |
 | `activity_log` | 004 | Dashboard event feed | Tenant child |
 | `escalation_contacts` | 006 | Owner-configured escalation chain | Tenant child |
+| `subscriptions` | 010 | Stripe subscription state per tenant | Tenant child (SELECT-own only) |
+| `stripe_webhook_events` | 010 | Webhook idempotency (UNIQUE event_id) | Service role only |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
@@ -472,6 +533,12 @@ RLS: Uses `TO service_role` syntax variant (still service_role bypass, different
 | `NEXT_PUBLIC_SUPABASE_URL` | All three clients | Supabase project URL (public, safe in browser) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | supabase-server.js, supabase-browser.js, middleware.js | Client auth + RLS-scoped access |
 | `SUPABASE_SERVICE_ROLE_KEY` | supabase.js (service role) only | Full DB access, bypasses RLS — SERVER ONLY, never expose to browser |
+| `STRIPE_SECRET_KEY` | stripe.js (server-side) | Stripe API secret key — SERVER ONLY |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Client components | Stripe publishable key (safe in browser) |
+| `STRIPE_WEBHOOK_SECRET` | Webhook API route | Stripe webhook signature verification |
+| `STRIPE_PRICE_STARTER` | Server-side | Stripe Price ID for Starter plan ($99/mo) |
+| `STRIPE_PRICE_GROWTH` | Server-side | Stripe Price ID for Growth plan ($249/mo) |
+| `STRIPE_PRICE_SCALE` | Server-side | Stripe Price ID for Scale plan ($599/mo) |
 
 ---
 
