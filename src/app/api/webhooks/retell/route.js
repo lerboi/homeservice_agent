@@ -95,7 +95,7 @@ async function handleInbound(payload) {
   // Include scheduling config fields for slot calculation
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, business_name, default_locale, onboarding_complete, owner_phone, tone_preset, working_hours, slot_duration_mins, tenant_timezone')
+    .select('id, business_name, default_locale, onboarding_complete, owner_phone, tone_preset, working_hours, slot_duration_mins, tenant_timezone, trade_type')
     .eq('retell_phone_number', to_number)
     .single();
 
@@ -111,6 +111,8 @@ async function handleInbound(payload) {
         tone_preset: 'professional',
         available_slots: 'No available slots',
         booking_enabled: 'false',
+        trade_type: '',
+        intake_questions: '',
       },
     });
   }
@@ -137,6 +139,18 @@ async function handleInbound(payload) {
       .select('zone_a_id, zone_b_id, buffer_mins')
       .eq('tenant_id', tenant.id),
   ]);
+
+  // Fetch intake questions from active services for this tenant
+  const { data: servicesData } = await supabase
+    .from('services')
+    .select('intake_questions')
+    .eq('tenant_id', tenant.id)
+    .eq('is_active', true);
+
+  // Flatten and deduplicate intake questions across all active services
+  const intakeQuestions = (servicesData || [])
+    .flatMap(s => s.intake_questions || [])
+    .filter((q, i, arr) => arr.indexOf(q) === i);
 
   const tenantTimezone = tenant.tenant_timezone || 'America/Chicago';
 
@@ -179,6 +193,8 @@ async function handleInbound(payload) {
       tone_preset: tenant.tone_preset || 'professional',
       available_slots: slotsText || 'No available slots',
       booking_enabled: String(allSlots.length > 0),
+      trade_type: tenant.trade_type || '',
+      intake_questions: intakeQuestions.length > 0 ? intakeQuestions.join('\n') : '',
     },
   });
 }
@@ -251,6 +267,10 @@ async function handleFunctionCall(payload) {
         result: "I've noted your details and someone will follow up.",
       });
     }
+  }
+
+  if (function_call?.name === 'check_caller_history') {
+    return handleCheckCallerHistory(payload);
   }
 
   if (function_call?.name === 'check_availability') {
@@ -652,5 +672,89 @@ async function handleBookAppointment(payload) {
   const formattedTime = formatSlotForSpeech(startTime, tenantTimezone);
   return Response.json({
     result: `Your appointment is confirmed for ${formattedTime}. You will receive a confirmation. Is there anything else I can help you with?`,
+  });
+}
+
+/**
+ * Handle the check_caller_history function invocation from the AI agent.
+ * Returns any existing leads and appointments for this caller (D-02).
+ * Read-only — no database writes.
+ */
+async function handleCheckCallerHistory(payload) {
+  const { call_id } = payload;
+
+  // Resolve tenant and caller number from call record (same two-hop pattern as capture_lead)
+  const { data: call } = await supabase
+    .from('calls')
+    .select('tenant_id, from_number')
+    .eq('retell_call_id', call_id)
+    .single();
+
+  if (!call?.tenant_id || !call?.from_number) {
+    return Response.json({
+      result: 'No caller history available.',
+    });
+  }
+
+  // Look up tenant timezone for formatting
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('tenant_timezone')
+    .eq('id', call.tenant_id)
+    .single();
+
+  const tenantTimezone = tenant?.tenant_timezone || 'America/Chicago';
+
+  // Parallel lookup: leads + appointments for this caller at this tenant
+  const [leadsResult, appointmentsResult] = await Promise.all([
+    supabase
+      .from('leads')
+      .select('id, caller_name, job_type, service_address, status, created_at')
+      .eq('tenant_id', call.tenant_id)
+      .eq('from_number', call.from_number)
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase
+      .from('appointments')
+      .select('start_time, end_time, service_address, status, caller_name')
+      .eq('tenant_id', call.tenant_id)
+      .eq('caller_phone', call.from_number)
+      .neq('status', 'cancelled')
+      .gte('end_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(3),
+  ]);
+
+  const leads = leadsResult.data || [];
+  const appointments = appointmentsResult.data || [];
+
+  if (leads.length === 0 && appointments.length === 0) {
+    return Response.json({
+      result: 'First-time caller. No prior history found.',
+    });
+  }
+
+  // Build natural-language summary for the AI
+  let summary = '';
+
+  if (appointments.length > 0) {
+    const apptLines = appointments.map(a => {
+      const dateStr = formatSlotForSpeech(new Date(a.start_time), tenantTimezone);
+      return `- ${dateStr} at ${a.service_address || 'address on file'} (${a.status})`;
+    });
+    summary += `Upcoming appointments:\n${apptLines.join('\n')}\n\n`;
+  }
+
+  if (leads.length > 0) {
+    const leadLines = leads.map(l => {
+      const name = l.caller_name || 'Unknown';
+      const job = l.job_type || 'unspecified';
+      return `- ${name}: ${job} (status: ${l.status})`;
+    });
+    summary += `Previous interactions:\n${leadLines.join('\n')}`;
+  }
+
+  return Response.json({
+    result: `Returning caller. ${summary}\n\nAcknowledge their history naturally. If they have an upcoming appointment, ask if this call is about that appointment or something new. If they have both an appointment AND an open lead, mention the appointment first, then ask if this is about that or a new issue.`,
   });
 }
