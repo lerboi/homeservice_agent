@@ -1,1 +1,10 @@
-I plan to completely change this page and flow. Currently, users can select the plan here. I plan to change it such that the onboarding starts from the pricing page after the user clicks on one of the plans in the pricing page during onboarding, the final step should just be to enter their CC details to start the free trial for the one they selected in pricing page.
+Backend
+--------------
+Can you just look through the entire calling process from start to finish, the supabase DB, the code, the skill files to get the full context, every process the ai agent does, the tools, and the dashboard and let me know if everything works together well and wether everything is production ready? Suggest me potential issues, errors, improvements, or improvements that can be made. You have to heavily understand the context of the codebase and the website in general first. Let me know your findings, dont edit any code, only read.
+
+
+Frontend
+--------------
+Can you look at the frontend for both the dashboard and the home page with all the pages, and let me know what optimisations can be made to improve page loading speed, and any other core web vitals for the website? This process shold only be focused on any changes that can improve the user experience of the user using the wbsite, through improving page loading speeds, optimising     
+core web vitals, etc, while NOT affecting ANY of the functionality. If required, you can look for relevant skills for frontend best practices or nextjs/vercel best practies or web design best practices, anything that can improve the page load speed and overall give the website a much more responsive feeling. It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design     
+changes should be made 
