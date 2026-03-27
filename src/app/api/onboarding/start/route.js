@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { createSupabaseServer } from '@/lib/supabase-server';
+import { TRADE_TEMPLATES } from '@/lib/trade-templates';
 
 export async function POST(request) {
   // Authenticate user via server-side session
@@ -68,10 +69,15 @@ export async function POST(request) {
         .delete()
         .eq('tenant_id', tenant.id);
 
+      // Get intake questions for this trade type from TRADE_TEMPLATES
+      const tradeTemplate = TRADE_TEMPLATES[trade_type];
+      const tradeIntakeQuestions = tradeTemplate?.intakeQuestions || [];
+
       const serviceRows = services.map((svc) => ({
         tenant_id: tenant.id,
         name: svc.name,
         urgency_tag: svc.urgency_tag || 'routine',
+        intake_questions: tradeIntakeQuestions,
       }));
 
       const { error: servicesError } = await supabase

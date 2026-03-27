@@ -1,6 +1,10 @@
 export const TRADE_TEMPLATES = {
   plumber: {
     label: 'Plumber',
+    intakeQuestions: [
+      'Is the water still running or have you been able to shut it off?',
+      'How long has this been going on?',
+    ],
     services: [
       { name: 'Gas Leak', urgency_tag: 'emergency' },
       { name: 'Burst Pipe', urgency_tag: 'emergency' },
@@ -16,6 +20,10 @@ export const TRADE_TEMPLATES = {
   },
   hvac: {
     label: 'HVAC',
+    intakeQuestions: [
+      'Is this a heating or cooling issue?',
+      'Is your system making any unusual noises or smells?',
+    ],
     services: [
       { name: 'No Heat in Winter', urgency_tag: 'emergency' },
       { name: 'Carbon Monoxide Alarm', urgency_tag: 'emergency' },
@@ -31,6 +39,10 @@ export const TRADE_TEMPLATES = {
   },
   electrician: {
     label: 'Electrician',
+    intakeQuestions: [
+      'Are there any burning smells or visible sparks?',
+      'Is this affecting one area or your whole property?',
+    ],
     services: [
       { name: 'Electrical Fire/Sparks', urgency_tag: 'emergency' },
       { name: 'Exposed Wiring', urgency_tag: 'emergency' },
@@ -46,6 +58,10 @@ export const TRADE_TEMPLATES = {
   },
   general_handyman: {
     label: 'General Handyman',
+    intakeQuestions: [
+      'Can you describe what needs to be fixed or installed?',
+      'Is this something that needs to be done urgently?',
+    ],
     services: [
       { name: 'Burst Pipe', urgency_tag: 'emergency' },
       { name: 'Door/Lock Repair', urgency_tag: 'routine' },
