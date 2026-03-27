@@ -48,13 +48,15 @@ Exceptions: Ring gauge component uses 120px diameter (not on the 8-point scale) 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 12px | 500 (medium) | 1.4 |
+| Label | 12px | 400 (regular) | 1.4 |
 | Heading | 20px | 600 (semibold) | 1.2 |
 | Display | 28px | 600 (semibold) | 1.2 |
 
+Weights used: 2 (400 regular, 600 semibold).
+
 Notes:
 - Body at 14px matches existing dashboard text-sm pattern (`text-sm text-[#475569]`).
-- Label at 12px for meter captions, invoice table headers, and banner countdown text.
+- Label at 12px / 400 for meter captions, invoice table headers, and banner countdown text. Size alone (12px vs 14px) provides sufficient visual differentiation from Body without requiring a third weight.
 - Heading at 20px for section headings within the billing page (matches `text-xl font-semibold` in More page).
 - Display at 28px for the usage meter center number and upgrade page hero headline.
 
@@ -175,6 +177,8 @@ Implementation: Pure SVG (no external library). Matches existing SVG animation p
 
 Page structure follows existing More subpage pattern (card.base containers, stone-200/60 borders).
 
+**Focal point:** The UsageRingGauge (120px animated SVG donut, centered within Section 2) is the primary visual anchor of the billing page. Its size, animation on mount, and brand-orange fill arc draw the eye first, establishing at a glance how much of the plan has been consumed.
+
 ### Section 1: Plan Card
 - Full-width card using `card.base` token
 - Left side: Plan name in 20px semibold `#0F172A` + monthly price in 14px `#475569`
@@ -211,7 +215,7 @@ Page structure follows existing More subpage pattern (card.base containers, ston
 - Invoice table: 3 row skeletons with 3 columns each
 
 ### Error State
-- If subscription data fails to load: full-page centered error card with AlertCircle icon, "Unable to load billing information" heading, "Please refresh the page or contact support if the problem persists." body, and a "Refresh" button that calls `router.refresh()`.
+- If subscription data fails to load: full-page centered error card with AlertCircle icon, "Unable to load billing information" heading, "Please refresh the page or contact support if the problem persists." body, and a "Refresh Page" button that calls `router.refresh()`.
 
 ---
 
@@ -319,7 +323,7 @@ Add to MORE_ITEMS array in `src/app/dashboard/more/page.js`:
 | Upgrade page heading | "Pick a plan to reactivate your AI receptionist" |
 | Upgrade page subheading | "Your subscription has ended. Choose a plan below to resume 24/7 call answering for your business." |
 | Empty state (invoices) | Heading: "No invoices yet" / Body: "Your first invoice will appear after your trial ends." |
-| Error state (billing page) | Heading: "Unable to load billing information" / Body: "Please refresh the page or contact support if the problem persists." |
+| Error state (billing page) | Heading: "Unable to load billing information" / Body: "Please refresh the page or contact support if the problem persists." / Button: "Refresh Page" |
 | Error state (checkout) | "Something went wrong. Please try again, or [contact support](/contact?type=support)." |
 | Overage meter text | "{N} overage calls at ${rate}/call" |
 | Blocked caller message | "This service is temporarily unavailable. Please try again later." |
@@ -341,7 +345,7 @@ This phase has NO user-initiated destructive actions. Cancellation is handled en
 | Loaded (active) | Plan card shows "Active" badge, full usage/invoice data |
 | Loaded (past_due) | Plan card shows "Past Due" badge in amber, BillingWarningBanner visible at layout level |
 | Loaded (cancel_at_period_end) | Amber inline warning in plan card section |
-| Error | Full-page error card with refresh button |
+| Error | Full-page error card with "Refresh Page" button |
 | Portal redirect | "Manage Subscription" button shows loading spinner during redirect |
 
 ### Upgrade Page
