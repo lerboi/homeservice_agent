@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-27 (Granular notification preferences: per-outcome SMS/email toggles via notification_preferences JSONB on tenants, replaces owner_notify_mode; new /dashboard/more/notifications page; emergency override always notifies both channels)
+**Last updated**: 2026-03-27 (Phase 30: Voice Agent Prompt Optimization — smart slot preference detection, repeat caller awareness via check_caller_history tool, failed transfer callback booking, prompt cleanup, trade-specific intake questions, post-booking recap flow)
 
 ---
 
@@ -27,8 +27,9 @@ Caller dials Retell number
        ↓                               (tenant lookup, slot calc, returns dynamic_variables)
   Retell connects WebSocket → Railway wss://url/llm-websocket/{call_id}
        ↓                       (streams Groq responses back to Retell for TTS)
-       ↓  During call: AI uses 4 tools
+       ↓  During call: AI uses 5 tools
        ↓    capture_lead → webhook handler → createOrMergeLead() (mid-call lead)
+       ↓    check_caller_history → webhook handler → read-only leads + appointments lookup
        ↓    end_call     → WebSocket sends end_call:true to Retell
        ↓    transfer_call → webhook handler → retell.call.transfer() with whisper_message
        ↓    book_appointment → webhook handler → atomicBookSlot()
@@ -71,6 +72,7 @@ Caller dials Retell number
 | `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC (Phase 23) |
 | `supabase/migrations/014_owner_notify_mode.sql` | SUPERSEDED by 015 — added owner_notify_mode (now dropped) |
 | `supabase/migrations/015_notification_preferences.sql` | notification_preferences JSONB on tenants + drops owner_notify_mode |
+| `supabase/migrations/018_intake_questions.sql` | intake_questions jsonb column on services (Phase 30) |
 | `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB for dashboard |
 
 ---
@@ -131,6 +133,10 @@ SDK: openai (Groq-compatible base URL)
 - `notes` (string, optional)
 - `required: []` — all parameters optional
 
+**`check_caller_history`** — Always available (NOT gated by onboarding_complete). No parameters — uses caller_number from the call record. Returns natural-language summary of caller's prior leads and upcoming appointments. AI invokes this after greeting, before first question. Read-only — no DB writes.
+- Returns: "First-time caller. No prior history found." or "Returning caller. [appointments/leads summary]"
+- Purpose: Enable repeat caller recognition (D-02) and prevent duplicate bookings
+
 **`end_call`** — Always available (NOT gated by onboarding_complete). No parameters. Groq generates a farewell message, then `end_call: true` is sent on the final `content_complete` response.
 
 **`check_availability`** — Only when `onboarding_complete === true`. Real-time slot query. Parameters:
@@ -146,7 +152,7 @@ SDK: openai (Groq-compatible base URL)
 - `caller_name` (string, required)
 - `urgency` (enum: `emergency`|`routine`|`high_ticket`, required)
 
-**Tool ordering**: `transfer_call`, `capture_lead`, `end_call`, then conditionally `check_availability` and `book_appointment`.
+**Tool ordering**: `transfer_call`, `capture_lead`, `check_caller_history`, `end_call`, then conditionally `check_availability` and `book_appointment`.
 
 ### end_call Handler
 
@@ -158,7 +164,7 @@ When `tool_call_result` arrives for `end_call`, it flows through Groq like any o
 
 **File**: `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js`
 
-### `buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset })`
+### `buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset, intake_questions })`
 
 The prompt is constructed from modular section builder functions assembled per call. Each section is a separate builder function — composable and developer-controlled (not tenant-configurable from dashboard).
 
@@ -186,6 +192,27 @@ Always states: "This call may be recorded for quality purposes."
 - Prompt instructs Groq to say a brief warm farewell when `end_call` is invoked
 - **No-interruption rule**: "Complete your farewell without stopping, even if the caller speaks over you"
 
+### Repeat Caller Awareness (Phase 30, D-02)
+- AI invokes `check_caller_history` after greeting, before first question
+- First-time callers: proceed normally, do not mention
+- Returning callers with appointment: "Welcome back! I see you have an appointment [date/time]..."
+- Returning callers with leads only: "Welcome back, I have your information on file..."
+- Both appointment + lead: mention appointment first, ask if new issue
+- Uses gathered info to skip re-asking name/address
+
+### Slot Preference Detection (Phase 30, D-01) — prompt section: SLOT PREFERENCE DETECTION
+- AI detects time cues from natural conversation: morning/AM, afternoon, evening/after work, weekend, specific days
+- Prioritizes matching slots from check_availability results
+- No proactive "When do you prefer?" question — detect from language only
+- If no matching slots: acknowledge preference and offer alternatives
+
+### Trade-Specific Intake Questions (Phase 30, D-05)
+- Injected via `intake_questions` dynamic variable (newline-separated string)
+- Source: `TRADE_TEMPLATES.intakeQuestions` → `services.intake_questions` jsonb → `handleInbound` dynamic variable
+- Asked naturally during conversation, not as checklist
+- Skipped if caller already answered
+- Examples: Plumber "Is the water still running?", HVAC "Heating or cooling?", Electrician "Any burning smells?"
+
 ### Language Instructions
 - Detect caller language from first utterance
 - Respond exclusively in caller's language
@@ -212,6 +239,14 @@ Urgency affects slot selection only — tone stays unified (no emergency/routine
 - Emergency cues ("pipe burst", "gas leak", "flooding"): offer same-day/nearest slots first
 - Routine cues ("next month", "no rush", "whenever"): offer next available in order
 
+### Post-Booking Recap (Phase 30, D-06)
+- After booking: recap date, time, AND address: "{business_name} will see you then. Is there anything else?"
+- If yes: answer, then wrap up. If no: warm farewell + end_call.
+
+### Post-Decline Flow (Phase 30, D-06)
+- After second decline + capture_lead: "I've saved your information. Is there anything else you'd like to ask before I let you go?"
+- If yes: answer, then end_call. If no: farewell + end_call.
+
 ### DECLINE HANDLING (only when onboarding_complete)
 
 Two-strike decline pattern:
@@ -233,6 +268,12 @@ After 3 failed clarification attempts (2 standard + 1 "Could you describe what y
 - Invoke `transfer_call` with whatever context was captured.
 
 No other transfer triggers (no language barrier transfer, no emotional distress transfer).
+
+### Transfer Recovery (Phase 30, D-03) — prompt section: TRANSFER RECOVERY
+- When transfer_call returns "transfer_failed": offer callback booking
+- Flow: "They're not available" → offer callback → check_availability → book_appointment (with callback note)
+- If caller declines callback: capture_lead with callback-declined note
+- When transfer returns "transfer_unavailable": capture_lead with callback request
 
 ### Call Duration
 - After 9 minutes: begin wrap-up
@@ -295,7 +336,7 @@ Synchronous — must respond fast (within Retell timeout).
 3. Fetch in parallel: appointments, calendar_events, service_zones, zone_travel_buffers
 4. Calculate available slots (today + next 2 days, up to 6 slots)
 5. Format slots as numbered list with timezone conversion
-6. Return `dynamic_variables`: `business_name`, `default_locale`, `onboarding_complete`, `caller_number`, `tenant_id`, `owner_phone`, `tone_preset`, `available_slots`, `booking_enabled`
+6. Return `dynamic_variables`: `business_name`, `default_locale`, `onboarding_complete`, `caller_number`, `tenant_id`, `owner_phone`, `tone_preset`, `available_slots`, `booking_enabled`, `trade_type`, `intake_questions` (newline-separated string from active services)
 
 These variables are injected into the WebSocket call_details message.
 
@@ -319,6 +360,14 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 5. Look up `business_name` for personalized confirmation message
 6. Return: `"I've saved your information. {bizName} will reach out soon."`
 7. On error: return `"I've noted your details and someone will follow up."`
+
+**`check_caller_history`**:
+1. Resolve tenant and from_number from call record: `calls.select('tenant_id, from_number').eq('retell_call_id', call_id)`
+2. Look up tenant timezone
+3. Parallel query: `leads` (by tenant_id + from_number, most recent 3) + `appointments` (by tenant_id + caller_phone, upcoming non-cancelled 3)
+4. Build natural-language summary with formatted dates via `formatSlotForSpeech()`
+5. Return: "First-time caller" or "Returning caller" with appointment/lead details
+6. Read-only — no database writes (D-02)
 
 **`check_availability`**:
 1. Resolve tenant from call record (same pattern as other handlers)
@@ -528,7 +577,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 | `tenants` | Business config: phone, name, locale, hours, tone, timezone |
 | `calls` | Full call record: metadata, transcript, recording, triage, language flags, booking_outcome, exception_reason, notification_priority |
 | `appointments` | Bookings. `UNIQUE(tenant_id, start_time)`. Links to call + Google Calendar |
-| `services` | Service catalog with `urgency_tag` for Layer 3 triage |
+| `services` | Service catalog with `urgency_tag` for Layer 3 triage and `intake_questions` jsonb for trade-specific AI questioning |
 | `service_zones` | Geographic zones for travel buffers |
 | `zone_travel_buffers` | Travel time between zone pairs |
 | `calendar_credentials` | Google OAuth + watch channel state |
@@ -593,6 +642,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
 - **processCallAnalyzed UUID retrieval**: The calls upsert chains `.select('id').single()` to get the Supabase UUID (`callUuid`). This is critical because the Retell `call_id` (e.g., "call_337593af...") is a text string, not a UUID — passing it to `createOrMergeLead` would fail with `22P02` on `leads.primary_call_id` and `lead_calls.call_id` (both UUID FK columns). The webhook handlers (`capture_lead`, `book_appointment`) already do this correctly via a separate query; `processCallAnalyzed` now matches that pattern.
 - **Test call auto-cancel**: `test-call/route.js` passes `test_call: 'true'` in `retell_llm_dynamic_variables`; `processCallEnded` checks this flag and cancels any appointment + resets lead status — owner experiences booking-first flow during onboarding without cluttering the real calendar (D-07, D-08)
+- **Prompt cleanup (Phase 30 D-04)**: Removed standalone RECORDING_NOTICE (redundant with OPENING LINE) and LANGUAGE_BARRIER_ESCALATION (redundant with LANGUAGE section). Replaced rigid "1-2 sentences" rule with nuanced conciseness: brief but never truncates booking confirmations, address recaps, or important details. Sections array uses `.filter(Boolean)` for conditional sections.
 - **Granular notification preferences**: `tenants.notification_preferences` JSONB column stores per-booking-outcome SMS/email toggles: `{ booked: { sms, email }, declined: { sms, email }, not_attempted: { sms, email }, attempted: { sms, email } }`. Default: all true. In `processCallAnalyzed`, reads `calls.booking_outcome` and dispatches `sendOwnerSMS`/`sendOwnerEmail` independently based on the matching preference. Emergency calls (urgency=emergency) always notify both channels regardless of preferences (safety override). Dashboard page at `/dashboard/more/notifications` with per-outcome Switch toggles. API: `GET/PATCH /api/notification-settings`. Migration 015 adds JSONB column and drops old `owner_notify_mode` from migration 014. Only gates owner notifications — caller SMS (booking confirmation + recovery) and lead creation are unaffected.
 
 ---
