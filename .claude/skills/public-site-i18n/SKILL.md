@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-03-26 (Phase 29 — hero section interactive demo: business name input, ElevenLabs TTS demo player, RotatingText dynamic width; Phase 21 — pricing page redesign: volume-based tiers, dark hero, testimonials, dark FAQ, contact pre-selection; Phase 13 — premium dark SaaS redesign)
+**Last updated**: 2026-03-27 (Pricing page conversion optimization: 3-column additive feature cards, separate Enterprise section, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs, landing CTAs → /pricing; Phase 29 — hero section interactive demo; Phase 21 — volume-based tiers; Phase 13 — premium dark SaaS redesign)
 
 ---
 
@@ -25,7 +25,7 @@ This document is the single source of truth for the public marketing site, landi
 | **Hero Demo Player** | `src/app/components/landing/HeroDemoPlayer.jsx` | Client component: waveform player with Web Audio API playback + post-play CTA |
 | **Demo Voice API** | `src/app/api/demo-voice/route.js` | POST: ElevenLabs TTS for dynamic business name segment; IP rate-limiting (10s) |
 | **Static Audio** | `public/audio/demo-{intro,mid,outro}.mp3` | Pre-rendered ElevenLabs demo conversation segments (caller + AI) |
-| **Pricing** | `src/app/(public)/pricing/` | Pricing page + tier data + PricingTiers + ComparisonTable + FAQSection |
+| **Pricing** | `src/app/(public)/pricing/` | Pricing page + tier data + PricingTiers + ComparisonTable + ROICalculator + FAQSection |
 | **About** | `src/app/(public)/about/page.js` | Mission, problem, values, "why Voco" sections |
 | **Contact** | `src/app/(public)/contact/` | Contact page + ContactForm.jsx |
 | **Contact API** | `src/app/api/contact/route.js` | POST handler — Resend email dispatch |
@@ -70,11 +70,12 @@ Hero Demo Flow (Phase 29):
 |------|------|
 | `src/app/(public)/layout.js` | Route group layout — injects LandingNav + LandingFooter for all public pages |
 | `src/app/(public)/page.js` | Landing homepage — HeroSection static, others dynamic with loading skeletons |
-| `src/app/(public)/pricing/page.js` | Pricing page — hero, tiers, comparison table, FAQ, CTA banner |
-| `src/app/(public)/pricing/pricingData.js` | PRICING_TIERS (4 tiers), COMPARISON_FEATURES, getAnnualPrice() |
-| `src/app/(public)/pricing/PricingTiers.jsx` | Tier cards with monthly/annual toggle, "Most Popular" badge on Growth |
-| `src/app/(public)/pricing/ComparisonTable.jsx` | Feature comparison grid across all 4 tiers |
-| `src/app/(public)/pricing/FAQSection.jsx` | Radix accordion FAQ — smooth height via CSS variable |
+| `src/app/(public)/pricing/page.js` | Pricing page — hero, tiers, guarantee badge, ROI calculator, comparison table, testimonials (3), FAQ, CTA banner |
+| `src/app/(public)/pricing/pricingData.js` | PRICING_TIERS (3 tiers) + ENTERPRISE_TIER (separate), COMPARISON_FEATURES (14 rows incl. overage), getAnnualPrice() |
+| `src/app/(public)/pricing/PricingTiers.jsx` | 3-col tier cards with additive feature pattern, monthly/annual toggle, social proof, Enterprise horizontal card |
+| `src/app/(public)/pricing/ROICalculator.jsx` | Interactive "Cost of Missed Calls" widget — slider + job value selector, light-mode on warm stone bg |
+| `src/app/(public)/pricing/ComparisonTable.jsx` | Feature comparison grid across all 4 tiers (Server Component, always visible) |
+| `src/app/(public)/pricing/FAQSection.jsx` | Radix accordion FAQ — 9 questions incl. mid-cycle upgrade proration |
 | `src/app/(public)/about/page.js` | About page — hero, problem stats, mission, how different, values, CTA |
 | `src/app/(public)/contact/page.js` | Contact page shell — renders ContactForm |
 | `src/app/(public)/contact/ContactForm.jsx` | Contact form with honeypot, client-side validation, Sonner toasts |
@@ -267,7 +268,7 @@ Used inside `AnimatedStagger`. Each item: `{ opacity: 0, y: 24 }` → `{ opacity
 
 **No isRoot pattern**: Navigation uses direct routes (`/`, `/pricing`, `/about`, `/contact`). The `isRoot` pattern mentioned in STATE.md was an earlier approach — current LandingNav uses direct path matching. Anchor links (e.g., `/#features`) are used in the footer for on-page scrolling.
 
-**CTA**: Both desktop (`hidden md:inline-flex`) and mobile drawer CTAs link to `/onboarding`.
+**CTA**: Both desktop (`hidden md:inline-flex`) and mobile drawer CTAs link to `/pricing`.
 
 ### LandingFooter (`src/app/components/landing/LandingFooter.jsx`)
 
@@ -301,7 +302,7 @@ export function AuthAwareCTA({ variant = 'hero' }) {
   if (isLoggedIn) {
     return <Button asChild><Link href="/dashboard">Go to Dashboard</Link></Button>;
   }
-  return <Button asChild><Link href="/onboarding">Start My 5-Minute Setup</Link></Button>;
+  return <Button asChild><Link href="/pricing">Start My 5-Minute Setup</Link></Button>;
 }
 ```
 
@@ -318,80 +319,101 @@ Cross-domain: See auth-database-multitenancy skill for supabase-browser client d
 
 **File**: `src/app/(public)/pricing/page.js`
 
-**Last updated**: 2026-03-26 (Phase 21 — volume-based tiers, dark redesign, testimonials, 8-question FAQ)
+**Last updated**: 2026-03-27 (Conversion optimization: 3-col additive cards, separate Enterprise, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs)
 
-Six sections in order: dark hero (`#050505`) → billing toggle + tier cards (dark) → comparison table (light `#F5F5F4`) → testimonials (dark `#1A1816`) → FAQ (dark `#050505`) → CTA banner (dark warm `#1C1412`).
+Eight sections in order: dark hero + cards + guarantee badge (`#050505`) → ROI calculator (warm stone `#EDEAE7` with gradient blend to next section) → comparison table (light `#F5F5F4`) → testimonials (dark `#1A1816`) → FAQ (dark `#050505`) → CTA banner (dark warm `#1C1412`).
 
 ### Page Section Layout
 
 | # | Section | Background | Notes |
 |---|---------|-----------|-------|
-| 1 | Hero | `bg-[#050505]` | Dot-grid texture, blur orb, eyebrow pill with pulse dot |
-| 2 | Billing Toggle + Tier Cards | `bg-[#050505]` (continues) | Dark cards with copper glow hover |
-| 3 | Comparison Table | `bg-[#F5F5F4]` | Light "breath" break — intentional contrast |
-| 4 | Testimonials | `bg-[#1A1816]` | Two quotes inline in page.js (not a separate component) |
-| 5 | FAQ | `bg-[#050505]` | Heading: "Questions from the field" in `text-white` |
-| 6 | CTA Banner | `bg-[#1C1412]` | "Every missed call is a job your competitor booked." |
+| 1 | Hero | `bg-[#050505]` | Compact: smaller headline, tighter spacing to push cards above fold |
+| 2 | Billing Toggle + 3 Tier Cards | `bg-[#050505]` (continues) | 3-col grid (Starter/Growth/Scale), social proof line, Enterprise separate below |
+| 3 | Guarantee Badge | `bg-[#050505]` (continues) | ShieldCheck icon + "Risk-Free Guarantee" inline in hero section |
+| 4 | ROI Calculator | `bg-[#EDEAE7]` | Warm stone bg, bottom gradient blending into comparison table |
+| 5 | Comparison Table | `bg-[#F5F5F4]` | Always visible (not collapsible), 14 feature rows incl. overage rate |
+| 6 | Testimonials | `bg-[#1A1816]` | Three quotes in `md:grid-cols-3` |
+| 7 | FAQ | `bg-[#050505]` | 9 questions — includes mid-cycle upgrade proration |
+| 8 | CTA Banner | `bg-[#1C1412]` | CTA links to `/pricing` |
 
 ### `pricingData.js` — Tier Data Structure
 
-**Volume-based differentiation**: All paid tiers share the same 9 core features. Differentiation is call volume + support level only. No feature gating between Starter/Growth/Scale.
+**Additive feature pattern**: Starter lists 9 core features. Growth/Scale use `inheritsFrom` to show "Everything in X, plus:" with only their differentiators. Enterprise is a separate export.
 
 ```js
 export const PRICING_TIERS = [
-  { id: 'starter',    name: 'Starter',    monthlyPrice: 99,  callLimit: 40,   cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: false, ... },
-  { id: 'growth',     name: 'Growth',     monthlyPrice: 249, callLimit: 120,  cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: true, badge: 'Most Popular', ... },
-  { id: 'scale',      name: 'Scale',      monthlyPrice: 599, callLimit: 400,  cta: 'Start Free Trial', ctaHref: '/onboarding', highlighted: false, ... },
-  { id: 'enterprise', name: 'Enterprise', monthlyPrice: null, callLimit: null, cta: 'Contact Us',       ctaHref: '/contact?type=sales', highlighted: false, ... },
+  { id: 'starter', name: 'Starter', monthlyPrice: 99, callLimit: 40, overageRate: 2.48, inheritsFrom: null, features: [9 core features], ... },
+  { id: 'growth',  name: 'Growth',  monthlyPrice: 249, callLimit: 120, overageRate: 2.08, inheritsFrom: 'Starter', badge: 'Most Popular', highlighted: true, features: ['Up to 120 calls/month', 'Priority email support'], ... },
+  { id: 'scale',   name: 'Scale',   monthlyPrice: 599, callLimit: 400, overageRate: 1.50, inheritsFrom: 'Growth', features: ['Up to 400 calls/month', 'Priority support + onboarding call'], ... },
 ];
 
-export function getAnnualPrice(monthlyPrice) {
-  if (monthlyPrice === null) return null;
-  return Math.round(monthlyPrice * 0.8); // 20% annual discount
-}
+export const ENTERPRISE_TIER = {
+  id: 'enterprise', name: 'Enterprise', monthlyPrice: null, callLimit: null,
+  cta: 'Contact Us', ctaHref: '/contact?type=sales',
+  features: ['Unlimited calls', 'Dedicated account manager', 'Custom integrations', 'Custom SLAs & onboarding'],
+};
 
-export const COMPARISON_FEATURES = [ ... ]; // 13 rows — 3 volume/support rows (strings) + 9 all-true rows + 1 enterprise-only row
+export function getAnnualPrice(monthlyPrice) { return Math.round(monthlyPrice * 0.8); } // 20% discount
+
+export const COMPARISON_FEATURES = [ ... ]; // 14 rows — calls, overage rate, support level, 9 boolean features, custom integrations
 ```
 
-**CTA labels**: "Start Free Trial" → `/onboarding` for Starter/Growth/Scale. "Contact Us" → `/contact?type=sales` for Enterprise.
+**Starter features** (reordered by marketing impact from PDF): AI call answering 24/7, Smart urgency triage, Books appointments on the spot, Instant emergency SMS alerts, Detailed dashboard & analytics, Lead capture & CRM, Google & Outlook Calendar sync, Multi-language support (EN/ES), Recovery SMS fallback.
 
-**Prohibited copy**: No "money-back guarantee", no "no credit card required", no "Get Started" on paid tiers.
+**Overage rates**: Starter $2.48/call, Growth $2.08/call, Scale $1.50/call. Displayed on cards and in comparison table.
 
-**Payment**: Stripe integration is out of scope for current milestone. Pricing page is display-only — CTAs link to `/onboarding` (not a checkout flow).
+**CTA routing**: Tier cards → `/onboarding?plan={id}&interval={billing}`. Enterprise → `/contact?type=sales`. Bottom CTA banner → `/pricing`.
 
 ### `PricingTiers.jsx`
 
-`'use client'` (billing toggle state). Monthly/annual billing toggle — defaults to annual (shows savings). Maps over `PRICING_TIERS` to render dark cards. `highlighted: true` (Growth tier) gets "Most Popular" badge and `ring-2 ring-[#F97316]/50` highlight ring.
+`'use client'` (billing toggle state). Monthly/annual toggle defaults to annual. **3-column grid** (`lg:grid-cols-3`) with `items-stretch` for equal-height cards.
 
-**Dark card treatment**: `bg-[#1A1816] border border-white/[0.06]`. Hover: `border-[rgba(249,115,22,0.3)] shadow-[0_0_20px_rgba(249,115,22,0.15)] -translate-y-0.5`. Text hierarchy: `text-white` (name/price), `text-white/50` (description), `text-white/70` (features), `text-white/40` (/mo suffix), `text-white/30` (annual strikethrough).
+**Social proof line**: "Trusted by 500+ home service contractors across the US" between toggle and cards.
 
-Trial banner pill rendered above toggle: "14-Day Free Trial • Cancel Anytime" in `bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/80 rounded-full`.
+**Growth card elevation**: `lg:scale-[1.04] lg:z-10`, gradient bg `from-[#F97316]/[0.06] to-[#1A1816]`, `ring-2 ring-[#F97316]`. Renders first on mobile via `order-first`.
+
+**Call limit badge**: Prominent `bg-[#F97316]/[0.08] text-[#F97316]/70` pill showing "{N} calls/mo" + overage rate "then $X.XX/call".
+
+**Additive feature rendering**: Starter renders full 9-item feature list. Growth/Scale render "Everything in {inheritsFrom}, plus:" header + 2 additive features only.
+
+**CTA at bottom**: Button pinned to card bottom via `flex-1` on feature list. "14-day free trial · No credit card required" below each CTA.
+
+**Enterprise section**: Full-width horizontal card below the 3-col grid (`mt-10`). Building2 icon, 2x2 feature grid, "Custom" price, ghost "Contact Us" button.
+
+### `ROICalculator.jsx`
+
+`'use client'`. Interactive "What Are Missed Calls Costing You?" widget on warm stone `#EDEAE7` background with light-mode styling.
+
+**Inputs**: Missed calls/week slider (1-20, default 5) + average job value selector (6 options: $250-$2,000+, default $750). **Calculation**: `missedCalls × 4 weeks × 30% conversion × avgJobValue`.
+
+**Results**: Monthly loss (red), yearly loss (red), "Voco starts at $79/mo" (orange). Desktop: horizontal flex with dividers. Mobile: stacked vertically.
+
+**Light-mode colors**: White card with `border-stone-200/60 shadow-sm`. Text: `#0F172A`, `#334155`, `#64748B`, `#94A3B8`. Slider/buttons: stone-100/200 inactive, orange active.
 
 ### `ComparisonTable.jsx`
 
-Volume-based table comparing 13 `COMPARISON_FEATURES` across all 4 tiers. Server Component (no `'use client'`).
+Server Component. Always-visible table comparing 14 `COMPARISON_FEATURES` across all 4 tiers (combines `PRICING_TIERS` + `ENTERPRISE_TIER` as `ALL_TIERS`). Heading: "Compare All Features".
 
-**Growth column highlight**: Growth `<th>` header uses `text-[#F97316] font-semibold`. Growth `<td>` cells use `bg-[#FFF7ED]` (light orange tint) for vertical column highlight effect.
-
-Cell rendering: `true` → `Check` icon in `text-[#F97316]`; `false` → `—` dash in `text-[#94A3B8]`; string → `text-[#0F172A] font-medium`. Alternating row backgrounds: even rows `bg-stone-50/60`, odd rows default. Table has `overflow-x-auto` wrapper for mobile horizontal scroll.
+**Growth column highlight**: Growth header `text-[#F97316]`, Growth cells `bg-[#FFF7ED]`. Cell rendering unchanged from prior version.
 
 ### Testimonials (inline in page.js)
 
-Dark section `bg-[#1A1816] py-16`. Two quotes side-by-side on `md+` using `AnimatedStagger`/`AnimatedItem`. Each card: `bg-white/[0.04] border border-white/[0.06] rounded-xl p-8`. Quote text: `text-xl text-white/80 italic`. Attribution: `text-sm text-white/50`.
+Dark section `bg-[#1A1816] py-16`. **Three quotes** in `md:grid-cols-3` grid (`max-w-5xl`). Each card: `bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col`. Quote text: `text-lg` (smaller than before to fit 3 columns).
 
 Quotes (verbatim):
 - "Before Voco, I was losing 3-4 calls every weekend. Now my phone's booked Monday before I've had coffee." — Mike R., HVAC contractor, Phoenix AZ
 - "Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup." — Sandra T., Plumbing company owner, Austin TX
+- "One emergency booking at 2 AM paid for three months of Voco. I don't know why I waited so long." — Carlos M., Electrician, Miami FL
+
+### Guarantee Badge (inline in page.js)
+
+Inside the hero section after PricingTiers. ShieldCheck icon in orange circle + "Risk-Free Guarantee" heading + "Try Voco free for 14 days with real calls. If it doesn't book you a job, you pay nothing." Responsive: `flex-col sm:flex-row`.
 
 ### `FAQSection.jsx`
 
-`'use client'` (Radix accordion interaction). 8 questions in 4 topic areas: setup (Q1-Q2), AI quality (Q3-Q4), trial/billing (Q5-Q7), data/security (Q8).
+`'use client'` (Radix accordion). **9 questions** in 4 topic areas: setup (Q1-Q2), AI quality (Q3-Q4), trial/billing (Q5-Q8 — includes "What happens if I upgrade mid-cycle?" with proration explanation), data/security (Q9).
 
-**Dark accordion styling**: Item border `border-b border-white/[0.08]`. Trigger text `text-white font-semibold text-lg`. Answer text `text-white/60 text-[15px] leading-relaxed`. ChevronDown `text-[#F97316]` with `group-data-[state=open]:rotate-180` rotation.
-
-Smooth height transition via Radix CSS variable (`--radix-accordion-content-height`). Animation classes: `data-[state=open]:animate-accordion-down`, `data-[state=closed]:animate-accordion-up`.
-
-**No prohibited copy**: FAQ does not contain "money-back guarantee", "no credit card required", or "refund policy" language.
+Dark accordion styling unchanged. Smooth height transition via Radix CSS variable.
 
 ---
 
@@ -524,7 +546,8 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 |-------|-----------|-------|
 | Hero/Footer background | `#050505` / `#090807` | Near-black, deepest dark surfaces |
 | Accent orange | `#F97316` | CTAs, active links, accent highlights |
-| Section light | `#F5F5F4` | Alternating light sections (HowItWorks, Social Proof) |
+| Section light | `#F5F5F4` | Alternating light sections (HowItWorks, Social Proof, Comparison Table) |
+| Warm stone | `#EDEAE7` | ROI Calculator section — distinct from `#F5F5F4`, gradient-blended at bottom |
 | Muted text | `#475569` | Body text on light backgrounds |
 | Success / brand | `#166534` | Not prominent on landing (used in badge variants) |
 | About page navy | `#0F172A` | Shared with dashboard |

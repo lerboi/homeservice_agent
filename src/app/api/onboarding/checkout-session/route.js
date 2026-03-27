@@ -7,14 +7,17 @@ const PRICE_MAP = {
   starter: {
     monthly: process.env.STRIPE_PRICE_STARTER,
     annual: process.env.STRIPE_PRICE_STARTER_ANNUAL,
+    overage: process.env.STRIPE_PRICE_STARTER_OVERAGE,
   },
   growth: {
     monthly: process.env.STRIPE_PRICE_GROWTH,
     annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL,
+    overage: process.env.STRIPE_PRICE_GROWTH_OVERAGE,
   },
   scale: {
     monthly: process.env.STRIPE_PRICE_SCALE,
     annual: process.env.STRIPE_PRICE_SCALE_ANNUAL,
+    overage: process.env.STRIPE_PRICE_SCALE_OVERAGE,
   },
 };
 
@@ -61,11 +64,19 @@ export async function POST(request) {
       );
     }
 
-    // 5. Create Stripe Checkout Session
+    // 5. Build line items — flat-rate plan + metered overage component
+    const lineItems = [{ price: priceId, quantity: 1 }];
+    const overagePriceId = planPrices.overage;
+    if (overagePriceId) {
+      // Metered prices don't take a quantity — Stripe bills based on usage records
+      lineItems.push({ price: overagePriceId });
+    }
+
+    // 6. Create Stripe Checkout Session
     const sessionConfig = {
       mode: 'subscription',
       payment_method_collection: 'always', // D-03: CC required
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: lineItems,
       subscription_data: {
         trial_period_days: 14,
         metadata: { tenant_id: tenant.id }, // Critical: webhook uses this to find tenant

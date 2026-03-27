@@ -46,7 +46,7 @@ export function AuthAwareCTA({ variant = 'hero' }) {
           : 'bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[52px] px-8 text-base font-medium rounded-xl shadow-[0_4px_12px_0_rgba(0,0,0,0.3)] transition-all hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] hover:-translate-y-0.5 group'
       }
     >
-      <Link href="/onboarding">
+      <Link href="/pricing">
         Start My 5-Minute Setup
         <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-0.5" />
       </Link>

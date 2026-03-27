@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase';
+import { stripe } from '@/lib/stripe';
 import { locales } from '@/i18n/routing';
 import { classifyCall } from '@/lib/triage/classifier';
 import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator';
 import { createOrMergeLead } from '@/lib/leads';
-import { sendOwnerNotifications } from '@/lib/notifications';
+import { sendOwnerSMS, sendOwnerEmail } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
@@ -130,6 +131,33 @@ export async function processCallEnded(call) {
           `success=${success} used=${calls_used}/${calls_limit} ` +
           `limit_exceeded=${limit_exceeded}`
         );
+
+        // Report overage to Stripe metered billing when limit exceeded
+        // Only on successful increment (not duplicates) to prevent double-charging
+        if (success && limit_exceeded) {
+          try {
+            const { data: sub } = await supabase
+              .from('subscriptions')
+              .select('overage_stripe_item_id')
+              .eq('tenant_id', tenantId)
+              .eq('is_current', true)
+              .maybeSingle();
+
+            if (sub?.overage_stripe_item_id) {
+              await stripe.subscriptionItems.createUsageRecord(
+                sub.overage_stripe_item_id,
+                { quantity: 1, action: 'increment' }
+              );
+              console.log(
+                `[usage] Overage reported to Stripe: tenant=${tenantId} call=${call_id} ` +
+                `used=${calls_used}/${calls_limit}`
+              );
+            }
+          } catch (overageErr) {
+            // Non-fatal: overage billing failure must not lose call data
+            console.error('[usage] Stripe overage report failed (non-fatal):', overageErr);
+          }
+        }
       }
     } catch (err) {
       // D-06: billing counter glitch must never lose call data
@@ -385,23 +413,73 @@ export async function processCallAnalyzed(call) {
   }
 
   // === OWNER NOTIFICATIONS (Phase 4: NOTIF-01, NOTIF-02) ===
+  // Granular per-outcome notification preferences. Emergency calls always notify both channels.
   // Fire-and-forget: notification failures are logged but never block the handler.
   if (lead && tenantId) {
     try {
       const { data: tenantInfo } = await supabase
         .from('tenants')
-        .select('business_name, owner_phone, owner_email')
+        .select('business_name, owner_phone, owner_email, notification_preferences')
         .eq('id', tenantId)
         .single();
 
       if (tenantInfo) {
-        sendOwnerNotifications({
-          tenantId,
-          lead,
-          businessName: tenantInfo.business_name || 'Your Business',
-          ownerPhone: tenantInfo.owner_phone,
-          ownerEmail: tenantInfo.owner_email,
-        }).catch(err => console.error('Owner notification failed:', err));
+        // Read the booking_outcome for this call to determine which preference row to check
+        const { data: callRow } = await supabase
+          .from('calls')
+          .select('booking_outcome')
+          .eq('retell_call_id', call_id)
+          .single();
+
+        const bookingOutcome = callRow?.booking_outcome || 'not_attempted';
+        const isEmergency = triageResult.urgency === 'emergency';
+
+        // Emergency calls always notify both channels (safety override)
+        const prefs = tenantInfo.notification_preferences || {};
+        const outcomePrefs = isEmergency
+          ? { sms: true, email: true }
+          : prefs[bookingOutcome] || { sms: true, email: true };
+
+        const callbackLink = `tel:${lead?.from_number}`;
+        const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000'}/dashboard/leads`;
+        const businessName = tenantInfo.business_name || 'Your Business';
+
+        const promises = [];
+
+        if (outcomePrefs.sms && tenantInfo.owner_phone) {
+          promises.push(
+            sendOwnerSMS({
+              to: tenantInfo.owner_phone,
+              businessName,
+              callerName: lead?.caller_name,
+              jobType: lead?.job_type,
+              urgency: lead?.urgency_classification || lead?.urgency,
+              address: lead?.address,
+              callbackLink,
+              dashboardLink,
+            })
+          );
+        }
+
+        if (outcomePrefs.email && tenantInfo.owner_email) {
+          promises.push(
+            sendOwnerEmail({
+              to: tenantInfo.owner_email,
+              lead,
+              businessName,
+              dashboardUrl: dashboardLink,
+            })
+          );
+        }
+
+        if (promises.length > 0) {
+          Promise.allSettled(promises).then(results => {
+            const statuses = results.map((r, i) => `${i === 0 ? 'first' : 'second'}=${r.status}`).join(', ');
+            console.log(`[notifications] Owner notify for tenant ${tenantId}: outcome=${bookingOutcome}, emergency=${isEmergency}, ${statuses}`);
+          });
+        } else {
+          console.log(`[notifications] Skipped owner notify: outcome=${bookingOutcome}, sms=${outcomePrefs.sms}, email=${outcomePrefs.email}`);
+        }
       }
     } catch (err) {
       console.error('Tenant lookup for notifications failed:', err);

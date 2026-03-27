@@ -122,7 +122,17 @@
       "Bash(pip show:*)",
       "Bash(where stripe:*)",
       "Bash(for wt:*)",
-      "Bash(do git:*)"
+      "Bash(do git:*)",
+      "WebFetch(domain:www.skool.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.clixlogix.com)",
+      "Bash(find C:/Users/leheh/.Projects/Retell-ws-server -type f \\\\\\(-name *.json -o -name Dockerfile -o -name .env* -o -name *.md -o -name *.yml -o -name *.yaml \\\\\\))",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(npx -y acorn --ecma2020 --module --allow-import-export-everywhere src/app/api/stripe/webhook/route.js)",
+      "Bash(npx -y acorn --ecma2020 --module --allow-import-export-everywhere src/app/api/onboarding/checkout-session/route.js)",
+      "Bash(npx -y acorn --ecma2020 --module --allow-import-export-everywhere src/lib/call-processor.js)",
+      "Bash(find /c/Users/leheh/.Projects/homeservice_agent -type f \\\\\\(-name *.sql -o -name *migrations* -o -name *schema* \\\\\\))"
     ]
   }
 }

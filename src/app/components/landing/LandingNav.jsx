@@ -83,7 +83,7 @@ export function LandingNav() {
               size="sm"
               className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
             >
-              <Link href="/onboarding">Start My 5-Minute Setup</Link>
+              <Link href="/pricing">Start My 5-Minute Setup</Link>
             </Button>
 
             {/* Mobile hamburger */}
@@ -162,7 +162,7 @@ export function LandingNav() {
         {/* CTA */}
         <div className="p-4 border-t border-white/[0.06]">
           <Link
-            href="/onboarding"
+            href="/pricing"
             className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
           >
             Start My 5-Minute Setup

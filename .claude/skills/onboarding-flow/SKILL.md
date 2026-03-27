@@ -355,15 +355,15 @@ Accepts `{ email }`, validates email format, inserts into `phone_inventory_waitl
 
 **File**: `src/app/api/onboarding/checkout-session/route.js`
 
-Creates a Stripe Checkout Session for the selected plan. Request: `{ plan: 'starter' | 'growth' | 'scale' }`. Response: `{ url: string }`.
+Creates a Stripe Checkout Session for the selected plan. Request: `{ plan: 'starter' | 'growth' | 'scale', interval?: 'monthly' | 'annual', embedded?: boolean }`. Response: `{ url: string }` or `{ clientSecret: string }` (embedded).
 
 - Authenticates user via `createSupabaseServer()` + `getUser()`
 - Looks up tenant via service role client (for `tenant_id`, `owner_email`)
-- Maps plan to price ID via env vars: `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE`
+- Maps plan + interval to price ID via `PRICE_MAP` (monthly/annual/overage per plan)
+- **Two line items**: flat-rate plan price + metered overage price. The overage price (usage-based) has no upfront quantity — Stripe bills based on usage records reported by `call-processor.js` when `calls_used > calls_limit`
 - Creates Checkout Session with: `mode: 'subscription'`, `payment_method_collection: 'always'` (CC required), `trial_period_days: 14`
 - **Critical**: `metadata.tenant_id` set on BOTH the session and `subscription_data` — the webhook handler reads `subscription.metadata.tenant_id` to find which tenant the subscription belongs to
-- Success URL: `/onboarding/checkout-success?session_id={CHECKOUT_SESSION_ID}`
-- Cancel URL: `/onboarding/plan`
+- Supports embedded mode (`ui_mode: 'embedded_page'` with `return_url`) and hosted mode (`success_url`/`cancel_url`)
 
 ### `POST /api/onboarding/complete`
 

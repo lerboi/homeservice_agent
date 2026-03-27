@@ -7,7 +7,7 @@ description: "Complete architectural reference for authentication, database sche
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-03-26 (Phase 23-01 — 13 migrations, usage_events table, increment_calls_used RPC)
+**Last updated**: 2026-03-27 (Migration 017 — overage_stripe_item_id on subscriptions for metered overage billing)
 
 ---
 
@@ -83,6 +83,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/011_country_provisioning.sql` | phone_inventory, phone_inventory_waitlist tables + assign_sg_number RPC |
 | `supabase/migrations/012_admin_users.sql` | admin_users table + RLS self-read policy |
 | `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC |
+| `supabase/migrations/017_overage_billing.sql` | overage_stripe_item_id column on subscriptions |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -601,6 +602,14 @@ INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
 - Atomic increment: `UPDATE subscriptions SET calls_used = calls_used + 1 WHERE tenant_id = p_tenant_id AND is_current = true` — Postgres atomicity guarantees no race conditions
 - No active subscription: returns `(false, 0, 0, false)`
 - No SECURITY DEFINER — service_role client bypasses RLS automatically
+
+---
+
+### 017_overage_billing.sql — Overage Metered Billing
+
+**Extends subscriptions**: `overage_stripe_item_id` (text, nullable) — Stripe subscription item ID for the metered overage price component. Used by `call-processor.js` to report per-call usage when `calls_used > calls_limit`.
+
+No new tables. No RLS changes (existing subscriptions policies cover all columns).
 
 ---
 

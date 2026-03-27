@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Web
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-26 (Phase 23-01: processCallEnded now calls increment_calls_used RPC for real calls >= 10 seconds — usage tracking added after isTestCall block)
+**Last updated**: 2026-03-27 (Granular notification preferences: per-outcome SMS/email toggles via notification_preferences JSONB on tenants, replaces owner_notify_mode; new /dashboard/more/notifications page; emergency override always notifies both channels)
 
 ---
 
@@ -69,6 +69,9 @@ Caller dials Retell number
 | `supabase/migrations/008_call_outcomes.sql` | booking_outcome, exception_reason, notification_priority columns |
 | `supabase/migrations/009_recovery_sms_tracking.sql` | Recovery SMS delivery tracking columns (recovery_sms_status, recovery_sms_retry_count, recovery_sms_last_error, recovery_sms_last_attempt_at) |
 | `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC (Phase 23) |
+| `supabase/migrations/014_owner_notify_mode.sql` | SUPERSEDED by 015 — added owner_notify_mode (now dropped) |
+| `supabase/migrations/015_notification_preferences.sql` | notification_preferences JSONB on tenants + drops owner_notify_mode |
+| `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB for dashboard |
 
 ---
 
@@ -83,10 +86,10 @@ Caller dials Retell number
 
 1. **Connection opens** — server extracts `call_id` from URL path `/llm-websocket/{call_id}`
 2. **Config sent** — `{ response_type: "config", config: { auto_reconnect: true, call_details: true } }`
-3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, sends locale-aware greeting (from messages JSON files), starts 5s TTS guard
-4. **Greeting TTS guard** — `response_required`/`reminder_required` messages are suppressed for 5 seconds after greeting is sent. Without this, ambient noise triggers Groq during TTS playback and Retell cuts off the greeting mid-sentence.
+3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, calls Groq via `handleResponseRequired()` with empty transcript to generate the greeting dynamically (no hardcoded TTS), starts 6s greeting guard
+4. **Greeting TTS guard** — `response_required`/`reminder_required` messages are suppressed for 6 seconds after greeting Groq call is triggered. Without this, ambient noise triggers a second Groq call during greeting TTS playback.
 5. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
-6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (except `end_call` — see below). **Chained tool calls supported**: if Groq returns another tool call after processing a tool result (e.g., `end_call` after `capture_lead`), it's accumulated and dispatched — same logic as the initial tool call handler.
+6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (including `end_call` — Groq generates the farewell, then `end_call: true` is sent on `content_complete`). **Chained tool calls supported**: if Groq returns another tool call after processing a tool result (e.g., `end_call` after `capture_lead`), it's accumulated and dispatched — same logic as the initial tool call handler.
 7. **Connection closes** — cleanup
 
 ### Message Types Handled
@@ -94,10 +97,10 @@ Caller dials Retell number
 | `interaction_type` | Action |
 |---|---|
 | `ping_pong` | Echo back with same timestamp |
-| `call_details` | Build prompt, set tools, send greeting |
+| `call_details` | Build prompt, set tools, trigger Groq-generated greeting |
 | `response_required` | Call Groq with transcript, stream response |
 | `reminder_required` | Same as above + inject "caller silent" nudge |
-| `tool_call_result` | Continue conversation with tool result (skip Groq for end_call) |
+| `tool_call_result` | Continue conversation with tool result (all tools go through Groq, including end_call) |
 | `update_only` | Ignored (transcript update, no response needed) |
 
 ### Groq Configuration
@@ -128,29 +131,26 @@ SDK: openai (Groq-compatible base URL)
 - `notes` (string, optional)
 - `required: []` — all parameters optional
 
-**`end_call`** — Always available (NOT gated by onboarding_complete). No parameters. Sends `end_call: true` to Retell — bypasses Groq continuation entirely.
+**`end_call`** — Always available (NOT gated by onboarding_complete). No parameters. Groq generates a farewell message, then `end_call: true` is sent on the final `content_complete` response.
+
+**`check_availability`** — Only when `onboarding_complete === true`. Real-time slot query. Parameters:
+- `date` (string, optional) — YYYY-MM-DD format. AI converts natural language ("next Tuesday") to ISO. Omit to check today + next 2 days.
+- `urgency` (enum: `emergency`|`routine`|`high_ticket`, optional) — affects slot prioritization
+- `required: []` — all parameters optional
+- Returns: numbered slot list with human-readable times + ISO start/end for `book_appointment`. Returns "no slots" message with fallback instructions if empty.
 
 **`book_appointment`** — Only when `onboarding_complete === true`. Parameters:
-- `slot_start` (ISO 8601, required)
-- `slot_end` (ISO 8601, required)
+- `slot_start` (ISO 8601, required) — from `check_availability` results
+- `slot_end` (ISO 8601, required) — from `check_availability` results
 - `service_address` (string, required)
 - `caller_name` (string, required)
 - `urgency` (enum: `emergency`|`routine`|`high_ticket`, required)
 
-**Tool ordering**: `transfer_call`, `capture_lead`, `end_call`, then conditionally `book_appointment`.
+**Tool ordering**: `transfer_call`, `capture_lead`, `end_call`, then conditionally `check_availability` and `book_appointment`.
 
 ### end_call Handler
 
-When `tool_call_result` arrives for `end_call`, the server skips Groq entirely and sends:
-```js
-{
-  response_type: 'response',
-  response_id: responseId,
-  content: 'Thank you for calling. Have a great day!',
-  content_complete: true,
-  end_call: true,
-}
-```
+When `tool_call_result` arrives for `end_call`, it flows through Groq like any other tool result — Groq generates a natural farewell based on the CLOSING THE CALL prompt section. The `isEndCall` flag ensures `end_call: true` is set on the final `content_complete` response and on the error fallback. If Groq fails, a last-resort hardcoded farewell is used: `"Thank you for calling. Goodbye!"`
 
 ---
 
@@ -175,9 +175,16 @@ You are a professional AI receptionist for {business_name}. You are warm, friend
 ### Recording Notice
 Always states: "This call may be recorded for quality purposes."
 
-### Greeting
-- **With onboarding**: "Hello, thank you for calling {business_name}. {recording_disclosure} {capture_job_type}"
-- **Without onboarding**: "{recording_disclosure} {default_greeting}"
+### Opening Line (Groq-generated, not hardcoded)
+- Prompt instructs Groq to generate the greeting when there is no conversation history yet
+- **With onboarding**: Greet with business name, recording disclosure, ask how to help
+- **Without onboarding**: Recording disclosure + ask how to help
+- Example provided in prompt but AI generates natural variation
+- **No-interruption rule**: "Complete your entire greeting without stopping, even if the caller speaks over you or background noise is detected"
+
+### Closing the Call (Groq-generated, not hardcoded)
+- Prompt instructs Groq to say a brief warm farewell when `end_call` is invoked
+- **No-interruption rule**: "Complete your farewell without stopping, even if the caller speaks over you"
 
 ### Language Instructions
 - Detect caller language from first utterance
@@ -241,11 +248,13 @@ AVAILABLE APPOINTMENT SLOTS:
 ```
 
 ### Translation Keys (messages/en.json and messages/es.json)
-Only the `agent` section is used by the voice system:
-- `default_greeting`, `recording_disclosure`, `language_clarification`
+Only the `agent` section is used by the voice system. All keys are embedded as prompt instructions to Groq — none are spoken as hardcoded TTS:
+- `recording_disclosure`, `language_clarification`
 - `unsupported_language_apology`, `call_wrap_up`, `transfer_attempt`
 - `capture_name`, `capture_address`, `capture_job_type`
 - `fallback_no_booking`, `language_barrier_escalation`
+
+Note: `greeting_onboarding`, `greeting_default`, and `default_greeting` still exist in the JSON files but are no longer read by server.js. The greeting is now Groq-generated from prompt instructions.
 
 ---
 
@@ -311,6 +320,16 @@ Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after 
 6. Return: `"I've saved your information. {bizName} will reach out soon."`
 7. On error: return `"I've noted your details and someone will follow up."`
 
+**`check_availability`**:
+1. Resolve tenant from call record (same pattern as other handlers)
+2. Fetch tenant scheduling config: `tenant_timezone`, `working_hours`, `slot_duration_mins`, `business_name`
+3. Parallel fetch: live `appointments` + `calendar_events` + `service_zones` + `zone_travel_buffers` (same queries as `call_inbound`)
+4. If `date` argument provided: check that single date. Otherwise: today + next 2 days (same as inbound).
+5. Call `calculateAvailableSlots()` for each date (up to 6 slots total)
+6. Format as numbered list with human-readable times + ISO start/end for `book_appointment`
+7. If no slots: return message instructing AI to ask for alternative date or capture lead
+8. On no tenant: return graceful fallback suggesting lead capture
+
 **`transfer_call`**:
 1. Look up call → tenant → `owner_phone` (two-hop query)
 2. Build whisper message via `buildWhisperMessage({ callerName, jobType, urgency, summary })` from AI-provided arguments
@@ -353,7 +372,8 @@ After the test call auto-cancel block, `processCallEnded()` conditionally calls 
 - **RPC call**: `supabase.rpc('increment_calls_used', { p_tenant_id: tenantId, p_call_id: call_id })`
 - **Error-resilient**: Entire block wrapped in try/catch — RPC failures logged (`[usage] increment_calls_used RPC error:` and `[usage] increment failed (non-fatal):`) but never thrown (D-06: billing counter glitch must not lose call data)
 - **Runs inside `after()` callback** — non-blocking to webhook response (D-01)
-- **RPC returns** `{ success, calls_used, calls_limit, limit_exceeded }` — logged for observability, not used for enforcement (Phase 25 will add enforcement)
+- **RPC returns** `{ success, calls_used, calls_limit, limit_exceeded }` — logged for observability
+- **Overage billing**: When `success === true && limit_exceeded === true`, reports 1 usage unit to Stripe via `stripe.subscriptionItems.createUsageRecord(overageItemId, { quantity: 1, action: 'increment' })`. Looks up `overage_stripe_item_id` from the `subscriptions` table. If no overage item ID (legacy subscription), silently skips. Entire overage block is wrapped in its own try/catch — Stripe reporting failure is non-fatal and never loses call data
 
 ### `processCallAnalyzed(call)`
 Heavy pipeline:
@@ -367,7 +387,7 @@ Heavy pipeline:
 7b. Upsert `calls` with all analyzed data including notification_priority (does NOT include booking_outcome) — chains `.select('id').single()` to retrieve the Supabase UUID (`callUuid`) for downstream lead creation
 7c. Conditional update: set `booking_outcome='not_attempted'` where `booking_outcome IS NULL`
 8. Create/merge lead via `createOrMergeLead()` using `callUuid` (NOT the Retell string `call_id`) — guarded: skips lead creation if UUID retrieval failed
-9. Send owner notifications (SMS + email) via `sendOwnerNotifications()`
+9. Send owner notifications — **gated by `tenants.notification_preferences` JSONB**. Reads `calls.booking_outcome` for this call, looks up the matching preference object (`{ sms: bool, email: bool }`). Calls `sendOwnerSMS` and `sendOwnerEmail` independently based on per-channel flags. **Emergency override**: urgency=emergency always sends both channels regardless of preferences. Configurable at `/dashboard/more/notifications` via `PATCH /api/notification-settings`.
 
 ---
 
@@ -497,7 +517,7 @@ Unsupported language detected → agent apologizes → gathers what info possibl
 Caller doesn't book → call ends → triage: routine → suggested slots calculated → lead created (status: `new`) → owner notified → ~60s later: recovery SMS sent to caller with booking link
 
 ### Flow E: Decline → Lead Capture
-Caller declines booking first time → AI soft re-offer ("No problem — if you change your mind, I can book anytime") → caller declines again → AI invokes `capture_lead` with all gathered info → webhook handler creates lead immediately via `createOrMergeLead()` (duration computed from start_timestamp) → AI confirms "I've saved your information. {bizName} will reach out soon." → AI invokes `end_call` → WebSocket sends `end_call: true` to Retell → call ends
+Caller declines booking first time → AI soft re-offer ("No problem — if you change your mind, I can book anytime") → caller declines again → AI invokes `capture_lead` with all gathered info → webhook handler creates lead immediately via `createOrMergeLead()` (duration computed from start_timestamp) → AI confirms "I've saved your information. {bizName} will reach out soon." → AI invokes `end_call` → Groq generates farewell → `end_call: true` sent on `content_complete` → call ends
 
 ---
 
@@ -554,11 +574,13 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Unified tone**: No emergency/routine tone split — urgency affects slot priority only (D-11, D-12)
 - **Whisper message on transfer**: AI passes caller context; webhook builds structured whisper for receiving human (D-08)
 - **Mid-call lead capture**: `capture_lead` tool creates lead immediately during call — no post-call wait for declined callers (D-14, D-15)
-- **end_call bypasses Groq**: WebSocket handles end_call in handleToolResult before Groq call — sends end_call:true directly (D-14)
+- **end_call goes through Groq**: All tool results (including end_call) flow through Groq — AI generates a natural farewell; `isEndCall` flag sets `end_call: true` on `content_complete`. Hardcoded farewell only as Groq-failure fallback.
 - **Chained tool calls supported**: handleToolResult now handles `finish_reason: 'tool_calls'` — enables multi-step flows like capture_lead → end_call without dropping the second tool call
-- **Locale-aware greeting**: server.js reads greeting text from messages/{locale}.json with `{business_name}` interpolation — Spanish-default tenants hear Spanish greeting
-- **Prompt greeting deduplication**: agent-prompt.js greeting section says "already greeted, do not repeat" — prevents AI from re-greeting after the 5s TTS guard expires
+- **Groq-generated greeting**: server.js calls `handleResponseRequired()` with empty transcript on `call_details` — Groq generates the greeting from OPENING LINE prompt instructions. No hardcoded greeting text. Locale/business_name/onboarding_complete shape the prompt, not a template string.
+- **No hardcoded TTS anywhere**: All spoken content (greeting, conversation, farewell) is Groq-generated. Only error fallbacks have hardcoded text (Groq API failure safety nets).
+- **No-interruption prompt rules**: OPENING LINE and CLOSING THE CALL sections instruct the AI to complete its greeting/farewell without stopping even if the caller speaks over it or background noise is detected. This is a prompt-level directive — Retell's `interruption_sensitivity` setting controls the actual TTS barge-in threshold.
 - **Slot-taken recalculation accuracy**: handleBookAppointment fetches real appointments/events before recalculating next available slot — no longer offers potentially-taken slots
+- **Real-time availability via check_availability tool**: AI can query live slot availability for any date during the call — not limited to static call-start slots. Warm-start slots from `call_inbound` serve the first offer; `check_availability` handles follow-up queries, specific date requests, and stale-data refresh. Same `calculateAvailableSlots()` + parallel DB fetch pattern as `handleInbound`, reused in `handleCheckAvailability`. Returns ISO start/end alongside human-readable times so AI can pass them directly to `book_appointment`. No-slots case instructs AI to offer alternative dates or fall back to `capture_lead`.
 - **Book_appointment error fallback**: if Groq fails after booking tool result, uses webhook confirmation text instead of generic fallback — caller hears the actual confirmation
 - **Transfer reason explicit**: transfer_call tool accepts `reason` enum (caller_requested/clarification_limit) — webhook uses it for exception_reason, falls back to summary heuristic
 - **booking_outcome set real-time**: booked/attempted/declined written during live call via `after()`; not_attempted defaulted post-call with conditional `WHERE IS NULL` update
@@ -571,6 +593,7 @@ Caller declines booking first time → AI soft re-offer ("No problem — if you 
 - **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
 - **processCallAnalyzed UUID retrieval**: The calls upsert chains `.select('id').single()` to get the Supabase UUID (`callUuid`). This is critical because the Retell `call_id` (e.g., "call_337593af...") is a text string, not a UUID — passing it to `createOrMergeLead` would fail with `22P02` on `leads.primary_call_id` and `lead_calls.call_id` (both UUID FK columns). The webhook handlers (`capture_lead`, `book_appointment`) already do this correctly via a separate query; `processCallAnalyzed` now matches that pattern.
 - **Test call auto-cancel**: `test-call/route.js` passes `test_call: 'true'` in `retell_llm_dynamic_variables`; `processCallEnded` checks this flag and cancels any appointment + resets lead status — owner experiences booking-first flow during onboarding without cluttering the real calendar (D-07, D-08)
+- **Granular notification preferences**: `tenants.notification_preferences` JSONB column stores per-booking-outcome SMS/email toggles: `{ booked: { sms, email }, declined: { sms, email }, not_attempted: { sms, email }, attempted: { sms, email } }`. Default: all true. In `processCallAnalyzed`, reads `calls.booking_outcome` and dispatches `sendOwnerSMS`/`sendOwnerEmail` independently based on the matching preference. Emergency calls (urgency=emergency) always notify both channels regardless of preferences (safety override). Dashboard page at `/dashboard/more/notifications` with per-outcome Switch toggles. API: `GET/PATCH /api/notification-settings`. Migration 015 adds JSONB column and drops old `owner_notify_mode` from migration 014. Only gates owner notifications — caller SMS (booking confirmation + recovery) and lead creation are unaffected.
 
 ---
 

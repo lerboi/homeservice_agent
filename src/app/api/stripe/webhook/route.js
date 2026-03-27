@@ -103,7 +103,7 @@ async function provisionPhoneNumber(tenantId, country) {
   }
 }
 
-// Price ID -> plan mapping (D-12) — includes both monthly and annual prices
+// Price ID -> plan mapping (D-12) — includes monthly, annual, and overage prices
 const PLAN_MAP = {
   [process.env.STRIPE_PRICE_STARTER]:        { plan_id: 'starter', calls_limit: 40 },
   [process.env.STRIPE_PRICE_STARTER_ANNUAL]: { plan_id: 'starter', calls_limit: 40 },
@@ -112,6 +112,13 @@ const PLAN_MAP = {
   [process.env.STRIPE_PRICE_SCALE]:          { plan_id: 'scale',   calls_limit: 400 },
   [process.env.STRIPE_PRICE_SCALE_ANNUAL]:   { plan_id: 'scale',   calls_limit: 400 },
 };
+
+// Overage metered price IDs — used to identify the metered subscription item
+const OVERAGE_PRICE_IDS = new Set([
+  process.env.STRIPE_PRICE_STARTER_OVERAGE,
+  process.env.STRIPE_PRICE_GROWTH_OVERAGE,
+  process.env.STRIPE_PRICE_SCALE_OVERAGE,
+].filter(Boolean));
 
 /**
  * Stripe webhook handler — processes all subscription lifecycle events.
@@ -275,8 +282,15 @@ async function handleSubscriptionEvent(subscription) {
   }
 
   // Price-to-plan mapping (D-12)
-  const priceId = subscription.items?.data?.[0]?.price?.id;
+  // With overage metered pricing, subscription.items.data has 2 entries (flat-rate + metered).
+  // Find the flat-rate item by matching against PLAN_MAP keys (not by index).
+  const subscriptionItems = subscription.items?.data || [];
+  const flatRateItem = subscriptionItems.find((item) => PLAN_MAP[item.price?.id]);
+  const overageItem = subscriptionItems.find((item) => OVERAGE_PRICE_IDS.has(item.price?.id));
+
+  const priceId = flatRateItem?.price?.id;
   const planInfo = PLAN_MAP[priceId] || { plan_id: 'starter', calls_limit: 40 };
+  const overageStripeItemId = overageItem?.id || null;
 
   // Status mapping (D-14) — map Stripe status to local status
   const statusMap = {
@@ -325,6 +339,7 @@ async function handleSubscriptionEvent(subscription) {
         : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       stripe_updated_at: stripeUpdatedAt,
+      overage_stripe_item_id: overageStripeItemId,
       is_current: true,
     });
 

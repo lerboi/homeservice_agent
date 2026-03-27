@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-03-26 (Phase 28-03 — Admin impersonation banner, dashboard layout Suspense boundary for useSearchParams)
+**Last updated**: 2026-03-27 (WorkingHoursEditor redesign — visual schedule preview, timezone selector, sticky save bar, mobile layout)
 
 ---
 
@@ -75,7 +75,10 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/more/calendar-connections/page.js` | Wraps CalendarSyncCard |
 | `src/app/dashboard/more/service-zones/page.js` | Wraps ZoneManager |
 | `src/app/dashboard/more/escalation-contacts/page.js` | Wraps EscalationChainSection |
-| `src/app/dashboard/more/ai-voice-settings/page.js` | Wraps SettingsAISection |
+| `src/app/dashboard/more/notifications/page.js` | Notification preferences page — per-outcome SMS/email toggles |
+| `src/components/dashboard/NotificationPreferences.jsx` | Per-outcome Switch grid (booked/declined/not_attempted/attempted x SMS/email) |
+| `src/app/dashboard/more/ai-voice-settings/page.js` | Wraps SettingsAISection (phone number + test call only) |
+| `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB on tenants |
 | `src/app/dashboard/more/account/page.js` | Placeholder stub — account management future plan |
 | `src/app/dashboard/services/page.js` | redirect() to /dashboard/more/services-pricing |
 | `src/app/dashboard/settings/page.js` | redirect() to /dashboard/more |
@@ -90,7 +93,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
 | `src/components/dashboard/SetupChecklist.jsx` | Redesigned checklist: required/recommended split, conic-gradient progress ring, expandable items |
 | `src/components/dashboard/ChecklistItem.jsx` | Expandable checklist item: type badge, description, action link |
-| `src/components/dashboard/WorkingHoursEditor.js` | Per-day hours editor with quick-set presets + slot duration |
+| `src/components/dashboard/WorkingHoursEditor.js` | Per-day hours editor: schedule preview bars, timezone selector, controlled preset dropdown, sticky save bar, responsive day cards |
 | `src/components/dashboard/CalendarView.js` | Week/day time grid with appointments, external events, travel buffers |
 | `src/components/dashboard/DashboardHomeStats.jsx` | 4 animated stat cards with requestAnimationFrame counter |
 | `src/lib/leads.js` | `createOrMergeLead()` and `getLeads()` — core lead logic |
@@ -513,7 +516,20 @@ Per-urgency mapping rows use `Switch` toggles (display-only, not persisted to DB
 
 **File**: `src/components/dashboard/WorkingHoursEditor.js`
 
-Per-day hours grid (7 days). Each day: enable toggle, open/close time inputs, optional lunch break. Copy popover to apply one day's schedule to other days. Quick-set presets: Mon–Fri 8–5, Mon–Fri 7–6, Mon–Sat 8–5, Mon–Sat 7–6. Slot duration select (30/45/60/90/120 min). Dirty-state detection (`isDirty`). `PUT /api/working-hours` to save.
+Redesigned working hours editor. Key features:
+
+- **Weekly overview bar chart**: `ScheduleBar` components render horizontal bars (6 AM–10 PM range) per day showing working hours as brand-orange segments with gaps for breaks. Disabled days show empty gray bars.
+- **Controlled preset dropdown**: `activePreset` derived via `useMemo(() => detectPreset(hours))` — auto-reverts to "Custom" (disabled item) when hours no longer match any preset. Fixes stale-label bug from uncontrolled `defaultValue`.
+- **Timezone selector**: Loads `tenant_timezone` from GET response, renders grouped `Select` (US, Canada, Asia-Pacific, Europe zones), includes in PUT payload. No migration needed — API already supports `tenant_timezone`.
+- **Day cards**: Each day is a rounded card. Enabled days: white bg, orange left border (`border-l-[3px] border-l-[#C2410C]`). Disabled days: gray bg, dimmed. Toggle + day name + inline time inputs (desktop) or stacked time inputs (mobile via `sm:hidden`/`hidden sm:flex`).
+- **Break as chip**: Lunch break rendered as an inline pill (`bg-stone-50 border border-stone-100 rounded-lg`) with Clock icon, time inputs, and X remove button. "+ Add break" shown with Plus icon when no break.
+- **Copy popover enhanced**: Quick-action buttons "All weekdays" and "Select all" above per-day checkboxes. `applyToWeekdays(sourceDay)` applies source schedule to all weekdays in one click.
+- **Sticky save bar**: Fixed bottom bar (`z-30`, `lg:left-60` to clear sidebar) slides up via `translate-y` transition when `isDirty`. Shows pulsing amber dot, "Unsaved changes", Discard button (resets to saved state), and Save Changes button.
+- **Mobile responsive**: Time inputs stack vertically on `< sm` breakpoint with "Opens"/"Closes" labels.
+- **Slot duration context**: Shows interpolated text "Your AI will offer {duration} time slots when booking appointments."
+- **Dirty detection includes timezone**: `isDirty` checks hours + slotDuration + timezone against saved values.
+- **No duplicate heading**: Heading lives in `page.js` wrapper only; component uses `aria-labelledby` pointing to that heading.
+- **Save payload**: `PUT /api/working-hours` with `{ working_hours, slot_duration_mins, tenant_timezone }`.
 
 ### `CalendarView({ appointments, externalEvents, travelBuffers, currentDate, viewMode, loading, onAppointmentClick })`
 

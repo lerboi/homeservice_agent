@@ -12,7 +12,7 @@
 
 Go to **Product Catalog > + Add product** in the Stripe Dashboard.
 
-You need **3 products**, each with **2 prices** (monthly + annual).
+You need **3 products**, each with **3 prices** (monthly + annual + overage metered).
 
 ### Product 1: Starter
 
@@ -35,6 +35,15 @@ You need **3 products**, each with **2 prices** (monthly + annual).
 | Amount | `$79.00` (20% discount = $99 x 0.8, rounded) |
 | Billing period | Yearly |
 
+**Price 3 (Overage — Metered):**
+| Field | Value |
+|-------|-------|
+| Pricing model | Usage-based (metered) |
+| Usage type | Metered |
+| Aggregation mode | Sum of usage during period |
+| Amount | `$2.48` per unit |
+| Billing period | Monthly |
+
 ---
 
 ### Product 2: Growth
@@ -55,6 +64,15 @@ You need **3 products**, each with **2 prices** (monthly + annual).
 |-------|-------|
 | Amount | `$199.00` (20% discount = $249 x 0.8, rounded) |
 | Billing period | Yearly |
+
+**Price 3 (Overage — Metered):**
+| Field | Value |
+|-------|-------|
+| Pricing model | Usage-based (metered) |
+| Usage type | Metered |
+| Aggregation mode | Sum of usage during period |
+| Amount | `$2.08` per unit |
+| Billing period | Monthly |
 
 ---
 
@@ -77,25 +95,37 @@ You need **3 products**, each with **2 prices** (monthly + annual).
 | Amount | `$479.00` (20% discount = $599 x 0.8, rounded) |
 | Billing period | Yearly |
 
+**Price 3 (Overage — Metered):**
+| Field | Value |
+|-------|-------|
+| Pricing model | Usage-based (metered) |
+| Usage type | Metered |
+| Aggregation mode | Sum of usage during period |
+| Amount | `$1.50` per unit |
+| Billing period | Monthly |
+
 ---
 
 ## After Creating Products
 
-Each price gets a unique Price ID (starts with `price_`). Copy all 6 into `.env.local`:
+Each price gets a unique Price ID (starts with `price_`). Copy all 9 into `.env.local`:
 
 ```bash
-# Monthly prices (used in Phase 22 onboarding checkout)
+# Monthly prices
 STRIPE_PRICE_STARTER=price_xxxxxxxxxxxxxxxx
 STRIPE_PRICE_GROWTH=price_xxxxxxxxxxxxxxxx
 STRIPE_PRICE_SCALE=price_xxxxxxxxxxxxxxxx
 
-# Annual prices (for future annual billing toggle)
+# Annual prices
 STRIPE_PRICE_STARTER_ANNUAL=price_xxxxxxxxxxxxxxxx
 STRIPE_PRICE_GROWTH_ANNUAL=price_xxxxxxxxxxxxxxxx
 STRIPE_PRICE_SCALE_ANNUAL=price_xxxxxxxxxxxxxxxx
-```
 
-> **Note:** Phase 22 only uses the monthly prices. Annual prices are set up now for future use but aren't wired into checkout yet.
+# Overage metered prices (per-call charge when plan limit exceeded)
+STRIPE_PRICE_STARTER_OVERAGE=price_xxxxxxxxxxxxxxxx
+STRIPE_PRICE_GROWTH_OVERAGE=price_xxxxxxxxxxxxxxxx
+STRIPE_PRICE_SCALE_OVERAGE=price_xxxxxxxxxxxxxxxx
+```
 
 ---
 
@@ -131,11 +161,11 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 | What | Count |
 |------|-------|
 | Products | 3 (Starter, Growth, Scale) |
-| Prices per product | 2 (monthly + annual) |
-| Total prices | 6 |
+| Prices per product | 3 (monthly + annual + overage metered) |
+| Total prices | 9 |
 | Env vars (keys) | 3 (secret, publishable, webhook secret) |
-| Env vars (prices) | 6 (3 monthly + 3 annual) |
-| **Total env vars** | **10** |
+| Env vars (prices) | 9 (3 monthly + 3 annual + 3 overage) |
+| **Total env vars** | **13** |
 
 Enterprise is handled via contact form — no Stripe product needed.
 
@@ -199,24 +229,51 @@ Our webhook handler already processes all of these. The `customer.subscription.u
 
 ### Downgrade call limit handling
 
-When downgrading mid-cycle, `calls_used` is carried forward (not reset). If the customer has already used more calls than the new plan allows (e.g., used 80 calls on Growth, downgrades to Starter with 40-call limit), enforcement should:
+When downgrading mid-cycle, `calls_used` is carried forward (not reset). If the customer has already used more calls than the new plan allows (e.g., used 80 calls on Growth, downgrades to Starter with 40-call limit):
 
-- Allow the downgrade to proceed
-- Block new calls immediately (usage already exceeds new limit)
-- Reset `calls_used` to 0 at next billing cycle as normal
-
-This enforcement logic is built in Phase 24 (Usage Enforcement).
+- The downgrade proceeds immediately
+- Subsequent calls are charged at the new plan's overage rate (calls are never blocked)
+- `calls_used` resets to 0 at next billing cycle as normal
 
 ### Price ID mapping for plan changes
 
-The plan change API needs access to all 6 price IDs to handle any combination:
+The plan change API needs access to all 9 price IDs to handle any combination:
 
 ```javascript
 const PRICE_MAP = {
-  starter:        { monthly: process.env.STRIPE_PRICE_STARTER,        annual: process.env.STRIPE_PRICE_STARTER_ANNUAL },
-  growth:         { monthly: process.env.STRIPE_PRICE_GROWTH,         annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL },
-  scale:          { monthly: process.env.STRIPE_PRICE_SCALE,          annual: process.env.STRIPE_PRICE_SCALE_ANNUAL },
+  starter:        { monthly: process.env.STRIPE_PRICE_STARTER,        annual: process.env.STRIPE_PRICE_STARTER_ANNUAL,  overage: process.env.STRIPE_PRICE_STARTER_OVERAGE },
+  growth:         { monthly: process.env.STRIPE_PRICE_GROWTH,         annual: process.env.STRIPE_PRICE_GROWTH_ANNUAL,   overage: process.env.STRIPE_PRICE_GROWTH_OVERAGE },
+  scale:          { monthly: process.env.STRIPE_PRICE_SCALE,          annual: process.env.STRIPE_PRICE_SCALE_ANNUAL,    overage: process.env.STRIPE_PRICE_SCALE_OVERAGE },
 };
 ```
 
-This enables any upgrade/downgrade path including billing interval changes (monthly ↔ annual).
+This enables any upgrade/downgrade path including billing interval changes (monthly ↔ annual). On plan change, the overage metered item is automatically updated by Stripe when the subscription items change.
+
+---
+
+## Overage Billing
+
+When a tenant exceeds their plan's `calls_limit`, each additional call is charged at the plan's overage rate via Stripe metered billing.
+
+### How it works
+
+1. Each subscription has two line items: flat-rate plan price + metered overage price
+2. `calls_used` is incremented via `increment_calls_used` RPC on every qualifying call
+3. When `calls_used > calls_limit` (limit_exceeded), the call processor reports 1 usage unit to Stripe via `subscriptionItems.createUsageRecord()`
+4. At the end of the billing cycle, Stripe tallies all usage records and adds them to the invoice
+
+### Overage rates
+
+| Plan | Overage rate |
+|------|-------------|
+| Starter | $2.48/call |
+| Growth | $2.08/call |
+| Scale | $1.50/call |
+
+### Key behaviors
+
+- **Calls are never blocked** — overages just cost money
+- **During trial**: Usage records are accepted but invoiced at $0. After trial ends, overages are billed normally
+- **Cycle reset**: `calls_used` resets to 0 on `invoice.paid` (billing_reason = subscription_cycle). Stripe metered usage also resets per billing period automatically
+- **Idempotency**: Only reports to Stripe when `increment_calls_used` returns `success=true` (not on duplicate call_id)
+- **Non-fatal**: Stripe reporting failure is logged but never blocks call processing

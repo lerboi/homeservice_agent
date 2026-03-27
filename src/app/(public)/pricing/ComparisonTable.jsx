@@ -1,10 +1,15 @@
-import { COMPARISON_FEATURES, PRICING_TIERS } from './pricingData';
+import { COMPARISON_FEATURES, PRICING_TIERS, ENTERPRISE_TIER } from './pricingData';
 import { Check } from 'lucide-react';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
+
+const ALL_TIERS = [...PRICING_TIERS, ENTERPRISE_TIER];
 
 export default function ComparisonTable() {
   return (
     <AnimatedSection direction="up">
+      <h2 className="text-2xl font-semibold text-[#0F172A] text-center mb-10 tracking-tight leading-[1.3]">
+        Compare All Features
+      </h2>
       <div className="rounded-2xl border border-stone-200/60 bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
@@ -13,7 +18,7 @@ export default function ComparisonTable() {
                 <th scope="col" className="py-4 px-6 text-left text-sm font-medium text-[#475569] w-[200px]">
                   Feature
                 </th>
-                {PRICING_TIERS.map((tier) => (
+                {ALL_TIERS.map((tier) => (
                   <th
                     key={tier.id}
                     scope="col"

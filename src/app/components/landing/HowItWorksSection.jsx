@@ -41,7 +41,7 @@ export function HowItWorksSection() {
             size="lg"
             className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[48px] px-6 text-[15px] font-medium rounded-xl shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] transition-all hover:shadow-[0_4px_16px_0_rgba(249,115,22,0.4)] hover:-translate-y-0.5 group"
           >
-            <Link href="/onboarding">
+            <Link href="/pricing">
               See It In Action
               <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>

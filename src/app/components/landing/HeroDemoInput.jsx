@@ -88,7 +88,7 @@ export function HeroDemoInput({ onAudioReady }) {
       {/* Secondary skip link */}
       <div className="mt-4 text-center">
         <Link
-          href={isLoggedIn ? '/dashboard' : '/onboarding'}
+          href={isLoggedIn ? '/dashboard' : '/pricing'}
           className="text-sm text-white/30 hover:text-white/50 transition-colors"
         >
           {isLoggedIn ? 'Go to Dashboard' : 'Skip the demo \u2014 Start your free trial'}

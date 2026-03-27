@@ -253,6 +253,10 @@ async function handleFunctionCall(payload) {
     }
   }
 
+  if (function_call?.name === 'check_availability') {
+    return handleCheckAvailability(payload);
+  }
+
   if (function_call?.name === 'book_appointment') {
     return handleBookAppointment(payload);
   }
@@ -331,6 +335,115 @@ async function handleFunctionCall(payload) {
   }
 
   return Response.json({ received: true });
+}
+
+/**
+ * Handle the check_availability function invocation from the AI agent.
+ * Returns real-time available slots for the requested date(s).
+ *
+ * @param {object} payload Retell function invocation payload
+ * @returns {Response} JSON with { result: string } listing available slots
+ */
+async function handleCheckAvailability(payload) {
+  const { call_id, function_call } = payload;
+  const args = function_call.arguments || {};
+
+  // Resolve tenant from call record
+  const { data: call } = await supabase
+    .from('calls')
+    .select('tenant_id')
+    .eq('retell_call_id', call_id)
+    .single();
+
+  if (!call?.tenant_id) {
+    return Response.json({
+      result: 'I was unable to check availability right now. Let me take your information and someone will call you back to schedule.',
+    });
+  }
+
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('tenant_timezone, working_hours, slot_duration_mins, business_name')
+    .eq('id', call.tenant_id)
+    .single();
+
+  const tenantTimezone = tenant?.tenant_timezone || 'America/Chicago';
+
+  // Fetch live scheduling data (same parallel pattern as handleInbound)
+  const [appointmentsResult, eventsResult, zonesResult, buffersResult] = await Promise.all([
+    supabase
+      .from('appointments')
+      .select('start_time, end_time, zone_id')
+      .eq('tenant_id', call.tenant_id)
+      .neq('status', 'cancelled')
+      .gte('end_time', new Date().toISOString()),
+    supabase
+      .from('calendar_events')
+      .select('start_time, end_time')
+      .eq('tenant_id', call.tenant_id)
+      .gte('end_time', new Date().toISOString()),
+    supabase
+      .from('service_zones')
+      .select('id, name, postal_codes')
+      .eq('tenant_id', call.tenant_id),
+    supabase
+      .from('zone_travel_buffers')
+      .select('zone_a_id, zone_b_id, buffer_mins')
+      .eq('tenant_id', call.tenant_id),
+  ]);
+
+  // Determine which dates to check
+  let datesToCheck = [];
+
+  if (args.date) {
+    // AI passed a specific date in YYYY-MM-DD format
+    datesToCheck = [args.date];
+  } else {
+    // Default: today + next 2 days (same as call_inbound)
+    for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+      const d = new Date();
+      d.setDate(d.getDate() + dayOffset);
+      datesToCheck.push(toLocalDateString(d, tenantTimezone));
+    }
+  }
+
+  // Calculate slots across requested dates (up to 6 total)
+  const allSlots = [];
+  for (const dateStr of datesToCheck) {
+    if (allSlots.length >= 6) break;
+
+    const daySlots = calculateAvailableSlots({
+      workingHours: tenant?.working_hours || {},
+      slotDurationMins: tenant?.slot_duration_mins || 60,
+      existingBookings: appointmentsResult.data || [],
+      externalBlocks: eventsResult.data || [],
+      zones: zonesResult.data || [],
+      zonePairBuffers: formatZonePairBuffers(buffersResult.data || []),
+      targetDate: dateStr,
+      tenantTimezone,
+      maxSlots: 6 - allSlots.length,
+    });
+    allSlots.push(...daySlots);
+  }
+
+  if (allSlots.length === 0) {
+    const dateLabel = args.date
+      ? format(toZonedTime(new Date(args.date + 'T12:00:00Z'), tenantTimezone), 'EEEE, MMMM do')
+      : 'the next few days';
+    return Response.json({
+      result: `No available slots for ${dateLabel}. Ask the caller if another date works, or capture their information so ${tenant?.business_name || 'the team'} can call back to schedule.`,
+    });
+  }
+
+  // Format slots as numbered list with ISO data for booking
+  const slotsText = allSlots.map((slot, i) => {
+    const zonedStart = toZonedTime(new Date(slot.start), tenantTimezone);
+    return `${i + 1}. ${format(zonedStart, "EEEE MMMM do 'at' h:mm a")} (start: ${slot.start}, end: ${slot.end})`;
+  }).join('\n');
+
+  return Response.json({
+    result: `Available slots:\n${slotsText}\n\nPresent these to the caller naturally (without the ISO times). Use the start/end values when invoking book_appointment.`,
+  });
 }
 
 /**

@@ -33,6 +33,10 @@ const FAQ_ITEMS = [
     a: "We don't cut you off mid-month. Calls beyond your plan limit are charged at a transparent per-call overage rate shown on your invoice. You can upgrade anytime to get a better per-call rate.",
   },
   {
+    q: 'What happens if I upgrade mid-cycle?',
+    a: "You only pay the difference. If you're on Starter and upgrade to Growth halfway through your billing period, we prorate the cost — you're only charged for the remaining time at the new rate, minus what you've already paid. No double-charging, no surprises.",
+  },
+  {
     q: 'Where are call recordings stored? Who can access them?',
     a: "Recordings are stored on encrypted servers in the US. Only your account can access your recordings and transcripts — no one else sees your call data. Voco does not share or sell your data.",
   },

@@ -10,6 +10,7 @@ import {
   MapPin,
   PhoneCall,
   Bot,
+  Bell,
   UserCircle,
   ChevronRight,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/calendar-connections', label: 'Calendar Connections', description: 'Connect Google or Outlook calendars', icon: CalendarDays },
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
   { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', description: 'Set up your emergency contact chain', icon: PhoneCall },
+  { href: '/dashboard/more/notifications', label: 'Notifications', description: 'SMS and email alerts per call outcome', icon: Bell },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
   { href: '/dashboard/more/account', label: 'Account', description: 'Profile and account management', icon: UserCircle },
 ];

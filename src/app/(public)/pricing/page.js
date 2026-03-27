@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ShieldCheck } from 'lucide-react';
 import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
 import PricingTiers from './PricingTiers';
+import ROICalculator from './ROICalculator';
 import ComparisonTable from './ComparisonTable';
 import FAQSection from './FAQSection';
 
@@ -14,7 +16,7 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero + Tiers (dark) */}
-      <section className="relative bg-[#050505] pt-28 pb-20 overflow-hidden">
+      <section className="relative bg-[#050505] pt-24 pb-14 overflow-hidden">
         {/* Radial gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.06),transparent_70%)] pointer-events-none" />
         {/* Dot-grid texture */}
@@ -24,61 +26,91 @@ export default function PricingPage() {
 
         <div className="relative max-w-6xl mx-auto px-6">
           {/* Hero content */}
-          <div className="max-w-4xl mx-auto text-center mb-10">
+          <div className="max-w-4xl mx-auto text-center mb-6">
             <AnimatedSection>
               {/* Eyebrow pill */}
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.07]">
                   <span className="size-1.5 rounded-full bg-[#F97316] animate-pulse" />
                   <span className="text-xs font-semibold text-white/70 tracking-wide uppercase">AI Receptionist for Trades</span>
                 </div>
               </div>
               {/* Headline */}
-              <h1 className="text-[3rem] md:text-[3.5rem] lg:text-[3.75rem] font-semibold text-white tracking-tight leading-[1.1]">
+              <h1 className="text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold text-white tracking-tight leading-[1.1]">
                 Stop Losing <span className="text-[#F97316]">$1,000 Jobs</span> to Voicemail
               </h1>
               {/* Subline */}
-              <p className="mt-4 text-lg text-white/50 max-w-xl mx-auto">
+              <p className="mt-3 text-base text-white/50 max-w-xl mx-auto">
                 Every plan pays for itself after one booked job. Pick the volume that matches your crew.
               </p>
             </AnimatedSection>
           </div>
           <PricingTiers />
+
+          {/* Guarantee Badge — inside same section, no background break */}
+          <div className="mt-10 max-w-3xl mx-auto">
+            <AnimatedSection>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
+                <div className="flex items-center justify-center size-12 rounded-full bg-[#F97316]/[0.08] shrink-0">
+                  <ShieldCheck className="size-6 text-[#F97316]" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white">Risk-Free Guarantee</p>
+                  <p className="text-sm text-white/45 mt-0.5">
+                    Try Voco free for 14 days with real calls. If it doesn&apos;t book you a job, you pay nothing. Cancel anytime &mdash; no contracts, no fees.
+                  </p>
+                </div>
+              </div>
+            </AnimatedSection>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ROI Calculator (warm light) */}
+      <section className="relative bg-[#EDEAE7] py-16">
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-[#EDEAE7] to-[#F5F5F4] pointer-events-none" />
+        <div className="relative max-w-6xl mx-auto px-6">
+          <ROICalculator />
         </div>
       </section>
 
       {/* Comparison Table (light) */}
-      <section className="bg-[#F5F5F4] py-20">
+      <section className="bg-[#F5F5F4] py-16">
         <div className="max-w-6xl mx-auto px-6">
-          <AnimatedSection>
-            <h2 className="text-2xl font-semibold text-[#0F172A] text-center mb-12 tracking-tight leading-[1.3]">
-              Compare Plans
-            </h2>
-          </AnimatedSection>
           <ComparisonTable />
         </div>
       </section>
 
       {/* Testimonials (dark) */}
       <section className="bg-[#1A1816] py-16">
-        <div className="max-w-4xl mx-auto px-6">
-          <AnimatedStagger className="grid md:grid-cols-2 gap-8">
+        <div className="max-w-5xl mx-auto px-6">
+          <AnimatedStagger className="grid md:grid-cols-3 gap-6">
             <AnimatedItem>
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
-                <p className="text-6xl font-serif text-[#F97316]/30 leading-none mb-4">&ldquo;</p>
-                <p className="text-xl text-white/80 italic leading-relaxed">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
+                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
+                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
                   Before Voco, I was losing 3-4 calls every weekend. Now my phone&apos;s booked Monday before I&apos;ve had coffee.
                 </p>
                 <p className="text-sm text-white/50 mt-4">&mdash; Mike R., HVAC contractor, Phoenix AZ</p>
               </div>
             </AnimatedItem>
             <AnimatedItem>
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-8">
-                <p className="text-6xl font-serif text-[#F97316]/30 leading-none mb-4">&ldquo;</p>
-                <p className="text-xl text-white/80 italic leading-relaxed">
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
+                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
+                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
                   Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup.
                 </p>
                 <p className="text-sm text-white/50 mt-4">&mdash; Sandra T., Plumbing company owner, Austin TX</p>
+              </div>
+            </AnimatedItem>
+            <AnimatedItem>
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
+                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
+                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
+                  One emergency booking at 2 AM paid for three months of Voco. I don&apos;t know why I waited so long.
+                </p>
+                <p className="text-sm text-white/50 mt-4">&mdash; Carlos M., Electrician, Miami FL</p>
               </div>
             </AnimatedItem>
           </AnimatedStagger>
@@ -113,7 +145,7 @@ export default function PricingPage() {
                 asChild
                 className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[44px] px-8 text-base font-medium rounded-lg shadow-[0_4px_12px_0_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] transition-all hover:-translate-y-0.5"
               >
-                <Link href="/onboarding">Start Free Trial</Link>
+                <Link href="/pricing">Start Free Trial</Link>
               </Button>
             </div>
             <p className="text-sm text-white/40 mt-3">14-day free trial. Cancel anytime.</p>
