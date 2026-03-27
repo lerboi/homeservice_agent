@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 30 context gathered
-last_updated: "2026-03-26T22:23:51.982Z"
+status: Ready to execute
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-03-27T10:37:14.714Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 24 — subscription-lifecycle-and-notifications
+**Current focus:** Phase 30 — voice-agent-prompt-optimization
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
+Phase: 30 (voice-agent-prompt-optimization) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -71,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 24-subscription-lifecycle-and-notifications]: past_due excluded from blockedStatuses per D-03 — grace period grants full dashboard access with banner only
 - [Phase 24-subscription-lifecycle-and-notifications]: /billing/* exempt from subscription gate via middleware matcher config absence per D-10
 - [Phase 24-03]: jest.worktree.config.js needed to exclude worktrees path from testPathIgnorePatterns — allows test discovery within the worktree directory
+- [Phase 30]: Intake questions stored as jsonb on services, populated from TRADE_TEMPLATES during onboarding
+- [Phase 30]: check_caller_history is read-only (no DB writes) per D-02
+- [Phase 30]: intake_questions passed as newline-separated string per Retell dynamic var contract
 
 ### Roadmap Evolution
 
@@ -104,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T22:23:51.965Z
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-voice-agent-prompt-optimization/30-CONTEXT.md
+Last session: 2026-03-27T10:37:14.707Z
+Stopped at: Completed 30-01-PLAN.md
+Resume file: None
