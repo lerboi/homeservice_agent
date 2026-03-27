@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-03-27T10:37:14.714Z"
+stopped_at: Completed 30-02-PLAN.md
+last_updated: "2026-03-27T10:42:52.103Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 30 (voice-agent-prompt-optimization) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -74,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 30]: Intake questions stored as jsonb on services, populated from TRADE_TEMPLATES during onboarding
 - [Phase 30]: check_caller_history is read-only (no DB writes) per D-02
 - [Phase 30]: intake_questions passed as newline-separated string per Retell dynamic var contract
+- [Phase 30]: check_caller_history tool has zero parameters -- uses caller phone from call context
+- [Phase 30]: SLOT PREFERENCE DETECTION is prompt-only -- Groq interprets time cues, no code-level reordering
+- [Phase 30]: Conciseness rule changed from rigid 1-2 sentences to nuanced never-truncate-confirmations
 
 ### Roadmap Evolution
 
@@ -107,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T10:37:14.707Z
-Stopped at: Completed 30-01-PLAN.md
+Last session: 2026-03-27T10:42:52.092Z
+Stopped at: Completed 30-02-PLAN.md
 Resume file: None

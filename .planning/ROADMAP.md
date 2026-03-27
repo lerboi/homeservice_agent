@@ -298,11 +298,11 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 **Goal:** Holistic refinement of the AI receptionist system prompt and supporting tools to maximize booking conversion, improve caller experience, and close behavioral gaps — smart slot preference detection, repeat caller awareness, failed transfer recovery, prompt cleanup, trade-specific questioning, and post-booking recap flow
 **Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06
 **Depends on:** Phase 14
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables
-- [ ] 30-02-PLAN.md — Agent prompt restructure (all 6 decisions) + server.js new tool definition
+- [x] 30-02-PLAN.md — Agent prompt restructure (all 6 decisions) + server.js new tool definition
 - [ ] 30-03-PLAN.md — Skill file update + prompt quality verification checkpoint
 
 ### Phase 31: Voice Call Feature Showcase PDF
