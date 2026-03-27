@@ -1,0 +1,16 @@
+- The AI was asking if it was routine, emergency etc booking. It shouldnt ask the caller this, it should classify the call accordingly AFTER the call.
+
+- The AI speaks way too fast. Slow it down, especially when suggesting timings.
+
+- Confirm the address with thte caller first, before continuing. I said the address wrongly once and it went on with the wrong address.
+
+- This error:
+
+[usage] increment_calls_used RPC error: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.increment_calls_used with parameters p_call_id, p_tenant_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: null,
+  message: 'Could not find the function public.increment_calls_used(p_call_id, p_tenant_id) in the schema cache'
+}
+
+- After a call, i dont see the lead in the dashboard.
