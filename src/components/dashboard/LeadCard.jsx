@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +56,7 @@ function getFirstCall(lead) {
   return firstEntry?.calls || null;
 }
 
-export default function LeadCard({ lead, onView }) {
+export default memo(function LeadCard({ lead, onView }) {
   const urgency = lead.urgency || 'routine';
   const status = lead.status || 'new';
   const borderClass = URGENCY_BORDER[urgency] || URGENCY_BORDER.routine;
@@ -131,4 +132,4 @@ export default function LeadCard({ lead, onView }) {
       </div>
     </div>
   );
-}
+});

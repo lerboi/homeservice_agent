@@ -26,11 +26,14 @@ export function RotatingText({
   const containerRef = useRef(null);
   const measureRef = useRef(null);
 
+  const lastWidthRef = useRef(0);
+
   // Size container to current word width with animated transition
   useLayoutEffect(() => {
     if (!measureRef.current || !containerRef.current || prefersReducedMotion) return;
     const width = measureRef.current.getBoundingClientRect().width;
-    if (width > 0) {
+    if (width > 0 && width !== lastWidthRef.current) {
+      lastWidthRef.current = width;
       containerRef.current.style.width = `${width}px`;
     }
   }, [currentIndex, prefersReducedMotion]);

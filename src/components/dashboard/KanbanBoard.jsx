@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import KanbanColumn from '@/components/dashboard/KanbanColumn';
 
 const PIPELINE_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
@@ -12,11 +13,11 @@ const PIPELINE_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
  * @param {{ leads: Array, onViewLead: Function }} props
  */
 export default function KanbanBoard({ leads, onViewLead }) {
-  // Group leads by status
-  const grouped = PIPELINE_STATUSES.reduce((acc, status) => {
+  // Group leads by status (memoized — only recomputes when leads array changes)
+  const grouped = useMemo(() => PIPELINE_STATUSES.reduce((acc, status) => {
     acc[status] = (leads ?? []).filter((lead) => lead.status === status);
     return acc;
-  }, {});
+  }, {}), [leads]);
 
   return (
     <div

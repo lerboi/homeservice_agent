@@ -348,9 +348,13 @@ export default function CallLogsPage() {
             transition={{ duration: 0.2 }}
           >
             <p className="text-xs text-[#475569]">{stat.label}</p>
-            <p className={`text-xl font-bold ${stat.accent ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
-              {stat.value}
-            </p>
+            {loading ? (
+              <Skeleton className="h-6 w-10 mt-1" />
+            ) : (
+              <p className={`text-xl font-bold ${stat.accent ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                {stat.value}
+              </p>
+            )}
           </motion.div>
         ))}
       </div>

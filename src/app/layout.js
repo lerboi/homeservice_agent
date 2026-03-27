@@ -16,11 +16,10 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale} className={inter.variable}>
       <head>
-        {/* Preload Spline scene file so 3D hero loads faster */}
+        {/* Prefetch Spline scene file — low priority, doesn't block initial render */}
         <link
-          rel="preload"
+          rel="prefetch"
           href="https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode"
-          as="fetch"
           crossOrigin="anonymous"
         />
       </head>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -167,9 +168,9 @@ export default function AnalyticsCharts({ leads, loading }) {
     );
   }
 
-  const revenueData = buildRevenueData(allLeads);
-  const funnelData = buildFunnelData(allLeads);
-  const pipelineData = buildPipelineData(allLeads);
+  const revenueData = useMemo(() => buildRevenueData(allLeads), [allLeads]);
+  const funnelData = useMemo(() => buildFunnelData(allLeads), [allLeads]);
+  const pipelineData = useMemo(() => buildPipelineData(allLeads), [allLeads]);
 
   return (
     <div className="space-y-6">
