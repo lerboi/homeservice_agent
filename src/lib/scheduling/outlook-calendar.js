@@ -67,15 +67,15 @@ async function graphFetch(urlOrPath, accessToken, options = {}) {
 
 /**
  * Generate Microsoft OAuth consent URL.
- * @param {string} tenantId - Used as state parameter for CSRF protection
+ * @param {string} state - HMAC-signed state parameter for CSRF protection
  * @returns {Promise<string>} Authorization URL
  */
-export async function getOutlookAuthUrl(tenantId) {
+export async function getOutlookAuthUrl(state) {
   const msalClient = getMsalClient();
   return msalClient.getAuthCodeUrl({
     scopes: SCOPES,
     redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/outlook-calendar/callback`,
-    state: tenantId,
+    state,
   });
 }
 

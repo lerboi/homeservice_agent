@@ -1,0 +1,55 @@
+import { supabase } from '@/lib/supabase';
+import { getTenantId } from '@/lib/get-tenant-id';
+
+/**
+ * GET /api/dashboard/stats
+ * Returns aggregated dashboard stats via COUNT queries — no row data transferred.
+ * Replaces the client-side filtering of /api/leads (which was capped at 100 rows).
+ */
+export async function GET() {
+  const tenantId = await getTenantId();
+  if (!tenantId) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgoIso = sevenDaysAgo.toISOString();
+
+  const [newTodayRes, allTodayRes, weekRes, weekBookedRes] = await Promise.all([
+    supabase
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'new')
+      .gte('created_at', today),
+    supabase
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', today),
+    supabase
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', sevenDaysAgoIso),
+    supabase
+      .from('leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .gte('created_at', sevenDaysAgoIso)
+      .in('status', ['booked', 'completed', 'paid']),
+  ]);
+
+  const weekLeads = weekRes.count ?? 0;
+  const weekBooked = weekBookedRes.count ?? 0;
+
+  return Response.json({
+    newLeadsToday: newTodayRes.count ?? 0,
+    callsToday: allTodayRes.count ?? 0,
+    weekLeads,
+    weekBooked,
+    conversionRate: weekLeads > 0 ? Math.round((weekBooked / weekLeads) * 100) : 0,
+  });
+}

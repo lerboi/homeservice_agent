@@ -56,6 +56,12 @@ export async function processCallEnded(call) {
 
   const tenantId = tenant?.id || null;
 
+  // Guard: unrecognized phone number — log and bail to avoid NOT NULL violation on tenant_id
+  if (!tenantId) {
+    console.error(`[processCallEnded] Unknown number ${to_number} — no tenant found. Call record not created.`);
+    return;
+  }
+
   // Upsert using retell_call_id as dedupe key
   await supabase.from('calls').upsert(
     {

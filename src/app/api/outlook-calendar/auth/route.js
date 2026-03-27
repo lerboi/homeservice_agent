@@ -1,6 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server.js';
 import { supabase } from '@/lib/supabase.js';
 import { getOutlookAuthUrl } from '@/lib/scheduling/outlook-calendar.js';
+import { signOAuthState } from '@/app/api/google-calendar/auth/route.js';
 
 /**
  * GET /api/outlook-calendar/auth
@@ -28,7 +29,8 @@ export async function GET(request) {
     return Response.json({ error: 'Tenant not found' }, { status: 404 });
   }
 
-  const url = await getOutlookAuthUrl(tenant.id);
+  // Pass HMAC-signed state for CSRF protection
+  const url = await getOutlookAuthUrl(signOAuthState(tenant.id));
 
   return Response.json({ url });
 }

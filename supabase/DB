@@ -33,6 +33,16 @@ CREATE TABLE public.appointments (
   CONSTRAINT appointments_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id),
   CONSTRAINT appointments_zone_id_fkey FOREIGN KEY (zone_id) REFERENCES public.service_zones(id)
 );
+CREATE TABLE public.billing_notifications (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  notification_type text NOT NULL,
+  sent_at timestamp with time zone NOT NULL DEFAULT now(),
+  metadata jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT billing_notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT billing_notifications_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
 CREATE TABLE public.calendar_credentials (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
@@ -236,6 +246,13 @@ CREATE TABLE public.tenants (
   notification_preferences jsonb NOT NULL DEFAULT '{"booked": {"sms": true, "email": true}, "declined": {"sms": true, "email": true}, "attempted": {"sms": true, "email": true}, "not_attempted": {"sms": true, "email": true}}'::jsonb,
   CONSTRAINT tenants_pkey PRIMARY KEY (id),
   CONSTRAINT tenants_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.usage_events (
+  call_id text NOT NULL,
+  tenant_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT usage_events_pkey PRIMARY KEY (call_id),
+  CONSTRAINT usage_events_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 CREATE TABLE public.zone_travel_buffers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

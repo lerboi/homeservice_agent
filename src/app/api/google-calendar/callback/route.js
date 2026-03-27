@@ -1,6 +1,7 @@
 import { createOAuth2Client, registerWatch, syncCalendarEvents } from '@/lib/scheduling/google-calendar.js';
 import { google } from 'googleapis';
 import { supabase } from '@/lib/supabase.js';
+import { verifyOAuthState } from '@/app/api/google-calendar/auth/route.js';
 
 /**
  * GET /api/google-calendar/callback
@@ -8,15 +9,18 @@ import { supabase } from '@/lib/supabase.js';
  *
  * Query params:
  *   - code: Authorization code from Google
- *   - state: Tenant ID (passed in auth URL for CSRF protection)
+ *   - state: HMAC-signed tenant ID for CSRF protection
  */
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const tenantId = searchParams.get('state');
+  const rawState = searchParams.get('state');
+
+  // Verify HMAC-signed state to prevent CSRF / tenant spoofing
+  const tenantId = verifyOAuthState(rawState);
 
   if (!code || !tenantId) {
-    console.log('400:', 'Missing code or tenantId');
+    console.log('400:', 'Missing code or invalid state');
     return Response.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=error`
     );
@@ -41,6 +45,14 @@ export async function GET(request) {
       // Non-critical — continue with default name
     }
 
+    // Determine is_primary: first connected calendar becomes primary
+    const { count } = await supabase
+      .from('calendar_credentials')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId);
+
+    const isPrimary = count === 0;
+
     // Upsert credentials into DB
     await supabase.from('calendar_credentials').upsert(
       {
@@ -51,6 +63,7 @@ export async function GET(request) {
         expiry_date,
         calendar_id: 'primary',
         calendar_name: calendarName,
+        is_primary: isPrimary,
       },
       { onConflict: 'tenant_id,provider' }
     );

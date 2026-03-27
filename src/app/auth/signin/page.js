@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Phone, Calendar, ArrowLeft, Shield, Zap, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,9 +73,8 @@ export default function AuthPage() {
   const isSignin = mode === 'signin';
 
   // Preserve redirect destination from middleware (e.g. /onboarding?plan=growth&interval=annual)
-  const redirectTo = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('redirect') || '/onboarding'
-    : '/onboarding';
+  const searchParams = useSearchParams();
+  const redirectTo = useMemo(() => searchParams.get('redirect') || '/onboarding', [searchParams]);
 
   useEffect(() => {
     if (cooldown <= 0) return;

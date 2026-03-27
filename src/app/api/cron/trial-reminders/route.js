@@ -41,7 +41,31 @@ export async function GET(request) {
 
   let sent7 = 0, sent12 = 0, skipped = 0;
 
-  for (const sub of trialSubs || []) {
+  if (!trialSubs?.length) {
+    return Response.json({ sent_day_7: 0, sent_day_12: 0, skipped: 0 });
+  }
+
+  // Batch-fetch tenants and existing notifications to avoid N+1 queries
+  const tenantIds = [...new Set(trialSubs.map(s => s.tenant_id))];
+
+  const [tenantsResult, notificationsResult] = await Promise.all([
+    supabase
+      .from('tenants')
+      .select('id, business_name, owner_email')
+      .in('id', tenantIds),
+    supabase
+      .from('billing_notifications')
+      .select('tenant_id, notification_type')
+      .in('tenant_id', tenantIds)
+      .in('notification_type', ['trial_reminder_day_7', 'trial_reminder_day_12']),
+  ]);
+
+  const tenantMap = new Map((tenantsResult.data || []).map(t => [t.id, t]));
+  const sentNotifications = new Set(
+    (notificationsResult.data || []).map(n => `${n.tenant_id}:${n.notification_type}`)
+  );
+
+  for (const sub of trialSubs) {
     const trialStart = new Date(sub.current_period_start);
     const daysSinceStart = Math.floor((Date.now() - trialStart.getTime()) / 86_400_000);
 
@@ -55,25 +79,14 @@ export async function GET(request) {
     }
 
     for (const reminder of reminders) {
-      // Idempotency check (D-07)
-      const { data: existing } = await supabase
-        .from('billing_notifications')
-        .select('id')
-        .eq('tenant_id', sub.tenant_id)
-        .eq('notification_type', reminder.type)
-        .maybeSingle();
-
-      if (existing) {
+      // Idempotency check — use batch-fetched set
+      if (sentNotifications.has(`${sub.tenant_id}:${reminder.type}`)) {
         skipped++;
         continue;
       }
 
-      // Lookup tenant for email + business name
-      const { data: tenant } = await supabase
-        .from('tenants')
-        .select('business_name, owner_email')
-        .eq('id', sub.tenant_id)
-        .single();
+      // Tenant lookup — use batch-fetched map
+      const tenant = tenantMap.get(sub.tenant_id);
 
       if (!tenant?.owner_email) {
         console.warn(`[trial-reminders] No tenant/email for ${sub.tenant_id}`);
@@ -102,12 +115,15 @@ export async function GET(request) {
           }),
         });
 
-        // Record send for idempotency
-        await supabase.from('billing_notifications').insert({
-          tenant_id: sub.tenant_id,
-          notification_type: reminder.type,
-          metadata: { subject, days_used: reminder.daysUsed },
-        });
+        // Record send for idempotency (upsert with ignoreDuplicates for atomic dedup at DB level)
+        await supabase.from('billing_notifications').upsert(
+          {
+            tenant_id: sub.tenant_id,
+            notification_type: reminder.type,
+            metadata: { subject, days_used: reminder.daysUsed },
+          },
+          { onConflict: 'tenant_id,notification_type', ignoreDuplicates: true }
+        );
 
         if (reminder.type === 'trial_reminder_day_7') sent7++;
         else sent12++;

@@ -10,9 +10,9 @@ import { renewOutlookSubscription } from '@/lib/scheduling/outlook-calendar.js';
  * Protected by CRON_SECRET bearer token — called by Supabase pg_cron or external scheduler.
  * Renews channels expiring within the next 24 hours.
  */
-export async function POST(request) {
-  // Verify cron secret
-  const authHeader = request.headers.get('Authorization');
+export async function GET(request) {
+  // Verify cron secret (Vercel Cron uses GET)
+  const authHeader = request.headers.get('authorization');
   const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
 
   if (!authHeader || authHeader !== expectedToken) {

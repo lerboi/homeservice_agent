@@ -74,7 +74,7 @@ export async function createOrMergeLead({
       primary_call_id: callId,
       appointment_id: appointmentId || null,
     },
-  ]);
+  ]).select('id, status, from_number, urgency, caller_name, job_type');
 
   if (error) {
     console.error('createOrMergeLead: insert error', error);

@@ -250,10 +250,11 @@ async function handleFunctionCall(payload) {
       });
 
       // Real-time booking_outcome write — declined (D-02)
-      await supabase.from('calls').upsert(
-        { retell_call_id: call_id, booking_outcome: 'declined' },
-        { onConflict: 'retell_call_id' }
-      );
+      // Conditional: only set 'declined' if no outcome was already recorded (preserves 'booked')
+      await supabase.from('calls')
+        .update({ booking_outcome: 'declined' })
+        .eq('retell_call_id', call_id)
+        .is('booking_outcome', null);
 
       // Look up business name for the confirmation message
       const { data: tenant } = await supabase
@@ -522,22 +523,38 @@ async function handleBookAppointment(payload) {
   const startTime = new Date(args.slot_start);
   const endTime = new Date(args.slot_end);
 
+  // Resolve caller phone from DB (payload.call is not present in call_function_invoked events)
+  const { data: callForPhone } = await supabase
+    .from('calls')
+    .select('from_number')
+    .eq('retell_call_id', call_id)
+    .maybeSingle();
+  const resolvedCallerPhone = callForPhone?.from_number || null;
+
   // Attempt atomic slot booking — Postgres advisory lock prevents double-booking
-  const result = await atomicBookSlot({
-    tenantId: call.tenant_id,
-    callId: call.id,
-    startTime,
-    endTime,
-    address: args.service_address,
-    callerName: args.caller_name,
-    callerPhone: payload.call?.from_number || null,
-    urgency: args.urgency,
-    zoneId: args.zone_id || null,
-  });
+  let result;
+  try {
+    result = await atomicBookSlot({
+      tenantId: call.tenant_id,
+      callId: call.id,
+      startTime,
+      endTime,
+      address: args.service_address || 'Address to be confirmed',
+      callerName: args.caller_name || 'Caller',
+      callerPhone: resolvedCallerPhone,
+      urgency: args.urgency || 'routine',
+      zoneId: args.zone_id || null,
+    });
+  } catch (bookingErr) {
+    console.error('[webhook] atomicBookSlot error:', bookingErr);
+    return Response.json({
+      result: 'I was unable to confirm the booking right now. Let me take your information and someone will call you back to schedule.',
+    });
+  }
 
   if (!result.success) {
-    // Slot was taken — fetch current bookings/events before recalculating
-    const [currentBookings, currentEvents] = await Promise.all([
+    // Slot was taken — fetch current bookings/events/zones before recalculating
+    const [currentBookings, currentEvents, currentZones, currentBuffers] = await Promise.all([
       supabase
         .from('appointments')
         .select('start_time, end_time, zone_id')
@@ -549,6 +566,14 @@ async function handleBookAppointment(payload) {
         .select('start_time, end_time')
         .eq('tenant_id', call.tenant_id)
         .gte('end_time', new Date().toISOString()),
+      supabase
+        .from('service_zones')
+        .select('id, name, postal_codes')
+        .eq('tenant_id', call.tenant_id),
+      supabase
+        .from('zone_travel_buffers')
+        .select('zone_a_id, zone_b_id, buffer_mins')
+        .eq('tenant_id', call.tenant_id),
     ]);
 
     const endDateStr = toLocalDateString(endTime, tenantTimezone);
@@ -557,8 +582,8 @@ async function handleBookAppointment(payload) {
       slotDurationMins: tenant?.slot_duration_mins || 60,
       existingBookings: currentBookings.data || [],
       externalBlocks: currentEvents.data || [],
-      zones: [],
-      zonePairBuffers: [],
+      zones: currentZones.data || [],
+      zonePairBuffers: formatZonePairBuffers(currentBuffers.data || []),
       targetDate: endDateStr,
       tenantTimezone,
       maxSlots: 1,
@@ -662,7 +687,7 @@ async function handleBookAppointment(payload) {
   });
 
   // Caller SMS confirmation — fire-and-forget (D-06, D-07, D-08, BOOK-04)
-  const callerPhone = payload.call?.from_number || null;
+  const callerPhone = resolvedCallerPhone;
   const { data: callLang } = await supabase
     .from('calls')
     .select('detected_language')

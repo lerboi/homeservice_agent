@@ -34,7 +34,7 @@ export async function GET(request) {
 
   // ═══ Branch A: First-send for not_attempted / legacy calls ═══════════════
 
-  const cutoff = new Date(Date.now() - 60_000).toISOString();
+  const cutoff = Date.now() - 60_000; // raw milliseconds to match bigint end_timestamp column
 
   const { data: firstSendCalls, error: errA } = await supabase
     .from('calls')
@@ -47,6 +47,24 @@ export async function GET(request) {
     .not('from_number', 'is', null)
     .in('booking_outcome', ['not_attempted']) // Pitfall 4: only not_attempted, NOT attempted
     .limit(10);
+
+  // Batch-fetch tenants and appointments for all qualifying calls to avoid N+1
+  const callIds = (firstSendCalls || []).map(c => c.id);
+  const tenantIds = [...new Set((firstSendCalls || []).map(c => c.tenant_id).filter(Boolean))];
+
+  let tenantMapA = new Map();
+  let bookedCallIds = new Set();
+
+  if (callIds.length > 0) {
+    const [tenantsRes, apptsRes] = await Promise.all([
+      tenantIds.length > 0
+        ? supabase.from('tenants').select('id, business_name, owner_phone, retell_phone_number, default_locale').in('id', tenantIds)
+        : { data: [] },
+      supabase.from('appointments').select('call_id').in('call_id', callIds),
+    ]);
+    tenantMapA = new Map((tenantsRes.data || []).map(t => [t.id, t]));
+    bookedCallIds = new Set((apptsRes.data || []).map(a => a.call_id));
+  }
 
   for (const call of firstSendCalls || []) {
     processedA++;
@@ -64,25 +82,15 @@ export async function GET(request) {
     }
 
     // Check if a booking was made (booked callers don't need recovery)
-    const { data: appt } = await supabase
-      .from('appointments')
-      .select('id')
-      .eq('retell_call_id', call.retell_call_id)
-      .maybeSingle();
-
-    if (appt) {
+    if (bookedCallIds.has(call.id)) {
       await supabase.from('calls')
         .update({ recovery_sms_sent_at: new Date().toISOString(), recovery_sms_status: 'sent' })
         .eq('id', call.id);
       continue;
     }
 
-    // Tenant lookup for business name and locale
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('business_name, owner_phone, retell_phone_number, default_locale')
-      .eq('id', call.tenant_id)
-      .single();
+    // Tenant lookup — use batch-fetched map
+    const tenant = tenantMapA.get(call.tenant_id);
 
     if (!tenant) continue;
 
@@ -144,6 +152,17 @@ export async function GET(request) {
     .not('from_number', 'is', null)
     .limit(10);
 
+  // Batch-fetch tenants for Branch B calls
+  const retryTenantIds = [...new Set((retryCalls || []).map(c => c.tenant_id).filter(Boolean))];
+  let tenantMapB = new Map();
+  if (retryTenantIds.length > 0) {
+    const { data: retryTenants } = await supabase
+      .from('tenants')
+      .select('id, business_name, default_locale')
+      .in('id', retryTenantIds);
+    tenantMapB = new Map((retryTenants || []).map(t => [t.id, t]));
+  }
+
   for (const call of retryCalls || []) {
     processedB++;
 
@@ -154,11 +173,7 @@ export async function GET(request) {
 
     if (elapsedSecs < backoffSecs) continue; // Not yet due
 
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('business_name, default_locale')
-      .eq('id', call.tenant_id)
-      .single();
+    const tenant = tenantMapB.get(call.tenant_id);
 
     if (!tenant) continue;
 

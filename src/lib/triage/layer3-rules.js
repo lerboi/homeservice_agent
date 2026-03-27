@@ -46,13 +46,15 @@ export async function applyOwnerRules(baseUrgency, tenant_id, detected_service) 
     }
   }
 
-  // If no specific match, take the highest severity tag across all services
-  // (conservative escalation: if owner has ANY emergency-tagged service, escalate)
+  // If no specific match and tenant has only one service, use that service's tag.
+  // With multiple services and no detected_service, do NOT escalate — we can't know
+  // which service the caller is asking about, so default to baseUrgency.
   if (!matchedTag) {
-    const maxSeverity = services.reduce((max, s) => {
-      return (SEVERITY[s.urgency_tag] || 0) > (SEVERITY[max] || 0) ? s.urgency_tag : max;
-    }, baseUrgency);
-    matchedTag = maxSeverity;
+    if (services.length === 1) {
+      matchedTag = services[0].urgency_tag;
+    } else {
+      matchedTag = baseUrgency;
+    }
   }
 
   // Never downgrade — only escalate

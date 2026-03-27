@@ -4,6 +4,7 @@ import {
   syncOutlookCalendarEvents,
 } from '@/lib/scheduling/outlook-calendar.js';
 import { supabase } from '@/lib/supabase.js';
+import { verifyOAuthState } from '@/app/api/google-calendar/auth/route.js';
 
 /**
  * GET /api/outlook-calendar/callback
@@ -18,7 +19,7 @@ import { supabase } from '@/lib/supabase.js';
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const tenantId = searchParams.get('state');
+  const rawState = searchParams.get('state');
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description') || '';
 
@@ -43,8 +44,11 @@ export async function GET(request) {
     );
   }
 
+  // Verify HMAC-signed state to prevent CSRF / tenant spoofing
+  const tenantId = verifyOAuthState(rawState);
+
   if (!code || !tenantId) {
-    console.log('400:', 'Missing code or tenantId');
+    console.log('400:', 'Missing code or invalid state');
     return Response.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
     );

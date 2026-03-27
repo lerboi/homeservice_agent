@@ -100,53 +100,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadActiveData() {
-      const today = new Date().toISOString().split('T')[0];
+      // Fetch aggregated stats from dedicated endpoint (no 100-lead cap)
+      try {
+        const statsRes = await fetch('/api/dashboard/stats');
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          setStats({ newLeadsToday: data.newLeadsToday, callsToday: data.callsToday });
+          setWeekStats({ leads: data.weekLeads, booked: data.weekBooked, conversionRate: data.conversionRate });
+        }
+      } catch { /* ignore — stats cards will show 0 */ }
 
-      // Fetch leads data for stats (appointments API does not exist yet — skip gracefully)
-      const [leadsRes, allLeadsRes] = await Promise.allSettled([
-        fetch(`/api/leads?status=new&date_from=${today}`),
-        fetch('/api/leads'),
-      ]);
-
-      // New leads today (action-required card)
-      let newLeadsToday = 0;
-      if (leadsRes.status === 'fulfilled' && leadsRes.value.ok) {
-        try {
-          const data = await leadsRes.value.json();
-          newLeadsToday = (data.leads ?? []).length;
-        } catch { /* ignore */ }
-      }
-
-      // All-time leads for calls today + week stats
-      let callsToday = 0;
-      let weekLeads = 0;
-      let weekBooked = 0;
-      if (allLeadsRes.status === 'fulfilled' && allLeadsRes.value.ok) {
-        try {
-          const data = await allLeadsRes.value.json();
-          const allLeads = data.leads ?? [];
-
-          callsToday = allLeads.filter((l) => {
-            const created = l.created_at?.split('T')[0];
-            return created === today;
-          }).length;
-
-          // Week stats: last 7 days
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          const weekLeadList = allLeads.filter((l) => {
-            if (!l.created_at) return false;
-            return new Date(l.created_at) >= sevenDaysAgo;
-          });
-          weekLeads = weekLeadList.length;
-          weekBooked = weekLeadList.filter((l) => l.status === 'booked' || l.status === 'completed' || l.status === 'paid').length;
-        } catch { /* ignore */ }
-      }
-
-      const conversionRate = weekLeads > 0 ? Math.round((weekBooked / weekLeads) * 100) : 0;
-
-      setStats({ newLeadsToday, callsToday });
-      setWeekStats({ leads: weekLeads, booked: weekBooked, conversionRate });
       setNextAppointment(null); // appointments API not yet available
       setActiveLoading(false);
 

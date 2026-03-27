@@ -2,6 +2,7 @@ import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { retell } from '@/lib/retell';
 import twilio from 'twilio';
+import { Resend } from 'resend';
 import { PaymentFailedEmail } from '@/emails/PaymentFailedEmail';
 import { TrialReminderEmail } from '@/emails/TrialReminderEmail';
 
@@ -19,7 +20,6 @@ function getTwilioClient() {
 let resendClient = null;
 function getResendClient() {
   if (!resendClient) {
-    const { Resend } = require('resend');
     resendClient = new Resend(process.env.RESEND_API_KEY);
   }
   return resendClient;
@@ -297,15 +297,9 @@ async function handleSubscriptionEvent(subscription) {
   const callsUsed = currentRow?.calls_used ?? 0;
 
   // History table insert (D-13)
-  // Step 1: Mark all existing rows for this subscription as not current
-  await supabase
-    .from('subscriptions')
-    .update({ is_current: false })
-    .eq('stripe_subscription_id', subscription.id)
-    .eq('is_current', true);
-
-  // Step 2: Insert new row with is_current = true
-  const { error: insertError } = await supabase
+  // Insert new row first, THEN mark old rows inactive to avoid a window with zero current rows.
+  // Brief window with 2 is_current rows is safer than 0 (proxy uses order+limit to pick latest).
+  const { data: newRow, error: insertError } = await supabase
     .from('subscriptions')
     .insert({
       tenant_id: tenantId,
@@ -329,12 +323,22 @@ async function handleSubscriptionEvent(subscription) {
       stripe_updated_at: stripeUpdatedAt,
       overage_stripe_item_id: overageStripeItemId,
       is_current: true,
-    });
+    })
+    .select('id')
+    .single();
 
   if (insertError) {
     console.error('[stripe/webhook] Failed to insert subscription row:', insertError);
     throw insertError;
   }
+
+  // Now mark all OTHER rows for this subscription as not current
+  await supabase
+    .from('subscriptions')
+    .update({ is_current: false })
+    .eq('stripe_subscription_id', subscription.id)
+    .eq('is_current', true)
+    .neq('id', newRow.id);
 
   console.log(`[stripe/webhook] Synced subscription ${subscription.id} status=${localStatus} plan=${planInfo.plan_id}`);
 }
@@ -440,16 +444,15 @@ async function handleTrialWillEnd(subscription) {
     const smsStatus = smsResult.status === 'fulfilled' ? 'ok' : `failed: ${smsResult.reason?.message}`;
     console.log(`[stripe/webhook] Trial-will-end notifications: email=${emailStatus}, sms=${smsStatus}`);
 
-    // Record send in billing_notifications for idempotency
-    const { error: insertError } = await supabase.from('billing_notifications').insert({
-      tenant_id: tenantId,
-      notification_type: 'trial_will_end',
-      metadata: { trial_end: subscription.trial_end },
-    });
-
-    if (insertError) {
-      console.error('[stripe/webhook] Failed to insert billing_notification row:', insertError);
-    }
+    // Record send in billing_notifications for idempotency (upsert with ignoreDuplicates for atomic dedup)
+    await supabase.from('billing_notifications').upsert(
+      {
+        tenant_id: tenantId,
+        notification_type: 'trial_will_end',
+        metadata: { trial_end: subscription.trial_end },
+      },
+      { onConflict: 'tenant_id,notification_type', ignoreDuplicates: true }
+    );
 
     console.log('[stripe/webhook] Trial-will-end notification sent for tenant:', tenantId);
   } catch (err) {

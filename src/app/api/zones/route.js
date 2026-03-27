@@ -110,6 +110,20 @@ export async function PUT(request) {
       return Response.json({ error: 'buffers must be an array' }, { status: 400 });
     }
 
+    // Validate all zone IDs belong to this tenant to prevent cross-tenant IDOR
+    const submittedZoneIds = [...new Set(buffers.flatMap(b => [b.zone_a_id, b.zone_b_id]))];
+    if (submittedZoneIds.length > 0) {
+      const { count: validCount } = await supabase
+        .from('service_zones')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .in('id', submittedZoneIds);
+
+      if (validCount !== submittedZoneIds.length) {
+        return Response.json({ error: 'One or more zone IDs do not belong to your account' }, { status: 403 });
+      }
+    }
+
     const rows = buffers.map(({ zone_a_id, zone_b_id, buffer_mins }) => ({
       tenant_id: tenantId,
       zone_a_id,

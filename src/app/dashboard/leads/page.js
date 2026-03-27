@@ -80,7 +80,14 @@ export default function LeadsPage() {
   // ── Get tenant ID for Realtime subscription ─────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setTenantId(user?.id ?? null);
+      if (!user) { setTenantId(null); return; }
+      // Resolve actual tenant_id from tenants table (user.id !== tenant_id)
+      supabase
+        .from('tenants')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+        .then(({ data }) => setTenantId(data?.id ?? null));
     }).catch(() => {
       setTenantId(null);
     });

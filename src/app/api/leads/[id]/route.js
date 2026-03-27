@@ -57,6 +57,12 @@ export async function PATCH(request, { params }) {
   const body = await request.json();
   const { status, revenue_amount, previous_status } = body;
 
+  // Validate: status must be one of the allowed values
+  const VALID_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
+  if (status && !VALID_STATUSES.includes(status)) {
+    return Response.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
+  }
+
   // Validate: Paid status requires revenue_amount
   if (status === 'paid' && (revenue_amount === null || revenue_amount === undefined || revenue_amount === '')) {
     console.log('422: revenue_amount required for Paid status');

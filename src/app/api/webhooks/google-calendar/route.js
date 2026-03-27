@@ -1,6 +1,7 @@
 import { after } from 'next/server';
 import { supabase } from '@/lib/supabase.js';
 import { handleGoogleCalendarPush } from '@/lib/webhooks/google-calendar-push.js';
+import { syncCalendarEvents } from '@/lib/scheduling/google-calendar.js';
 
 /**
  * POST /api/webhooks/google-calendar
@@ -19,7 +20,8 @@ export async function POST(request) {
     return Response.json({ ok: true });
   }
 
-  // Validate that the channel is still registered (reject stale channels)
+  // Validate channel is registered and use DB-sourced tenant_id (not the header)
+  // to prevent forged push notifications with spoofed X-Goog-Channel-Token
   if (channelId) {
     const { data: creds } = await supabase
       .from('calendar_credentials')
@@ -31,9 +33,19 @@ export async function POST(request) {
       // Stale or unknown channel — return 200 to stop Google retrying
       return Response.json({ ok: true });
     }
+
+    // Use the trusted DB tenant_id for sync, not the header value
+    if (state === 'exists' && creds.tenant_id) {
+      const verifiedTenantId = creds.tenant_id;
+      after(async () => {
+        await syncCalendarEvents(verifiedTenantId);
+      });
+    }
+
+    return Response.json({ ok: true });
   }
 
-  // Trigger async incremental sync — runs after response is sent
+  // Fallback: no channelId — use header tenant_id (legacy compatibility)
   if (state === 'exists' && tenantId) {
     after(async () => {
       await handleGoogleCalendarPush(request);

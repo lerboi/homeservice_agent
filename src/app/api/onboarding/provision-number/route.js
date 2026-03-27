@@ -10,6 +10,21 @@ export async function POST(request) {
   }
 
   try {
+    // Idempotency: check if tenant already has a number provisioned
+    const { data: existingTenant } = await supabase
+      .from('tenants')
+      .select('retell_phone_number')
+      .eq('id', tenantId)
+      .single();
+
+    if (existingTenant?.retell_phone_number) {
+      return Response.json({
+        phone_number: existingTenant.retell_phone_number,
+        phone_number_pretty: existingTenant.retell_phone_number,
+        already_provisioned: true,
+      });
+    }
+
     // Provision a new Retell phone number
     const phoneNumber = await retell.phoneNumber.create({});
 

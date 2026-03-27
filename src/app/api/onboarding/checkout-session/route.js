@@ -87,7 +87,7 @@ export async function POST(request) {
 
     if (embedded) {
       // Embedded checkout — returns client_secret, uses return_url
-      sessionConfig.ui_mode = 'embedded_page';
+      sessionConfig.ui_mode = 'embedded';
       sessionConfig.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout?session_id={CHECKOUT_SESSION_ID}`;
     } else {
       // Hosted checkout — returns url, uses success_url/cancel_url

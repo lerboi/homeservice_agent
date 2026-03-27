@@ -27,14 +27,47 @@ export function getAuthUrl(oauth2Client) {
 }
 
 /**
+ * Get a valid Google access token, refreshing and persisting if near expiry (5-min buffer).
+ * Mirrors the Outlook `getValidAccessToken` pattern for serverless compatibility.
+ * @param {object} creds - calendar_credentials row
+ * @returns {Promise<string>} Valid access token
+ */
+async function getValidGoogleAccessToken(creds) {
+  if (creds.expiry_date > Date.now() + 300000) {
+    return creds.access_token;
+  }
+
+  const oauth2Client = createOAuth2Client();
+  oauth2Client.setCredentials({
+    refresh_token: creds.refresh_token,
+  });
+
+  const { credentials: newTokens } = await oauth2Client.refreshAccessToken();
+
+  // Persist refreshed tokens to DB so they survive serverless cold starts
+  await supabase
+    .from('calendar_credentials')
+    .update({
+      access_token: newTokens.access_token,
+      refresh_token: newTokens.refresh_token || creds.refresh_token,
+      expiry_date: newTokens.expiry_date,
+    })
+    .eq('tenant_id', creds.tenant_id)
+    .eq('provider', 'google');
+
+  return newTokens.access_token;
+}
+
+/**
  * Create a Google Calendar event for a platform appointment.
  * @param {{ credentials: object, appointment: object }} params
  * @returns {Promise<string>} Created event ID
  */
 export async function createCalendarEvent({ credentials, appointment }) {
+  const validToken = await getValidGoogleAccessToken(credentials);
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({
-    access_token: credentials.access_token,
+    access_token: validToken,
     refresh_token: credentials.refresh_token,
     expiry_date: credentials.expiry_date,
   });
@@ -248,11 +281,14 @@ export async function pushBookingToCalendar(tenantId, appointmentId) {
     return;
   }
 
-  // Create calendar event
-  const eventId = await createCalendarEvent({
-    credentials: creds,
-    appointment,
-  });
+  // Create calendar event — branch by provider
+  let eventId;
+  if (creds.provider === 'outlook') {
+    const { createOutlookCalendarEvent } = await import('./outlook-calendar.js');
+    eventId = await createOutlookCalendarEvent({ credentials: creds, appointment });
+  } else {
+    eventId = await createCalendarEvent({ credentials: creds, appointment });
+  }
 
   // Store external_event_id and provider on appointment (D-09)
   await supabase

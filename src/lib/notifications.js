@@ -165,7 +165,7 @@ export async function sendCallerRecoverySMS({
  */
 function interpolate(template, vars) {
   return Object.entries(vars).reduce(
-    (str, [key, val]) => str.replace(`{${key}}`, val ?? ''),
+    (str, [key, val]) => str.replaceAll(`{${key}}`, val ?? ''),
     template
   );
 }

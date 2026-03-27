@@ -1,6 +1,36 @@
+import crypto from 'crypto';
 import { createSupabaseServer } from '@/lib/supabase-server.js';
 import { createOAuth2Client } from '@/lib/scheduling/google-calendar.js';
 import { supabase } from '@/lib/supabase.js';
+
+/**
+ * Sign an OAuth state parameter with HMAC to prevent CSRF / tenant spoofing.
+ * @param {string} tenantId
+ * @returns {string} `${tenantId}:${hmac}`
+ */
+export function signOAuthState(tenantId) {
+  const hmac = crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY)
+    .update(tenantId)
+    .digest('hex');
+  return `${tenantId}:${hmac}`;
+}
+
+/**
+ * Verify and extract tenant ID from a signed OAuth state parameter.
+ * @param {string} state
+ * @returns {string|null} tenantId if valid, null if tampered
+ */
+export function verifyOAuthState(state) {
+  if (!state || !state.includes(':')) return null;
+  const [tenantId, hmac] = state.split(':');
+  const expected = crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY)
+    .update(tenantId)
+    .digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'))) {
+    return null;
+  }
+  return tenantId;
+}
 
 /**
  * GET /api/google-calendar/auth
@@ -30,12 +60,12 @@ export async function GET(request) {
 
   const oauth2Client = createOAuth2Client();
 
-  // Include tenant_id as state parameter for CSRF protection and callback correlation
+  // HMAC-signed state parameter for CSRF protection and callback correlation
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
     scope: ['https://www.googleapis.com/auth/calendar.events'],
-    state: tenant.id,
+    state: signOAuthState(tenant.id),
   });
 
   return Response.json({ url: authUrl });

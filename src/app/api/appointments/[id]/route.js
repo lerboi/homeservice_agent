@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
 
@@ -21,7 +22,7 @@ export async function GET(request, { params }) {
       urgency, zone_id, status, booked_via,
       external_event_id, notes, created_at,
       service_zones (id, name),
-      calls (id, recording_url, transcript, created_at, caller_phone)
+      calls (id, recording_url, transcript_text, created_at, from_number)
     `)
     .eq('id', id)
     .eq('tenant_id', tenantId)
@@ -105,12 +106,50 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Async: remove from Google Calendar if event exists
-    // Using after() pattern — fire-and-forget, non-blocking
+    // Async: remove from external calendar if event exists
     if (appt.external_event_id) {
-      // Deferred Google Calendar deletion (after response)
-      // The caller handles this asynchronously
-      // We signal the external_event_id in the response for client-side handling if needed
+      after(async () => {
+        try {
+          // Determine provider from the appointment's external_event_provider or credentials
+          const { data: creds } = await supabase
+            .from('calendar_credentials')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .eq('is_primary', true)
+            .single();
+
+          if (!creds) return;
+
+          if (creds.provider === 'google') {
+            const { createOAuth2Client } = await import('@/lib/scheduling/google-calendar.js');
+            const { google } = await import('googleapis');
+            const oauth2Client = createOAuth2Client();
+            oauth2Client.setCredentials({
+              access_token: creds.access_token,
+              refresh_token: creds.refresh_token,
+              expiry_date: creds.expiry_date,
+            });
+            const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+            await calendar.events.delete({
+              calendarId: 'primary',
+              eventId: appt.external_event_id,
+            });
+          } else if (creds.provider === 'outlook') {
+            const { refreshOutlookAccessToken } = await import('@/lib/scheduling/outlook-calendar.js');
+            let accessToken = creds.access_token;
+            if (creds.expiry_date <= Date.now() + 300000) {
+              const tokenData = await refreshOutlookAccessToken(creds.refresh_token);
+              accessToken = tokenData.access_token;
+            }
+            await fetch(`https://graph.microsoft.com/v1.0/me/events/${appt.external_event_id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+          }
+        } catch (err) {
+          console.error('[appointment-cancel] Calendar event deletion failed:', err.message);
+        }
+      });
     }
 
     return Response.json({ appointment: updated });
