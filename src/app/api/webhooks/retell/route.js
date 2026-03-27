@@ -21,7 +21,12 @@ export async function POST(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const payload = JSON.parse(rawBody);
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
   const { event } = payload;
 
   if (event === 'call_inbound') {
@@ -483,7 +488,13 @@ async function handleCheckAvailability(payload) {
  */
 async function handleBookAppointment(payload) {
   const { call_id, function_call } = payload;
-  const args = function_call.arguments;
+  const args = function_call.arguments || {};
+
+  if (!args.slot_start || !args.slot_end) {
+    return Response.json({
+      result: 'I need a bit more information to complete the booking. Could you confirm the time you would like?',
+    });
+  }
 
   // Resolve tenant from call record (two-hop: calls -> tenants)
   const { data: call } = await supabase

@@ -80,22 +80,9 @@ async function provisionPhoneNumber(tenantId, country) {
 
       return phoneNumber;
     } else {
-      // Fallback: treat as US (legacy behavior)
-      console.warn('[stripe/webhook] Unknown country for tenant:', tenantId, country);
-      const client = getTwilioClient();
-      const purchasedNumber = await client.incomingPhoneNumbers.create({
-        phoneNumberType: 'local',
-        countryCode: 'US',
-      });
-      const phoneNumber = purchasedNumber.phoneNumber;
-
-      try {
-        await retell.phoneNumber.import({ phone_number: phoneNumber });
-      } catch (importErr) {
-        console.error(`[stripe/webhook] Retell import failed for fallback ${phoneNumber}:`, importErr);
-      }
-
-      return phoneNumber;
+      // Unknown or null country — flag for admin instead of provisioning wrong country
+      console.error('[stripe/webhook] Cannot provision: unknown country for tenant:', tenantId, country);
+      return null;
     }
   } catch (err) {
     console.error('[stripe/webhook] Provisioning failed for tenant:', tenantId, err);
@@ -159,7 +146,8 @@ export async function POST(request) {
 
   if (idempotencyError) {
     console.error('[stripe/webhook] Idempotency insert error:', idempotencyError);
-    // Continue processing — the event may still need handling
+    // DB error (not duplicate) — return 500 so Stripe retries after DB recovers
+    return Response.json({ error: 'Idempotency check failed' }, { status: 500 });
   }
 
   // 3. Event routing (D-08 — synchronous, no after())

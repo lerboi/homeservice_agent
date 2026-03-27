@@ -234,7 +234,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This will cancel the appointment with {appointment.caller_name}.
-                  {appointment.google_event_id && ' The Google Calendar event will also be removed.'}
+                  {appointment.external_event_id && ' The calendar event will also be removed.'}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

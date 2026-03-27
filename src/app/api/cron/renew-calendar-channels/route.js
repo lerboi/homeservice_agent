@@ -29,7 +29,7 @@ export async function POST(request) {
     .from('calendar_credentials')
     .select('*')
     .not('watch_channel_id', 'is', null)
-    .lt('watch_expiration', cutoffTimestamp.toString());
+    .lt('watch_expiration', cutoffTimestamp);
 
   if (error) {
     console.error('[cron-renew] DB query error:', error);

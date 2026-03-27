@@ -114,7 +114,7 @@ export async function GET(request) {
       id, tenant_id, call_id, start_time, end_time,
       service_address, caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
-      google_event_id, notes, created_at,
+      external_event_id, notes, created_at,
       service_zones (id, name)
     `)
     .eq('tenant_id', tenantId)

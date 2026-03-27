@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
       id, tenant_id, call_id, start_time, end_time,
       service_address, caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
-      google_event_id, notes, created_at,
+      external_event_id, notes, created_at,
       service_zones (id, name),
       calls (id, recording_url, transcript, created_at, caller_phone)
     `)
@@ -74,10 +74,10 @@ export async function PATCH(request, { params }) {
 
   // Handle appointment status update (cancel)
   if (body.status === 'cancelled') {
-    // Fetch the appointment to get google_event_id
+    // Fetch the appointment to get external_event_id
     const { data: appt, error: fetchError } = await supabase
       .from('appointments')
-      .select('id, tenant_id, google_event_id, status')
+      .select('id, tenant_id, external_event_id, status')
       .eq('id', id)
       .eq('tenant_id', tenantId)
       .single();
@@ -97,7 +97,7 @@ export async function PATCH(request, { params }) {
       .update({ status: 'cancelled' })
       .eq('id', id)
       .eq('tenant_id', tenantId)
-      .select('id, status, google_event_id, start_time, end_time, caller_name')
+      .select('id, status, external_event_id, start_time, end_time, caller_name')
       .single();
 
     if (updateError) {
@@ -107,10 +107,10 @@ export async function PATCH(request, { params }) {
 
     // Async: remove from Google Calendar if event exists
     // Using after() pattern — fire-and-forget, non-blocking
-    if (appt.google_event_id) {
+    if (appt.external_event_id) {
       // Deferred Google Calendar deletion (after response)
       // The caller handles this asynchronously
-      // We signal the google_event_id in the response for client-side handling if needed
+      // We signal the external_event_id in the response for client-side handling if needed
     }
 
     return Response.json({ appointment: updated });
