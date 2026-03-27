@@ -248,15 +248,26 @@ export async function processCallAnalyzed(call) {
   }
 
   // Check whether a booking was made during this call
+  // Appointments link via call_id (UUID FK to calls table), not retell_call_id (string)
+  // First resolve the call UUID, then check appointments
   let appointmentExists = false;
+  let earlyCallUuid = null;
   if (tenantId) {
-    const { data: appt } = await supabase
-      .from('appointments')
+    const { data: callRow } = await supabase
+      .from('calls')
       .select('id')
-      .eq('tenant_id', tenantId)
       .eq('retell_call_id', call_id)
       .maybeSingle();
-    appointmentExists = appt != null;
+    earlyCallUuid = callRow?.id || null;
+
+    if (earlyCallUuid) {
+      const { data: appt } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('call_id', earlyCallUuid)
+        .maybeSingle();
+      appointmentExists = appt != null;
+    }
   }
 
   // For any unbooked call: calculate suggested slots for owner follow-up
@@ -381,13 +392,13 @@ export async function processCallAnalyzed(call) {
     : 0;
 
   // Look up appointmentId for this call if a booking was made during the call
+  // Use callUuid (from upsert above) to query by call_id FK, not retell_call_id
   let appointmentId = null;
-  if (appointmentExists && tenantId) {
+  if (appointmentExists && callUuid) {
     const { data: apptRow } = await supabase
       .from('appointments')
       .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('retell_call_id', call_id)
+      .eq('call_id', callUuid)
       .maybeSingle();
     appointmentId = apptRow?.id || null;
   }

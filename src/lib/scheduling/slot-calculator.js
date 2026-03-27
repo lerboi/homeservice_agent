@@ -150,6 +150,18 @@ export function calculateAvailableSlots({
   const available = [];
   let cursor = new Date(windowStart);
 
+  // Skip past slots when calculating for today — don't offer times that have already passed
+  const now = new Date();
+  if (cursor < now && now < windowEnd) {
+    // Only advance if we're within today's working window
+    // Check if targetDate is actually today in the tenant timezone
+    const zonedNow = toZonedTime(now, tenantTimezone);
+    const todayStr = `${zonedNow.getFullYear()}-${String(zonedNow.getMonth() + 1).padStart(2, '0')}-${String(zonedNow.getDate()).padStart(2, '0')}`;
+    if (targetDate === todayStr) {
+      cursor = new Date(now);
+    }
+  }
+
   while (cursor < windowEnd && available.length < maxSlots) {
     const slotStart = new Date(cursor);
     const slotEnd = addMinutes(slotStart, slotDurationMins);

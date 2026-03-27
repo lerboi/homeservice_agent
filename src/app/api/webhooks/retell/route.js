@@ -274,9 +274,10 @@ async function handleFunctionCall(payload) {
     }
   }
 
-  if (function_call?.name === 'check_caller_history') {
-    return handleCheckCallerHistory(payload);
-  }
+  // check_caller_history disabled — call record doesn't exist during live calls yet
+  // if (function_call?.name === 'check_caller_history') {
+  //   return handleCheckCallerHistory(payload);
+  // }
 
   if (function_call?.name === 'check_availability') {
     return handleCheckAvailability(payload);
