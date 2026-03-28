@@ -1,0 +1,150 @@
+EXECUTE: Voice System Migration to Twilio + LiveKit + Gemini 3.1 Flash Live
+============================================================================
+
+CONTEXT
+-------
+This is the execution prompt. Before running this, the research and planning
+prompt (Gemini_migration.txt) has already been completed. The implementation
+plan is at My Prompts/Gemini_migration_plan.md. The original migration brief
+with full architectural context is at My Prompts/Gemini_migration.txt.
+
+
+BEFORE YOU START
+----------------
+1. Read My Prompts/Gemini_migration.txt to understand the full system context,
+   what files to keep unchanged, what to remove, and the important notes.
+2. Read My Prompts/Gemini_migration_plan.md to understand the phased plan you
+   are executing.
+3. Read the voice-call-architecture skill file for the current system's
+   complete behavior reference. Every behavioral nuance documented there
+   (booking-first protocol, two-strike decline, transfer recovery, greeting
+   guard, repeat caller awareness, slot preference detection, post-booking
+   recap, intake questions, etc.) must be preserved in the new system.
+4. Read supabase/DB in root directory for the full database schema.
+
+
+EXECUTION RULES
+---------------
+Follow these rules strictly throughout the entire migration:
+
+  Commit discipline:
+    - Commit after completing each phase in the plan. Each commit should leave
+      the codebase in a working state (nothing half-finished).
+    - Write clear commit messages that describe what was migrated in that phase.
+    - Push after each phase so progress is saved.
+
+  Preserve business logic:
+    - The scheduling system (slot-calculator, atomic booking, calendar sync),
+      lead management, triage pipeline, and notification system must NOT be
+      modified. Import and call them from the new agent code exactly as the
+      current webhook handlers do.
+    - Every tool handler (book_appointment, check_availability, capture_lead,
+      check_caller_history, transfer_call, end_call) must produce the same
+      database writes and side effects as the current implementations in
+      src/app/api/webhooks/retell/route.js. The execution moves from webhook
+      handlers to in-process agent functions, but the logic stays the same.
+    - The post-call pipeline (call record, triage, lead creation, owner
+      notifications, caller SMS, calendar push, usage tracking) must produce
+      the same outputs. It currently lives in src/lib/call-processor.js —
+      reuse that code or port it faithfully into the agent's call-end handler.
+
+  Database compatibility:
+    - The dashboard reads from the calls, leads, appointments, and activity_log
+      tables. The new agent must write to these same tables with the same column
+      values so the dashboard continues working without changes.
+    - Any schema migration must preserve existing data. Use ALTER TABLE, not
+      DROP + CREATE. Add new columns as nullable, rename with care.
+    - The transcript_structured format (array of {role, content} objects) must
+      stay the same so TranscriptViewer renders correctly.
+    - Recordings must end up in Supabase Storage at recording_storage_path so
+      AudioPlayer can play them.
+
+  Dashboard changes:
+    - Keep dashboard changes minimal. The dashboard already reads everything
+      from the database — if the agent writes the same data, most components
+      need zero changes.
+    - Only change what is strictly necessary: column references if renamed,
+      recording playback source if the URL format changes, display labels
+      that say "Retell" (if any).
+
+  Agent prompt:
+    - Port the entire system prompt from agent-prompt.js section by section.
+      Do not summarize, simplify, or skip any section. The prompt has been
+      refined over many iterations and handles subtle edge cases.
+    - Adapt prompt instructions where Gemini's native audio capabilities make
+      them unnecessary (e.g., TTS-specific instructions) or where they need
+      to be expressed differently for Gemini.
+    - Do NOT remove any behavioral rules — booking-first protocol, decline
+      handling, transfer rules, urgency detection, language handling, call
+      duration limits, etc. must all be preserved.
+
+  Testing:
+    - After building the agent, verify that all 6 tool handlers work by
+      tracing through the code path and confirming they call the same
+      underlying functions (atomicBookSlot, calculateAvailableSlots,
+      createOrMergeLead, etc.).
+    - Update or replace the existing Retell webhook tests to test the new
+      agent's tool execution paths.
+    - Remove the Retell mock file (tests/__mocks__/retell.js) and any tests
+      that test Retell-specific behavior (signature verification, webhook
+      payload parsing).
+
+  Cleanup:
+    - After the new system is fully working, remove all Retell artifacts:
+      src/lib/retell.js, retell-sdk from package.json, RETELL_API_KEY from
+      .env.example, the entire src/app/api/webhooks/retell/ directory.
+    - Do not remove these until the new system is confirmed working. If the
+      plan has a cleanup phase at the end, follow that ordering.
+
+  Skill files:
+    - After all code changes are complete, update the voice-call-architecture
+      skill file to document the new system. This is the single source of
+      truth for the voice pipeline — it must accurately reflect the new
+      Twilio + LiveKit + Gemini architecture, the new file map, the new
+      tool execution flow, the new call lifecycle, and any behavioral
+      differences.
+    - Update onboarding-flow skill if phone provisioning changed.
+    - Update auth-database-multitenancy skill if schema changed.
+
+
+PHASE EXECUTION
+---------------
+Work through the plan in My Prompts/Gemini_migration_plan.md phase by phase.
+For each phase:
+
+  1. Read the phase requirements from the plan.
+  2. Implement the changes described.
+  3. Verify the changes work (run tests if applicable, trace code paths).
+  4. Commit with a clear message describing what was done.
+  5. Push to the remote branch.
+  6. Move to the next phase.
+
+If you encounter a decision point not covered by the plan, choose the approach
+that is simplest, most consistent with the existing codebase patterns, and
+preserves all current behavior. Do not over-engineer or add capabilities beyond
+what the current system provides — this is a migration, not a feature expansion.
+
+If a phase turns out to be larger than expected, break it into sub-commits
+rather than making one massive commit. Each sub-commit should still leave the
+codebase in a working state.
+
+
+COMPLETION CHECKLIST
+--------------------
+When all phases are done, verify the following before marking the migration
+as complete:
+
+  [ ] LiveKit agent connects to rooms and streams audio to/from Gemini
+  [ ] All 6 tools execute in-process and produce correct database writes
+  [ ] Inbound calls route through Twilio SIP -> LiveKit -> Agent -> Gemini
+  [ ] Post-call pipeline runs: call record, triage, lead, notifications
+  [ ] Recordings are captured and stored in Supabase Storage
+  [ ] Transcripts are stored in the same format (transcript_structured)
+  [ ] Dashboard displays calls, leads, transcripts, and recordings correctly
+  [ ] Onboarding test call works through the new system
+  [ ] Phone provisioning works without Retell
+  [ ] All Retell artifacts are removed (SDK, lib, webhooks, env vars, mocks)
+  [ ] voice-call-architecture skill file is updated
+  [ ] All other affected skill files are updated
+  [ ] No existing business logic was modified (scheduling, leads, triage,
+      notifications, calendar sync)
