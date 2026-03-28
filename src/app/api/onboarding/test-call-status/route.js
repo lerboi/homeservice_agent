@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('onboarding_complete, retell_phone_number')
+    .select('onboarding_complete, phone_number')
     .eq('owner_id', user.id)
     .single();
 
@@ -22,6 +22,6 @@ export async function GET() {
 
   return Response.json({
     complete: tenant.onboarding_complete ?? false,
-    retell_phone_number: tenant.retell_phone_number ?? null,
+    phone_number: tenant.phone_number ?? null,
   });
 }

@@ -95,7 +95,7 @@ const SAMPLE_LEAD = {
     {
       calls: {
         id: 'call-uuid-1',
-        retell_call_id: 'retell-123',
+        call_id: 'retell-123',
         from_number: '+15551234567',
         urgency_classification: 'routine',
         urgency_confidence: 0.95,

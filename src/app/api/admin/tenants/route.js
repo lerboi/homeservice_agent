@@ -15,7 +15,7 @@ export async function GET(request) {
     .from('tenants')
     .select(
       `
-      id, business_name, owner_name, country, retell_phone_number,
+      id, business_name, owner_name, country, phone_number,
       onboarding_complete, provisioning_failed, created_at,
       subscriptions(plan_id, status, is_current)
     `,

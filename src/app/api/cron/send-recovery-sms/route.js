@@ -38,7 +38,7 @@ export async function GET(request) {
 
   const { data: firstSendCalls, error: errA } = await supabase
     .from('calls')
-    .select('id, retell_call_id, from_number, to_number, tenant_id, start_timestamp, end_timestamp, retell_metadata, urgency_classification, detected_language')
+    .select('id, call_id, from_number, to_number, tenant_id, start_timestamp, end_timestamp, call_metadata, urgency_classification, detected_language')
     .eq('status', 'analyzed')
     .is('recovery_sms_sent_at', null)
     .is('recovery_sms_status', null)         // Not already being tracked by Phase 17
@@ -58,7 +58,7 @@ export async function GET(request) {
   if (callIds.length > 0) {
     const [tenantsRes, apptsRes] = await Promise.all([
       tenantIds.length > 0
-        ? supabase.from('tenants').select('id, business_name, owner_phone, retell_phone_number, default_locale').in('id', tenantIds)
+        ? supabase.from('tenants').select('id, business_name, owner_phone, phone_number, default_locale').in('id', tenantIds)
         : { data: [] },
       supabase.from('appointments').select('call_id').in('call_id', callIds),
     ]);
@@ -95,8 +95,8 @@ export async function GET(request) {
     if (!tenant) continue;
 
     const callerName =
-      call.retell_metadata?.caller_name ||
-      call.retell_metadata?.call_analysis?.caller_name ||
+      call.call_metadata?.caller_name ||
+      call.call_metadata?.call_analysis?.caller_name ||
       null;
 
     // Pitfall 2: urgency_classification and detected_language now in select
@@ -146,7 +146,7 @@ export async function GET(request) {
 
   const { data: retryCalls, error: errB } = await supabase
     .from('calls')
-    .select('id, retell_call_id, from_number, tenant_id, detected_language, urgency_classification, recovery_sms_retry_count, recovery_sms_last_attempt_at, retell_metadata')
+    .select('id, call_id, from_number, tenant_id, detected_language, urgency_classification, recovery_sms_retry_count, recovery_sms_last_attempt_at, call_metadata')
     .eq('recovery_sms_status', 'retrying')
     .lt('recovery_sms_retry_count', MAX_ATTEMPTS)
     .not('from_number', 'is', null)
@@ -178,8 +178,8 @@ export async function GET(request) {
     if (!tenant) continue;
 
     const callerName =
-      call.retell_metadata?.caller_name ||
-      call.retell_metadata?.call_analysis?.caller_name ||
+      call.call_metadata?.caller_name ||
+      call.call_metadata?.call_analysis?.caller_name ||
       null;
     const locale = call.detected_language || tenant.default_locale || 'en';
     const urgency = call.urgency_classification || 'routine';

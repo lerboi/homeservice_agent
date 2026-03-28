@@ -1,6 +1,5 @@
 import { stripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
-import { retell } from '@/lib/retell';
 import twilio from 'twilio';
 import { Resend } from 'resend';
 import { PaymentFailedEmail } from '@/emails/PaymentFailedEmail';
@@ -28,7 +27,7 @@ function getResendClient() {
 /**
  * Provision a phone number based on tenant's country.
  * SG: Assign from phone_inventory via atomic RPC.
- * US/CA: Purchase via Twilio API, then import into Retell (per D-12 — Twilio-direct for future SMS access).
+ * US/CA: Purchase via Twilio API. Number routes via Twilio Elastic SIP trunk to LiveKit.
  *
  * Returns the provisioned phone number string, or null on failure.
  */
@@ -53,8 +52,8 @@ async function provisionPhoneNumber(tenantId, country) {
 
       return data[0].phone_number;
     } else if (country === 'US' || country === 'CA') {
-      // Step 1: Purchase number via Twilio API (D-12 — direct Twilio, not Retell)
-      // This gives us ownership of the number for future SMS capabilities
+      // Purchase number via Twilio API
+      // Number routes via Twilio Elastic SIP trunk to LiveKit (no Retell import needed)
       const client = getTwilioClient();
       const purchasedNumber = await client.incomingPhoneNumbers.create({
         phoneNumberType: 'local',
@@ -63,20 +62,6 @@ async function provisionPhoneNumber(tenantId, country) {
       const phoneNumber = purchasedNumber.phoneNumber; // E.164 format
 
       console.log(`[stripe/webhook] Purchased Twilio number ${phoneNumber} (${country}) for tenant ${tenantId}`);
-
-      // Step 2: Import the Twilio-purchased number into Retell for voice AI
-      // Retell needs the number imported with SIP trunk config to handle inbound calls
-      try {
-        await retell.phoneNumber.import({
-          phone_number: phoneNumber,
-          termination_uri: process.env.RETELL_SIP_TRUNK_TERMINATION_URI || undefined,
-        });
-        console.log(`[stripe/webhook] Imported ${phoneNumber} into Retell for tenant ${tenantId}`);
-      } catch (importErr) {
-        // Number is purchased but Retell import failed — log but still return the number
-        // The number is usable; Retell import can be retried manually
-        console.error(`[stripe/webhook] Retell import failed for ${phoneNumber}:`, importErr);
-      }
 
       return phoneNumber;
     } else {
@@ -210,17 +195,17 @@ async function handleCheckoutCompleted(session) {
   // Provision phone number based on tenant's country (Phase 27)
   const { data: tenantRow } = await supabase
     .from('tenants')
-    .select('country, retell_phone_number')
+    .select('country, phone_number')
     .eq('id', tenantId)
     .single();
 
-  if (tenantRow && !tenantRow.retell_phone_number) {
+  if (tenantRow && !tenantRow.phone_number) {
     const provisionedNumber = await provisionPhoneNumber(tenantId, tenantRow.country);
 
     if (provisionedNumber) {
       await supabase
         .from('tenants')
-        .update({ retell_phone_number: provisionedNumber })
+        .update({ phone_number: provisionedNumber })
         .eq('id', tenantId);
       console.log(`[stripe/webhook] Provisioned ${provisionedNumber} for tenant ${tenantId} (${tenantRow.country})`);
     } else {

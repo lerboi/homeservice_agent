@@ -39,9 +39,8 @@ export async function PATCH(request, { params }) {
  * Trigger re-provisioning for a tenant with provisioning_failed = true (SG only).
  * Calls assign_sg_number RPC and updates tenant record on success.
  *
- * Note: Unlike the Stripe webhook handler, admin re-provisioning does NOT call
- * Retell API or Twilio API — it only assigns the inventory number and updates the tenant.
- * Retell agent association is a separate operational step.
+ * Note: Admin re-provisioning only assigns the inventory number and updates the tenant.
+ * SIP trunk routing is handled at the Twilio/LiveKit level.
  */
 export async function POST(request, { params }) {
   const admin = await verifyAdmin();
@@ -92,11 +91,11 @@ export async function POST(request, { params }) {
 
   const assignedNumber = rpcData[0].phone_number;
 
-  // Update tenant: set retell_phone_number and clear provisioning_failed
+  // Update tenant: set phone_number and clear provisioning_failed
   const { error: updateError } = await supabase
     .from('tenants')
     .update({
-      retell_phone_number: assignedNumber,
+      phone_number: assignedNumber,
       provisioning_failed: false,
     })
     .eq('id', params.id);

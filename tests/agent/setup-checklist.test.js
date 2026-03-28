@@ -133,7 +133,7 @@ describe('GET /api/setup-checklist', () => {
       business_name: 'Acme Plumbing',
       working_hours: { mon: '09:00-17:00' },
       onboarding_complete: true,
-      retell_phone_number: '+18005551234',
+      phone_number: '+18005551234',
       setup_checklist_dismissed: false,
     };
     mockFromImpl
@@ -165,7 +165,7 @@ describe('GET /api/setup-checklist', () => {
       business_name: 'Test Co',
       working_hours: null,
       onboarding_complete: false,
-      retell_phone_number: null,
+      phone_number: null,
       setup_checklist_dismissed: null,
     };
     mockFromImpl
@@ -188,7 +188,7 @@ describe('GET /api/setup-checklist', () => {
       business_name: null,
       working_hours: null,
       onboarding_complete: false,
-      retell_phone_number: null,
+      phone_number: null,
       setup_checklist_dismissed: false,
     };
     mockFromImpl

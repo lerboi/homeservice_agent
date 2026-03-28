@@ -19,7 +19,7 @@ export async function GET(request) {
   let query = supabase
     .from('calls')
     .select(`
-      id, retell_call_id, from_number, to_number, direction, status,
+      id, call_id, from_number, to_number, direction, status,
       disconnection_reason, start_timestamp, end_timestamp, duration_seconds,
       recording_url, recording_storage_path, detected_language, language_barrier,
       urgency_classification, urgency_confidence, triage_layer_used,

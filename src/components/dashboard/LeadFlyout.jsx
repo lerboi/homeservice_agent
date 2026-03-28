@@ -35,6 +35,7 @@ import {
 import AudioPlayer from '@/components/dashboard/AudioPlayer';
 import TranscriptViewer from '@/components/dashboard/TranscriptViewer';
 import RevenueInput from '@/components/dashboard/RevenueInput';
+import { supabase } from '@/lib/supabase-browser';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -167,6 +168,20 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
   // First call associated with this lead (for recording/transcript)
   const firstCall = lead?.lead_calls?.[0]?.calls ?? null;
   const urgencyStyle = URGENCY_STYLES[lead?.urgency] || URGENCY_STYLES.routine;
+
+  // Resolve recording URL — prefer Supabase Storage (new calls), fall back to recording_url (historical)
+  const [recordingSrc, setRecordingSrc] = useState(null);
+  useEffect(() => {
+    if (!firstCall) { setRecordingSrc(null); return; }
+    if (firstCall.recording_storage_path) {
+      supabase.storage
+        .from('call-recordings')
+        .createSignedUrl(firstCall.recording_storage_path, 3600)
+        .then(({ data }) => setRecordingSrc(data?.signedUrl || null));
+    } else {
+      setRecordingSrc(firstCall.recording_url || null);
+    }
+  }, [firstCall]);
 
   // ─── Save status change ──────────────────────────────────────────────────
 
@@ -358,7 +373,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
                   Call Recording
                 </h3>
-                <AudioPlayer src={firstCall?.recording_url ?? null} />
+                <AudioPlayer src={recordingSrc} />
               </div>
 
               {/* ── Transcript ── */}

@@ -92,7 +92,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const emergencyCall = {
       id: 'call-1',
-      retell_call_id: 'retell-1',
+      call_id: 'retell-1',
       from_number: '+15551234567',
       tenant_id: 'tenant-1',
       start_timestamp: new Date(now - 120_000).toISOString(),
@@ -100,7 +100,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
       booking_outcome: 'not_attempted',
       urgency_classification: 'emergency',
       detected_language: 'es',
-      retell_metadata: { caller_name: 'Maria Garcia' },
+      call_metadata: { caller_name: 'Maria Garcia' },
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({ success: true, sid: 'SM_A1' });
@@ -163,7 +163,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const shortCall = {
       id: 'call-short',
-      retell_call_id: 'retell-short',
+      call_id: 'retell-short',
       from_number: '+15551111111',
       tenant_id: 'tenant-1',
       start_timestamp: new Date(now - 80_000).toISOString(),
@@ -171,7 +171,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
       booking_outcome: 'not_attempted',
       urgency_classification: 'routine',
       detected_language: 'en',
-      retell_metadata: {},
+      call_metadata: {},
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({ success: true, sid: 'SM_skip' });
@@ -204,7 +204,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const bookedCall = {
       id: 'call-booked',
-      retell_call_id: 'retell-booked',
+      call_id: 'retell-booked',
       from_number: '+15552222222',
       tenant_id: 'tenant-1',
       start_timestamp: new Date(now - 120_000).toISOString(),
@@ -212,7 +212,7 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
       booking_outcome: 'not_attempted',
       urgency_classification: 'routine',
       detected_language: 'en',
-      retell_metadata: {},
+      call_metadata: {},
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({ success: true, sid: 'SM_booked' });
@@ -254,14 +254,14 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const retryCall = {
       id: 'call-retry',
-      retell_call_id: 'retell-retry',
+      call_id: 'retell-retry',
       from_number: '+15553333333',
       tenant_id: 'tenant-1',
       detected_language: 'en',
       urgency_classification: 'routine',
       recovery_sms_retry_count: 1,
       recovery_sms_last_attempt_at: new Date(now - 60_000).toISOString(), // 60s ago, past 30s backoff
-      retell_metadata: {},
+      call_metadata: {},
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({ success: true, sid: 'SM_retry' });
@@ -306,14 +306,14 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const tooEarlyCall = {
       id: 'call-too-early',
-      retell_call_id: 'retell-too-early',
+      call_id: 'retell-too-early',
       from_number: '+15554444444',
       tenant_id: 'tenant-1',
       detected_language: 'en',
       urgency_classification: 'routine',
       recovery_sms_retry_count: 1,
       recovery_sms_last_attempt_at: new Date(now - 10_000).toISOString(), // Only 10s ago — within 30s backoff
-      retell_metadata: {},
+      call_metadata: {},
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({ success: true, sid: 'SM_skip' });
@@ -357,14 +357,14 @@ describe('Recovery SMS cron — Branch A (first-send) and Branch B (retry)', () 
     const now = Date.now();
     const exhaustedCall = {
       id: 'call-exhausted',
-      retell_call_id: 'retell-exhausted',
+      call_id: 'retell-exhausted',
       from_number: '+15555555555',
       tenant_id: 'tenant-1',
       detected_language: 'en',
       urgency_classification: 'routine',
       recovery_sms_retry_count: 2,
       recovery_sms_last_attempt_at: new Date(now - 200_000).toISOString(), // 200s ago, past 120s backoff
-      retell_metadata: {},
+      call_metadata: {},
     };
 
     const sendCallerRecoverySMSMock = jest.fn().mockResolvedValue({

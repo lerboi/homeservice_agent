@@ -1,5 +1,4 @@
 import { getTenantId } from '@/lib/get-tenant-id';
-import { retell } from '@/lib/retell';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request) {
@@ -13,33 +12,24 @@ export async function POST(request) {
     // Idempotency: check if tenant already has a number provisioned
     const { data: existingTenant } = await supabase
       .from('tenants')
-      .select('retell_phone_number')
+      .select('phone_number')
       .eq('id', tenantId)
       .single();
 
-    if (existingTenant?.retell_phone_number) {
+    if (existingTenant?.phone_number) {
       return Response.json({
-        phone_number: existingTenant.retell_phone_number,
-        phone_number_pretty: existingTenant.retell_phone_number,
+        phone_number: existingTenant.phone_number,
+        phone_number_pretty: existingTenant.phone_number,
         already_provisioned: true,
       });
     }
 
-    // Provision a new Retell phone number
-    const phoneNumber = await retell.phoneNumber.create({});
-
-    // Save to tenant row
-    await supabase
-      .from('tenants')
-      .update({ retell_phone_number: phoneNumber.phone_number })
-      .eq('id', tenantId);
-
-    return Response.json({
-      phone_number: phoneNumber.phone_number,
-      phone_number_pretty: phoneNumber.phone_number_pretty,
-    });
+    // Phone provisioning now happens during Stripe checkout webhook
+    // (Twilio purchase for US/CA, inventory assignment for SG).
+    // This route is a fallback check — if no number yet, return error.
+    return Response.json({ error: 'Number not yet provisioned. Complete checkout first.' }, { status: 400 });
   } catch (err) {
-    console.error('Retell number provisioning failed:', err);
-    return Response.json({ error: 'Provisioning failed' }, { status: 500 });
+    console.error('Number provisioning check failed:', err);
+    return Response.json({ error: 'Provisioning check failed' }, { status: 500 });
   }
 }

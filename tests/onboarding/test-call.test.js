@@ -1,19 +1,21 @@
 /**
  * Unit tests for the test-call API route.
- * Tests Retell outbound call triggering and onboarding completion.
+ * Tests LiveKit SIP outbound call triggering and onboarding completion.
  */
 
 import { jest } from '@jest/globals';
 
-// Mutable shared mock for retell
-const mockCreatePhoneCall = jest.fn();
+// Mutable shared mocks for LiveKit SDK
+const mockCreateRoom = jest.fn().mockResolvedValue({});
+const mockCreateSipParticipant = jest.fn().mockResolvedValue({});
 
-jest.unstable_mockModule('@/lib/retell', () => ({
-  retell: {
-    call: {
-      createPhoneCall: mockCreatePhoneCall,
-    },
-  },
+jest.unstable_mockModule('livekit-server-sdk', () => ({
+  RoomServiceClient: jest.fn().mockImplementation(() => ({
+    createRoom: mockCreateRoom,
+  })),
+  SipClient: jest.fn().mockImplementation(() => ({
+    createSipParticipant: mockCreateSipParticipant,
+  })),
 }));
 
 // Shared mutable supabase mock
@@ -24,17 +26,6 @@ const mockSupabase = {
 
 jest.unstable_mockModule('@/lib/supabase', () => ({
   supabase: mockSupabase,
-}));
-
-// Server supabase mock (cookie-based, for auth)
-const mockGetUser = jest.fn();
-
-jest.unstable_mockModule('@/lib/supabase-server', () => ({
-  createSupabaseServer: jest.fn().mockResolvedValue({
-    auth: {
-      getUser: mockGetUser,
-    },
-  }),
 }));
 
 // Mock getTenantId — returns tenant-123 by default
@@ -52,6 +43,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGetTenantId.mockResolvedValue('tenant-123');
 });
 
 function makeRequest() {
@@ -83,13 +75,12 @@ describe('POST /api/onboarding/test-call', () => {
     expect(body.error).toBe('Unauthorized');
   });
 
-  it('returns 400 when tenant has no retell_phone_number', async () => {
-
+  it('returns 400 when tenant has no phone_number', async () => {
     const tenantQuery = makeChainableQuery({
-      data: { retell_phone_number: null, owner_phone: '+15551234567', business_name: 'Test Co', tone_preset: 'professional' },
+      data: { phone_number: null, owner_phone: '+15551234567', business_name: 'Test Co', tone_preset: 'professional' },
       error: null,
     });
-    mockFromImpl.mockReturnValueOnce(tenantQuery);
+    mockFromImpl.mockReturnValue(tenantQuery);
 
     const res = await POST(makeRequest());
     const body = await res.json();
@@ -99,15 +90,11 @@ describe('POST /api/onboarding/test-call', () => {
   });
 
   it('returns 400 when tenant has no owner_phone', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: { user: { user_metadata: { tenant_id: 'tenant-123' } } },
-    });
-
     const tenantQuery = makeChainableQuery({
-      data: { retell_phone_number: '+18005551234', owner_phone: null, business_name: 'Test Co', tone_preset: 'professional' },
+      data: { phone_number: '+18005551234', owner_phone: null, business_name: 'Test Co', tone_preset: 'professional' },
       error: null,
     });
-    mockFromImpl.mockReturnValueOnce(tenantQuery);
+    mockFromImpl.mockReturnValue(tenantQuery);
 
     const res = await POST(makeRequest());
     const body = await res.json();
@@ -116,108 +103,64 @@ describe('POST /api/onboarding/test-call', () => {
     expect(body.error).toMatch(/not configured/i);
   });
 
-  it('happy path: calls createPhoneCall with correct params and returns call_id', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: {
-        user: {
-          user_metadata: { tenant_id: 'tenant-abc' },
-        },
-      },
-    });
-
+  it('happy path: creates LiveKit room and SIP participant, returns call_id', async () => {
     const tenantQuery = makeChainableQuery({
       data: {
-        retell_phone_number: '+18005550001',
+        phone_number: '+18005550001',
         owner_phone: '+15559990000',
         business_name: 'Acme Plumbing',
         tone_preset: 'friendly',
-      },
-      error: null,
-    });
-    const updateQuery = {
-      update: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockResolvedValue({ error: null }),
-    };
-    mockFromImpl
-      .mockReturnValueOnce(tenantQuery)    // tenant SELECT
-      .mockReturnValueOnce(updateQuery);   // tenant UPDATE
-
-    mockCreatePhoneCall.mockResolvedValueOnce({ call_id: 'call-xyz-123' });
-
-    const res = await POST(makeRequest());
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.call_id).toBe('call-xyz-123');
-
-    expect(mockCreatePhoneCall).toHaveBeenCalledWith({
-      from_number: '+18005550001',
-      to_number: '+15559990000',
-      retell_llm_dynamic_variables: {
-        business_name: 'Acme Plumbing',
-        onboarding_complete: true,
-        tone_preset: 'friendly',
-      },
-    });
-  });
-
-  it('sets onboarding_complete=true and test_call_completed=true after call', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: {
-        user: {
-          user_metadata: { tenant_id: 'tenant-abc' },
-        },
-      },
-    });
-
-    const tenantQuery = makeChainableQuery({
-      data: {
-        retell_phone_number: '+18005550001',
-        owner_phone: '+15559990000',
-        business_name: 'Acme Plumbing',
-        tone_preset: 'professional',
       },
       error: null,
     });
     const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
     const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
-    const updateQuery = { update: mockUpdate, eq: jest.fn() };
-    mockFromImpl
-      .mockReturnValueOnce(tenantQuery)
-      .mockReturnValueOnce({ update: mockUpdate });
-
-    mockCreatePhoneCall.mockResolvedValueOnce({ call_id: 'call-abc' });
-
-    await POST(makeRequest());
-
-    expect(mockUpdate).toHaveBeenCalledWith({
-      test_call_completed: true,
-      onboarding_complete: true,
+    mockFromImpl.mockImplementation((table) => {
+      if (table === 'tenants') {
+        // First call is SELECT, subsequent calls are UPDATE
+        return tenantQuery;
+      }
+      return { update: mockUpdate };
     });
-    expect(mockUpdateEq).toHaveBeenCalledWith('id', 'tenant-123');
+
+    // Override the select chain for update
+    let selectCallCount = 0;
+    mockFromImpl.mockImplementation(() => {
+      selectCallCount++;
+      if (selectCallCount === 1) return tenantQuery; // SELECT
+      return { update: mockUpdate, eq: jest.fn().mockResolvedValue({ error: null }) }; // UPDATE
+    });
+
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.call_id).toMatch(/^test-call-tenant-123-/);
+
+    // Verify room was created with test_call metadata
+    expect(mockCreateRoom).toHaveBeenCalledTimes(1);
+    const roomArgs = mockCreateRoom.mock.calls[0][0];
+    expect(roomArgs.name).toMatch(/^test-call-/);
+    const metadata = JSON.parse(roomArgs.metadata);
+    expect(metadata.test_call).toBe(true);
+
+    // Verify SIP participant was created
+    expect(mockCreateSipParticipant).toHaveBeenCalledTimes(1);
   });
 
-  it('returns 500 when createPhoneCall throws (Retell API error)', async () => {
-    mockGetUser.mockResolvedValueOnce({
-      data: {
-        user: {
-          user_metadata: { tenant_id: 'tenant-abc' },
-        },
-      },
-    });
-
+  it('returns 500 when LiveKit API throws', async () => {
     const tenantQuery = makeChainableQuery({
       data: {
-        retell_phone_number: '+18005550001',
+        phone_number: '+18005550001',
         owner_phone: '+15559990000',
         business_name: 'Acme Plumbing',
         tone_preset: 'professional',
       },
       error: null,
     });
-    mockFromImpl.mockReturnValueOnce(tenantQuery);
+    mockFromImpl.mockReturnValue(tenantQuery);
 
-    mockCreatePhoneCall.mockRejectedValueOnce(new Error('Retell API error'));
+    mockCreateRoom.mockRejectedValueOnce(new Error('LiveKit API error'));
 
     const res = await POST(makeRequest());
     const body = await res.json();

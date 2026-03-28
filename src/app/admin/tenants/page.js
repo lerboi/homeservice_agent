@@ -238,7 +238,7 @@ export default function TenantsPage() {
                     {tenant.country || '---'}
                   </TableCell>
                   <TableCell className="text-sm text-slate-700">
-                    {tenant.retell_phone_number || '---'}
+                    {tenant.phone_number || '---'}
                   </TableCell>
                   <TableCell className="text-sm text-slate-700">
                     {tenant.plan_id

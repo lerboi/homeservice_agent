@@ -21,8 +21,8 @@ export default function TestCallPage() {
           return;
         }
         const data = await res.json();
-        if (data.retell_phone_number) {
-          setPhoneNumber(data.retell_phone_number);
+        if (data.phone_number) {
+          setPhoneNumber(data.phone_number);
         } else {
           setNoPhone(true);
         }

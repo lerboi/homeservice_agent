@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
       *,
       lead_calls(
         calls(
-          id, retell_call_id, from_number, urgency_classification, urgency_confidence,
+          id, call_id, from_number, urgency_classification, urgency_confidence,
           triage_layer_used, recording_url, recording_storage_path, transcript_text,
           transcript_structured, detected_language, start_timestamp, end_timestamp,
           duration_seconds, suggested_slots

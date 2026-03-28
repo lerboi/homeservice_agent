@@ -13,9 +13,9 @@ export default function AIVoiceSettingsPage() {
       try {
         const { data } = await supabase
           .from('tenants')
-          .select('retell_phone_number')
+          .select('phone_number')
           .single();
-        setPhoneNumber(data?.retell_phone_number ?? null);
+        setPhoneNumber(data?.phone_number ?? null);
       } catch { /* ignore */ }
       setLoading(false);
     }
