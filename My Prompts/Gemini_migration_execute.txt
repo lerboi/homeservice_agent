@@ -9,6 +9,15 @@ plan is at My Prompts/Gemini_migration_plan.md. The original migration brief
 with full architectural context is at My Prompts/Gemini_migration.txt.
 
 
+CRITICAL CONSTRAINT
+-------------------
+This is an infrastructure migration, NOT a rewrite. Every feature, behavior,
+tool call, prompt rule, and use case that exists today must work identically
+after the migration. Nothing is being added, removed, or simplified. The only
+thing changing is the underlying voice infrastructure. Read the
+"NON-NEGOTIABLE REQUIREMENT" section in Gemini_migration.txt before proceeding.
+
+
 BEFORE YOU START
 ----------------
 1. Read My Prompts/Gemini_migration.txt to understand the full system context,

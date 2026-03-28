@@ -12,6 +12,51 @@ Retell entirely and replacing it with Twilio SIP trunking + LiveKit + Gemini 3.1
 Flash Live (native audio-to-audio model via the LiveKit Agents framework).
 
 
+NON-NEGOTIABLE REQUIREMENT — READ THIS FIRST
+---------------------------------------------
+This migration changes ONLY the infrastructure layer (Retell+Groq → Twilio+
+LiveKit+Gemini). Every single piece of functionality, behavior, and use case
+that exists today MUST exist identically after the migration. The end user
+must experience the exact same AI receptionist — same booking flow, same
+responses, same tool behavior — but with noticeably higher voice quality and
+lower latency from the improved infrastructure.
+
+What MUST be preserved exactly:
+  - All 6 tool calls: book_appointment, check_availability, capture_lead,
+    check_caller_history, transfer_call, end_call — same parameters, same
+    behavior, same database writes, same side effects
+  - The entire agent prompt structure and every behavioral rule within it:
+    booking-first protocol, two-strike decline handling, transfer rules
+    (explicit request + clarification limit only), urgency detection, slot
+    preference detection, repeat caller awareness, post-booking recap,
+    post-decline flow, transfer recovery with callback booking, intake
+    questions, language detection and switching, call duration limits,
+    recording disclosure, greeting and farewell generation
+  - The post-call pipeline: call record creation, triage classification,
+    lead creation/merging, owner notifications (SMS + email with per-outcome
+    preferences and emergency override), caller SMS confirmation, Google
+    Calendar sync, recovery SMS for failed bookings, usage tracking and
+    overage billing
+  - The onboarding test call flow with auto-cancel of test appointments
+  - Phone provisioning during checkout (Twilio purchase for US/CA, inventory
+    assignment for SG)
+  - All dashboard functionality: calls list, lead flyout with transcript and
+    audio playback, analytics, settings panels
+  - All database writes: the same data must end up in the same tables so the
+    dashboard, CRM, and reporting continue working unchanged
+
+What CHANGES:
+  - The telephony layer (Retell → Twilio SIP + LiveKit)
+  - The AI model (Groq/Llama → Gemini 3.1 Flash Live native audio)
+  - The transport (Retell WebSocket → LiveKit room + Gemini WebSocket)
+  - Tool execution method (webhook round-trips → in-process function calls)
+  - Recording source (Retell CDN → LiveKit Egress → Supabase Storage)
+  - Transcript source (Retell call_analyzed → agent-captured or Gemini-provided)
+
+The result should be: same product, same features, same AI behavior — but
+faster responses, more natural voice, and no Retell dependency.
+
+
 STEP 1 — UNDERSTAND THE EXISTING SYSTEM
 ----------------------------------------
 Before writing any code, you must deeply understand how the current system works.
