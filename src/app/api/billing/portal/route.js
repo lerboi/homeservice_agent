@@ -5,12 +5,15 @@ import { createSupabaseServer } from '@/lib/supabase-server';
  * GET /api/billing/portal
  *
  * Generates a Stripe Customer Portal session and redirects the user to it.
- * Used by BillingWarningBanner "Update Payment Method" link.
+ * Used by BillingWarningBanner "Update Payment Method" link and billing dashboard.
+ *
+ * Accepts optional ?return_url= query parameter to control where Stripe redirects
+ * the user after portal interaction. Defaults to /dashboard/more/billing.
  *
  * Returns 303 redirect to Stripe portal URL on success.
  * Returns JSON error on auth failure or missing subscription.
  */
-export async function GET() {
+export async function GET(request) {
   const supabase = await createSupabaseServer();
 
   const {
@@ -42,9 +45,13 @@ export async function GET() {
     return Response.json({ error: 'No active subscription found' }, { status: 404 });
   }
 
+  // Parse optional return_url query param; default to billing page per Pitfall 5
+  const { searchParams } = new URL(request.url);
+  const returnPath = searchParams.get('return_url') || '/dashboard/more/billing';
+
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripe_customer_id,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}${returnPath}`,
   });
 
   return Response.redirect(session.url, 303);

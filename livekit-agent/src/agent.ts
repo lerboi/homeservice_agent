@@ -71,6 +71,57 @@ export default defineAgent({
     const ownerPhone = tenant?.owner_phone ?? null;
     const tenantTimezone = tenant?.tenant_timezone ?? 'America/Chicago';
 
+    // ── Subscription enforcement gate (ENFORCE-01, ENFORCE-02) ──
+    // Blocked statuses: 'canceled', 'paused', 'incomplete'.
+    // past_due is allowed (3-day grace period per D-05).
+    // Over-quota calls are NEVER blocked (overage billing handles them per D-04).
+    // Test calls bypass this check so providers can always test functionality.
+    if (tenantId && !isTestCall) {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('tenant_id', tenantId)
+        .eq('is_current', true)
+        .maybeSingle();
+
+      const blockedStatuses = ['canceled', 'paused', 'incomplete'];
+      const subStatus = (sub as any)?.status;
+      if (subStatus && blockedStatuses.includes(subStatus)) {
+        console.log(`[agent] Subscription blocked: tenant=${tenantId} status=${subStatus}`);
+        // Record the blocked call attempt before speaking the message
+        await supabase.from('calls').upsert(
+          {
+            call_id: callId,
+            tenant_id: tenantId,
+            from_number: fromNumber,
+            to_number: toNumber,
+            direction: 'inbound',
+            status: 'blocked',
+            start_timestamp: Date.now(),
+            call_provider: 'livekit',
+            call_metadata: { blocked_reason: 'subscription_inactive', sub_status: subStatus },
+          },
+          { onConflict: 'call_id' },
+        );
+        // Start a minimal session to speak the unavailable message, then return
+        const blockedModel = new google.beta.realtime.RealtimeModel({
+          model: 'gemini-3.1-flash-live-preview',
+          voice: 'Kore' as any,
+          temperature: 0.3,
+          instructions: `Say only: "This service is temporarily unavailable. Please try again later." Nothing else.`,
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+        });
+        const blockedSession = new llm.AgentSession({ llm: blockedModel });
+        await blockedSession.start(ctx.room, participant);
+        await blockedSession.say(
+          'This service is temporarily unavailable. Please try again later.',
+          { allowInterruptions: false },
+        );
+        return;
+      }
+    }
+
     // ── Calculate available slots (same logic as handleInbound) ──
     let availableSlots = '';
     if (onboardingComplete && tenantId) {
