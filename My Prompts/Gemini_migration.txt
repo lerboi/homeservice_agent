@@ -139,7 +139,10 @@ capabilities, not just replicate the old STT->LLM->TTS pipeline on top of it.
 
 STEP 3 — PLAN THE MIGRATION
 ----------------------------
-Create a comprehensive, ordered implementation plan. The plan should cover every
+Create a comprehensive, ordered implementation plan and write it to
+My Prompts/Gemini_migration_plan.md. The plan must be detailed enough that a
+developer can follow it step by step without ambiguity. Organize it into clearly
+numbered phases with specific deliverables per phase. The plan should cover every
 aspect of the migration from start to finish. Think through these concerns:
 
   New LiveKit Agent service:
