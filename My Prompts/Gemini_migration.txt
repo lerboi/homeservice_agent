@@ -56,10 +56,12 @@ Read the following resources in full:
     - src/lib/triage/                        — 3-layer triage pipeline (KEEP)
 
   Database schema:
-    - supabase/migrations/001_initial_schema.sql — tenants table has
-        retell_phone_number; calls table has retell_call_id, recording_url,
-        recording_storage_path, transcript_text, transcript_structured,
-        retell_metadata
+    - For the full database schema, refer to supabase/DB in the root directory.
+      This contains the complete schema definitions for all tables.
+    - supabase/migrations/ — all migrations in order. Key Retell-related columns:
+        tenants table has retell_phone_number; calls table has retell_call_id,
+        recording_url, recording_storage_path, transcript_text,
+        transcript_structured, retell_metadata
 
   Dashboard components that display call data:
     - src/components/dashboard/AudioPlayer.jsx       — Plays recording_url
