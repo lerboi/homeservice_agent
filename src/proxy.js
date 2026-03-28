@@ -109,7 +109,7 @@ export async function proxy(request) {
     const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
 
     if (isDashboardPath && tenant) {
-      const { data: sub } = await supabase
+      const { data: sub, error: subError } = await supabase
         .from('subscriptions')
         .select('status, stripe_updated_at')
         .eq('tenant_id', tenant.id)
@@ -118,8 +118,11 @@ export async function proxy(request) {
         .limit(1)
         .maybeSingle();
 
+      console.log('[proxy] dashboard gate:', { email: user.email, tenantId: tenant.id, sub, subError: subError?.message || null });
+
       const blockedStatuses = ['canceled', 'paused', 'incomplete'];
       if (!sub || blockedStatuses.includes(sub.status)) {
+        console.log('[proxy] blocked → /billing/upgrade:', { email: user.email, reason: !sub ? 'no subscription row' : sub.status });
         return NextResponse.redirect(new URL('/billing/upgrade', request.url));
       }
 

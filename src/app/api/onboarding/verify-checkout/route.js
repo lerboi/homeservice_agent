@@ -26,6 +26,8 @@ export async function GET() {
     .eq('is_current', true)
     .maybeSingle();
 
+  console.log('[verify-checkout]', { email: user.email, tenantId: tenant.id, subscription });
+
   if (!subscription || !['trialing', 'active'].includes(subscription.status)) {
     return Response.json({ verified: false });
   }
