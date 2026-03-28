@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Phase 25 planned — 3 plans in 2 waves
-last_updated: "2026-03-27T11:47:21.421Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-03-28T21:04:56.180Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 30 — voice-agent-prompt-optimization
+**Current focus:** Phase 25 — enforcement-gate-and-billing-dashboard
 
 ## Current Position
 
-Phase: 30 (voice-agent-prompt-optimization) — EXECUTING
-Plan: 3 of 3
+Phase: 25 (enforcement-gate-and-billing-dashboard) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 30]: check_caller_history tool has zero parameters -- uses caller phone from call context
 - [Phase 30]: SLOT PREFERENCE DETECTION is prompt-only -- Groq interprets time cues, no code-level reordering
 - [Phase 30]: Conciseness rule changed from rigid 1-2 sentences to nuanced never-truncate-confirmations
+- [Phase 25-02]: Pure SVG for UsageRingGauge with stroke-dasharray animation and 50% overage arc cap — no external library, consistent with codebase
+- [Phase 25-02]: Export calculateTrialDaysRemaining and getTrialBannerState as pure functions from TrialCountdownBanner for node-env unit testing
 
 ### Roadmap Evolution
 
@@ -110,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T11:47:21.413Z
-Stopped at: Phase 25 planned — 3 plans in 2 waves
-Resume file: .planning/phases/25-enforcement-gate-and-billing-dashboard/25-01-PLAN.md
+Last session: 2026-03-28T21:04:56.172Z
+Stopped at: Completed 25-02-PLAN.md
+Resume file: None

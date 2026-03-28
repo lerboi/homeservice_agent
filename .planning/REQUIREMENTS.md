@@ -29,8 +29,8 @@
 
 ### Billing UI
 
-- [ ] **BILLUI-01**: Billing dashboard page at /dashboard/more/billing — current plan card, usage meter (X of Y calls), renewal/trial-end date, Stripe Customer Portal link
-- [ ] **BILLUI-02**: Trial countdown banner in dashboard layout — shows "X days left in trial" with upgrade CTA, visible across all dashboard pages
+- [x] **BILLUI-01**: Billing dashboard page at /dashboard/more/billing — current plan card, usage meter (X of Y calls), renewal/trial-end date, Stripe Customer Portal link
+- [x] **BILLUI-02**: Trial countdown banner in dashboard layout — shows "X days left in trial" with upgrade CTA, visible across all dashboard pages
 - [ ] **BILLUI-03**: Post-trial paywall page at /billing/upgrade — plan comparison, Stripe Checkout links for each tier, shown to expired/cancelled tenants
 - [ ] **BILLUI-04**: Stripe Checkout flow — plan selection, Checkout Session in subscription mode with CC required, success redirect to dashboard
 - [ ] **BILLUI-05**: Stripe Customer Portal integration — plan changes, cancellation, invoice history, payment method update; linked from billing page
@@ -356,8 +356,8 @@
 | BILLNOTIF-03 | Phase 24 | Complete |
 | ENFORCE-01 | Phase 25 | Pending |
 | ENFORCE-02 | Phase 25 | Pending |
-| BILLUI-01 | Phase 25 | Pending |
-| BILLUI-02 | Phase 25 | Pending |
+| BILLUI-01 | Phase 25 | Complete |
+| BILLUI-02 | Phase 25 | Complete |
 | BILLUI-03 | Phase 25 | Pending |
 | BILLUI-04 | Phase 25 | Pending |
 | BILLUI-05 | Phase 25 | Pending |
