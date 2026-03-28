@@ -231,6 +231,24 @@ async function handleCheckoutCompleted(session) {
     }
   }
 
+  // Create subscription row immediately to prevent race condition where the user
+  // reaches the dashboard before the separate customer.subscription.created webhook
+  // arrives. The middleware subscription gate would otherwise redirect to /billing/upgrade.
+  if (session.subscription) {
+    try {
+      const subscriptionObj = await stripe.subscriptions.retrieve(session.subscription, {
+        expand: ['items.data'],
+      });
+      // Ensure tenant_id metadata is present for handleSubscriptionEvent
+      if (!subscriptionObj.metadata?.tenant_id) {
+        subscriptionObj.metadata = { ...subscriptionObj.metadata, tenant_id: tenantId };
+      }
+      await handleSubscriptionEvent(subscriptionObj);
+    } catch (subErr) {
+      // Log but don't throw — the customer.subscription.created webhook will retry
+      console.error('[stripe/webhook] Failed to eagerly create subscription row:', subErr);
+    }
+  }
 }
 
 /**
