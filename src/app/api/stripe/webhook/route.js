@@ -195,6 +195,8 @@ async function handleCheckoutCompleted(session) {
     return;
   }
 
+  console.log('[stripe/webhook] checkout.session.completed:', { tenantId, subscriptionId: session.subscription });
+
   // Set onboarding_complete = true on the tenant row
   const { error: tenantError } = await supabase
     .from('tenants')
