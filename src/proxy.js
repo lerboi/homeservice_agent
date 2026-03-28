@@ -119,12 +119,12 @@ export async function proxy(request) {
         .maybeSingle();
 
       const blockedStatuses = ['canceled', 'paused', 'incomplete'];
-      if (!sub || blockedStatuses.includes(sub.status)) {
+      if (sub && blockedStatuses.includes(sub.status)) {
         return NextResponse.redirect(new URL('/billing/upgrade', request.url));
       }
 
       // Block past_due tenants after 3-day grace period expires
-      if (sub.status === 'past_due' && sub.stripe_updated_at) {
+      if (sub?.status === 'past_due' && sub.stripe_updated_at) {
         const gracePeriodMs = 3 * 24 * 60 * 60 * 1000;
         const elapsed = Date.now() - new Date(sub.stripe_updated_at).getTime();
         if (elapsed > gracePeriodMs) {
