@@ -46,7 +46,7 @@ function buildSupabaseMock(userResult, tenantResult, subResult) {
     data: { user: userResult },
   });
 
-  // Track calls: tenants returns onboarding_complete + id, subscriptions returns status
+  // SSR client handles auth + tenants (RLS-scoped)
   mockFrom = jest.fn((table) => {
     if (table === 'tenants') {
       return {
@@ -55,16 +55,6 @@ function buildSupabaseMock(userResult, tenantResult, subResult) {
         single: jest.fn().mockResolvedValue({ data: tenantResult, error: null }),
         maybeSingle: jest.fn().mockResolvedValue({ data: tenantResult, error: null }),
       };
-    }
-    if (table === 'subscriptions') {
-      const query = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        maybeSingle: jest.fn().mockResolvedValue({ data: subResult, error: null }),
-      };
-      return query;
     }
     if (table === 'admin_users') {
       return {
@@ -80,6 +70,26 @@ function buildSupabaseMock(userResult, tenantResult, subResult) {
       maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     };
   });
+
+  // Admin client handles subscriptions (service role, bypasses RLS)
+  currentMockAdminSupabase = {
+    from: jest.fn((table) => {
+      if (table === 'subscriptions') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: subResult, error: null }),
+        };
+      }
+      return {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+    }),
+  };
 
   return {
     auth: { getUser: mockGetUser },
@@ -97,7 +107,12 @@ jest.unstable_mockModule('@supabase/ssr', () => ({
   }),
 }));
 
+jest.unstable_mockModule('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => currentMockAdminSupabase),
+}));
+
 let currentMockSupabase;
+let currentMockAdminSupabase;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

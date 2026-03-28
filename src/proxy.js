@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 // All onboarding, dashboard, and admin paths require authentication.
@@ -109,7 +110,16 @@ export async function proxy(request) {
     const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
 
     if (isDashboardPath && tenant) {
-      const { data: sub, error: subError } = await supabase
+      // Use service role for subscription check — the anon-key client's
+      // PostgREST queries can fail RLS even for authenticated users because
+      // the proxy's cookie-based auth context doesn't always resolve the
+      // Postgres role correctly. Tenant ownership is already validated above.
+      const admin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
+      const { data: sub, error: subError } = await admin
         .from('subscriptions')
         .select('status, stripe_updated_at')
         .eq('tenant_id', tenant.id)
