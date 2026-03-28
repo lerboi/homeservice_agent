@@ -106,7 +106,8 @@ export function LandingFooter() {
                 alt="Voco"
                 width={100}
                 height={36}
-                className="h-9 w-auto"
+                className="h-9"
+                style={{ width: 'auto' }}
               />
               <span className="text-base text-[#71717A]">Every call answered. Every job booked.</span>
             </div>

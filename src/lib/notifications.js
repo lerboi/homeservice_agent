@@ -115,6 +115,7 @@ export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
  */
 export async function sendCallerRecoverySMS({
   to,
+  from,
   callerName,
   businessName,
   locale,
@@ -144,7 +145,7 @@ export async function sendCallerRecoverySMS({
   try {
     const result = await getTwilioClient().messages.create({
       body,
-      from: process.env.TWILIO_FROM_NUMBER,
+      from: from || process.env.TWILIO_FROM_NUMBER,
       to,
     });
     console.log('[notifications] Caller recovery SMS sent:', result.sid);
@@ -179,7 +180,7 @@ function interpolate(template, vars) {
  * @param {{ to: string, businessName: string, date: string, time: string,
  *            address: string, locale: string }} params
  */
-export async function sendCallerSMS({ to, businessName, date, time, address, locale }) {
+export async function sendCallerSMS({ to, from, businessName, date, time, address, locale }) {
   if (!to) {
     console.warn('[notifications] sendCallerSMS skipped: no phone number');
     return;
@@ -196,7 +197,7 @@ export async function sendCallerSMS({ to, businessName, date, time, address, loc
   try {
     const result = await getTwilioClient().messages.create({
       body,
-      from: process.env.TWILIO_FROM_NUMBER,
+      from: from || process.env.TWILIO_FROM_NUMBER,
       to,
     });
     console.log('[notifications] Caller SMS sent:', result.sid);

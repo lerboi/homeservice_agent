@@ -62,10 +62,11 @@ BEGIN
   END IF;
 
   -- Atomic increment: single UPDATE statement, Postgres guarantees atomicity
-  UPDATE subscriptions
-  SET calls_used = calls_used + 1
-  WHERE tenant_id = p_tenant_id AND is_current = true
-  RETURNING subscriptions.calls_used, subscriptions.calls_limit
+  -- Alias 's' required to disambiguate table columns from RETURNS TABLE output columns
+  UPDATE subscriptions s
+  SET calls_used = s.calls_used + 1
+  WHERE s.tenant_id = p_tenant_id AND s.is_current = true
+  RETURNING s.calls_used, s.calls_limit
   INTO v_calls_used, v_calls_limit;
 
   -- No active subscription row

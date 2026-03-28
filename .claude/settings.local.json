@@ -154,7 +154,11 @@
       "Bash(curl -s https://api.github.com/repos/livekit/agents-js/contents/plugins/google/src)",
       "Bash(curl -s https://raw.githubusercontent.com/livekit-examples/livekit-sip-agent-example/main/src/agent.ts)",
       "Bash(curl -s https://raw.githubusercontent.com/livekit/agents-js/main/plugins/google/src/index.ts)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cp \"C:/Users/leheh/.Projects/Retell-ws-server/messages/en.json\" \"C:/Users/leheh/.Projects/homeservice_agent/livekit-agent/src/messages/en.json\")",
+      "Bash(cp \"C:/Users/leheh/.Projects/Retell-ws-server/messages/es.json\" \"C:/Users/leheh/.Projects/homeservice_agent/livekit-agent/src/messages/es.json\")",
+      "Bash(npx tsc:*)",
+      "Bash(lk sip:*)"
     ]
   }
 }

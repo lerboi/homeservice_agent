@@ -578,9 +578,9 @@ Plans:
   3. The billing dashboard page at /dashboard/more/billing shows the current plan name, calls_used / calls_limit as a usage meter, the next renewal date or trial end date, and a link to Stripe Customer Portal
   4. The trial countdown banner is visible on every dashboard page and shows the correct number of days remaining — clicking the upgrade CTA opens Stripe Checkout for the selected plan
   5. A tenant visiting /billing/upgrade sees a plan comparison with Stripe Checkout links, selects a plan, completes Checkout with a test card, and is redirected back to the dashboard with their subscription now active
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 Plans:
-- [ ] 25-01-PLAN.md — Enforcement gate in handleInbound + billing API routes
+- [x] 25-01-PLAN.md — Enforcement gate in handleInbound + billing API routes
 - [x] 25-02-PLAN.md — Billing dashboard page, usage ring gauge, trial countdown banner, More menu entry
 - [ ] 25-03-PLAN.md — Upgrade/paywall page with plan cards and Stripe Checkout
 **UI hint**: yes
@@ -657,7 +657,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
 | 23. Usage Tracking | 1/1 | Complete    | 2026-03-26 |
 | 24. Subscription Lifecycle and Notifications | 3/3 | Complete    | 2026-03-26 |
-| 25. Enforcement Gate and Billing Dashboard | 1/3 | In Progress|  |
+| 25. Enforcement Gate and Billing Dashboard | 2/3 | In Progress|  |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 1/3 | Complete    | 2026-03-26 |

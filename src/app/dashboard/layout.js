@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings } from 'lucide-react';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import BottomTabBar from '@/components/dashboard/BottomTabBar';
 import dynamic from 'next/dynamic';
@@ -13,101 +11,6 @@ import { GridTexture } from '@/components/ui/grid-texture';
 import ImpersonationBanner from './ImpersonationBanner';
 import BillingWarningBanner from './BillingWarningBanner';
 import TrialCountdownBanner from './TrialCountdownBanner';
-
-const BREADCRUMB_LABELS = {
-  leads: 'Leads',
-  calendar: 'Calendar',
-  analytics: 'Analytics',
-  more: 'More',
-  'services-pricing': 'Services & Pricing',
-  'working-hours': 'Working Hours',
-  'calendar-connections': 'Calendar Connections',
-  'service-zones': 'Service Zones & Travel',
-  'escalation-contacts': 'Escalation Contacts',
-  'notifications': 'Notifications',
-  'billing': 'Billing',
-  'ai-voice-settings': 'AI & Voice Settings',
-  'account': 'Account',
-  'calls': 'Calls',
-};
-
-function DashboardBreadcrumb() {
-  const pathname = usePathname();
-  const segments = pathname.replace(/\/$/, '').split('/').filter(Boolean);
-  // segments: ['dashboard'] or ['dashboard', 'leads'] or ['dashboard', 'more', 'services-pricing']
-
-  // Home page — just show "Home"
-  if (segments.length <= 1) {
-    return (
-      <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
-        <span className="text-[#0F172A] font-semibold">Home</span>
-      </nav>
-    );
-  }
-
-  const crumbs = segments.slice(1); // remove 'dashboard'
-
-  // Single segment like /dashboard/leads → just show "Leads" (no parent)
-  if (crumbs.length === 1) {
-    const label = BREADCRUMB_LABELS[crumbs[0]] || crumbs[0];
-    return (
-      <nav className="text-sm text-[#475569]" aria-label="Breadcrumb">
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={crumbs[0]}
-            className="text-[#0F172A] font-semibold"
-            initial={{ opacity: 0, x: -4 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 4 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-          >
-            {label}
-          </motion.span>
-        </AnimatePresence>
-      </nav>
-    );
-  }
-
-  // Nested like /dashboard/more/working-hours → "More › Working Hours" (clickable parent)
-  return (
-    <nav className="text-sm text-[#475569] flex items-center" aria-label="Breadcrumb">
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={pathname}
-          className="flex items-center"
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 4 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-        >
-          {crumbs.map((seg, i) => {
-            const label = BREADCRUMB_LABELS[seg];
-            if (!label) return null;
-            const isLast = i === crumbs.length - 1;
-            // Build href for this crumb: /dashboard + all segments up to and including this one
-            const href = '/dashboard/' + crumbs.slice(0, i + 1).join('/');
-
-            return (
-              <span key={seg} className="flex items-center">
-                {i > 0 && <span className="mx-2 text-stone-300">&rsaquo;</span>}
-                {isLast ? (
-                  <span className="text-[#0F172A] font-semibold">{label}</span>
-                ) : (
-                  <Link
-                    href={href}
-                    className="text-[#475569] hover:text-[#0F172A] transition-colors"
-                  >
-                    {label}
-                  </Link>
-                )}
-              </span>
-            );
-          })}
-        </motion.span>
-      </AnimatePresence>
-    </nav>
-  );
-}
 
 function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
@@ -132,12 +35,6 @@ function DashboardLayoutInner({ children }) {
         <ImpersonationBanner tenantName={impersonateName || 'Unknown Tenant'} />
       )}
 
-      {/* Billing warning banner — amber past_due countdown, shown below ImpersonationBanner when not impersonating */}
-      {!impersonateTenantId && <BillingWarningBanner />}
-
-      {/* Trial countdown banner — blue/amber trial days remaining, mutually exclusive with BillingWarningBanner (trialing vs past_due are different statuses) */}
-      {!impersonateTenantId && <TrialCountdownBanner />}
-
       {/* Main layout — wrapped in pointer-events-none when impersonating to disable all actions */}
       <div className={impersonateTenantId ? 'pointer-events-none opacity-60' : ''}>
         <div className="min-h-screen bg-[#F5F5F4] relative">
@@ -145,17 +42,9 @@ function DashboardLayoutInner({ children }) {
           <DashboardSidebar />
 
           <div className="relative lg:pl-60">
-            {/* Top bar */}
-            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-stone-200/60 px-4 lg:px-8">
-              <div className="max-w-6xl mx-auto h-14 flex items-center justify-between">
-                <div className="lg:hidden w-10" /> {/* Spacer for mobile layout */}
-                <DashboardBreadcrumb />
-                {/* Mobile settings gear icon — links to More hub (D-10) */}
-                <Link href="/dashboard/more" className="lg:hidden p-2 text-stone-500 hover:text-[#0F172A]">
-                  <Settings className="h-5 w-5" />
-                </Link>
-              </div>
-            </div>
+            {/* Billing/trial banners — inside content column so they push content down */}
+            {!impersonateTenantId && <BillingWarningBanner />}
+            {!impersonateTenantId && <TrialCountdownBanner />}
 
             {/* Main content — subtle fade on route change */}
             <AnimatePresence mode="wait">

@@ -319,7 +319,8 @@ export default function AuthPage() {
                     alt="Voco"
                     width={100}
                     height={32}
-                    className="h-7 w-auto"
+                    className="h-7"
+                    style={{ width: 'auto' }}
                   />
                   <Link href="/" className="text-[11px] text-[#64748B] hover:text-[#94A3B8] transition-colors">
                     Home
@@ -341,7 +342,8 @@ export default function AuthPage() {
                     alt="Voco"
                     width={100}
                     height={32}
-                    className="h-7 w-auto"
+                    className="h-7"
+                    style={{ width: 'auto' }}
                   />
                   <Link href="/" className="text-[11px] text-[#64748B] hover:text-[#94A3B8] transition-colors">
                     Home

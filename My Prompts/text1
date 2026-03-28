@@ -13,3 +13,8 @@ changes should be made
 Fullstack
 --------------
 Deeply read and understand the entire codebase — all frontend pages and components (dashboard + home page), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the retell-ws-server code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready.
+
+Lily
+
+Katherine
+

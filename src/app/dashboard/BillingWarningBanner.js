@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 
 const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
@@ -30,6 +30,7 @@ export function calculateGraceDaysRemaining(stripeUpdatedAt) {
 export default function BillingWarningBanner() {
   const [daysRemaining, setDaysRemaining] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     async function checkSubscriptionStatus() {
@@ -67,29 +68,35 @@ export default function BillingWarningBanner() {
     checkSubscriptionStatus();
   }, []);
 
-  if (!visible || daysRemaining === null) return null;
+  if (!visible || daysRemaining === null || dismissed) return null;
 
   return (
     <div
       role="alert"
-      className="sticky top-0 z-39 h-11 bg-amber-50 border-b border-amber-300 flex items-center justify-between px-4 lg:px-8"
+      className="relative z-39 h-10 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/60 flex items-center justify-center gap-3 px-10"
     >
-      <div className="flex items-center gap-2">
-        <AlertCircle className="h-4 w-4 text-amber-800" aria-hidden="true" />
-        <p className="text-sm text-amber-800">
-          Your payment failed — update your payment method within{' '}
-          <strong>
-            {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
-          </strong>{' '}
-          to avoid service interruption.
-        </p>
-      </div>
-      <a
-        href="/api/billing/portal"
-        className="text-sm font-medium border border-amber-400 text-amber-800 px-3 py-1 rounded-md hover:bg-amber-100 transition-colors"
+      <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" aria-hidden="true" />
+      <p className="text-xs text-amber-900 truncate">
+        Payment failed — update within{' '}
+        <strong>
+          {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
+        </strong>{' '}
+        to avoid service interruption
+        <span className="mx-1.5 text-stone-300">·</span>
+        <a
+          href="/api/billing/portal"
+          className="font-medium text-amber-800 hover:text-amber-950 underline underline-offset-2 transition-colors"
+        >
+          Update payment method
+        </a>
+      </p>
+      <button
+        onClick={() => setDismissed(true)}
+        className="absolute right-3 p-1 rounded-md text-amber-600 hover:text-amber-900 hover:bg-amber-100/60 transition-colors"
+        aria-label="Dismiss banner"
       >
-        Update Payment Method
-      </a>
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

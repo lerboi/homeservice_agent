@@ -60,7 +60,8 @@ export default function DashboardSidebar({ businessName }) {
           alt="Voco"
           width={100}
           height={32}
-          className="h-8 w-auto"
+          className="h-8"
+          style={{ width: 'auto' }}
           priority
         />
       </div>

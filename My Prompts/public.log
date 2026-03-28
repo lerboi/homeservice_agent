@@ -1,0 +1,1229 @@
+2026-03-27 18:28:56.866 call_a624bd2025d8157f54426b54e1c info: triggering inbound call_inbound webhook
+2026-03-27 18:28:59.822 call_a624bd2025d8157f54426b54e1c info: inbound call_inbound webhook response: {
+  dynamic_variables: {
+    business_name: 'vocolive',
+    default_locale: 'en',
+    onboarding_complete: 'true',
+    caller_number: '+6587528516',
+    tenant_id: '489badfd-9448-4a5c-98ee-b444ecf64baf',
+    owner_phone: '+6587528516',
+    tone_preset: 'professional',
+    available_slots: 'No available slots',
+    booking_enabled: 'false',
+    trade_type: 'general_handyman',
+    intake_questions: ''
+  }
+}
+2026-03-27 18:29:00.227 call_a624bd2025d8157f54426b54e1c info: Starting call: call_a624bd2025d8157f54426b54e1c
+2026-03-27 18:29:00.253 call_a624bd2025d8157f54426b54e1c info: LLM Ws init attempt 0
+2026-03-27 18:29:00.699 call_a624bd2025d8157f54426b54e1c info: LLM ws open:
+2026-03-27 18:29:00.701 call_a624bd2025d8157f54426b54e1c verbose: LLM ws config event received {
+  response_type: 'config',
+  config: { auto_reconnect: true, call_details: true }
+}
+2026-03-27 18:29:01.010 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: 'Hello',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.010 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ',',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.011 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' thank',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.015 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.021 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' for',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.021 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' calling',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.022 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' voc',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.024 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: 'olive',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.027 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.030 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' This',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.099 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' call',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.099 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' may',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.099 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' be',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' recorded',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' for',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' quality',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' purposes',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.100 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' How',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' help',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: ' today',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:01.101 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 0 Received Response: {
+  response_type: 'response',
+  response_id: 0,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-27 18:29:01.501 call_a624bd2025d8157f54426b54e1c info: Webhook triggered for call_started
+2026-03-27 18:29:01.725 call_a624bd2025d8157f54426b54e1c info: Webhook response received for call_started
+2026-03-27 18:29:02.273 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:02.474 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:02.575 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:02.776 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:02.860 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:03.076 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:03.785 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive.',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:04.036 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:04.287 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:04.438 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:04.587 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:04.899 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:05.041 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:05.059 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Thanks for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:05.192 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'Thanks for ',
+      words: [Array],
+      metadata: undefined
+    },
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:05.363 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:05.364 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'user_turn'
+}
+2026-03-27 18:29:05.678 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling Buckle ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:05.832 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:06.627 call_a624bd2025d8157f54426b54e1c verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 1,
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'response_required'
+}
+2026-03-27 18:29:06.861 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:07.785 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-27 18:29:08.861 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:10.861 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:11.016 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    },
+    { role: 'user', content: 'Hello? ', words: [Array] }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:11.016 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    },
+    { role: 'user', content: 'Hello? ', words: [Array] }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'user_turn'
+}
+2026-03-27 18:29:11.065 call_a624bd2025d8157f54426b54e1c verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 2,
+  transcript: [
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    },
+    { role: 'user', content: 'Hello? ', words: [Array] }
+  ],
+  interaction_type: 'response_required'
+}
+2026-03-27 18:29:11.405 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: 'Hello',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.406 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ',',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.408 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' thank',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.410 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.414 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' for',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.415 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' calling',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.418 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' voc',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.420 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: 'olive',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.423 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.426 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' This',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.494 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' call',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' may',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' be',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' recorded',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' for',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' quality',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' purposes',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.495 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: '.',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' How',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' help',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: ' today',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.496 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:11.497 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 2 Received Response: {
+  response_type: 'response',
+  response_id: 2,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-27 18:29:11.925 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'user',
+      content: 'calling Bucklein. ',
+      words: [Array],
+      metadata: undefined
+    },
+    { role: 'user', content: 'Hello? ', words: [Array] }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-27 18:29:11.926 call_a624bd2025d8157f54426b54e1c info: Latency for response_id: 2 - e2e: 1073 asr: 162 llm: 359 tts: 230
+2026-03-27 18:29:12.475 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:12.726 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:12.826 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:12.861 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:12.977 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:13.337 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:14.187 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive.',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:14.489 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:14.740 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:14.862 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:14.941 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:15.092 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:15.543 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:15.693 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:16.094 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:16.794 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes.',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:16.861 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:17.045 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:17.195 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:17.246 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:17.447 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:17.548 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:18.098 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:18.863 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:20.864 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:22.864 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:24.862 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:26.864 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:28.144 call_a624bd2025d8157f54426b54e1c verbose: Requesting response (transcript trimmed to last 2 utterances): {
+  response_id: 3,
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'reminder_required'
+}
+2026-03-27 18:29:28.144 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    { role: 'user', content: 'Hello? ', words: [Array] },
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only',
+  turntaking: 'agent_turn'
+}
+2026-03-27 18:29:28.573 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: 'Hello',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.573 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.575 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' Are',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.577 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.580 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' still',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.583 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' there',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.585 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.588 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' How',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.590 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' can',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.593 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' I',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.715 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' help',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.733 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' you',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.736 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: ' today',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.749 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '?',
+  content_complete: false,
+  end_call: false
+}
+2026-03-27 18:29:28.755 call_a624bd2025d8157f54426b54e1c verbose: Current response Id: 3 Received Response: {
+  response_type: 'response',
+  response_id: 3,
+  content: '',
+  content_complete: true,
+  end_call: false
+}
+2026-03-27 18:29:28.929 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:29.682 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:29.898 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:30.023 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:30.258 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:30.759 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there?',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:30.881 call_a624bd2025d8157f54426b54e1c verbose: LLM pingpong event received
+2026-03-27 18:29:30.960 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? How ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:31.110 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? How can ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:31.210 call_a624bd2025d8157f54426b54e1c verbose: Sending updates (transcript trimmed to last 2 utterances): {
+  transcript: [
+    {
+      role: 'agent',
+      content: 'Hello, thank you for calling vocolive. This call may be recorded for quality purposes. How can I help you today?',
+      words: [Array],
+      metadata: [Object]
+    },
+    {
+      role: 'agent',
+      content: 'Hello? Are you still there? How can I ',
+      words: [Array],
+      metadata: [Object]
+    }
+  ],
+  interaction_type: 'update_only'
+}
+2026-03-27 18:29:31.248 call_a624bd2025d8157f54426b54e1c info: Ending call: call_a624bd2025d8157f54426b54e1c
+2026-03-27 18:29:31.249 call_a624bd2025d8157f54426b54e1c info: Closing LLM ws as requested.
+2026-03-27 18:29:34.254 call_a624bd2025d8157f54426b54e1c info: Webhook triggered for call_ended
+2026-03-27 18:29:34.254 call_a624bd2025d8157f54426b54e1c info: Webhook triggered for call_analyzed
+2026-03-27 18:29:34.439 call_a624bd2025d8157f54426b54e1c info: Webhook response received for call_ended
+2026-03-27 18:29:34.716 call_a624bd2025d8157f54426b54e1c info: Webhook response received for call_analyzed

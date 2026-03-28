@@ -53,7 +53,8 @@ export function LandingNav() {
               alt="Voco"
               width={140}
               height={44}
-              className="h-11 w-auto"
+              className="h-11"
+              style={{ width: 'auto' }}
               priority
             />
           </Link>
@@ -124,7 +125,8 @@ export function LandingNav() {
               alt="Voco"
               width={100}
               height={32}
-              className="h-8 w-auto"
+              className="h-8"
+              style={{ width: 'auto' }}
             />
           </Link>
           <button

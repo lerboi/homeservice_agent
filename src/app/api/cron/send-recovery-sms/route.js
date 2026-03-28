@@ -113,6 +113,7 @@ export async function GET(request) {
 
     const deliveryResult = await sendCallerRecoverySMS({
       to: call.from_number,
+      from: tenant.phone_number,
       callerName,
       businessName: tenant.business_name || 'Your service provider',
       locale,
@@ -158,7 +159,7 @@ export async function GET(request) {
   if (retryTenantIds.length > 0) {
     const { data: retryTenants } = await supabase
       .from('tenants')
-      .select('id, business_name, default_locale')
+      .select('id, business_name, default_locale, phone_number')
       .in('id', retryTenantIds);
     tenantMapB = new Map((retryTenants || []).map(t => [t.id, t]));
   }
@@ -191,6 +192,7 @@ export async function GET(request) {
 
     const deliveryResult = await sendCallerRecoverySMS({
       to: call.from_number,
+      from: tenant.phone_number,
       callerName,
       businessName: tenant.business_name || 'Your service provider',
       locale,

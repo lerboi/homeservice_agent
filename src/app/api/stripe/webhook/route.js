@@ -50,7 +50,26 @@ async function provisionPhoneNumber(tenantId, country) {
         return null;
       }
 
-      return data[0].phone_number;
+      const phoneNumber = data[0].phone_number;
+
+      // Associate SG number with the Elastic SIP trunk so calls route to LiveKit
+      if (process.env.TWILIO_SIP_TRUNK_SID) {
+        try {
+          const client = getTwilioClient();
+          // Look up the number's SID from Twilio by phone number
+          const numbers = await client.incomingPhoneNumbers.list({ phoneNumber, limit: 1 });
+          if (numbers.length > 0) {
+            await client.trunking.v1
+              .trunks(process.env.TWILIO_SIP_TRUNK_SID)
+              .phoneNumbers.create({ phoneNumberSid: numbers[0].sid });
+            console.log(`[stripe/webhook] Associated SG ${phoneNumber} with SIP trunk`);
+          }
+        } catch (trunkErr) {
+          console.error(`[stripe/webhook] SIP trunk association failed for SG ${phoneNumber}:`, trunkErr);
+        }
+      }
+
+      return phoneNumber;
     } else if (country === 'US' || country === 'CA') {
       // Purchase number via Twilio API
       // Number routes via Twilio Elastic SIP trunk to LiveKit (no Retell import needed)

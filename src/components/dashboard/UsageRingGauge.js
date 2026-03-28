@@ -116,12 +116,11 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
         {/* Center text: calls used count */}
         <text
           x="60"
-          y="56"
+          y="54"
           textAnchor="middle"
-          fontSize="28"
+          fontSize="26"
           fontWeight="600"
           fill="#0F172A"
-          dominantBaseline="middle"
         >
           {callsUsed}
         </text>
@@ -131,7 +130,7 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
           x="60"
           y="72"
           textAnchor="middle"
-          fontSize="12"
+          fontSize="11"
           fill="#475569"
         >
           of {callsLimit}

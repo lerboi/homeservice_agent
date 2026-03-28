@@ -6,7 +6,7 @@ export default function PublicLayout({ children }) {
   return (
     <>
       <LandingNav />
-      <main>{children}</main>
+      <main className="relative">{children}</main>
       <LandingFooter />
       <Toaster richColors position="top-center" />
     </>

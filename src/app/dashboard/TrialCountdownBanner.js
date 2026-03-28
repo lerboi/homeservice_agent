@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Clock, AlertCircle } from 'lucide-react';
+import { Clock, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 
 /**
@@ -42,6 +42,7 @@ export function getTrialBannerState(daysRemaining) {
 export default function TrialCountdownBanner() {
   const [daysRemaining, setDaysRemaining] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     async function checkTrialStatus() {
@@ -80,7 +81,7 @@ export default function TrialCountdownBanner() {
     checkTrialStatus();
   }, []);
 
-  if (!visible || daysRemaining === null) return null;
+  if (!visible || daysRemaining === null || dismissed) return null;
 
   const state = getTrialBannerState(daysRemaining);
   const isUrgent = state === 'urgent';
@@ -93,41 +94,36 @@ export default function TrialCountdownBanner() {
       : `Your trial ends in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} - upgrade to keep your AI receptionist`
     : `${daysRemaining} days left in your free trial`;
 
-  if (isUrgent) {
-    return (
-      <div
-        role="alert"
-        className="sticky top-0 z-39 h-11 bg-amber-50 border-b border-amber-300 flex items-center justify-between px-4 lg:px-8"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <AlertCircle className="h-4 w-4 text-amber-800 shrink-0" aria-hidden="true" />
-          <p className="text-sm text-amber-800 truncate">{bannerText}</p>
-        </div>
-        <Link
-          href="/dashboard/more/billing"
-          className="text-sm font-medium border border-amber-400 text-amber-800 px-3 py-1 rounded-md hover:bg-amber-100 transition-colors shrink-0 ml-2"
-        >
-          Upgrade now
-        </Link>
-      </div>
-    );
-  }
+  const bgClass = isUrgent
+    ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/60'
+    : 'bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border-b border-blue-200/40';
+  const textClass = isUrgent ? 'text-amber-900' : 'text-blue-900/80';
+  const iconClass = isUrgent ? 'text-amber-600' : 'text-blue-500';
+  const Icon = isUrgent ? AlertCircle : Clock;
 
   return (
     <div
       role="alert"
-      className="sticky top-0 z-39 h-11 bg-blue-50 border-b border-blue-200 flex items-center justify-between px-4 lg:px-8"
+      className={`relative z-39 h-10 ${bgClass} flex items-center justify-center gap-3 px-10`}
     >
-      <div className="flex items-center gap-2 min-w-0">
-        <Clock className="h-4 w-4 text-blue-800 shrink-0" aria-hidden="true" />
-        <p className="text-sm text-blue-800 truncate">{bannerText}</p>
-      </div>
-      <Link
-        href="/dashboard/more/billing"
-        className="text-sm font-medium text-blue-800 underline hover:text-blue-900 transition-colors shrink-0 ml-2"
+      <Icon className={`h-3.5 w-3.5 ${iconClass} shrink-0`} aria-hidden="true" />
+      <p className={`text-xs ${textClass} truncate`}>
+        {bannerText}
+        <span className="mx-1.5 text-stone-300">·</span>
+        <Link
+          href="/dashboard/more/billing"
+          className={`font-medium ${isUrgent ? 'text-amber-800 hover:text-amber-950' : 'text-blue-700 hover:text-blue-900'} underline underline-offset-2 transition-colors`}
+        >
+          Upgrade now
+        </Link>
+      </p>
+      <button
+        onClick={() => setDismissed(true)}
+        className={`absolute right-3 p-1 rounded-md ${isUrgent ? 'text-amber-600 hover:text-amber-900 hover:bg-amber-100/60' : 'text-blue-400 hover:text-blue-700 hover:bg-blue-100/60'} transition-colors`}
+        aria-label="Dismiss banner"
       >
-        Upgrade now
-      </Link>
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

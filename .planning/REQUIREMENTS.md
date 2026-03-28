@@ -22,8 +22,8 @@
 
 ### Enforcement
 
-- [ ] **ENFORCE-01**: Subscription check added to handleInbound() as parallel Supabase query — zero net latency increase on call pickup
-- [ ] **ENFORCE-02**: Block call if subscription status is cancelled/paused/expired OR calls_used >= calls_limit — play graceful caller message via AI prompt dynamic variable
+- [x] **ENFORCE-01**: Subscription check added to handleInbound() as parallel Supabase query — zero net latency increase on call pickup
+- [x] **ENFORCE-02**: Block call if subscription status is cancelled/paused/expired OR calls_used >= calls_limit — play graceful caller message via AI prompt dynamic variable
 - [x] **ENFORCE-03**: Past_due status gets 3-day grace window before blocking — owner continues receiving calls while payment retries happen
 - [x] **ENFORCE-04**: Subscription status middleware gates dashboard routes — cancelled/paused/expired redirects to /billing/upgrade
 
@@ -32,8 +32,8 @@
 - [x] **BILLUI-01**: Billing dashboard page at /dashboard/more/billing — current plan card, usage meter (X of Y calls), renewal/trial-end date, Stripe Customer Portal link
 - [x] **BILLUI-02**: Trial countdown banner in dashboard layout — shows "X days left in trial" with upgrade CTA, visible across all dashboard pages
 - [ ] **BILLUI-03**: Post-trial paywall page at /billing/upgrade — plan comparison, Stripe Checkout links for each tier, shown to expired/cancelled tenants
-- [ ] **BILLUI-04**: Stripe Checkout flow — plan selection, Checkout Session in subscription mode with CC required, success redirect to dashboard
-- [ ] **BILLUI-05**: Stripe Customer Portal integration — plan changes, cancellation, invoice history, payment method update; linked from billing page
+- [x] **BILLUI-04**: Stripe Checkout flow — plan selection, Checkout Session in subscription mode with CC required, success redirect to dashboard
+- [x] **BILLUI-05**: Stripe Customer Portal integration — plan changes, cancellation, invoice history, payment method update; linked from billing page
 
 ### Billing Notifications
 
@@ -354,13 +354,13 @@
 | BILLNOTIF-01 | Phase 24 | Complete |
 | BILLNOTIF-02 | Phase 24 | Complete |
 | BILLNOTIF-03 | Phase 24 | Complete |
-| ENFORCE-01 | Phase 25 | Pending |
-| ENFORCE-02 | Phase 25 | Pending |
+| ENFORCE-01 | Phase 25 | Complete |
+| ENFORCE-02 | Phase 25 | Complete |
 | BILLUI-01 | Phase 25 | Complete |
 | BILLUI-02 | Phase 25 | Complete |
 | BILLUI-03 | Phase 25 | Pending |
-| BILLUI-04 | Phase 25 | Pending |
-| BILLUI-05 | Phase 25 | Pending |
+| BILLUI-04 | Phase 25 | Complete |
+| BILLUI-05 | Phase 25 | Complete |
 | BILLDOC-01 | Phase 26 | Pending |
 | BILLDOC-02 | Phase 26 | Pending |
 

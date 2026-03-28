@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 25-02-PLAN.md
-last_updated: "2026-03-28T21:04:56.180Z"
+stopped_at: "25-03: Task 1 complete, checkpoint pending at Task 2 (human-verify)"
+last_updated: "2026-03-28T21:14:59.093Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 25 (enforcement-gate-and-billing-dashboard) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -79,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 30]: Conciseness rule changed from rigid 1-2 sentences to nuanced never-truncate-confirmations
 - [Phase 25-02]: Pure SVG for UsageRingGauge with stroke-dasharray animation and 50% overage arc cap — no external library, consistent with codebase
 - [Phase 25-02]: Export calculateTrialDaysRemaining and getTrialBannerState as pure functions from TrialCountdownBanner for node-env unit testing
+- [Phase 25-01]: Enforcement gate moved to livekit-agent/src/agent.ts + src/lib/subscription-gate.js (retell/route.js deleted in migration)
+- [Phase 25-01]: Portal return_url defaults to /dashboard/more/billing (changed from /dashboard)
 
 ### Roadmap Evolution
 
@@ -112,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:04:56.172Z
-Stopped at: Completed 25-02-PLAN.md
+Last session: 2026-03-28T21:14:59.084Z
+Stopped at: 25-03: Task 1 complete, checkpoint pending at Task 2 (human-verify)
 Resume file: None
