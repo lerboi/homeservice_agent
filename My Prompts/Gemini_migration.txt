@@ -1,0 +1,288 @@
+VOICE SYSTEM MIGRATION: Retell + Groq  -->  Twilio + LiveKit + Gemini 3.1 Flash Live
+====================================================================================
+
+CONTEXT
+-------
+Voco is a SaaS platform for home service businesses. An AI receptionist answers
+phone calls 24/7, triages urgency, books appointments, creates CRM leads, and
+notifies the business owner. The current voice system uses Retell as the
+telephony + STT/TTS layer and a standalone WebSocket server on Railway that
+streams text to Groq (Llama 4 Scout) for reasoning. We are migrating away from
+Retell entirely and replacing it with Twilio SIP trunking + LiveKit + Gemini 3.1
+Flash Live (native audio-to-audio model via the LiveKit Agents framework).
+
+
+STEP 1 — UNDERSTAND THE EXISTING SYSTEM
+----------------------------------------
+Before writing any code, you must deeply understand how the current system works.
+Read the following resources in full:
+
+  Skill files (in .claude/skills/):
+    - voice-call-architecture        — The entire voice pipeline end to end
+    - auth-database-multitenancy     — All database tables, RLS, migrations
+    - onboarding-flow                — How phone numbers are provisioned and
+                                       test calls are triggered during signup
+    - dashboard-crm-system           — How the dashboard displays calls, leads,
+                                       transcripts, recordings, and analytics
+    - scheduling-calendar-system     — Slot calculation, atomic booking, calendar
+                                       sync (these are Retell-independent and
+                                       must be preserved exactly as-is)
+
+  WebSocket LLM server (separate repo — this is the Railway service):
+    - server.js                      — WebSocket lifecycle, Groq streaming,
+                                       tool call handling, greeting guard
+    - agent-prompt.js                — System prompt builder with all sections
+                                       (booking-first protocol, decline handling,
+                                       transfer rules, intake questions, etc.)
+
+  Key source files in this repo:
+    - src/app/api/webhooks/retell/route.js   — All webhook event handlers
+                                               (inbound, ended, analyzed,
+                                               function_invoked) and every
+                                               tool handler (book_appointment,
+                                               capture_lead, check_availability,
+                                               check_caller_history, transfer_call,
+                                               end_call)
+    - src/lib/call-processor.js              — Post-call pipeline (recording
+                                               download, triage, lead creation,
+                                               notifications, usage tracking)
+    - src/lib/retell.js                      — Retell SDK singleton
+    - src/lib/whisper-message.js             — Warm transfer whisper builder
+    - src/lib/scheduling/slot-calculator.js  — Pure slot calculation (KEEP)
+    - src/lib/scheduling/booking.js          — Atomic booking RPC (KEEP)
+    - src/lib/leads.js                       — Lead create/merge logic (KEEP)
+    - src/lib/notifications.js               — SMS + email dispatch (KEEP)
+    - src/lib/scheduling/google-calendar.js  — Calendar sync (KEEP)
+    - src/lib/triage/                        — 3-layer triage pipeline (KEEP)
+
+  Database schema:
+    - supabase/migrations/001_initial_schema.sql — tenants table has
+        retell_phone_number; calls table has retell_call_id, recording_url,
+        recording_storage_path, transcript_text, transcript_structured,
+        retell_metadata
+
+  Dashboard components that display call data:
+    - src/components/dashboard/AudioPlayer.jsx       — Plays recording_url
+    - src/components/dashboard/TranscriptViewer.jsx  — Shows transcript_structured
+    - src/components/dashboard/LeadFlyout.jsx        — Call detail in leads tab
+    - src/app/dashboard/calls/page.js                — Calls list page
+
+  Onboarding + phone provisioning:
+    - src/app/api/onboarding/test-call/route.js      — Creates test call via
+                                                        retell.call.createPhoneCall()
+    - src/app/api/onboarding/provision-number/route.js — Provisions number via
+                                                          retell.phoneNumber.create()
+    - src/app/api/stripe/webhook/route.js            — Auto-provisions on checkout:
+                                                        Twilio purchase then
+                                                        retell.phoneNumber.import()
+
+  Important architectural facts you must understand:
+    - The dashboard NEVER calls Retell's API to fetch data. All transcript and
+      recording data is stored in Supabase during post-call processing and served
+      from there. This means the dashboard migration is about changing where the
+      data comes FROM (LiveKit/Gemini instead of Retell), not how it's displayed.
+    - Tool calls currently round-trip through Retell webhooks: Groq returns a
+      tool call -> server.js sends tool_call_invocation to Retell -> Retell fires
+      call_function_invoked webhook to Next.js -> Next.js executes against
+      Supabase -> returns result -> Retell forwards to server.js -> server.js
+      sends to Groq. In the new system, tool execution happens in-process inside
+      the LiveKit agent — no webhook round-trip.
+    - The scheduling system (slot-calculator, atomic booking, calendar sync) is
+      completely independent of Retell. It must be preserved unchanged.
+    - Lead management, triage, and notification systems are also Retell-independent.
+      They just need to be called from the new agent instead of from webhook handlers.
+
+
+STEP 2 — RESEARCH GEMINI 3.1 FLASH LIVE AND LIVEKIT
+----------------------------------------------------
+Before planning the implementation, deeply research the following. This step is
+critical — the migration should use Gemini 3.1 Flash Live to its full native
+capabilities, not just replicate the old STT->LLM->TTS pipeline on top of it.
+
+  Gemini 3.1 Flash Live API:
+    - Read the official documentation thoroughly: capabilities, WebSocket protocol,
+      session lifecycle, audio format requirements, context window, session duration
+      limits, and compression/resumption features
+    - Understand native audio-to-audio: how it differs from a traditional
+      STT->LLM->TTS pipeline, what new capabilities it enables (tone awareness,
+      emotional responsiveness, natural pacing)
+    - Function calling / tool use during live sessions: how tools are declared at
+      session start, how the model invokes them, sequential vs non-blocking
+      execution, how results are returned
+    - Voice configuration: available voices, language support, voice steering
+    - Interruption handling: how barge-in works natively
+    - Session limits: max duration (15 min audio-only), context window compression
+      for longer sessions, resumption tokens
+    - Pricing: token-based (25 tokens/sec of audio), input vs output costs
+
+  LiveKit Agents framework:
+    - Read the LiveKit Agents documentation for Node.js/TypeScript (agents-js) —
+      this is the preferred language since our codebase is Node.js
+    - Understand the @livekit/agents-plugin-google package and how it integrates
+      Gemini 3.1 Flash Live via the RealtimeModel class
+    - LiveKit SIP telephony: how Twilio SIP trunks connect to LiveKit, dispatch
+      rules, SIP participant lifecycle
+    - Room architecture: how the agent joins a room with the SIP participant
+    - Tool/function calling within LiveKit agents: how to define and handle tools
+    - Warm transfer: LiveKit's built-in warm transfer workflow and how it compares
+      to Retell's call.transfer() with whisper messages
+    - Recording via LiveKit Egress: how to capture call audio and store it
+    - VAD (voice activity detection) and turn-taking behavior
+
+  Explore reference implementations:
+    - LiveKit + Gemini Live quickstart examples
+    - LiveKit SIP agent examples
+    - Any Twilio + LiveKit + Gemini production examples
+
+
+STEP 3 — PLAN THE MIGRATION
+----------------------------
+Create a comprehensive, ordered implementation plan. The plan should cover every
+aspect of the migration from start to finish. Think through these concerns:
+
+  New LiveKit Agent service:
+    - Where does it run? (replaces the Railway WebSocket server)
+    - How does it connect to LiveKit rooms and stream audio to Gemini?
+    - How is the system prompt ported from agent-prompt.js? Consider that Gemini
+      processes audio natively — some prompt instructions about speech pacing,
+      interruption handling, and tone may work differently or be unnecessary
+    - How are all 6 tools (book_appointment, check_availability, capture_lead,
+      check_caller_history, transfer_call, end_call) implemented as in-process
+      function handlers instead of webhook round-trips?
+    - How does the agent access Supabase? (direct client, same as webhook handlers)
+    - How is the greeting handled? (currently Groq-generated from prompt on empty
+      transcript; Gemini may handle this differently with native audio)
+    - How does the 6-second greeting guard translate? (suppresses duplicate
+      responses during TTS playback — may not be needed with native audio)
+
+  Telephony changes:
+    - Twilio SIP trunk configuration pointing to LiveKit SIP service
+    - Phone number management: currently numbers are either Retell-provisioned or
+      Twilio-purchased-then-imported-to-Retell. After migration, numbers are
+      purely Twilio, routed via SIP trunk to LiveKit. What changes in the
+      provisioning flow?
+    - The onboarding test call: currently uses retell.call.createPhoneCall(). How
+      does LiveKit initiate an outbound test call?
+
+  Call lifecycle (replaces Retell webhooks):
+    - call_inbound equivalent: when a SIP participant joins a LiveKit room, the
+      agent must look up the tenant by the dialed number, calculate available
+      slots, and configure the Gemini session with the right prompt and tools.
+      This is the same logic as the current handleInbound webhook handler.
+    - call_ended equivalent: when the session ends, the agent must run the
+      post-call pipeline — save call record, run triage, create/merge lead,
+      send notifications, track usage, push to calendar. This is the same logic
+      as processCallEnded + processCallAnalyzed, but it runs in-process.
+    - Recording and transcript: Retell provided these via the call_analyzed
+      webhook. Now the agent must capture audio via LiveKit Egress and generate
+      a transcript. Consider whether Gemini provides a transcript of the
+      conversation, or whether a separate transcription step is needed.
+
+  Call transfer:
+    - Currently: retell.call.transfer() with whisper_message
+    - LiveKit has built-in warm transfer. How does the whisper message (caller
+      context briefing) translate to LiveKit's transfer model?
+    - What happens on transfer failure? (current system offers callback booking)
+
+  Database schema changes:
+    - The calls table has retell_call_id (text, UNIQUE NOT NULL) — this needs to
+      change to accommodate LiveKit/Gemini call identifiers
+    - retell_metadata column — what replaces it?
+    - recording_url currently points to Retell's CDN — after migration, recordings
+      come from LiveKit Egress to Supabase Storage. The recording_storage_path
+      column already exists for this purpose.
+    - tenants.retell_phone_number — rename or repurpose for the Twilio number
+      (it already stores Twilio numbers for US/CA tenants)
+    - Plan a migration that preserves existing data while accommodating the new
+      system
+
+  Dashboard impact:
+    - The dashboard reads all call data from Supabase, not from Retell's API.
+      As long as the new agent writes the same data (transcript_text,
+      transcript_structured, recording_storage_path, duration, urgency, etc.)
+      to the same tables, the dashboard components (AudioPlayer,
+      TranscriptViewer, LeadFlyout, calls page) should work with minimal changes.
+    - The AudioPlayer currently plays from recording_url (Retell CDN). After
+      migration, it should play from recording_storage_path (Supabase Storage)
+      or a signed URL. Check if the AudioPlayer already handles this fallback.
+    - The AI Voice Settings page displays retell_phone_number — update labeling.
+    - The setup checklist checks retell_phone_number — update the check.
+
+  Onboarding flow changes:
+    - Phone provisioning: remove Retell import step, keep Twilio purchase
+    - Test call: replace retell.call.createPhoneCall() with LiveKit outbound
+      call mechanism (or Twilio-initiated call routed through LiveKit)
+    - The test call auto-cancel logic in processCallEnded should still work
+
+  Files to remove:
+    - src/lib/retell.js (Retell SDK singleton)
+    - retell-sdk from package.json
+    - RETELL_API_KEY and RETELL_SIP_TRUNK_TERMINATION_URI from env
+    - src/app/api/webhooks/retell/route.js (replaced by LiveKit agent logic)
+    - The entire Retell-ws-server repository (Railway service — replaced by
+      LiveKit agent)
+
+  Files to keep unchanged:
+    - src/lib/scheduling/slot-calculator.js
+    - src/lib/scheduling/booking.js
+    - src/lib/scheduling/google-calendar.js
+    - src/lib/leads.js
+    - src/lib/notifications.js
+    - src/lib/triage/ (entire directory)
+    - src/lib/whisper-message.js (may still be useful for transfer context)
+
+  New files to create:
+    - The LiveKit agent entry point and configuration
+    - Tool handler definitions for Gemini function calling
+    - System prompt builder adapted for Gemini's native audio capabilities
+    - LiveKit webhook/event handler (if needed for room events)
+    - Any new API routes for LiveKit integration
+
+  Testing strategy:
+    - How to test the new voice pipeline end to end
+    - Update existing test mocks (tests/__mocks__/retell.js and all retell
+      webhook tests) to reflect the new architecture
+    - Test tool execution in the agent context
+
+  Rollout strategy:
+    - Can this be done incrementally (some tenants on Retell, some on LiveKit)?
+    - Or is it a full cutover? Consider the phone number routing implications.
+
+  Environment and deployment:
+    - New environment variables needed (LiveKit credentials, Gemini API key)
+    - Where the LiveKit agent runs (Railway, VPS, LiveKit Cloud)
+    - LiveKit SIP service setup (self-hosted or LiveKit Cloud)
+
+  Update skill files:
+    - After implementation, update voice-call-architecture skill to reflect
+      the new system
+    - Update onboarding-flow skill for provisioning changes
+    - Update auth-database-multitenancy skill for schema changes
+    - Update dashboard-crm-system skill if dashboard changes are needed
+
+
+IMPORTANT NOTES
+---------------
+- Do NOT just replicate the old architecture on top of Gemini. Gemini 3.1 Flash
+  Live processes audio natively — leverage this. The greeting, farewell,
+  interruption handling, tone adaptation, and emotional responsiveness should
+  take advantage of native audio capabilities rather than treating Gemini as a
+  text-only LLM with bolted-on STT/TTS.
+
+- The business logic (booking protocol, decline handling, transfer rules, intake
+  questions, triage, lead management, notifications) must be preserved exactly.
+  The migration changes the voice transport and AI model layer, not the business
+  rules.
+
+- Tool execution becomes dramatically simpler: instead of webhook round-trips
+  through Retell, tools execute in-process inside the agent. This means lower
+  latency for bookings, faster lead capture, and real-time availability checks
+  without network hops.
+
+- The agent prompt from agent-prompt.js is battle-tested with many edge cases
+  handled (repeat callers, slot preference detection, post-booking recap,
+  transfer recovery, two-strike decline, etc.). Port all of this logic carefully.
+  Do not lose any behavioral nuance.
+
+- LiveKit is MIT-licensed and can be self-hosted. Consider cost implications of
+  LiveKit Cloud vs self-hosted for the expected call volume.
