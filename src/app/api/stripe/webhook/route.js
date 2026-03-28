@@ -60,8 +60,22 @@ async function provisionPhoneNumber(tenantId, country) {
         countryCode: country,
       });
       const phoneNumber = purchasedNumber.phoneNumber; // E.164 format
+      const numberSid = purchasedNumber.sid;
 
       console.log(`[stripe/webhook] Purchased Twilio number ${phoneNumber} (${country}) for tenant ${tenantId}`);
+
+      // Associate number with the Elastic SIP trunk so calls route to LiveKit
+      if (process.env.TWILIO_SIP_TRUNK_SID) {
+        try {
+          await client.trunking.v1
+            .trunks(process.env.TWILIO_SIP_TRUNK_SID)
+            .phoneNumbers.create({ phoneNumberSid: numberSid });
+          console.log(`[stripe/webhook] Associated ${phoneNumber} with SIP trunk`);
+        } catch (trunkErr) {
+          // Non-fatal: number is purchased, trunk association can be done manually
+          console.error(`[stripe/webhook] SIP trunk association failed for ${phoneNumber}:`, trunkErr);
+        }
+      }
 
       return phoneNumber;
     } else {
