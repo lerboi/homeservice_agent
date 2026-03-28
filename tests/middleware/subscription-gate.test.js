@@ -60,8 +60,6 @@ function buildSupabaseMock(userResult, tenantResult, subResult) {
       const query = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        order: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: subResult, error: null }),
       };
       return query;
@@ -121,8 +119,8 @@ let middleware;
 let middlewareConfig;
 
 beforeAll(async () => {
-  const mod = await import('../../src/proxy.js');
-  middleware = mod.proxy;
+  const mod = await import('../../src/middleware.js');
+  middleware = mod.middleware;
   middlewareConfig = mod.config;
 });
 
