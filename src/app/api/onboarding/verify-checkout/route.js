@@ -26,7 +26,7 @@ export async function GET() {
     .eq('is_current', true)
     .maybeSingle();
 
-  if (!subscription || subscription.status !== 'trialing') {
+  if (!subscription || !['trialing', 'active'].includes(subscription.status)) {
     return Response.json({ verified: false });
   }
 
