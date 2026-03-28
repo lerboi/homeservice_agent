@@ -8,7 +8,7 @@
  * Test 4: status='active' on /dashboard -> no redirect
  * Test 5: status='trialing' on /dashboard -> no redirect
  * Test 6: status='past_due' on /dashboard -> no redirect (grace period, banner handles it)
- * Test 7: No subscription row on /dashboard -> no redirect (edge case, allow through)
+ * Test 7: No subscription row on /dashboard -> redirect to /billing/upgrade
  * Test 8: User on /billing/upgrade -> no subscription check (exempt path)
  */
 
@@ -60,6 +60,8 @@ function buildSupabaseMock(userResult, tenantResult, subResult) {
       const query = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: subResult, error: null }),
       };
       return query;
@@ -119,8 +121,8 @@ let middleware;
 let middlewareConfig;
 
 beforeAll(async () => {
-  const mod = await import('../../src/middleware.js');
-  middleware = mod.middleware;
+  const mod = await import('../../src/proxy.js');
+  middleware = mod.proxy;
   middlewareConfig = mod.config;
 });
 
@@ -213,7 +215,7 @@ describe('Subscription gate — allowed statuses pass through without redirect',
     expect(mockRedirectUrl).toBeNull();
   });
 
-  it('Test 7: No subscription row (sub=null) on /dashboard does NOT redirect', async () => {
+  it('Test 7: No subscription row (sub=null) on /dashboard redirects to /billing/upgrade', async () => {
     const user = { id: 'user-007' };
     const tenant = { id: 'tenant-007', onboarding_complete: true };
     const sub = null;
@@ -223,7 +225,7 @@ describe('Subscription gate — allowed statuses pass through without redirect',
     const req = makeRequest('/dashboard');
     const result = await middleware(req);
 
-    expect(mockRedirectUrl).toBeNull();
+    expect(mockRedirectUrl).toContain('/billing/upgrade');
   });
 });
 

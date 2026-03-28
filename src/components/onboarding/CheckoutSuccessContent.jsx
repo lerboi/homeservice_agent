@@ -18,7 +18,9 @@ export default function CheckoutSuccessContent() {
     let cancelled = false;
 
     async function verify() {
-      for (let attempt = 0; attempt < 5; attempt++) {
+      // Poll until Stripe webhook creates the subscription row.
+      // 30 attempts * 2s = 60s max wait.
+      for (let attempt = 0; attempt < 30; attempt++) {
         if (cancelled) return;
 
         try {
@@ -40,9 +42,9 @@ export default function CheckoutSuccessContent() {
           // Retry on network error
         }
 
-        // Wait 1 second before retrying (unless last attempt)
-        if (attempt < 4) {
-          await new Promise((r) => setTimeout(r, 1000));
+        // Wait 2 seconds before retrying (unless last attempt)
+        if (attempt < 29) {
+          await new Promise((r) => setTimeout(r, 2000));
         }
       }
 
@@ -85,11 +87,17 @@ export default function CheckoutSuccessContent() {
     router.push('/dashboard');
   }, [router]);
 
-  // Verifying state
+  // Verifying state — wait for Stripe webhook
   if (status === 'verifying') {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin size-6 border-2 border-[#C2410C] border-t-transparent rounded-full" />
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin size-8 border-2 border-[#C2410C] border-t-transparent rounded-full" />
+        <h1 className="mt-6 text-xl font-semibold text-[#0F172A]">
+          Processing your purchase
+        </h1>
+        <p className="mt-2 text-sm text-[#475569]">
+          Hang tight, this usually takes just a few seconds...
+        </p>
       </div>
     );
   }

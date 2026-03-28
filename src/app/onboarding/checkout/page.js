@@ -52,12 +52,14 @@ export default function CheckoutPage() {
     return data.clientSecret;
   }, [selectedPlan, selectedInterval]);
 
-  // Handle checkout completion
+  // Handle checkout completion — wait for Stripe webhook to create subscription
   const handleComplete = useCallback(async () => {
     setPhase('verifying');
 
-    // Poll verify-checkout to confirm webhook processed
-    for (let attempt = 0; attempt < 8; attempt++) {
+    // Poll verify-checkout until webhook has created the subscription row.
+    // Stripe webhooks typically arrive within 5-15s but can take up to ~60s.
+    // 30 attempts * 2s = 60s max wait.
+    for (let attempt = 0; attempt < 30; attempt++) {
       try {
         const res = await fetch('/api/onboarding/verify-checkout');
         const data = await res.json();
@@ -69,9 +71,9 @@ export default function CheckoutPage() {
           return;
         }
       } catch {
-        // Retry
+        // Retry on network error
       }
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 2000));
     }
 
     setPhase('error');
@@ -135,12 +137,17 @@ export default function CheckoutPage() {
     );
   }
 
-  // Verifying phase
+  // Verifying phase — wait for Stripe webhook
   if (phase === 'verifying') {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="animate-spin size-8 border-2 border-[#C2410C] border-t-transparent rounded-full" />
-        <p className="mt-4 text-sm text-[#475569]">Confirming your subscription...</p>
+        <h1 className="mt-6 text-xl font-semibold text-[#0F172A]">
+          Processing your purchase
+        </h1>
+        <p className="mt-2 text-sm text-[#475569]">
+          Hang tight, this usually takes just a few seconds...
+        </p>
       </div>
     );
   }
