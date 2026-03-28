@@ -11,6 +11,7 @@ import {
   PhoneCall,
   Bot,
   Bell,
+  CreditCard,
   UserCircle,
   ChevronRight,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
   { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', description: 'Set up your emergency contact chain', icon: PhoneCall },
   { href: '/dashboard/more/notifications', label: 'Notifications', description: 'SMS and email alerts per call outcome', icon: Bell },
+  { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
   { href: '/dashboard/more/account', label: 'Account', description: 'Profile and account management', icon: UserCircle },
 ];
