@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Briefcase, Wrench, UserCircle, PhoneCall, CreditCard, Check } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { OnboardingProvider, useOnboarding } from './OnboardingContext';
@@ -19,12 +20,51 @@ function getStep(pathname) {
 
 const TOTAL_STEPS = 5;
 
+const STEP_ICONS = [Briefcase, Wrench, UserCircle, PhoneCall, CreditCard];
+
+function StepIndicator({ currentStep, completed }) {
+  return (
+    <div className="flex items-center gap-1.5" role="list" aria-label="Onboarding steps">
+      {STEP_ICONS.map((Icon, i) => {
+        const stepNum = i + 1;
+        const isDone = completed || stepNum < currentStep;
+        const isCurrent = !completed && stepNum === currentStep;
+        return (
+          <div key={stepNum} className="flex items-center gap-1.5" role="listitem">
+            <div
+              className={`flex items-center justify-center size-7 rounded-full transition-all duration-500 ${
+                isDone
+                  ? 'bg-emerald-500 text-white scale-100'
+                  : isCurrent
+                    ? 'bg-[#C2410C] text-white ring-4 ring-[#C2410C]/10'
+                    : 'bg-stone-100 text-stone-400'
+              }`}
+            >
+              {isDone ? (
+                <Check className="size-3.5" strokeWidth={2.5} />
+              ) : (
+                <Icon className="size-3.5" />
+              )}
+            </div>
+            {i < STEP_ICONS.length - 1 && (
+              <div
+                className={`w-4 sm:w-6 h-px transition-colors duration-500 ${
+                  isDone ? 'bg-emerald-400' : 'bg-stone-200'
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function OnboardingLayoutInner({ children }) {
   const pathname = usePathname();
   const t = useTranslations('onboarding');
   const { completed } = useOnboarding();
   const currentStep = getStep(pathname);
-  const progressValue = completed ? 100 : (currentStep / TOTAL_STEPS) * 100;
 
   return (
     <div className="min-h-screen bg-[#F5F5F4] relative">
@@ -39,8 +79,8 @@ function OnboardingLayoutInner({ children }) {
       />
 
       <div className="relative max-w-2xl mx-auto px-6 py-8 sm:py-12">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Header with logo + step indicators */}
+        <div className="flex items-center justify-between mb-8">
           <Link href="/" className="flex items-center group">
             <Image
               src="/images/logos/VOCO%20Logo%20V1%20(no%20bg).png"
@@ -51,32 +91,7 @@ function OnboardingLayoutInner({ children }) {
               priority
             />
           </Link>
-          <span
-            className={`text-sm transition-colors duration-700 ${
-              completed ? 'text-[#166534] font-medium' : 'text-[#475569]'
-            }`}
-          >
-            {completed
-              ? (t.raw ? 'Done' : 'Done')
-              : t('step_counter', { step: currentStep, total: TOTAL_STEPS })}
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div
-          className="relative h-1 mb-8 rounded-full bg-[#0F172A]/[0.08] overflow-hidden"
-          role="progressbar"
-          aria-valuenow={completed ? TOTAL_STEPS : currentStep}
-          aria-valuemin={1}
-          aria-valuemax={TOTAL_STEPS}
-          aria-label="Onboarding progress"
-        >
-          <div
-            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${
-              completed ? 'bg-[#16a34a]' : 'bg-[#C2410C]'
-            }`}
-            style={{ width: `${progressValue}%` }}
-          />
+          <StepIndicator currentStep={currentStep} completed={completed} />
         </div>
 
         {/* Wizard card */}

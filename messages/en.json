@@ -95,6 +95,7 @@
     "tag_emergency": "Emergency",
     "tag_routine": "Routine",
     "tag_high_ticket": "High-Ticket",
+    "save_failed": "Changes couldn't be saved. Check your connection and try again.",
     "working_hours_coming_soon": "Working hours configuration is coming soon.",
     "checklist_heading": "Keep going \u2014 optimize your setup",
     "checklist_subtext": "Your AI is live. These optional steps make it even better.",

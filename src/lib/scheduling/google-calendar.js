@@ -227,12 +227,12 @@ export async function syncCalendarEvents(tenantId) {
 
   // Delete cancelled events from mirror
   const toDelete = items.filter((evt) => evt.status === 'cancelled').map((evt) => evt.id);
-  for (const externalId of toDelete) {
+  if (toDelete.length > 0) {
     await supabase
       .from('calendar_events')
       .delete()
       .eq('tenant_id', tenantId)
-      .eq('external_id', externalId);
+      .in('external_id', toDelete);
   }
 
   // Persist new sync token and update last_synced_at

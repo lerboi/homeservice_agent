@@ -95,6 +95,7 @@
     "tag_emergency": "Emergencia",
     "tag_routine": "Rutinario",
     "tag_high_ticket": "Alto valor",
+    "save_failed": "Los cambios no se pudieron guardar. Verifica tu conexion e intenta de nuevo.",
     "working_hours_coming_soon": "La configuracion de horario laboral estara disponible pronto.",
     "checklist_heading": "Sigue adelante \u2014 optimiza tu configuracion",
     "checklist_subtext": "Tu IA esta en vivo. Estos pasos opcionales la hacen aun mejor.",

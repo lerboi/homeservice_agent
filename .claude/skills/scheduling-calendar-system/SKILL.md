@@ -35,16 +35,16 @@ Tenant configures working hours (PUT /api/working-hours)
        ↓
 Google/Outlook calendars sync via push webhooks + incremental pull
        ↓
-call_inbound webhook → fetches appointments + calendar_events + zones + buffers in parallel
+LiveKit agent joins room → fetches appointments + calendar_events + zones + buffers in parallel
        ↓
 calculateAvailableSlots() → pure computation → returns ISO slot pairs
        ↓
 AI offers slots to caller → caller picks one
        ↓
-book_appointment tool → webhook → atomicBookSlot() → book_appointment_atomic RPC
+book_appointment tool (in-process) → atomicBookSlot() → book_appointment_atomic RPC
        ↓  (Postgres advisory lock + tsrange overlap check)
        ↓
-On success → after() → pushBookingToCalendar(tenantId, appointmentId)
+On success → pushBookingToCalendar(tenantId, appointmentId) (async, non-blocking)
        ↓                 (queries is_primary=true credential, creates calendar event)
        ↓
 pushBookingToCalendar writes external_event_id + external_event_provider on appointment
@@ -250,9 +250,9 @@ RETURN { success: true, appointment_id: v_new_id };
 
 ### OAuth Routes
 
-**`GET /api/google-calendar/auth`** — Requires authenticated user. Retrieves `tenant.id`, generates OAuth consent URL with `state: tenant.id` (CSRF protection), returns `{ url }`.
+**`GET /api/google-calendar/auth`** — Requires authenticated user. Retrieves `tenant.id`, generates OAuth consent URL with `state: signOAuthState(tenant.id)` (HMAC-signed `tenantId:hmac` string for CSRF protection), returns `{ url }`.
 
-**`GET /api/google-calendar/callback`** — Accepts `?code=&state=tenantId`. Exchanges code for tokens, fetches calendar display name (`calendarList.get({ calendarId: 'primary' })`), upserts credentials to DB (conflict: `tenant_id,provider`), calls `registerWatch`, calls `syncCalendarEvents`, redirects to `/dashboard/services?calendar=connected`.
+**`GET /api/google-calendar/callback`** — Accepts `?code=&state=tenantId:hmac`. Verifies HMAC signature via `verifyOAuthState()`, exchanges code for tokens, fetches calendar display name (`calendarList.get({ calendarId: 'primary' })`), upserts credentials to DB (conflict: `tenant_id,provider`), calls `registerWatch`, calls `syncCalendarEvents`, redirects to `/dashboard/services?calendar=connected`.
 
 ---
 
@@ -353,7 +353,7 @@ For each notification:
 
 **File**: `src/app/api/cron/renew-calendar-channels/route.js`
 
-**Endpoint**: `POST /api/cron/renew-calendar-channels`
+**Endpoint**: `GET /api/cron/renew-calendar-channels` (Vercel Cron uses GET)
 
 **Auth**: `Authorization: Bearer {CRON_SECRET}` header required (returns 401 otherwise)
 
@@ -531,7 +531,7 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 
 ## 10. Key Design Decisions
 
-- **Local DB mirror is source of truth** — `calendar_events` table mirrors Google/Outlook events locally. Slot calculator reads from `calendar_events`, never live-queries the calendar APIs. This keeps the `call_inbound` hot path fast and eliminates dependency on external API availability during calls.
+- **Local DB mirror is source of truth** — `calendar_events` table mirrors Google/Outlook events locally. Slot calculator reads from `calendar_events`, never live-queries the calendar APIs. This keeps the LiveKit agent's slot calculation fast and eliminates dependency on external API availability during calls.
 
 - **`pg_try_advisory_xact_lock` is non-blocking** — Using `pg_try_advisory_xact_lock` instead of `pg_advisory_lock` means if the slot is being concurrently booked, the second transaction immediately returns `slot_taken` instead of queuing. This prevents queue buildup under concurrent call load.
 
@@ -553,13 +553,13 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 
 - **Admin consent detection in Outlook callback** — Microsoft 365 Business accounts with admin-controlled app permissions trigger `consent_required` or `AADSTS65001` error codes. The callback detects these and redirects to `?calendar=admin_consent` for a specific error message, distinct from generic OAuth failures.
 
-- **Google OAuth state = tenant_id** — The `state` parameter in the Google auth URL carries the `tenant_id` for CSRF protection and callback correlation. The callback extracts it from `?state=` to know which tenant is completing OAuth.
+- **Google OAuth state = HMAC-signed tenant_id** — The `state` parameter is a `tenantId:hmac` string signed via HMAC-SHA256 (keyed on `SUPABASE_SERVICE_ROLE_KEY`). The callback calls `verifyOAuthState()` to validate the signature before extracting the tenant_id. Outlook auth imports `signOAuthState` from the Google auth route rather than having its own implementation.
 
 ---
 
 ## Cross-Domain References
 
-- For slot calculation callers during active calls, see **voice-call-architecture skill** (sections on `call_inbound` webhook, `book_appointment` tool handler)
+- For slot calculation during active calls, see **voice-call-architecture skill** (sections on agent entry, `check_availability` tool, `book_appointment` tool)
 - For Supabase service role vs. user client patterns, RLS policies, and multi-tenant data isolation, see **auth-database-multitenancy skill**
 - For dashboard calendar UI components (calendar page, appointment cards, conflict banner), see the dashboard/CRM skill
 

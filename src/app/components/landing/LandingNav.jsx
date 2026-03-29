@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase-browser';
 
 const NAV_LINKS = [
   { href: '/', label: 'Home', exact: true },
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const pathname = usePathname();
 
   const isActive = (href, exact) =>
@@ -33,6 +35,12 @@ export function LandingNav() {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setHasSession(!!session);
+    });
+  }, []);
 
   return (
     <>
@@ -78,14 +86,34 @@ export function LandingNav() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* CTA (desktop) */}
-            <Button
-              asChild
-              size="sm"
-              className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
-            >
-              <Link href="/pricing">Start My 5-Minute Setup</Link>
-            </Button>
+            {hasSession ? (
+              <Button
+                asChild
+                size="sm"
+                className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
+              >
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                {/* Sign in (desktop) */}
+                <Link
+                  href="/auth/signin"
+                  className="hidden md:inline-flex text-[13px] font-medium text-white/60 hover:text-white transition-colors"
+                >
+                  Sign in
+                </Link>
+
+                {/* CTA (desktop) */}
+                <Button
+                  asChild
+                  size="sm"
+                  className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
+                >
+                  <Link href="/pricing">Start My 5-Minute Setup</Link>
+                </Button>
+              </>
+            )}
 
             {/* Mobile hamburger */}
             <button
@@ -161,15 +189,31 @@ export function LandingNav() {
           })}
         </nav>
 
-        {/* CTA */}
-        <div className="p-4 border-t border-white/[0.06]">
-          <Link
-            href="/pricing"
-            className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
-          >
-            Start My 5-Minute Setup
-          </Link>
-          <p className="text-center text-xs text-white/25 mt-3">No credit card required</p>
+        {/* CTA + Sign in */}
+        <div className="p-4 border-t border-white/[0.06] space-y-3">
+          {hasSession ? (
+            <Link
+              href="/dashboard"
+              className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/pricing"
+                className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+              >
+                Start My 5-Minute Setup
+              </Link>
+              <Link
+                href="/auth/signin"
+                className="flex items-center justify-center w-full min-h-[44px] text-[14px] font-medium text-white/50 hover:text-white transition-colors"
+              >
+                Already have an account? Sign in
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </>

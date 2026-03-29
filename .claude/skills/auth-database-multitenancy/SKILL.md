@@ -1,6 +1,6 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, middleware auth guards, three Supabase client types, RLS policies, all 8 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth middleware, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 23 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
@@ -15,13 +15,13 @@ This document is the single source of truth for authentication, Supabase client 
 
 | Layer | File(s) | Purpose |
 |-------|---------|---------|
-| **Middleware Auth Guard** | `src/middleware.js` | Cookie-based auth check, onboarding redirect logic |
+| **Middleware Auth Guard** | `src/proxy.js` | Cookie-based auth check, onboarding redirect logic |
 | **Server Client** | `src/lib/supabase-server.js` | `createSupabaseServer()` — SSR cookie-based for server components and API routes |
 | **Service Role Client** | `src/lib/supabase.js` | Service role — bypasses RLS, used by webhook handlers and server-side writes |
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 11 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 23 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -45,14 +45,14 @@ HTTP Request arrives
        │
        ├── getTenantId() pattern
        │     createSupabaseServer().auth.getUser() → user.id
-       │     supabase (service role).from('tenants').eq('owner_id', user.id) → tenant.id
+       │     serverSupabase.from('tenants').eq('owner_id', user.id) → tenant.id  (same session client — RLS enforces isolation)
        │
        └── verifyAdmin() pattern (admin API routes)
              createSupabaseServer().auth.getUser() → user
              supabase (service role).from('admin_users').eq('user_id', user.id) → returns user if admin
 
-Webhook path (Retell, cron jobs):
-  Retell webhook → supabase (service role client) → bypasses RLS for cross-tenant writes
+Webhook path (Stripe, cron jobs) and external services (LiveKit agent):
+  Stripe webhook / LiveKit agent → supabase (service role client) → bypasses RLS for cross-tenant writes
 
 Realtime subscriptions (browser):
   Dashboard leads page → supabase-browser client → filtered by tenant_id via RLS
@@ -64,7 +64,7 @@ Realtime subscriptions (browser):
 
 | File | Role |
 |------|------|
-| `src/middleware.js` | Auth guard middleware — cookie-based auth, onboarding redirect, AUTH_REQUIRED_PATHS, admin gate |
+| `src/proxy.js` | Auth guard middleware — cookie-based auth, onboarding redirect, AUTH_REQUIRED_PATHS, admin gate |
 | `src/lib/supabase.js` | Service role client — bypasses RLS, used by webhooks and server-side API routes |
 | `src/lib/supabase-server.js` | `createSupabaseServer()` factory — SSR cookie-based client for server components |
 | `src/lib/supabase-browser.js` | Browser client — anon key, client components and Realtime |
@@ -83,7 +83,16 @@ Realtime subscriptions (browser):
 | `supabase/migrations/011_country_provisioning.sql` | phone_inventory, phone_inventory_waitlist tables + assign_sg_number RPC |
 | `supabase/migrations/012_admin_users.sql` | admin_users table + RLS self-read policy |
 | `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC |
+| `supabase/migrations/014_owner_notify_mode.sql` | SUPERSEDED by 015 — added owner_notify_mode (now dropped) |
+| `supabase/migrations/015_notification_preferences.sql` | notification_preferences JSONB on tenants + drops owner_notify_mode |
+| `supabase/migrations/016_billing_notifications.sql` | billing_notifications table for idempotent trial/payment notifications |
 | `supabase/migrations/017_overage_billing.sql` | overage_stripe_item_id column on subscriptions |
+| `supabase/migrations/018_intake_questions.sql` | intake_questions jsonb column on services |
+| `supabase/migrations/019_appointments_exclusion_constraint.sql` | GiST exclusion constraint `appointments_no_overlap` — replaces UNIQUE(tenant_id, start_time), prevents overlapping time ranges for non-cancelled appointments |
+| `supabase/migrations/020_billing_notifications_unique.sql` | UNIQUE constraint on billing_notifications (tenant_id, notification_type) |
+| `supabase/migrations/021_fix_subscriptions_rls.sql` | Fix subscriptions RLS policies |
+| `supabase/migrations/022_fix_missing_cascades.sql` | Add missing ON DELETE CASCADE to FKs |
+| `supabase/migrations/023_livekit_migration.sql` | Retell→LiveKit renames: retell_call_id→call_id, retell_metadata→call_metadata, retell_phone_number→phone_number + call_provider, egress_id columns |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -103,8 +112,7 @@ export const supabase = createClient(
 ```
 
 **Purpose**: Bypasses RLS entirely. Used by:
-- Webhook handlers (Retell, Google, Outlook) — must write to any tenant's data
-- `getTenantId()` — reads tenants table by `owner_id` (service role avoids RLS chicken-and-egg)
+- Webhook handlers (Stripe, Google, Outlook) and external services (LiveKit agent) — must write to any tenant's data
 - Server-side API routes that need cross-tenant reads (e.g., `processCallAnalyzed`)
 - Cron jobs
 
@@ -170,24 +178,24 @@ const serverSupabase = await createSupabaseServer();
 const { data: { user } } = await serverSupabase.auth.getUser();
 if (!user) return null;
 
-const { data: tenant } = await supabase   // service role client
+const { data: tenant } = await serverSupabase   // same session client
   .from('tenants')
   .select('id')
   .eq('owner_id', user.id)
-  .single();
+  .maybeSingle();
 
 return tenant?.id || null;
 ```
 
 **Key design**: Uses `user.id` (the Supabase auth UID) to query `tenants.owner_id`. Does NOT use `user.user_metadata` — tenant_id is never stored in Supabase auth user_metadata. The tenants table is the authoritative source.
 
-**Hybrid client usage**: `createSupabaseServer()` for auth (reads session cookie); service role `supabase` for the tenants query (avoids RLS dependency on session state for that query).
+**Single client usage**: Uses `createSupabaseServer()` (the session-scoped anon client) for both the auth check AND the tenants query. Because the tenants table has an RLS policy `owner_id = auth.uid()`, the session client can only see the authenticated user's own tenant row — this enforces tenant isolation as defense-in-depth. There is no RLS chicken-and-egg problem because the user's session is already established when the query runs.
 
 ---
 
 ## 3. Middleware
 
-**File**: `src/middleware.js`
+**File**: `src/proxy.js`
 
 ### AUTH_REQUIRED_PATHS
 
@@ -321,7 +329,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 13 migrations are applied sequentially. FK dependencies require this order.
+All 23 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 documented in detail below; 018–023 documented in the file map above.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -333,14 +341,14 @@ All 13 migrations are applied sequentially. FK dependencies require this order.
 | `id` | uuid PK | gen_random_uuid() |
 | `owner_id` | uuid UNIQUE | Supabase auth user ID |
 | `business_name` | text | nullable |
-| `retell_phone_number` | text UNIQUE | nullable |
+| `phone_number` | text UNIQUE | nullable (renamed from retell_phone_number in migration 023) |
 | `owner_phone` | text | nullable |
 | `owner_email` | text | nullable |
 | `default_locale` | text | NOT NULL DEFAULT 'en' |
 | `onboarding_complete` | boolean | NOT NULL DEFAULT false |
 | `created_at`, `updated_at` | timestamptz | |
 
-**calls columns**: `id`, `tenant_id` (FK), `retell_call_id` UNIQUE, `from_number`, `to_number`, `direction`, `status`, `disconnection_reason`, `start_timestamp`, `end_timestamp`, `duration_seconds` (GENERATED STORED), `recording_url`, `recording_storage_path`, `transcript_text`, `transcript_structured` (jsonb), `detected_language`, `language_barrier`, `barrier_language`, `retell_metadata` (jsonb)
+**calls columns**: `id`, `tenant_id` (FK), `call_id` UNIQUE (renamed from retell_call_id in migration 023), `from_number`, `to_number`, `direction`, `status`, `disconnection_reason`, `start_timestamp`, `end_timestamp`, `duration_seconds` (GENERATED STORED), `recording_url`, `recording_storage_path`, `transcript_text`, `transcript_structured` (jsonb), `detected_language`, `language_barrier`, `barrier_language`, `call_metadata` (jsonb, renamed from retell_metadata in migration 023), `call_provider` (text, 'retell'|'livekit', DEFAULT 'livekit'), `egress_id` (text)
 
 **RLS**: Both tables have full RLS. Tenants: direct owner pattern. Calls: tenant_id child pattern. Both have service_role bypass.
 
@@ -378,7 +386,7 @@ All 13 migrations are applied sequentially. FK dependencies require this order.
 
 Key table details:
 
-**appointments**: `id`, `tenant_id` (FK), `call_id` (FK → calls SET NULL), `start_time`, `end_time`, `service_address`, `caller_name`, `caller_phone`, `urgency` (CHECK emergency|routine|high_ticket), `zone_id` (FK → service_zones SET NULL), `status` (CHECK confirmed|cancelled|completed DEFAULT confirmed), `booked_via` (CHECK ai_call|manual DEFAULT ai_call), `google_event_id` (text, renamed in 007), `notes`. Constraint: `UNIQUE (tenant_id, start_time)`.
+**appointments**: `id`, `tenant_id` (FK), `call_id` (FK → calls SET NULL), `start_time`, `end_time`, `service_address`, `caller_name`, `caller_phone`, `urgency` (CHECK emergency|routine|high_ticket), `zone_id` (FK → service_zones SET NULL), `status` (CHECK confirmed|cancelled|completed DEFAULT confirmed), `booked_via` (CHECK ai_call|manual DEFAULT ai_call), `google_event_id` (text, renamed in 007), `notes`. Constraint: GiST exclusion `appointments_no_overlap` (see migration 019 below — replaced the original `UNIQUE (tenant_id, start_time)`).
 
 **calendar_credentials**: `id`, `tenant_id` (FK), `provider` (CHECK google|outlook DEFAULT google), `access_token`, `refresh_token`, `expiry_date` (bigint), `calendar_id` (DEFAULT 'primary'), `calendar_name`, `watch_channel_id`, `watch_resource_id`, `watch_expiration` (bigint), `last_sync_token`, `last_synced_at`. Constraint: `UNIQUE (tenant_id, provider)`.
 
@@ -388,6 +396,8 @@ Key table details:
 -- Checks tsrange overlap on non-cancelled appointments
 -- Returns: jsonb { success: true, appointment_id: uuid }
 --       or: jsonb { success: false, reason: 'slot_taken' }
+-- Secondary defense: GiST exclusion constraint `appointments_no_overlap` (added in migration 019)
+--   prevents overlapping [start_time, end_time) ranges per tenant for non-cancelled appointments
 ```
 
 All 5 tables use tenant_id child RLS pattern + service_role bypass.
@@ -588,7 +598,7 @@ INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
 **usage_events columns**:
 | Column | Type | Notes |
 |--------|------|-------|
-| `call_id` | text PK | Retell call ID — idempotency key, prevents double-counting on webhook retries |
+| `call_id` | text PK | Call ID (LiveKit room name or legacy Retell ID) — idempotency key, prevents double-counting |
 | `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
 | `created_at` | timestamptz | NOT NULL DEFAULT now() |
 
@@ -610,6 +620,33 @@ INSERT INTO admin_users (user_id, role) VALUES ('<auth.users UUID>', 'admin');
 **Extends subscriptions**: `overage_stripe_item_id` (text, nullable) — Stripe subscription item ID for the metered overage price component. Used by `call-processor.js` to report per-call usage when `calls_used > calls_limit`.
 
 No new tables. No RLS changes (existing subscriptions policies cover all columns).
+
+---
+
+### 019_appointments_exclusion_constraint.sql — Overlap Prevention
+
+Replaces the original `UNIQUE (tenant_id, start_time)` constraint from migration 003 with a GiST exclusion constraint that prevents overlapping time ranges.
+
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_tenant_id_start_time_key;
+
+ALTER TABLE appointments ADD CONSTRAINT appointments_no_overlap
+  EXCLUDE USING gist (
+    tenant_id WITH =,
+    tstzrange(start_time, end_time, '[)') WITH &&
+  )
+  WHERE (status <> 'cancelled');
+```
+
+**Key properties**:
+- Prevents overlapping time ranges (not just identical start times) — two appointments for the same tenant cannot have overlapping `[start_time, end_time)` intervals
+- Only applies to non-cancelled appointments (`WHERE status <> 'cancelled'`) — cancelled slots can be rebooked
+- Uses `btree_gist` extension for GiST index support on scalar types (required for `tenant_id WITH =` in the exclusion)
+- The existing `idx_appointments_tenant_start` index from migration 003 is kept for query performance
+
+No new tables. No RLS changes.
 
 ---
 
@@ -635,12 +672,23 @@ No new tables. No RLS changes (existing subscriptions policies cover all columns
 | `phone_inventory_waitlist` | 011 | Email waitlist for SG number availability | INSERT for anon+authenticated |
 | `admin_users` | 012 | Platform admin users — gates /admin/* routes | Authenticated SELECT-own only (user_id = auth.uid()) |
 | `usage_events` | 013 | Per-call idempotency guard for usage counting (call_id PK) | Service role only |
+| `billing_notifications` | 016 | Idempotent billing notification tracking (trial_will_end, payment_failed) | Service role only |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
 - 003: `tenant_timezone`, `slot_duration_mins`
 - 005: `setup_checklist_dismissed`
 - 011: `owner_name`, `country`, `provisioning_failed`
+- 015: `notification_preferences` (JSONB, per-outcome SMS/email toggles)
+- 023: `phone_number` (renamed from `retell_phone_number`)
+
+**Calls columns added across migrations** (all on `calls` table):
+- 008: `booking_outcome`, `exception_reason`, `notification_priority`
+- 009: `recovery_sms_status`, `recovery_sms_retry_count`, `recovery_sms_last_error`, `recovery_sms_last_attempt_at`
+- 023: `call_provider` ('retell'|'livekit'), `egress_id`; renames: `retell_call_id`→`call_id`, `retell_metadata`→`call_metadata`
+
+**Services columns added**:
+- 018: `intake_questions` (jsonb)
 
 ---
 
@@ -678,7 +726,7 @@ No new tables. No RLS changes (existing subscriptions policies cover all columns
 
 - **Admin gate returns early from middleware**: The `/admin/*` check returns response immediately after verifying admin status — before the tenant/onboarding redirect logic. Admin users are platform operators who may not have a `tenants` row. Without early return, the middleware would redirect them to `/onboarding`.
 
-- **verifyAdmin uses service_role for admin_users lookup**: Unlike `getTenantId()`, `verifyAdmin()` uses the service-role client for the admin_users query rather than the anon-key session client. This ensures consistent behavior regardless of RLS policy changes. The session client is used only for `auth.getUser()`.
+- **verifyAdmin uses service_role for admin_users lookup**: `verifyAdmin()` uses the service-role client for the admin_users query. This ensures consistent behavior regardless of RLS policy changes. The session client is used only for `auth.getUser()`. Note that `getTenantId()` takes the opposite approach — it uses the session client for both auth and the tenants query, relying on RLS for defense-in-depth tenant isolation.
 
 - **admin_users has no service_role bypass policy**: Service role bypasses RLS by default in Supabase — no explicit policy is needed. The single SELECT policy allows authenticated users to check their own admin status (used by middleware). All writes (INSERT/UPDATE/DELETE) are done directly via service_role (Supabase CLI or SQL editor) — there are intentionally no INSERT policies.
 

@@ -1,652 +1,470 @@
 ---
 name: voice-call-architecture
-description: "Complete architectural reference for the voice call system — WebSocket LLM server, Retell webhooks, agent prompts, triage pipeline, scheduling, booking, notifications, and lead management. Use this skill whenever making changes to the call system, voice agent prompts, triage logic, booking flow, call processing pipeline, notifications, lead creation, or any Retell/Groq/Twilio integration. Also use when the user asks about how calls work, wants to modify agent behavior, or needs to debug call-related issues."
+description: "Complete architectural reference for the voice call system — Twilio SIP + LiveKit + Gemini 3.1 Flash Live Python agent, SIP trunking, in-process tool execution, post-call pipeline, triage, scheduling, booking, notifications, and lead management. Use this skill whenever making changes to the call system, voice agent prompts, triage logic, booking flow, post-call pipeline, notifications, lead creation, or any Twilio/LiveKit/Gemini integration. Also use when the user asks about how calls work, wants to modify agent behavior, or needs to debug call-related issues."
 ---
 
 # Voice Call Architecture — Complete Reference
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-27 (Phase 30: Voice Agent Prompt Optimization — smart slot preference detection, repeat caller awareness via check_caller_history tool, failed transfer callback booking, prompt cleanup, trade-specific intake questions, post-booking recap flow)
+**Last updated**: 2026-03-30 (Python rewrite — Twilio SIP + LiveKit + Gemini 3.1 Flash Live, Python 3.12, in-process tools, asyncio.to_thread for non-blocking DB)
 
 ---
 
 ## Architecture Overview
 
-Two separate processes work together:
+Two separate services work together:
 
-| Process | Runtime | Port | Purpose |
-|---------|---------|------|---------|
-| **Next.js App** | Vercel | 3000 | Webhooks, dashboard, cron jobs |
-| **WebSocket LLM Server** | Railway (standalone Node.js) | 8081 | Real-time AI voice conversation via Groq |
+| Service | Runtime | Deployment | Purpose |
+|---------|---------|------------|---------|
+| **Next.js App** | Vercel | Vercel | Dashboard, API routes, cron jobs, Stripe webhooks, phone provisioning |
+| **LiveKit Voice Agent** | Python 3.12 | Railway | Real-time AI voice conversation via Gemini 3.1 Flash Live |
+
+The agent is a **separate repo** (`lerboi/livekit_agent`) at `C:/Users/leheh/.Projects/livekit-agent/`.
 
 ```
-Caller dials Retell number
-       ↓
-  Retell sends call_inbound webhook → Next.js /api/webhooks/retell
-       ↓                               (tenant lookup, slot calc, returns dynamic_variables)
-  Retell connects WebSocket → Railway wss://url/llm-websocket/{call_id}
-       ↓                       (streams Groq responses back to Retell for TTS)
-       ↓  During call: AI uses 5 tools
-       ↓    capture_lead → webhook handler → createOrMergeLead() (mid-call lead)
-       ↓    check_caller_history → webhook handler → read-only leads + appointments lookup
-       ↓    end_call     → WebSocket sends end_call:true to Retell
-       ↓    transfer_call → webhook handler → retell.call.transfer() with whisper_message
-       ↓    book_appointment → webhook handler → atomicBookSlot()
-  Call ends → call_ended webhook → processCallEnded()
-       ↓
-  ~Minutes later → call_analyzed webhook → processCallAnalyzed()
-       ↓                                    (recording upload, triage, lead creation, notifications)
-  ~60s after call → Recovery SMS cron (urgency-aware, delivery tracking, exponential backoff retry)
-  During call (slot taken) → Real-time recovery SMS via after() in handleBookAppointment
+Caller dials Twilio number
+       |
+  Twilio routes via Elastic SIP Trunk -> LiveKit Cloud
+       |                                 (SIP inbound trunk: voco-twilio-inbound)
+  LiveKit SIP dispatch rule creates room: "call-{uuid}"
+       |
+  Agent joins room (entrypoint function, agent_name="voco-voice-agent")
+       |  Looks up tenant by to_number (sip.trunkPhoneNumber)
+       |  Calculates initial available slots
+       |  Builds system prompt (locale, tone, intake questions)
+       |  Creates call record in DB
+       |
+  Opens Gemini 3.1 Flash Live session (native audio-to-audio)
+       |  Starts Egress recording -> Supabase S3 (call-recordings bucket)
+       |  Gemini's native server VAD handles turn detection
+       |
+       |  During call: AI uses 6 tools (in-process, direct Supabase access)
+       |    check_caller_history -> read-only leads + appointments lookup
+       |    check_availability   -> real-time slot calculation
+       |    book_appointment     -> atomic_book_slot() + calendar sync + caller SMS
+       |    capture_lead         -> create_or_merge_lead() (mid-call lead)
+       |    transfer_call        -> SIP REFER via LiveKit SipClient
+       |    end_call             -> removes SIP participant after 3s delay
+       |
+  Session closes -> Post-call pipeline runs immediately (in-process)
+       |  Transcript + recording saved to call record
+       |  Test call auto-cancel (if applicable)
+       |  Usage tracking + overage billing
+       |  Language barrier detection
+       |  3-layer triage classification
+       |  Suggested slot calculation (unbooked calls)
+       |  Lead creation/merging
+       |  Owner notifications (SMS + email, preference-gated)
+       |
+  ~60s after call -> Recovery SMS cron (for not_attempted calls, with retry)
 ```
 
 ---
 
 ## File Map
 
+### Agent Repo (`lerboi/livekit_agent` — deployed to Railway)
+
 | File | Role |
 |------|------|
-| `C:/Users/leheh/.Projects/Retell-ws-server/server.js` | WebSocket LLM server (Railway production) |
-| `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js` | Agent prompt builder (Railway production) |
-| `src/app/api/webhooks/retell/route.js` | All Retell webhook event handling |
-| `src/lib/whisper-message.js` | Whisper message builder for warm transfers |
-| `src/lib/call-processor.js` | Post-call pipeline (recording, triage, leads, notifications) |
-| `src/lib/triage/classifier.js` | Three-layer triage orchestrator |
-| `src/lib/triage/layer1-keywords.js` | Regex urgency detection |
-| `src/lib/triage/layer2-llm.js` | LLM urgency classification (Groq) |
-| `src/lib/triage/layer3-rules.js` | Owner service tag override |
-| `src/lib/scheduling/slot-calculator.js` | Available slot calculation |
-| `src/lib/scheduling/booking.js` | Atomic slot booking (Postgres advisory lock) |
-| `src/lib/scheduling/google-calendar.js` | Calendar sync + push notifications |
-| `src/lib/leads.js` | Lead creation and merge logic |
-| `src/lib/notifications.js` | SMS (Twilio) + Email (Resend) dispatch |
+| `src/agent.py` | Main entry point — `entrypoint()`, tenant lookup, Gemini session, Egress recording, post-call trigger |
+| `src/prompt.py` | System prompt builder — all behavioral sections |
+| `src/post_call.py` | Post-call pipeline — triage, leads, notifications, usage tracking |
+| `src/supabase_client.py` | Singleton service-role Supabase client |
+| `src/utils.py` | Date formatting, initial slot calculation |
+| `src/health.py` | HTTP health check server on port 8080 |
+| `src/tools/__init__.py` | Tool registry — conditional registration based on onboarding state |
+| `src/tools/book_appointment.py` | Atomic slot booking + calendar sync + SMS |
+| `src/tools/check_availability.py` | Real-time slot query for requested dates |
+| `src/tools/capture_lead.py` | Mid-call lead capture on booking decline |
+| `src/tools/check_caller_history.py` | Repeat caller lookup (read-only, silent context) |
+| `src/tools/transfer_call.py` | SIP REFER transfer to owner phone |
+| `src/tools/end_call.py` | Graceful SIP participant disconnect |
+| `src/lib/booking.py` | Atomic slot booking via Supabase RPC |
+| `src/lib/slot_calculator.py` | Available slot calculation algorithm |
+| `src/lib/leads.py` | Lead creation/merge logic |
+| `src/lib/notifications.py` | SMS (Twilio) + Email (Resend) dispatch |
+| `src/lib/google_calendar.py` | Google Calendar push (OAuth2) |
+| `src/lib/whisper_message.py` | Whisper message builder for warm transfers |
+| `src/lib/triage/classifier.py` | Three-layer triage orchestrator |
+| `src/lib/triage/layer1_keywords.py` | Regex urgency detection |
+| `src/lib/triage/layer2_llm.py` | LLM urgency classification (Groq/Llama 4 Scout) |
+| `src/lib/triage/layer3_rules.py` | Owner service tag override |
+| `src/messages/en.json` | English agent utterances + notification templates |
+| `src/messages/es.json` | Spanish agent utterances + notification templates |
+| `pyproject.toml` | Dependencies and build config |
+| `Dockerfile` | Python 3.12-slim, runs `python -m src.agent start` |
+| `livekit.toml` | LiveKit agent name and entrypoint config |
+| `sip-inbound-trunk.json` | Twilio SIP inbound trunk config (allowed IPs, Krisp enabled) |
+| `sip-outbound-trunk.json` | Twilio SIP outbound trunk config (for test calls) |
+| `sip-dispatch-rule.json` | LiveKit SIP dispatch rule (roomPrefix: "call-") |
+
+### Main Repo (`homeservice_agent` — deployed to Vercel)
+
+| File | Role |
+|------|------|
+| `src/app/api/stripe/webhook/route.js` | Phone provisioning (US/CA Twilio purchase, SG inventory) + SIP trunk association |
+| `src/app/api/onboarding/test-call/route.js` | LiveKit SIP outbound test call trigger |
+| `src/lib/subscription-gate.js` | Subscription enforcement gate for the agent |
 | `src/app/api/cron/send-recovery-sms/route.js` | Recovery SMS cron job |
-| `src/app/api/onboarding/test-call/route.js` | Onboarding test call trigger — passes `test_call: 'true'` in dynamic variables |
-| `messages/en.json` | English agent utterances |
-| `messages/es.json` | Spanish agent utterances |
-| `supabase/migrations/003_scheduling.sql` | Scheduling schema + `book_appointment_atomic` function |
-| `supabase/migrations/004_leads_crm.sql` | Leads + activity_log schema |
-| `supabase/migrations/008_call_outcomes.sql` | booking_outcome, exception_reason, notification_priority columns |
-| `supabase/migrations/009_recovery_sms_tracking.sql` | Recovery SMS delivery tracking columns (recovery_sms_status, recovery_sms_retry_count, recovery_sms_last_error, recovery_sms_last_attempt_at) |
-| `supabase/migrations/013_usage_events.sql` | usage_events idempotency table + increment_calls_used RPC (Phase 23) |
-| `supabase/migrations/014_owner_notify_mode.sql` | SUPERSEDED by 015 — added owner_notify_mode (now dropped) |
-| `supabase/migrations/015_notification_preferences.sql` | notification_preferences JSONB on tenants + drops owner_notify_mode |
-| `supabase/migrations/018_intake_questions.sql` | intake_questions jsonb column on services (Phase 30) |
 | `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB for dashboard |
 
 ---
 
-## 1. WebSocket LLM Server
+## 1. Agent Service
 
-**File**: `C:/Users/leheh/.Projects/Retell-ws-server/server.js` (Railway production)
-**Prompt**: `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js`
+**Repo**: `lerboi/livekit_agent` — **File**: `src/agent.py`
 
-**How it works**: Retell connects via WebSocket for each call. The server receives conversation transcripts, sends them to Groq for inference, and streams response tokens back to Retell for text-to-speech.
+The agent runs as a LiveKit Agents worker on Railway using Python 3.12.
 
 ### Connection Lifecycle
 
-1. **Connection opens** — server extracts `call_id` from URL path `/llm-websocket/{call_id}`
-2. **Config sent** — `{ response_type: "config", config: { auto_reconnect: true, call_details: true } }`
-3. **call_details received** — extracts `retell_llm_dynamic_variables`, builds system prompt, calls Groq via `handleResponseRequired()` with empty transcript to generate the greeting dynamically (no hardcoded TTS), starts 6s greeting guard
-4. **Greeting TTS guard** — `response_required`/`reminder_required` messages are suppressed for 6 seconds after greeting Groq call is triggered. Without this, ambient noise triggers a second Groq call during greeting TTS playback.
-5. **Conversation loop** — receives `response_required`/`reminder_required`, calls Groq, streams back
-6. **Tool calls** — Groq returns `finish_reason: "tool_calls"` → server sends `tool_call_invocation` to Retell → waits for `tool_call_result` → calls Groq again with result (including `end_call` — Groq generates the farewell, then `end_call: true` is sent on `content_complete`). **Chained tool calls supported**: if Groq returns another tool call after processing a tool result (e.g., `end_call` after `capture_lead`), it's accumulated and dispatched — same logic as the initial tool call handler.
-7. **Connection closes** — cleanup
+1. **Agent connects** — `await ctx.connect()` joins the LiveKit room
+2. **Wait for participant** — `asyncio.wait_for(ctx.wait_for_participant(), timeout=30)` blocks until the SIP caller joins
+3. **Extract phone numbers** — `sip.trunkPhoneNumber` (to_number for tenant lookup), `sip.phoneNumber` (from_number / caller) from `participant.attributes`
+4. **Call ID** — `ctx.room.name` (e.g., `call-{uuid}`) serves as the call identifier
+5. **Test call detection** — room metadata `{ test_call: true }` set by test-call route
+6. **Tenant lookup** — query `tenants` by `phone_number = to_number` via `asyncio.to_thread()`
+7. **Subscription gate** — fail-open check against blocked statuses
+8. **Calculate initial slots** — today + next 2 days, up to 6 slots (appended to prompt)
+9. **Fetch intake questions** — from `services.intake_questions` for active services
+10. **Build system prompt** — `build_system_prompt(locale, ...)` with keyword args
+11. **Create call record** — upsert into `calls` (status: 'started', call_provider: 'livekit')
+12. **Create tools** — `create_tools(deps)` with direct Supabase access
+13. **Open Gemini session** — `RealtimeModel` + `VocoAgent` + `AgentSession`
+14. **Register event handlers** — transcript collection, error handler, close handler (all BEFORE session.start)
+15. **Start session** — `await session.start(agent=agent, room=ctx.room, room_options=...)`
+16. **Start Egress** — `LiveKitAPI().egress.start_room_composite_egress()` -> Supabase S3
+17. **Greeting** — Gemini starts speaking automatically from system prompt instructions (no `generate_reply()` needed)
+18. **Session close** — async handler stops Egress, runs `run_post_call_pipeline()`
 
-### Message Types Handled
-
-| `interaction_type` | Action |
-|---|---|
-| `ping_pong` | Echo back with same timestamp |
-| `call_details` | Build prompt, set tools, trigger Groq-generated greeting |
-| `response_required` | Call Groq with transcript, stream response |
-| `reminder_required` | Same as above + inject "caller silent" nudge |
-| `tool_call_result` | Continue conversation with tool result (all tools go through Groq, including end_call) |
-| `update_only` | Ignored (transcript update, no response needed) |
-
-### Groq Configuration
+### Key Dependencies
 
 ```
-Model: meta-llama/llama-4-scout-17b-16e-instruct
-Temperature: 0.3
-Max tokens: 500
-Streaming: true
-SDK: openai (Groq-compatible base URL)
+livekit-agents (>=1.5)           — Agent framework (AgentSession, Agent, WorkerOptions, cli)
+livekit-plugins-google (PR#5238) — Gemini RealtimeModel (gemini-3.1-flash-live-preview support)
+livekit-plugins-noise-cancellation — BVCTelephony for SIP audio quality
+livekit-api (>=1.0)              — LiveKitAPI (egress, room, sip management)
+supabase (>=2.0)                 — Database access (service-role)
 ```
 
-### Tool Definitions
+### Deployment
 
-**`transfer_call`** — Always available. Optional parameters for whisper message context:
-- `caller_name` (string, optional) — caller full name if captured
-- `job_type` (string, optional) — type of job or service needed
-- `urgency` (enum: `emergency`|`routine`|`high_ticket`, optional) — urgency level
-- `summary` (string, optional) — 1-line summary for the receiving human
-- `reason` (enum: `caller_requested`|`clarification_limit`, optional) — why the transfer is happening. Webhook uses this for `exception_reason` column; falls back to summary heuristic if not provided
-- `required: []` — all parameters optional (AI provides whatever it has captured)
-
-**`capture_lead`** — Always available (NOT gated by onboarding_complete). Parameters:
-- `caller_name` (string, optional)
-- `phone` (string, optional)
-- `address` (string, optional)
-- `job_type` (string, optional)
-- `notes` (string, optional)
-- `required: []` — all parameters optional
-
-**`check_caller_history`** — Always available (NOT gated by onboarding_complete). No parameters — uses caller_number from the call record. Returns natural-language summary of caller's prior leads and upcoming appointments. AI invokes this after greeting, before first question. Read-only — no DB writes.
-- Returns: "First-time caller. No prior history found." or "Returning caller. [appointments/leads summary]"
-- Purpose: Enable repeat caller recognition (D-02) and prevent duplicate bookings
-
-**`end_call`** — Always available (NOT gated by onboarding_complete). No parameters. Groq generates a farewell message, then `end_call: true` is sent on the final `content_complete` response.
-
-**`check_availability`** — Only when `onboarding_complete === true`. Real-time slot query. Parameters:
-- `date` (string, optional) — YYYY-MM-DD format. AI converts natural language ("next Tuesday") to ISO. Omit to check today + next 2 days.
-- `urgency` (enum: `emergency`|`routine`|`high_ticket`, optional) — affects slot prioritization
-- `required: []` — all parameters optional
-- Returns: numbered slot list with human-readable times + ISO start/end for `book_appointment`. Returns "no slots" message with fallback instructions if empty.
-
-**`book_appointment`** — Only when `onboarding_complete === true`. Parameters:
-- `slot_start` (ISO 8601, required) — from `check_availability` results
-- `slot_end` (ISO 8601, required) — from `check_availability` results
-- `service_address` (string, required)
-- `caller_name` (string, required)
-- `urgency` (enum: `emergency`|`routine`|`high_ticket`, required)
-
-**Tool ordering**: `transfer_call`, `capture_lead`, `check_caller_history`, `end_call`, then conditionally `check_availability` and `book_appointment`.
-
-### end_call Handler
-
-When `tool_call_result` arrives for `end_call`, it flows through Groq like any other tool result — Groq generates a natural farewell based on the CLOSING THE CALL prompt section. The `isEndCall` flag ensures `end_call: true` is set on the final `content_complete` response and on the error fallback. If Groq fails, a last-resort hardcoded farewell is used: `"Thank you for calling. Goodbye!"`
+- **Runtime**: Railway (Python 3.12)
+- **Dockerfile**: `python:3.12-slim`, installs deps via pip, pre-downloads ML models, runs `python -m src.agent start`
+- **Entry**: `cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name="voco-voice-agent"))`
 
 ---
 
-## 2. Agent System Prompt
+## 2. SIP Configuration
 
-**File**: `C:/Users/leheh/.Projects/Retell-ws-server/agent-prompt.js`
+Three JSON config files in the agent repo define the SIP routing:
 
-### `buildSystemPrompt(locale, { business_name, onboarding_complete, tone_preset, intake_questions })`
+### Inbound Trunk (`sip-inbound-trunk.json`)
+- **Allowed addresses**: Twilio media server IP ranges (global)
+- **Krisp**: Noise cancellation enabled for call audio quality
+- **Numbers**: Empty array — all Twilio numbers routed via the Elastic SIP trunk
 
-The prompt is constructed from modular section builder functions assembled per call. Each section is a separate builder function — composable and developer-controlled (not tenant-configurable from dashboard).
+### Outbound Trunk (`sip-outbound-trunk.json`)
+- Used for test calls (LiveKit -> Twilio -> owner's phone)
+- Credentials are environment-specific
 
-### Core Identity
-```
-You are a professional AI receptionist for {business_name}. You are warm, friendly, calm, and speak at a moderate pace.
-```
-
-### Personality (varies by tone_preset)
-- `professional` → "measured and formal"
-- `friendly` → "upbeat and warm"
-- `local_expert` → "relaxed and neighborly"
-
-### Recording Notice
-Always states: "This call may be recorded for quality purposes."
-
-### Opening Line (Groq-generated, not hardcoded)
-- Prompt instructs Groq to generate the greeting when there is no conversation history yet
-- **With onboarding**: Greet with business name, recording disclosure, ask how to help
-- **Without onboarding**: Recording disclosure + ask how to help
-- Example provided in prompt but AI generates natural variation
-- **No-interruption rule**: "Complete your entire greeting without stopping, even if the caller speaks over you or background noise is detected"
-
-### Closing the Call (Groq-generated, not hardcoded)
-- Prompt instructs Groq to say a brief warm farewell when `end_call` is invoked
-- **No-interruption rule**: "Complete your farewell without stopping, even if the caller speaks over you"
-
-### Repeat Caller Awareness (Phase 30, D-02)
-- AI invokes `check_caller_history` after greeting, before first question
-- First-time callers: proceed normally, do not mention
-- Returning callers with appointment: "Welcome back! I see you have an appointment [date/time]..."
-- Returning callers with leads only: "Welcome back, I have your information on file..."
-- Both appointment + lead: mention appointment first, ask if new issue
-- Uses gathered info to skip re-asking name/address
-
-### Slot Preference Detection (Phase 30, D-01) — prompt section: SLOT PREFERENCE DETECTION
-- AI detects time cues from natural conversation: morning/AM, afternoon, evening/after work, weekend, specific days
-- Prioritizes matching slots from check_availability results
-- No proactive "When do you prefer?" question — detect from language only
-- If no matching slots: acknowledge preference and offer alternatives
-
-### Trade-Specific Intake Questions (Phase 30, D-05)
-- Injected via `intake_questions` dynamic variable (newline-separated string)
-- Source: `TRADE_TEMPLATES.intakeQuestions` → `services.intake_questions` jsonb → `handleInbound` dynamic variable
-- Asked naturally during conversation, not as checklist
-- Skipped if caller already answered
-- Examples: Plumber "Is the water still running?", HVAC "Heating or cooling?", Electrician "Any burning smells?"
-
-### Language Instructions
-- Detect caller language from first utterance
-- Respond exclusively in caller's language
-- If uncertain, ask: "Would you prefer English or Spanish?"
-- If unsupported language: apologize, gather name/phone/issue, tag as LANGUAGE_BARRIER
-- Switch language mid-conversation if caller switches
-
-### Information Gathering
-- Ask for name, service address, and issue description
-- Capture all details before attempting any action
-
-### BOOKING-FIRST PROTOCOL (only when onboarding_complete)
-
-The AI books every caller by default — no caller goes without a booking offer.
-
-1. **Answer first, then pivot**: For info-only or quote calls, answer the question first, then naturally offer a slot ("I can get you on the schedule if you'd like")
-2. **Quote reframe**: "To give you an accurate quote, we'd need to see the space. Let me book a time for {owner} to come take a look."
-3. **Offer slots**: Present 2-3 available slots from `available_slots` data
-4. **Address read-back**: Mandatory — must wait for verbal "yes" before booking
-5. **Book**: Invoke `book_appointment` only after slot selected + name + address confirmed
-
-#### URGENCY DETECTION
-Urgency affects slot selection only — tone stays unified (no emergency/routine tone split):
-- Emergency cues ("pipe burst", "gas leak", "flooding"): offer same-day/nearest slots first
-- Routine cues ("next month", "no rush", "whenever"): offer next available in order
-
-### Post-Booking Recap (Phase 30, D-06)
-- After booking: recap date, time, AND address: "{business_name} will see you then. Is there anything else?"
-- If yes: answer, then wrap up. If no: warm farewell + end_call.
-
-### Post-Decline Flow (Phase 30, D-06)
-- After second decline + capture_lead: "I've saved your information. Is there anything else you'd like to ask before I let you go?"
-- If yes: answer, then end_call. If no: farewell + end_call.
-
-### DECLINE HANDLING (only when onboarding_complete)
-
-Two-strike decline pattern:
-- **First decline**: Soft re-offer — "No problem — if you change your mind, I can book anytime."
-- **Second explicit decline**: Invoke `capture_lead` with whatever info was gathered, confirm: "I've saved your info — {business_name} will reach out." Then invoke `end_call`.
-- Only explicit verbal decline counts ("no thanks", "not right now") — passive non-engagement is not a decline.
-
-### CALL TRANSFER
-
-Two exception states only (D-06, D-07):
-
-#### EXPLICIT REQUEST
-If caller says "let me talk to a person" or similar: instant transfer, zero friction.
-- AI says: "Absolutely, let me connect you now."
-- Invoke `transfer_call` immediately with whatever context is available.
-
-#### CLARIFICATION LIMIT
-After 3 failed clarification attempts (2 standard + 1 "Could you describe what you're seeing?"):
-- Invoke `transfer_call` with whatever context was captured.
-
-No other transfer triggers (no language barrier transfer, no emotional distress transfer).
-
-### Transfer Recovery (Phase 30, D-03) — prompt section: TRANSFER RECOVERY
-- When transfer_call returns "transfer_failed": offer callback booking
-- Flow: "They're not available" → offer callback → check_availability → book_appointment (with callback note)
-- If caller declines callback: capture_lead with callback-declined note
-- When transfer returns "transfer_unavailable": capture_lead with callback request
-
-### Call Duration
-- After 9 minutes: begin wrap-up
-- 10-minute hard maximum
-
-### Available Slots
-Appended at the end of the prompt when present:
-```
-AVAILABLE APPOINTMENT SLOTS:
-1. Monday March 23rd at 10 AM
-2. Monday March 23rd at 2 PM
-...
-```
-
-### Translation Keys (messages/en.json and messages/es.json)
-Only the `agent` section is used by the voice system. All keys are embedded as prompt instructions to Groq — none are spoken as hardcoded TTS:
-- `recording_disclosure`, `language_clarification`
-- `unsupported_language_apology`, `call_wrap_up`, `transfer_attempt`
-- `capture_name`, `capture_address`, `capture_job_type`
-- `fallback_no_booking`, `language_barrier_escalation`
-
-Note: `greeting_onboarding`, `greeting_default`, and `default_greeting` still exist in the JSON files but are no longer read by server.js. The greeting is now Groq-generated from prompt instructions.
+### Dispatch Rule (`sip-dispatch-rule.json`)
+- `dispatchRuleIndividual` with `roomPrefix: "call-"`
+- `roomConfig.agents` with `agentName: "voco-voice-agent"`
+- Each inbound call creates a unique room
 
 ---
 
-## 3. Whisper Message Builder
+## 3. Gemini Live Session
 
-**File**: `src/lib/whisper-message.js`
+**File**: `src/agent.py`
 
-### `buildWhisperMessage({ callerName, jobType, urgency, summary })`
+### Model Configuration
 
-Builds the D-08 whisper template for warm transfers: `"[Name] calling about [job type]. [Emergency/Routine]. [1-line summary]."`
-
-All parameters are optional with graceful fallbacks:
-- Missing `callerName` → "Unknown caller"
-- Missing `jobType` → "unspecified job"
-- Missing `urgency` → treated as Routine
-- `urgency === 'emergency'` → "Emergency"; all others (routine, high_ticket) → "Routine"
-- Missing `summary` → omitted (no trailing space)
-
----
-
-## 4. Retell Webhook
-
-**File**: `src/app/api/webhooks/retell/route.js`
-
-**Endpoint**: `POST /api/webhooks/retell`
-
-### Signature Verification
-```js
-Retell.verify(rawBody, process.env.RETELL_API_KEY, signature)
+```python
+model = google.realtime.RealtimeModel(
+    model="gemini-3.1-flash-live-preview",
+    voice=voice_name,
+    temperature=0.3,
+    instructions=system_prompt,
+    thinking_config=genai_types.ThinkingConfig(
+        thinking_level="minimal",
+        include_thoughts=False,
+    ),
+)
 ```
-Returns 401 if invalid. Body must be read as text first for HMAC integrity.
 
-### Event: `call_inbound`
-Synchronous — must respond fast (within Retell timeout).
+### Voice Mapping (tone_preset -> Gemini voice)
 
-1. Look up tenant by `to_number` from `tenants` table
-2. If no tenant: return defaults (`onboarding_complete: false`)
-3. Fetch in parallel: appointments, calendar_events, service_zones, zone_travel_buffers
-4. Calculate available slots (today + next 2 days, up to 6 slots)
-5. Format slots as numbered list with timezone conversion
-6. Return `dynamic_variables`: `business_name`, `default_locale`, `onboarding_complete`, `caller_number`, `tenant_id`, `owner_phone`, `tone_preset`, `available_slots`, `booking_enabled`, `trade_type`, `intake_questions` (newline-separated string from active services)
+| `tone_preset` | Voice | Character |
+|----------------|-------|-----------|
+| `professional` | Zephyr | Clear and measured |
+| `friendly` | Aoede | Upbeat and warm |
+| `local_expert` | Achird | Relaxed and neighborly |
 
-These variables are injected into the WebSocket call_details message.
+### Session Architecture
 
-### Event: `call_ended`
-Non-blocking via `after()`. Calls `processCallEnded()`. Returns `{ received: true }` immediately.
+```python
+agent = VocoAgent(instructions=system_prompt, tools=tools)
+session = AgentSession(llm=model)
+await session.start(agent=agent, room=ctx.room, room_options=...)
+```
 
-### Event: `call_analyzed`
-Non-blocking via `after()`. Calls `processCallAnalyzed()`. Fires ~minutes after call ends.
+- **Native audio-to-audio**: Gemini processes audio directly — no separate STT/TTS pipeline
+- **Server VAD**: Uses Gemini's built-in voice activity detection (client-side VAD disabled to prevent echo/self-interruption)
+- **Minimal thinking**: `thinking_level="minimal"` for lowest latency
+- **Noise cancellation**: `BVCTelephony` for SIP calls, `BVC` for WebRTC
+- **Greeting**: Gemini starts speaking automatically from system prompt — no `generate_reply()` needed
 
-### Event: `call_function_invoked`
+### Non-Blocking I/O Pattern
 
-**`end_call`**:
-- Safety guard — end_call is handled by WebSocket server (sends end_call:true).
-- If it reaches the webhook: return `{ result: 'Call ending.' }` and acknowledge.
+All synchronous Supabase calls are wrapped with `asyncio.to_thread()` to prevent blocking the audio event loop:
 
-**`capture_lead`**:
-1. Resolve tenant from call record: `calls.select('id, tenant_id, from_number, start_timestamp').eq('retell_call_id', call_id)`
-2. Compute `durationSeconds` from `start_timestamp` to current time (avoids 15s short-call filter)
-3. Call `createOrMergeLead()` with all AI-provided fields
-4. Write `booking_outcome: 'declined'` to calls record (D-02)
-5. Look up `business_name` for personalized confirmation message
-6. Return: `"I've saved your information. {bizName} will reach out soon."`
-7. On error: return `"I've noted your details and someone will follow up."`
+```python
+response = await asyncio.to_thread(
+    lambda: supabase.table("tenants").select("*").eq("id", tenant_id).single().execute()
+)
+```
 
-**`check_caller_history`**:
-1. Resolve tenant and from_number from call record: `calls.select('tenant_id, from_number').eq('retell_call_id', call_id)`
-2. Look up tenant timezone
-3. Parallel query: `leads` (by tenant_id + from_number, most recent 3) + `appointments` (by tenant_id + caller_phone, upcoming non-cancelled 3)
-4. Build natural-language summary with formatted dates via `formatSlotForSpeech()`
-5. Return: "First-time caller" or "Returning caller" with appointment/lead details
-6. Read-only — no database writes (D-02)
+Parallel queries use `asyncio.gather()`:
 
-**`check_availability`**:
-1. Resolve tenant from call record (same pattern as other handlers)
-2. Fetch tenant scheduling config: `tenant_timezone`, `working_hours`, `slot_duration_mins`, `business_name`
-3. Parallel fetch: live `appointments` + `calendar_events` + `service_zones` + `zone_travel_buffers` (same queries as `call_inbound`)
-4. If `date` argument provided: check that single date. Otherwise: today + next 2 days (same as inbound).
-5. Call `calculateAvailableSlots()` for each date (up to 6 slots total)
-6. Format as numbered list with human-readable times + ISO start/end for `book_appointment`
-7. If no slots: return message instructing AI to ask for alternative date or capture lead
-8. On no tenant: return graceful fallback suggesting lead capture
-
-**`transfer_call`**:
-1. Look up call → tenant → `owner_phone` (two-hop query)
-2. Build whisper message via `buildWhisperMessage({ callerName, jobType, urgency, summary })` from AI-provided arguments
-3. Call `retell.call.transfer({ call_id, transfer_to: ownerPhone, whisper_message: whisperMsg })`
-4. Return `transfer_initiated` or graceful fallback if no phone configured
-5. Write `exception_reason` to calls record (`clarification_limit` or `caller_requested`, inferred from summary)
-
-**`book_appointment`**:
-1. Resolve tenant via calls → tenants
-2. Call `atomicBookSlot()` with all parameters
-3. On slot_taken: recalculate next available, return alternative speech
-4. On success: async push to Google Calendar via `after()`
-5. Return confirmation speech
-6. On success: async write `booking_outcome: 'booked'` via `after()`
-7. On success: async send caller SMS confirmation via `sendCallerSMS()` (locale from detected_language or tenant default_locale)
-8. On failure: async write `booking_outcome: 'attempted'` via `after()`
-9. On failure: async send real-time recovery SMS via `sendCallerRecoverySMS()` in second `after()` block (Phase 17 RECOVER-01)
+```python
+appointments, events, zones, buffers = await asyncio.gather(
+    asyncio.to_thread(lambda: supabase.table("appointments")...execute()),
+    asyncio.to_thread(lambda: supabase.table("calendar_events")...execute()),
+    asyncio.to_thread(lambda: supabase.table("service_zones")...execute()),
+    asyncio.to_thread(lambda: supabase.table("zone_travel_buffers")...execute()),
+)
+```
 
 ---
 
-## 5. Call Processor
+## 4. System Prompt
 
-**File**: `src/lib/call-processor.js`
+**File**: `src/prompt.py`
 
-### `processCallEnded(call)`
-Lightweight. Upserts `calls` row with: `from_number`, `to_number`, `direction`, `disconnection_reason`, timestamps, `retell_metadata`.
+### `build_system_prompt(locale, *, business_name, onboarding_complete, tone_preset, intake_questions)`
 
-**Test call auto-cancel (Phase 18 D-08):** After the upsert, checks `metadata?.test_call === 'true'` OR `metadata?.retell_llm_dynamic_variables?.test_call === 'true'`. If `isTestCall && tenantId`:
-1. Queries `appointments` for a row with matching `retell_call_id` and `tenant_id`.
-2. If found: sets `appointments.status = 'cancelled'`.
-3. Resets associated `leads.status = 'new'` and nullifies `leads.appointment_id` (prevents dashboard showing "booked" lead with no active calendar appointment — Pitfall 6).
+The prompt is assembled from modular section builder functions. Conditional sections are filtered via list comprehension.
 
-The `test_call: 'true'` flag is set in `test-call/route.js` as a `retell_llm_dynamic_variables` entry when triggering the onboarding test call. Auto-cancel fires at `call_ended` (not `call_analyzed`) so the calendar clears immediately after the call, not minutes later.
+### Section Order
 
-**Usage Tracking (Phase 23):**
-After the test call auto-cancel block, `processCallEnded()` conditionally calls the `increment_calls_used` RPC:
-- **Duration filter**: `durationSeconds = Math.round((end_timestamp - start_timestamp) / 1000)` — computed from raw timestamps (NOT the `duration_seconds` generated column which isn't returned by the upsert). RPC only called when duration >= 10 seconds — short calls skip the RPC entirely.
-- **Test call exclusion**: Reuses `isTestCall` already in scope — no RPC call for test calls.
-- **Tenant guard**: Skipped if `tenantId` is null (no tenant found for this number).
-- **RPC call**: `supabase.rpc('increment_calls_used', { p_tenant_id: tenantId, p_call_id: call_id })`
-- **Error-resilient**: Entire block wrapped in try/catch — RPC failures logged (`[usage] increment_calls_used RPC error:` and `[usage] increment failed (non-fatal):`) but never thrown (D-06: billing counter glitch must not lose call data)
-- **Runs inside `after()` callback** — non-blocking to webhook response (D-01)
-- **RPC returns** `{ success, calls_used, calls_limit, limit_exceeded }` — logged for observability
-- **Overage billing**: When `success === true && limit_exceeded === true`, reports 1 usage unit to Stripe via `stripe.subscriptionItems.createUsageRecord(overageItemId, { quantity: 1, action: 'increment' })`. Looks up `overage_stripe_item_id` from the `subscriptions` table. If no overage item ID (legacy subscription), silently skips. Entire overage block is wrapped in its own try/catch — Stripe reporting failure is non-fatal and never loses call data
+1. **Identity** — role, tone, conciseness rule
+2. **Voice Behavior** — energy matching, pacing, tool silence instruction ("do NOT speak while tool is executing")
+3. **Opening Line** — greeting with business name + recording disclosure. Echo awareness.
+4. **Language** — match caller language, ask if unsure, apologize + gather info for unsupported languages
+5. **Repeat Caller** — empty (all calls treated as new — never reveal prior history)
+6. **Info Gathering** — collect name first, then address + issue. Urgency classified silently.
+7. **Intake Questions** — trade-specific questions asked naturally
+8. **Booking Protocol** — caller-led scheduling flow:
+   - Never offer times first — ask the caller when they prefer
+   - If they give day without time, ask for time; if time without day, ask for day
+   - Check availability only after getting both day and time preference
+   - If unavailable, offer up to 3 closest alternatives
+   - Address confirmation mandatory before booking
+   - Handle edge cases (vague, ASAP, fully booked) by narrowing to specific date+time
+9. **Decline Handling** — two-strike: first decline = soft re-offer, second = capture_lead
+10. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
+11. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max
 
-### `processCallAnalyzed(call)`
-Heavy pipeline:
-1. Tenant lookup by `to_number`
-2. Download recording → upload to Supabase Storage (`call-recordings/{call_id}.wav`)
-3. Language barrier detection (check against `SUPPORTED_LANGUAGES: ['en', 'es']`)
-4. Triage classification via 3-layer pipeline
-5. Check if appointment exists for this call
-6. If unbooked (no appointment for this call, any urgency): calculate suggested slots (next 3 from tomorrow)
-7a. Compute notification_priority from urgency (emergency/high_ticket → 'high', routine → 'standard')
-7b. Upsert `calls` with all analyzed data including notification_priority (does NOT include booking_outcome) — chains `.select('id').single()` to retrieve the Supabase UUID (`callUuid`) for downstream lead creation
-7c. Conditional update: set `booking_outcome='not_attempted'` where `booking_outcome IS NULL`
-8. Create/merge lead via `createOrMergeLead()` using `callUuid` (NOT the Retell string `call_id`) — guarded: skips lead creation if UUID retrieval failed
-9. Send owner notifications — **gated by `tenants.notification_preferences` JSONB**. Reads `calls.booking_outcome` for this call, looks up the matching preference object (`{ sms: bool, email: bool }`). Calls `sendOwnerSMS` and `sendOwnerEmail` independently based on per-channel flags. **Emergency override**: urgency=emergency always sends both channels regardless of preferences. Configurable at `/dashboard/more/notifications` via `PATCH /api/notification-settings`.
+### Translation Keys (`messages/en.json`, `messages/es.json`)
+
+Both files contain two top-level sections:
+- `agent.*` — recording_disclosure, language_clarification, capture_name, etc.
+- `notifications.*` — booking_confirmation, recovery_sms_attempted_routine, recovery_sms_attempted_emergency
 
 ---
 
-## 6. Triage System
+## 5. Tools
+
+**Registry**: `src/tools/__init__.py`
+
+### Tool Registration
+
+```python
+# Always available:
+transfer_call, capture_lead, check_caller_history, end_call
+
+# Only when onboarding_complete:
+check_availability, book_appointment
+```
+
+All tools execute **in-process** with direct Supabase access — no webhook round-trips. Tools are created via factory functions that return `@function_tool` decorated callables, capturing a `deps` dict via closure. All blocking calls within tools use `asyncio.to_thread()`.
+
+### `check_caller_history` — Repeat Caller Awareness (Silent Context)
+
+**File**: `src/tools/check_caller_history.py`
+
+- Parallel query: leads (3 most recent) + appointments (3 upcoming) via `asyncio.gather()`
+- Returns natural-language summary BUT instructs AI to **never mention history to the caller**
+- AI uses context silently (e.g., avoids re-asking known name/address)
+- Only references history if the caller explicitly asks
+
+### `check_availability` — Real-Time Slot Query
+
+**File**: `src/tools/check_availability.py`
+
+- Parameters: `date` (optional YYYY-MM-DD), `urgency` (optional)
+- Fetches tenant config + 4 scheduling tables in parallel via `asyncio.gather()`
+- Calculates slots using `calculate_available_slots()` (pure function)
+- Returns numbered list with speech-friendly times + raw ISO start/end for booking
+
+### `book_appointment` — Atomic Slot Booking
+
+**File**: `src/tools/book_appointment.py`
+
+- Parameters: `slot_start`, `slot_end`, `service_address`, `caller_name`, `urgency`
+- Calls `atomic_book_slot()` via Supabase RPC
+- **On success**: calendar push (fire-and-forget), booking_outcome='booked', caller SMS
+- **On slot taken**: recalculates next available (parallel queries), booking_outcome='attempted', recovery SMS
+- Recovery SMS tracks pending/sent/retrying status in calls table
+
+### `capture_lead` — Lead Capture on Decline
+
+**File**: `src/tools/capture_lead.py`
+
+- Parameters: `caller_name` (required), `phone`, `address`, `job_type`, `notes` (optional)
+- Computes mid-call duration from `start_timestamp` (milliseconds)
+- Calls `create_or_merge_lead()`, writes booking_outcome='declined'
+
+### `transfer_call` — SIP REFER Transfer
+
+**File**: `src/tools/transfer_call.py`
+
+- Parameters: `caller_name`, `job_type`, `urgency`, `summary`, `reason` (all optional)
+- Writes `exception_reason` to calls record
+- Performs SIP REFER via `LiveKitAPI().sip.transfer_sip_participant()`
+- Destination: `sip:{ownerPhone}@pstn.twilio.com`
+
+### `end_call` — Graceful Termination
+
+**File**: `src/tools/end_call.py`
+
+- Returns 'Call ending.' immediately
+- After 3-second `asyncio.sleep()`: removes SIP participant via `LiveKitAPI().room.remove_participant()`
+- Delay allows farewell audio to play before disconnection
+
+---
+
+## 6. Post-Call Pipeline
+
+**File**: `src/post_call.py`
+
+Runs immediately when the AgentSession closes (in-process, no webhook delay).
+
+### `run_post_call_pipeline(params)`
+
+1. **Build transcript** — `transcript_text` (string) + `transcript_structured` (JSON list)
+2. **Update call record** — status='analyzed', transcript, recording path, disconnection_reason
+3. **Test call auto-cancel** — cancel appointment + reset lead if `is_test_call`
+4. **Usage tracking** — `increment_calls_used` RPC; Stripe overage if limit_exceeded
+5. **Language detection** — Spanish markers regex (>=2 matches -> 'es', else 'en')
+6. **Triage classification** — `classify_call()` three-layer pipeline
+7. **Suggested slots** — for unbooked calls, next 3 slots from tomorrow
+8. **Update call with triage** — urgency, confidence, layer, language, notification_priority
+9. **Create/merge lead** — if duration >= 15s, via `create_or_merge_lead()`
+10. **Owner notifications** — SMS/email per outcome preferences, emergency always sends both
+
+---
+
+## 7. Triage System
 
 **Directory**: `src/lib/triage/`
 
-Three-layer pipeline. Layer 3 can only ESCALATE, never downgrade.
+Three-layer pipeline. Layer 3 can only ESCALATE, never downgrade. Urgency values validated to `{emergency, routine, high_ticket}`.
 
-### Layer 1 — Keywords (`layer1-keywords.js`)
-Synchronous regex matching. Checks routine patterns first (to prevent false positives), then emergency patterns:
-- Routine: `quote`, `estimate`, `next week`, `no rush`, `whenever`
-- Emergency: `flooding`, `gas leak`, `no heat`, `sewer backup`, `pipe burst`, `electrical fire`, `carbon monoxide`, `emergency`, `happening now`
+### Layer 1 — Keywords (`layer1_keywords.py`)
+Synchronous regex matching. Routine patterns checked FIRST (prevents "not urgent" from matching emergency "urgent").
 
-### Layer 2 — LLM (`layer2-llm.js`)
-Only called when Layer 1 is NOT confident. Uses Groq with JSON mode, temperature 0.
-Classifies into: `emergency` (immediate safety risk), `high_ticket` (>$500), `routine` (future scheduling).
+### Layer 2 — LLM (`layer2_llm.py`)
+Only called when Layer 1 is NOT confident. Uses Groq with Llama 4 Scout via AsyncOpenAI, JSON mode, temperature 0, 5s timeout.
 
-### Layer 3 — Owner Rules (`layer3-rules.js`)
-Always runs as final step. Checks tenant's `services` table for `urgency_tag` values. Matches detected service name → uses that service's tag. Otherwise takes highest severity across all services. Severity: `emergency(3) > high_ticket(2) > routine(1)`.
-
-### Orchestrator (`classifier.js`)
-Pipeline: Layer1 → (if confident) Layer3 → return. Or Layer1 → Layer2 → Layer3 → return. Short transcripts (<10 chars) short-circuit to routine.
+### Layer 3 — Owner Rules (`layer3_rules.py`)
+Always runs as final step. Queries tenant's services for urgency_tag. Matches detected service, applies escalation if higher severity.
 
 ---
 
-## 7. Scheduling System
+## 8. Recording & Transcripts
 
-### Slot Calculator (`src/lib/scheduling/slot-calculator.js`)
+### Recording — LiveKit Egress
 
-`calculateAvailableSlots()` — pure function, no DB access.
+```python
+await lk.egress.start_room_composite_egress(
+    api.RoomCompositeEgressRequest(
+        room_name=call_id,
+        audio_only=True,
+        file_outputs=[api.EncodedFileOutput(
+            filepath=f"{call_id}.mp4",
+            s3=api.S3Upload(...)
+        )],
+    )
+)
+```
 
-Inputs: `workingHours` (per day), `slotDurationMins`, `existingBookings`, `externalBlocks` (Google Calendar), `zones`, `zonePairBuffers`, `targetDate`, `tenantTimezone`, `maxSlots`.
+- **Storage**: Supabase Storage -> `call-recordings` bucket via S3 protocol
+- **Format**: MP4 (audio-only)
+- **Lifecycle**: starts after session begins, stops on session close
 
-Algorithm: Walk forward from day open time in slot-duration steps, skipping slots that overlap lunch, existing bookings, calendar blocks, or violate travel buffers.
+### Transcripts
 
-Travel buffer: no zones = 30 min flat. Same zone = 0. Cross-zone = lookup or default 30 min.
-
-### Atomic Booking (`src/lib/scheduling/booking.js`)
-
-Calls Supabase RPC `book_appointment_atomic`:
-1. Postgres advisory lock: `pg_try_advisory_xact_lock(abs(hashtext(tenant_id || epoch(start_time))))`
-2. Check overlapping appointments via `tsrange` overlap
-3. If overlap: return `{ success: false, reason: "slot_taken" }`
-4. If clear: insert appointment, return `{ success: true, appointment_id }`
-
-Secondary defense: `UNIQUE (tenant_id, start_time)` constraint.
-
-### Google Calendar (`src/lib/scheduling/google-calendar.js`)
-
-- `pushBookingToCalendar()` — creates event, adds `[URGENT]` prefix for emergencies
-- `syncCalendarEvents()` — incremental sync via `last_sync_token`, full re-sync on 410
-- `registerWatch()` — push notification channel with 7-day TTL
-- `revokeAndDisconnect()` — cleanup
+Collected via `conversation_item_added` session events. Stored as both `transcript_text` (string) and `transcript_structured` (JSONB array of `{role, content}`).
 
 ---
 
-## 8. Notification System
+## 9. Environment Variables
 
-**File**: `src/lib/notifications.js`
+### Agent Service (Railway)
 
-### `sendOwnerSMS()`
-Twilio SMS to owner. Emergency format: `"EMERGENCY: {businessName} — {name} needs urgent {job} at {addr}. Call NOW: {callbackLink} | Dashboard: {dashboardLink}"`. Non-emergency: `"{businessName}: New booking — {name}, {job} at {addr}. Callback: {callbackLink} | Dashboard: {dashboardLink}"`.
-
-### `sendOwnerEmail()`
-Resend email with React Email template.
-
-### `sendCallerRecoverySMS({ to, callerName, businessName, locale, urgency, bookingLink })`
-Urgency-aware recovery SMS to callers whose booking failed. Phase 17:
-- **Signature**: accepts `locale` ('en'|'es'), `urgency` ('emergency'|'routine'|'high_ticket'), `bookingLink` (D-10 placeholder — accepted but unused). `ownerPhone` removed per D-09.
-- **Returns**: `{ success: boolean, sid?: string, error?: { code: string|number, message: string } }` — structured return, not fire-and-forget
-- **Emergency**: `recovery_sms_attempted_emergency` template — empathetic urgency tone ("your situation is time-sensitive")
-- **Routine/other**: `recovery_sms_attempted_routine` template — standard warm tone ("sorry we couldn't get your appointment booked")
-- **i18n**: `locale === 'es'` selects Spanish templates via `interpolate()` + JSON import; falls back to 'en' for unknown locales
-- **Null guard**: `to` missing → `{ success: false, error: { code: 'NO_PHONE' } }` without calling Twilio
-
-### `sendCallerSMS()`
-Booking confirmation SMS to caller: "Your appointment with {business_name} is confirmed for {date} at {time} at {address}." Multi-language (en/es) via direct JSON import of messages files. Fire-and-forget — errors logged but never thrown. Null guard on `to` prevents Twilio calls when no phone number.
-
-### `sendOwnerNotifications()`
-Fires SMS + email in parallel via `Promise.allSettled()`.
-
-### Recovery SMS Cron (`src/app/api/cron/send-recovery-sms/route.js`)
-Runs every minute. Phase 17 two-branch design:
-
-**Branch A — First-send for not_attempted / legacy calls:**
-Finds `status='analyzed'`, `recovery_sms_sent_at IS NULL`, `recovery_sms_status IS NULL`, ended >60s ago, `booking_outcome = 'not_attempted'` (Pitfall 4: only not_attempted). Skips calls <15s and booked calls. Sends urgency-aware recovery SMS (uses `urgency_classification` + `detected_language` from calls row — Pitfall 2). Writes delivery status: `pending` → `sent` or `retrying`.
-
-**Branch B — Retry for failed deliveries:**
-Finds `recovery_sms_status = 'retrying'` with `recovery_sms_retry_count < 3`. Respects exponential backoff: 30s before 2nd attempt, 120s before 3rd. After 3 total attempts, sets `recovery_sms_status = 'failed'` permanently (D-14).
-
-**DB columns (migration 009):** `recovery_sms_status` (pending/sent/failed/retrying), `recovery_sms_retry_count`, `recovery_sms_last_error`, `recovery_sms_last_attempt_at`.
-
-**Real-time trigger**: `handleBookAppointment` in webhook route fires recovery SMS via `after()` when `atomicBookSlot` fails (slot taken). Uses `args.urgency` from AI tool args (not DB field — Pitfall 1). Writes `pending` → `sent`/`retrying` status to DB. On exception, writes `retrying` for cron pickup.
-
----
-
-## 9. Lead Management
-
-**File**: `src/lib/leads.js`
-
-### `createOrMergeLead()` Flow
-1. Skip calls <15 seconds (misdial/voicemail) — callDuration must be >= 15
-2. Check for open lead (same `tenant_id` + `from_number`, status `new` or `booked`)
-3. Repeat caller → attach to existing lead via `lead_calls` junction
-4. New caller → insert `leads` row (status: `booked` if appointment, else `new`)
-5. Insert `activity_log` entry
-
-Statuses: `new` → `booked` → `completed` → `paid` / `lost`
-
-**Mid-call invocation (capture_lead)**: When called from the `capture_lead` webhook handler, `callDuration` is computed from `start_timestamp` to current time — not from a post-call field — ensuring the 15s filter is satisfied for any real conversation.
-
----
-
-## 10. End-to-End Call Flows
-
-### Flow A: Booking
-Caller dials → `call_inbound` webhook (slot calc) → WebSocket connects → AI conversation (BOOKING-FIRST PROTOCOL) → caller selects slot → `book_appointment` tool → atomic booking → Google Calendar sync → call ends → recording upload → triage → lead created (status: `booked`) → owner SMS + email
-
-### Flow B: Transfer to Owner
-Caller explicitly requests human (or 3 clarification attempts exhausted) → AI invokes `transfer_call` with caller context → webhook builds whisper message → Retell transfers with `whisper_message` → if fails, agent reassures caller → call ends → lead created (status: `new`) → owner notified
-
-### Flow C: Language Barrier
-Unsupported language detected → agent apologizes → gathers what info possible → tags LANGUAGE_BARRIER → call ends → `language_barrier: true` stored → lead created → owner notified
-
-### Flow D: Routine No-Book + Recovery
-Caller doesn't book → call ends → triage: routine → suggested slots calculated → lead created (status: `new`) → owner notified → ~60s later: recovery SMS sent to caller with booking link
-
-### Flow E: Decline → Lead Capture
-Caller declines booking first time → AI soft re-offer ("No problem — if you change your mind, I can book anytime") → caller declines again → AI invokes `capture_lead` with all gathered info → webhook handler creates lead immediately via `createOrMergeLead()` (duration computed from start_timestamp) → AI confirms "I've saved your information. {bizName} will reach out soon." → AI invokes `end_call` → Groq generates farewell → `end_call: true` sent on `content_complete` → call ends
-
----
-
-## 11. Database Tables
-
-| Table | Purpose |
+| Variable | Purpose |
 |---|---|
-| `tenants` | Business config: phone, name, locale, hours, tone, timezone |
-| `calls` | Full call record: metadata, transcript, recording, triage, language flags, booking_outcome, exception_reason, notification_priority |
-| `appointments` | Bookings. `UNIQUE(tenant_id, start_time)`. Links to call + Google Calendar |
-| `services` | Service catalog with `urgency_tag` for Layer 3 triage and `intake_questions` jsonb for trade-specific AI questioning |
-| `service_zones` | Geographic zones for travel buffers |
-| `zone_travel_buffers` | Travel time between zone pairs |
-| `calendar_credentials` | Google OAuth + watch channel state |
-| `calendar_events` | Mirror of Google Calendar events |
-| `leads` | CRM records. Realtime-enabled for live dashboard |
-| `lead_calls` | Junction: many calls → one lead |
-| `activity_log` | Dashboard event feed |
+| `LIVEKIT_URL` | LiveKit Cloud WebSocket URL (wss://...) |
+| `LIVEKIT_API_KEY` | LiveKit API authentication |
+| `LIVEKIT_API_SECRET` | LiveKit API authentication |
+| `GOOGLE_API_KEY` | Gemini 3.1 Flash Live API key |
+| `SUPABASE_S3_ACCESS_KEY` | Supabase Storage S3 access |
+| `SUPABASE_S3_SECRET_KEY` | Supabase Storage S3 secret |
+| `SUPABASE_S3_ENDPOINT` | Supabase Storage S3 endpoint URL |
+| `SUPABASE_S3_REGION` | Supabase Storage region |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service-role key (bypasses RLS) |
+| `TWILIO_ACCOUNT_SID` | Twilio SMS auth |
+| `TWILIO_AUTH_TOKEN` | Twilio SMS auth |
+| `TWILIO_FROM_NUMBER` | Twilio SMS sender number |
+| `RESEND_API_KEY` | Resend email API |
+| `RESEND_FROM_EMAIL` | Resend sender address (default: alerts@getvoco.ai) |
+| `GROQ_API_KEY` | Groq API for Layer 2 triage (Llama 4 Scout) |
+| `GOOGLE_CLIENT_ID` | Google OAuth (calendar sync) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth (calendar sync) |
+| `STRIPE_SECRET_KEY` | Stripe API for overage billing |
+| `NEXT_PUBLIC_APP_URL` | Base URL for dashboard links in notifications |
+| `SENTRY_DSN` | Sentry error tracking |
 
 ---
 
-## 12. Environment Variables
+## 10. Key Design Decisions
 
-| Variable | Service | Purpose |
-|---|---|---|
-| `RETELL_API_KEY` | Retell | SDK auth + webhook HMAC verification |
-| `GROQ_API_KEY` | Groq | LLM inference (WS server + Layer 2 triage) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase | Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase | Client-side auth |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase | Server-side (bypasses RLS) |
-| `TWILIO_ACCOUNT_SID` | Twilio | SMS auth |
-| `TWILIO_AUTH_TOKEN` | Twilio | SMS auth |
-| `TWILIO_FROM_NUMBER` | Twilio | SMS sender |
-| `RESEND_API_KEY` | Resend | Email API |
-| `GOOGLE_CLIENT_ID` | Google | OAuth |
-| `GOOGLE_CLIENT_SECRET` | Google | OAuth |
-| `NEXT_PUBLIC_APP_URL` | App | Base URL for links |
-| `CRON_SECRET` | Vercel | Cron endpoint auth |
-| `WS_PORT` / `PORT` | WS Server | WebSocket port (default 8081) |
-
----
-
-## 13. Key Design Decisions
-
-- **WebSocket separate from Next.js**: Next.js doesn't support WS upgrades → standalone process on Railway
-- **`after()` for async work**: Heavy processing deferred until after HTTP response → stays within Retell's timeout
-- **Atomic booking via Postgres advisory locks**: Prevents double-booking under concurrent calls
-- **Triage never downgrades**: Layer 3 can only escalate urgency (safety decision)
-- **Slot calculation is pure**: No DB access, fully testable
-- **Lead merge for repeat callers**: Same `from_number` → attach to existing open lead
-- **Service role client for webhooks**: Bypasses RLS for server-side cross-tenant access
-- **Booking-first AI**: Every caller gets a booking offer by default; info-only calls pivot after answering; quotes convert to site visits
-- **Two transfer triggers only**: Explicit human request + 3 clarification failures (D-06, D-07)
-- **Unified tone**: No emergency/routine tone split — urgency affects slot priority only (D-11, D-12)
-- **Whisper message on transfer**: AI passes caller context; webhook builds structured whisper for receiving human (D-08)
-- **Mid-call lead capture**: `capture_lead` tool creates lead immediately during call — no post-call wait for declined callers (D-14, D-15)
-- **end_call goes through Groq**: All tool results (including end_call) flow through Groq — AI generates a natural farewell; `isEndCall` flag sets `end_call: true` on `content_complete`. Hardcoded farewell only as Groq-failure fallback.
-- **Chained tool calls supported**: handleToolResult now handles `finish_reason: 'tool_calls'` — enables multi-step flows like capture_lead → end_call without dropping the second tool call
-- **Groq-generated greeting**: server.js calls `handleResponseRequired()` with empty transcript on `call_details` — Groq generates the greeting from OPENING LINE prompt instructions. No hardcoded greeting text. Locale/business_name/onboarding_complete shape the prompt, not a template string.
-- **No hardcoded TTS anywhere**: All spoken content (greeting, conversation, farewell) is Groq-generated. Only error fallbacks have hardcoded text (Groq API failure safety nets).
-- **No-interruption prompt rules**: OPENING LINE and CLOSING THE CALL sections instruct the AI to complete its greeting/farewell without stopping even if the caller speaks over it or background noise is detected. This is a prompt-level directive — Retell's `interruption_sensitivity` setting controls the actual TTS barge-in threshold.
-- **Slot-taken recalculation accuracy**: handleBookAppointment fetches real appointments/events before recalculating next available slot — no longer offers potentially-taken slots
-- **Real-time availability via check_availability tool**: AI can query live slot availability for any date during the call — not limited to static call-start slots. Warm-start slots from `call_inbound` serve the first offer; `check_availability` handles follow-up queries, specific date requests, and stale-data refresh. Same `calculateAvailableSlots()` + parallel DB fetch pattern as `handleInbound`, reused in `handleCheckAvailability`. Returns ISO start/end alongside human-readable times so AI can pass them directly to `book_appointment`. No-slots case instructs AI to offer alternative dates or fall back to `capture_lead`.
-- **Book_appointment error fallback**: if Groq fails after booking tool result, uses webhook confirmation text instead of generic fallback — caller hears the actual confirmation
-- **Transfer reason explicit**: transfer_call tool accepts `reason` enum (caller_requested/clarification_limit) — webhook uses it for exception_reason, falls back to summary heuristic
-- **booking_outcome set real-time**: booked/attempted/declined written during live call via `after()`; not_attempted defaulted post-call with conditional `WHERE IS NULL` update
-- **notification_priority decoupled from urgency**: separate column maps emergency/high_ticket→high, routine→standard; Phase 16 reads this column, not urgency directly
-- **Caller SMS confirmation**: sent via `after()` in handleBookAppointment after successful booking; locale from detected_language or tenant default_locale; uses i18n JSON templates
-- **Recovery SMS real-time trigger**: second `after()` in handleBookAppointment slot-taken branch fires recovery SMS immediately; uses `args.urgency` NOT `calls.urgency_classification` (processCallAnalyzed hasn't run yet — Pitfall 1)
-- **Recovery SMS urgency-aware**: emergency → empathetic-urgency template; routine/other → warm standard template; locale fallback chain: detected_language → tenant.default_locale → 'en'
-- **Recovery SMS structured return**: `{ success, sid?, error? }` enables real-time delivery status writes to DB (pending → sent/retrying); cron retries on 'retrying' status
-- **Recovery SMS exponential backoff**: 30s before 2nd attempt, 120s before 3rd; max 3 total attempts; permanent 'failed' after exhaustion (D-14)
-- **Recovery cron two-branch**: Branch A for not_attempted first-send; Branch B for retrying status; both write delivery tracking columns from migration 009
-- **processCallAnalyzed UUID retrieval**: The calls upsert chains `.select('id').single()` to get the Supabase UUID (`callUuid`). This is critical because the Retell `call_id` (e.g., "call_337593af...") is a text string, not a UUID — passing it to `createOrMergeLead` would fail with `22P02` on `leads.primary_call_id` and `lead_calls.call_id` (both UUID FK columns). The webhook handlers (`capture_lead`, `book_appointment`) already do this correctly via a separate query; `processCallAnalyzed` now matches that pattern.
-- **Test call auto-cancel**: `test-call/route.js` passes `test_call: 'true'` in `retell_llm_dynamic_variables`; `processCallEnded` checks this flag and cancels any appointment + resets lead status — owner experiences booking-first flow during onboarding without cluttering the real calendar (D-07, D-08)
-- **Prompt cleanup (Phase 30 D-04)**: Removed standalone RECORDING_NOTICE (redundant with OPENING LINE) and LANGUAGE_BARRIER_ESCALATION (redundant with LANGUAGE section). Replaced rigid "1-2 sentences" rule with nuanced conciseness: brief but never truncates booking confirmations, address recaps, or important details. Sections array uses `.filter(Boolean)` for conditional sections.
-- **Granular notification preferences**: `tenants.notification_preferences` JSONB column stores per-booking-outcome SMS/email toggles: `{ booked: { sms, email }, declined: { sms, email }, not_attempted: { sms, email }, attempted: { sms, email } }`. Default: all true. In `processCallAnalyzed`, reads `calls.booking_outcome` and dispatches `sendOwnerSMS`/`sendOwnerEmail` independently based on the matching preference. Emergency calls (urgency=emergency) always notify both channels regardless of preferences (safety override). Dashboard page at `/dashboard/more/notifications` with per-outcome Switch toggles. API: `GET/PATCH /api/notification-settings`. Migration 015 adds JSONB column and drops old `owner_notify_mode` from migration 014. Only gates owner notifications — caller SMS (booking confirmation + recovery) and lead creation are unaffected.
+- **Python 3.12 + LiveKit Agents SDK**: Replaced Node.js agent. Python SDK is LiveKit's primary SDK with faster updates and native Gemini 3.1 support (via PR#5238).
+- **Gemini 3.1 Flash Live**: Native audio-to-audio model. No separate STT/TTS pipeline. Minimal thinking for lowest latency.
+- **Server VAD only**: Client-side Silero VAD was removed — it caused `commit_audio` errors and self-interruption on SIP calls. Gemini's native server VAD handles turn detection and echo cancellation.
+- **asyncio.to_thread() everywhere**: All synchronous Supabase, Twilio, Resend, Stripe, and Google Calendar calls run in thread pools to prevent blocking audio processing.
+- **asyncio.gather() for parallel queries**: Independent DB queries (appointments, events, zones, buffers) run concurrently for reduced latency.
+- **In-process tool execution**: All 6 tools run directly in the agent process with direct Supabase access — zero webhook round-trips.
+- **Single post-call pipeline**: Combines processCallEnded + processCallAnalyzed into one `run_post_call_pipeline()`.
+- **Silent repeat caller context**: `check_caller_history` tool returns history but instructs AI to never mention it. AI treats all calls as new unless the caller explicitly asks about prior calls.
+- **Caller-led booking flow**: AI never offers times first. Asks the caller when they prefer, checks availability after getting both day and time preference, offers alternatives if unavailable.
+- **Event handlers before session.start()**: Prevents race conditions where session closes before handlers are registered.
+- **Greeting via system prompt**: Gemini starts speaking automatically from the OPENING LINE section — no `generate_reply()` call needed.
+- **Noise cancellation**: `BVCTelephony` for SIP calls, `BVC` for WebRTC — improves audio quality without interfering with VAD.
+- **Atomic booking via Postgres advisory locks**: `book_appointment_atomic` RPC with `tstzrange` overlap checking.
+- **Triage never downgrades**: Layer 3 can only escalate urgency.
+- **Fail-open design**: Missing tenant, slots, or subscription errors don't block calls.
 
 ---
 
 ## Important: Keeping This Document Updated
 
 When making changes to any file listed in the File Map above, update the relevant sections of this skill document to reflect the new behavior. This ensures future conversations always have an accurate reference.
+
+When modifying the agent repo (`lerboi/livekit_agent`), remember to update this skill file in the main repo (`homeservice_agent`).

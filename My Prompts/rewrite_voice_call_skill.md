@@ -12,7 +12,7 @@ The voice system was migrated from **Retell + Groq (Llama 4 Scout on Railway Web
 - `My Prompts/Gemini_migration_plan.md` — 8-phase implementation plan
 - `My Prompts/Gemini_migration_execute.txt` — execution rules and constraints
 
-The LiveKit agent is a **separate repo** (`lerboi/livekit_agent`) deployed to Railway. It is NOT in this repo. The `livekit-agent/` folder in this repo is a leftover scaffold and should be ignored.
+The LiveKit agent is a **separate repo** (`lerboi/livekit_agent`) deployed to Railway. It is NOT in this repo. The `livekit-agent/` folder in this repo is a leftover scaffold and should be ignored. You cvan find it in the parent folder in my directory with name livekit-agent.
 
 ## What You Need Access To
 

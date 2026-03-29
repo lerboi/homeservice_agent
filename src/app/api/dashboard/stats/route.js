@@ -25,7 +25,7 @@ export async function GET() {
       .eq('status', 'new')
       .gte('created_at', today),
     supabase
-      .from('leads')
+      .from('calls')
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .gte('created_at', today),

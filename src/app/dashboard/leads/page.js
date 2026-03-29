@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { LayoutList, Columns3 } from 'lucide-react';
+import { LayoutList, Columns3, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import LeadCard from '@/components/dashboard/LeadCard';
 import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
@@ -213,7 +213,10 @@ export default function LeadsPage() {
 
   const pageHeader = (
     <div className="flex items-center justify-between px-6 pt-6 pb-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
+          <Users className="size-4 text-stone-500" />
+        </div>
         <h1 className="text-xl font-semibold text-[#0F172A]">Leads</h1>
         {!loading && (
           <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2.5 py-0.5 text-xs font-medium">

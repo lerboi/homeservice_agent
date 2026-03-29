@@ -310,13 +310,13 @@ export async function syncOutlookCalendarEvents(tenantId) {
 
   // Delete events with @removed annotation
   const toDelete = allEvents.filter((evt) => evt['@removed']).map((evt) => evt.id);
-  for (const externalId of toDelete) {
+  if (toDelete.length > 0) {
     await supabase
       .from('calendar_events')
       .delete()
       .eq('tenant_id', tenantId)
       .eq('provider', 'outlook')
-      .eq('external_id', externalId);
+      .in('external_id', toDelete);
   }
 
   // Persist deltaLink and update last_synced_at

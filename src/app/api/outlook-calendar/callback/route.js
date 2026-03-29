@@ -34,13 +34,13 @@ export async function GET(request) {
     if (isAdminConsentError) {
       console.log('400:', 'Admin consent required');
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=admin_consent`
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=admin_consent`
       );
     }
 
     console.log('400:', 'OAuth error:', error, errorDescription);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
     );
   }
 
@@ -50,7 +50,7 @@ export async function GET(request) {
   if (!code || !tenantId) {
     console.log('400:', 'Missing code or invalid state');
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
     );
   }
 
@@ -102,12 +102,12 @@ export async function GET(request) {
     await syncOutlookCalendarEvents(tenantId);
 
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_connected`
     );
   } catch (err) {
     console.error('[outlook-calendar-callback] Error:', err);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
     );
   }
 }

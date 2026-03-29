@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Clock, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 
@@ -109,13 +108,6 @@ export default function TrialCountdownBanner() {
       <Icon className={`h-3.5 w-3.5 ${iconClass} shrink-0`} aria-hidden="true" />
       <p className={`text-xs ${textClass} truncate`}>
         {bannerText}
-        <span className="mx-1.5 text-stone-300">·</span>
-        <Link
-          href="/dashboard/more/billing"
-          className={`font-medium ${isUrgent ? 'text-amber-800 hover:text-amber-950' : 'text-blue-700 hover:text-blue-900'} underline underline-offset-2 transition-colors`}
-        >
-          Upgrade now
-        </Link>
       </p>
       <button
         onClick={() => setDismissed(true)}

@@ -390,11 +390,8 @@ export default function ZoneManager() {
 
   if (loading) {
     return (
-      <section aria-labelledby="zone-manager-heading" className="mt-6">
-        <h2 id="zone-manager-heading" className="text-xl font-semibold text-[#0F172A] mb-1">
-          Service Zones
-        </h2>
-        <div className="space-y-3 mt-4">
+      <section>
+        <div className="space-y-3">
           {[1, 2].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-lg" />
           ))}
@@ -405,17 +402,9 @@ export default function ZoneManager() {
 
   return (
     <TooltipProvider>
-      <section aria-labelledby="zone-manager-heading" className="mt-6">
-        <div className="flex items-center justify-between mb-1">
-          <div>
-            <h2 id="zone-manager-heading" className="text-xl font-semibold text-[#0F172A]">
-              Service Zones
-            </h2>
-            <p className="text-sm text-[#475569] mt-0.5">
-              Define the areas you serve. Zones help your AI suggest the right time slots and account
-              for travel between jobs.
-            </p>
-          </div>
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div />
 
           {zones.length > 0 && (
             <Tooltip>

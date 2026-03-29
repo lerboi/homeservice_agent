@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, CalendarOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarOff, CalendarDays, Link2, ChevronDown } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
 import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
+import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import { card } from '@/lib/design-tokens';
 
 function startOfWeek(date) {
@@ -74,6 +76,8 @@ export default function CalendarPage() {
   // Flyout state
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
+  const prefersReduced = useReducedMotion();
 
   // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
@@ -243,48 +247,84 @@ export default function CalendarPage() {
           </div>
 
           {/* Today's Agenda Sidebar */}
-          <div className="lg:w-[280px] shrink-0">
-            <h2 className="text-xs font-semibold text-[#475569] uppercase tracking-wider mb-3">
-              Today&apos;s Agenda
-            </h2>
-
-            {todayAppts.length === 0 ? (
-              data.appointments.length === 0 ? (
-                <EmptyStateCalendar padding="py-8" />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
-                  <p className="text-sm text-[#475569]">No appointments today</p>
-                </div>
-              )
-            ) : (
-              <div className="space-y-2">
-                {todayAppts.map((appt) => {
-                  const urgencyBorder = {
-                    emergency: 'border-l-red-400',
-                    routine: 'border-l-[#0F172A]/30',
-                    high_ticket: 'border-l-amber-400',
-                  };
-                  const time = new Date(appt.start_time).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  });
-
-                  return (
-                    <button
-                      key={appt.id}
-                      type="button"
-                      className={`w-full text-left rounded-md border border-stone-200 border-l-2 ${urgencyBorder[appt.urgency] || urgencyBorder.routine} p-3 hover:bg-stone-50 transition-colors cursor-pointer`}
-                      onClick={() => handleAppointmentClick(appt)}
-                    >
-                      <div className="text-xs text-[#475569] font-medium">{time}</div>
-                      <div className="text-sm font-semibold text-[#0F172A] mt-0.5">{appt.caller_name}</div>
-                      <div className="text-xs text-[#475569] truncate">{appt.notes || appt.service_address || ''}</div>
-                    </button>
-                  );
-                })}
+          <div className="lg:w-[280px] shrink-0 space-y-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <CalendarDays className="size-3.5 text-[#475569]" />
+                <h2 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                  Today&apos;s Agenda
+                </h2>
               </div>
-            )}
+
+              {todayAppts.length === 0 ? (
+                data.appointments.length === 0 ? (
+                  <EmptyStateCalendar padding="py-8" onConnect={() => setConnectionsOpen(true)} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
+                    <p className="text-sm text-[#475569]">No appointments today</p>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-2">
+                  {todayAppts.map((appt) => {
+                    const urgencyBorder = {
+                      emergency: 'border-l-red-400',
+                      routine: 'border-l-[#0F172A]/30',
+                      high_ticket: 'border-l-amber-400',
+                    };
+                    const time = new Date(appt.start_time).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    });
+
+                    return (
+                      <button
+                        key={appt.id}
+                        type="button"
+                        className={`w-full text-left rounded-md border border-stone-200 border-l-2 ${urgencyBorder[appt.urgency] || urgencyBorder.routine} p-3 hover:bg-stone-50 transition-colors cursor-pointer`}
+                        onClick={() => handleAppointmentClick(appt)}
+                      >
+                        <div className="text-xs text-[#475569] font-medium">{time}</div>
+                        <div className="text-sm font-semibold text-[#0F172A] mt-0.5">{appt.caller_name}</div>
+                        <div className="text-xs text-[#475569] truncate">{appt.notes || appt.service_address || ''}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Calendar Connections — collapsible */}
+            <div className="border-t border-stone-200 pt-4">
+              <button
+                type="button"
+                onClick={() => setConnectionsOpen((o) => !o)}
+                className="flex items-center gap-2 w-full"
+                aria-expanded={connectionsOpen}
+              >
+                <Link2 className="size-3.5 text-[#475569]" />
+                <h2 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                  Connections
+                </h2>
+                <ChevronDown className={`size-3 text-stone-400 ml-auto transition-transform duration-200 ${connectionsOpen ? '' : '-rotate-90'}`} />
+              </button>
+              <AnimatePresence initial={false}>
+                {connectionsOpen && (
+                  <motion.div
+                    initial={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                    animate={prefersReduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+                    exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="pt-3">
+                      <CalendarSyncCard />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

@@ -206,7 +206,7 @@ BEGIN
   FROM appointments
   WHERE tenant_id = p_tenant_id
     AND status    <> 'cancelled'
-    AND tsrange(start_time, end_time, '[)') && tsrange(p_start_time, p_end_time, '[)');
+    AND tstzrange(start_time, end_time, '[)') && tstzrange(p_start_time, p_end_time, '[)');
 
   IF v_overlap_cnt > 0 THEN
     RETURN jsonb_build_object('success', false, 'reason', 'slot_taken');

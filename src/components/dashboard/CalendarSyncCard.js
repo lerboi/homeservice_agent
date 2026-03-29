@@ -109,30 +109,28 @@ function CalendarProviderRow({
   // Not connected row
   if (!data) {
     return (
-      <div className="flex items-center justify-between gap-4 p-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-full ${config.iconBg}`}>
-            <CalendarDays className={`h-5 w-5 ${config.iconColor}`} aria-hidden="true" />
+      <div className="flex items-center justify-between gap-3 py-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`p-1.5 rounded-lg ${config.iconBg} shrink-0`}>
+            <CalendarDays className={`h-4 w-4 ${config.iconColor}`} aria-hidden="true" />
           </div>
-          <div>
-            <span className="text-sm font-semibold text-[#0F172A]">{config.label}</span>
-            <p className="text-sm text-stone-400">Not connected</p>
+          <div className="min-w-0">
+            <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
+            <p className="text-xs text-stone-400">Not connected</p>
           </div>
         </div>
         <Button
           variant="outline"
-          size="sm"
+          size="xs"
           onClick={() => onConnect(provider)}
           disabled={isConnecting}
           aria-label={`Connect ${config.label}`}
+          className="shrink-0"
         >
           {isConnecting ? (
-            <>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              Connecting...
-            </>
+            <RefreshCw className="size-3 animate-spin" />
           ) : (
-            `Connect ${config.label}`
+            'Connect'
           )}
         </Button>
       </div>
@@ -141,63 +139,51 @@ function CalendarProviderRow({
 
   // Connected row
   return (
-    <div className="flex items-start justify-between gap-4 p-4">
-      <div className="flex items-start gap-3">
-        <div className={`mt-0.5 p-2 rounded-full ${config.iconBg}`}>
-          <CalendarDays className={`h-5 w-5 ${config.iconColor}`} aria-hidden="true" />
+    <div className="py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`p-1.5 rounded-lg ${config.iconBg} shrink-0`}>
+            <CalendarDays className={`h-4 w-4 ${config.iconColor}`} aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
+              {data.is_primary && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#C2410C]/10 text-[#C2410C] leading-none">
+                  PRIMARY
+                </span>
+              )}
+            </div>
+            {data.calendar_name && (
+              <p className="text-xs text-[#475569] truncate">{data.calendar_name}</p>
+            )}
+          </div>
         </div>
-        <div>
-          <span className="text-sm font-semibold text-[#0F172A]">{config.label}</span>
-          {data.calendar_name && (
-            <p className="text-sm text-[#475569] mt-0.5">{data.calendar_name}</p>
-          )}
-          {data.last_synced_at && (
-            <p className="text-xs text-stone-400 mt-1">
-              Last synced:{' '}
-              {formatDistanceToNow(new Date(data.last_synced_at), { addSuffix: true })}
-            </p>
-          )}
-        </div>
+        <SyncStatusDot status={deriveSyncStatus()} />
       </div>
 
-      <div className="flex flex-col items-end gap-2">
-        <SyncStatusDot status={deriveSyncStatus()} />
-
-        {data.is_primary ? (
-          <span
-            className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#C2410C]/10 text-[#C2410C]"
-            aria-label="Primary calendar"
-          >
-            PRIMARY
+      <div className="flex items-center gap-2 mt-2 pl-9">
+        {data.last_synced_at && (
+          <span className="text-[11px] text-stone-400 mr-auto">
+            Synced {formatDistanceToNow(new Date(data.last_synced_at), { addSuffix: true })}
           </span>
-        ) : (
+        )}
+        {!data.is_primary && (
           <button
-            className="text-sm text-[#C2410C] hover:underline cursor-pointer"
-            aria-label={`Make ${config.label} the primary calendar`}
+            className="text-[11px] text-[#C2410C] hover:underline"
             onClick={() => onMakePrimary(provider)}
           >
             Make Primary
           </button>
         )}
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+            <button
+              className="text-[11px] text-stone-400 hover:text-red-600 transition-colors"
               disabled={isDisconnecting}
-              aria-label={`Disconnect ${config.label}`}
             >
-              {isDisconnecting ? (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Disconnecting...
-                </>
-              ) : (
-                'Disconnect'
-              )}
-            </Button>
+              {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+            </button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -362,31 +348,18 @@ export default function CalendarSyncCard() {
     }
   }
 
-  const neitherConnected = !providers.google && !providers.outlook;
-
   // Loading state
   if (loading) {
     return (
-      <section aria-labelledby="calendar-sync-heading" className="mt-6">
-        <h2 id="calendar-sync-heading" className="text-xl font-semibold text-[#0F172A] mb-1">
-          Calendar Sync
-        </h2>
-        <p className="text-sm text-[#475569] mb-4">
-          Keep your calendar in sync with confirmed bookings.
-        </p>
-        <div className="h-32 rounded-lg border border-stone-200 animate-pulse bg-[#F5F5F4]" />
+      <section className="space-y-3">
+        <div className="h-10 rounded-lg animate-pulse bg-[#F5F5F4]" />
+        <div className="h-10 rounded-lg animate-pulse bg-[#F5F5F4]" />
       </section>
     );
   }
 
   return (
-    <section aria-labelledby="calendar-sync-heading" className="mt-6">
-      <h2 id="calendar-sync-heading" className="text-xl font-semibold text-[#0F172A] mb-1">
-        Calendar Sync
-      </h2>
-      <p className="text-sm text-[#475569] mb-4">
-        Keep your calendar in sync with confirmed bookings.
-      </p>
+    <section>
 
       {/* OAuth error alerts */}
       {oauthError === 'google' && (
@@ -449,71 +422,26 @@ export default function CalendarSyncCard() {
         </Alert>
       )}
 
-      {neitherConnected ? (
-        /* Empty state (D-07) */
-        <div className="rounded-lg border border-dashed border-stone-300 bg-[#F5F5F4] p-6 flex flex-col items-center text-center">
-          <div className="p-3 rounded-full bg-white border border-stone-200 mb-3">
-            <CalendarDays className="h-6 w-6 text-stone-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-[#0F172A] mb-1">No calendar connected</h3>
-          <p className="text-sm text-[#475569] mb-4 max-w-xs">
-            Connect a calendar to automatically sync bookings.
-          </p>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => handleConnect('google')}
-              disabled={connectingProvider === 'google'}
-              aria-label="Connect Google Calendar"
-            >
-              {connectingProvider === 'google' ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                'Connect Google Calendar'
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleConnect('outlook')}
-              disabled={connectingProvider === 'outlook'}
-              aria-label="Connect Outlook Calendar"
-            >
-              {connectingProvider === 'outlook' ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                'Connect Outlook Calendar'
-              )}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        /* One or both connected (D-05) */
-        <div className="rounded-lg border border-stone-200 divide-y divide-stone-100">
-          <CalendarProviderRow
-            provider="google"
-            data={providers.google}
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-            onMakePrimary={handleMakePrimary}
-            isConnecting={connectingProvider === 'google'}
-            isDisconnecting={disconnectingProvider === 'google'}
-          />
-          <CalendarProviderRow
-            provider="outlook"
-            data={providers.outlook}
-            onConnect={handleConnect}
-            onDisconnect={handleDisconnect}
-            onMakePrimary={handleMakePrimary}
-            isConnecting={connectingProvider === 'outlook'}
-            isDisconnecting={disconnectingProvider === 'outlook'}
-          />
-        </div>
-      )}
+      <div className="divide-y divide-stone-100">
+        <CalendarProviderRow
+          provider="google"
+          data={providers.google}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          onMakePrimary={handleMakePrimary}
+          isConnecting={connectingProvider === 'google'}
+          isDisconnecting={disconnectingProvider === 'google'}
+        />
+        <CalendarProviderRow
+          provider="outlook"
+          data={providers.outlook}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          onMakePrimary={handleMakePrimary}
+          isConnecting={connectingProvider === 'outlook'}
+          isDisconnecting={disconnectingProvider === 'outlook'}
+        />
+      </div>
     </section>
   );
 }

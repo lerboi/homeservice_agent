@@ -335,10 +335,10 @@ export default function CallLogsPage() {
       {/* Summary bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Calls', value: total, accent: false },
-          { label: 'Booked', value: booked, accent: booked > 0 },
-          { label: 'Avg Duration', value: formatDuration(avgDur), accent: false },
-          { label: 'Emergencies', value: emergencies, accent: emergencies > 0 },
+          { label: 'Total Calls', value: total, accent: false, icon: Phone, iconBg: 'bg-stone-100', iconColor: 'text-stone-500' },
+          { label: 'Booked', value: booked, accent: booked > 0, icon: CalendarCheck, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
+          { label: 'Avg Duration', value: formatDuration(avgDur), accent: false, icon: Clock, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+          { label: 'Emergencies', value: emergencies, accent: emergencies > 0, icon: AlertTriangle, iconBg: emergencies > 0 ? 'bg-red-50' : 'bg-stone-100', iconColor: emergencies > 0 ? 'text-red-500' : 'text-stone-400' },
         ].map((stat) => (
           <motion.div
             key={stat.label}
@@ -347,14 +347,21 @@ export default function CallLogsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <p className="text-xs text-[#475569]">{stat.label}</p>
-            {loading ? (
-              <Skeleton className="h-6 w-10 mt-1" />
-            ) : (
-              <p className={`text-xl font-bold ${stat.accent ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
-                {stat.value}
-              </p>
-            )}
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center size-8 rounded-lg shrink-0 ${stat.iconBg}`}>
+                <stat.icon className={`size-4 ${stat.iconColor}`} />
+              </div>
+              <div>
+                <p className="text-[10px] text-[#475569] uppercase tracking-wider">{stat.label}</p>
+                {loading ? (
+                  <Skeleton className="h-5 w-10 mt-0.5" />
+                ) : (
+                  <p className={`text-lg font-bold ${stat.accent ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                    {stat.value}
+                  </p>
+                )}
+              </div>
+            </div>
           </motion.div>
         ))}
       </div>

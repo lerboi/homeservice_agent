@@ -14,4 +14,4 @@ Look through all the issues and gather all the context and code needed to fully 
 Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 
 
 
-Implement these 21st.dev components using Next.js dynamic imports for lazy loading and aggressive code-splitting, prioritizing Core Web Vitals by ensuring a high LCP and low CLS, while automatically simplifying or swapping heavy interactive elements for lightweight static fallbacks on mobile devices to maintain a smooth user experience.
+ensure you have the full context needed to properly con to a conclusion (read the codebase, and anything needed to get full context). Understand what youre reading, why its needed, and whether the implementation is correct and optimal. 

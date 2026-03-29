@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Phone, AlertCircle, CalendarClock, Users, CalendarCheck, TrendingUp, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
@@ -10,7 +11,8 @@ import { supabase } from '@/lib/supabase-browser';
 
 // ─── Required checklist items for setup completion ────────────────────────────
 
-const REQUIRED_IDS = ['create_account', 'setup_profile', 'configure_services', 'make_test_call'];
+const REQUIRED_IDS = ['configure_services', 'make_test_call', 'configure_hours'];
+const RECOMMENDED_IDS = ['connect_calendar', 'configure_zones', 'setup_escalation', 'configure_notifications'];
 
 // ─── Time formatter ───────────────────────────────────────────────────────────
 
@@ -67,6 +69,7 @@ function AIStatusIndicator() {
 export default function DashboardPage() {
   const [checklistData, setChecklistData] = useState(undefined); // undefined=loading
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [hasIncompleteRecommended, setHasIncompleteRecommended] = useState(false);
   const [stats, setStats] = useState(null);
   const [nextAppointment, setNextAppointment] = useState(null);
   const [weekStats, setWeekStats] = useState({ leads: 0, booked: 0, conversionRate: 0 });
@@ -87,6 +90,10 @@ export default function DashboardPage() {
               .filter((i) => REQUIRED_IDS.includes(i.id))
               .every((i) => i.complete);
             setIsSetupComplete(setupComplete);
+            const incompleteRec = data.items
+              .filter((i) => RECOMMENDED_IDS.includes(i.id))
+              .some((i) => !i.complete);
+            setHasIncompleteRecommended(incompleteRec);
           }
         } else {
           setChecklistData(null);
@@ -110,7 +117,18 @@ export default function DashboardPage() {
         }
       } catch { /* ignore — stats cards will show 0 */ }
 
-      setNextAppointment(null); // appointments API not yet available
+      // Fetch next upcoming appointment
+      try {
+        const now = new Date().toISOString();
+        const weekLater = new Date();
+        weekLater.setDate(weekLater.getDate() + 7);
+        const apptRes = await fetch(`/api/appointments?start=${now}&end=${weekLater.toISOString()}`);
+        if (apptRes.ok) {
+          const apptData = await apptRes.json();
+          const upcoming = (apptData.appointments || []).find((a) => a.status === 'confirmed');
+          setNextAppointment(upcoming || null);
+        }
+      } catch { /* ignore — card shows "None scheduled" fallback */ }
       setActiveLoading(false);
 
       // Recent activity from activity_log
@@ -201,66 +219,98 @@ export default function DashboardPage() {
         <>
           {/* Hero metric — full width */}
           <div className={`${card.base} p-6`} data-tour="hero-metric">
-            <p className="text-sm text-[#475569] mb-1">Today</p>
-            <p className="text-4xl lg:text-5xl font-bold text-[#0F172A]">{stats?.callsToday ?? 0}</p>
-            <p className="text-base text-[#475569] mt-1">calls answered by AI</p>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center size-12 rounded-xl bg-[#C2410C]/[0.08]">
+                <Phone className="size-5 text-[#C2410C]" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Today</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl lg:text-5xl font-bold text-[#0F172A]">{stats?.callsToday ?? 0}</p>
+                  <p className="text-sm text-[#475569]">calls answered</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 2-col grid: Action Required + Next Appointment */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Action Required card */}
-            <div className={`${card.base} ${card.hover} p-5`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-sm font-semibold ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-[#475569]'}`}>
-                    {(stats?.newLeadsToday ?? 0) > 0 ? 'Action Required' : 'No Actions Needed'}
-                  </p>
-                  <p className="text-2xl font-bold text-[#0F172A]">{stats?.newLeadsToday ?? 0}</p>
-                  <p className="text-sm text-[#475569]">new leads need response</p>
+            <Link href="/dashboard/leads" className={`${card.base} ${card.hover} p-5 block`}>
+              <div className="flex items-start gap-3">
+                <div className={`flex items-center justify-center size-9 rounded-lg shrink-0 ${
+                  (stats?.newLeadsToday ?? 0) > 0 ? 'bg-[#C2410C]/[0.08]' : 'bg-stone-100'
+                }`}>
+                  <AlertCircle className={`size-4.5 ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-stone-400'}`} />
                 </div>
-                <Link href="/dashboard/leads" className="text-sm font-medium text-[#C2410C] hover:underline">
-                  View Leads →
-                </Link>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-medium uppercase tracking-wider ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-[#475569]'}`}>
+                    {(stats?.newLeadsToday ?? 0) > 0 ? 'Action Required' : 'All Clear'}
+                  </p>
+                  <p className="text-2xl font-bold text-[#0F172A] mt-0.5">{stats?.newLeadsToday ?? 0}</p>
+                  <p className="text-xs text-[#475569]">new leads</p>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Next Appointment card */}
             <div className={`${card.base} p-5`}>
-              <p className="text-sm font-semibold text-[#0F172A] mb-2">Next Appointment</p>
-              {nextAppointment ? (
-                <div>
-                  <p className="text-base font-medium text-[#0F172A]">{nextAppointment.customer_name || 'Customer'}</p>
-                  <p className="text-sm text-[#475569]">{formatTime(nextAppointment.start_time)} — {nextAppointment.service_type || 'Service'}</p>
-                  {nextAppointment.address && <p className="text-sm text-[#475569] mt-1">{nextAppointment.address}</p>}
+              <div className="flex items-start gap-3">
+                <div className="flex items-center justify-center size-9 rounded-lg shrink-0 bg-stone-100">
+                  <CalendarClock className="size-4.5 text-stone-400" />
                 </div>
-              ) : (
-                <p className="text-sm text-[#475569]">No upcoming appointments</p>
-              )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Next Appointment</p>
+                  {nextAppointment ? (
+                    <div className="mt-1">
+                      <p className="text-sm font-semibold text-[#0F172A]">{nextAppointment.caller_name || 'Customer'}</p>
+                      <p className="text-xs text-[#475569]">{formatTime(nextAppointment.start_time)}{nextAppointment.service_address ? ` — ${nextAppointment.service_address}` : ''}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#475569] mt-1">None scheduled</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* This Week — full width */}
           <div className={`${card.base} p-5`}>
-            <p className="text-sm font-semibold text-[#0F172A] mb-3">This Week</p>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
+            <p className="text-xs font-medium text-[#475569] uppercase tracking-wider mb-4">This Week</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
+                  <Users className="size-4 text-stone-500" />
+                </div>
                 <p className="text-2xl font-bold text-[#0F172A]">{weekStats.leads}</p>
                 <p className="text-xs text-[#475569]">Leads</p>
               </div>
-              <div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-emerald-50">
+                  <CalendarCheck className="size-4 text-emerald-600" />
+                </div>
                 <p className="text-2xl font-bold text-[#0F172A]">{weekStats.booked}</p>
                 <p className="text-xs text-[#475569]">Booked</p>
               </div>
-              <div>
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-blue-50">
+                  <TrendingUp className="size-4 text-blue-600" />
+                </div>
                 <p className="text-2xl font-bold text-[#0F172A]">{weekStats.conversionRate}%</p>
                 <p className="text-xs text-[#475569]">Conversion</p>
               </div>
             </div>
           </div>
 
+          {/* Setup checklist — shown in active mode when recommended items remain */}
+          {hasIncompleteRecommended && <SetupChecklist />}
+
           {/* Recent Activity — full width, capped at 5 */}
           <div className={`${card.base} p-5`}>
-            <h2 className="text-base font-semibold text-[#0F172A] mb-4">Recent Activity</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="size-4 text-[#475569]" />
+              <h2 className="text-xs font-medium text-[#475569] uppercase tracking-wider">Recent Activity</h2>
+            </div>
             <RecentActivityFeed activities={activities?.slice(0, 5)} loading={activitiesLoading} />
           </div>
         </>

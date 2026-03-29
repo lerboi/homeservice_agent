@@ -22,7 +22,7 @@ export async function GET(request) {
   if (!code || !tenantId) {
     console.log('400:', 'Missing code or invalid state');
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=error`
     );
   }
 
@@ -75,12 +75,12 @@ export async function GET(request) {
     await syncCalendarEvents(tenantId);
 
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=connected`
     );
   } catch (err) {
     console.error('[google-calendar-callback] Error:', err);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/services?calendar=error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=error`
     );
   }
 }

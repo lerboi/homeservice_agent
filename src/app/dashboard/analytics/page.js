@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { BarChart3 } from 'lucide-react';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 import { EmptyStateAnalytics } from '@/components/dashboard/EmptyStateAnalytics';
 import { card } from '@/lib/design-tokens';
@@ -29,7 +30,12 @@ export default function AnalyticsPage() {
   return (
     <div className={`${card.base} p-0`} data-tour="analytics-page">
       <div className="p-6">
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-6">Analytics</h1>
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
+            <BarChart3 className="size-4 text-stone-500" />
+          </div>
+          <h1 className="text-xl font-semibold text-[#0F172A]">Analytics</h1>
+        </div>
         {!loading && leads && leads.length === 0 ? (
           <EmptyStateAnalytics />
         ) : (

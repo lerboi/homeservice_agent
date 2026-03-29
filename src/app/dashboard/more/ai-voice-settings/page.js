@@ -24,7 +24,8 @@ export default function AIVoiceSettingsPage() {
 
   return (
     <div className={`${card.base} p-6`}>
-      <h1 className="text-xl font-semibold text-[#0F172A] mb-4">AI & Voice Settings</h1>
+      <h1 className="text-xl font-semibold text-[#0F172A] mb-1">AI & Voice Settings</h1>
+      <p className="text-sm text-[#475569] mb-6">Your AI phone number and test call.</p>
       <SettingsAISection phoneNumber={phoneNumber} loading={loading} />
     </div>
   );

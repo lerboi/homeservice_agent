@@ -3,20 +3,20 @@ import { supabase } from '@/lib/supabase';
 
 // ─── Checklist derivation ─────────────────────────────────────────────────────
 
-function deriveChecklistItems(tenant, serviceCount, calendarConnected) {
+const DEFAULT_NOTIFICATION_PREFS = {
+  booked: { sms: true, email: true },
+  declined: { sms: false, email: false },
+  not_attempted: { sms: false, email: false },
+  attempted: { sms: false, email: false },
+};
+
+function hasCustomNotificationPrefs(prefs) {
+  if (!prefs || typeof prefs !== 'object') return false;
+  return JSON.stringify(prefs) !== JSON.stringify(DEFAULT_NOTIFICATION_PREFS);
+}
+
+function deriveChecklistItems(tenant, serviceCount, calendarConnected, zoneCount, escalationCount) {
   return [
-    {
-      id: 'create_account',
-      label: 'Create account',
-      complete: true,
-      locked: true,
-    },
-    {
-      id: 'setup_profile',
-      label: 'Set up business profile',
-      complete: !!tenant.business_name,
-      locked: true,
-    },
     {
       id: 'configure_services',
       label: 'Configure services',
@@ -24,11 +24,11 @@ function deriveChecklistItems(tenant, serviceCount, calendarConnected) {
       locked: true,
     },
     {
-      id: 'connect_calendar',
-      label: 'Connect Google Calendar',
-      complete: calendarConnected,
+      id: 'make_test_call',
+      label: 'Make a test call',
+      complete: !!tenant.onboarding_complete,
       locked: false,
-      href: '/dashboard/more/calendar-connections',
+      href: '/dashboard/more/ai-voice-settings',
     },
     {
       id: 'configure_hours',
@@ -38,11 +38,32 @@ function deriveChecklistItems(tenant, serviceCount, calendarConnected) {
       href: '/dashboard/more/working-hours',
     },
     {
-      id: 'make_test_call',
-      label: 'Make a test call',
-      complete: !!tenant.onboarding_complete,
+      id: 'connect_calendar',
+      label: 'Connect your calendar',
+      complete: calendarConnected,
       locked: false,
-      href: '/dashboard/more/ai-voice-settings',
+      href: '/dashboard/calendar',
+    },
+    {
+      id: 'configure_zones',
+      label: 'Set up service zones',
+      complete: zoneCount > 0,
+      locked: false,
+      href: '/dashboard/more/service-zones',
+    },
+    {
+      id: 'setup_escalation',
+      label: 'Add escalation contacts',
+      complete: escalationCount > 0,
+      locked: false,
+      href: '/dashboard/more/escalation-contacts',
+    },
+    {
+      id: 'configure_notifications',
+      label: 'Configure notifications',
+      complete: hasCustomNotificationPrefs(tenant.notification_preferences),
+      locked: false,
+      href: '/dashboard/more/notifications',
     },
   ];
 }
@@ -60,7 +81,7 @@ export async function GET() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, business_name, working_hours, onboarding_complete, phone_number, setup_checklist_dismissed')
+    .select('id, business_name, working_hours, onboarding_complete, phone_number, setup_checklist_dismissed, notification_preferences')
     .eq('owner_id', user.id)
     .single();
 
@@ -69,7 +90,7 @@ export async function GET() {
     return Response.json({ error: 'Tenant not found' }, { status: 404 });
   }
 
-  const [serviceResult, calendarResult] = await Promise.allSettled([
+  const [serviceResult, calendarResult, zoneResult, escalationResult] = await Promise.allSettled([
     supabase
       .from('services')
       .select('id', { count: 'exact', head: true })
@@ -79,16 +100,28 @@ export async function GET() {
       .from('calendar_credentials')
       .select('id')
       .eq('tenant_id', tenant.id)
-      .eq('provider', 'google')
       .maybeSingle(),
+    supabase
+      .from('service_zones')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenant.id),
+    supabase
+      .from('escalation_contacts')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenant.id)
+      .eq('is_active', true),
   ]);
 
   const serviceCount =
     serviceResult.status === 'fulfilled' ? (serviceResult.value.count ?? 0) : 0;
   const calendarConnected =
     calendarResult.status === 'fulfilled' ? !!calendarResult.value.data : false;
+  const zoneCount =
+    zoneResult.status === 'fulfilled' ? (zoneResult.value.count ?? 0) : 0;
+  const escalationCount =
+    escalationResult.status === 'fulfilled' ? (escalationResult.value.count ?? 0) : 0;
 
-  const items = deriveChecklistItems(tenant, serviceCount, calendarConnected);
+  const items = deriveChecklistItems(tenant, serviceCount, calendarConnected, zoneCount, escalationCount);
 
   return Response.json({
     items,

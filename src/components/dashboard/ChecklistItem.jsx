@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { CheckCircle2, Circle, ChevronDown, ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 
-export default function ChecklistItem({ item, type, description }) {
-  const [expanded, setExpanded] = useState(false);
+export default function ChecklistItem({ item, type, description, expanded, onToggle }) {
   const prefersReduced = useReducedMotion();
 
   const canExpand = !item.complete;
@@ -14,7 +12,7 @@ export default function ChecklistItem({ item, type, description }) {
   return (
     <div className="border-b border-stone-100 last:border-b-0">
       <button
-        onClick={() => canExpand && setExpanded(!expanded)}
+        onClick={() => canExpand && onToggle?.(item.id)}
         className="flex items-center gap-3 py-3 px-1 min-h-[44px] w-full text-left"
         disabled={!canExpand}
         aria-expanded={canExpand ? expanded : undefined}
@@ -30,13 +28,6 @@ export default function ChecklistItem({ item, type, description }) {
         <span className={`flex-1 text-sm ${item.complete ? 'text-[#475569] line-through' : 'text-[#0F172A]'}`}>
           {item.label}
         </span>
-
-        {/* Type badge */}
-        {type === 'required' ? (
-          <span className="bg-[#C2410C]/10 text-[#C2410C] text-xs font-medium px-2 py-0.5 rounded-full">Required</span>
-        ) : (
-          <span className="bg-stone-100 text-stone-600 text-xs font-medium px-2 py-0.5 rounded-full">Recommended</span>
-        )}
 
         {/* Expand indicator */}
         {canExpand && (

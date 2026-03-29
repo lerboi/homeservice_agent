@@ -6,7 +6,7 @@ import { card } from '@/lib/design-tokens';
 import {
   Wrench,
   Clock,
-  CalendarDays,
+
   MapPin,
   PhoneCall,
   Bot,
@@ -19,7 +19,6 @@ import {
 const MORE_ITEMS = [
   { href: '/dashboard/more/services-pricing', label: 'Services & Pricing', description: 'Manage your service list and urgency tags', icon: Wrench },
   { href: '/dashboard/more/working-hours', label: 'Working Hours', description: 'Set your weekly availability schedule', icon: Clock },
-  { href: '/dashboard/more/calendar-connections', label: 'Calendar Connections', description: 'Connect Google or Outlook calendars', icon: CalendarDays },
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
   { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', description: 'Set up your emergency contact chain', icon: PhoneCall },
   { href: '/dashboard/more/notifications', label: 'Notifications', description: 'SMS and email alerts per call outcome', icon: Bell },

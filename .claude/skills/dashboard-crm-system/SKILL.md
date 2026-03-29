@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-03-27 (WorkingHoursEditor redesign — visual schedule preview, timezone selector, sticky save bar, mobile layout)
+**Last updated**: 2026-03-30 (Expanded setup checklist with 5 recommended items, checklist visible in active mode, Account page with profile editor, Next Appointment wired up, callsToday fix)
 
 ---
 
@@ -23,7 +23,7 @@ This document is the single source of truth for the entire dashboard and CRM sys
 | **Realtime** | Supabase `supabase_realtime` publication | Live lead updates to dashboard via WebSocket |
 
 ```
-Call ends → call_analyzed webhook → call-processor.js → createOrMergeLead()
+Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
                                                               ↓
                                           INSERT into leads table (Supabase)
                                                               ↓
@@ -43,13 +43,15 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
   ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
   ├── analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut)
-  └── more/page.js               ← Config hub: 7 section links
+  └── more/page.js               ← Config hub: 9 section links
       ├── more/services-pricing/page.js    ← Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/page.js       ← WorkingHoursEditor
       ├── more/calendar-connections/page.js ← CalendarSyncCard
       ├── more/service-zones/page.js       ← ZoneManager
       ├── more/escalation-contacts/page.js ← EscalationChainSection
+      ├── more/notifications/page.js       ← SMS and email alert preferences
       ├── more/ai-voice-settings/page.js   ← SettingsAISection
+      ├── more/billing/page.js             ← Plan, usage meter, invoices
       └── more/account/page.js             ← Placeholder (future plan)
 ```
 
@@ -61,14 +63,16 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 
 | File | Role |
 |------|------|
-| `src/app/dashboard/layout.js` | Layout wrapper: sidebar (desktop), BottomTabBar (mobile), breadcrumb, DashboardTour. Exports Suspense-wrapped DashboardLayout with admin impersonation support via ImpersonationBanner |
+| `src/app/dashboard/layout.js` | Layout wrapper: banners (impersonation, billing warning, trial countdown), sidebar (desktop), BottomTabBar (mobile), GridTexture, DashboardTour. Exports Suspense-wrapped DashboardLayout with admin impersonation support |
 | `src/app/dashboard/ImpersonationBanner.js` | Amber sticky banner shown when admin impersonates a tenant — displays "Viewing as: {name} (read-only)" + Exit Impersonation link |
+| `src/app/dashboard/BillingWarningBanner.js` | Persistent amber warning for past_due subscriptions with 3-day grace countdown |
+| `src/app/dashboard/TrialCountdownBanner.js` | Trial countdown banner (blue >3d, amber <=3d) with upgrade CTA |
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
 | `src/app/dashboard/leads/page.js` | Leads page: filter bar, list/kanban toggle, Realtime subscription |
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
 | `src/app/dashboard/analytics/page.js` | Analytics page: fetches all leads, renders AnalyticsCharts |
 | `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner |
-| `src/app/dashboard/more/page.js` | Config hub list: 7 section links with icons, labels, descriptions |
+| `src/app/dashboard/more/page.js` | Config hub list: 9 section links with icons, labels, descriptions |
 | `src/app/dashboard/more/layout.js` | Pass-through layout for more/* route group |
 | `src/app/dashboard/more/services-pricing/page.js` | Service table with DnD, urgency tags, bulk select |
 | `src/app/dashboard/more/working-hours/page.js` | Wraps WorkingHoursEditor |
@@ -79,7 +83,10 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/NotificationPreferences.jsx` | Per-outcome Switch grid (booked/declined/not_attempted/attempted x SMS/email) |
 | `src/app/dashboard/more/ai-voice-settings/page.js` | Wraps SettingsAISection (phone number + test call only) |
 | `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB on tenants |
-| `src/app/dashboard/more/account/page.js` | Placeholder stub — account management future plan |
+| `src/app/dashboard/more/billing/page.js` | Billing page: plan card, usage ring gauge, billing details, recent invoices |
+| `src/components/dashboard/UsageRingGauge.js` | SVG donut ring gauge for call usage visualization |
+| `src/app/dashboard/more/account/page.js` | Account page: profile editor (business_name, owner_name, owner_email, owner_phone), account details, sign out |
+| `src/app/api/account/route.js` | GET/PATCH tenant profile fields (business_name, owner_name, owner_email, owner_phone) |
 | `src/app/dashboard/services/page.js` | redirect() to /dashboard/more/services-pricing |
 | `src/app/dashboard/settings/page.js` | redirect() to /dashboard/more |
 | `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 6 nav items (Home, Leads, Calendar, Calls, Analytics, More), no mobile drawer |
@@ -115,11 +122,14 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 `DashboardLayout({ children })` — 'use client'. Exported as a Suspense wrapper that renders `DashboardLayoutInner` to support `useSearchParams()` per Next.js requirements.
 
 `DashboardLayoutInner({ children })` — the actual layout. Wraps all dashboard pages with:
-- `ImpersonationBanner` — rendered ABOVE the main layout when `impersonate` query param is present (admin impersonation mode)
-- `DashboardSidebar` — desktop-only fixed left sidebar (lg+), no mobile drawer
+- `ImpersonationBanner` — z-40, rendered ABOVE the main layout when `?impersonate=` query param is present (admin impersonation mode)
+- `BillingWarningBanner` — z-39, amber background, shown when subscription is `past_due` with 3-day grace period countdown + link to Stripe portal
+- `TrialCountdownBanner` — z-39, blue (>3 days remaining) or amber (<=3 days remaining), shows trial days remaining + link to /dashboard/more/billing
+- `DashboardSidebar` — fixed left sidebar (lg:pl-60), desktop-only, no mobile drawer
+- Main content — `max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-[72px] lg:pb-6`
 - `BottomTabBar` — mobile-only fixed bottom nav (hidden on lg+)
-- `DashboardTour` — Joyride guided tour mounted at layout level, persists across tab navigation
-- Sticky top bar — `bg-white/80 backdrop-blur-md`, z-20, contains `DashboardBreadcrumb` and mobile Settings gear icon
+- `GridTexture` (light variant) — background pattern
+- `DashboardTour` — dynamically imported, triggered by `start-dashboard-tour` window event
 - **No card wrapper** — each page controls its own card styling (page-level card ownership)
 
 **Important**: Main content div uses `pb-[72px] lg:pb-6` to clear the 56px mobile tab bar.
@@ -142,8 +152,6 @@ The dashboard layout reads these query params via `useSearchParams()` and:
 - `border-amber-400 text-amber-800 hover:bg-amber-100` button style
 
 **Suspense boundary**: The exported `DashboardLayout` wraps `DashboardLayoutInner` in `<Suspense fallback={<div className="min-h-screen bg-[#F5F5F4]" />}>` to satisfy Next.js requirement for `useSearchParams()` in client components.
-
-**`DashboardBreadcrumb`** — reads `usePathname()`, supports 3-segment paths (e.g., Dashboard > More > Working Hours) via `crumbs.map()` loop over path segments.
 
 **`DashboardTour` wiring in layout:**
 ```js
@@ -204,12 +212,13 @@ Wraps `react-joyride` v3. Mounted at layout level (not page level) so it persist
 - `run` (boolean) — controlled by layout.js via `tourRunning` state
 - `onFinish` (function) — called when tour FINISHED or SKIPPED; layout resets `tourRunning = false`
 
-**Tour steps (5 total):**
+**Tour steps (6 total):**
 1. `[data-tour="home-page"]` — Command center overview
 2. `[href="/dashboard/leads"]` — Leads tracking
 3. `[href="/dashboard/calendar"]` — Calendar / appointments
-4. `[href="/dashboard/analytics"]` — Analytics / conversion
-5. `[href="/dashboard/more"]` — Config hub (placement: 'top')
+4. `[href="/dashboard/calls"]` — View every call your AI handled
+5. `[href="/dashboard/analytics"]` — Analytics / conversion
+6. `[href="/dashboard/more"]` — Config hub (placement: 'top')
 
 **Key configuration:**
 - `primaryColor: '#C2410C'` — brand orange spotlight
@@ -280,11 +289,12 @@ Shown when all 4 required items are complete.
 **Active mode renders:**
 - `AIStatusIndicator`
 - Hero metric card: calls answered today (`data-tour="hero-metric"`)
-- 2-col grid: Action Required card (new leads today) + Next Appointment card
+- 2-col grid: Action Required card (new leads today) + Next Appointment card (fetches from `/api/appointments`)
 - This Week summary card: leads, booked, conversion rate (last 7 days)
+- `SetupChecklist` — shown when any recommended items are incomplete (controlled by `hasIncompleteRecommended` state). Dismissed via the checklist's own dismiss mechanism. Disappears once all 5 recommended items are complete.
 - Recent Activity feed (capped at 5 items via `.slice(0, 5)`)
 
-**Note:** Appointments API does not exist yet — `nextAppointment` is always `null` with graceful "No upcoming appointments" fallback.
+**Next Appointment card** fetches from `GET /api/appointments?start={now}&end={weekLater}`, finds the first `confirmed` appointment, and displays `caller_name` and `service_address`.
 
 ### data-tour attributes on home page
 
@@ -297,7 +307,7 @@ Shown when all 4 required items are complete.
 
 **File**: `src/app/dashboard/more/page.js`
 
-`/dashboard/more` is the 5th tab destination. Lists 7 config sections as card rows.
+`/dashboard/more` is the 5th tab destination. Lists 9 config sections as card rows.
 
 ```js
 const MORE_ITEMS = [
@@ -306,7 +316,9 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/calendar-connections', label: 'Calendar Connections', ... },
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', ... },
   { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', ... },
+  { href: '/dashboard/more/notifications', label: 'Notifications', ... },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', ... },
+  { href: '/dashboard/more/billing', label: 'Billing', ... },
   { href: '/dashboard/more/account', label: 'Account', ... },
 ];
 ```
@@ -321,6 +333,31 @@ const MORE_ITEMS = [
 - `connect_calendar` — `/dashboard/more/calendar-connections`
 - `configure_hours` — `/dashboard/more/working-hours`
 - `make_test_call` — `/dashboard/more/ai-voice-settings`
+
+### Account Page (`/dashboard/more/account`)
+
+**File**: `src/app/dashboard/more/account/page.js`
+
+Profile editor with three sections:
+
+1. **Profile form** — editable fields: `business_name` (required), `owner_name`, `owner_email`, `owner_phone`. Fetches from `GET /api/account`, saves via `PATCH /api/account`. Dirty detection via JSON comparison. Shows "Saved" confirmation for 3 seconds.
+2. **Account details** — read-only display: login email (from Supabase Auth `user.email`), trade type, country, member since date.
+3. **Sign out** — sign out button with AlertDialog confirmation. Uses `supabase.auth.signOut()` then redirects to `/auth/signin`.
+
+**API Route**: `src/app/api/account/route.js`
+- `GET` — returns tenant profile fields + `user.email` from Supabase Auth
+- `PATCH` — updates only allowed fields (`business_name`, `owner_name`, `owner_email`, `owner_phone`). Validates `business_name` is not empty. Uses service role client for write.
+
+### Billing Page (`/dashboard/more/billing`)
+
+**File**: `src/app/dashboard/more/billing/page.js`
+
+Displays subscription status and usage for the current tenant. Four sections:
+
+1. **Plan card** — shows plan name, price, status badge (`active`/`trialing`/`past_due`/`cancelled`/`paused`). Displays cancel-at-period-end warning when subscription is set to cancel at the end of the billing period.
+2. **Usage meter** — `UsageRingGauge` (`src/components/dashboard/UsageRingGauge.js`) SVG donut ring showing `calls_used / calls_limit` with overage visualization when usage exceeds the plan limit.
+3. **Billing details** — renewal date, "Manage Subscription" button that links to the Stripe customer portal.
+4. **Recent invoices** — table of up to 5 invoices displaying date, amount, status badge, and link to the Stripe-hosted invoice.
 
 ---
 
@@ -339,6 +376,9 @@ const ITEM_TYPE = {
   make_test_call: 'required',
   connect_calendar: 'recommended',
   configure_hours: 'recommended',
+  configure_zones: 'recommended',
+  setup_escalation: 'recommended',
+  configure_notifications: 'recommended',
 };
 ```
 
@@ -365,9 +405,12 @@ Checklist items are **derived from tenants table columns** — not stored as sep
 - `create_account` — always complete
 - `setup_profile` — `!!tenant.business_name`
 - `configure_services` — `serviceCount > 0`
-- `connect_calendar` — `!!calendar_credentials row`
-- `configure_hours` — `!!tenant.working_hours`
 - `make_test_call` — `!!tenant.onboarding_complete`
+- `configure_hours` — `!!tenant.working_hours`
+- `connect_calendar` — `!!calendar_credentials row` (any provider, not just Google)
+- `configure_zones` — `service_zones` count > 0
+- `setup_escalation` — active `escalation_contacts` count > 0
+- `configure_notifications` — `notification_preferences` differs from defaults
 
 ---
 
@@ -752,11 +795,15 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 - **BottomTabBar as mobile nav (Phase 20)**: 5 tabs (no More), `h-[56px]`, `min-h-[48px]` touch targets, `safe-area-inset-bottom`, `z-40`, `bg-[#0F172A]`. Animated orange indicator via `layoutId="tab-indicator"` (framer-motion spring). `pb-[72px]` on main content div to clear the bar. Mobile-only (`lg:hidden`). More accessible via gear icon in top bar.
 - **Call logs page (Phase 20)**: `/dashboard/calls` — queries `GET /api/calls` (calls table directly, not through leads). Date-grouped expandable cards with urgency border, summary stats bar, search by phone, expandable filters (time range, urgency, booking outcome). Tap to expand detail panel (duration, urgency, booking, language, recording, SMS status, triage info). Short calls (<15s) dimmed with "missed" tag.
-- **Page transitions (Phase 20)**: framer-motion `AnimatePresence` on layout content area — `opacity: 0→1, y: 6→0` on route change. Breadcrumb shows tab name directly ("Leads" not "Dashboard > Leads"), animated text swap. More sub-pages show clickable "More > Sub-page" breadcrumb. `MoreBackButton` injected via `more/layout.js` on all sub-pages.
+- **Page transitions (Phase 20)**: framer-motion `AnimatePresence` on layout content area — `opacity: 0→1, y: 6→0` on route change. More sub-pages show `MoreBackButton` injected via `more/layout.js` on all sub-pages.
 
-- **More menu as config hub (Phase 20)**: 7 sub-pages under `/dashboard/more/*` wrap existing components (thin wrappers). Old `/dashboard/services` and `/dashboard/settings` redirect to new routes — bookmarks preserved.
+- **More menu as config hub (Phase 20)**: 9 sub-pages under `/dashboard/more/*` wrap existing components (thin wrappers). Old `/dashboard/services` and `/dashboard/settings` redirect to new routes — bookmarks preserved.
 
-- **Adaptive home page (Phase 20)**: Single page component branches into setup mode (checklist hero) vs active mode (command center) based on `isSetupComplete`. `onDataLoaded` callback avoids double-fetching checklist data.
+- **Adaptive home page (Phase 20, expanded Phase 30)**: Single page component branches into setup mode (checklist hero) vs active mode (command center) based on `isSetupComplete`. Active mode also renders `SetupChecklist` when any recommended items are incomplete (`hasIncompleteRecommended` state). The checklist appears between "This Week" stats and "Recent Activity" in active mode, so new users see what's left to configure without blocking their dashboard.
+
+- **Expanded setup checklist (Phase 30)**: 9 total items (4 required, 5 recommended). Required items gate setup→active mode transition. Recommended items: `configure_hours`, `connect_calendar`, `configure_zones`, `setup_escalation`, `configure_notifications`. Calendar check is provider-agnostic (Google or Outlook). Notification check compares against defaults via JSON stringify.
+
+- **`callsToday` stat queries `calls` table**: The `/api/dashboard/stats` route counts actual calls (from the `calls` table), not leads. This was a bug fix — the original counted leads, which undercounted since short calls (<15s) never create leads.
 
 - **Joyride tour pattern (Phase 20)**: Tour mounted at layout level (persists across tab switches). Triggered by CustomEvent `start-dashboard-tour` from page.js button. Never auto-starts. Sets `gsd_has_seen_tour` in localStorage on completion. Respects `prefers-reduced-motion`.
 

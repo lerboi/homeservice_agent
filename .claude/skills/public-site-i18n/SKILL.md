@@ -516,7 +516,7 @@ export const locales = ['en', 'es'];
 export const defaultLocale = 'en';
 ```
 
-**Cookie-based locale, no URL prefix**: The app uses `next-intl` with cookie-based locale switching rather than URL-prefixed routing (e.g., `/es/pricing`). This is required by the API-first multi-tenant architecture — URL prefixes would break webhook routing and Retell callbacks.
+**Cookie-based locale, no URL prefix**: The app uses `next-intl` with cookie-based locale switching rather than URL-prefixed routing (e.g., `/es/pricing`). This is required by the API-first multi-tenant architecture — URL prefixes would break webhook routing and OAuth callbacks.
 
 **Single source of truth for language barrier detection**: The voice call system imports `locales` from this file to detect unsupported languages. Any detected_language not in the `locales` array → `language_barrier = true`. Adding a new language means updating both this file AND the translation files.
 
@@ -524,7 +524,7 @@ export const defaultLocale = 'en';
 
 Both `messages/en.json` and `messages/es.json` have two top-level sections:
 
-**`agent` section** — used by the WebSocket LLM server (`agent-prompt.js`) via direct JSON import (NOT next-intl runtime — the Railway WebSocket server runs outside Next.js context):
+**`agent` section** — used by the LiveKit voice agent (`src/prompt.py`) via direct JSON import (NOT next-intl runtime — the Railway agent runs outside Next.js context):
 - `default_greeting`, `recording_disclosure`, `language_clarification`
 - `unsupported_language_apology`, `call_wrap_up`, `transfer_attempt`
 - `capture_name`, `capture_address`, `capture_job_type`
@@ -532,7 +532,7 @@ Both `messages/en.json` and `messages/es.json` have two top-level sections:
 
 **`ui` section** — used by Next.js frontend via `next-intl` for UI text translations.
 
-**Direct JSON import vs next-intl**: `buildSystemPrompt()` on Railway imports `messages/en.json` and `messages/es.json` directly (not via next-intl provider). This is because it runs in a plain Node.js process with no Next.js context. Frontend components use `next-intl`'s `useTranslations()` hook normally.
+**Direct JSON import vs next-intl**: `build_system_prompt()` on Railway imports `messages/en.json` and `messages/es.json` directly (not via next-intl provider). This is because it runs in a Python process with no Next.js context. Frontend components use `next-intl`'s `useTranslations()` hook normally.
 
 Cross-domain: See voice-call-architecture skill for how `buildSystemPrompt()` uses translation files.
 
@@ -561,9 +561,9 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 
 - **(public) route group for layout injection**: The `(public)` route group applies `LandingNav` + `LandingFooter` to all public pages without repeating them in each page component. Parentheses in the folder name exclude it from the URL path.
 
-- **Cookie-based locale without URL prefix**: next-intl configured without URL prefix routing. API-first multi-tenant constraint — URL-prefixed routing would break Retell webhooks and OAuth callbacks that expect fixed path patterns.
+- **Cookie-based locale without URL prefix**: next-intl configured without URL prefix routing. API-first multi-tenant constraint — URL-prefixed routing would break Stripe webhooks and OAuth callbacks that expect fixed path patterns.
 
-- **next-intl for client, direct JSON import for agent**: The WebSocket voice server (Railway) runs outside Next.js — it imports translation JSON directly. Frontend uses next-intl runtime. Two consumers, two import strategies.
+- **next-intl for client, direct JSON import for agent**: The LiveKit voice agent (Railway) runs outside Next.js — it imports translation JSON directly. Frontend uses next-intl runtime. Two consumers, two import strategies.
 
 - **Language barrier uses routing.js locales as source of truth**: `locales = ['en', 'es']` is the authoritative list. The voice call system compares `detected_language` against this array. Adding a language = update routing.js + add messages file + test triage.
 

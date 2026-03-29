@@ -289,14 +289,6 @@ export function EscalationChainSection() {
 
   return (
     <div>
-      {/* Section heading + description */}
-      <h2 className="text-xl font-semibold text-[#0F172A] mb-1">
-        {t('escalation.section_heading')}
-      </h2>
-      <p className="text-base text-[#475569] mb-6">
-        {t('escalation.section_description')}
-      </p>
-
       {/* Per-urgency mapping rows */}
       <div className="space-y-3 mb-6">
         <h3 className="text-sm font-semibold text-[#475569]">

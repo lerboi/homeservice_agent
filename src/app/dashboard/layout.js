@@ -50,7 +50,7 @@ function DashboardLayoutInner({ children }) {
             <AnimatePresence mode="wait">
               <motion.div
                 key={pathname}
-                className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-[72px] lg:pb-6"
+                className="max-w-6xl mx-auto px-4 lg:px-8 py-6"
                 data-tour="dashboard-layout"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}

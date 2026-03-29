@@ -297,6 +297,9 @@ async function handleSubscriptionEvent(subscription) {
   const overageItem = subscriptionItems.find((item) => OVERAGE_PRICE_IDS.has(item.price?.id));
 
   const priceId = flatRateItem?.price?.id;
+  if (priceId && !PLAN_MAP[priceId]) {
+    console.error(`[stripe/webhook] Unknown price ID: ${priceId} for subscription ${subscription.id} — defaulting to starter`);
+  }
   const planInfo = PLAN_MAP[priceId] || { plan_id: 'starter', calls_limit: 40 };
   const overageStripeItemId = overageItem?.id || null;
 
