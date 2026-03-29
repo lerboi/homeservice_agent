@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Phone, ExternalLink, FileText, AlertTriangle, Clock } from 'lucide-react';
+import { supabase } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -67,10 +68,24 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   const [cancelling, setCancelling] = useState(false);
   const [dismissingConflict, setDismissingConflict] = useState(false);
 
+  // Resolve recording URL — prefer Supabase Storage (new calls), fall back to recording_url (historical)
+  const call = appointment?.calls;
+  const [recordingSrc, setRecordingSrc] = useState(null);
+  useEffect(() => {
+    if (!call) { setRecordingSrc(null); return; }
+    if (call.recording_storage_path) {
+      supabase.storage
+        .from('call-recordings')
+        .createSignedUrl(call.recording_storage_path, 3600)
+        .then(({ data }) => setRecordingSrc(data?.signedUrl || null));
+    } else {
+      setRecordingSrc(call.recording_url || null);
+    }
+  }, [call]);
+
   if (!appointment) return null;
 
   const urgency = URGENCY_STYLES[appointment.urgency] || URGENCY_STYLES.routine;
-  const call = appointment.calls;
 
   async function handleCancel() {
     setCancelling(true);
@@ -166,9 +181,9 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Links</h3>
               <div className="flex flex-col gap-2">
-                {call.recording_url && (
+                {recordingSrc && (
                   <a
-                    href={call.recording_url}
+                    href={recordingSrc}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412]"
@@ -177,7 +192,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                     Listen to Recording
                   </a>
                 )}
-                {call.transcript && (
+                {call.transcript_text && (
                   <button
                     type="button"
                     className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left"
