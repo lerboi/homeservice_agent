@@ -17,7 +17,7 @@ export async function getTenantId() {
     .from('tenants')
     .select('id')
     .eq('owner_id', user.id)
-    .single();
+    .maybeSingle();
 
   return tenant?.id || null;
 }

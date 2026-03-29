@@ -133,7 +133,7 @@ export async function GET(request) {
     .from('calendar_events')
     .select('id, tenant_id, provider, external_id, title, start_time, end_time, is_all_day, appointment_id, conflict_dismissed, synced_at')
     .eq('tenant_id', tenantId)
-    .or(`and(start_time.gte.${start},start_time.lte.${end}),is_all_day.eq.true`);
+    .or(`and(start_time.gte.${start},start_time.lte.${end}),and(is_all_day.eq.true,start_time.gte.${start},start_time.lte.${end})`);
 
   if (eventsError) {
     console.log('500:', eventsError.message);

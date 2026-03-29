@@ -8,6 +8,27 @@ Run these two new migrations in order after applying 001-018:
 
 ---
 
+## Schema Changes Needed (New Migration Required)
+
+### S1. Missing index on `subscriptions.stripe_customer_id`
+**File:** `supabase/migrations/010_billing_schema.sql`
+Indexes exist on `(tenant_id, is_current)` and `stripe_subscription_id`, but not on `stripe_customer_id`. Used in invoice lookups. Will degrade at scale.
+```sql
+CREATE INDEX idx_subscriptions_stripe_customer_id ON subscriptions(stripe_customer_id);
+```
+
+### S2. `call_provider` column should be NOT NULL
+**File:** `supabase/migrations/023_livekit_migration.sql`
+Column has `DEFAULT 'livekit'` but no NOT NULL constraint. Explicit NULL inserts are possible. All existing rows already have a value (backfilled in migration 023).
+```sql
+ALTER TABLE calls ALTER COLUMN call_provider SET NOT NULL;
+```
+
+### S3. `supabase/DB` schema file is outdated
+Missing recovery SMS columns from migration 009 (`recovery_sms_status`, `recovery_sms_retry_count`, `recovery_sms_last_error`, `recovery_sms_last_attempt_at`) and LiveKit columns from migration 023 (`call_provider`, `egress_id`, renamed columns). Regenerate from current schema.
+
+---
+
 ## Low Severity
 
 ### L1. `messages/public.log` not gitignored

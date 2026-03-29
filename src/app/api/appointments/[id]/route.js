@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
       urgency, zone_id, status, booked_via,
       external_event_id, notes, created_at,
       service_zones (id, name),
-      calls (id, recording_url, transcript_text, created_at, from_number)
+      calls (id, recording_url, recording_storage_path, transcript_text, created_at, from_number)
     `)
     .eq('id', id)
     .eq('tenant_id', tenantId)
