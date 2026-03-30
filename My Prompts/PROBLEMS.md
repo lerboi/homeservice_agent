@@ -1,1 +1,5 @@
-- Change address to get Zip code instead. Its more reliable. Change the prompt flow to extract the ZIP code from the customer.
+- Make the AI ask for the zip code before asking for the postal code first before asking for street name. Detect if the caller is from Singapore, or the US. If from Singapore, say Postal code. if from US, say zip code. 
+
+- The AI is still naming out all the available hours. The AI SHOULD NOT name out all the times of the day. Ask the caller to select a day and time, and if the caller mentions a day or similar without specifying a time, ask the caller what time they want, and only if the time the user wants is unavailble, sleect the 3 closest times to that time the caller asked for and suggest it.
+
+- When the AI uses a tool to check for availability, or when the AI is using the tool to book a slot for the caller, it just goes silent and when its done then it talks. This leaves the caller abit confused. before every tool call, briefly inform the user what the AI is doing and basically just give them a heads up so when the AI goes silent, the caller isnt confused.

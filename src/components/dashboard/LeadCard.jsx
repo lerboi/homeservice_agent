@@ -98,9 +98,11 @@ export default memo(function LeadCard({ lead, onView }) {
               </Badge>
             )}
           </div>
-          {lead.service_address && (
+          {(lead.street_name || lead.postal_code || lead.service_address) && (
             <p className="text-xs text-[#475569] truncate mt-1">
-              {lead.service_address}
+              {lead.street_name && lead.postal_code
+                ? `${lead.street_name}, ${lead.postal_code}`
+                : lead.service_address}
             </p>
           )}
           {firstCall?.urgency_classification && (

@@ -1,4 +1,4 @@
--- 026_lock_rpc_functions.sql
+-- 027_lock_rpc_functions.sql
 -- Lock down SECURITY DEFINER functions that should only be callable by service_role.
 --
 -- book_appointment_atomic: called from webhook handlers and Python agent only.

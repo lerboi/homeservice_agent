@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
           duration_seconds, suggested_slots
         )
       ),
-      appointments(id, start_time, end_time, status, service_address)
+      appointments(id, start_time, end_time, status, service_address, postal_code, street_name)
     `)
     .eq('id', id)
     .eq('tenant_id', tenantId)

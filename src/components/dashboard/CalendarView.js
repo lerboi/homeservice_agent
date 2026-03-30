@@ -100,7 +100,7 @@ function AppointmentBlock({ appointment, onClick }) {
         <div className="min-w-0">
           <div className="text-sm font-semibold text-[#0F172A] truncate">{appointment.caller_name}</div>
           <div className="text-xs text-[#475569] truncate">{appointment.notes || ''}</div>
-          <div className="text-xs text-[#475569] truncate">{appointment.service_address || ''}</div>
+          <div className="text-xs text-[#475569] truncate">{appointment.street_name && appointment.postal_code ? `${appointment.street_name}, ${appointment.postal_code}` : appointment.service_address || ''}</div>
         </div>
         <span className={`text-[11px] px-1.5 py-0.5 rounded-full shrink-0 ${badgeClass}`}>
           {urgency === 'emergency' ? 'Emerg' : urgency === 'high_ticket' ? 'High' : 'Routine'}

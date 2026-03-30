@@ -287,7 +287,7 @@ export default function CalendarPage() {
                       >
                         <div className="text-xs text-[#475569] font-medium">{time}</div>
                         <div className="text-sm font-semibold text-[#0F172A] mt-0.5">{appt.caller_name}</div>
-                        <div className="text-xs text-[#475569] truncate">{appt.notes || appt.service_address || ''}</div>
+                        <div className="text-xs text-[#475569] truncate">{appt.notes || (appt.street_name && appt.postal_code ? `${appt.street_name}, ${appt.postal_code}` : appt.service_address) || ''}</div>
                       </button>
                     );
                   })}

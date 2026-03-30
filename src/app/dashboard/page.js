@@ -264,7 +264,7 @@ export default function DashboardPage() {
                   {nextAppointment ? (
                     <div className="mt-1">
                       <p className="text-sm font-semibold text-[#0F172A]">{nextAppointment.caller_name || 'Customer'}</p>
-                      <p className="text-xs text-[#475569]">{formatTime(nextAppointment.start_time)}{nextAppointment.service_address ? ` — ${nextAppointment.service_address}` : ''}</p>
+                      <p className="text-xs text-[#475569]">{formatTime(nextAppointment.start_time)}{nextAppointment.street_name && nextAppointment.postal_code ? ` — ${nextAppointment.street_name}, ${nextAppointment.postal_code}` : nextAppointment.service_address ? ` — ${nextAppointment.service_address}` : ''}</p>
                     </div>
                   ) : (
                     <p className="text-sm text-[#475569] mt-1">None scheduled</p>

@@ -20,7 +20,7 @@ BEGIN
     WHERE proname = 'book_appointment_atomic'
       AND pronamespace = 'public'::regnamespace
   LOOP
-    EXECUTE 'DROP FUNCTION ' || r.func_sig;
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || r.func_sig;
   END LOOP;
 END $$;
 
