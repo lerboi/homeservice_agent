@@ -411,8 +411,8 @@ export default function WorkingHoursEditor() {
                 <span className="text-[11px] text-stone-400 w-24 text-right shrink-0 tabular-nums">
                   {d.enabled
                     ? d.lunchStart
-                      ? `${formatTimeLabel(d.open)}–${formatTimeLabel(d.close)}`
-                      : `${formatTimeLabel(d.open)}–${formatTimeLabel(d.close)}`
+                      ? `${formatTimeLabel(d.open)}\u2013${formatTimeLabel(d.lunchStart)}, ${formatTimeLabel(d.lunchEnd)}\u2013${formatTimeLabel(d.close)}`
+                      : `${formatTimeLabel(d.open)}\u2013${formatTimeLabel(d.close)}`
                     : 'Closed'}
                 </span>
               </div>

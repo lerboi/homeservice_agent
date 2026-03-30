@@ -1,7 +1,24 @@
-// IP-based rate limiting — module-level Map persists across requests in the same server instance
+// =============================================================================
+// Rate limiting for demo voice endpoint
+//
+// LIMITATION: In-memory Maps do NOT persist across serverless cold starts or
+// across multiple Vercel instances. A determined attacker can bypass this by
+// waiting for a new instance. For production hardening, replace with Redis
+// (e.g., Upstash) or a Supabase-backed rate limit table.
+//
+// Despite the limitation, this still provides:
+// 1. Burst protection within a single warm instance (60s per-IP cooldown)
+// 2. Global daily cap to limit total ElevenLabs API spend per instance
+// =============================================================================
 const rateLimitMap = new Map();
-const RATE_LIMIT_MS = 10000; // 10 seconds per IP
-const RATE_LIMIT_CLEANUP_MS = 60000; // Clean entries older than 60 seconds
+const RATE_LIMIT_MS = 60000; // 60 seconds per IP (increased from 10s)
+const RATE_LIMIT_CLEANUP_MS = 120000; // Clean entries older than 2 minutes
+
+// Global daily cap: limit total demo requests per server instance per day.
+// Resets on cold start or when the day changes.
+let globalDailyCount = 0;
+let globalDailyDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+const GLOBAL_DAILY_CAP = 500; // max demo requests per instance per day
 
 function getClientIp(request) {
   return (
@@ -13,8 +30,20 @@ function getClientIp(request) {
 
 function checkRateLimit(ip) {
   const now = Date.now();
+  const today = new Date().toISOString().slice(0, 10);
 
-  // Clean entries older than 60 seconds to prevent memory leak
+  // Reset global counter on new day
+  if (today !== globalDailyDate) {
+    globalDailyCount = 0;
+    globalDailyDate = today;
+  }
+
+  // Check global daily cap
+  if (globalDailyCount >= GLOBAL_DAILY_CAP) {
+    return false;
+  }
+
+  // Clean entries older than cleanup window to prevent memory leak
   for (const [key, timestamp] of rateLimitMap.entries()) {
     if (now - timestamp > RATE_LIMIT_CLEANUP_MS) {
       rateLimitMap.delete(key);
@@ -27,6 +56,7 @@ function checkRateLimit(ip) {
   }
 
   rateLimitMap.set(ip, now);
+  globalDailyCount++;
   return true; // Allowed
 }
 

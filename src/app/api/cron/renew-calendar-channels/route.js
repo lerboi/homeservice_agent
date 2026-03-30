@@ -12,6 +12,10 @@ import { renewOutlookSubscription } from '@/lib/scheduling/outlook-calendar.js';
  */
 export async function GET(request) {
   // Verify cron secret (Vercel Cron uses GET)
+  if (!process.env.CRON_SECRET) {
+    return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+  }
+
   const authHeader = request.headers.get('authorization');
   const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
 

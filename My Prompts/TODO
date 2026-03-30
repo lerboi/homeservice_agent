@@ -1,26 +1,5 @@
-- The AI was asking if it was routine, emergency etc booking. It shouldnt ask the caller this, it should classify the call accordingly AFTER the call.
 
-- The AI speaks way too fast. Slow it down, especially when suggesting timings.
-
-- Confirm the address with thte caller first, before continuing. I said the address wrongly once and it went on with the wrong address.
-
-- This error:
-
-[usage] increment_calls_used RPC error: {
-  code: 'PGRST202',
-  details: 'Searched for the function public.increment_calls_used with parameters p_call_id, p_tenant_id or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
-  hint: null,
-  message: 'Could not find the function public.increment_calls_used(p_call_id, p_tenant_id) in the schema cache'
-}
-
-- After a call, i dont see the lead in the dashboard.
-
-- The Email and sms provided doesnt contain the Address, phone, or any info. 
-
-- Latency is abit long, takes a while to reply
-
-- fix the booking dates issue? How are dates given?
-
-- always confirm the name after caller says it.
-
-- allow archival then deletion of calls
+- Is the check for availability tool working correctly? The AI offers only the current timing, and says every other slot is not free.
+- At the end of the call, the AI sounds like it cuts itself off. Can you check what this issue is? 
+- "- When calling a tool, do NOT speak while the tool is executing. Wait silently for the tool result before responding." this part is in the prompt in the livekit_agent. This is not the behaviour i want. When checking tools, I want the AI to let the caller know before checking, saying something like 'let me check' or similar to let the caller know. An example of this is when checking availability for a slot, let the caller know they will be checking
+ 

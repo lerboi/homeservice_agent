@@ -67,6 +67,7 @@ function formatRelativeTime(iso) {
 export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled }) {
   const [cancelling, setCancelling] = useState(false);
   const [dismissingConflict, setDismissingConflict] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   // Resolve recording URL — prefer Supabase Storage (new calls), fall back to recording_url (historical)
   const call = appointment?.calls;
@@ -193,13 +194,21 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                   </a>
                 )}
                 {call.transcript_text && (
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left"
-                  >
-                    <FileText className="h-4 w-4" />
-                    View Transcript
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowTranscript(!showTranscript)}
+                      className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left"
+                    >
+                      <FileText className="h-4 w-4" />
+                      {showTranscript ? 'Hide Transcript' : 'View Transcript'}
+                    </button>
+                    {showTranscript && (
+                      <div className="mt-2 p-3 bg-zinc-800/50 rounded-lg text-sm text-zinc-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                        {call.transcript_text}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

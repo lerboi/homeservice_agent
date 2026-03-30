@@ -131,8 +131,17 @@ export default function LeadsPage() {
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
-          // Only animate Realtime inserts, not initial page load
-          setLeads((prev) => [{ ...payload.new, _isNew: true }, ...prev]);
+          const newLead = { ...payload.new, _isNew: true };
+          // Only add if it matches current filters or no filters are active
+          const matchesFilters = !hasActiveFilters(filters) || (
+            (!filters.status || filters.status === newLead.status) &&
+            (!filters.urgency || filters.urgency === newLead.urgency_tag) &&
+            (!filters.jobType || filters.jobType === newLead.job_type) &&
+            (!filters.search || (newLead.caller_name || '').toLowerCase().includes(filters.search.toLowerCase()))
+          );
+          if (matchesFilters) {
+            setLeads((prev) => [newLead, ...prev]);
+          }
         }
       )
       .on(
@@ -156,7 +165,7 @@ export default function LeadsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tenantId]);
+  }, [tenantId, filters]);
 
   // ── Event handlers ──────────────────────────────────────────────────────
 

@@ -1,17 +1,48 @@
 
-Confirm:
+Confirm
+--------------
 Before making any changes, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know.    
 
 
-Improve UI:
+Improve UI
+--------------
 I want to improve the UI/UX for this page. You will refer to any relevant frontend design skills (frontend-design, web-design-guidelines, vercel-best-practices, ui-ux-pro-max).
 For the design, try to use icons with little text to convey information to keep it looking professional/minimalistic and not so cluttered (however, use text is it makes more sense UI/UX wise).
 It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design changes should be made
 
 
-Confirm the issues:
+Confirm the issues
+--------------
 Look through all the issues and gather all the context and code needed to fully and correctly reach a 100% certain conclusion that the issues are legit and not false positives. 
 Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 
 
 
-ensure you have the full context needed to properly come to a conclusion (read the codebase, and anything needed to get full context). Understand what youre reading, why its needed, and whether the implementation is correct and optimal. 
+Backend
+--------------
+Can you just look through the entire calling process from start to finish, the supabase DB, the code, the skill files to get the full context, every process the ai agent does, the tools, and the dashboard and let me know if everything works together well and wether everything is production ready? Suggest me potential issues, errors, improvements, or improvements that can be made. You have to heavily understand the context of the codebase and the website in general first. Let me know your findings, dont edit any code, only read.
+
+
+Frontend
+--------------
+Can you look at the frontend for both the dashboard and the home page with all the pages, and let me know what optimisations can be made to improve page loading speed, and any other core web vitals for the website? This process shold only be focused on any changes that can improve the user experience of the user using the wbsite, through improving page loading speeds, optimising     
+core web vitals, etc, while NOT affecting ANY of the functionality. If required, you can look for relevant skills for frontend best practices or nextjs/vercel best practies or web design best practices, anything that can improve the page load speed and overall give the website a much more responsive feeling. It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design     
+changes should be made 
+
+
+Fullstack
+--------------
+Deeply read and understand the entire codebase — all frontend pages and components (dashboard + home page), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready.
+
+
+
+
+
+
+
+custom
+--------------
+Deeply read and understand the voice-call system code — all frontend pages and components (dashboard + backend + the livekit_agent repo), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I want to fix some issues that showed up in the livekit_agent deployed on railway during a call, and some of the AI agents behaviour during a call by changing the prompt sin the livekit_agent. But you have to first fully understand the full context. Let me know once you have  afull understanding
+
+
+
+When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.

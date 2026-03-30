@@ -436,7 +436,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 {/* Save button */}
                 <Button
                   onClick={handleSave}
-                  disabled={saving || selectedStatus === lead.status && !revenueAmount}
+                  disabled={saving || (selectedStatus === lead.status && !revenueAmount)}
                   className="w-full min-h-[44px] bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] text-white font-semibold shadow-sm transition-all duration-150"
                 >
                   {saving ? 'Saving...' : 'Update Status'}

@@ -251,6 +251,13 @@ async function handleCheckoutCompleted(session) {
     }
   }
 
+  // Create the initial subscription row so the dashboard gate doesn't block the user.
+  // Safe because handleSubscriptionEvent does an upsert on stripe_subscription_id,
+  // so the later customer.subscription.created event will just update the same row.
+  if (session.subscription) {
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    await handleSubscriptionEvent(subscription);
+  }
 }
 
 /**

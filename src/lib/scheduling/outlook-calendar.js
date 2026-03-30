@@ -94,6 +94,7 @@ export async function exchangeCodeForTokens(code) {
 
   return {
     accessToken: tokenResponse.accessToken,
+    refreshToken: tokenResponse.refreshToken,
     account: tokenResponse.account,
   };
 }

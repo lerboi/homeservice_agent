@@ -130,18 +130,19 @@ export async function proxy(request) {
 
       console.log('[proxy] dashboard gate:', { email: user.email, tenantId: tenant.id, sub, subError: subError?.message || null });
 
+      // Subscription status is checked but no longer blocks dashboard access.
+      // The BillingWarningBanner component shows warnings directly on the dashboard.
       const blockedStatuses = ['canceled', 'paused', 'incomplete'];
       if (!sub || blockedStatuses.includes(sub.status)) {
-        console.log('[proxy] blocked → /billing/upgrade:', { email: user.email, reason: !sub ? 'no subscription row' : sub.status });
-        return NextResponse.redirect(new URL('/billing/upgrade', request.url));
+        console.log('[proxy] subscription issue (allowing through):', { email: user.email, reason: !sub ? 'no subscription row' : sub.status });
       }
 
-      // Block past_due tenants after 3-day grace period expires
-      if (sub.status === 'past_due' && sub.stripe_updated_at) {
+      // Log past_due tenants after 3-day grace period expires
+      if (sub && sub.status === 'past_due' && sub.stripe_updated_at) {
         const gracePeriodMs = 3 * 24 * 60 * 60 * 1000;
         const elapsed = Date.now() - new Date(sub.stripe_updated_at).getTime();
         if (elapsed > gracePeriodMs) {
-          return NextResponse.redirect(new URL('/billing/upgrade', request.url));
+          console.log('[proxy] past_due grace expired (allowing through):', { email: user.email });
         }
       }
     }

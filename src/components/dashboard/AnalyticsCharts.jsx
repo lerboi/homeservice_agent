@@ -146,11 +146,15 @@ function ChartsSkeleton() {
  * @param {{ leads: Array | null, loading?: boolean }} props
  */
 export default function AnalyticsCharts({ leads, loading }) {
+  const allLeads = leads ?? [];
+
+  const revenueData = useMemo(() => buildRevenueData(allLeads), [allLeads]);
+  const funnelData = useMemo(() => buildFunnelData(allLeads), [allLeads]);
+  const pipelineData = useMemo(() => buildPipelineData(allLeads), [allLeads]);
+
   if (loading) {
     return <ChartsSkeleton />;
   }
-
-  const allLeads = leads ?? [];
 
   // Empty state: fewer than 5 completed leads
   const completedCount = allLeads.filter(
@@ -167,10 +171,6 @@ export default function AnalyticsCharts({ leads, loading }) {
       </div>
     );
   }
-
-  const revenueData = useMemo(() => buildRevenueData(allLeads), [allLeads]);
-  const funnelData = useMemo(() => buildFunnelData(allLeads), [allLeads]);
-  const pipelineData = useMemo(() => buildPipelineData(allLeads), [allLeads]);
 
   return (
     <div className="space-y-6">

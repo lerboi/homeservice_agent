@@ -1,20 +1,3 @@
-Backend
---------------
-Can you just look through the entire calling process from start to finish, the supabase DB, the code, the skill files to get the full context, every process the ai agent does, the tools, and the dashboard and let me know if everything works together well and wether everything is production ready? Suggest me potential issues, errors, improvements, or improvements that can be made. You have to heavily understand the context of the codebase and the website in general first. Let me know your findings, dont edit any code, only read.
+C3, C4, C5, C6, C8, C9,  C7, C11 (dont redirect to /billing/upgrade, remove that logic, just normally go to dashboard), H6, H7, H8, M2 (make it smoothly scroll back up to the pricing section), M4, M6, M7, M8, M9, M14, M19.
 
-
-Frontend
---------------
-Can you look at the frontend for both the dashboard and the home page with all the pages, and let me know what optimisations can be made to improve page loading speed, and any other core web vitals for the website? This process shold only be focused on any changes that can improve the user experience of the user using the wbsite, through improving page loading speeds, optimising     
-core web vitals, etc, while NOT affecting ANY of the functionality. If required, you can look for relevant skills for frontend best practices or nextjs/vercel best practies or web design best practices, anything that can improve the page load speed and overall give the website a much more responsive feeling. It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design     
-changes should be made 
-
-
-Fullstack
---------------
-Deeply read and understand the entire codebase — all frontend pages and components (dashboard + home page), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the retell-ws-server code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready.
-
-Lily
-
-Katherine
-
+I want all the above issues added to the My Prompts/Problems.md file. First, with a short implementation plan for each issue. Ignore the issues that i did NOT mention above. Let me know when you added them to PROBLEMS.md.

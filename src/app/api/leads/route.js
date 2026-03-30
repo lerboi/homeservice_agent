@@ -37,7 +37,15 @@ export async function GET(request) {
   if (jobType) query = query.eq('job_type', jobType);
   if (search) query = query.or(`caller_name.ilike.%${search}%,from_number.ilike.%${search}%`);
 
-  query = query.order('created_at', { ascending: false }).limit(100);
+  // Support optional limit param. Default 100 for backwards compatibility.
+  // Pass limit=0 to fetch all rows (used by analytics page).
+  const limitParam = searchParams.get('limit');
+  const parsedLimit = limitParam !== null ? parseInt(limitParam, 10) : 100;
+
+  query = query.order('created_at', { ascending: false });
+  if (parsedLimit > 0) {
+    query = query.limit(parsedLimit);
+  }
 
   const { data, error } = await query;
   if (error) {

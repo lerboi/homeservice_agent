@@ -8,6 +8,7 @@ import BottomTabBar from '@/components/dashboard/BottomTabBar';
 import dynamic from 'next/dynamic';
 const DashboardTour = dynamic(() => import('@/components/dashboard/DashboardTour'), { ssr: false });
 import { GridTexture } from '@/components/ui/grid-texture';
+import { Toaster } from 'sonner';
 import ImpersonationBanner from './ImpersonationBanner';
 import BillingWarningBanner from './BillingWarningBanner';
 import TrialCountdownBanner from './TrialCountdownBanner';
@@ -72,6 +73,7 @@ function DashboardLayoutInner({ children }) {
           />
         </div>
       </div>
+      <Toaster richColors position="top-right" />
     </>
   );
 }

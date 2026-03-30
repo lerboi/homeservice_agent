@@ -21,6 +21,10 @@ const BACKOFF_SECONDS = [30, 120]; // 30s before 2nd attempt, 2min before 3rd
 const MAX_ATTEMPTS = 3; // D-14: 3 total attempts then permanent failure
 
 export async function GET(request) {
+  if (!process.env.CRON_SECRET) {
+    return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+  }
+
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.log('401: Unauthorized');

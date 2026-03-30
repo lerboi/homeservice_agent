@@ -16,6 +16,11 @@
       "sourceType": "github",
       "computedHash": "516bd2154eb843a8240e43d5b285229129853114ad7075a5e141e1c08e408c84"
     },
+    "nextjs-16-complete-guide": {
+      "source": "fernandofuc/nextjs-claude-setup",
+      "sourceType": "github",
+      "computedHash": "a22336d2b19db144f9d5a25d3d0aa8acebfbcd26311ca2a1eb058f0fe0953823"
+    },
     "pdf": {
       "source": "anthropics/skills",
       "sourceType": "github",

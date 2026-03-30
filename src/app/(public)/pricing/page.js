@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck } from 'lucide-react';
 import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
@@ -45,7 +44,9 @@ export default function PricingPage() {
               </p>
             </AnimatedSection>
           </div>
-          <PricingTiers />
+          <div id="pricing-plans">
+            <PricingTiers />
+          </div>
 
           {/* Guarantee Badge — inside same section, no background break */}
           <div className="mt-10 max-w-3xl mx-auto">
@@ -145,7 +146,7 @@ export default function PricingPage() {
                 asChild
                 className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[44px] px-8 text-base font-medium rounded-lg shadow-[0_4px_12px_0_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] transition-all hover:-translate-y-0.5"
               >
-                <Link href="/pricing">Start Free Trial</Link>
+                <a href="#pricing-plans" onClick={(e) => { e.preventDefault(); document.getElementById('pricing-plans')?.scrollIntoView({ behavior: 'smooth' }); }}>Start Free Trial</a>
               </Button>
             </div>
             <p className="text-sm text-white/40 mt-3">14-day free trial. Cancel anytime.</p>

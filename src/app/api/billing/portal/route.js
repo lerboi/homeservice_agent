@@ -47,7 +47,10 @@ export async function GET(request) {
 
   // Parse optional return_url query param; default to billing page per Pitfall 5
   const { searchParams } = new URL(request.url);
-  const returnPath = searchParams.get('return_url') || '/dashboard/more/billing';
+  const ALLOWED_RETURNS = ['/dashboard', '/dashboard/more/billing'];
+  const returnPath = ALLOWED_RETURNS.includes(searchParams.get('return_url'))
+    ? searchParams.get('return_url')
+    : '/dashboard/more/billing';
 
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripe_customer_id,

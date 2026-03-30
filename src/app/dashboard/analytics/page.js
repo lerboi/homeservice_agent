@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function fetchLeads() {
       try {
-        const res = await fetch('/api/leads');
+        const res = await fetch('/api/leads?limit=0');
         if (!res.ok) throw new Error('Failed to load leads');
         const data = await res.json();
         setLeads(data.leads ?? []);

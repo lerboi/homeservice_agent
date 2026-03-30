@@ -20,6 +20,10 @@ function getResendClient() {
 
 export async function GET(request) {
   // Auth check (same pattern as send-recovery-sms)
+  if (!process.env.CRON_SECRET) {
+    return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+  }
+
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.log('401: Unauthorized');
