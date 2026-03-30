@@ -89,6 +89,64 @@ function buildPipelineData(leads) {
   })).filter((d) => d.value > 0);
 }
 
+// ─── Call data helpers ───────────────────────────────────────────────────────
+
+const URGENCY_COLORS = {
+  routine: '#57534e',
+  emergency: '#DC2626',
+  high_ticket: '#C2410C',
+  unknown: '#94a3b8',
+};
+
+const BOOKING_COLORS = {
+  booked: '#166534',
+  declined: '#DC2626',
+  not_attempted: '#57534e',
+  failed: '#94a3b8',
+};
+
+function buildCallVolumeData(calls) {
+  const dayMap = {};
+  for (const call of calls) {
+    if (!call.created_at) continue;
+    const day = call.created_at.slice(0, 10);
+    dayMap[day] = (dayMap[day] ?? 0) + 1;
+  }
+  const sortedDays = Object.keys(dayMap).sort();
+  // Show last 30 days max
+  const recent = sortedDays.slice(-30);
+  return recent.map((day) => ({
+    date: new Date(day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    calls: dayMap[day],
+  }));
+}
+
+function buildUrgencyData(calls) {
+  const counts = {};
+  for (const call of calls) {
+    const u = call.urgency_classification || 'unknown';
+    counts[u] = (counts[u] ?? 0) + 1;
+  }
+  return Object.entries(counts).map(([key, value]) => ({
+    name: key === 'high_ticket' ? 'High Ticket' : key.charAt(0).toUpperCase() + key.slice(1),
+    value,
+    color: URGENCY_COLORS[key] || '#94a3b8',
+  })).filter((d) => d.value > 0);
+}
+
+function buildBookingOutcomeData(calls) {
+  const counts = {};
+  for (const call of calls) {
+    const o = call.booking_outcome || 'not_attempted';
+    counts[o] = (counts[o] ?? 0) + 1;
+  }
+  return Object.entries(counts).map(([key, value]) => ({
+    name: key === 'not_attempted' ? 'Not Attempted' : key.charAt(0).toUpperCase() + key.slice(1),
+    value,
+    color: BOOKING_COLORS[key] || '#94a3b8',
+  })).filter((d) => d.value > 0);
+}
+
 // ─── Custom tooltip ───────────────────────────────────────────────────────────
 
 function RevenueTooltip({ active, payload, label }) {
@@ -141,32 +199,31 @@ function ChartsSkeleton() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 /**
- * AnalyticsCharts — revenue over time (line), conversion funnel (bar), pipeline breakdown (donut).
+ * AnalyticsCharts — call volume, urgency, booking outcomes, revenue, conversion funnel, pipeline.
  *
- * @param {{ leads: Array | null, loading?: boolean }} props
+ * @param {{ leads: Array | null, calls: Array | null, loading?: boolean }} props
  */
-export default function AnalyticsCharts({ leads, loading }) {
+export default function AnalyticsCharts({ leads, calls, loading }) {
   const allLeads = leads ?? [];
+  const allCalls = calls ?? [];
 
   const revenueData = useMemo(() => buildRevenueData(allLeads), [allLeads]);
   const funnelData = useMemo(() => buildFunnelData(allLeads), [allLeads]);
   const pipelineData = useMemo(() => buildPipelineData(allLeads), [allLeads]);
+  const callVolumeData = useMemo(() => buildCallVolumeData(allCalls), [allCalls]);
+  const urgencyData = useMemo(() => buildUrgencyData(allCalls), [allCalls]);
+  const bookingOutcomeData = useMemo(() => buildBookingOutcomeData(allCalls), [allCalls]);
 
   if (loading) {
     return <ChartsSkeleton />;
   }
 
-  // Empty state: fewer than 5 completed leads
-  const completedCount = allLeads.filter(
-    (l) => l.status === 'completed' || l.status === 'paid'
-  ).length;
-
-  if (allLeads.length < 5 || completedCount < 1) {
+  if (allLeads.length === 0 && allCalls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-2">Not enough data yet</h2>
+        <h2 className="text-xl font-semibold text-[#0F172A] mb-2">No data yet</h2>
         <p className="text-sm text-[#475569] max-w-xs">
-          Revenue and conversion charts appear once you have at least 5 completed leads.
+          Charts will appear once calls start coming in.
         </p>
       </div>
     );
@@ -175,108 +232,164 @@ export default function AnalyticsCharts({ leads, loading }) {
   return (
     <div className="space-y-6">
 
+      {/* ── Call Volume (Bar) ─────────────────────────────────────────────── */}
+      {callVolumeData.length > 0 && (
+        <ChartCard title="Call Volume">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={callVolumeData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                formatter={(value) => [`${value} calls`, 'Calls']}
+              />
+              <Bar dataKey="calls" fill="#C2410C" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
+
+      {/* ── Urgency & Booking Outcomes (side by side donuts) ───────────── */}
+      {(urgencyData.length > 0 || bookingOutcomeData.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {urgencyData.length > 0 && (
+            <ChartCard title="Call Urgency">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={urgencyData} cx="50%" cy="45%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                    {urgencyData.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>} />
+                  <Tooltip formatter={(value, name) => [`${value} calls`, name]} contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+          {bookingOutcomeData.length > 0 && (
+            <ChartCard title="Booking Outcomes">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={bookingOutcomeData} cx="50%" cy="45%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
+                    {bookingOutcomeData.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
+                  </Pie>
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>} />
+                  <Tooltip formatter={(value, name) => [`${value} calls`, name]} contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          )}
+        </div>
+      )}
+
       {/* ── Revenue Over Time (Line) ─────────────────────────────────────── */}
-      <ChartCard title="Revenue Over Time">
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={revenueData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 12, fill: '#475569' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
-              tick={{ fontSize: 12, fill: '#475569' }}
-              axisLine={false}
-              tickLine={false}
-              width={56}
-            />
-            <Tooltip content={<RevenueTooltip />} />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              stroke="#C2410C"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#C2410C' }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartCard>
+      {revenueData.length > 0 && (
+        <ChartCard title="Revenue Over Time">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={revenueData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 12, fill: '#475569' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                tick={{ fontSize: 12, fill: '#475569' }}
+                axisLine={false}
+                tickLine={false}
+                width={56}
+              />
+              <Tooltip content={<RevenueTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                stroke="#C2410C"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#C2410C' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
 
       {/* ── Conversion Funnel (Horizontal Bar) ─────────────────────────── */}
-      <ChartCard title="Conversion Funnel">
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={funnelData}
-            layout="vertical"
-            margin={{ top: 4, right: 8, left: 56, bottom: 4 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-            <XAxis
-              type="number"
-              tick={{ fontSize: 12, fill: '#475569' }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              type="category"
-              dataKey="status"
-              tick={{ fontSize: 12, fill: '#475569' }}
-              axisLine={false}
-              tickLine={false}
-              width={72}
-            />
-            <Tooltip content={<CountTooltip />} />
-            <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={36}>
-              {funnelData.map((entry) => (
-                <Cell key={entry.status} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartCard>
+      {allLeads.length > 0 && (
+        <ChartCard title="Conversion Funnel">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={funnelData}
+              layout="vertical"
+              margin={{ top: 4, right: 8, left: 56, bottom: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 12, fill: '#475569' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="status"
+                tick={{ fontSize: 12, fill: '#475569' }}
+                axisLine={false}
+                tickLine={false}
+                width={72}
+              />
+              <Tooltip content={<CountTooltip />} />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={36}>
+                {funnelData.map((entry) => (
+                  <Cell key={entry.status} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
 
       {/* ── Pipeline Breakdown (Donut) ───────────────────────────────────── */}
-      <ChartCard title="Pipeline Breakdown">
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={pipelineData}
-              cx="50%"
-              cy="45%"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {pipelineData.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              iconType="circle"
-              iconSize={8}
-              formatter={(value) => (
-                <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>
-              )}
-            />
-            <Tooltip
-              formatter={(value, name) => [`${value} leads`, name]}
-              contentStyle={{
-                fontSize: 12,
-                border: '1px solid #e2e8f0',
-                borderRadius: 8,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </ChartCard>
+      {pipelineData.length > 0 && (
+        <ChartCard title="Pipeline Breakdown">
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={pipelineData}
+                cx="50%"
+                cy="45%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {pipelineData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                iconType="circle"
+                iconSize={8}
+                formatter={(value) => (
+                  <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>
+                )}
+              />
+              <Tooltip
+                formatter={(value, name) => [`${value} leads`, name]}
+                contentStyle={{
+                  fontSize: 12,
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
 
     </div>
   );

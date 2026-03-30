@@ -151,7 +151,9 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
               </div>
               <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
                 <MapPin className="h-4 w-4 text-stone-400" />
-                <span>{appointment.service_address || 'No address'}</span>
+                <span>{appointment.street_name && appointment.postal_code
+                  ? `${appointment.street_name}, ${appointment.postal_code}`
+                  : appointment.service_address || 'No address'}</span>
               </div>
               {appointment.booked_via && (
                 <div className="text-xs text-stone-400">

@@ -18,7 +18,8 @@ export async function GET(request, { params }) {
     .from('appointments')
     .select(`
       id, tenant_id, call_id, start_time, end_time,
-      service_address, caller_name, caller_phone,
+      service_address, postal_code, street_name,
+      caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
       external_event_id, notes, created_at,
       service_zones (id, name),

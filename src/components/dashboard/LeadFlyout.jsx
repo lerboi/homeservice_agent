@@ -346,10 +346,12 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     <span className="capitalize">{lead.job_type}</span>
                   </div>
                 )}
-                {lead.service_address && (
+                {(lead.street_name || lead.postal_code || lead.service_address) && (
                   <div className="flex items-start gap-2 text-sm text-[#0F172A]/80">
                     <MapPin className="h-4 w-4 text-stone-400 flex-shrink-0 mt-0.5" />
-                    <span>{lead.service_address}</span>
+                    <span>{lead.street_name && lead.postal_code
+                      ? `${lead.street_name}, ${lead.postal_code}`
+                      : lead.service_address}</span>
                   </div>
                 )}
                 {firstCall && (

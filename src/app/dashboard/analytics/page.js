@@ -8,23 +8,29 @@ import { card } from '@/lib/design-tokens';
 
 export default function AnalyticsPage() {
   const [leads, setLeads] = useState(null);
+  const [calls, setCalls] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchLeads() {
+    async function fetchData() {
       try {
-        const res = await fetch('/api/leads?limit=0');
-        if (!res.ok) throw new Error('Failed to load leads');
-        const data = await res.json();
-        setLeads(data.leads ?? []);
+        const [leadsRes, callsRes] = await Promise.all([
+          fetch('/api/leads?limit=0'),
+          fetch('/api/calls'),
+        ]);
+        const leadsData = leadsRes.ok ? await leadsRes.json() : { leads: [] };
+        const callsData = callsRes.ok ? await callsRes.json() : { calls: [] };
+        setLeads(leadsData.leads ?? []);
+        setCalls(callsData.calls ?? []);
       } catch {
         setLeads([]);
+        setCalls([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchLeads();
+    fetchData();
   }, []);
 
   return (
@@ -36,10 +42,10 @@ export default function AnalyticsPage() {
           </div>
           <h1 className="text-xl font-semibold text-[#0F172A]">Analytics</h1>
         </div>
-        {!loading && leads && leads.length === 0 ? (
+        {!loading && (!leads || leads.length === 0) && (!calls || calls.length === 0) ? (
           <EmptyStateAnalytics />
         ) : (
-          <AnalyticsCharts leads={leads} loading={loading} />
+          <AnalyticsCharts leads={leads} calls={calls} loading={loading} />
         )}
       </div>
     </div>

@@ -24,7 +24,9 @@ export function NewLeadEmail({ lead, businessName, dashboardUrl }) {
   const isEmergency = urgency === 'emergency';
   const callerName = lead?.caller_name || 'Unknown caller';
   const jobType = lead?.job_type || 'General inquiry';
-  const address = lead?.address || 'No address provided';
+  const address = (lead?.street_name && lead?.postal_code)
+    ? `${lead.street_name}, ${lead.postal_code}`
+    : lead?.service_address || 'No address provided';
   const phone = lead?.from_number || 'N/A';
 
   return (
