@@ -320,10 +320,10 @@ Plans:
 **Goal:** Redesign the landing page hero text, Features section, and How It Works section to be more conversion-focused — attacking direct pain points for home service business owners with clear messaging around 70+ language support, real-time calendar-aware booking, post-call SMS, call analytics, and full integration capabilities. Improve visual clarity and UX appeal across all landing sections.
 **Requirements**: D-01 through D-20 (from 32-CONTEXT.md)
 **Depends on:** Phase 29
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
-- [ ] 32-01-PLAN.md — Hero copy update + HowItWorks 4-step expansion with folder-stack effect
+- [x] 32-01-PLAN.md — Hero copy update + HowItWorks 4-step expansion with folder-stack effect
 - [x] 32-02-PLAN.md — FeaturesGrid full rewrite: 2-col grid, 70+ Languages hero card, 6 feature cards with micro visuals
 - [ ] 32-03-PLAN.md — Page.js skeleton updates, ScrollLinePath verification, visual checkpoint
 
@@ -331,7 +331,7 @@ Plans:
 
 **Goal:** Business owners can generate professional white-labeled invoices from completed jobs, edit typed line items (labor, materials with markup, travel, flat-rate, discount), configure business identity and tax settings, send invoices to customers via email (PDF attachment) and SMS (summary), download PDFs for on-site hand-delivery, and track invoice status through a filterable dashboard — replacing manual revenue entry with a full invoicing workflow. Voco handles invoicing only — no payment processing, no payment links, no online payment collection.
 **Depends on:** Phase 20 (Dashboard UX Overhaul — navigation structure)
-**Requirements**: TBD
+**Requirements**: D-01 through D-17 (from 33-CONTEXT.md)
 **Success Criteria** (what must be TRUE):
   1. An owner creates an invoice from a completed lead with pre-filled customer data, adds typed line items (labor, materials, travel, flat-rate, discount), and sees auto-calculated tax on taxable items
   2. The generated PDF is fully white-labeled — business name, logo, license number, and contact info appear; zero Voco branding, URLs, or references
@@ -339,10 +339,16 @@ Plans:
   4. The Invoices tab shows summary cards (Total Outstanding, Overdue, Paid This Month), status filter tabs (All/Draft/Sent/Overdue/Paid), and a sortable invoice table
   5. Marking an invoice as Paid auto-updates the linked lead's revenue_amount and status to Paid; marking a lead as Paid auto-marks the linked invoice — bidirectional sync with no circular updates
   6. Invoice settings page allows configuring business identity (name, logo, address, phone, email, license), tax rate, default terms, invoice prefix, and next number display
-**Plans**: 0 plans
+**Plans**: 7 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 33 to break down)
+- [ ] 33-01-PLAN.md — Foundation: DB schema, @react-pdf/renderer install, calculation functions + TDD tests
+- [ ] 33-02-PLAN.md — Invoice Settings: API route + settings page + More menu updates
+- [ ] 33-03-PLAN.md — Invoice CRUD API + navigation surgery (Invoices replaces Analytics)
+- [ ] 33-04-PLAN.md — Invoice List UI: summary cards, status filter tabs, invoice table
+- [ ] 33-05-PLAN.md — Invoice Editor: line item editor with typed fields, totals, lead pre-fill
+- [ ] 33-06-PLAN.md — PDF generation + invoice detail page with actions
+- [ ] 33-07-PLAN.md — Email/SMS delivery, bidirectional sync, LeadFlyout integration
 **UI hint**: yes
 
 ---

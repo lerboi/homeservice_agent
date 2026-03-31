@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 32-02-PLAN.md
-last_updated: "2026-03-31T17:31:23.125Z"
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-03-31T17:33:59.220Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 32 (landing-page-redesign-conversion-optimized-sections) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -56,6 +56,7 @@ Recent decisions affecting current work:
 - [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
 - [Phase 32]: Full-width language hero card placed at top of 2-col grid using md:col-span-2 for visual hierarchy
+- [Phase 32]: Used Option B revenue-forward RotatingText words ($3,000/$5,000/$10,000) over Option A competitor words for stronger loss aversion framing
 
 ### Roadmap Evolution
 
@@ -122,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T17:31:17.609Z
-Stopped at: Completed 32-02-PLAN.md
+Last session: 2026-03-31T17:33:59.211Z
+Stopped at: Completed 32-01-PLAN.md
 Resume file: None
