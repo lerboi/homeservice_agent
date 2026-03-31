@@ -1,6 +1,7 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
+import { shouldSyncToLead } from '@/lib/invoice-sync';
 
 /**
  * GET /api/invoices/[id]
@@ -196,6 +197,31 @@ export async function PATCH(request, { params }) {
     .select('*')
     .eq('invoice_id', id)
     .order('sort_order', { ascending: true });
+
+  // ── Bidirectional sync: invoice Paid → lead Paid ───────────────────────────
+  // When invoice is marked Paid and has a linked lead, propagate status to lead.
+  // sync_source='invoice_paid' prevents the lead route from triggering a reverse sync.
+  if (shouldSyncToLead(body.status, current.lead_id, body.sync_source)) {
+    try {
+      const { origin } = new URL(request.url);
+      await fetch(`${origin}/api/leads/${current.lead_id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          cookie: request.headers.get('cookie') || '',
+        },
+        body: JSON.stringify({
+          status: 'paid',
+          revenue_amount: updatedInvoice.total,
+          sync_source: 'invoice_paid',
+        }),
+      });
+      console.log('[invoice-sync] Propagated paid status to lead:', current.lead_id);
+    } catch (err) {
+      // Sync failure must NOT fail the invoice update — invoice is already saved
+      console.error('[invoice-sync] Lead sync failed (non-fatal):', err?.message || err);
+    }
+  }
 
   return Response.json({ invoice: updatedInvoice, line_items: lineItems || [] });
 }

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { shouldSyncToInvoice } from '@/lib/invoice-sync';
 
 /**
  * GET /api/leads/[id]
@@ -55,7 +56,7 @@ export async function PATCH(request, { params }) {
 
   const { id } = await params;
   const body = await request.json();
-  const { status, revenue_amount, previous_status } = body;
+  const { status, revenue_amount, previous_status, sync_source } = body;
 
   // Validate: status must be one of the allowed values
   const VALID_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
@@ -99,6 +100,39 @@ export async function PATCH(request, { params }) {
       console.error('Activity log insert failed:', err);
     }
   })();
+
+  // ── Bidirectional sync: lead Paid → linked invoice Paid ───────────────────
+  // When lead is marked Paid (and not triggered by an invoice sync), find and
+  // mark the linked sent/overdue invoice as Paid. Uses direct Supabase update
+  // (not internal fetch) to avoid an extra HTTP round-trip.
+  if (shouldSyncToInvoice(status, sync_source)) {
+    try {
+      const { data: linkedInvoice } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('lead_id', id)
+        .eq('tenant_id', tenantId)
+        .in('status', ['sent', 'overdue'])
+        .maybeSingle();
+
+      if (linkedInvoice) {
+        await supabase
+          .from('invoices')
+          .update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', linkedInvoice.id)
+          .eq('tenant_id', tenantId);
+
+        console.log('[invoice-sync] Propagated paid status to invoice:', linkedInvoice.id);
+      }
+    } catch (err) {
+      // Sync failure must NOT fail the lead update — lead is already saved
+      console.error('[invoice-sync] Invoice sync failed (non-fatal):', err?.message || err);
+    }
+  }
 
   return Response.json({ lead: data });
 }
