@@ -1,17 +1,17 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Phone, Brain, CalendarCheck } from 'lucide-react';
+import { Phone, Brain, CalendarCheck, LayoutDashboard } from 'lucide-react';
 
 const steps = [
   {
     number: '01',
     icon: Phone,
-    title: 'Call comes in',
+    title: 'Call Comes In',
     description:
-      'A homeowner calls at 11 PM about a burst pipe. Your AI picks up in under a second.',
+      'A homeowner calls at 11 PM about a burst pipe. Your AI picks up in under a second, sounds human, and speaks their language.',
     detail: 'No voicemail. No hold music. No missed revenue.',
     extended:
-      'While your competitors send callers to voicemail, Voco answers instantly — 24/7, 365 days a year. Every ring is a potential job worth hundreds. Your AI receptionist never sleeps, never takes a break, and never lets revenue slip through the cracks.',
+      'While your competitors send callers to voicemail, Voco answers instantly — 24/7, 365 days a year. Every ring is a potential job worth hundreds or thousands. Your AI receptionist never sleeps, never takes a break, and never lets revenue slip through the cracks.',
     iconColor: 'text-amber-600',
     bgColor: 'bg-gradient-to-br from-amber-50 via-amber-50/80 to-orange-50',
     accentGradient: 'from-amber-500/30 to-amber-400/10',
@@ -23,12 +23,12 @@ const steps = [
   {
     number: '02',
     icon: Brain,
-    title: 'AI triages instantly',
+    title: 'AI Handles the Conversation',
     description:
-      'The call is classified as an emergency. Your AI shifts tone — faster, more direct.',
+      'Gathers name, address, job details, and urgency naturally. No robotic scripts, no "press 1".',
     detail: '"I understand this is urgent. Let me get you scheduled right away."',
     extended:
-      'Voco doesn\'t just answer — it thinks. It detects urgency from tone and context, adjusts its response style in real time, and routes emergencies to the front of the queue. Routine calls get handled smoothly. Emergencies get handled now.',
+      "Voco listens like your best front-desk person would. It picks up on context, asks the right follow-up questions, and adjusts its tone in real time. The caller gets a genuine conversation — not a phone tree. You get every detail you need to show up ready.",
     iconColor: 'text-sky-600',
     bgColor: 'bg-gradient-to-br from-sky-50 via-sky-50/80 to-blue-50',
     accentGradient: 'from-sky-500/30 to-sky-400/10',
@@ -40,12 +40,12 @@ const steps = [
   {
     number: '03',
     icon: CalendarCheck,
-    title: 'Job is booked',
+    title: 'Job Is Booked',
     description:
-      'First available morning slot is locked while the caller is still on the line.',
+      'Appointment locks into your calendar while the caller is still on the line. Caller gets SMS confirmation.',
     detail: 'You get a text. The homeowner gets confirmation. You sleep.',
     extended:
-      'No back-and-forth. No "someone will call you back." The job goes straight into your calendar before the call even ends. You wake up to a full schedule and a confirmed booking — the homeowner already has their time slot.',
+      'No back-and-forth. No "someone will call you back." The job goes straight into your calendar before the call even ends. You wake up to a full schedule and a confirmed booking — the homeowner already has their time slot and a text to prove it.',
     iconColor: 'text-emerald-600',
     bgColor: 'bg-gradient-to-br from-emerald-50 via-emerald-50/80 to-teal-50',
     accentGradient: 'from-emerald-500/30 to-emerald-400/10',
@@ -54,11 +54,38 @@ const steps = [
     borderColor: 'border-emerald-200/60',
     shadowColor: 'shadow-emerald-200/40',
   },
+  {
+    number: '04',
+    icon: LayoutDashboard,
+    title: 'Your Dashboard Does the Rest',
+    description:
+      'Call analytics, lead management, invoicing — everything from one place.',
+    detail: '"Wake up to a full schedule and a clear picture of your business."',
+    extended:
+      'Every call becomes a data point. See which calls converted, track revenue, manage leads — all without spreadsheets, sticky notes, or callback lists. Your dashboard is your business cockpit.',
+    iconColor: 'text-violet-600',
+    bgColor: 'bg-gradient-to-br from-violet-50 via-violet-50/80 to-purple-50',
+    accentGradient: 'from-violet-500/30 to-violet-400/10',
+    badgeBg: 'bg-violet-100 text-violet-800 border-violet-300',
+    numberColor: 'text-violet-400/15',
+    borderColor: 'border-violet-200/60',
+    shadowColor: 'shadow-violet-200/40',
+  },
 ];
 
 export function HowItWorksSticky() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isCompact, setIsCompact] = useState(false);
   const cardRefs = useRef([]);
+
+  useEffect(() => {
+    const checkCompact = () => {
+      setIsCompact(window.innerHeight < 700 || window.innerWidth < 640);
+    };
+    checkCompact();
+    window.addEventListener('resize', checkCompact);
+    return () => window.removeEventListener('resize', checkCompact);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -77,6 +104,9 @@ export function HowItWorksSticky() {
     return () => observer.disconnect();
   }, []);
 
+  const baseTop = isCompact ? 60 : 80;
+  const peekDelta = isCompact ? 32 : 48;
+
   return (
     <div className="w-full">
       {steps.map((step, index) => {
@@ -88,9 +118,9 @@ export function HowItWorksSticky() {
             ref={(el) => (cardRefs.current[index] = el)}
             className={`${step.borderColor} border rounded-3xl sticky min-h-[40vh] md:min-h-[50vh] p-6 md:p-14 lg:p-16 shadow-lg ${step.shadowColor} overflow-hidden`}
             style={{
-              top: '80px',
+              top: `${baseTop + index * peekDelta}px`,
               zIndex: index + 1,
-              marginBottom: isLast ? '2rem' : '25vh',
+              marginBottom: isLast ? '2rem' : isCompact ? '20vh' : '25vh',
               background: 'white',
             }}
           >
@@ -109,20 +139,20 @@ export function HowItWorksSticky() {
               <div>
                 <div className="flex items-center justify-between mb-8">
                   <span
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border ${step.badgeBg}`}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${step.badgeBg}`}
                   >
                     <span className="size-2 rounded-full bg-current opacity-60" />
                     Step {step.number}
                   </span>
                   <div
-                    className={`size-14 md:size-16 rounded-2xl bg-gradient-to-br ${step.accentGradient} flex items-center justify-center border border-black/[0.05] backdrop-blur-sm`}
+                    className={`size-14 md:size-16 rounded-2xl bg-gradient-to-br ${step.accentGradient} flex items-center justify-center border border-black/[0.05]`}
                   >
                     <Icon className={`size-7 md:size-8 ${step.iconColor}`} strokeWidth={1.5} />
                   </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-[#0F172A] mb-4 tracking-tight leading-tight">
+                <h3 className="text-[1.5rem] md:text-3xl lg:text-[2.75rem] font-semibold text-[#0F172A] mb-4 tracking-tight leading-[1.2]">
                   {step.title}
                 </h3>
 
@@ -147,7 +177,7 @@ export function HowItWorksSticky() {
                 </p>
 
                 {/* Minimal progress dots */}
-                <div className="flex items-center gap-1.5 shrink-0 ml-4">
+                <div className="flex items-center gap-1.5 shrink-0 ml-4" aria-hidden="true">
                   {steps.map((_, i) => (
                     <div
                       key={i}
