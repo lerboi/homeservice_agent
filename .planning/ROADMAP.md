@@ -547,7 +547,7 @@ Plans:
 - [x] **Phase 22: Billing Foundation** - Stripe products/prices, subscriptions and usage_events DB tables, webhook handler with idempotency, trial auto-start at onboarding completion (completed 2026-03-26, Plan 04 skipped — UI handled elsewhere)
 - [x] **Phase 23: Usage Tracking** - Atomic per-call increment via Postgres RPC, usage_events idempotency, billing cycle reset on invoice.paid (completed 2026-03-26)
 - [x] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification (completed 2026-03-26)
-- [ ] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link
+- [x] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link (completed 2026-03-31)
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
 - [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI (completed 2026-03-26)
 - [x] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview (completed 2026-03-26)
@@ -608,11 +608,11 @@ Plans:
   3. The billing dashboard page at /dashboard/more/billing shows the current plan name, calls_used / calls_limit as a usage meter, the next renewal date or trial end date, and a link to Stripe Customer Portal
   4. The trial countdown banner is visible on every dashboard page and shows the correct number of days remaining — clicking the upgrade CTA opens Stripe Checkout for the selected plan
   5. A tenant visiting /billing/upgrade sees a plan comparison with Stripe Checkout links, selects a plan, completes Checkout with a test card, and is redirected back to the dashboard with their subscription now active
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 25-01-PLAN.md — Enforcement gate in handleInbound + billing API routes
 - [x] 25-02-PLAN.md — Billing dashboard page, usage ring gauge, trial countdown banner, More menu entry
-- [ ] 25-03-PLAN.md — Upgrade/paywall page with plan cards and Stripe Checkout
+- [x] 25-03-PLAN.md — Upgrade/paywall page with plan cards and Stripe Checkout
 **UI hint**: yes
 
 ### Phase 26: Billing Documentation
@@ -687,7 +687,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
 | 23. Usage Tracking | 1/1 | Complete    | 2026-03-26 |
 | 24. Subscription Lifecycle and Notifications | 3/3 | Complete    | 2026-03-26 |
-| 25. Enforcement Gate and Billing Dashboard | 2/3 | In Progress|  |
+| 25. Enforcement Gate and Billing Dashboard | 3/3 | Complete   | 2026-03-31 |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 1/3 | Complete    | 2026-03-26 |
