@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: Phase 36 context gathered
-last_updated: "2026-03-31T21:43:21.100Z"
+status: Ready to execute
+stopped_at: Completed 36-01-PLAN.md
+last_updated: "2026-03-31T22:14:05.365Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 33 — invoice-core
+**Current focus:** Phase 36 — landing-page-section-redesign-how-it-works-minimalism-and-features-carousel
 
 ## Current Position
 
-Phase: 33
-Plan: Not started
+Phase: 36 (landing-page-section-redesign-how-it-works-minimalism-and-features-carousel) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -69,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 33-invoice-core]: getResendClient and getTwilioClient exported from notifications.js for reuse by invoice send route
 - [Phase 33-invoice-core]: Lead PATCH to paid uses direct Supabase update for invoice sync (not internal fetch) to avoid HTTP round-trip
 - [Phase 33-invoice-core]: SMS failure in invoice send route is non-fatal — email already delivered before SMS attempt, Twilio errors caught and logged only
+- [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
+- [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 
 ### Roadmap Evolution
 
@@ -136,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T21:43:21.091Z
-Stopped at: Phase 36 context gathered
-Resume file: .planning/phases/36-landing-page-section-redesign-how-it-works-minimalism-and-features-carousel/36-CONTEXT.md
+Last session: 2026-03-31T22:14:05.357Z
+Stopped at: Completed 36-01-PLAN.md
+Resume file: None
