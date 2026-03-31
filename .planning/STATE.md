@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 33-invoice-core plan 06 (33-06-PLAN.md)
-last_updated: "2026-03-31T19:17:51.803Z"
+stopped_at: Completed 33-invoice-core plan 07 (33-07-PLAN.md)
+last_updated: "2026-03-31T19:41:18.694Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 33 (invoice-core) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 
 ## Accumulated Context
 
@@ -66,6 +66,9 @@ Recent decisions affecting current work:
 - [Phase 33-invoice-core]: STATUS_CONFIG exported as named export from InvoiceStatusBadge for reuse by other components
 - [Phase 33-invoice-core]: HTML/CSS invoice preview (not PDF embed) in detail page — faster render, no CORS, matches PDF layout visually
 - [Phase 33-invoice-core]: Send Invoice button shows 'Send feature coming soon' toast in detail page — actual delivery wired in Plan 07
+- [Phase 33-invoice-core]: getResendClient and getTwilioClient exported from notifications.js for reuse by invoice send route
+- [Phase 33-invoice-core]: Lead PATCH to paid uses direct Supabase update for invoice sync (not internal fetch) to avoid HTTP round-trip
+- [Phase 33-invoice-core]: SMS failure in invoice send route is non-fatal — email already delivered before SMS attempt, Twilio errors caught and logged only
 
 ### Roadmap Evolution
 
@@ -132,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T19:17:51.795Z
-Stopped at: Completed 33-invoice-core plan 06 (33-06-PLAN.md)
+Last session: 2026-03-31T19:41:18.686Z
+Stopped at: Completed 33-invoice-core plan 07 (33-07-PLAN.md)
 Resume file: None
