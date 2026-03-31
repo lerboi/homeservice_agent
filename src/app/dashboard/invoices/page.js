@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users } from 'lucide-react';
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -46,9 +47,32 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeStatus, setActiveStatus] = useState('all');
+  const [settingsComplete, setSettingsComplete] = useState(true);
+  const [completedLeadsCount, setCompletedLeadsCount] = useState(0);
 
   // Track whether summary has been loaded yet (only fetch once)
   const [summaryLoaded, setSummaryLoaded] = useState(false);
+
+  // Fetch settings completeness + completed leads count (for empty state)
+  useEffect(() => {
+    async function fetchContext() {
+      try {
+        const [settingsRes, leadsRes] = await Promise.all([
+          fetch('/api/invoice-settings'),
+          fetch('/api/leads?status=completed&limit=0'),
+        ]);
+        if (settingsRes.ok) {
+          const { settings } = await settingsRes.json();
+          setSettingsComplete(!!settings?.business_name);
+        }
+        if (leadsRes.ok) {
+          const { leads } = await leadsRes.json();
+          setCompletedLeadsCount(leads?.length || 0);
+        }
+      } catch {}
+    }
+    fetchContext();
+  }, []);
 
   useEffect(() => {
     async function fetchInvoices() {
@@ -190,13 +214,61 @@ export default function InvoicesPage() {
 
         {/* Empty state — no invoices at all */}
         {!loading && !error && invoices.length === 0 && activeStatus === 'all' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <FileText className="w-12 h-12 text-stone-300 mb-4" />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <FileText className="w-12 h-12 text-stone-300 mb-6" />
             <h2 className="text-xl font-semibold text-stone-900 mb-2">No invoices yet</h2>
             <p className="text-sm text-stone-500 max-w-md mb-6">
-              Create your first invoice from a completed job or start a new one. Your customers
-              will receive a professional invoice with your business branding.
+              Send professional, white-labeled invoices to your customers in three simple steps.
             </p>
+
+            {/* Workflow visual */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-10 rounded-full bg-stone-100">
+                  <CheckCircle className="size-5 text-stone-500" />
+                </div>
+                <span className="text-xs text-stone-500">Complete job</span>
+              </div>
+              <ArrowRight className="size-4 text-stone-300 mt-[-18px]" />
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-10 rounded-full bg-orange-50">
+                  <FileText className="size-5 text-[#C2410C]" />
+                </div>
+                <span className="text-xs text-stone-500">Create invoice</span>
+              </div>
+              <ArrowRight className="size-4 text-stone-300 mt-[-18px]" />
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center justify-center size-10 rounded-full bg-stone-100">
+                  <Send className="size-5 text-stone-500" />
+                </div>
+                <span className="text-xs text-stone-500">Send to customer</span>
+              </div>
+            </div>
+
+            {/* Settings nudge */}
+            {!settingsComplete && (
+              <Link
+                href="/dashboard/more/invoice-settings"
+                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                <Settings className="size-4" />
+                Set up your business info first
+                <ArrowRight className="size-3.5 ml-auto" />
+              </Link>
+            )}
+
+            {/* Completed leads prompt */}
+            {completedLeadsCount > 0 && (
+              <Link
+                href="/dashboard/leads?status=completed"
+                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+              >
+                <Users className="size-4" />
+                {completedLeadsCount} completed lead{completedLeadsCount !== 1 ? 's' : ''} ready for invoicing
+                <ArrowRight className="size-3.5 ml-auto" />
+              </Link>
+            )}
+
             <button
               onClick={handleCreateInvoice}
               className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"

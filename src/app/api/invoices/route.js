@@ -57,6 +57,11 @@ export async function GET(request) {
     query = query.eq('lead_id', leadId);
   }
 
+  const leadIds = searchParams.get('lead_ids');
+  if (leadIds) {
+    query = query.in('lead_id', leadIds.split(',').filter(Boolean));
+  }
+
   const { data: invoices, error: listError } = await query;
   if (listError) {
     return Response.json({ error: listError.message }, { status: 500 });

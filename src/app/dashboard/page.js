@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Phone, AlertCircle, CalendarClock, Users, CalendarCheck, TrendingUp, Activity } from 'lucide-react';
+import { Phone, AlertCircle, CalendarClock, Users, CalendarCheck, TrendingUp, Activity, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
@@ -273,6 +273,31 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Outstanding Invoices — only show if there are any */}
+          {stats.invoiceOutstandingCount > 0 && (
+            <Link href="/dashboard/invoices" className={`${card.base} p-5 hover:shadow-md transition-shadow block`}>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center size-10 rounded-xl bg-orange-50 shrink-0">
+                  <FileText className="size-5 text-[#C2410C]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Outstanding Invoices</p>
+                  <p className="text-xl font-bold text-[#0F172A] mt-0.5">
+                    {stats.invoiceOutstandingCount} invoice{stats.invoiceOutstandingCount !== 1 ? 's' : ''}
+                    <span className="text-sm font-normal text-[#475569] ml-2">
+                      ${stats.invoiceOutstandingAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                    </span>
+                  </p>
+                  {stats.invoiceOverdueCount > 0 && (
+                    <p className="text-xs text-red-600 font-medium mt-0.5">
+                      {stats.invoiceOverdueCount} overdue
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Link>
+          )}
 
           {/* This Week — full width */}
           <div className={`${card.base} p-5`}>

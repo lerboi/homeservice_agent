@@ -17,7 +17,7 @@ export async function GET() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const sevenDaysAgoIso = sevenDaysAgo.toISOString();
 
-  const [newTodayRes, allTodayRes, weekRes, weekBookedRes] = await Promise.all([
+  const [newTodayRes, allTodayRes, weekRes, weekBookedRes, invoiceOutstandingRes, invoiceOverdueRes] = await Promise.all([
     supabase
       .from('leads')
       .select('id', { count: 'exact', head: true })
@@ -40,10 +40,28 @@ export async function GET() {
       .eq('tenant_id', tenantId)
       .gte('created_at', sevenDaysAgoIso)
       .in('status', ['booked', 'completed', 'paid']),
+    // Invoice outstanding: sent + overdue
+    supabase
+      .from('invoices')
+      .select('total')
+      .eq('tenant_id', tenantId)
+      .in('status', ['sent', 'overdue']),
+    // Invoice overdue count
+    supabase
+      .from('invoices')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'overdue'),
   ]);
 
   const weekLeads = weekRes.count ?? 0;
   const weekBooked = weekBookedRes.count ?? 0;
+
+  // Calculate invoice totals
+  const outstandingInvoices = invoiceOutstandingRes.data || [];
+  const invoiceOutstandingCount = outstandingInvoices.length;
+  const invoiceOutstandingAmount = outstandingInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
+  const invoiceOverdueCount = invoiceOverdueRes.count ?? 0;
 
   return Response.json({
     newLeadsToday: newTodayRes.count ?? 0,
@@ -51,5 +69,8 @@ export async function GET() {
     weekLeads,
     weekBooked,
     conversionRate: weekLeads > 0 ? Math.round((weekBooked / weekLeads) * 100) : 0,
+    invoiceOutstandingCount,
+    invoiceOutstandingAmount,
+    invoiceOverdueCount,
   });
 }

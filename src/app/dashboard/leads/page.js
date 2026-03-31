@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { LayoutList, Columns3, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import LeadCard from '@/components/dashboard/LeadCard';
@@ -74,6 +75,24 @@ export default function LeadsPage() {
   // Tenant ID for Realtime filter
   const [tenantId, setTenantId] = useState(null);
 
+  // Invoice status map for badge indicators on lead cards
+  const [invoiceStatusMap, setInvoiceStatusMap] = useState({});
+
+  // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const openHandled = useRef(false);
+
+  useEffect(() => {
+    const openLeadId = searchParams.get('open');
+    if (openLeadId && !loading && !openHandled.current) {
+      openHandled.current = true;
+      setSelectedLeadId(openLeadId);
+      setFlyoutOpen(true);
+      router.replace('/dashboard/leads', { scroll: false });
+    }
+  }, [searchParams, loading, router]);
+
   // ── Inject Realtime animation keyframe once ─────────────────────────────
   useEffect(() => { ensureSlideInKeyframe(); }, []);
 
@@ -114,6 +133,23 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchLeads(filters);
   }, [filters, fetchLeads]);
+
+  // ── Batch-fetch invoice statuses for lead cards ────────────────────────
+  useEffect(() => {
+    if (!leads.length) return;
+    const ids = leads.map((l) => l.id).join(',');
+    fetch(`/api/invoices?lead_ids=${ids}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.invoices) return;
+        const map = {};
+        for (const inv of data.invoices) {
+          if (inv.lead_id) map[inv.lead_id] = inv.status;
+        }
+        setInvoiceStatusMap(map);
+      })
+      .catch(() => {});
+  }, [leads]);
 
   // ── Supabase Realtime subscription ─────────────────────────────────────
 
@@ -306,6 +342,7 @@ export default function LeadsPage() {
             <LeadCard
               lead={lead}
               onView={handleView}
+              invoiceStatus={invoiceStatusMap[lead.id]}
             />
           </div>
         ))}

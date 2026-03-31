@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MapPin, Calendar, Briefcase, FileText } from 'lucide-react';
+import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink } from 'lucide-react';
+import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -408,6 +409,42 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 />
               </div>
 
+              {/* ── Invoice section ── */}
+              {(lead.status === 'booked' || lead.status === 'completed' || lead.status === 'paid') && (
+                <>
+                  <Separator className="bg-stone-100" />
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                      Invoice
+                    </h3>
+
+                    {linkedInvoice ? (
+                      <button
+                        onClick={() => router.push(`/dashboard/invoices/${linkedInvoice.id}`)}
+                        className="flex items-center justify-between w-full px-3 py-2.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-stone-700 font-medium">
+                          <FileText className="h-4 w-4 text-stone-400" />
+                          {linkedInvoice.invoice_number}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <InvoiceStatusBadge status={linkedInvoice.status} />
+                          <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => router.push(`/dashboard/invoices/new?lead_id=${lead.id}`)}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[#C2410C] border border-[#C2410C]/30 rounded-lg hover:bg-orange-50 transition-colors"
+                      >
+                        <FileText className="h-4 w-4" />
+                        {lead.status === 'booked' ? 'Create Draft Invoice' : 'Create Invoice'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+
               <Separator className="bg-stone-100" />
 
               {/* ── Pipeline actions: status select + revenue input ── */}
@@ -462,28 +499,6 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 >
                   {saving ? 'Saving...' : 'Update Status'}
                 </Button>
-
-                {/* Create Invoice button — completed/paid leads with no existing invoice */}
-                {(lead.status === 'completed' || lead.status === 'paid') && !linkedInvoice && (
-                  <button
-                    onClick={() => router.push(`/dashboard/invoices/new?lead_id=${lead.id}`)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#C2410C] border border-[#C2410C] rounded-lg hover:bg-orange-50 transition-colors"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Create Invoice
-                  </button>
-                )}
-
-                {/* View Invoice button — when a linked invoice already exists */}
-                {linkedInvoice && (
-                  <button
-                    onClick={() => router.push(`/dashboard/invoices/${linkedInvoice.id}`)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
-                  >
-                    <FileText className="h-4 w-4" />
-                    View Invoice ({linkedInvoice.invoice_number})
-                  </button>
-                )}
               </div>
             </div>
 

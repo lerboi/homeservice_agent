@@ -355,7 +355,7 @@ export default function InvoiceDetailPage() {
         throw new Error(err.error || 'Failed to send invoice');
       }
       toast.success('Invoice sent successfully');
-      fetchInvoice();
+      fetchData();
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -454,7 +454,7 @@ export default function InvoiceDetailPage() {
                     <dt className="text-stone-500">Linked Lead</dt>
                     <dd>
                       <Link
-                        href="/dashboard/leads"
+                        href={`/dashboard/leads?open=${invoice.lead_id}`}
                         className="text-[#C2410C] hover:underline text-xs"
                       >
                         View Lead
@@ -512,6 +512,19 @@ export default function InvoiceDetailPage() {
                 >
                   <CheckCircle className="h-4 w-4" />
                   Mark as Paid
+                </Button>
+              )}
+
+              {/* Resend Invoice — sent or overdue only */}
+              {isSentOrOverdue && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={handleSendClick}
+                  disabled={actionLoading}
+                >
+                  <Send className="h-4 w-4" />
+                  Resend Invoice
                 </Button>
               )}
 
@@ -584,6 +597,18 @@ export default function InvoiceDetailPage() {
           >
             <CheckCircle className="h-3.5 w-3.5" />
             Paid
+          </Button>
+        )}
+        {isSentOrOverdue && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5"
+            onClick={handleSendClick}
+            disabled={actionLoading}
+          >
+            <Send className="h-3.5 w-3.5" />
+            Resend
           </Button>
         )}
         {!isPaidOrVoid && (

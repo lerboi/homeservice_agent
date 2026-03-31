@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye } from 'lucide-react';
+import { Eye, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -56,7 +56,23 @@ function getFirstCall(lead) {
   return firstEntry?.calls || null;
 }
 
-export default memo(function LeadCard({ lead, onView }) {
+const INVOICE_DOT = {
+  draft: 'bg-stone-400',
+  sent: 'bg-blue-500',
+  paid: 'bg-green-500',
+  overdue: 'bg-red-500',
+  void: 'bg-stone-300',
+};
+
+const INVOICE_LABEL = {
+  draft: 'Draft',
+  sent: 'Sent',
+  paid: 'Paid',
+  overdue: 'Overdue',
+  void: 'Void',
+};
+
+export default memo(function LeadCard({ lead, onView, invoiceStatus }) {
   const urgency = lead.urgency || 'routine';
   const status = lead.status || 'new';
   const borderClass = URGENCY_BORDER[urgency] || URGENCY_BORDER.routine;
@@ -114,9 +130,17 @@ export default memo(function LeadCard({ lead, onView }) {
 
         {/* Right section: status, time, action */}
         <div className="flex flex-col items-end gap-2 shrink-0">
-          <Badge className={`${statusBadgeClass} text-xs`}>
-            {STATUS_LABEL[status] || status}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge className={`${statusBadgeClass} text-xs`}>
+              {STATUS_LABEL[status] || status}
+            </Badge>
+            {invoiceStatus && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-stone-500" title={`Invoice: ${INVOICE_LABEL[invoiceStatus]}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${INVOICE_DOT[invoiceStatus] || 'bg-stone-300'}`} />
+                <FileText className="h-3 w-3" />
+              </span>
+            )}
+          </div>
           <span className="text-xs text-[#475569]">
             {getRelativeTime(lead.created_at)}
           </span>

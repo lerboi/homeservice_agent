@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Search, X } from 'lucide-react';
+import Link from 'next/link';
+import { useRef, useCallback } from 'react';
 import { addDays, format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,6 +83,14 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
   const [notes, setNotes] = useState(settings?.default_notes || '');
   const [lineItems, setLineItems] = useState([emptyLineItem(0)]);
 
+  // Lead search state
+  const [leadSearchQuery, setLeadSearchQuery] = useState('');
+  const [leadResults, setLeadResults] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchTimerRef = useRef(null);
+
   // Re-apply initialData if it arrives after mount (async pre-fill from lead fetch)
   useEffect(() => {
     if (!initialData) return;
@@ -89,6 +99,9 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
     if (initialData.customer_email !== undefined) setCustomerEmail(initialData.customer_email);
     if (initialData.customer_address !== undefined) setCustomerAddress(initialData.customer_address);
     if (initialData.job_type !== undefined) setJobType(initialData.job_type);
+    if (initialData.lead_id && initialData.customer_name) {
+      setSelectedLead({ id: initialData.lead_id, caller_name: initialData.lead_name || initialData.customer_name });
+    }
   }, [initialData]);
 
   // Recalculate due date when issued date or payment terms change
@@ -98,6 +111,46 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
 
   function handleTermsChange(terms) {
     setPaymentTerms(terms);
+  }
+
+  // Lead search with debounce
+  const handleLeadSearch = useCallback((query) => {
+    setLeadSearchQuery(query);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!query || query.length < 2) {
+      setLeadResults([]);
+      setSearchOpen(false);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/leads?search=${encodeURIComponent(query)}&limit=10`);
+        if (res.ok) {
+          const data = await res.json();
+          setLeadResults(data.leads || []);
+          setSearchOpen(true);
+        }
+      } catch {} finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  }, []);
+
+  function handleSelectLead(lead) {
+    setSelectedLead(lead);
+    setCustomerName(lead.caller_name || '');
+    setCustomerPhone(lead.from_number || '');
+    setCustomerEmail(lead.caller_email || '');
+    setCustomerAddress(lead.service_address || '');
+    setJobType(lead.job_type || '');
+    setLeadSearchQuery('');
+    setLeadResults([]);
+    setSearchOpen(false);
+  }
+
+  function handleUnlinkLead() {
+    setSelectedLead(null);
   }
 
   function handleLineItemChange(index, updatedItem) {
@@ -114,7 +167,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
 
   function assembleInvoiceData() {
     return {
-      lead_id: initialData?.lead_id || null,
+      lead_id: selectedLead?.id || initialData?.lead_id || null,
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
@@ -134,12 +187,99 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
 
   return (
     <div className="space-y-6 pb-24 md:pb-6">
+      {/* Settings nudge — shown when business identity is not configured */}
+      {settings && !settings.business_name && (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 text-sm">
+          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-amber-900">Set up your business info</p>
+            <p className="text-amber-700 text-xs mt-0.5">
+              Add your business name, logo, and contact details so invoices look professional.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/more/invoice-settings"
+            className="text-sm font-medium text-[#C2410C] hover:underline shrink-0"
+          >
+            Go to Settings
+          </Link>
+        </div>
+      )}
+
       {/* Customer Info */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold text-stone-900">Customer Information</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Lead search / link */}
+          <div className="mb-4">
+            {selectedLead ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
+                <Search className="h-4 w-4 text-[#C2410C]" />
+                <span className="text-stone-700">
+                  Linked to: <span className="font-medium text-stone-900">{selectedLead.caller_name}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleUnlinkLead}
+                  className="ml-auto p-0.5 text-stone-400 hover:text-stone-600 rounded"
+                  aria-label="Unlink lead"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Label className="text-sm font-medium text-stone-700 mb-1 block">
+                  Link to Lead <span className="text-stone-400 font-normal">(optional)</span>
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                  <Input
+                    placeholder="Search leads by name or phone..."
+                    value={leadSearchQuery}
+                    onChange={(e) => handleLeadSearch(e.target.value)}
+                    onFocus={() => { if (leadResults.length) setSearchOpen(true); }}
+                    onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+                    className="pl-9"
+                  />
+                  {searchLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-stone-400" />
+                  )}
+                </div>
+                {searchOpen && leadResults.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {leadResults.map((lead) => (
+                      <button
+                        key={lead.id}
+                        type="button"
+                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-50 text-left"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectLead(lead)}
+                      >
+                        <div>
+                          <span className="font-medium text-stone-900">{lead.caller_name || 'Unknown'}</span>
+                          <span className="text-stone-500 ml-2">{lead.from_number}</span>
+                        </div>
+                        {lead.job_type && (
+                          <span className="text-xs text-stone-400">{lead.job_type}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {searchOpen && leadResults.length === 0 && leadSearchQuery.length >= 2 && !searchLoading && (
+                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg p-3 text-sm text-stone-500">
+                    No leads found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator className="mb-4" />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="customer-name" className="text-sm font-medium text-stone-700">

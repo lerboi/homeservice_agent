@@ -35,6 +35,7 @@ export default function NewInvoicePage() {
             const { lead } = await leadRes.json();
             setInitialData({
               lead_id: lead.id,
+              lead_name: lead.caller_name || '',
               customer_name: lead.caller_name || '',
               customer_phone: lead.caller_phone || '',
               customer_email: lead.caller_email || '',
