@@ -11,25 +11,21 @@ const HowItWorksSection = dynamic(
   () => import('@/app/components/landing/HowItWorksSection').then((m) => m.HowItWorksSection),
   {
     loading: () => (
-      <section className="bg-[#F5F5F4] py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
-            <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
-          </div>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-[180px] rounded-3xl bg-white border border-stone-200/60 shadow-sm" />
-            ))}
-          </div>
+      <section className="bg-white" aria-hidden="true">
+        <div className="pt-24 pb-8 text-center px-6">
+          <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
+          <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
         </div>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className={`min-h-screen ${i % 2 === 0 ? 'bg-[#FAFAF9]' : 'bg-white'}`} />
+        ))}
       </section>
     ),
   }
 );
 
-const FeaturesGrid = dynamic(
-  () => import('@/app/components/landing/FeaturesGrid').then((m) => m.FeaturesGrid),
+const FeaturesCarousel = dynamic(
+  () => import('@/app/components/landing/FeaturesCarousel').then((m) => m.FeaturesCarousel),
   {
     loading: () => (
       <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
@@ -38,12 +34,8 @@ const FeaturesGrid = dynamic(
             <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
             <div className="h-10 w-96 bg-black/10 rounded mx-auto" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2 h-48 rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
-            ))}
-          </div>
+          <div className="h-[480px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+          <div className="mt-6 h-16 rounded-xl bg-white/60" />
         </div>
       </section>
     ),
@@ -92,7 +84,7 @@ export default function HomePage() {
       <HeroSection />
       <ScrollLinePath>
         <HowItWorksSection />
-        <FeaturesGrid />
+        <FeaturesCarousel />
         <SocialProofSection />
       </ScrollLinePath>
       <FinalCTASection />
