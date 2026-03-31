@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-03-30 (Expanded setup checklist with 5 recommended items, checklist visible in active mode, Account page with profile editor, Next Appointment wired up, callsToday fix)
+**Last updated**: 2026-04-01 (Phase 33: Invoices tab added to sidebar, Analytics relocated to /dashboard/more/analytics, LeadFlyout Create/View Invoice integration, GET /api/invoices supports lead_id filter)
 
 ---
 
@@ -17,7 +17,7 @@ This document is the single source of truth for the entire dashboard and CRM sys
 |-------|-------|---------|
 | **Dashboard Pages** | `src/app/dashboard/` | All page routes nested under layout |
 | **CRM Components** | `src/components/dashboard/` | Kanban, flyouts, charts, stats, editors, tour |
-| **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/` | Lead CRUD, call logs, escalation CRUD, checklist state |
+| **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/`, `src/app/api/invoices/` | Lead CRUD, call logs, escalation CRUD, checklist state, invoice CRUD |
 | **Business Logic** | `src/lib/leads.js` | Lead creation and repeat-caller merge |
 | **Design System** | `src/lib/design-tokens.js` | Shared color palette and component tokens |
 | **Realtime** | Supabase `supabase_realtime` publication | Live lead updates to dashboard via WebSocket |
@@ -34,7 +34,7 @@ Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
                                    DashboardHomeStats updates via Realtime
 ```
 
-### Dashboard Page Structure (Phase 20)
+### Dashboard Page Structure (Phase 20 + Phase 33)
 
 ```
 layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour
@@ -42,17 +42,20 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
   ├── leads/page.js              ← Filter bar + list/kanban toggle + LeadFlyout
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
   ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
-  ├── analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut)
+  ├── invoices/page.js           ← Invoice list with status tabs, summary metrics, search (Phase 33)
+  ├── invoices/new/page.js       ← New invoice form — pre-fills from lead_id query param (Phase 33)
+  ├── invoices/[id]/page.js      ← Invoice detail + HTML preview + Send button (Phase 33)
   └── more/page.js               ← Config hub: 9 section links
-      ├── more/services-pricing/page.js    ← Full service table (DnD, urgency tags, bulk select)
-      ├── more/working-hours/page.js       ← WorkingHoursEditor
+      ├── more/analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut) — relocated from /dashboard/analytics in Phase 33
+      ├── more/services-pricing/page.js   ← Full service table (DnD, urgency tags, bulk select)
+      ├── more/working-hours/page.js      ← WorkingHoursEditor
       ├── more/calendar-connections/page.js ← CalendarSyncCard
-      ├── more/service-zones/page.js       ← ZoneManager
+      ├── more/service-zones/page.js      ← ZoneManager
       ├── more/escalation-contacts/page.js ← EscalationChainSection
-      ├── more/notifications/page.js       ← SMS and email alert preferences
-      ├── more/ai-voice-settings/page.js   ← SettingsAISection
-      ├── more/billing/page.js             ← Plan, usage meter, invoices
-      └── more/account/page.js             ← Placeholder (future plan)
+      ├── more/notifications/page.js      ← SMS and email alert preferences
+      ├── more/ai-voice-settings/page.js  ← SettingsAISection
+      ├── more/billing/page.js            ← Plan, usage meter, invoices
+      └── more/account/page.js            ← Placeholder (future plan)
 ```
 
 **Note:** `/dashboard/services` redirects to `/dashboard/more/services-pricing`. `/dashboard/settings` redirects to `/dashboard/more`.
@@ -94,7 +97,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/MoreBackButton.jsx` | "← Back to More" link shown on More sub-pages via more/layout.js |
 | `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 6 steps, brand-themed, layout-mounted |
 | `src/app/api/calls/route.js` | GET calls (filtered by date, urgency, booking_outcome, phone search) |
-| `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript |
+| `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript, Create/View Invoice button for completed/paid leads |
 | `src/components/dashboard/KanbanBoard.jsx` | 5-column pipeline board (new/booked/completed/paid/lost) |
 | `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
@@ -177,9 +180,10 @@ const NAV_ITEMS = [
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },  // Phase 33: replaced Analytics
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
+// Note: Analytics is now accessible at /dashboard/more/analytics (not top nav)
 ```
 
 Active state: `border-l-2 border-[#C2410C]` left orange border. Desktop: `lg:fixed lg:w-60 bg-[#0F172A]`. Mobile: not rendered (replaced by BottomTabBar).
@@ -194,10 +198,11 @@ const TABS = [
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },  // Phase 33: replaced Analytics
 ];
 // Active: tab.exact ? pathname === tab.href : pathname.startsWith(tab.href)
 // More tab omitted on mobile — settings gear icon (top-right) links to /dashboard/more
+// Analytics is accessible via /dashboard/more/analytics
 ```
 
 ---
@@ -501,7 +506,7 @@ Client component. Week/day view toggle (mobile always forces day view). Fetches 
 
 **File**: `src/components/dashboard/LeadFlyout.jsx`
 
-Right-side Sheet. On open, fetches `GET /api/leads/${leadId}` (includes transcript). Renders:
+Right-side Sheet. On open, fetches `GET /api/leads/${leadId}` (includes transcript) AND `GET /api/invoices?lead_id=${leadId}` to check for linked invoice. Renders:
 - Urgency badge + relative time
 - Caller info (phone, call timestamp)
 - Job details (job_type, service_address, triage layer/confidence)
@@ -509,10 +514,13 @@ Right-side Sheet. On open, fetches `GET /api/leads/${leadId}` (includes transcri
 - `TranscriptViewer` with structured + text transcript
 - Status `Select` + `RevenueInput` (shown for completed/paid)
 - "Update Status" button — `PATCH /api/leads/${leadId}`
+- **"Create Invoice" button** (Phase 33): shown when lead status is 'completed' or 'paid' AND no linked invoice exists — navigates to `/dashboard/invoices/new?lead_id=${lead.id}`. Styled with `text-[#C2410C] border-[#C2410C]` brandOrange outline.
+- **"View Invoice (INV-XXXX)" button** (Phase 33): shown when a linked invoice already exists — navigates to `/dashboard/invoices/${linkedInvoice.id}`. Styled with `text-stone-600 border-stone-300`.
 - "Mark as Lost" with `AlertDialog` confirmation
 
 Key constants: `URGENCY_STYLES`, `STATUS_LABELS`, `STATUS_OPTIONS`.
 `formatRelativeTime(iso)` — relative display (just now, Xm ago, Xh ago, Xd ago).
+Invoice state: `linkedInvoice` — fetched on open, reset on close.
 
 ### `KanbanBoard({ leads, onViewLead })`
 

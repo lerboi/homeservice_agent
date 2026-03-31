@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Phone, MapPin, Calendar, Briefcase } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Phone, MapPin, Calendar, Briefcase, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -119,9 +120,14 @@ function LeadFlyoutSkeleton() {
  * @param {{ leadId: string | null, open: boolean, onOpenChange: Function, onStatusChange: Function }} props
  */
 export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange }) {
+  const router = useRouter();
+
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+
+  // Linked invoice state (for Create/View Invoice button)
+  const [linkedInvoice, setLinkedInvoice] = useState(null);
 
   // Status change state
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -144,6 +150,18 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       // Pre-fill revenue if already set
       setRevenueAmount(data.lead.revenue_amount ? String(data.lead.revenue_amount) : '');
       setRevenueError('');
+
+      // Check for linked invoice — for Create/View Invoice button
+      try {
+        const invRes = await fetch(`/api/invoices?lead_id=${leadId}`);
+        if (invRes.ok) {
+          const invData = await invRes.json();
+          setLinkedInvoice(invData.invoices?.[0] || null);
+        }
+      } catch {
+        // Invoice check failure is non-fatal — button just won't appear
+        setLinkedInvoice(null);
+      }
     } catch {
       setFetchError(true);
     } finally {
@@ -162,6 +180,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       setSelectedStatus('');
       setRevenueAmount('');
       setRevenueError('');
+      setLinkedInvoice(null);
     }
   }, [open, leadId, fetchLead]);
 
@@ -443,6 +462,28 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 >
                   {saving ? 'Saving...' : 'Update Status'}
                 </Button>
+
+                {/* Create Invoice button — completed/paid leads with no existing invoice */}
+                {(lead.status === 'completed' || lead.status === 'paid') && !linkedInvoice && (
+                  <button
+                    onClick={() => router.push(`/dashboard/invoices/new?lead_id=${lead.id}`)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#C2410C] border border-[#C2410C] rounded-lg hover:bg-orange-50 transition-colors"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Create Invoice
+                  </button>
+                )}
+
+                {/* View Invoice button — when a linked invoice already exists */}
+                {linkedInvoice && (
+                  <button
+                    onClick={() => router.push(`/dashboard/invoices/${linkedInvoice.id}`)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View Invoice ({linkedInvoice.invoice_number})
+                  </button>
+                )}
               </div>
             </div>
 

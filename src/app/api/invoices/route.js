@@ -27,6 +27,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get('status');
   const search = searchParams.get('search');
+  const leadId = searchParams.get('lead_id');
 
   // Bulk-update overdue invoices (sent + past due_date → overdue)
   const today = new Date().toISOString().split('T')[0];
@@ -50,6 +51,10 @@ export async function GET(request) {
 
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,invoice_number.ilike.%${search}%`);
+  }
+
+  if (leadId) {
+    query = query.eq('lead_id', leadId);
   }
 
   const { data: invoices, error: listError } = await query;
