@@ -15,7 +15,7 @@ import es from '../../messages/es.json' with { type: 'json' };
 // ─── Lazy-instantiated clients ────────────────────────────────────────────────
 
 let twilioClient = null;
-function getTwilioClient() {
+export function getTwilioClient() {
   if (!twilioClient) {
     twilioClient = twilio(
       process.env.TWILIO_ACCOUNT_SID,
@@ -26,7 +26,7 @@ function getTwilioClient() {
 }
 
 let resendClient = null;
-function getResendClient() {
+export function getResendClient() {
   if (!resendClient) {
     resendClient = new Resend(process.env.RESEND_API_KEY);
   }
