@@ -9,7 +9,7 @@ const HowItWorksSticky = dynamic(
   {
     loading: () => (
       <div className="space-y-8">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-[180px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
         ))}
       </div>
@@ -26,9 +26,9 @@ export function HowItWorksSection() {
             How it works
           </p>
           <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
-            From missed call to booked job.
+            From missed call to booked revenue.
             <br className="hidden sm:block" />
-            <span className="text-[#475569]">In under two minutes.</span>
+            <span className="text-[#475569]">No callbacks. No voicemail. No lost jobs.</span>
           </h2>
         </AnimatedSection>
 
