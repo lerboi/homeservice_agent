@@ -20,9 +20,9 @@ Consumed by: /gsd:new-milestone (scans seeds and presents matches)
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/plant-seed.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/plant-seed.md
 </execution_context>
 
 <process>
-Execute the plant-seed workflow from @F:/homeservice-agent/.claude/get-shit-done/workflows/plant-seed.md end-to-end.
+Execute the plant-seed workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/plant-seed.md end-to-end.
 </process>

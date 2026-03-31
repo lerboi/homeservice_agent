@@ -9,4 +9,4 @@ allowed-tools:
 
 Show the following output to the user verbatim, with no extra commentary:
 
-!`node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" config-set-model-profile $ARGUMENTS --raw`
+!`node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" config-set-model-profile $ARGUMENTS --raw`

@@ -31,8 +31,8 @@ Context budget: ~15% orchestrator, 100% fresh per subagent.
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/execute-phase.md
-@F:/homeservice-agent/.claude/get-shit-done/references/ui-brand.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/execute-phase.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -54,6 +54,6 @@ Context files are resolved inside the workflow via `gsd-tools init execute-phase
 </context>
 
 <process>
-Execute the execute-phase workflow from @F:/homeservice-agent/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
+Execute the execute-phase workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
 Preserve all workflow gates (wave execution, checkpoint handling, verification, state updates, routing).
 </process>

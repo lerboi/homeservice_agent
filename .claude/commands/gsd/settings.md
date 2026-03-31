@@ -20,11 +20,11 @@ Routes to the settings workflow which handles:
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/settings.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/settings.md
 </execution_context>
 
 <process>
-**Follow the settings workflow** from `@F:/homeservice-agent/.claude/get-shit-done/workflows/settings.md`.
+**Follow the settings workflow** from `@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/settings.md`.
 
 The workflow handles all logic including:
 1. Config file creation with defaults if missing

@@ -14,7 +14,7 @@ Read project state to determine current position:
 
 ```bash
 # Get state snapshot
-node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" state json 2>/dev/null || echo "{}"
+node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" state json 2>/dev/null || echo "{}"
 ```
 
 Also read:

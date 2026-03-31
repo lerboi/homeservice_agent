@@ -29,7 +29,7 @@ Exit.
 Load phase operation context:
 
 ```bash
-INIT=$(node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" init phase-op "0")
+INIT=$(node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" init phase-op "0")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -45,7 +45,7 @@ Exit.
 **Delegate the phase addition to gsd-tools:**
 
 ```bash
-RESULT=$(node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" phase add "${description}")
+RESULT=$(node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" phase add "${description}")
 ```
 
 The CLI handles:

@@ -140,7 +140,7 @@ export default function PricingTiers() {
                       </Link>
                     </Button>
                     <p className="text-[11px] text-white/25 mt-1.5 text-center">
-                      14-day free trial &middot; No credit card required
+                      14-day free trial &middot; Cancel anytime
                     </p>
                   </div>
                 </CardContent>

@@ -22,9 +22,9 @@ you could describe in one sentence and execute in under 2 minutes.
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/fast.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/fast.md
 </execution_context>
 
 <process>
-Execute the fast workflow from @F:/homeservice-agent/.claude/get-shit-done/workflows/fast.md end-to-end.
+Execute the fast workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/fast.md end-to-end.
 </process>

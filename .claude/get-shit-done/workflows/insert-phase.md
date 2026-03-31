@@ -34,7 +34,7 @@ Validate first argument is an integer.
 Load phase operation context:
 
 ```bash
-INIT=$(node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" init phase-op "${after_phase}")
+INIT=$(node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" init phase-op "${after_phase}")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -49,7 +49,7 @@ Exit.
 **Delegate the phase insertion to gsd-tools:**
 
 ```bash
-RESULT=$(node "F:/homeservice-agent/.claude/get-shit-done/bin/gsd-tools.cjs" phase insert "${after_phase}" "${description}")
+RESULT=$(node "C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/bin/gsd-tools.cjs" phase insert "${after_phase}" "${description}")
 ```
 
 The CLI handles:

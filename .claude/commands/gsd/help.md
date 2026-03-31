@@ -13,10 +13,10 @@ Output ONLY the reference content below. Do NOT add:
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/help.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/help.md
 </execution_context>
 
 <process>
-Output the complete GSD command reference from @F:/homeservice-agent/.claude/get-shit-done/workflows/help.md.
+Output the complete GSD command reference from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/help.md.
 Display the reference content directly — no additions or modifications.
 </process>

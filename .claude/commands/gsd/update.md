@@ -19,11 +19,11 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/update.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/update.md
 </execution_context>
 
 <process>
-**Follow the update workflow** from `@F:/homeservice-agent/.claude/get-shit-done/workflows/update.md`.
+**Follow the update workflow** from `@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/update.md`.
 
 The workflow handles all logic including:
 1. Installed version detection (local/global)

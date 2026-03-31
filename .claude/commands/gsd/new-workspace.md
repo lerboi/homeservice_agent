@@ -34,11 +34,11 @@ Create a physical workspace directory containing copies of specified git repos (
 </objective>
 
 <execution_context>
-@F:/homeservice-agent/.claude/get-shit-done/workflows/new-workspace.md
-@F:/homeservice-agent/.claude/get-shit-done/references/ui-brand.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/new-workspace.md
+@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the new-workspace workflow from @F:/homeservice-agent/.claude/get-shit-done/workflows/new-workspace.md end-to-end.
+Execute the new-workspace workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/new-workspace.md end-to-end.
 Preserve all workflow gates (validation, approvals, commits, routing).
 </process>
