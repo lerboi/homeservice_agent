@@ -3,8 +3,7 @@ import { getTenantId } from '@/lib/get-tenant-id';
 
 /**
  * GET /api/dashboard/stats
- * Returns aggregated dashboard stats via COUNT queries — no row data transferred.
- * Replaces the client-side filtering of /api/leads (which was capped at 100 rows).
+ * Returns dashboard stats: new lead count + preview, invoice snapshot, and overall totals.
  */
 export async function GET() {
   const tenantId = await getTenantId();
@@ -13,33 +12,29 @@ export async function GET() {
   }
 
   const today = new Date().toISOString().split('T')[0];
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoIso = sevenDaysAgo.toISOString();
+  const firstOfMonth = today.slice(0, 8) + '01';
 
-  const [newTodayRes, allTodayRes, weekRes, weekBookedRes, invoiceOutstandingRes, invoiceOverdueRes] = await Promise.all([
+  const [
+    newLeadsCountRes,
+    newLeadsPreviewRes,
+    invoiceOutstandingRes,
+    invoiceOverdueRes,
+    invoicePaidMonthRes,
+  ] = await Promise.all([
+    // Count of all new leads
     supabase
       .from('leads')
       .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('status', 'new'),
+    // Preview: up to 3 newest new leads with name + job type
+    supabase
+      .from('leads')
+      .select('id, caller_name, job_type, from_number, created_at')
       .eq('tenant_id', tenantId)
       .eq('status', 'new')
-      .gte('created_at', today),
-    supabase
-      .from('calls')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .gte('created_at', today),
-    supabase
-      .from('leads')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .gte('created_at', sevenDaysAgoIso),
-    supabase
-      .from('leads')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .gte('created_at', sevenDaysAgoIso)
-      .in('status', ['booked', 'completed', 'paid']),
+      .order('created_at', { ascending: false })
+      .limit(3),
     // Invoice outstanding: sent + overdue
     supabase
       .from('invoices')
@@ -52,25 +47,29 @@ export async function GET() {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'overdue'),
+    // Paid this month
+    supabase
+      .from('invoices')
+      .select('total')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'paid')
+      .gte('paid_at', firstOfMonth),
   ]);
 
-  const weekLeads = weekRes.count ?? 0;
-  const weekBooked = weekBookedRes.count ?? 0;
-
-  // Calculate invoice totals
   const outstandingInvoices = invoiceOutstandingRes.data || [];
   const invoiceOutstandingCount = outstandingInvoices.length;
   const invoiceOutstandingAmount = outstandingInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
   const invoiceOverdueCount = invoiceOverdueRes.count ?? 0;
 
+  const paidInvoices = invoicePaidMonthRes.data || [];
+  const paidThisMonth = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
+
   return Response.json({
-    newLeadsToday: newTodayRes.count ?? 0,
-    callsToday: allTodayRes.count ?? 0,
-    weekLeads,
-    weekBooked,
-    conversionRate: weekLeads > 0 ? Math.round((weekBooked / weekLeads) * 100) : 0,
+    newLeadsCount: newLeadsCountRes.count ?? 0,
+    newLeadsPreview: newLeadsPreviewRes.data || [],
     invoiceOutstandingCount,
     invoiceOutstandingAmount,
     invoiceOverdueCount,
+    paidThisMonth,
   });
 }

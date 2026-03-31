@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Phone, AlertCircle, CalendarClock, Users, CalendarCheck, TrendingUp, Activity, FileText } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { CalendarDays, Users, FileText, Activity, MapPin, Clock, ChevronRight, Inbox } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
@@ -14,7 +15,7 @@ import { supabase } from '@/lib/supabase-browser';
 const REQUIRED_IDS = ['configure_services', 'make_test_call', 'configure_hours'];
 const RECOMMENDED_IDS = ['connect_calendar', 'configure_zones', 'setup_escalation', 'configure_notifications'];
 
-// ─── Time formatter ───────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTime(iso) {
   if (!iso) return '';
@@ -25,41 +26,38 @@ function formatTime(iso) {
   }
 }
 
-// ─── Skeleton shapes ──────────────────────────────────────────────────────────
-
-function HeroSkeleton() {
-  return <Skeleton className="h-36 w-full rounded-2xl" />;
+function formatCurrency(amount) {
+  return '$' + Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function CardSkeleton() {
-  return <Skeleton className="h-28 w-full rounded-2xl" />;
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
 }
+
+function relativeTime(dateStr) {
+  if (!dateStr) return '';
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+  } catch {
+    return '';
+  }
+}
+
+// ─── Skeletons ────────────────────────────────────────────────────────────────
 
 function ActiveModeSkeleton() {
   return (
     <div className="space-y-4">
-      <Skeleton className="h-5 w-48" />
-      <HeroSkeleton />
+      <Skeleton className="h-5 w-64" />
+      <Skeleton className="h-52 w-full rounded-2xl" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CardSkeleton />
-        <CardSkeleton />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
-      <CardSkeleton />
-      <Skeleton className="h-48 w-full rounded-2xl" />
-    </div>
-  );
-}
-
-// ─── AI status indicator ──────────────────────────────────────────────────────
-
-function AIStatusIndicator() {
-  return (
-    <div className="flex items-center gap-2 mb-6">
-      <span className="relative flex h-2.5 w-2.5">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-      </span>
-      <span className="text-sm font-medium text-[#0F172A]">AI Receptionist: Active</span>
+      <Skeleton className="h-32 w-full rounded-2xl" />
     </div>
   );
 }
@@ -67,17 +65,16 @@ function AIStatusIndicator() {
 // ─── Dashboard home page ──────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [checklistData, setChecklistData] = useState(undefined); // undefined=loading
+  const [checklistData, setChecklistData] = useState(undefined);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [hasIncompleteRecommended, setHasIncompleteRecommended] = useState(false);
   const [stats, setStats] = useState(null);
-  const [nextAppointment, setNextAppointment] = useState(null);
-  const [weekStats, setWeekStats] = useState({ leads: 0, booked: 0, conversionRate: 0 });
+  const [todayAppointments, setTodayAppointments] = useState([]);
   const [activities, setActivities] = useState(null);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [activeLoading, setActiveLoading] = useState(true);
 
-  // Fetch checklist data at page level to determine setup vs active mode
+  // Fetch checklist data
   useEffect(() => {
     async function loadChecklist() {
       try {
@@ -105,45 +102,42 @@ export default function DashboardPage() {
     loadChecklist();
   }, []);
 
+  // Fetch active mode data
   useEffect(() => {
     async function loadActiveData() {
-      // Fetch aggregated stats from dedicated endpoint (no 100-lead cap)
+      // Stats (leads + invoices)
       try {
         const statsRes = await fetch('/api/dashboard/stats');
         if (statsRes.ok) {
-          const data = await statsRes.json();
-          setStats({ newLeadsToday: data.newLeadsToday, callsToday: data.callsToday });
-          setWeekStats({ leads: data.weekLeads, booked: data.weekBooked, conversionRate: data.conversionRate });
+          setStats(await statsRes.json());
         }
-      } catch { /* ignore — stats cards will show 0 */ }
+      } catch {}
 
-      // Fetch next upcoming appointment
+      // Today's appointments
       try {
-        const now = new Date().toISOString();
-        const weekLater = new Date();
-        weekLater.setDate(weekLater.getDate() + 7);
-        const apptRes = await fetch(`/api/appointments?start=${now}&end=${weekLater.toISOString()}`);
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+        const apptRes = await fetch(`/api/appointments?start=${startOfDay}&end=${endOfDay}`);
         if (apptRes.ok) {
           const apptData = await apptRes.json();
-          const upcoming = (apptData.appointments || []).find((a) => a.status === 'confirmed');
-          setNextAppointment(upcoming || null);
+          const sorted = (apptData.appointments || [])
+            .filter((a) => a.status === 'confirmed' || a.status === 'pending')
+            .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+          setTodayAppointments(sorted);
         }
-      } catch { /* ignore — card shows "None scheduled" fallback */ }
+      } catch {}
       setActiveLoading(false);
 
-      // Recent activity from activity_log
+      // Recent activity
       try {
         const { data, error } = await supabase
           .from('activity_log')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(20);
-
-        if (!error) {
-          setActivities(data ?? []);
-        } else {
-          setActivities([]);
-        }
+        if (!error) setActivities(data ?? []);
+        else setActivities([]);
       } catch {
         setActivities([]);
       }
@@ -153,7 +147,7 @@ export default function DashboardPage() {
     loadActiveData();
   }, []);
 
-  // Tour button visibility (hide if already seen)
+  // Tour button
   const [showTour, setShowTour] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -166,7 +160,6 @@ export default function DashboardPage() {
   const setupMode = checklistData === undefined || !isSetupComplete;
 
   if (checklistData === undefined) {
-    // First paint: show setup skeleton while checklist loads
     return (
       <div className="p-6 space-y-4" data-tour="home-page">
         <Skeleton className="h-5 w-48" />
@@ -178,13 +171,14 @@ export default function DashboardPage() {
   if (setupMode) {
     return (
       <div className="p-6 space-y-6" data-tour="home-page">
-        {/* AI Status */}
-        <AIStatusIndicator />
-
-        {/* Checklist hero */}
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+          </span>
+          <span className="text-sm font-medium text-[#0F172A]">AI Receptionist: Active</span>
+        </div>
         <SetupChecklist />
-
-        {/* Tour button */}
         {showTour && (
           <div className="flex justify-center">
             <button
@@ -208,135 +202,238 @@ export default function DashboardPage() {
 
   // ── Active mode ─────────────────────────────────────────────────────────────
 
+  const appointmentCount = todayAppointments.length;
+
   return (
-    <div className="p-6 space-y-4" data-tour="home-page">
-      {/* AI Status */}
-      <AIStatusIndicator />
+    <div className="p-6 space-y-5" data-tour="home-page">
+      {/* Section 1: AI Status + Greeting */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+          </span>
+          <div>
+            <p className="text-lg font-semibold text-[#0F172A]">
+              {getGreeting()}
+            </p>
+            <p className="text-sm text-[#475569]">
+              {activeLoading
+                ? 'Loading your day...'
+                : appointmentCount > 0
+                  ? `You have ${appointmentCount} job${appointmentCount !== 1 ? 's' : ''} today`
+                  : 'No jobs scheduled today'
+              }
+            </p>
+          </div>
+        </div>
+        <span className="text-xs text-green-600 font-medium bg-green-50 px-2.5 py-1 rounded-full hidden sm:block">
+          AI Active
+        </span>
+      </div>
 
       {activeLoading ? (
         <ActiveModeSkeleton />
       ) : (
         <>
-          {/* Hero metric — full width */}
-          <div className={`${card.base} p-6`} data-tour="hero-metric">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center size-12 rounded-xl bg-[#C2410C]/[0.08]">
-                <Phone className="size-5 text-[#C2410C]" />
+          {/* Section 2: Setup Checklist (if incomplete recommended items) */}
+          {hasIncompleteRecommended && <SetupChecklist />}
+
+          {/* Section 3: Today's Schedule */}
+          <div className={`${card.base} overflow-hidden`} data-tour="todays-schedule">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="size-4 text-[#C2410C]" />
+                <h2 className="text-sm font-semibold text-[#0F172A]">Today&apos;s Schedule</h2>
+                {appointmentCount > 0 && (
+                  <span className="text-xs font-medium text-[#C2410C] bg-[#C2410C]/[0.08] px-2 py-0.5 rounded-full">
+                    {appointmentCount}
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Today</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-4xl lg:text-5xl font-bold text-[#0F172A]">{stats?.callsToday ?? 0}</p>
-                  <p className="text-sm text-[#475569]">calls answered</p>
+              <Link
+                href="/dashboard/calendar"
+                className="text-xs text-[#475569] hover:text-[#0F172A] transition-colors flex items-center gap-0.5"
+              >
+                Full calendar <ChevronRight className="size-3" />
+              </Link>
+            </div>
+
+            {appointmentCount === 0 ? (
+              <div className="px-5 pb-5">
+                <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-stone-200 rounded-lg">
+                  <CalendarDays className="size-8 text-stone-300 mb-2" />
+                  <p className="text-sm text-stone-500">No jobs scheduled today</p>
+                  <Link
+                    href="/dashboard/calendar"
+                    className="text-xs text-[#C2410C] hover:underline mt-1"
+                  >
+                    View calendar
+                  </Link>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="divide-y divide-stone-100">
+                {todayAppointments.map((appt) => {
+                  const isPending = appt.status === 'pending';
+                  return (
+                    <div
+                      key={appt.id}
+                      className={`flex items-center gap-3 px-5 py-3 hover:bg-stone-50/50 transition-colors border-l-3 ${
+                        isPending ? 'border-l-amber-400' : 'border-l-green-500'
+                      }`}
+                    >
+                      {/* Time */}
+                      <div className="w-16 shrink-0 text-right">
+                        <p className="text-sm font-semibold text-[#0F172A] tabular-nums">
+                          {formatTime(appt.start_time)}
+                        </p>
+                        {appt.end_time && (
+                          <p className="text-[10px] text-stone-400 tabular-nums">
+                            {formatTime(appt.end_time)}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Divider line */}
+                      <div className="w-px h-8 bg-stone-200 shrink-0" />
+
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#0F172A] truncate">
+                          {appt.caller_name || 'Customer'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {appt.job_type && (
+                            <span className="text-xs text-stone-500">{appt.job_type}</span>
+                          )}
+                          {(appt.street_name || appt.service_address) && (
+                            <span className="flex items-center gap-0.5 text-xs text-stone-400 truncate">
+                              <MapPin className="size-3 shrink-0" />
+                              {appt.street_name && appt.postal_code
+                                ? `${appt.street_name}, ${appt.postal_code}`
+                                : appt.service_address}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      {isPending && (
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full shrink-0">
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* 2-col grid: Action Required + Next Appointment */}
+          {/* Section 4: Two-column — Leads Needing Attention + Invoice Snapshot */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Action Required card */}
-            <Link href="/dashboard/leads" className={`${card.base} ${card.hover} p-5 block`}>
-              <div className="flex items-start gap-3">
-                <div className={`flex items-center justify-center size-9 rounded-lg shrink-0 ${
-                  (stats?.newLeadsToday ?? 0) > 0 ? 'bg-[#C2410C]/[0.08]' : 'bg-stone-100'
-                }`}>
-                  <AlertCircle className={`size-4.5 ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-stone-400'}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-medium uppercase tracking-wider ${(stats?.newLeadsToday ?? 0) > 0 ? 'text-[#C2410C]' : 'text-[#475569]'}`}>
-                    {(stats?.newLeadsToday ?? 0) > 0 ? 'Action Required' : 'All Clear'}
-                  </p>
-                  <p className="text-2xl font-bold text-[#0F172A] mt-0.5">{stats?.newLeadsToday ?? 0}</p>
-                  <p className="text-xs text-[#475569]">new leads</p>
-                </div>
-              </div>
-            </Link>
-
-            {/* Next Appointment card */}
+            {/* Leads Needing Attention */}
             <div className={`${card.base} p-5`}>
-              <div className="flex items-start gap-3">
-                <div className="flex items-center justify-center size-9 rounded-lg shrink-0 bg-stone-100">
-                  <CalendarClock className="size-4.5 text-stone-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Next Appointment</p>
-                  {nextAppointment ? (
-                    <div className="mt-1">
-                      <p className="text-sm font-semibold text-[#0F172A]">{nextAppointment.caller_name || 'Customer'}</p>
-                      <p className="text-xs text-[#475569]">{formatTime(nextAppointment.start_time)}{nextAppointment.street_name && nextAppointment.postal_code ? ` — ${nextAppointment.street_name}, ${nextAppointment.postal_code}` : nextAppointment.service_address ? ` — ${nextAppointment.service_address}` : ''}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[#475569] mt-1">None scheduled</p>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className={`size-4 ${(stats?.newLeadsCount ?? 0) > 0 ? 'text-[#C2410C]' : 'text-stone-400'}`} />
+                  <h2 className="text-sm font-semibold text-[#0F172A]">New Leads</h2>
+                  {(stats?.newLeadsCount ?? 0) > 0 && (
+                    <span className="text-xs font-medium text-white bg-[#C2410C] px-2 py-0.5 rounded-full">
+                      {stats.newLeadsCount}
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Outstanding Invoices — only show if there are any */}
-          {stats.invoiceOutstandingCount > 0 && (
-            <Link href="/dashboard/invoices" className={`${card.base} p-5 hover:shadow-md transition-shadow block`}>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center size-10 rounded-xl bg-orange-50 shrink-0">
-                  <FileText className="size-5 text-[#C2410C]" />
+              {(stats?.newLeadsCount ?? 0) === 0 ? (
+                <div className="flex items-center gap-3 py-4 text-center justify-center">
+                  <Inbox className="size-5 text-stone-300" />
+                  <p className="text-sm text-stone-400">All caught up</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#475569] uppercase tracking-wider">Outstanding Invoices</p>
-                  <p className="text-xl font-bold text-[#0F172A] mt-0.5">
-                    {stats.invoiceOutstandingCount} invoice{stats.invoiceOutstandingCount !== 1 ? 's' : ''}
-                    <span className="text-sm font-normal text-[#475569] ml-2">
-                      ${stats.invoiceOutstandingAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                    </span>
+              ) : (
+                <div className="space-y-2">
+                  {(stats?.newLeadsPreview || []).map((lead) => (
+                    <div
+                      key={lead.id}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-stone-50/70"
+                    >
+                      <div className="size-8 rounded-full bg-[#C2410C]/[0.08] flex items-center justify-center shrink-0">
+                        <Users className="size-3.5 text-[#C2410C]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[#0F172A] truncate">
+                          {lead.caller_name || lead.from_number || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-stone-400 truncate">
+                          {lead.job_type || 'No job type'} · {relativeTime(lead.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {(stats?.newLeadsCount ?? 0) > 3 && (
+                    <Link
+                      href="/dashboard/leads?status=new"
+                      className="flex items-center justify-center gap-1 text-xs text-[#C2410C] hover:underline pt-1"
+                    >
+                      View all {stats.newLeadsCount} leads <ChevronRight className="size-3" />
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {(stats?.newLeadsCount ?? 0) > 0 && (stats?.newLeadsCount ?? 0) <= 3 && (
+                <Link
+                  href="/dashboard/leads"
+                  className="flex items-center justify-center gap-1 text-xs text-[#C2410C] hover:underline mt-3"
+                >
+                  View leads <ChevronRight className="size-3" />
+                </Link>
+              )}
+            </div>
+
+            {/* Invoice Snapshot */}
+            <Link href="/dashboard/invoices" className={`${card.base} ${card.hover} p-5 block`}>
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="size-4 text-[#C2410C]" />
+                <h2 className="text-sm font-semibold text-[#0F172A]">Invoices</h2>
+              </div>
+
+              {(stats?.invoiceOutstandingCount ?? 0) > 0 ? (
+                <div>
+                  <p className="text-2xl font-bold text-[#0F172A]">
+                    {formatCurrency(stats.invoiceOutstandingAmount)}
                   </p>
-                  {stats.invoiceOverdueCount > 0 && (
+                  <p className="text-xs text-[#475569] mt-1">
+                    {stats.invoiceOutstandingCount} outstanding
+                  </p>
+                  {(stats?.invoiceOverdueCount ?? 0) > 0 && (
                     <p className="text-xs text-red-600 font-medium mt-0.5">
                       {stats.invoiceOverdueCount} overdue
                     </p>
                   )}
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <p className="text-2xl font-bold text-[#0F172A]">
+                    {formatCurrency(stats?.paidThisMonth)}
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    Collected this month
+                  </p>
+                </div>
+              )}
             </Link>
-          )}
-
-          {/* This Week — full width */}
-          <div className={`${card.base} p-5`}>
-            <p className="text-xs font-medium text-[#475569] uppercase tracking-wider mb-4">This Week</p>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
-                  <Users className="size-4 text-stone-500" />
-                </div>
-                <p className="text-2xl font-bold text-[#0F172A]">{weekStats.leads}</p>
-                <p className="text-xs text-[#475569]">Leads</p>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-emerald-50">
-                  <CalendarCheck className="size-4 text-emerald-600" />
-                </div>
-                <p className="text-2xl font-bold text-[#0F172A]">{weekStats.booked}</p>
-                <p className="text-xs text-[#475569]">Booked</p>
-              </div>
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-blue-50">
-                  <TrendingUp className="size-4 text-blue-600" />
-                </div>
-                <p className="text-2xl font-bold text-[#0F172A]">{weekStats.conversionRate}%</p>
-                <p className="text-xs text-[#475569]">Conversion</p>
-              </div>
-            </div>
           </div>
 
-          {/* Setup checklist — shown in active mode when recommended items remain */}
-          {hasIncompleteRecommended && <SetupChecklist />}
-
-          {/* Recent Activity — full width, capped at 5 */}
+          {/* Section 5: Recent Activity (trimmed to 3) */}
           <div className={`${card.base} p-5`}>
             <div className="flex items-center gap-2 mb-4">
               <Activity className="size-4 text-[#475569]" />
               <h2 className="text-xs font-medium text-[#475569] uppercase tracking-wider">Recent Activity</h2>
             </div>
-            <RecentActivityFeed activities={activities?.slice(0, 5)} loading={activitiesLoading} />
+            <RecentActivityFeed activities={activities?.slice(0, 3)} loading={activitiesLoading} />
           </div>
         </>
       )}
