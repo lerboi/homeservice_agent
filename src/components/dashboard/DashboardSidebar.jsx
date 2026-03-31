@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, BarChart3, Calendar, Phone, MoreHorizontal, LogOut, Ellipsis } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, Ellipsis } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 

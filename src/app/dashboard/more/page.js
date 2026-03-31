@@ -24,7 +24,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', description: 'Set up your emergency contact chain', icon: PhoneCall },
   { href: '/dashboard/more/notifications', label: 'Notifications', description: 'SMS and email alerts per call outcome', icon: Bell },
   { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
-  { href: '/dashboard/analytics', label: 'Analytics', description: 'View call volume and performance trends', icon: BarChart3 },
+  { href: '/dashboard/more/analytics', label: 'Analytics', description: 'View call volume and performance trends', icon: BarChart3 },
   { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
   { href: '/dashboard/more/account', label: 'Account', description: 'Profile and account management', icon: UserCircle },
