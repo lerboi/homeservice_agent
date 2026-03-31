@@ -327,6 +327,23 @@ Plans:
 - [ ] 32-02-PLAN.md — FeaturesGrid full rewrite: 2-col grid, 70+ Languages hero card, 6 feature cards with micro visuals
 - [ ] 32-03-PLAN.md — Page.js skeleton updates, ScrollLinePath verification, visual checkpoint
 
+### Phase 33: Invoice Core
+
+**Goal:** Business owners can generate professional white-labeled invoices from completed jobs, edit typed line items (labor, materials with markup, travel, flat-rate, discount), configure business identity and tax settings, send invoices to customers via email (PDF attachment) and SMS (summary), download PDFs for on-site hand-delivery, and track invoice status through a filterable dashboard — replacing manual revenue entry with a full invoicing workflow. Voco handles invoicing only — no payment processing, no payment links, no online payment collection.
+**Depends on:** Phase 20 (Dashboard UX Overhaul — navigation structure)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. An owner creates an invoice from a completed lead with pre-filled customer data, adds typed line items (labor, materials, travel, flat-rate, discount), and sees auto-calculated tax on taxable items
+  2. The generated PDF is fully white-labeled — business name, logo, license number, and contact info appear; zero Voco branding, URLs, or references
+  3. Sending an invoice delivers an email (Resend) with PDF attachment and an optional SMS (Twilio) summary from the business phone number — both white-labeled
+  4. The Invoices tab shows summary cards (Total Outstanding, Overdue, Paid This Month), status filter tabs (All/Draft/Sent/Overdue/Paid), and a sortable invoice table
+  5. Marking an invoice as Paid auto-updates the linked lead's revenue_amount and status to Paid; marking a lead as Paid auto-marks the linked invoice — bidirectional sync with no circular updates
+  6. Invoice settings page allows configuring business identity (name, logo, address, phone, email, license), tax rate, default terms, invoice prefix, and next number display
+**Plans**: 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 33 to break down)
+**UI hint**: yes
 
 ---
 
