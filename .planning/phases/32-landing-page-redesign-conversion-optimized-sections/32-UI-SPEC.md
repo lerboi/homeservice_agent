@@ -39,11 +39,11 @@ Declared values (multiples of 4 only):
 | md | 16px | Card content padding, icon container size delta, section subtitle to heading gap |
 | lg | 24px | Card padding (p-6), gap between section heading and content |
 | xl | 32px | Card internal padding on desktop (p-8), section heading margin-bottom (mb-16 = 64px, see 3xl) |
-| 2xl | 48px | Sticky card content padding on desktop (p-14 desktop scaled to p-12) |
+| 2xl | 48px | Sticky card content padding on desktop (p-12) |
 | 3xl | 64px | Section vertical padding (py-20 = 80px / py-28 = 112px), section heading margin-bottom (mb-16) |
 
 Exceptions:
-- Sticky card folder-stack offsets: 80px, 130px, 180px, 230px (per D-13 — not pure 8-point scale, but driven by visual peeking requirement of ~50px per prior card)
+- Sticky card folder-stack offsets: 80px, 128px, 176px, 224px (48px peek delta per prior card, 4px-grid-aligned)
 - Sticky card minimum height: `min-h-[40vh]` mobile / `min-h-[50vh]` desktop (viewport-relative, not fixed pixel)
 - Sticky card inter-card scroll gap: `marginBottom: 25vh` (viewport-relative, drives scroll-trigger timing)
 - 44px minimum touch target for mobile interactive elements (WCAG 2.5.5)
@@ -59,23 +59,20 @@ This phase spans two surface contexts: dark hero (`#050505`) and light sections 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Display | 40px / 52px / 60px (responsive) | 600 (semibold) | 1.1 | Hero h1 with RotatingText |
-| Heading | 30px / 36px (responsive) | 600 (semibold) | 1.2 | Section headings (Features, How It Works) |
-| Subheading | 24px / 30px / 44px (responsive) | 700 (bold) | 1.15 | How It Works card titles |
-| Body | 18px / 20px (responsive) | 400 (regular) | 1.6 | Hero subtitle, How It Works card descriptions |
-| Small body | 16px | 400 (regular) | 1.6 | How It Works extended text, Feature card descriptions |
-| Label | 14px | 600 (semibold) | 1.0 | Section eyebrow text, badge labels, feature card titles |
-| Caption | 11px / 12px | 600 (semibold) | 1.0 | Metric tags, icon badge micro labels, uppercase trackers |
+| Heading | 24px / 30px / 36px / 44px (responsive) | 600 (semibold) | 1.2 | Section headings (Features, How It Works), How It Works card titles. Size differentiation creates hierarchy: section headings use 30-36px range, card titles use 24-44px responsive range. |
+| Body | 16px / 18px / 20px (responsive) | 400 (regular) | 1.6 | Hero subtitle, How It Works card descriptions, How It Works extended text, Feature card descriptions |
+| Label | 11px / 12px / 14px (responsive) | 600 (semibold) | 1.0 | Section eyebrow text, badge labels, feature card titles, metric tags, icon badge micro labels, uppercase trackers |
 
 Tailwind class mapping:
 - Display: `text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold leading-[1.1] tracking-tight`
-- Heading: `text-3xl md:text-4xl font-semibold tracking-tight`
-- Subheading: `text-3xl md:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-tight`
-- Body: `text-lg md:text-xl leading-relaxed`
-- Small body: `text-base leading-relaxed`
-- Label: `text-sm font-semibold` (section eyebrows add `tracking-[0.15em] uppercase`)
-- Caption: `text-[11px] font-semibold tracking-wide`
+- Heading (section): `text-3xl md:text-4xl font-semibold tracking-tight leading-[1.2]`
+- Heading (card title): `text-[1.5rem] md:text-3xl lg:text-[2.75rem] font-semibold tracking-tight leading-[1.2]`
+- Body (large): `text-lg md:text-xl leading-relaxed`
+- Body (standard): `text-base leading-relaxed`
+- Label (standard): `text-sm font-semibold` (section eyebrows add `tracking-[0.15em] uppercase`)
+- Label (micro): `text-[11px] font-semibold tracking-wide`
 
-Weights used: 400 (regular), 600 (semibold), 700 (bold). The bold weight is carried forward from existing How It Works card titles — changing it would break visual hierarchy between card titles and section headings.
+Weights used: 400 (regular), 600 (semibold). Size differentiation replaces weight differentiation for visual hierarchy between section headings and card titles (section headings at 30-36px, card titles at 24-44px responsive).
 
 Source: `HeroSection.jsx`, `HowItWorksSticky.jsx`, `FeaturesGrid.jsx`, `HowItWorksSection.jsx`, `SocialProofSection.jsx`
 
@@ -218,8 +215,8 @@ Mobile (<md):  grid grid-cols-1 gap-4 + scroll-snap-type: x mandatory (per D-18)
 
 Each card follows this structure:
 1. **Icon container** (top-left): 44px rounded-xl, `bg-[#F97316]/[0.08] border border-[#F97316]/[0.12]`, Lucide icon 20px in `text-[#F97316]`
-2. **Title**: `text-lg font-semibold text-[#0F172A]`
-3. **Description**: `text-sm text-[#475569] leading-relaxed`
+2. **Title**: Label role — `text-sm font-semibold text-[#0F172A]`
+3. **Description**: Body role — `text-base text-[#475569] leading-relaxed`
 4. **Micro visual** (center/bottom): Inline SVG/CSS, max height 160px, transform/opacity animations only
 5. **Card container**: `bg-white rounded-2xl border border-stone-200/60 p-6 md:p-8 shadow-sm`
 6. **Hover**: `hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-0.5 transition-all duration-200`
@@ -254,14 +251,14 @@ Source: CONTEXT.md D-05, D-06, D-07, D-08, D-09
 
 ### Folder-Stack Sticky Card Implementation (D-12, D-13)
 
-Each card is `position: sticky` with incrementing `top` values:
+Each card is `position: sticky` with incrementing `top` values. Peek delta is 48px (4px-grid-aligned):
 
 | Card | Top Offset | z-index | Peek-Through |
 |------|-----------|---------|-------------|
-| Step 01 — Call Comes In | `80px` | `1` | — |
-| Step 02 — AI Handles the Conversation | `130px` | `2` | 50px of card 1 badge visible |
-| Step 03 — Job Is Booked | `180px` | `3` | 50px of card 1+2 badges visible |
-| Step 04 — Dashboard Does the Rest | `230px` | `4` | 50px of card 1+2+3 badges visible |
+| Step 01 — Call Comes In | `80px` | `1` | -- |
+| Step 02 — AI Handles the Conversation | `128px` | `2` | 48px of card 1 badge visible |
+| Step 03 — Job Is Booked | `176px` | `3` | 48px of card 1+2 badges visible |
+| Step 04 — Dashboard Does the Rest | `224px` | `4` | 48px of card 1+2+3 badges visible |
 
 At full stack state (all 4 cards stacked), the visible peek-through area shows step badges from prior cards, creating a "folder tab" visual.
 
@@ -269,14 +266,14 @@ At full stack state (all 4 cards stacked), the visible peek-through area shows s
 
 Each card interior follows this layout:
 1. **Top row**: Step badge (left) + Icon container (right)
-   - Badge: `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border {step.badgeBg}`
+   - Badge: `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border {step.badgeBg}`
    - Icon: `size-14 md:size-16 rounded-2xl bg-gradient-to-br {step.accentGradient} flex items-center justify-center`
-2. **Title**: `text-3xl md:text-4xl lg:text-[2.75rem] font-bold text-[#0F172A] tracking-tight leading-tight`
+2. **Title**: Heading role (card) — `text-[1.5rem] md:text-3xl lg:text-[2.75rem] font-semibold text-[#0F172A] tracking-tight leading-[1.2]`
 3. **Accent divider**: `w-16 h-1 rounded-full bg-gradient-to-r {step.accentGradient}`
-4. **Description**: `text-lg md:text-xl text-[#334155] leading-relaxed`
-5. **Extended text**: `text-base text-[#64748B] leading-relaxed`
+4. **Description**: Body role (large) — `text-lg md:text-xl text-[#334155] leading-relaxed`
+5. **Extended text**: Body role (standard) — `text-base text-[#64748B] leading-relaxed`
 6. **Bottom row**: Detail quote (italic) + progress dots
-7. **Background decorative number**: `text-[14rem] md:text-[20rem] font-black {step.numberColor}` positioned absolute bottom-right
+7. **Background decorative number**: `text-[14rem] md:text-[20rem] font-semibold {step.numberColor}` positioned absolute bottom-right
 
 ### 4-Step Content (D-10)
 
@@ -291,9 +288,9 @@ Note: Step 2 title changed from "AI triages instantly" to "AI Handles the Conver
 
 ### Mobile degradation (D-19)
 
-On viewports shorter than 700px, reduce folder-stack offsets to prevent cards from being pushed too far down:
-- Card 1: `top: 60px`, Card 2: `top: 90px`, Card 3: `top: 120px`, Card 4: `top: 150px`
-- Offset delta: 30px instead of 50px
+On viewports shorter than 700px, reduce folder-stack offsets to maintain usability with 32px peek delta (4px-grid-aligned):
+- Card 1: `top: 60px`, Card 2: `top: 92px`, Card 3: `top: 124px`, Card 4: `top: 156px`
+- Offset delta: 32px instead of 48px
 
 On viewports under 640px width, scroll gap between cards reduces from `marginBottom: 25vh` to `marginBottom: 20vh`.
 
