@@ -142,7 +142,7 @@ export function LandingFooter() {
 
             {/* Copyright + back to top */}
             <div className="flex items-center gap-4">
-              <p className="text-xs text-white/15">&copy; {new Date().getFullYear()} Voco. No call goes to voicemail.</p>
+              <p className="text-xs text-white/15">&copy; {new Date().getFullYear()} Voco Private Limited. All rights reserved.</p>
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

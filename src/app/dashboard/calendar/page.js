@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, CalendarOff, CalendarDays, Link2, ChevronDown } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2 } from 'lucide-react';
+import { useReducedMotion } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
 import CalendarView from '@/components/dashboard/CalendarView';
@@ -73,13 +73,10 @@ export default function CalendarPage() {
     conflicts: [],
   });
 
-  // Flyout state
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
-  const [connectionsOpen, setConnectionsOpen] = useState(false);
   const prefersReduced = useReducedMotion();
 
-  // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -167,27 +164,40 @@ export default function CalendarPage() {
     ? formatWeekRange(currentDate)
     : formatDayLabel(currentDate);
 
-  // Today's agenda
+  // Today's agenda — all appointments for today, sorted by time
   const todayAppts = data.appointments
     .filter((a) => isSameDay(new Date(a.start_time), new Date()))
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
-  // Find conflict for selected appointment
   const selectedConflict = selectedAppointment
     ? data.conflicts.find((c) => c.appointment.id === selectedAppointment.id)
     : null;
 
-  return (
-    <div className={`${card.base} p-0`} data-tour="calendar-page">
-      <div className="p-4 lg:p-6 max-w-6xl mx-auto">
-        {/* Conflict Banner */}
-        <ConflictAlertBanner
-          conflicts={data.conflicts}
-          onReviewConflicts={handleReviewConflicts}
-        />
+  const urgencyBorderColor = {
+    emergency: 'border-l-red-400',
+    routine: 'border-l-[#4F6BED]',
+    high_ticket: 'border-l-amber-400',
+  };
 
-        {/* Calendar Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+  const urgencyTimeColor = {
+    emergency: 'text-red-500',
+    routine: 'text-[#4F6BED]',
+    high_ticket: 'text-amber-600',
+  };
+
+  return (
+    <div className="space-y-4" data-tour="calendar-page">
+
+      {/* Conflict Banner */}
+      <ConflictAlertBanner
+        conflicts={data.conflicts}
+        onReviewConflicts={handleReviewConflicts}
+      />
+
+      {/* ── Calendar Card (full width) ───────────────────────────── */}
+      <div className={`${card.base} p-0 overflow-hidden`}>
+        {/* Calendar toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-stone-200/60 bg-[#FAFAF9]">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous">
               <ChevronLeft className="h-4 w-4" />
@@ -195,7 +205,7 @@ export default function CalendarPage() {
             <Button variant="outline" size="icon" onClick={() => navigate('next')} aria-label="Next">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-semibold text-[#0F172A] ml-2">{dateLabel}</span>
+            <span className="text-base font-semibold text-[#0F172A] ml-1 tabular-nums">{dateLabel}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -209,7 +219,7 @@ export default function CalendarPage() {
             </Button>
 
             {!isMobile && (
-              <div className="flex rounded-md border border-stone-200 overflow-hidden">
+              <div className="flex rounded-lg border border-stone-200 overflow-hidden">
                 <button
                   type="button"
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'week' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
@@ -219,7 +229,7 @@ export default function CalendarPage() {
                 </button>
                 <button
                   type="button"
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-stone-200 ${viewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
                   onClick={() => setViewMode('day')}
                 >
                   Day
@@ -229,114 +239,100 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Main content: Calendar + Agenda sidebar */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Calendar */}
-          <div
-            className={`flex-1 min-w-0 border border-stone-200 rounded-lg overflow-hidden transition-opacity ${fading ? 'opacity-0 duration-100' : 'opacity-100 duration-150'}`}
-          >
-            <CalendarView
-              appointments={data.appointments}
-              externalEvents={data.externalEvents}
-              travelBuffers={data.travelBuffers}
-              currentDate={currentDate}
-              viewMode={effectiveViewMode}
-              loading={loading}
-              onAppointmentClick={handleAppointmentClick}
-            />
+        {/* Calendar grid */}
+        <div className={`transition-opacity ${fading ? 'opacity-0 duration-100' : 'opacity-100 duration-150'}`}>
+          <CalendarView
+            appointments={data.appointments}
+            externalEvents={data.externalEvents}
+            travelBuffers={data.travelBuffers}
+            currentDate={currentDate}
+            viewMode={effectiveViewMode}
+            loading={loading}
+            onAppointmentClick={handleAppointmentClick}
+          />
+        </div>
+      </div>
+
+      {/* ── Bottom row: Agenda + Connections ────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {/* Today's Agenda */}
+        <div className={`${card.base} p-5`}>
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarDays className="size-4 text-[#C2410C]" />
+            <h2 className="text-sm font-semibold text-[#0F172A]">Today&apos;s Agenda</h2>
+            {todayAppts.length > 0 && (
+              <span className="ml-auto text-xs font-medium bg-[#0F172A]/[0.06] text-[#475569] px-2 py-0.5 rounded-full">
+                {todayAppts.length} appointment{todayAppts.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
 
-          {/* Today's Agenda Sidebar */}
-          <div className="lg:w-[280px] shrink-0 space-y-6">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <CalendarDays className="size-3.5 text-[#475569]" />
-                <h2 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
-                  Today&apos;s Agenda
-                </h2>
+          {todayAppts.length === 0 ? (
+            data.appointments.length === 0 ? (
+              <EmptyStateCalendar padding="py-6" onConnect={() => {}} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
+                <p className="text-sm font-medium text-[#0F172A]">No appointments today</p>
+                <p className="text-xs text-[#94A3B8] mt-0.5">Enjoy the day off.</p>
               </div>
+            )
+          ) : (
+            <div className="space-y-2">
+              {todayAppts.map((appt) => {
+                const border = urgencyBorderColor[appt.urgency] || urgencyBorderColor.routine;
+                const timeColor = urgencyTimeColor[appt.urgency] || urgencyTimeColor.routine;
+                const startTime = new Date(appt.start_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const endTime = new Date(appt.end_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const addressLine = appt.street_name && appt.postal_code
+                  ? `${appt.street_name}, ${appt.postal_code}`
+                  : appt.service_address || '';
 
-              {todayAppts.length === 0 ? (
-                data.appointments.length === 0 ? (
-                  <EmptyStateCalendar padding="py-8" onConnect={() => setConnectionsOpen(true)} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
-                    <p className="text-sm text-[#475569]">No appointments today</p>
-                  </div>
-                )
-              ) : (
-                <div className="space-y-2">
-                  {todayAppts.map((appt) => {
-                    const urgencyBorder = {
-                      emergency: 'border-l-red-400',
-                      routine: 'border-l-[#0F172A]/30',
-                      high_ticket: 'border-l-amber-400',
-                    };
-                    const time = new Date(appt.start_time).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    });
-
-                    return (
-                      <button
-                        key={appt.id}
-                        type="button"
-                        className={`w-full text-left rounded-md border border-stone-200 border-l-2 ${urgencyBorder[appt.urgency] || urgencyBorder.routine} p-3 hover:bg-stone-50 transition-colors cursor-pointer`}
-                        onClick={() => handleAppointmentClick(appt)}
-                      >
-                        <div className="text-xs text-[#475569] font-medium">{time}</div>
-                        <div className="text-sm font-semibold text-[#0F172A] mt-0.5">{appt.caller_name}</div>
-                        <div className="text-xs text-[#475569] truncate">{appt.notes || (appt.street_name && appt.postal_code ? `${appt.street_name}, ${appt.postal_code}` : appt.service_address) || ''}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Calendar Connections — collapsible */}
-            <div className="border-t border-stone-200 pt-4">
-              <button
-                type="button"
-                onClick={() => setConnectionsOpen((o) => !o)}
-                className="flex items-center gap-2 w-full"
-                aria-expanded={connectionsOpen}
-              >
-                <Link2 className="size-3.5 text-[#475569]" />
-                <h2 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
-                  Connections
-                </h2>
-                <ChevronDown className={`size-3 text-stone-400 ml-auto transition-transform duration-200 ${connectionsOpen ? '' : '-rotate-90'}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {connectionsOpen && (
-                  <motion.div
-                    initial={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                    animate={prefersReduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
-                    exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    style={{ overflow: 'hidden' }}
+                return (
+                  <button
+                    key={appt.id}
+                    type="button"
+                    className={`w-full text-left rounded-lg border border-stone-200 border-l-[3px] ${border} p-3 hover:bg-stone-50 transition-colors group`}
+                    onClick={() => handleAppointmentClick(appt)}
                   >
-                    <div className="pt-3">
-                      <CalendarSyncCard />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold ${timeColor} mb-0.5`}>{startTime} – {endTime}</p>
+                        <p className="text-sm font-semibold text-[#0F172A]">{appt.caller_name}</p>
+                        {addressLine && (
+                          <p className="text-xs text-[#64748B] truncate mt-0.5">{addressLine}</p>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8] group-hover:text-[#475569] transition-colors shrink-0 mt-0.5">
+                        View →
+                      </span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Appointment Flyout */}
-        <AppointmentFlyout
-          appointment={selectedAppointment}
-          conflict={selectedConflict}
-          open={flyoutOpen}
-          onOpenChange={setFlyoutOpen}
-          onCancelled={handleCancelled}
-        />
+        {/* Calendar Connections */}
+        <div className={`${card.base} p-5`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Link2 className="size-4 text-[#C2410C]" />
+            <h2 className="text-sm font-semibold text-[#0F172A]">Calendar Connections</h2>
+          </div>
+          <CalendarSyncCard />
+        </div>
       </div>
+
+      {/* Appointment Flyout */}
+      <AppointmentFlyout
+        appointment={selectedAppointment}
+        conflict={selectedConflict}
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        onCancelled={handleCancelled}
+      />
     </div>
   );
 }
