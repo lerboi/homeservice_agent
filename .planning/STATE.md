@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Phase 32 UI-SPEC approved
-last_updated: "2026-03-31T11:21:11.388Z"
+stopped_at: Phase 33 context gathered
+last_updated: "2026-03-31T12:12:36.276Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -58,6 +58,9 @@ Recent decisions affecting current work:
 
 ### Roadmap Evolution
 
+- Phase 33 added: Invoice Core — schema, CRUD API, line item editor, PDF generation, email/SMS delivery, Stripe payment links, customer payment page, status tracking, invoice settings
+- Phase 34 added: Estimates, Reminders, and Recurring Invoices — good/better/best estimates, automated reminders, late fees, deposits, digital signatures, recurring invoices for maintenance contracts
+- Phase 35 added: Invoice Integrations and AI — QuickBooks/Xero sync, AI work descriptions from transcripts, batch invoicing, customer financing (Wisetack/Hearth)
 - Phase 32 added: Landing Page Redesign — Conversion-Optimized Sections
 - [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
 - [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
@@ -118,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T11:21:11.381Z
-Stopped at: Phase 32 UI-SPEC approved
-Resume file: .planning/phases/32-landing-page-redesign-conversion-optimized-sections/32-UI-SPEC.md
+Last session: 2026-03-31T12:12:36.270Z
+Stopped at: Phase 33 context gathered
+Resume file: .planning/phases/33-invoice-core/33-CONTEXT.md
