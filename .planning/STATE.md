@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: "25-03: Task 1 complete, checkpoint pending at Task 2 (human-verify)"
-last_updated: "2026-03-28T21:14:59.093Z"
+stopped_at: Phase 32 context gathered
+last_updated: "2026-03-31T11:07:58.903Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -55,6 +55,10 @@ Recent decisions affecting current work:
 - [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
 - [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
+
+### Roadmap Evolution
+
+- Phase 32 added: Landing Page Redesign — Conversion-Optimized Sections
 - [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
 - [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
 - [Phase 28-admin-dashboard]: Admin gate returns early from middleware after successful check — admins may not have a tenants row
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T21:14:59.084Z
-Stopped at: 25-03: Task 1 complete, checkpoint pending at Task 2 (human-verify)
-Resume file: None
+Last session: 2026-03-31T11:07:58.894Z
+Stopped at: Phase 32 context gathered
+Resume file: .planning/phases/32-landing-page-redesign-conversion-optimized-sections/32-CONTEXT.md
