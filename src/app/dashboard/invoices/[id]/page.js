@@ -346,8 +346,21 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const handleSendClick = () => {
-    toast.info('Send feature coming soon');
+  const handleSendClick = async () => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/send`, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to send invoice');
+      }
+      toast.success('Invoice sent successfully');
+      fetchInvoice();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // ── Loading ──
@@ -471,6 +484,7 @@ export default function InvoiceDetailPage() {
                 <Button
                   className="w-full justify-start gap-2 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
                   onClick={handleSendClick}
+                  disabled={actionLoading}
                 >
                   <Send className="h-4 w-4" />
                   Send Invoice
@@ -555,6 +569,7 @@ export default function InvoiceDetailPage() {
             size="sm"
             className="flex-1 gap-1.5 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
             onClick={handleSendClick}
+            disabled={actionLoading}
           >
             <Send className="h-3.5 w-3.5" />
             Send
