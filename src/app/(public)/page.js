@@ -18,12 +18,9 @@ const HowItWorksSection = dynamic(
             <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
           </div>
           <div className="space-y-4">
-            <div className="flex gap-2 justify-center mb-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 w-16 rounded-lg bg-black/[0.04]" />
-              ))}
-            </div>
-            <div className="h-[280px] rounded-2xl bg-white border border-stone-200/60" />
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-[180px] rounded-3xl bg-white border border-stone-200/60 shadow-sm" />
+            ))}
           </div>
         </div>
       </section>
@@ -41,12 +38,11 @@ const FeaturesGrid = dynamic(
             <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
             <div className="h-10 w-96 bg-black/10 rounded mx-auto" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-px bg-stone-200/80 rounded-2xl overflow-hidden">
-            <div className="sm:col-span-3 h-64 bg-white" />
-            <div className="sm:col-span-2 h-64 bg-white" />
-            <div className="sm:col-span-2 h-48 bg-white" />
-            <div className="sm:col-span-3 h-48 bg-white" />
-            <div className="sm:col-span-5 h-24 bg-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2 h-48 rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+            ))}
           </div>
         </div>
       </section>
