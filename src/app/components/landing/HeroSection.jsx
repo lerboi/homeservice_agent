@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 const RotatingText = dynamic(
   () => import('./RotatingText').then((m) => m.RotatingText),
   {
-    loading: () => <span className="text-[#F97316]">Competitor</span>,
+    loading: () => <span className="text-[#F97316]">$5,000</span>,
   }
 );
 
@@ -48,16 +48,16 @@ export function HeroSection() {
         <div className="md:max-w-[50%]">
           <AnimatedSection>
             <h1 className="text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold text-white leading-[1.1] tracking-tight">
-              Every Missed Call Is a Job Your{' '}
+              Every Missed Call Costs You{' '}
               <br />
               <RotatingText
-                texts={['Competitor', 'Rival', 'Neighbor']}
+                texts={['$3,000', '$5,000', '$10,000']}
                 rotationInterval={3000}
                 staggerDuration={0.03}
                 staggerFrom="first"
                 className="text-[#F97316]"
               />{' '}
-              Just<br /> Booked
+              <br />in Lost Revenue
             </h1>
 
             <p className="text-lg md:text-xl text-white/50 mt-5 mb-8 max-w-xl leading-relaxed">
