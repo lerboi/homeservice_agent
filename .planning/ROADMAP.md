@@ -351,6 +351,19 @@ Plans:
 - [x] 33-07-PLAN.md — Email/SMS delivery, bidirectional sync, LeadFlyout integration
 **UI hint**: yes
 
+### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel
+
+**Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
+**Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
+**Depends on:** Phase 32
+**Plans:** 3 plans
+
+Plans:
+- [ ] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update
+- [ ] 36-02-PLAN.md -- FeaturesCarousel component and page.js import swap
+- [ ] 36-03-PLAN.md -- Build verification, ScrollLinePath integration, visual checkpoint
+**UI hint**: yes
+
 ---
 
 ## Milestone v2.0 Phases
@@ -555,7 +568,8 @@ Plans:
 - [x] **Phase 24: Subscription Lifecycle and Notifications** - Past_due grace period, middleware gate, failed payment SMS/email, trial email cron at day 7+12, trial-will-end webhook notification (completed 2026-03-26)
 - [x] **Phase 25: Enforcement Gate and Billing Dashboard** - handleInbound subscription check, call blocking with graceful message, billing dashboard page, trial countdown banner, paywall page, Stripe Checkout, Customer Portal link (completed 2026-03-31)
 - [ ] **Phase 26: Billing Documentation** - Billing/payment architecture skill file, CLAUDE.md updated with billing skill entry
-- [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI (completed 2026-03-26)
+- [x] **Phase 27: Country-Aware Onboarding and Number Provisioning** - User info collection (name, phone, country), country-based Twilio provisioning, Singapore pre-purchased inventory, simplified plan selection UI
+ (completed 2026-03-26)
 - [x] **Phase 28: Admin Dashboard** - Separate admin auth, Singapore phone number inventory management, tenant user overview (completed 2026-03-26)
 - [x] **Phase 29: Hero Section Interactive Demo** - Business name input, AI voice demo player with dynamic TTS name splice, shorter hero title, responsive rotating text (completed 2026-03-26)
 
