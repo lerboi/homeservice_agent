@@ -4,13 +4,13 @@ import { AnimatedSection } from './AnimatedSection';
 import { ArrowRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const HowItWorksSticky = dynamic(
-  () => import('./HowItWorksSticky').then((m) => m.HowItWorksSticky),
+const HowItWorksMinimal = dynamic(
+  () => import('./HowItWorksMinimal').then((m) => m.HowItWorksMinimal),
   {
     loading: () => (
-      <div className="space-y-8">
+      <div>
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-[180px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+          <div key={i} className="min-h-screen bg-white" />
         ))}
       </div>
     ),
@@ -19,23 +19,22 @@ const HowItWorksSticky = dynamic(
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-[#F5F5F4] py-20 md:py-28 px-6">
-      <div className="relative z-[1] max-w-5xl mx-auto">
-        <AnimatedSection className="text-center mb-16">
-          <p className="text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
+    <section id="how-it-works">
+      <div className="bg-white pt-24 pb-0">
+        <AnimatedSection className="max-w-xl mx-auto text-center px-6">
+          <p className="text-xs md:text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
             How it works
           </p>
-          <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">
-            From missed call to booked revenue.
-            <br className="hidden sm:block" />
-            <span className="text-[#475569]">No callbacks. No voicemail. No lost jobs.</span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-[#0F172A] tracking-tight leading-[1.2]">
+            From first ring to full calendar — in one call.
           </h2>
         </AnimatedSection>
+      </div>
 
-        {/* Sticky scroll cards — all breakpoints */}
-        <HowItWorksSticky />
+      <HowItWorksMinimal />
 
-        <AnimatedSection delay={0.3} className="flex justify-center mt-16">
+      <div className="bg-white py-16 flex justify-center px-6">
+        <AnimatedSection delay={0.3}>
           <Button
             asChild
             size="lg"
