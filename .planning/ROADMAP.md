@@ -687,7 +687,7 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 22. Billing Foundation | 3/3 | Complete | 2026-03-26 |
 | 23. Usage Tracking | 1/1 | Complete    | 2026-03-26 |
 | 24. Subscription Lifecycle and Notifications | 3/3 | Complete    | 2026-03-26 |
-| 25. Enforcement Gate and Billing Dashboard | 3/3 | Complete   | 2026-03-31 |
+| 25. Enforcement Gate and Billing Dashboard | 3/3 | Complete    | 2026-03-31 |
 | 26. Billing Documentation | 0/TBD | Not started | - |
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 1/3 | Complete    | 2026-03-26 |
