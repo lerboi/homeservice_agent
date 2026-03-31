@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 36-01-PLAN.md
-last_updated: "2026-03-31T22:14:05.365Z"
+stopped_at: Completed 36-02-PLAN.md
+last_updated: "2026-03-31T22:14:45.946Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 36 (landing-page-section-redesign-how-it-works-minimalism-and-features-carousel) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -71,6 +71,7 @@ Recent decisions affecting current work:
 - [Phase 33-invoice-core]: SMS failure in invoice send route is non-fatal — email already delivered before SMS attempt, Twilio errors caught and logged only
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
+- [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
 
 ### Roadmap Evolution
 
@@ -138,6 +139,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T22:14:05.357Z
-Stopped at: Completed 36-01-PLAN.md
+Last session: 2026-03-31T22:14:45.927Z
+Stopped at: Completed 36-02-PLAN.md
 Resume file: None
