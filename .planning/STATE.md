@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 33-invoice-core plan 03 (33-03-PLAN.md)
-last_updated: "2026-03-31T18:27:02.928Z"
+stopped_at: Completed 33-invoice-core plan 05 (33-05-PLAN.md)
+last_updated: "2026-03-31T18:36:05.713Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 33 (invoice-core) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 
 ## Accumulated Context
 
@@ -61,6 +61,7 @@ Recent decisions affecting current work:
 - [Phase 33-invoice-core]: get_next_invoice_number uses INSERT ON CONFLICT DO UPDATE with composite PK (tenant_id, year) for atomic race-safe numbering; year rollover automatic
 - [Phase 33-invoice-core]: Analytics relocated to /dashboard/more/analytics (not removed) — redirect at old URL, link in More page updated to canonical path
 - [Phase 33-invoice-core]: Overdue detection runs on every GET /api/invoices (bulk UPDATE before SELECT) — no cron needed, list always current
+- [Phase 33-invoice-core]: Discount line total shown in red with '(-)' indicator; send flow creates invoice then fires delivery endpoint silently ignored until Plan 07
 
 ### Roadmap Evolution
 
@@ -127,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T18:27:02.921Z
-Stopped at: Completed 33-invoice-core plan 03 (33-03-PLAN.md)
+Last session: 2026-03-31T18:36:05.706Z
+Stopped at: Completed 33-invoice-core plan 05 (33-05-PLAN.md)
 Resume file: None
