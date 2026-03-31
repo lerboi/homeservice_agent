@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Milestone complete
-stopped_at: "Completed 25-03-PLAN.md — checkpoint:human-verify pending"
-last_updated: "2026-03-31T17:16:41.282Z"
+status: Ready to execute
+stopped_at: Completed 32-02-PLAN.md
+last_updated: "2026-03-31T17:31:23.125Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 25 — enforcement-gate-and-billing-dashboard
+**Current focus:** Phase 32 — landing-page-redesign-conversion-optimized-sections
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: 32 (landing-page-redesign-conversion-optimized-sections) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 - [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
 - [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
+- [Phase 32]: Full-width language hero card placed at top of 2-col grid using md:col-span-2 for visual hierarchy
 
 ### Roadmap Evolution
 
@@ -121,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T17:09:47.471Z
-Stopped at: Completed 25-03-PLAN.md — checkpoint:human-verify pending
+Last session: 2026-03-31T17:31:17.609Z
+Stopped at: Completed 32-02-PLAN.md
 Resume file: None

@@ -320,11 +320,11 @@ Plans:
 **Goal:** Redesign the landing page hero text, Features section, and How It Works section to be more conversion-focused — attacking direct pain points for home service business owners with clear messaging around 70+ language support, real-time calendar-aware booking, post-call SMS, call analytics, and full integration capabilities. Improve visual clarity and UX appeal across all landing sections.
 **Requirements**: D-01 through D-20 (from 32-CONTEXT.md)
 **Depends on:** Phase 29
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 32-01-PLAN.md — Hero copy update + HowItWorks 4-step expansion with folder-stack effect
-- [ ] 32-02-PLAN.md — FeaturesGrid full rewrite: 2-col grid, 70+ Languages hero card, 6 feature cards with micro visuals
+- [x] 32-02-PLAN.md — FeaturesGrid full rewrite: 2-col grid, 70+ Languages hero card, 6 feature cards with micro visuals
 - [ ] 32-03-PLAN.md — Page.js skeleton updates, ScrollLinePath verification, visual checkpoint
 
 ### Phase 33: Invoice Core
