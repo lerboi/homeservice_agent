@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 33-invoice-core plan 04 (33-04-PLAN.md)
-last_updated: "2026-03-31T18:53:05.729Z"
+stopped_at: Completed 33-invoice-core plan 06 (33-06-PLAN.md)
+last_updated: "2026-03-31T19:17:51.803Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 33 (invoice-core) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 
 ## Accumulated Context
 
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [Phase 33-invoice-core]: Discount line total shown in red with '(-)' indicator; send flow creates invoice then fires delivery endpoint silently ignored until Plan 07
 - [Phase 33-invoice-core]: Summary metrics fetched once on mount only — filter changes do not re-fetch summary, only the invoice list
 - [Phase 33-invoice-core]: STATUS_CONFIG exported as named export from InvoiceStatusBadge for reuse by other components
+- [Phase 33-invoice-core]: HTML/CSS invoice preview (not PDF embed) in detail page — faster render, no CORS, matches PDF layout visually
+- [Phase 33-invoice-core]: Send Invoice button shows 'Send feature coming soon' toast in detail page — actual delivery wired in Plan 07
 
 ### Roadmap Evolution
 
@@ -130,6 +132,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T18:53:05.723Z
-Stopped at: Completed 33-invoice-core plan 04 (33-04-PLAN.md)
+Last session: 2026-03-31T19:17:51.795Z
+Stopped at: Completed 33-invoice-core plan 06 (33-06-PLAN.md)
 Resume file: None
