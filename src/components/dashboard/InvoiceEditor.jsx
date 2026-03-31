@@ -385,16 +385,30 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
 
       {/* Line Items */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base font-semibold text-stone-900">Line Items</CardTitle>
+          <span className="text-xs text-stone-400">
+            {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
+          </span>
         </CardHeader>
         <CardContent className="pt-0">
           {lineItems.length === 0 ? (
-            <p className="text-sm text-stone-400 py-4 text-center">
-              No line items yet. Add one below.
-            </p>
+            <div className="text-center py-8 border-2 border-dashed border-stone-200 rounded-lg">
+              <p className="text-sm text-stone-400 mb-3">
+                No line items yet
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddLineItem}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add First Item
+              </Button>
+            </div>
           ) : (
-            <div>
+            <div className="space-y-2">
               {lineItems.map((item, index) => (
                 <LineItemRow
                   key={index}
@@ -407,36 +421,37 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-4 w-full sm:w-auto"
-            onClick={handleAddLineItem}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Line Item
-          </Button>
+          {lineItems.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full border-dashed text-stone-500 hover:text-stone-700 hover:border-stone-400"
+              onClick={handleAddLineItem}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Line Item
+            </Button>
+          )}
 
           {/* Totals */}
           {lineItems.length > 0 && (
-            <div className="mt-6">
-              <Separator className="mb-4" />
-              <div className="flex flex-col items-end gap-1 text-sm">
-                <div className="flex gap-8 w-full max-w-xs justify-between">
+            <div className="mt-5 ml-auto max-w-xs">
+              <div className="bg-stone-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
                   <span className="text-stone-500">Subtotal</span>
-                  <span className="font-medium text-stone-900">${subtotal.toFixed(2)}</span>
+                  <span className="font-medium text-stone-700 tabular-nums">${subtotal.toFixed(2)}</span>
                 </div>
                 {tax_amount > 0 && (
-                  <div className="flex gap-8 w-full max-w-xs justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-stone-500">Tax ({taxRatePct}%)</span>
-                    <span className="font-medium text-stone-900">${tax_amount.toFixed(2)}</span>
+                    <span className="font-medium text-stone-700 tabular-nums">${tax_amount.toFixed(2)}</span>
                   </div>
                 )}
-                <Separator className="my-2 w-full max-w-xs" />
-                <div className="flex gap-8 w-full max-w-xs justify-between">
-                  <span className="font-semibold text-stone-900 text-base">Total Due</span>
-                  <span className="font-semibold text-stone-900 text-base">${total.toFixed(2)}</span>
+                <Separator />
+                <div className="flex justify-between pt-1">
+                  <span className="font-semibold text-stone-900">Total Due</span>
+                  <span className="font-bold text-lg text-stone-900 tabular-nums">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
