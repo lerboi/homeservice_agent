@@ -20,7 +20,7 @@ const HowItWorksMinimal = dynamic(
 export function HowItWorksSection() {
   return (
     <section id="how-it-works">
-      <div className="bg-white pt-24 pb-0">
+      <div className="bg-[#F5F5F4] pt-24 pb-0">
         <AnimatedSection className="max-w-xl mx-auto text-center px-6">
           <p className="text-xs md:text-sm font-semibold text-[#F97316] tracking-[0.15em] uppercase mb-3">
             How it works
@@ -33,7 +33,7 @@ export function HowItWorksSection() {
 
       <HowItWorksMinimal />
 
-      <div className="bg-white py-16 flex justify-center px-6">
+      <div className="bg-[#F5F5F4] py-16 flex justify-center px-6">
         <AnimatedSection delay={0.3}>
           <Button
             asChild

@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 const RotatingText = dynamic(
   () => import('./RotatingText').then((m) => m.RotatingText),
   {
-    loading: () => <span className="text-[#F97316]">$5,000</span>,
+    loading: () => <span className="text-[#F97316]">Phone Calls</span>,
   }
 );
 
@@ -47,21 +47,25 @@ export function HeroSection() {
       <div className="relative max-w-6xl mx-auto px-6 pt-28 pb-20 md:pt-36 md:pb-28 pointer-events-none">
         <div className="md:max-w-[50%]">
           <AnimatedSection>
-            <h1 className="text-[2.5rem] md:text-[3.25rem] lg:text-[3.75rem] font-semibold text-white leading-[1.1] tracking-tight">
-              Every Missed Call Costs You{' '}
+            <h1 className="text-[1.75rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white leading-[1.2] tracking-tight">
+              Let Voco Handle Your
               <br />
-              <RotatingText
-                texts={['$3,000', '$5,000', '$10,000']}
-                rotationInterval={3000}
-                staggerDuration={0.03}
-                staggerFrom="first"
-                className="text-[#F97316]"
-              />{' '}
-              <br />in Lost Revenue
+              <span className="text-[2.25rem] md:text-[3rem] lg:text-[3.75rem]">
+                <RotatingText
+                  texts={['Phone Calls', 'Bookings', 'Invoices', 'Paperwork']}
+                  rotationInterval={3000}
+                  staggerDuration={0.03}
+                  staggerFrom="first"
+                  className="text-[#F97316]"
+                />
+              </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/50 mt-5 mb-8 max-w-xl leading-relaxed">
-              Enter your business name and hear your AI receptionist answer in 30 seconds.
+            <p className="text-lg md:text-xl text-white/60 mt-5 mb-4 max-w-xl leading-relaxed">
+              Your AI receptionist answers every call, books jobs, and captures leads — 24/7, in 70+ languages.
+            </p>
+            <p className="text-sm text-white/35 mb-8">
+              Enter your business name and hear it in action.
             </p>
 
             {/* Demo input/player — HeroDemoBlock manages input-to-player transition */}

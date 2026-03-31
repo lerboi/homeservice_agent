@@ -362,57 +362,56 @@ const FEATURES = [
 export function FeaturesCarousel() {
   const trackRef = useRef(null);
   const intervalRef = useRef(null);
-  const resumeTimeoutRef = useRef(null);
+  const userInteractedRef = useRef(false);
+  const isAutoScrollingRef = useRef(false);
+  const isProgrammaticScrollRef = useRef(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const prefersReducedMotion = useReducedMotion();
 
-  /* ── Scroll a specific card index into view ── */
+  /* ── Scroll a specific card index into the track (no page scroll) ── */
   const scrollToIndex = useCallback((idx) => {
     const clamped = ((idx % FEATURES.length) + FEATURES.length) % FEATURES.length;
     const track = trackRef.current;
-    const cards = track?.children;
-    if (!cards?.[clamped]) return;
-    cards[clamped].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    const card = track?.children?.[clamped];
+    if (!track || !card) return;
+    // Block observer from overriding during programmatic scroll
+    isProgrammaticScrollRef.current = true;
+    const cardLeft = card.offsetLeft;
+    const cardWidth = card.offsetWidth;
+    const trackWidth = track.offsetWidth;
+    const scrollTarget = cardLeft - (trackWidth / 2) + (cardWidth / 2);
+    track.scrollTo({ left: scrollTarget, behavior: 'smooth' });
     setActiveIndex(clamped);
+    // Re-enable observer after scroll settles
+    setTimeout(() => { isProgrammaticScrollRef.current = false; }, 800);
   }, []);
 
-  /* ── Pause auto-advance on user interaction, then restart after 8s ── */
-  const handleUserInteraction = useCallback(() => {
+  /* ── Stop auto-advance permanently on any user interaction ── */
+  const stopAutoAdvance = useCallback(() => {
+    userInteractedRef.current = true;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (resumeTimeoutRef.current) {
-      clearTimeout(resumeTimeoutRef.current);
-    }
-    if (!prefersReducedMotion) {
-      resumeTimeoutRef.current = setTimeout(() => {
-        intervalRef.current = setInterval(() => {
-          setActiveIndex((prev) => {
-            const next = (prev + 1) % FEATURES.length;
-            const track = trackRef.current;
-            const cards = track?.children;
-            if (cards?.[next]) {
-              cards[next].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-            return next;
-          });
-        }, 5000);
-      }, 8000);
-    }
-  }, [prefersReducedMotion]);
+  }, []);
 
-  /* ── Auto-advance on mount ── */
+  /* ── Auto-advance on mount (stops permanently on user interaction) ── */
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     intervalRef.current = setInterval(() => {
+      isAutoScrollingRef.current = true;
       setActiveIndex((prev) => {
         const next = (prev + 1) % FEATURES.length;
         const track = trackRef.current;
-        const cards = track?.children;
-        if (cards?.[next]) {
-          cards[next].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        const card = track?.children?.[next];
+        if (track && card) {
+          const cardLeft = card.offsetLeft;
+          const cardWidth = card.offsetWidth;
+          const trackWidth = track.offsetWidth;
+          const scrollTarget = cardLeft - (trackWidth / 2) + (cardWidth / 2);
+          track.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+          setTimeout(() => { isAutoScrollingRef.current = false; }, 800);
         }
         return next;
       });
@@ -420,7 +419,6 @@ export function FeaturesCarousel() {
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current);
     };
   }, [prefersReducedMotion]);
 
@@ -431,6 +429,8 @@ export function FeaturesCarousel() {
 
     const observer = new IntersectionObserver(
       (entries) => {
+        // Skip observer updates during programmatic or auto scrolls
+        if (isProgrammaticScrollRef.current || isAutoScrollingRef.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const cards = Array.from(track.children);
@@ -470,7 +470,7 @@ export function FeaturesCarousel() {
         {/* Left arrow */}
         <button
           aria-label="Previous feature"
-          onClick={() => { scrollToIndex(activeIndex - 1); handleUserInteraction(); }}
+          onClick={() => { stopAutoAdvance(); scrollToIndex(activeIndex - 1); }}
           className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center bg-white border border-stone-200 text-[#0F172A] shadow-sm hover:bg-[#F97316] hover:text-white hover:border-[#F97316] hover:shadow-md active:scale-[0.96] transition-colors duration-200"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -479,7 +479,7 @@ export function FeaturesCarousel() {
         {/* Right arrow */}
         <button
           aria-label="Next feature"
-          onClick={() => { scrollToIndex(activeIndex + 1); handleUserInteraction(); }}
+          onClick={() => { stopAutoAdvance(); scrollToIndex(activeIndex + 1); }}
           className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center bg-white border border-stone-200 text-[#0F172A] shadow-sm hover:bg-[#F97316] hover:text-white hover:border-[#F97316] hover:shadow-md active:scale-[0.96] transition-colors duration-200"
         >
           <ChevronRight className="w-5 h-5" />
@@ -488,7 +488,7 @@ export function FeaturesCarousel() {
         {/* Carousel track */}
         <div
           ref={trackRef}
-          onScroll={handleUserInteraction}
+          onScroll={() => { if (!isAutoScrollingRef.current) stopAutoAdvance(); }}
           className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-210px)]"
           style={{
             scrollSnapType: 'x mandatory',
@@ -541,7 +541,7 @@ export function FeaturesCarousel() {
               <button
                 key={feat.navLabel}
                 aria-label={`Go to feature: ${feat.title}`}
-                onClick={() => { setActiveIndex(i); handleUserInteraction(); scrollToIndex(i); }}
+                onClick={() => { stopAutoAdvance(); scrollToIndex(i); }}
                 className={`flex flex-col items-center gap-1.5 px-3 py-2 min-w-[60px] min-h-[44px] transition-opacity duration-200 rounded-lg ${
                   isActive ? 'opacity-100' : 'opacity-40 hover:opacity-70'
                 }`}
