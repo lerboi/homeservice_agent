@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Checkpoint reached at Task 3 of 32-03-PLAN.md — awaiting human visual verification
-last_updated: "2026-03-31T17:39:19.461Z"
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-03-31T18:16:59.198Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 32 — landing-page-redesign-conversion-optimized-sections
+**Current focus:** Phase 33 — invoice-core
 
 ## Current Position
 
-Phase: 32 (landing-page-redesign-conversion-optimized-sections) — EXECUTING
-Plan: 3 of 3
+Phase: 33 (invoice-core) — EXECUTING
+Plan: 2 of 7
 
 ## Accumulated Context
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
 - [Phase 32]: Full-width language hero card placed at top of 2-col grid using md:col-span-2 for visual hierarchy
 - [Phase 32]: Used Option B revenue-forward RotatingText words ($3,000/$5,000/$10,000) over Option A competitor words for stronger loss aversion framing
+- [Phase 33-invoice-core]: @react-pdf/renderer added to serverExternalPackages to prevent Next.js bundler from breaking its custom reconciler
+- [Phase 33-invoice-core]: get_next_invoice_number uses INSERT ON CONFLICT DO UPDATE with composite PK (tenant_id, year) for atomic race-safe numbering; year rollover automatic
 
 ### Roadmap Evolution
 
@@ -123,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T17:39:19.450Z
-Stopped at: Checkpoint reached at Task 3 of 32-03-PLAN.md — awaiting human visual verification
+Last session: 2026-03-31T18:16:59.189Z
+Stopped at: Completed 33-01-PLAN.md
 Resume file: None

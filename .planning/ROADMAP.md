@@ -342,8 +342,8 @@ Plans:
 **Plans**: 7 plans
 
 Plans:
-- [ ] 33-01-PLAN.md — Foundation: DB schema, @react-pdf/renderer install, calculation functions + TDD tests
-- [ ] 33-02-PLAN.md — Invoice Settings: API route + settings page + More menu updates
+- [x] 33-01-PLAN.md — Foundation: DB schema, @react-pdf/renderer install, calculation functions + TDD tests
+- [x] 33-02-PLAN.md — Invoice Settings: API route + settings page + More menu updates
 - [ ] 33-03-PLAN.md — Invoice CRUD API + navigation surgery (Invoices replaces Analytics)
 - [ ] 33-04-PLAN.md — Invoice List UI: summary cards, status filter tabs, invoice table
 - [ ] 33-05-PLAN.md — Invoice Editor: line item editor with typed fields, totals, lead pre-fill
@@ -382,7 +382,7 @@ Plans:
   3. A caller asking only for information ("how much does a water heater cost?") is NOT booked — the AI detects non-booking intent and provides information without forcing an appointment
   4. After 2 failed clarification attempts where the AI cannot determine the job type, the call is transferred to a human with a whisper message containing full caller details (name, phone, address, conversation summary)
   5. A caller who says "let me talk to a person" or "I want to speak to someone" is immediately transferred with full context — no pushback or re-prompting
-**Plans:** 0/7 plans executed
+**Plans:** 2/7 plans executed
 
 Plans:
 - [x] 14-01-PLAN.md — Test safety net: prompt snapshots, booking-first RED assertions, whisper message tests, capture_lead handler tests
