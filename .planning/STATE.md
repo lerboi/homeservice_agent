@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 36-02-PLAN.md
-last_updated: "2026-03-31T22:14:45.946Z"
+status: Checkpoint — awaiting visual verification (36-03 Task 2)
+stopped_at: Checkpoint in 36-03-PLAN.md (Task 2 human-verify)
+last_updated: "2026-04-01T00:00:00Z"
 progress:
   total_phases: 14
   completed_phases: 11
