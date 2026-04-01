@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Loader2, AlertCircle, Search, X } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Search, X, Sparkles, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRef, useCallback } from 'react';
 import { addDays, format } from 'date-fns';
@@ -18,6 +19,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import LineItemRow from '@/components/dashboard/LineItemRow';
 import { calculateInvoiceTotals } from '@/lib/invoice-calculations';
 
@@ -68,7 +75,7 @@ function emptyLineItem(sortOrder = 0) {
  *   onSend(invoiceData) — called when "Send Invoice" is clicked
  *   saving      — boolean for button loading state
  */
-export default function InvoiceEditor({ initialData, settings, onSave, onSend, saving }) {
+export default function InvoiceEditor({ initialData, settings, onSave, onSend, saving, invoiceId, leadId, hasTranscript }) {
   const defaultTerms = settings?.payment_terms || 'Net 30';
   const today = todayIso();
 
@@ -90,6 +97,11 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchTimerRef = useRef(null);
+
+  // AI Describe state
+  const [aiDescriptions, setAiDescriptions] = useState(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiAccepted, setAiAccepted] = useState([]);
 
   // Re-apply initialData if it arrives after mount (async pre-fill from lead fetch)
   useEffect(() => {
@@ -163,6 +175,65 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
 
   function handleAddLineItem() {
     setLineItems((prev) => [...prev, emptyLineItem(prev.length)]);
+  }
+
+  // AI Describe handlers
+  async function handleAiDescribe() {
+    setAiGenerating(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/ai-describe`, { method: 'POST' });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Request failed');
+      }
+      const data = await res.json();
+      setAiDescriptions(data.descriptions);
+      setAiAccepted(new Array(data.descriptions.length).fill(false));
+      toast.success('Descriptions generated. Review and accept below.');
+    } catch {
+      toast.error("Couldn't generate descriptions. Check that a call transcript is linked and try again.");
+    }
+    setAiGenerating(false);
+  }
+
+  function handleAcceptDescription(index) {
+    setLineItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, description: aiDescriptions[index] } : item))
+    );
+    setAiAccepted((prev) => {
+      const next = [...prev];
+      next[index] = true;
+      // If all accepted, clear AI descriptions
+      if (next.every(Boolean)) {
+        setTimeout(() => setAiDescriptions(null), 0);
+      }
+      return next;
+    });
+  }
+
+  function handleAcceptAll() {
+    setLineItems((prev) =>
+      prev.map((item, i) =>
+        aiDescriptions[i] ? { ...item, description: aiDescriptions[i] } : item
+      )
+    );
+    setAiDescriptions(null);
+  }
+
+  function handleDiscardAll() {
+    setAiDescriptions(null);
+  }
+
+  function handleDiscardDescription(index) {
+    setAiDescriptions((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      // If all discarded or accepted, clear
+      if (next.every((d, i) => d === null || aiAccepted[i])) {
+        return null;
+      }
+      return next;
+    });
   }
 
   function assembleInvoiceData() {
@@ -387,9 +458,41 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base font-semibold text-stone-900">Line Items</CardTitle>
-          <span className="text-xs text-stone-400">
-            {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
-          </span>
+          <div className="flex items-center gap-2">
+            {invoiceId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="border-[#C2410C] text-[#C2410C] hover:bg-[#C2410C]/5"
+                        disabled={!leadId || !hasTranscript || aiGenerating}
+                        onClick={handleAiDescribe}
+                      >
+                        {aiGenerating ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-1" />
+                        )}
+                        {aiGenerating ? 'Generating...' : 'AI Describe'}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {(!leadId || !hasTranscript) && (
+                    <TooltipContent>
+                      <p>No call transcript linked to this invoice</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <span className="text-xs text-stone-400">
+              {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </CardHeader>
         <CardContent className="pt-0">
           {lineItems.length === 0 ? (
@@ -409,14 +512,66 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
             </div>
           ) : (
             <div className="space-y-2">
+              {/* Accept All / Discard All bar */}
+              {aiDescriptions && !aiAccepted.every(Boolean) && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                    onClick={handleAcceptAll}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Accept All
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDiscardAll}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Discard All
+                  </Button>
+                </div>
+              )}
+
               {lineItems.map((item, index) => (
-                <LineItemRow
-                  key={index}
-                  item={item}
-                  index={index}
-                  onChange={(updated) => handleLineItemChange(index, updated)}
-                  onRemove={() => handleLineItemRemove(index)}
-                />
+                <div key={index}>
+                  <LineItemRow
+                    item={item}
+                    index={index}
+                    onChange={(updated) => handleLineItemChange(index, updated)}
+                    onRemove={() => handleLineItemRemove(index)}
+                  />
+                  {/* AI description preview card */}
+                  {aiDescriptions?.[index] && !aiAccepted[index] && (
+                    <div className="ml-2 mt-1 mb-2 p-3 bg-stone-50 border-l-2 border-[#C2410C] rounded-r-lg">
+                      <p className="text-sm text-stone-700 mb-2">{aiDescriptions[index]}</p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                          onClick={() => handleAcceptDescription(index)}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Accept
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => handleDiscardDescription(index)}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Discard
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
