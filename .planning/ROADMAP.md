@@ -365,7 +365,7 @@ Plans:
 **Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
 **Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
 **Depends on:** Phase 32
-**Plans:** 4/5 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update
