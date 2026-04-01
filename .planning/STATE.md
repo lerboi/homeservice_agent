@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase complete — ready for verification
-stopped_at: Completed 34-01-PLAN.md
-last_updated: "2026-04-01T11:23:19.849Z"
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-04-01T11:25:04.638Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -72,9 +72,8 @@ Recent decisions affecting current work:
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
-- [Phase 34]: Estimate line items are a separate table from invoice line items (not shared) per D-01
-- [Phase 34]: Tiered estimates use nullable tier_id FK — NULL means single-price estimate
-- [Phase 34]: Estimate totals nullable on estimates table to support tiered pricing where totals live on tiers
+- [Phase 35]: CJS compat import for @freshbooks/api — default import with destructure instead of named import
+- [Phase 35]: setCredentials method on adapters for lazy API client initialization (not constructor)
 
 ### Roadmap Evolution
 
@@ -142,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:23:19.837Z
-Stopped at: Completed 34-01-PLAN.md
+Last session: 2026-04-01T11:25:04.616Z
+Stopped at: Completed 35-01-PLAN.md
 Resume file: None
