@@ -350,7 +350,7 @@ Plans:
   3. An owner clicks "AI Describe" in the invoice editor and line item descriptions are generated from linked call transcript(s) via Gemini Flash — professional, trade-specific language
   4. An owner selects multiple completed leads, clicks "Create Invoices", reviews the batch of draft invoices, then sends all at once via "Send All"
   5. Accounting sync pushes invoice data on send and pushes status updates when invoices are marked paid or voided
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
 - [x] 35-01-PLAN.md — DB migration + adapter interface + factory + three platform adapters
@@ -358,6 +358,7 @@ Plans:
 - [x] 35-03-PLAN.md — Batch invoice creation from leads + review-then-send flow
 - [x] 35-04-PLAN.md — Accounting OAuth routes + push-on-send sync hook
 - [x] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
+- [ ] 35-06-PLAN.md — Gap closure: fix edit flow + AI Describe button reachability
 **UI hint**: yes
 
 ### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel
