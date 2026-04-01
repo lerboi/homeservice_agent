@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase complete — ready for verification
-stopped_at: Completed 34-06-PLAN.md
-last_updated: "2026-04-01T11:43:13.091Z"
+stopped_at: Completed 34-04-PLAN.md
+last_updated: "2026-04-01T11:43:23.469Z"
 progress:
-  total_phases: 12
-  completed_phases: 12
+  total_phases: 14
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 51
+  completed_plans: 50
 ---
 
 # Project State
@@ -72,12 +72,7 @@ Recent decisions affecting current work:
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
-- [Phase 35]: Extracted sendSingleInvoice as shared function so batch-send and single-send both use same code path
-- [Phase 35]: Batch create produces shell drafts (no line items, zero totals) -- owner adds during review per D-11
-- [Phase 35]: Dynamic import() for accounting sync to avoid hard dependency -- lazy-loaded only when accounting is connected
-- [Phase 35]: HMAC-signed state reuse from Google Calendar OAuth pattern for accounting OAuth routes
-- [Phase 35]: Accounting push is non-fatal in all paths -- try/catch with console.warn, never blocks user response
-- [Phase 34]: Pure calculation module pattern: extract business logic into pure functions for Wave 0 testability (late-fee-calculations.js)
+- [Phase 34]: Reused LineItemRow component from invoice editor inside TierEditor for consistency
 
 ### Roadmap Evolution
 
@@ -145,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:43:13.081Z
-Stopped at: Completed 34-06-PLAN.md
+Last session: 2026-04-01T11:43:23.459Z
+Stopped at: Completed 34-04-PLAN.md
 Resume file: None
