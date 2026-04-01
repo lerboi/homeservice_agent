@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-01
+revised: 2026-04-01
 ---
 
 # Phase 34 — UI Design Contract
@@ -48,14 +49,14 @@ Exceptions: Touch target minimum 44px for mobile action buttons ("Convert to Inv
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 14px | 500 (medium) | 1.4 |
+| Label | 14px | 400 (regular) | 1.4 |
 | Heading | 20px | 600 (semibold) | 1.2 |
 | Display | 28px | 600 (semibold) | 1.2 |
 
 Usage notes (extends Phase 33):
 - Display (28px): Summary card monetary values, estimate tier totals
 - Heading (20px): Page titles ("Estimates"), section headers, tier headings ("Good" / "Better" / "Best")
-- Label (14px/500): Table column headers, form field labels, status tabs, tier labels, payment log column headers
+- Label (14px/400): Table column headers, form field labels, status tabs, tier labels, payment log column headers. Distinguished from Body by `text-stone-500` color and `uppercase tracking-wide text-xs` where appropriate (e.g., table column headers)
 - Body (14px/400): Table cell text, form input text, descriptions, payment notes, reminder preview text
 
 ---
@@ -67,7 +68,7 @@ Usage notes (extends Phase 33):
 | Dominant (60%) | #F5F5F4 (warmSurface) | Page background, list backgrounds |
 | Secondary (30%) | #FFFFFF | Cards (summary cards, estimate detail, settings panels, tier cards) |
 | Accent (10%) | #C2410C (brandOrange) | See reserved list below |
-| Destructive | #DC2626 (red-600) | Decline action, overdue badge, late fee line items, void action |
+| Destructive | #DC2626 (red-600) | Decline action, overdue badge, late fee line items, void action, void badge |
 
 Accent reserved for:
 - Primary CTA buttons ("Create Estimate", "Send Estimate", "Convert to Invoice", "Record Payment")
@@ -92,6 +93,7 @@ Accent reserved for:
 | Status | Background | Text | Border |
 |--------|-----------|------|--------|
 | Partially Paid | violet-50 | violet-700 | violet-200 |
+| Void | red-50 | red-700 | red-200 |
 
 ### Summary Card Accent Colors (Estimates Section)
 
@@ -144,7 +146,7 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 | Select, SelectTrigger, SelectContent, SelectItem | Tier selection, frequency selector, late fee type |
 | Switch | Reminder toggle, late fee enable/disable |
 | Skeleton | Loading states |
-| AlertDialog | Decline confirmation, delete payment confirmation |
+| AlertDialog | Decline confirmation, delete payment confirmation, void confirmation |
 | Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter | Record Payment, Recurring Setup |
 | Separator | Section dividers |
 | Card, CardHeader, CardContent | Summary cards, tier cards |
@@ -181,6 +183,9 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 | Decline action | "Mark as Declined" |
 | Decline confirmation | "Decline estimate {estimate_number}? This marks it as declined. You can still convert it later if needed." |
 | Expire action | "Mark as Expired" |
+| Void action | "Void Invoice" |
+| Void confirmation | "Void invoice {invoice_number}? This permanently marks the invoice as void. A voided invoice cannot be sent or collected on." |
+| Void success toast | "Invoice {invoice_number} voided" |
 | SMS text (estimate) | "{business_name}: Estimate #{number} for ${amount}. Full estimate sent to your email. Questions? Call {phone}" |
 | SMS text (tiered estimate) | "{business_name}: Estimate #{number} with options from ${lowest} to ${highest}. Full estimate sent to your email. Questions? Call {phone}" |
 
@@ -194,7 +199,10 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 | Date field label | "Date received" |
 | Note field label | "Note (optional)" |
 | Note placeholder | "e.g., Check #4521, Cash, Venmo" |
+| Payment dialog primary CTA | "Record Payment" |
+| Payment dialog dismiss CTA | "Dismiss" |
 | Payment recorded toast | "Payment of {amount} recorded" |
+| Delete payment tooltip | "Remove payment" |
 | Delete payment confirmation | "Remove this payment record? The invoice balance will be recalculated." |
 | Balance label | "Balance Due" |
 | Payments total label | "Payments Received" |
@@ -242,6 +250,8 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 | Start date label | "Start date" |
 | End date label | "End date (optional)" |
 | End date placeholder | "No end date" |
+| Recurring dialog primary CTA | "Set Up" |
+| Recurring dialog dismiss CTA | "Dismiss" |
 | Recurring badge label | "Recurring" |
 | Recurring active description | "Next invoice: {date} ({frequency})" |
 | Recurring paused description | "Recurring paused" |
@@ -284,8 +294,8 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 1. **Location**: New section on invoice detail view, between the invoice preview and the action buttons on the right column (desktop) or below the preview (mobile).
 2. **Balance display**: Shows "Total: {total}" / "Payments: -{payments_sum}" / "Balance Due: {balance}" with Balance Due in Display typography and brandOrange color when > 0, emerald-600 when 0.
 3. **"Record Payment" button**: Below balance display. Opens RecordPaymentDialog.
-4. **RecordPaymentDialog**: Dialog with amount input (currency-formatted, auto-focus), date input (default today), note input (optional, placeholder text). "Record" primary button, "Cancel" outline button.
-5. **Payment list**: Simple list below the balance. Each entry: date (left), amount (center), note (right, stone-500), delete icon button (Trash2, stone-400, hover:red-500). Newest payment first. If no payments, show "No payments recorded" in stone-400 italic.
+4. **RecordPaymentDialog**: Dialog with amount input (currency-formatted, auto-focus), date input (default today), note input (optional, placeholder text). "Record Payment" primary button, "Dismiss" outline button.
+5. **Payment list**: Simple list below the balance. Each entry: date (left), amount (center), note (right, stone-500), delete icon button (Trash2, stone-400, hover:red-500, tooltip: "Remove payment", aria-label: "Remove payment"). Newest payment first. If no payments, show "No payments recorded" in stone-400 italic.
 
 ### Reminder Configuration (Invoice Detail Extension)
 
@@ -303,11 +313,17 @@ Late fee line items use `text-red-600` for the amount and a `(Late fee)` suffix 
 ### Recurring Invoices (Invoice Detail Extension)
 
 1. **"Make Recurring" button**: On invoice detail view action area, outline style. Opens RecurringSetupDialog.
-2. **RecurringSetupDialog**: Frequency selector (Select component with 4 options), start date (Popover date picker), optional end date (Popover date picker, clearable). "Set Up" primary button, "Cancel" outline button.
+2. **RecurringSetupDialog**: Frequency selector (Select component with 4 options), start date (Popover date picker), optional end date (Popover date picker, clearable). "Set Up" primary button, "Dismiss" outline button.
 3. **Recurring badge**: Once set, invoice shows RecurringBadge (lucide Repeat icon + "Recurring" text) next to the status badge. Badge uses `bg-violet-50 text-violet-700 border-violet-200`.
 4. **Recurring info display**: Below the badge on detail view, show "Next invoice: {date}" and frequency. "Stop Recurring" link in stone-500 with confirmation dialog.
 5. **Recurring filter**: Add "Recurring" tab to invoice status tabs. Shows only recurring templates (not generated instances). Generated instances show "Generated from recurring template" label in stone-400 text.
 6. **Generated invoices**: Auto-generated drafts appear in the main invoice list as regular Draft invoices with a small "Recurring" indicator label.
+
+### Void Invoice (Invoice Detail Extension)
+
+1. **Location**: "Void Invoice" button in invoice detail view action area, destructive outline style (text-red-600, border-red-200, hover:bg-red-50).
+2. **Confirmation**: AlertDialog with destructive confirm button. Copy per Copywriting Contract.
+3. **After void**: Invoice status badge shows "Void" (red-50/red-700/red-200). All action buttons except "Download PDF" are hidden. Reminders and late fees stop.
 
 ### LeadFlyout Extension
 
