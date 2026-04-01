@@ -485,10 +485,10 @@ export function FeaturesCarousel() {
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        {/* Carousel track — masked fade on desktop edges */}
+        {/* Carousel track — desktop edges fade out */}
         <div className="carousel-track-mask">
-        <div
-          ref={trackRef}
+          <div
+            ref={trackRef}
           onScroll={() => { if (!isAutoScrollingRef.current) stopAutoAdvance(); }}
           className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-210px)]"
           style={{
