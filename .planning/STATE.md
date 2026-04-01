@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Checkpoint — awaiting visual verification (36-03 Task 2)
-stopped_at: Checkpoint in 36-03-PLAN.md (Task 2 human-verify)
-last_updated: "2026-04-01T00:00:00Z"
+status: Phases 5, 9, 11 removed (outdated) — all remaining phases complete
+stopped_at: Phase 34 context gathered
+last_updated: "2026-04-01T10:21:19.712Z"
 progress:
-  total_phases: 14
-  completed_phases: 11
+  total_phases: 12
+  completed_phases: 12
   total_plans: 51
-  completed_plans: 50
+  completed_plans: 51
 ---
 
 # Project State
@@ -19,12 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 36 — landing-page-section-redesign-how-it-works-minimalism-and-features-carousel
+**Current focus:** All milestone phases complete — ready for next milestone or new work
 
 ## Current Position
 
-Phase: 36 (landing-page-section-redesign-how-it-works-minimalism-and-features-carousel) — EXECUTING
-Plan: 3 of 3
+All 12 phases complete. Phases 5, 9 (Hardening/QA) removed as outdated. Phase 11 closed (superseded by 32/36).
 
 ## Accumulated Context
 
@@ -139,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T22:14:45.927Z
-Stopped at: Completed 36-02-PLAN.md
-Resume file: None
+Last session: 2026-04-01T10:21:19.705Z
+Stopped at: Phase 34 context gathered
+Resume file: .planning/phases/34-estimates-reminders-recurring/34-CONTEXT.md
