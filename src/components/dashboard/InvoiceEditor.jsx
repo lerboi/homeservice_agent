@@ -103,7 +103,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiAccepted, setAiAccepted] = useState([]);
 
-  // Re-apply initialData if it arrives after mount (async pre-fill from lead fetch)
+  // Re-apply initialData if it arrives after mount (async pre-fill from lead fetch or edit mode)
   useEffect(() => {
     if (!initialData) return;
     if (initialData.customer_name !== undefined) setCustomerName(initialData.customer_name);
@@ -111,6 +111,13 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
     if (initialData.customer_email !== undefined) setCustomerEmail(initialData.customer_email);
     if (initialData.customer_address !== undefined) setCustomerAddress(initialData.customer_address);
     if (initialData.job_type !== undefined) setJobType(initialData.job_type);
+    if (initialData.issued_date) setIssuedDate(initialData.issued_date);
+    if (initialData.payment_terms) setPaymentTerms(initialData.payment_terms);
+    if (initialData.due_date) setDueDate(initialData.due_date);
+    if (initialData.notes !== undefined) setNotes(initialData.notes);
+    if (initialData.line_items && initialData.line_items.length > 0) {
+      setLineItems(initialData.line_items);
+    }
     if (initialData.lead_id && initialData.customer_name) {
       setSelectedLead({ id: initialData.lead_id, caller_name: initialData.lead_name || initialData.customer_name });
     }
