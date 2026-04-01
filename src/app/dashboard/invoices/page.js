@@ -16,13 +16,17 @@ import {
 } from '@/components/ui/table';
 import InvoiceSummaryCards from '@/components/dashboard/InvoiceSummaryCards';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
+import RecurringBadge from '@/components/dashboard/RecurringBadge';
 
 const STATUS_TABS = [
-  { key: 'all',     label: 'All' },
-  { key: 'draft',   label: 'Draft' },
-  { key: 'sent',    label: 'Sent' },
-  { key: 'overdue', label: 'Overdue' },
-  { key: 'paid',    label: 'Paid' },
+  { key: 'all',            label: 'All' },
+  { key: 'draft',          label: 'Draft' },
+  { key: 'sent',           label: 'Sent' },
+  { key: 'paid',           label: 'Paid' },
+  { key: 'partially_paid', label: 'Partially Paid' },
+  { key: 'overdue',        label: 'Overdue' },
+  { key: 'void',           label: 'Void' },
+  { key: 'recurring',      label: 'Recurring' },
 ];
 
 function formatAmount(value) {
@@ -124,11 +128,13 @@ export default function InvoicesPage() {
     (statusCounts.draft || 0) +
     (statusCounts.sent || 0) +
     (statusCounts.paid || 0) +
+    (statusCounts.partially_paid || 0) +
     (statusCounts.overdue || 0) +
     (statusCounts.void || 0);
 
   function getTabCount(key) {
     if (key === 'all') return totalCount;
+    if (key === 'recurring') return null; // No count for recurring filter
     return statusCounts[key] || 0;
   }
 
@@ -172,7 +178,7 @@ export default function InvoicesPage() {
                   `}
                 >
                   {tab.label}
-                  {!loading && (
+                  {!loading && getTabCount(tab.key) !== null && (
                     <span
                       className={`ml-1.5 text-xs ${
                         isActive ? 'text-[#C2410C]' : 'text-stone-400'
@@ -316,7 +322,13 @@ export default function InvoicesPage() {
                       className="cursor-pointer hover:bg-stone-50 transition-colors"
                     >
                       <TableCell className="text-sm font-medium text-stone-900">
-                        {invoice.invoice_number}
+                        <span className="flex items-center gap-1.5">
+                          {invoice.invoice_number}
+                          {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
+                          {invoice.generated_from_id && !invoice.is_recurring_template && (
+                            <span className="text-[10px] text-stone-400">Recurring</span>
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-sm text-stone-700">
                         {invoice.customer_name}
@@ -352,8 +364,12 @@ export default function InvoicesPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-900 truncate">
+                      <p className="text-sm font-medium text-stone-900 truncate flex items-center gap-1.5">
                         {invoice.invoice_number}
+                        {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
+                        {invoice.generated_from_id && !invoice.is_recurring_template && (
+                          <span className="text-[10px] text-stone-400">Recurring</span>
+                        )}
                       </p>
                       <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
                     </div>

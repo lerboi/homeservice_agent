@@ -10,6 +10,7 @@ import {
   Pencil,
   CheckCircle,
   Ban,
+  Repeat,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +28,10 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
+import RecurringBadge from '@/components/dashboard/RecurringBadge';
+import RecurringSetupDialog from '@/components/dashboard/RecurringSetupDialog';
+import PaymentLog from '@/components/dashboard/PaymentLog';
+import ReminderToggle from '@/components/dashboard/ReminderToggle';
 import { card } from '@/lib/design-tokens';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -276,6 +281,7 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -363,6 +369,25 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const handleStopRecurring = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recurring_active: false }),
+      });
+      if (!res.ok) throw new Error('Failed to stop recurring');
+      toast.success('Recurring schedule stopped');
+      fetchData();
+    } catch {
+      toast.error('Failed to stop recurring schedule.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // ── Loading ──
   if (loading) return <InvoiceDetailSkeleton />;
 
@@ -404,6 +429,7 @@ export default function InvoiceDetailPage() {
             Invoice {invoice.invoice_number}
           </h1>
           <InvoiceStatusBadge status={invoice.status} />
+          {invoice.is_recurring_template && <RecurringBadge />}
         </div>
       </div>
 
@@ -463,6 +489,67 @@ export default function InvoiceDetailPage() {
                   </div>
                 )}
               </dl>
+            </div>
+
+            {/* Recurring info */}
+            {invoice.is_recurring_template && (
+              <div className={`${card.base} p-5`}>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Recurring Schedule</p>
+                {invoice.recurring_active ? (
+                  <p className="text-sm text-stone-500">
+                    Next invoice: {invoice.recurring_next_date} ({invoice.recurring_frequency})
+                  </p>
+                ) : (
+                  <p className="text-sm text-stone-400">Recurring paused</p>
+                )}
+                {invoice.recurring_active && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="text-sm text-stone-500 hover:text-stone-700 underline mt-2">
+                        Stop Recurring
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Stop recurring invoices?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Stop generating recurring invoices from this template? Existing generated invoices are not affected.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          onClick={handleStopRecurring}
+                        >
+                          Stop Recurring
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
+
+            {invoice.generated_from_id && (
+              <div className={`${card.base} p-5`}>
+                <p className="text-sm text-stone-400">Generated from recurring template</p>
+              </div>
+            )}
+
+            {/* Payment Log */}
+            <PaymentLog
+              invoiceId={invoice.id}
+              invoiceTotal={invoice.total}
+              onStatusChange={() => fetchData()}
+            />
+
+            {/* Reminder Toggle */}
+            <div className={`${card.base} p-5`}>
+              <ReminderToggle
+                invoiceId={invoice.id}
+                initialEnabled={invoice.reminders_enabled}
+              />
             </div>
 
             {/* Actions card */}
@@ -525,6 +612,18 @@ export default function InvoiceDetailPage() {
                 >
                   <Send className="h-4 w-4" />
                   Resend Invoice
+                </Button>
+              )}
+
+              {/* Make Recurring — only for non-recurring, non-generated invoices */}
+              {!invoice.is_recurring_template && !invoice.generated_from_id && !isPaidOrVoid && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => setRecurringDialogOpen(true)}
+                >
+                  <Repeat className="h-4 w-4" />
+                  Make Recurring
                 </Button>
               )}
 
@@ -645,6 +744,14 @@ export default function InvoiceDetailPage() {
           </AlertDialog>
         )}
       </div>
+
+      {/* Recurring Setup Dialog */}
+      <RecurringSetupDialog
+        open={recurringDialogOpen}
+        onOpenChange={setRecurringDialogOpen}
+        invoiceId={invoice.id}
+        onSetup={() => fetchData()}
+      />
     </div>
   );
 }
