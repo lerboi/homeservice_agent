@@ -333,10 +333,10 @@ Plans:
 - [x] 34-01-PLAN.md — Database migrations (estimates, payment log, reminders/recurring)
 - [x] 34-02-PLAN.md — Estimate CRUD API + list page + status badge + summary cards
 - [x] 34-03-PLAN.md — Payment log API + UI (record/delete payments, auto-status, balance)
-- [ ] 34-04-PLAN.md — Estimate editor with tier support + estimate PDF generation
+- [x] 34-04-PLAN.md — Estimate editor with tier support + estimate PDF generation
 - [ ] 34-05-PLAN.md — Estimate detail view + send + convert-to-invoice + navigation
 - [x] 34-06-PLAN.md — Automated reminders cron + late fee settings + application
-- [ ] 34-07-PLAN.md — Recurring invoices (setup, cron generation, badge, list integration)
+- [x] 34-07-PLAN.md — Recurring invoices (setup, cron generation, badge, list integration)
 **UI hint**: yes
 
 ### Phase 35: Invoice Integrations and AI
@@ -365,7 +365,7 @@ Plans:
 **Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
 **Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
 **Depends on:** Phase 32
-**Plans:** 5/8 plans executed
+**Plans:** 7/8 plans executed
 
 Plans:
 - [x] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update
