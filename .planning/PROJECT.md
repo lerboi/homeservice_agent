@@ -8,19 +8,21 @@ An all-in-one AI platform for home service SMEs (plumbers, HVAC, electricians, e
 
 Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
-## Current Milestone: v3.0 Subscription Billing & Usage Enforcement
+## Current Milestone: v4.0 Invoicing, Voice Polish, and Landing Page
 
-**Goal:** Turn the free platform into a revenue-generating SaaS by adding Stripe subscription billing, per-call usage tracking, plan limit enforcement, and a full billing management dashboard.
+**Goal:** Add a full invoicing system (core + estimates + reminders + recurring + accounting integrations + AI descriptions), optimize the voice agent prompt for higher booking conversion, and redesign landing page sections for better conversion.
 
 **Target features:**
-- Stripe integration (products, prices, Checkout Sessions, webhooks)
-- Subscription lifecycle (create, upgrade, downgrade, cancel, reactivate)
-- Per-call usage metering (increment on each call, reset on billing cycle)
-- Plan limit enforcement (hard paywall when trial expires, per-call overage billing beyond plan limit)
-- 14-day free trial (auto-starts after onboarding, no credit card required)
-- Billing dashboard page (current plan, usage meter, invoice history, upgrade/downgrade, cancel via Stripe Customer Portal)
-- Trial countdown and upgrade prompts in dashboard
-- Database schema (subscriptions, usage tracking, invoices)
+- Invoice CRUD with typed line items, PDF generation, email/SMS delivery
+- Estimates with good/better/best tiers, convert-to-invoice flow
+- Payment log with partial payments and auto-calculated balance
+- Automated payment reminders and late fee calculation
+- Recurring invoices on configurable schedules
+- Accounting integrations (QuickBooks, Xero, FreshBooks) via OAuth with push-on-send sync
+- AI-generated line item descriptions from call transcripts (Gemini Flash)
+- Batch invoice creation from multiple leads with review-then-send
+- Voice agent prompt optimization (slot preference, repeat caller, trade-specific questioning)
+- Landing page redesign (conversion-focused hero, features grid, How It Works expansion)
 
 ## Requirements
 
@@ -122,4 +124,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 — v3.0 Subscription Billing & Usage Enforcement milestone started*
+*Last updated: 2026-04-02 — v4.0 Invoicing, Voice Polish, and Landing Page milestone assigned*

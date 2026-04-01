@@ -259,6 +259,16 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 | 8. Outlook Calendar Sync | 3/3 | Complete | 2026-03-26 |
 | 10. Dashboard Guided Setup | 4/4 | Complete    | 2026-03-22 |
 
+### v4.0 Phase Checklist
+
+- [x] **Phase 30: Voice Agent Prompt Optimization** - Smart slot preference, repeat caller awareness, trade-specific questioning, post-booking recap (2/3 plans, 30-03 skill file pending)
+- [ ] **Phase 31: Voice Call Feature Showcase PDF** - Sales-ready PDF showcasing all voice call features (not yet planned)
+- [x] **Phase 32: Landing Page Redesign — Conversion-Optimized Sections** - Hero copy, Features grid, How It Works expansion (2/3 plans, 32-03 visual checkpoint pending)
+- [x] **Phase 33: Invoice Core** - Invoice CRUD, PDF generation, email/SMS send, settings, dashboard (completed 2026-03-31)
+- [x] **Phase 34: Estimates, Reminders, and Recurring Invoices** - Estimates with tiers, payment log, automated reminders, late fees, recurring invoices (completed 2026-04-01)
+- [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
+- [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
+
 ### Phase 30: Voice Agent Prompt Optimization
 
 **Goal:** Holistic refinement of the AI receptionist system prompt and supporting tools to maximize booking conversion, improve caller experience, and close behavioral gaps — smart slot preference detection, repeat caller awareness, failed transfer recovery, prompt cleanup, trade-specific questioning, and post-booking recap flow
@@ -334,7 +344,7 @@ Plans:
 - [x] 34-02-PLAN.md — Estimate CRUD API + list page + status badge + summary cards
 - [x] 34-03-PLAN.md — Payment log API + UI (record/delete payments, auto-status, balance)
 - [x] 34-04-PLAN.md — Estimate editor with tier support + estimate PDF generation
-- [ ] 34-05-PLAN.md — Estimate detail view + send + convert-to-invoice + navigation
+- [x] 34-05-PLAN.md — Estimate detail view + send + convert-to-invoice + navigation
 - [x] 34-06-PLAN.md — Automated reminders cron + late fee settings + application
 - [x] 34-07-PLAN.md — Recurring invoices (setup, cron generation, badge, list integration)
 **UI hint**: yes
@@ -350,14 +360,15 @@ Plans:
   3. An owner clicks "AI Describe" in the invoice editor and line item descriptions are generated from linked call transcript(s) via Gemini Flash — professional, trade-specific language
   4. An owner selects multiple completed leads, clicks "Create Invoices", reviews the batch of draft invoices, then sends all at once via "Send All"
   5. Accounting sync pushes invoice data on send and pushes status updates when invoices are marked paid or voided
-**Plans**: 5 plans
+**Plans**: 6/6 plans complete
 
 Plans:
 - [x] 35-01-PLAN.md — DB migration + adapter interface + factory + three platform adapters
 - [x] 35-02-PLAN.md — AI line item descriptions (Gemini Flash + transcript access + editor UI)
 - [x] 35-03-PLAN.md — Batch invoice creation from leads + review-then-send flow
 - [x] 35-04-PLAN.md — Accounting OAuth routes + push-on-send sync hook
-- [ ] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
+- [x] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
+- [x] 35-06-PLAN.md — Edit mode for invoice editor + AI Describe button wiring (gap closure)
 **UI hint**: yes
 
 ### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel

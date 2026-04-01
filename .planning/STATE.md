@@ -1,30 +1,30 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Phases
-status: Milestone complete
-stopped_at: Completed 35-06-PLAN.md
-last_updated: "2026-04-01T18:18:26.966Z"
+milestone: v4.0
+milestone_name: Invoicing, Voice Polish, and Landing Page
+status: In progress
+stopped_at: Phases 30-36 assigned to v4.0
+last_updated: "2026-04-02T00:00:00.000Z"
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 51
-  completed_plans: 51
+  total_phases: 7
+  completed_phases: 5
+  total_plans: 30
+  completed_plans: 28
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 36 — landing-page-section-redesign-how-it-works-minimalism-and-features-carousel
+**Current focus:** v4.0 — Phases 30-36 (most complete, 30-03 and 32-03 pending, Phase 31 unplanned)
 
 ## Current Position
 
-Phase: 35
-Plan: Not started
+Phase: 30 (partially complete — 30-03 pending)
+Plan: 30-03
 
 ## Accumulated Context
 
