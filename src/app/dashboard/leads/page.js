@@ -1,9 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { LayoutList, Columns3, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import LeadCard from '@/components/dashboard/LeadCard';
 import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
 import LeadFlyout from '@/components/dashboard/LeadFlyout';
@@ -77,6 +89,10 @@ export default function LeadsPage() {
 
   // Invoice status map for badge indicators on lead cards
   const [invoiceStatusMap, setInvoiceStatusMap] = useState({});
+
+  // Batch select state
+  const [selectedLeads, setSelectedLeads] = useState(new Set());
+  const [batchCreating, setBatchCreating] = useState(false);
 
   // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
   const searchParams = useSearchParams();
@@ -203,6 +219,65 @@ export default function LeadsPage() {
     };
   }, [tenantId, filters]);
 
+  // ── Batch eligibility ──────────────────────────────────────────────────
+
+  /** A lead is eligible for batch invoicing if completed AND has no existing invoice */
+  function isEligibleForBatch(lead) {
+    return lead.status === 'completed' && !invoiceStatusMap[lead.id];
+  }
+
+  const eligibleLeads = useMemo(
+    () => leads.filter(isEligibleForBatch),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [leads, invoiceStatusMap]
+  );
+
+  function toggleLeadSelection(leadId) {
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllEligible() {
+    if (selectedLeads.size === eligibleLeads.length && eligibleLeads.length > 0) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(eligibleLeads.map((l) => l.id)));
+    }
+  }
+
+  // ── Batch create handler ───────────────────────────────────────────────
+
+  async function handleBatchCreate() {
+    setBatchCreating(true);
+    try {
+      const res = await fetch('/api/invoices/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_ids: Array.from(selectedLeads) }),
+      });
+      if (!res.ok) throw new Error('Batch creation failed');
+      const data = await res.json();
+      const invoiceIds = (data.invoices || []).map((inv) => inv.id);
+      setSelectedLeads(new Set());
+      if (invoiceIds.length > 0) {
+        router.push(`/dashboard/invoices/batch-review?ids=${invoiceIds.join(',')}`);
+      }
+    } catch {
+      // Show inline error — toast not imported, keep simple
+      setError("Couldn't create batch invoices. Try again.");
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setBatchCreating(false);
+    }
+  }
+
   // ── Event handlers ──────────────────────────────────────────────────────
 
   function handleFilterChange(partial) {
@@ -302,6 +377,21 @@ export default function LeadsPage() {
     </div>
   );
 
+  // ── Select all eligible header (list view only) ─────────────────────────
+
+  const selectAllHeader = viewMode === 'list' && eligibleLeads.length > 0 && (
+    <div className="flex items-center gap-2 px-6 pb-2">
+      <Checkbox
+        checked={selectedLeads.size === eligibleLeads.length && eligibleLeads.length > 0}
+        onCheckedChange={toggleSelectAllEligible}
+        aria-label="Select all eligible leads"
+      />
+      <span className="text-xs text-stone-500">
+        Select all eligible ({eligibleLeads.length})
+      </span>
+    </div>
+  );
+
   // ── Lead list / kanban content ──────────────────────────────────────────
 
   const isFiltered = hasActiveFilters(filters);
@@ -337,18 +427,66 @@ export default function LeadsPage() {
         {leads.map((lead) => (
           <div
             key={lead.id}
-            className={lead._isNew ? 'animate-slide-in-from-top' : ''}
+            className={`flex items-center gap-2 ${lead._isNew ? 'animate-slide-in-from-top' : ''}`}
           >
-            <LeadCard
-              lead={lead}
-              onView={handleView}
-              invoiceStatus={invoiceStatusMap[lead.id]}
-            />
+            {isEligibleForBatch(lead) && (
+              <Checkbox
+                checked={selectedLeads.has(lead.id)}
+                onCheckedChange={() => toggleLeadSelection(lead.id)}
+                aria-label={`Select ${lead.caller_name || 'lead'} for batch invoice`}
+                className="shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <LeadCard
+                lead={lead}
+                onView={handleView}
+                invoiceStatus={invoiceStatusMap[lead.id]}
+              />
+            </div>
           </div>
         ))}
       </div>
     );
   }
+
+  // ── Batch select bar ───────────────────────────────────────────────────
+
+  const batchSelectBar = selectedLeads.size > 0 && (
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-900 text-white px-6 py-3 flex items-center justify-between shadow-lg">
+      <span className="text-sm font-medium">
+        {selectedLeads.size} lead(s) selected
+      </span>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button
+            type="button"
+            disabled={batchCreating}
+            className="bg-white text-stone-900 hover:bg-stone-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {batchCreating ? 'Creating...' : 'Create Invoices'}
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create {selectedLeads.size} invoices?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A draft invoice will be created for each selected lead with pre-filled customer information.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBatchCreate}
+              className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
+            >
+              Create {selectedLeads.size} Drafts
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 
   return (
     <>
@@ -361,10 +499,14 @@ export default function LeadsPage() {
           onClear={handleClearFilters}
         />
 
+        {selectAllHeader}
+
         <div className="px-6 py-4">
           {mainContent}
         </div>
       </div>
+
+      {batchSelectBar}
 
       {/* LeadFlyout — rendered outside the card stack to avoid stacking context issues */}
       <LeadFlyout
