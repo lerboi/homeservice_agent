@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Executing Phase 35
-stopped_at: Completed 34-05-PLAN.md
-last_updated: "2026-04-01T17:31:02.649Z"
+status: Milestone complete
+stopped_at: Completed 35-06-PLAN.md
+last_updated: "2026-04-01T18:12:26.339Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 35 — invoice-integrations-and-ai
+**Current focus:** Phase 36 — landing-page-section-redesign-how-it-works-minimalism-and-features-carousel
 
 ## Current Position
 
-Phase: 35 (invoice-integrations-and-ai) — EXECUTING
-Plan: 1 of 5
+Phase: 34
+Plan: Not started
 
 ## Accumulated Context
 
@@ -74,6 +74,7 @@ Recent decisions affecting current work:
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
 - [Phase 34]: Inline HTML email template for estimate delivery (not React Email) -- simpler for single send route
 - [Phase 34]: Convert-to-invoice returns existing invoice_id if already converted (idempotent, not error)
+- [Phase 35]: hasTranscript uses !!invoice.lead_id as proxy — ai-describe endpoint validates transcript availability internally
 
 ### Roadmap Evolution
 
@@ -141,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T16:52:43.590Z
-Stopped at: Completed 34-05-PLAN.md
+Last session: 2026-04-01T18:12:26.332Z
+Stopped at: Completed 35-06-PLAN.md
 Resume file: None

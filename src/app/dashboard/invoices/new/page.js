@@ -11,11 +11,17 @@ export default function NewInvoicePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const leadId = searchParams.get('lead_id');
+  const editId = searchParams.get('edit');
 
   const [settings, setSettings] = useState(null);
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Edit mode state
+  const [editInvoiceId, setEditInvoiceId] = useState(null);
+  const [editLeadId, setEditLeadId] = useState(null);
+  const [editHasTranscript, setEditHasTranscript] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -28,8 +34,36 @@ export default function NewInvoicePage() {
           setSettings(settingsJson.settings || settingsJson);
         }
 
-        // If lead_id present, fetch lead data for pre-fill
-        if (leadId) {
+        if (editId) {
+          // Edit mode: fetch existing invoice and pre-fill
+          const invoiceRes = await fetch(`/api/invoices/${editId}`);
+          if (invoiceRes.ok) {
+            const { invoice, line_items } = await invoiceRes.json();
+            setInitialData({
+              customer_name: invoice.customer_name || '',
+              customer_phone: invoice.customer_phone || '',
+              customer_email: invoice.customer_email || '',
+              customer_address: invoice.customer_address || '',
+              job_type: invoice.job_type || '',
+              issued_date: invoice.issued_date || '',
+              due_date: invoice.due_date || '',
+              notes: invoice.notes || '',
+              payment_terms: invoice.payment_terms || '',
+              lead_id: invoice.lead_id || null,
+              lead_name: invoice.customer_name || '',
+              line_items: line_items || [],
+            });
+            setEditInvoiceId(editId);
+            setEditLeadId(invoice.lead_id || null);
+            // Use lead_id presence as proxy for transcript availability.
+            // The ai-describe endpoint validates transcript availability and returns
+            // a clear error if none found — no need for a separate check here.
+            setEditHasTranscript(!!invoice.lead_id);
+          } else {
+            toast.error('Could not load invoice for editing');
+          }
+        } else if (leadId) {
+          // Create mode: pre-fill from lead data (edit param takes precedence)
           const leadRes = await fetch(`/api/leads/${leadId}`);
           if (leadRes.ok) {
             const { lead } = await leadRes.json();
@@ -53,7 +87,7 @@ export default function NewInvoicePage() {
     }
 
     loadData();
-  }, [leadId]);
+  }, [leadId, editId]);
 
   async function createInvoice(invoiceData) {
     const res = await fetch('/api/invoices', {
@@ -71,12 +105,34 @@ export default function NewInvoicePage() {
     return json.invoice || json;
   }
 
+  async function patchInvoice(id, invoiceData) {
+    const res = await fetch(`/api/invoices/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(invoiceData),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update invoice');
+    }
+
+    const json = await res.json();
+    return json.invoice || json;
+  }
+
   async function handleSave(invoiceData) {
     setSaving(true);
     try {
-      const created = await createInvoice(invoiceData);
-      toast.success('Invoice saved as draft');
-      router.push(`/dashboard/invoices/${created.id}`);
+      if (editInvoiceId) {
+        await patchInvoice(editInvoiceId, invoiceData);
+        toast.success('Invoice updated');
+        router.push(`/dashboard/invoices/${editInvoiceId}`);
+      } else {
+        const created = await createInvoice(invoiceData);
+        toast.success('Invoice saved as draft');
+        router.push(`/dashboard/invoices/${created.id}`);
+      }
     } catch (err) {
       toast.error(err.message || 'Could not save invoice');
     } finally {
@@ -87,18 +143,26 @@ export default function NewInvoicePage() {
   async function handleSend(invoiceData) {
     setSaving(true);
     try {
-      // Step 1: create the invoice
-      const created = await createInvoice(invoiceData);
-
-      // Step 2: attempt to send (delivery wired in Plan 07 — no-op if not yet implemented)
-      try {
-        await fetch(`/api/invoices/${created.id}/send`, { method: 'POST' });
-      } catch {
-        // Delivery not yet wired — silently ignore (Plan 07)
+      let invoiceId;
+      if (editInvoiceId) {
+        // Edit mode: PATCH first, then send
+        await patchInvoice(editInvoiceId, invoiceData);
+        invoiceId = editInvoiceId;
+      } else {
+        // Create mode: create first, then send
+        const created = await createInvoice(invoiceData);
+        invoiceId = created.id;
       }
 
-      toast.success('Invoice created');
-      router.push(`/dashboard/invoices/${created.id}`);
+      // Attempt delivery
+      try {
+        await fetch(`/api/invoices/${invoiceId}/send`, { method: 'POST' });
+      } catch {
+        // Silently ignore delivery errors
+      }
+
+      toast.success(editInvoiceId ? 'Invoice updated and sent' : 'Invoice created');
+      router.push(`/dashboard/invoices/${invoiceId}`);
     } catch (err) {
       toast.error(err.message || 'Could not create invoice');
     } finally {
@@ -123,13 +187,15 @@ export default function NewInvoicePage() {
       {/* Page header */}
       <div className="flex items-center gap-3 mb-6">
         <Link
-          href="/dashboard/invoices"
+          href={editInvoiceId ? `/dashboard/invoices/${editInvoiceId}` : '/dashboard/invoices'}
           className="text-stone-500 hover:text-stone-900 transition-colors"
           aria-label="Back to invoices"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-xl font-semibold text-stone-900">New Invoice</h1>
+        <h1 className="text-xl font-semibold text-stone-900">
+          {editInvoiceId ? 'Edit Invoice' : 'New Invoice'}
+        </h1>
       </div>
 
       <InvoiceEditor
@@ -138,6 +204,9 @@ export default function NewInvoicePage() {
         onSave={handleSave}
         onSend={handleSend}
         saving={saving}
+        invoiceId={editInvoiceId}
+        leadId={editLeadId}
+        hasTranscript={editHasTranscript}
       />
     </div>
   );

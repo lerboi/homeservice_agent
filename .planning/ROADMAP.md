@@ -350,15 +350,14 @@ Plans:
   3. An owner clicks "AI Describe" in the invoice editor and line item descriptions are generated from linked call transcript(s) via Gemini Flash — professional, trade-specific language
   4. An owner selects multiple completed leads, clicks "Create Invoices", reviews the batch of draft invoices, then sends all at once via "Send All"
   5. Accounting sync pushes invoice data on send and pushes status updates when invoices are marked paid or voided
-**Plans**: 6 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 35-01-PLAN.md — DB migration + adapter interface + factory + three platform adapters
 - [x] 35-02-PLAN.md — AI line item descriptions (Gemini Flash + transcript access + editor UI)
 - [x] 35-03-PLAN.md — Batch invoice creation from leads + review-then-send flow
 - [x] 35-04-PLAN.md — Accounting OAuth routes + push-on-send sync hook
-- [x] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
-- [ ] 35-06-PLAN.md — Gap closure: fix edit flow + AI Describe button reachability
+- [ ] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
 **UI hint**: yes
 
 ### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel
@@ -366,7 +365,7 @@ Plans:
 **Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
 **Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
 **Depends on:** Phase 32
-**Plans:** 5/5 plans complete
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update
