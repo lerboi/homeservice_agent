@@ -223,5 +223,15 @@ export async function PATCH(request, { params }) {
     }
   }
 
+  // ── Push status update to accounting (non-fatal) ─────────────────────
+  if (body.status === 'paid' || body.status === 'void') {
+    try {
+      const { pushStatusUpdate } = await import('@/lib/accounting/sync.js');
+      await pushStatusUpdate(supabase, tenantId, id, body.status);
+    } catch (err) {
+      console.warn('[accounting-sync] Status push failed (non-fatal):', err?.message || err);
+    }
+  }
+
   return Response.json({ invoice: updatedInvoice, line_items: lineItems || [] });
 }
