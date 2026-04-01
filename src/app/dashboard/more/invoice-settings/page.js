@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +30,9 @@ export default function InvoiceSettingsPage() {
     payment_terms: 'Net 30',
     default_notes: '',
     invoice_prefix: 'INV',
+    late_fee_enabled: false,
+    late_fee_type: 'flat',
+    late_fee_amount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,6 +68,9 @@ export default function InvoiceSettingsPage() {
           payment_terms: data.payment_terms ?? 'Net 30',
           default_notes: data.default_notes ?? '',
           invoice_prefix: data.invoice_prefix ?? 'INV',
+          late_fee_enabled: data.late_fee_enabled ?? false,
+          late_fee_type: data.late_fee_type ?? 'flat',
+          late_fee_amount: data.late_fee_amount ?? 0,
         });
       } catch (err) {
         console.error('[invoice-settings] load error:', err);
@@ -325,6 +332,100 @@ export default function InvoiceSettingsPage() {
           </div>
           <p className={`text-xs ${body}`}>Enter 0 for no tax. Applied to taxable line items only.</p>
         </div>
+      </div>
+
+      {/* Section B2: Late Fees */}
+      <div className={`${card.base} p-6 space-y-5`}>
+        <h2 className="text-lg font-semibold text-[#0F172A]">Late Fees</h2>
+
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={settings.late_fee_enabled}
+            onCheckedChange={(val) => setSettings((p) => ({ ...p, late_fee_enabled: val }))}
+            id="late_fee_enabled"
+          />
+          <label
+            htmlFor="late_fee_enabled"
+            className={`text-sm font-medium ${heading} cursor-pointer`}
+          >
+            Automatically apply late fees to overdue invoices
+          </label>
+        </div>
+
+        {settings.late_fee_enabled && (
+          <div className="space-y-4 pl-[44px]">
+            <div className="space-y-1.5 max-w-xs">
+              <label className={`text-sm font-medium ${heading}`} htmlFor="late_fee_type">
+                Fee type
+              </label>
+              <Select
+                value={settings.late_fee_type}
+                onValueChange={(val) => setSettings((p) => ({ ...p, late_fee_type: val }))}
+              >
+                <SelectTrigger id="late_fee_type" className="w-full">
+                  <SelectValue placeholder="Select fee type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="flat">Flat amount</SelectItem>
+                  <SelectItem value="percentage">Percentage per month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5 max-w-xs">
+              {settings.late_fee_type === 'flat' ? (
+                <>
+                  <label className={`text-sm font-medium ${heading}`} htmlFor="late_fee_amount">
+                    Late fee amount
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className={`absolute left-3 text-sm ${body} pointer-events-none`}>$</span>
+                    <input
+                      id="late_fee_amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={settings.late_fee_amount || ''}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          late_fee_amount: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                      placeholder="0.00"
+                      className="w-full h-9 rounded-md border border-stone-200 bg-white pl-7 pr-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className={`text-sm font-medium ${heading}`} htmlFor="late_fee_amount">
+                    Monthly percentage
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      id="late_fee_amount"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={settings.late_fee_amount || ''}
+                      onChange={(e) =>
+                        setSettings((p) => ({
+                          ...p,
+                          late_fee_amount: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                      placeholder="0"
+                      className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 pr-24 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+                    />
+                    <span className={`absolute right-3 text-sm ${body} pointer-events-none`}>% per month</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Section C: Invoice Defaults */}
