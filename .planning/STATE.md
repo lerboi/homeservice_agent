@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase complete — ready for verification
-stopped_at: Completed 34-03-PLAN.md
-last_updated: "2026-04-01T11:33:14.897Z"
+stopped_at: Completed 34-02-PLAN.md
+last_updated: "2026-04-01T11:34:24.335Z"
 progress:
-  total_phases: 12
-  completed_phases: 12
+  total_phases: 14
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 51
+  completed_plans: 50
 ---
 
 # Project State
@@ -72,9 +72,8 @@ Recent decisions affecting current work:
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
-- [Phase 35]: Extracted sendSingleInvoice as shared function so batch-send and single-send both use same code path
-- [Phase 35]: Batch create produces shell drafts (no line items, zero totals) -- owner adds during review per D-11
-- [Phase 34]: recalculateInvoiceStatus helper shared by POST and DELETE to avoid duplication
+- [Phase 34-estimates-reminders-recurring]: Tiered estimate approved_value uses highest tier total (max) as representative value in summary
+- [Phase 34-estimates-reminders-recurring]: Summary metrics fetched once on mount only for estimates list, matching invoice pattern
 
 ### Roadmap Evolution
 
@@ -142,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:33:14.885Z
-Stopped at: Completed 34-03-PLAN.md
+Last session: 2026-04-01T11:34:24.320Z
+Stopped at: Completed 34-02-PLAN.md
 Resume file: None
