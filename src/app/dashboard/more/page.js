@@ -15,6 +15,7 @@ import {
   ChevronRight,
   BarChart3,
   FileText,
+  Plug,
 } from 'lucide-react';
 
 const MORE_ITEMS = [
@@ -26,6 +27,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
   { href: '/dashboard/more/analytics', label: 'Analytics', description: 'View call volume and performance trends', icon: BarChart3 },
   { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
+  { href: '/dashboard/more/integrations', label: 'Integrations', description: 'Connect accounting software for invoice sync', icon: Plug },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
   { href: '/dashboard/more/account', label: 'Account', description: 'Profile and account management', icon: UserCircle },
 ];
