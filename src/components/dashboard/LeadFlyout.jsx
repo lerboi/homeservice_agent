@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink } from 'lucide-react';
+import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList } from 'lucide-react';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -441,6 +441,14 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                         {lead.status === 'booked' ? 'Create Draft Invoice' : 'Create Invoice'}
                       </button>
                     )}
+
+                    <button
+                      onClick={() => router.push(`/dashboard/estimates/new?lead_id=${lead.id}`)}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[#C2410C] border border-[#C2410C] rounded-lg hover:bg-[#C2410C]/10 transition-colors"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      Create Estimate
+                    </button>
                   </div>
                 </>
               )}
