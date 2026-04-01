@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Milestone complete
-stopped_at: Completed 34-05-PLAN.md
-last_updated: "2026-04-01T17:19:47.571Z"
+stopped_at: Completed 35-05-PLAN.md
+last_updated: "2026-04-01T17:33:32.635Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -74,6 +74,7 @@ Recent decisions affecting current work:
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
 - [Phase 34]: Inline HTML email template for estimate delivery (not React Email) -- simpler for single send route
 - [Phase 34]: Convert-to-invoice returns existing invoice_id if already converted (idempotent, not error)
+- [Phase 35-invoice-integrations-and-ai]: Sync status fetch failure is non-critical — fail silently to preserve invoice list when accounting not connected
 
 ### Roadmap Evolution
 
@@ -141,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T16:52:43.590Z
-Stopped at: Completed 34-05-PLAN.md
+Last session: 2026-04-01T17:33:27.855Z
+Stopped at: Completed 35-05-PLAN.md
 Resume file: None

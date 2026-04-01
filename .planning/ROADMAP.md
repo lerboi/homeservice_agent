@@ -357,7 +357,7 @@ Plans:
 - [x] 35-02-PLAN.md — AI line item descriptions (Gemini Flash + transcript access + editor UI)
 - [x] 35-03-PLAN.md — Batch invoice creation from leads + review-then-send flow
 - [x] 35-04-PLAN.md — Accounting OAuth routes + push-on-send sync hook
-- [ ] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
+- [x] 35-05-PLAN.md — Integrations settings page + invoice sync status indicators
 **UI hint**: yes
 
 ### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel
@@ -365,7 +365,7 @@ Plans:
 **Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
 **Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
 **Depends on:** Phase 32
-**Plans:** 8/8 plans complete
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update
