@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/table';
 import InvoiceSummaryCards from '@/components/dashboard/InvoiceSummaryCards';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
+import InvoiceSyncIndicator from '@/components/dashboard/InvoiceSyncIndicator';
+import { supabase } from '@/lib/supabase-browser';
 
 const STATUS_TABS = [
   { key: 'all',     label: 'All' },
@@ -49,6 +51,7 @@ export default function InvoicesPage() {
   const [activeStatus, setActiveStatus] = useState('all');
   const [settingsComplete, setSettingsComplete] = useState(true);
   const [completedLeadsCount, setCompletedLeadsCount] = useState(0);
+  const [syncStatusMap, setSyncStatusMap] = useState({});
 
   // Track whether summary has been loaded yet (only fetch once)
   const [summaryLoaded, setSummaryLoaded] = useState(false);
@@ -87,7 +90,32 @@ export default function InvoicesPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        setInvoices(data.invoices || []);
+        const loadedInvoices = data.invoices || [];
+        setInvoices(loadedInvoices);
+
+        // Fetch sync statuses for loaded invoices
+        if (loadedInvoices.length > 0) {
+          try {
+            const invoiceIds = loadedInvoices.map((inv) => inv.id);
+            const { data: syncLogs } = await supabase
+              .from('accounting_sync_log')
+              .select('invoice_id, provider, status, error_message')
+              .in('invoice_id', invoiceIds);
+            if (syncLogs && syncLogs.length > 0) {
+              const map = {};
+              syncLogs.forEach((log) => {
+                map[log.invoice_id] = {
+                  provider: log.provider,
+                  status: log.status,
+                  error_message: log.error_message,
+                };
+              });
+              setSyncStatusMap(map);
+            }
+          } catch {
+            // Sync status is non-critical — fail silently
+          }
+        }
 
         // Status counts always come from the response
         if (data.status_counts) {
@@ -316,7 +344,10 @@ export default function InvoicesPage() {
                       className="cursor-pointer hover:bg-stone-50 transition-colors"
                     >
                       <TableCell className="text-sm font-medium text-stone-900">
-                        {invoice.invoice_number}
+                        <span className="inline-flex items-center gap-1.5">
+                          {invoice.invoice_number}
+                          <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
+                        </span>
                       </TableCell>
                       <TableCell className="text-sm text-stone-700">
                         {invoice.customer_name}
@@ -352,8 +383,9 @@ export default function InvoicesPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-900 truncate">
+                      <p className="text-sm font-medium text-stone-900 truncate inline-flex items-center gap-1.5">
                         {invoice.invoice_number}
+                        <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
                       </p>
                       <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
                     </div>
