@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phases 5, 9, 11 removed (outdated) — all remaining phases complete
-stopped_at: Phase 34 UI-SPEC approved
-last_updated: "2026-04-01T10:34:02.206Z"
+stopped_at: Phase 35 UI-SPEC approved
+last_updated: "2026-04-01T10:44:51.516Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -138,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T10:34:02.197Z
-Stopped at: Phase 34 UI-SPEC approved
-Resume file: .planning/phases/34-estimates-reminders-recurring/34-UI-SPEC.md
+Last session: 2026-04-01T10:44:51.506Z
+Stopped at: Phase 35 UI-SPEC approved
+Resume file: .planning/phases/35-invoice-integrations-and-ai/35-UI-SPEC.md
