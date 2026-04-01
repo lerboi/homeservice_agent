@@ -148,5 +148,13 @@ export async function sendSingleInvoice(supabase, tenantId, invoiceId, options =
     return { invoice, lineItems: lineItems || [], settings };
   }
 
+  // ── Push to accounting software (non-fatal) ──────────────────────────
+  try {
+    const { pushToAccounting } = await import('@/lib/accounting/sync.js');
+    await pushToAccounting(supabase, tenantId, updatedInvoice, lineItems || [], settings);
+  } catch (err) {
+    console.warn('[accounting-sync] Push failed (non-fatal):', err?.message || err);
+  }
+
   return { invoice: updatedInvoice, lineItems: lineItems || [], settings };
 }
