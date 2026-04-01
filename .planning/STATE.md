@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Checkpoint — awaiting visual verification (36-03 Task 2)
-stopped_at: Checkpoint in 36-03-PLAN.md (Task 2 human-verify)
-last_updated: "2026-04-01T00:00:00Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 34-04-PLAN.md
+last_updated: "2026-04-01T11:43:23.469Z"
 progress:
   total_phases: 14
   completed_phases: 11
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
+- [Phase 34]: Reused LineItemRow component from invoice editor inside TierEditor for consistency
 
 ### Roadmap Evolution
 
@@ -139,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T22:14:45.927Z
-Stopped at: Completed 36-02-PLAN.md
+Last session: 2026-04-01T11:43:23.459Z
+Stopped at: Completed 34-04-PLAN.md
 Resume file: None
