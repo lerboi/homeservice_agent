@@ -3,7 +3,7 @@ import { getTenantId } from '@/lib/get-tenant-id';
 import { formatInvoiceNumber } from '@/lib/invoice-number';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
 
-const VALID_STATUSES = ['draft', 'sent', 'paid', 'overdue', 'void'];
+const VALID_STATUSES = ['draft', 'sent', 'paid', 'partially_paid', 'overdue', 'void'];
 
 /**
  * GET /api/invoices
@@ -45,7 +45,10 @@ export async function GET(request) {
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
 
-  if (statusFilter && VALID_STATUSES.includes(statusFilter)) {
+  if (statusFilter === 'recurring') {
+    // Special filter: show recurring templates regardless of status
+    query = query.eq('is_recurring_template', true);
+  } else if (statusFilter && VALID_STATUSES.includes(statusFilter)) {
     query = query.eq('status', statusFilter);
   }
 
