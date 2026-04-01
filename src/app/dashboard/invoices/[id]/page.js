@@ -31,7 +31,7 @@ import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import RecurringBadge from '@/components/dashboard/RecurringBadge';
 import RecurringSetupDialog from '@/components/dashboard/RecurringSetupDialog';
 import PaymentLog from '@/components/dashboard/PaymentLog';
-import ReminderToggle from '@/components/dashboard/ReminderToggle';
+import { ReminderToggle } from '@/components/dashboard/ReminderToggle';
 import { card } from '@/lib/design-tokens';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
