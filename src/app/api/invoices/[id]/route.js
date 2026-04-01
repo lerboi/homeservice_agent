@@ -84,6 +84,17 @@ export async function PATCH(request, { params }) {
 
   const updateData = { updated_at: new Date().toISOString() };
 
+  // Recurring fields can be updated on any non-paid/void status
+  const recurringFields = [
+    'is_recurring_template', 'recurring_frequency', 'recurring_start_date',
+    'recurring_end_date', 'recurring_next_date', 'recurring_active',
+  ];
+  for (const field of recurringFields) {
+    if (body[field] !== undefined) {
+      updateData[field] = body[field];
+    }
+  }
+
   if (current.status === 'sent' || current.status === 'overdue') {
     // Only status change is permitted; only 'paid' or 'void' are valid transitions
     if (body.status && body.status !== 'paid' && body.status !== 'void') {
@@ -105,6 +116,9 @@ export async function PATCH(request, { params }) {
     const editableFields = [
       'customer_name', 'customer_phone', 'customer_email', 'customer_address',
       'job_type', 'issued_date', 'due_date', 'notes', 'payment_terms',
+      'reminders_enabled',
+      'is_recurring_template', 'recurring_frequency', 'recurring_start_date',
+      'recurring_end_date', 'recurring_next_date', 'recurring_active',
     ];
     for (const field of editableFields) {
       if (body[field] !== undefined) {

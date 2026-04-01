@@ -17,14 +17,18 @@ import {
 import InvoiceSummaryCards from '@/components/dashboard/InvoiceSummaryCards';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import InvoiceSyncIndicator from '@/components/dashboard/InvoiceSyncIndicator';
+import RecurringBadge from '@/components/dashboard/RecurringBadge';
 import { supabase } from '@/lib/supabase-browser';
 
 const STATUS_TABS = [
-  { key: 'all',     label: 'All' },
-  { key: 'draft',   label: 'Draft' },
-  { key: 'sent',    label: 'Sent' },
-  { key: 'overdue', label: 'Overdue' },
-  { key: 'paid',    label: 'Paid' },
+  { key: 'all',            label: 'All' },
+  { key: 'draft',          label: 'Draft' },
+  { key: 'sent',           label: 'Sent' },
+  { key: 'paid',           label: 'Paid' },
+  { key: 'partially_paid', label: 'Partially Paid' },
+  { key: 'overdue',        label: 'Overdue' },
+  { key: 'void',           label: 'Void' },
+  { key: 'recurring',      label: 'Recurring' },
 ];
 
 function formatAmount(value) {
@@ -152,11 +156,13 @@ export default function InvoicesPage() {
     (statusCounts.draft || 0) +
     (statusCounts.sent || 0) +
     (statusCounts.paid || 0) +
+    (statusCounts.partially_paid || 0) +
     (statusCounts.overdue || 0) +
     (statusCounts.void || 0);
 
   function getTabCount(key) {
     if (key === 'all') return totalCount;
+    if (key === 'recurring') return null; // No count for recurring filter
     return statusCounts[key] || 0;
   }
 
@@ -200,7 +206,7 @@ export default function InvoicesPage() {
                   `}
                 >
                   {tab.label}
-                  {!loading && (
+                  {!loading && getTabCount(tab.key) !== null && (
                     <span
                       className={`ml-1.5 text-xs ${
                         isActive ? 'text-[#C2410C]' : 'text-stone-400'
@@ -347,6 +353,10 @@ export default function InvoicesPage() {
                         <span className="inline-flex items-center gap-1.5">
                           {invoice.invoice_number}
                           <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
+                          {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
+                          {invoice.generated_from_id && !invoice.is_recurring_template && (
+                            <span className="text-[10px] text-stone-400">Recurring</span>
+                          )}
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-stone-700">
@@ -386,6 +396,10 @@ export default function InvoicesPage() {
                       <p className="text-sm font-medium text-stone-900 truncate inline-flex items-center gap-1.5">
                         {invoice.invoice_number}
                         <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
+                        {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
+                        {invoice.generated_from_id && !invoice.is_recurring_template && (
+                          <span className="text-[10px] text-stone-400">Recurring</span>
+                        )}
                       </p>
                       <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
                     </div>
