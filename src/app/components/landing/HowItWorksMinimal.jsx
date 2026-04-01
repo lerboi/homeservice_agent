@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Phone, Brain, CalendarCheck, LayoutDashboard } from 'lucide-react';
 
 const STEPS = [
@@ -45,153 +45,220 @@ const STEPS = [
   },
 ];
 
+const N = STEPS.length;
+
 /*
-  Pure scroll-position-based animation. No Framer Motion useScroll (which has
-  positioning bugs in this layout). Instead, a single RAF-throttled scroll
-  listener calculates each step's viewport position and derives opacity,
-  scale, and translateY from it.
-
-  For each step:
-    ratio = how far the step's CENTER is from viewport CENTER,
-            normalized to [-1, 1] where 0 = perfectly centered.
-
-    ratio -1 → step is one viewport below center (entering from bottom)
-    ratio  0 → step is centered
-    ratio +1 → step is one viewport above center (exiting upward)
+  Zero-rerender scroll animation with continuous RAF loop.
+  - All 4 steps pre-rendered, visibility toggled via refs.
+  - Runs every frame (not scroll-event-driven) for guaranteed smoothness.
+  - easeOut cubic for snappy, punchy transitions.
+  - translate3d / scale3d for explicit GPU compositing.
 */
 
-export function HowItWorksMinimal() {
-  const stepRefs = useRef([]);
-  const [transforms, setTransforms] = useState(() =>
-    STEPS.map(() => ({ opacity: 0, scale: 0.92, y: 40 }))
-  );
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
 
-  const setStepRef = useCallback((el, i) => {
-    stepRefs.current[i] = el;
-  }, []);
+// Fast start, smooth settle
+function easeOut(t) {
+  return 1 - (1 - t) * (1 - t) * (1 - t);
+}
+
+export function HowItWorksMinimal() {
+  const outerRef = useRef(null);
+  const contentRefs = useRef([]);
+  const shapeRefs = useRef([]);
 
   useEffect(() => {
-    let rafId;
+    let running = true;
 
-    const update = () => {
-      const vh = window.innerHeight;
-      const vpCenter = vh / 2;
+    // Cache scrollRange (doesn't change unless window resizes)
+    let scrollRange = 0;
+    const recalc = () => {
+      const el = outerRef.current;
+      if (el) scrollRange = el.offsetHeight - window.innerHeight;
+    };
+    recalc();
+    window.addEventListener('resize', recalc);
 
-      const newTransforms = stepRefs.current.map((el) => {
-        if (!el) return { opacity: 0, scale: 0.92, y: 40 };
+    // Initialise: show step 0, hide rest
+    contentRefs.current.forEach((el, i) => {
+      if (!el) return;
+      if (i === 0) {
+        el.style.opacity = '1';
+        el.style.transform = 'translate3d(0,0px,0) scale3d(1,1,1)';
+      } else {
+        el.style.opacity = '0';
+        el.style.transform = 'translate3d(0,100px,0) scale3d(0.85,0.85,1)';
+      }
+    });
+    shapeRefs.current.forEach((el, i) => {
+      if (!el) return;
+      el.style.opacity = i === 0 ? '1' : '0';
+      el.style.transform = i === 0 ? 'scale3d(1,1,1)' : 'scale3d(1.1,1.1,1)';
+    });
 
-        const rect = el.getBoundingClientRect();
-        const elCenter = rect.top + rect.height / 2;
+    const tick = () => {
+      if (!running) return;
 
-        // ratio: 0 = element centered in viewport
-        //       -1 = element center is 1 viewport above vp center (exited up)
-        //       +1 = element center is 1 viewport below vp center (not yet entered)
-        const ratio = (elCenter - vpCenter) / vh;
+      const el = outerRef.current;
+      if (el && scrollRange > 0) {
+        const top = el.getBoundingClientRect().top;
+        const scrolled = Math.max(0, Math.min(-top, scrollRange));
+        const totalProgress = scrolled / scrollRange;
 
-        // Clamp to [-1, 1]
-        const r = Math.max(-1, Math.min(1, ratio));
+        const stepFloat = totalProgress * N;
+        const active = Math.min(Math.floor(stepFloat), N - 1);
+        const rawProgress = Math.max(0, Math.min(1, stepFloat - active));
 
-        // abs distance from center — 0 at center, 1 at edges
-        const dist = Math.abs(r);
+        const enterEnd = 0.2;
+        const exitStart = 0.8;
+        const isFirst = active === 0;
+        const isLast = active === N - 1;
+        const hasNext = active + 1 < N;
 
-        // Opacity: 1 when centered (dist=0), 0 when dist >= 0.5
-        const opacity = Math.max(0, 1 - dist * 2.5);
+        // --- Current step ---
+        let cO, cS, cY;
+        if (isFirst && rawProgress < enterEnd) {
+          cO = 1; cS = 1; cY = 0;
+        } else if (rawProgress < enterEnd) {
+          const t = easeOut(rawProgress / enterEnd);
+          cO = t;
+          cS = lerp(0.85, 1, t);
+          cY = lerp(100, 0, t);
+        } else if (isLast && rawProgress > exitStart) {
+          cO = 1; cS = 1; cY = 0;
+        } else if (rawProgress > exitStart) {
+          const t = easeOut((rawProgress - exitStart) / (1 - exitStart));
+          cO = 1 - t;
+          cS = lerp(1, 0.85, t);
+          cY = lerp(0, -100, t);
+        } else {
+          cO = 1; cS = 1; cY = 0;
+        }
 
-        // Scale: 1 when centered, 0.92 at edges
-        const scale = 1 - dist * 0.08;
+        // --- Next step ---
+        let nO = 0, nS = 0.85, nY = 100;
+        if (hasNext && rawProgress > exitStart) {
+          const t = easeOut((rawProgress - exitStart) / (1 - exitStart));
+          nO = t;
+          nS = lerp(0.85, 1, t);
+          nY = lerp(100, 0, t);
+        }
 
-        // Y: 0 when centered, +40 when below (entering), -40 when above (exiting)
-        const y = r * 50;
+        // --- Shape crossfade ---
+        const sf = (rawProgress > exitStart && hasNext)
+          ? easeOut((rawProgress - exitStart) / (1 - exitStart))
+          : 0;
 
-        return { opacity, scale, y };
-      });
+        // Write all steps
+        for (let i = 0; i < N; i++) {
+          const cEl = contentRefs.current[i];
+          const sEl = shapeRefs.current[i];
 
-      setTransforms(newTransforms);
+          if (i === active) {
+            if (cEl) {
+              cEl.style.opacity = cO;
+              cEl.style.transform = `translate3d(0,${cY}px,0) scale3d(${cS},${cS},1)`;
+            }
+            if (sEl) {
+              sEl.style.opacity = 1 - sf;
+              sEl.style.transform = `scale3d(${lerp(1, 0.9, sf)},${lerp(1, 0.9, sf)},1)`;
+            }
+          } else if (i === active + 1) {
+            if (cEl) {
+              cEl.style.opacity = nO;
+              cEl.style.transform = `translate3d(0,${nY}px,0) scale3d(${nS},${nS},1)`;
+            }
+            if (sEl) {
+              sEl.style.opacity = sf;
+              sEl.style.transform = `scale3d(${lerp(1.1, 1, sf)},${lerp(1.1, 1, sf)},1)`;
+            }
+          } else {
+            if (cEl) cEl.style.opacity = '0';
+            if (sEl) sEl.style.opacity = '0';
+          }
+        }
+      }
+
+      requestAnimationFrame(tick);
     };
 
-    const onScroll = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(update);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    // Run once on mount
-    update();
+    requestAnimationFrame(tick);
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
+      running = false;
+      window.removeEventListener('resize', recalc);
     };
   }, []);
 
   return (
-    <div className="bg-[#F5F5F4]">
-      {STEPS.map((step, i) => {
-        const { Icon } = step;
-        const t = transforms[i];
-
-        return (
-          <div
-            key={step.number}
-            ref={(el) => setStepRef(el, i)}
-            className="relative h-screen flex items-center justify-center px-4 md:px-6"
-          >
-            {/* Soft background shape */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              aria-hidden="true"
-            >
+    <div
+      ref={outerRef}
+      id="hiw-scroll-runway"
+      className="bg-[#F5F5F4]"
+      style={{ height: `${N * 100}vh` }}
+    >
+      <div className="sticky top-0 h-screen flex items-center justify-center">
+        {STEPS.map((step, i) => (
+          <div key={step.number} className="contents">
+            {/* Background shape */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
               <div
+                ref={(el) => { shapeRefs.current[i] = el; }}
                 className={`w-[280px] h-[280px] md:w-[400px] md:h-[400px] rounded-full ${step.shapeFill}`}
+                style={{ willChange: 'transform, opacity' }}
               />
             </div>
 
-            {/* Content with scroll-driven transforms */}
+            {/* Step content */}
             <div
-              className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto gap-5 will-change-transform"
-              style={{
-                opacity: t.opacity,
-                transform: `scale(${t.scale}) translateY(${t.y}px)`,
-              }}
+              ref={(el) => { contentRefs.current[i] = el; }}
+              className="absolute inset-0 flex items-center justify-center px-4 md:px-6"
+              style={{ willChange: 'transform, opacity' }}
             >
-              {/* Step number */}
-              <span
-                className={`text-[5rem] md:text-[6rem] lg:text-[8rem] font-semibold leading-none select-none pointer-events-none ${step.numberColor}`}
-                aria-hidden="true"
-              >
-                {step.number}
-              </span>
-
-              {/* Icon */}
-              <div
-                className={`w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-3xl flex items-center justify-center ${step.iconBg}`}
-                aria-hidden="true"
-              >
-                <Icon
-                  className={`w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 ${step.iconColor}`}
-                  strokeWidth={1.5}
-                />
-              </div>
-
-              {/* Title */}
-              <h3 className="text-2xl md:text-3xl lg:text-5xl font-semibold tracking-tight leading-[1.2] text-[#0F172A]">
-                {step.title}
-              </h3>
-
-              {/* Gradient accent line */}
-              <div
-                className="w-20 h-0.5 rounded-full bg-gradient-to-r from-[#F97316] to-[#FB923C]"
-                aria-hidden="true"
-              />
-
-              {/* Description */}
-              <p className="text-base md:text-lg leading-relaxed text-[#475569]">
-                {step.description}
-              </p>
+              <StepContent step={step} />
             </div>
           </div>
-        );
-      })}
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepContent({ step }) {
+  const { Icon } = step;
+  return (
+    <div className="relative z-10 flex flex-col items-center text-center max-w-lg mx-auto gap-5">
+      <span
+        className={`text-[5rem] md:text-[6rem] lg:text-[8rem] font-semibold leading-none select-none pointer-events-none ${step.numberColor}`}
+        aria-hidden="true"
+      >
+        {step.number}
+      </span>
+
+      <div
+        className={`w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-3xl flex items-center justify-center ${step.iconBg}`}
+        aria-hidden="true"
+      >
+        <Icon
+          className={`w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 ${step.iconColor}`}
+          strokeWidth={1.5}
+        />
+      </div>
+
+      <h3 className="text-2xl md:text-3xl lg:text-5xl font-semibold tracking-tight leading-[1.2] text-[#0F172A]">
+        {step.title}
+      </h3>
+
+      <div
+        className="w-20 h-0.5 rounded-full bg-gradient-to-r from-[#F97316] to-[#FB923C]"
+        aria-hidden="true"
+      />
+
+      <p className="text-base md:text-lg leading-relaxed text-[#475569]">
+        {step.description}
+      </p>
     </div>
   );
 }

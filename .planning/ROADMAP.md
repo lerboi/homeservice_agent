@@ -328,11 +328,12 @@ Plans:
   3. Automated payment reminders fire at -3, 0, +3, +7 days relative to due date via email and SMS with escalating tone — toggleable per invoice
   4. Late fees auto-calculate (flat or percentage) from invoice settings and appear as a line item on overdue invoices
   5. An owner sets up a recurring invoice schedule (weekly/monthly/quarterly/annually) and the system auto-generates draft invoices on schedule for owner review before sending
-**Plans**: 7 plans
+**Plans**: 8 plans
 Plans:
-- [ ] 34-01-PLAN.md — Database migrations (estimates, payment log, reminders/recurring)
+- [x] 34-00-PLAN.md — Wave 0: Test scaffolds (estimate calculations, payment log, late fee, recurring schedule)
+- [x] 34-01-PLAN.md — Database migrations (estimates, payment log, reminders/recurring)
 - [ ] 34-02-PLAN.md — Estimate CRUD API + list page + status badge + summary cards
-- [ ] 34-03-PLAN.md — Payment log API + UI (record/delete payments, auto-status, balance)
+- [x] 34-03-PLAN.md — Payment log API + UI (record/delete payments, auto-status, balance)
 - [ ] 34-04-PLAN.md — Estimate editor with tier support + estimate PDF generation
 - [ ] 34-05-PLAN.md — Estimate detail view + send + convert-to-invoice + navigation
 - [ ] 34-06-PLAN.md — Automated reminders cron + late fee settings + application
@@ -365,7 +366,7 @@ Plans:
 **Goal:** Both the How It Works and Features sections on the landing page are redesigned -- How It Works uses full-viewport scroll steps with staggered animations, Features uses a horizontal carousel with icon nav -- delivering an Apple-style professional feel
 **Requirements**: HIW-01, HIW-02, HIW-03, HIW-04, HIW-05, FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-05, INTEG-01
 **Depends on:** Phase 32
-**Plans:** 2/3 plans executed
+**Plans:** 3/8 plans executed
 
 Plans:
 - [x] 36-01-PLAN.md -- HowItWorksMinimal component and HowItWorksSection wrapper update

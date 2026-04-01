@@ -485,7 +485,8 @@ export function FeaturesCarousel() {
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        {/* Carousel track */}
+        {/* Carousel track — masked fade on desktop edges */}
+        <div className="carousel-track-mask">
         <div
           ref={trackRef}
           onScroll={() => { if (!isAutoScrollingRef.current) stopAutoAdvance(); }}
@@ -532,6 +533,7 @@ export function FeaturesCarousel() {
             );
           })}
         </div>
+        </div>
 
         {/* Icon nav grid */}
         <div className="mt-8 flex overflow-x-auto scrollbar-hide gap-1 px-4 md:overflow-x-visible md:justify-center md:px-0">
@@ -574,6 +576,12 @@ export function FeaturesCarousel() {
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        @media (min-width: 768px) {
+          .carousel-track-mask {
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+          }
         }
       `}</style>
     </section>
