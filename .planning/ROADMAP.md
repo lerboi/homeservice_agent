@@ -16,7 +16,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Onboarding and Triage** - Business configuration wizard, three-layer triage engine, and per-business AI persona (completed 2026-03-19)
 - [ ] **Phase 3: Scheduling and Calendar Sync** - Atomic slot booking, travel time buffers, bidirectional Google and Outlook sync
 - [x] **Phase 4: CRM, Dashboard, and Notifications** - Lead pipeline, web dashboard, owner SMS/email alerts (completed 2026-03-21)
-- [ ] **Phase 5: Hardening and Launch** - Multi-language end-to-end, 5-minute onboarding gate, concurrency QA, and staging environment
 
 ## Phase Details
 
@@ -108,21 +107,6 @@ Plans:
 - [ ] 04-05-PLAN.md — Lead flyout (AudioPlayer, TranscriptViewer, status change, RevenueInput) + KanbanBoard + lead detail API
 - [ ] 04-06-PLAN.md — Dashboard home (stats, activity feed) + analytics page (charts) + Supabase Realtime + settings stub
 
-### Phase 5: Hardening and Launch
-**Goal**: The full product is demo-ready and production-hardened — multi-language works end-to-end from first utterance through notifications, the 5-minute onboarding activation gate is validated with a non-technical user, and concurrency and escalation edge cases are verified in a staging environment
-**Depends on**: Phase 4
-**Requirements**: (none — all 38 v1 requirements are covered in Phases 1-4; this phase delivers QA, hardening, and activation validation)
-**Success Criteria** (what must be TRUE):
-  1. A Spanish-language test call is answered in Spanish, triaged in Spanish, booked with a Spanish-language slot confirmation, and the owner notification SMS/email arrives with a Spanish-language summary
-  2. A non-technical SME owner (not a developer) completes the onboarding wizard and hears their AI answer a test call in under 5 minutes with no external help
-  3. A caller saying "I need to speak to a real person" or "operator" reaches a voicemail fallback and does not loop back into the AI
-  4. A load test firing 10 simultaneous calls at the same final available slot produces exactly 1 confirmed booking and 9 next-available-slot offers
-  5. All concurrency and triage tests pass in CI against a staging environment with a live Retell webhook tunnel
-**Plans**: 2 plans
-
-Plans:
-- [x] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
-- [x] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## Progress
 
@@ -136,7 +120,6 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 3 -> 4 -> 5
 | 2.1 Public Marketing Landing Page | 0/2 | Planning complete | - |
 | 3. Scheduling and Calendar Sync | 5/6 | In Progress|  |
 | 4. CRM, Dashboard, and Notifications | 6/6 | Complete   | 2026-03-21 |
-| 5. Hardening and Launch | 0/TBD | Not started | - |
 
 ### Phase 10: Dashboard Guided Setup and First-Run Experience
 **Goal**: A first-time user who lands on the dashboard after onboarding sees a guided setup checklist, contextual empty-state prompts, and a welcome message that walk them through every remaining configuration step — so they fully understand the product and complete setup without external help
@@ -208,7 +191,6 @@ Plans:
 - [x] **Phase 6: Public Marketing Pages** - Pricing page (4 tiers, toggle, FAQ, comparison table), About page, Contact page, and nav/footer updated across all public pages (completed 2026-03-22)
 - [x] **Phase 7: Unified Signup and Onboarding Wizard** - Single wizard from any CTA through account creation, business setup, and live test call finale (completed 2026-03-22)
 - [x] **Phase 8: Outlook Calendar Sync** - Bidirectional Microsoft Graph sync with OAuth connect/disconnect, delta queries, and webhook subscription renewal (completed 2026-03-26)
-- [ ] **Phase 9: Hardening and Launch QA** - Sentry monitoring, multi-language E2E, slot-locking contention test in CI, 5-minute gate validated by real SME, env var audit
 - [x] **Phase 10: Dashboard Guided Setup and First-Run Experience** - Setup checklist, empty states, test call from dashboard, contextual guidance for first-time users (completed 2026-03-22)
 
 ### Phase 6: Public Marketing Pages
@@ -263,21 +245,6 @@ Plans:
 - [x] 08-02-PLAN.md — Outlook OAuth routes (auth + callback) + Graph webhook endpoint + push handler
 - [x] 08-03-PLAN.md — Dual-provider API routes (status, disconnect, set-primary, cron) + CalendarSyncCard rewrite + human verification
 
-### Phase 9: Hardening and Launch QA
-**Goal**: Every critical failure mode is instrumented, monitored, and validated before the first real customer is handed a demo — including multi-language correctness end-to-end, slot-locking correctness under genuine contention, the 5-minute activation promise with a real SME user, and no secrets in source
-**Depends on**: Phase 7, Phase 8
-**Requirements**: LAUNCH-01, LAUNCH-02, LAUNCH-03, LAUNCH-04, LAUNCH-05
-**Success Criteria** (what must be TRUE):
-  1. An unhandled exception or Retell API failure in production triggers a Sentry alert within 60 seconds with full stack trace and request context — confirmed via a deliberate test throw in a staging environment
-  2. A Spanish-language test call is answered in Spanish, triaged in Spanish, booked with a Spanish-language confirmation, and the owner's SMS/email notification arrives with Spanish-language content — validated by a human reviewer end-to-end
-  3. A k6 contention test fires 20 simultaneous requests at the exact same availability slot within a 100ms window; exactly 1 request returns HTTP 201 and the remaining 19 return HTTP 409 — this test runs in CI and must pass before demo-ready is declared
-  4. A real non-technical home service business owner completes the wizard on staging and hears their AI answer a test call in under 5 minutes, measured from the landing page CTA click — timing and result logged
-  5. A full environment variable audit confirms zero secrets in source control and all required production env vars are set and non-empty — the audit checklist is saved as a file in the repository
-**Plans**: 2 plans
-
-Plans:
-- [x] 17-01-PLAN.md — Schema migration (recovery_sms_tracking), sendCallerRecoverySMS overhaul (urgency-aware i18n, structured return), test rewrite
-- [ ] 17-02-PLAN.md — Webhook real-time trigger, cron overhaul (urgency-aware + retry branch), skill file update
 
 ## v1.1 Progress
 
@@ -290,7 +257,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 | 6. Public Marketing Pages | 4/4 | Complete   | 2026-03-22 |
 | 7. Unified Signup and Onboarding Wizard | 4/4 | Complete   | 2026-03-22 |
 | 8. Outlook Calendar Sync | 3/3 | Complete | 2026-03-26 |
-| 9. Hardening and Launch QA | 0/TBD | Not started | - |
 | 10. Dashboard Guided Setup | 4/4 | Complete    | 2026-03-22 |
 
 ### Phase 30: Voice Agent Prompt Optimization
@@ -349,6 +315,20 @@ Plans:
 - [x] 33-05-PLAN.md — Invoice Editor: line item editor with typed fields, totals, lead pre-fill
 - [x] 33-06-PLAN.md — PDF generation + invoice detail page with actions
 - [x] 33-07-PLAN.md — Email/SMS delivery, bidirectional sync, LeadFlyout integration
+**UI hint**: yes
+
+### Phase 35: Invoice Integrations and AI
+
+**Goal:** Extend the invoice system with accounting software sync (QuickBooks Online, Xero, FreshBooks) via OAuth, AI-generated line item descriptions from call transcripts using Gemini Flash, and batch invoice creation from multiple completed leads with review-then-send flow
+**Depends on:** Phase 33 (Invoice Core)
+**Requirements**: D-01 through D-11 (from 35-CONTEXT.md)
+**Success Criteria** (what must be TRUE):
+  1. An owner connects QuickBooks Online via OAuth from Settings > Integrations, and when they send an invoice it automatically appears in their QBO account
+  2. The same OAuth + push-only sync works for Xero and FreshBooks via the adapter pattern — one shared interface, three platform-specific implementations
+  3. An owner clicks "AI Describe" in the invoice editor and line item descriptions are generated from linked call transcript(s) via Gemini Flash — professional, trade-specific language
+  4. An owner selects multiple completed leads, clicks "Create Invoices", reviews the batch of draft invoices, then sends all at once via "Send All"
+  5. Accounting sync pushes invoice data on send and pushes status updates when invoices are marked paid or voided
+**Plans**: 0 plans
 **UI hint**: yes
 
 ### Phase 36: Landing Page Section Redesign — How It Works Minimalism and Features Carousel
