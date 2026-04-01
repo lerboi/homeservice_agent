@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Phases 5, 9, 11 removed (outdated) — all remaining phases complete
-stopped_at: Phase 35 UI-SPEC approved
-last_updated: "2026-04-01T10:44:51.516Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 34-00-PLAN.md
+last_updated: "2026-04-01T11:22:41.946Z"
 progress:
-  total_phases: 12
-  completed_phases: 12
+  total_phases: 14
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 51
+  completed_plans: 50
 ---
 
 # Project State
@@ -19,11 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** All milestone phases complete — ready for next milestone or new work
+**Current focus:** Phase 36 — landing-page-section-redesign-how-it-works-minimalism-and-features-carousel
 
 ## Current Position
 
-All 12 phases complete. Phases 5, 9 (Hardening/QA) removed as outdated. Phase 11 closed (superseded by 32/36).
+Phase: 36 (landing-page-section-redesign-how-it-works-minimalism-and-features-carousel) — EXECUTING
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
 - [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
 - [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
+- [Phase 34]: Used relative imports in test files instead of @/ alias for ESM jest compatibility
 
 ### Roadmap Evolution
 
@@ -138,6 +140,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T10:44:51.506Z
-Stopped at: Phase 35 UI-SPEC approved
-Resume file: .planning/phases/35-invoice-integrations-and-ai/35-UI-SPEC.md
+Last session: 2026-04-01T11:22:41.939Z
+Stopped at: Completed 34-00-PLAN.md
+Resume file: None
