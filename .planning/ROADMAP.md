@@ -317,6 +317,28 @@ Plans:
 - [x] 33-07-PLAN.md — Email/SMS delivery, bidirectional sync, LeadFlyout integration
 **UI hint**: yes
 
+### Phase 34: Estimates, Reminders, and Recurring Invoices
+
+**Goal:** Extend the invoice system with pre-job estimates (optional good/better/best tiers), a simple payment log for partial payments, automated payment reminders on a fixed schedule, auto-calculated late fees, and recurring invoices for maintenance contracts
+**Depends on:** Phase 33 (Invoice Core)
+**Requirements**: D-01 through D-18 (from 34-CONTEXT.md)
+**Success Criteria** (what must be TRUE):
+  1. An owner creates an estimate with optional good/better/best tiers, sends it via email/SMS, and converts the approved tier to an invoice with one click
+  2. An owner records partial payments against an invoice with amount, date, and note — balance auto-calculates and status becomes "Partially Paid"
+  3. Automated payment reminders fire at -3, 0, +3, +7 days relative to due date via email and SMS with escalating tone — toggleable per invoice
+  4. Late fees auto-calculate (flat or percentage) from invoice settings and appear as a line item on overdue invoices
+  5. An owner sets up a recurring invoice schedule (weekly/monthly/quarterly/annually) and the system auto-generates draft invoices on schedule for owner review before sending
+**Plans**: 7 plans
+Plans:
+- [ ] 34-01-PLAN.md — Database migrations (estimates, payment log, reminders/recurring)
+- [ ] 34-02-PLAN.md — Estimate CRUD API + list page + status badge + summary cards
+- [ ] 34-03-PLAN.md — Payment log API + UI (record/delete payments, auto-status, balance)
+- [ ] 34-04-PLAN.md — Estimate editor with tier support + estimate PDF generation
+- [ ] 34-05-PLAN.md — Estimate detail view + send + convert-to-invoice + navigation
+- [ ] 34-06-PLAN.md — Automated reminders cron + late fee settings + application
+- [ ] 34-07-PLAN.md — Recurring invoices (setup, cron generation, badge, list integration)
+**UI hint**: yes
+
 ### Phase 35: Invoice Integrations and AI
 
 **Goal:** Extend the invoice system with accounting software sync (QuickBooks Online, Xero, FreshBooks) via OAuth, AI-generated line item descriptions from call transcripts using Gemini Flash, and batch invoice creation from multiple completed leads with review-then-send flow
