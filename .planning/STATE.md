@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase complete — ready for verification
-stopped_at: Completed 35-04-PLAN.md
-last_updated: "2026-04-01T11:34:40.687Z"
+stopped_at: Completed 34-06-PLAN.md
+last_updated: "2026-04-01T11:43:13.091Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -77,6 +77,7 @@ Recent decisions affecting current work:
 - [Phase 35]: Dynamic import() for accounting sync to avoid hard dependency -- lazy-loaded only when accounting is connected
 - [Phase 35]: HMAC-signed state reuse from Google Calendar OAuth pattern for accounting OAuth routes
 - [Phase 35]: Accounting push is non-fatal in all paths -- try/catch with console.warn, never blocks user response
+- [Phase 34]: Pure calculation module pattern: extract business logic into pure functions for Wave 0 testability (late-fee-calculations.js)
 
 ### Roadmap Evolution
 
@@ -144,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:34:31.933Z
-Stopped at: Completed 35-04-PLAN.md
+Last session: 2026-04-01T11:43:13.081Z
+Stopped at: Completed 34-06-PLAN.md
 Resume file: None
