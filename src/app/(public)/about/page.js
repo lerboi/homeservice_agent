@@ -1,252 +1,228 @@
 import Link from 'next/link';
-import { ArrowRight, Phone, Clock, TrendingUp, Shield, Zap, Users, Star, CheckCircle, Wrench, DollarSign } from 'lucide-react';
-import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
+import { ArrowRight, Zap } from 'lucide-react';
+import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
 
 export const metadata = {
   title: 'About — Voco',
-  description: 'Built for the trades. Every call answered, every job booked.',
+  description: 'Voco is an AI receptionist built specifically for home service businesses. Here\'s why we exist.',
 };
+
+const STATS = [
+  { value: '$650', label: 'average value of a missed emergency call' },
+  { value: '3 AM', label: 'when your best leads call' },
+  { value: '5 min', label: 'to get Voco live' },
+];
 
 const VALUES = [
   {
-    icon: Phone,
     title: 'Trades-first',
     body: 'We built Voco for plumbers, electricians, HVAC techs, and roofers — not generic call centres. Every decision we make starts with what a tradesperson actually needs.',
   },
   {
-    icon: Clock,
     title: 'Speed over complexity',
     body: 'Five minutes to set up. No IT team. No manuals. If it takes longer than a coffee break, we\'ve failed.',
   },
   {
-    icon: Shield,
     title: 'You own the relationship',
     body: 'Voco is your AI, not a third-party answering service. Every caller hears your business name. Every lead lands in your hands.',
   },
   {
-    icon: TrendingUp,
     title: 'Always improving',
     body: 'We ship updates constantly. Every edge case we discover — after-hours accents, multi-trade queries, urgent escalations — makes the AI sharper for everyone.',
   },
 ];
 
-const STATS = [
-  { value: '94%', label: 'of callers hang up if they reach voicemail' },
-  { value: '$650', label: 'average value of a missed emergency call' },
-  { value: '3 AM', label: 'when your best jobs come in' },
-  { value: '5 min', label: 'to get your AI live with Voco' },
-];
-
-const HOW_DIFFERENT = [
-  {
-    icon: Zap,
-    title: 'Trained on trade calls',
-    body: 'Voco understands "burst pipe", "no heat", and "sparking outlet" — not just generic booking requests. It asks the right follow-up questions and tags urgency automatically.',
-  },
-  {
-    icon: Users,
-    title: 'Your voice, your brand',
-    body: 'Pick a tone — professional, friendly, or local expert. Callers hear your business name and get the same warm experience every single time, whether you\'re on a job or asleep.',
-  },
-  {
-    icon: Star,
-    title: 'Booking, not just answering',
-    body: 'Voco doesn\'t just take messages. It captures lead details, qualifies the job type, and routes everything into your dashboard so you can call back with full context.',
-  },
-];
-
 export default function AboutPage() {
   return (
-    <div className="bg-[#0F172A]">
+    <div className="bg-[#050505]">
 
       {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-36 pb-24 md:pt-44 md:pb-32">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(194,65,12,0.12),transparent_60%)]" aria-hidden="true" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(194,65,12,0.06),transparent_50%)]" aria-hidden="true" />
-        <div className="relative max-w-4xl mx-auto px-6 text-center">
+      <section className="relative overflow-hidden pt-36 pb-20 md:pt-44 md:pb-24">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.12),transparent_60%)]" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(249,115,22,0.06),transparent_50%)]" aria-hidden="true" />
+        <div className="relative max-w-6xl mx-auto px-6">
           <AnimatedSection>
-            <span className="inline-block text-xs font-semibold tracking-widest uppercase text-[#C2410C] mb-5">
-              About Voco
-            </span>
-            <h1 className="text-4xl md:text-6xl font-semibold text-white leading-tight tracking-tight mb-6">
-              Built for the trades.
-              <br className="hidden sm:block" />
-              <span className="text-[#C2410C]">Not for call centres.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
-              Voco is an AI receptionist that speaks the language of home service businesses —
-              handling every inbound call, qualifying every lead, and booking every job while
-              you&apos;re out doing the work.
-            </p>
+            <div className="max-w-3xl">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-tight tracking-tight mb-6">
+                We answer phones for people who{' '}
+                <span className="text-[#F97316]">work with their hands.</span>
+              </h1>
+              <p className="text-lg text-white/50 max-w-xl leading-relaxed">
+                Voco is an AI receptionist for plumbers, electricians, and HVAC techs.
+                We exist because voicemail was never a real solution.
+              </p>
+            </div>
           </AnimatedSection>
         </div>
       </section>
 
       {/* ── The Problem ──────────────────────────────────── */}
-      <section className="bg-white">
-        <div
-          className="h-px w-full"
-          style={{ background: 'linear-gradient(90deg, transparent 0%, #C2410C 50%, transparent 100%)' }}
-          aria-hidden="true"
-        />
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
+      <section className="bg-[#F5F5F4]">
+        <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
+
+          {/* Big stat — pull quote */}
           <AnimatedSection>
-            <div className="max-w-3xl mx-auto text-center mb-16">
-              <p className="text-sm font-semibold tracking-widest uppercase text-[#C2410C] mb-4">The problem</p>
-              <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] leading-tight tracking-tight mb-5">
-                Tradespeople are the best in their field.
-                <br className="hidden sm:block" />Phone answering isn&apos;t their field.
-              </h2>
-              <p className="text-lg text-[#475569] leading-relaxed">
-                When you&apos;re under a sink, up a ladder, or just done for the day — missed calls mean missed jobs.
-                Hiring a receptionist costs $3,000–$4,000 a month. Voicemail loses the customer before they leave a message.
-                There had to be a better way.
+            <div className="max-w-3xl">
+              <div className="text-5xl md:text-7xl font-bold text-[#F97316] leading-none">94%</div>
+              <p className="text-xl md:text-2xl text-[#0F172A]/70 mt-3 max-w-md">
+                of callers hang up when they reach voicemail.
               </p>
             </div>
           </AnimatedSection>
 
-          <AnimatedStagger className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map(({ value, label }) => (
-              <AnimatedItem key={value}>
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl px-6 py-8 text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-[#C2410C] mb-2">{value}</div>
-                  <div className="text-sm text-[#64748B] leading-snug">{label}</div>
+          {/* Narrative + sidebar stats */}
+          <div className="mt-12 md:mt-16 grid md:grid-cols-[2fr_1fr] gap-12 items-start">
+            <div className="max-w-2xl">
+              <p className="text-lg text-[#475569] leading-relaxed">
+                When you&apos;re under a sink or up a ladder, you can&apos;t answer the phone. But the person
+                calling you has a burst pipe, a dead furnace, or a sparking outlet. They&apos;re not leaving
+                a voicemail — they&apos;re calling the next name on the list.
+              </p>
+              <p className="text-lg text-[#475569] leading-relaxed mt-4">
+                Hiring a receptionist costs $3,000 to $4,000 a month. The math never works for a
+                two-person crew. So the calls go to voicemail, and the jobs go to someone else.
+              </p>
+            </div>
+
+            <div className="space-y-6 border-l-2 border-[#F97316]/20 pl-6">
+              {STATS.map(({ value, label }) => (
+                <div key={value}>
+                  <div className="text-2xl font-semibold text-[#0F172A]">{value}</div>
+                  <div className="text-sm text-[#64748B] mt-1">{label}</div>
                 </div>
-              </AnimatedItem>
-            ))}
-          </AnimatedStagger>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── Mission ──────────────────────────────────────── */}
-      <section className="bg-[#F8FAFC] border-t border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
-            <AnimatedSection direction="right">
-              <p className="text-sm font-semibold tracking-widest uppercase text-[#C2410C] mb-4">Our mission</p>
-              <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] leading-tight tracking-tight mb-6">
-                Every call answered.<br />Every job booked.
-              </h2>
-              <p className="text-[#475569] leading-relaxed mb-4">
-                We started Voco because we kept hearing the same story: a great tradesperson loses a $2,000 job because
-                they were on another call, or their phone died on a job site, or it was 2 AM and the pipe burst.
-              </p>
-              <p className="text-[#475569] leading-relaxed">
-                Our mission is simple — make sure no home service business ever loses a customer to voicemail again.
-                Not by replacing the human touch, but by making sure there&apos;s always someone there to pick up.
-              </p>
-            </AnimatedSection>
+      {/* ── Origin Story ─────────────────────────────────── */}
+      <section className="bg-[#050505]">
+        <div className="max-w-3xl mx-auto px-6 py-20 md:py-28">
+          <p className="text-xl md:text-2xl text-white/80 leading-relaxed font-light">
+            We started Voco because we kept hearing the same story.
+          </p>
 
-            <AnimatedSection direction="left" delay={0.1}>
-              <div className="space-y-4">
-                {[
-                  'Answers calls in under 2 rings, 24 / 7 / 365',
-                  "Speaks naturally — callers often don't know it's AI",
-                  'Captures name, number, job type, and urgency',
-                  'Sends you a summary the moment the call ends',
-                  'Works alongside you — you stay in control',
-                ].map((point) => (
-                  <div key={point} className="flex items-start gap-3">
-                    <CheckCircle className="size-5 text-[#C2410C] shrink-0 mt-0.5" />
-                    <span className="text-[#334155]">{point}</span>
-                  </div>
-                ))}
-              </div>
-            </AnimatedSection>
+          <div className="my-10 md:my-14 border-l-2 border-[#F97316] pl-6 md:pl-8">
+            <p className="text-3xl md:text-4xl font-semibold text-white leading-snug">
+              A great tradesperson loses a $2,000 job because their phone died on a job site.
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            <p className="text-lg text-white/60 leading-relaxed">
+              It happens at 2 AM when a pipe bursts. It happens at noon when you&apos;re
+              elbow-deep in a panel box. It happens on Saturday when you&apos;ve finally taken
+              your kid to the park.
+            </p>
+            <p className="text-lg text-white/60 leading-relaxed">
+              Our job is simple: make sure there&apos;s always someone there to pick up. Not a
+              voicemail. Not a generic answering service. An AI that knows the difference between
+              a dripping tap and a flooded basement, and treats your callers the way you would.
+            </p>
+            <p className="text-lg text-white/60 leading-relaxed">
+              It answers in under two rings. It captures the name, number, job type, and urgency.
+              It sends you a summary the moment the call ends. And it sounds like your business —
+              because it is.
+            </p>
           </div>
         </div>
       </section>
 
       {/* ── How We're Different ───────────────────────────── */}
-      <section className="bg-white border-t border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <p className="text-sm font-semibold tracking-widest uppercase text-[#C2410C] mb-4">Why Voco</p>
-              <h2 className="text-3xl md:text-4xl font-semibold text-[#0F172A] leading-tight tracking-tight">
-                Not another generic chatbot.
-              </h2>
-            </div>
-          </AnimatedSection>
+      <section className="bg-[#F5F5F4]">
+        <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
+          <h2 className="text-2xl md:text-3xl font-semibold text-[#0F172A] tracking-tight max-w-lg mb-14">
+            Not another generic chatbot.
+          </h2>
 
-          <AnimatedStagger className="grid md:grid-cols-3 gap-6">
-            {HOW_DIFFERENT.map(({ icon: Icon, title, body }) => (
-              <AnimatedItem key={title}>
-                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-8 h-full">
-                  <div className="size-11 rounded-xl bg-[#FFF1EC] flex items-center justify-center mb-5">
-                    <Icon className="size-5 text-[#C2410C]" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-[#0F172A] mb-3">{title}</h3>
-                  <p className="text-[#64748B] leading-relaxed text-sm">{body}</p>
-                </div>
-              </AnimatedItem>
-            ))}
-          </AnimatedStagger>
+          {/* Differentiator 1 — icon + text, flat */}
+          <div className="flex items-start gap-5 md:gap-8">
+            <div className="size-10 rounded-xl bg-[#F97316]/10 flex items-center justify-center shrink-0">
+              <Zap className="size-5 text-[#F97316]" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[#0F172A] mb-2">Trained on trade calls</h3>
+              <p className="text-[#64748B] leading-relaxed max-w-xl">
+                Voco understands &ldquo;burst pipe&rdquo;, &ldquo;no heat&rdquo;, and &ldquo;sparking outlet&rdquo; — not just
+                generic booking requests. It asks the right follow-up questions and tags urgency automatically.
+              </p>
+            </div>
+          </div>
+
+          {/* Differentiator 2 — indented callout with border */}
+          <div className="md:ml-16 mt-10 border-l-2 border-[#F97316]/30 pl-6">
+            <h3 className="text-lg font-semibold text-[#0F172A] mb-2">Your voice, your brand</h3>
+            <p className="text-[#64748B] leading-relaxed max-w-lg">
+              Pick a tone — professional, friendly, or local expert. Callers hear your business name
+              and get the same warm experience every single time, whether you&apos;re on a job or asleep.
+            </p>
+          </div>
+
+          {/* Differentiator 3 — right-aligned on desktop */}
+          <div className="mt-10 md:ml-auto md:max-w-md md:text-right">
+            <h3 className="text-lg font-semibold text-[#0F172A] mb-2">Booking, not just answering</h3>
+            <p className="text-[#64748B] leading-relaxed">
+              Voco doesn&apos;t just take messages. It captures lead details, qualifies the job type,
+              and routes everything into your dashboard so you can call back with full context.
+            </p>
+          </div>
         </div>
       </section>
 
       {/* ── Values ───────────────────────────────────────── */}
-      <section className="bg-[#0F172A]">
-        <div
-          className="h-px w-full"
-          style={{ background: 'linear-gradient(90deg, transparent 0%, #C2410C 50%, transparent 100%)' }}
-          aria-hidden="true"
-        />
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <AnimatedSection>
-            <div className="text-center mb-14">
-              <p className="text-sm font-semibold tracking-widest uppercase text-[#C2410C] mb-4">What we stand for</p>
-              <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight tracking-tight">
-                Our values
-              </h2>
-            </div>
-          </AnimatedSection>
+      <section className="bg-[#050505]">
+        <div className="max-w-3xl mx-auto px-6 py-16 md:py-20">
+          <h2 className="text-xl font-medium text-white/40 tracking-tight mb-10">
+            What we believe
+          </h2>
 
-          <AnimatedStagger className="grid md:grid-cols-2 gap-6">
-            {VALUES.map(({ icon: Icon, title, body }) => (
-              <AnimatedItem key={title}>
-                <div className="flex gap-5 bg-white/[0.04] border border-white/[0.08] rounded-2xl p-7 h-full hover:bg-white/[0.06] transition-colors">
-                  <div className="size-10 rounded-xl bg-[#C2410C]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="size-5 text-[#C2410C]" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
-                    <p className="text-sm text-white/50 leading-relaxed">{body}</p>
-                  </div>
+          <div className="space-y-0">
+            {VALUES.map(({ title, body }, i) => (
+              <div key={title}>
+                <div className="py-8 md:py-10">
+                  <h3 className="text-xl md:text-2xl font-semibold text-white">{title}</h3>
+                  <p className="text-white/40 leading-relaxed mt-2 max-w-xl">{body}</p>
                 </div>
-              </AnimatedItem>
+                {i < VALUES.length - 1 && (
+                  <div className="h-px bg-white/[0.06]" aria-hidden="true" />
+                )}
+              </div>
             ))}
-          </AnimatedStagger>
+          </div>
         </div>
       </section>
 
-      {/* ── CTA — white bg ───────────────────────────────── */}
-      <section className="bg-white border-t border-[#E2E8F0]">
-        <div className="max-w-3xl mx-auto text-center px-6 py-20 md:py-28">
-          <AnimatedSection>
-            <p className="text-sm font-semibold text-[#C2410C] tracking-widest uppercase mb-4">
-              Ready to get started?
-            </p>
-            <h2 className="text-3xl md:text-[2.75rem] font-semibold text-[#0F172A] leading-tight tracking-tight mb-4">
-              Ready to never miss
-              <br className="hidden sm:block" />
-              another call?
-            </h2>
-            <p className="text-lg text-[#64748B] mb-10 max-w-md mx-auto leading-relaxed">
-              Set up your AI receptionist in 5 minutes. No tech skills needed. No credit card required.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+      {/* ── CTA ──────────────────────────────────────────── */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#1C1412]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.12),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(249,115,22,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(249,115,22,0.04),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.08),transparent_50%)] animate-cta-glow" />
+
+        <div className="relative max-w-5xl mx-auto px-6 py-20 md:py-28">
+          <div className="md:flex md:items-center md:justify-between gap-12">
+            <div className="md:max-w-lg mb-8 md:mb-0">
+              <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight tracking-tight">
+                Your next emergency call is tonight.
+              </h2>
+              <p className="text-lg text-[#A1A1AA] mt-4 leading-relaxed">
+                Five-minute setup. No tech skills. No credit card.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-4">
               <AuthAwareCTA variant="cta" />
               <Link
                 href="/contact"
-                className="text-sm text-[#64748B] hover:text-[#0F172A] transition-colors flex items-center gap-1 group"
+                className="text-sm text-[#A1A1AA] hover:text-white transition-colors flex items-center gap-1 group"
               >
                 Talk to us first
                 <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
-          </AnimatedSection>
+          </div>
         </div>
       </section>
 

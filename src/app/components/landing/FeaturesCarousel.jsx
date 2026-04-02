@@ -359,32 +359,45 @@ const FEATURES = [
 /* ─────────────────────────────────────────
    Main export
 ───────────────────────────────────────── */
+const TOTAL_SETS = 3; // triple the cards for infinite visual loop
+const CARDS = [...FEATURES, ...FEATURES, ...FEATURES]; // 21 cards
+const MIDDLE_OFFSET = FEATURES.length; // index where middle set starts (7)
+const INITIAL_INDEX = MIDDLE_OFFSET + Math.floor(FEATURES.length / 2); // start at middle of middle set
+
 export function FeaturesCarousel() {
   const trackRef = useRef(null);
   const intervalRef = useRef(null);
   const userInteractedRef = useRef(false);
   const isAutoScrollingRef = useRef(false);
   const isProgrammaticScrollRef = useRef(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeDisplayIndex, setActiveDisplayIndex] = useState(INITIAL_INDEX);
   const prefersReducedMotion = useReducedMotion();
 
-  /* ── Scroll a specific card index into the track (no page scroll) ── */
-  const scrollToIndex = useCallback((idx) => {
-    const clamped = ((idx % FEATURES.length) + FEATURES.length) % FEATURES.length;
+  // Real index (0-6) for nav dots and feature identity
+  const activeIndex = activeDisplayIndex % FEATURES.length;
+
+  /* ── Scroll a display index into view ── */
+  const scrollToDisplayIndex = useCallback((displayIdx) => {
     const track = trackRef.current;
-    const card = track?.children?.[clamped];
+    const card = track?.children?.[displayIdx];
     if (!track || !card) return;
-    // Block observer from overriding during programmatic scroll
     isProgrammaticScrollRef.current = true;
     const cardLeft = card.offsetLeft;
     const cardWidth = card.offsetWidth;
     const trackWidth = track.offsetWidth;
     const scrollTarget = cardLeft - (trackWidth / 2) + (cardWidth / 2);
     track.scrollTo({ left: scrollTarget, behavior: 'smooth' });
-    setActiveIndex(clamped);
-    // Re-enable observer after scroll settles
+    setActiveDisplayIndex(displayIdx);
     setTimeout(() => { isProgrammaticScrollRef.current = false; }, 800);
   }, []);
+
+  /* ── Navigate by real index (from nav dots) ── */
+  const scrollToIndex = useCallback((realIdx) => {
+    const clamped = ((realIdx % FEATURES.length) + FEATURES.length) % FEATURES.length;
+    // Find the equivalent card in the middle set
+    const displayIdx = MIDDLE_OFFSET + clamped;
+    scrollToDisplayIndex(displayIdx);
+  }, [scrollToDisplayIndex]);
 
   /* ── Stop auto-advance permanently on any user interaction ── */
   const stopAutoAdvance = useCallback(() => {
@@ -395,14 +408,26 @@ export function FeaturesCarousel() {
     }
   }, []);
 
+  /* ── Initial scroll to center of middle set (instant, no animation) ── */
+  useEffect(() => {
+    const track = trackRef.current;
+    const card = track?.children?.[INITIAL_INDEX];
+    if (!track || !card) return;
+    const cardLeft = card.offsetLeft;
+    const cardWidth = card.offsetWidth;
+    const trackWidth = track.offsetWidth;
+    const scrollTarget = cardLeft - (trackWidth / 2) + (cardWidth / 2);
+    track.scrollTo({ left: scrollTarget, behavior: 'instant' });
+  }, []);
+
   /* ── Auto-advance on mount (stops permanently on user interaction) ── */
   useEffect(() => {
     if (prefersReducedMotion) return;
 
     intervalRef.current = setInterval(() => {
       isAutoScrollingRef.current = true;
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % FEATURES.length;
+      setActiveDisplayIndex((prev) => {
+        const next = prev + 1;
         const track = trackRef.current;
         const card = track?.children?.[next];
         if (track && card) {
@@ -422,21 +447,20 @@ export function FeaturesCarousel() {
     };
   }, [prefersReducedMotion]);
 
-  /* ── IntersectionObserver: sync activeIndex on swipe ── */
+  /* ── IntersectionObserver: sync activeDisplayIndex on swipe ── */
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Skip observer updates during programmatic or auto scrolls
         if (isProgrammaticScrollRef.current || isAutoScrollingRef.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const cards = Array.from(track.children);
             const idx = cards.indexOf(entry.target);
             if (idx !== -1) {
-              setActiveIndex(idx);
+              setActiveDisplayIndex(idx);
             }
           }
         });
@@ -448,6 +472,43 @@ export function FeaturesCarousel() {
 
     return () => observer.disconnect();
   }, []);
+
+  /* ── Silent boundary reset: snap back to middle set when reaching edges ── */
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let resetTimeout;
+    const handleScroll = () => {
+      if (isProgrammaticScrollRef.current || isAutoScrollingRef.current) return;
+      clearTimeout(resetTimeout);
+      resetTimeout = setTimeout(() => {
+        const displayIdx = activeDisplayIndex;
+        // If we've scrolled into the first or last set, silently jump to middle set
+        if (displayIdx < FEATURES.length || displayIdx >= FEATURES.length * 2) {
+          const realIdx = displayIdx % FEATURES.length;
+          const targetIdx = MIDDLE_OFFSET + realIdx;
+          const card = track.children?.[targetIdx];
+          if (card) {
+            isProgrammaticScrollRef.current = true;
+            const cardLeft = card.offsetLeft;
+            const cardWidth = card.offsetWidth;
+            const trackWidth = track.offsetWidth;
+            const scrollTarget = cardLeft - (trackWidth / 2) + (cardWidth / 2);
+            track.scrollTo({ left: scrollTarget, behavior: 'instant' });
+            setActiveDisplayIndex(targetIdx);
+            requestAnimationFrame(() => { isProgrammaticScrollRef.current = false; });
+          }
+        }
+      }, 150);
+    };
+
+    track.addEventListener('scrollend', handleScroll, { passive: true });
+    return () => {
+      track.removeEventListener('scrollend', handleScroll);
+      clearTimeout(resetTimeout);
+    };
+  }, [activeDisplayIndex]);
 
   return (
     <section id="features" className="bg-[#FAFAF9] py-20 md:py-28 px-6 overflow-hidden">
@@ -465,12 +526,12 @@ export function FeaturesCarousel() {
       <div
         role="region"
         aria-label="Features"
-        className="relative max-w-[100vw]"
+        className="relative max-w-[100vw] lg:max-w-6xl lg:mx-auto"
       >
         {/* Left arrow */}
         <button
           aria-label="Previous feature"
-          onClick={() => { stopAutoAdvance(); scrollToIndex(activeIndex - 1); }}
+          onClick={() => { stopAutoAdvance(); scrollToDisplayIndex(activeDisplayIndex - 1); }}
           className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center bg-white border border-stone-200 text-[#0F172A] shadow-sm hover:bg-[#F97316] hover:text-white hover:border-[#F97316] hover:shadow-md active:scale-[0.96] transition-colors duration-200"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -479,7 +540,7 @@ export function FeaturesCarousel() {
         {/* Right arrow */}
         <button
           aria-label="Next feature"
-          onClick={() => { stopAutoAdvance(); scrollToIndex(activeIndex + 1); }}
+          onClick={() => { stopAutoAdvance(); scrollToDisplayIndex(activeDisplayIndex + 1); }}
           className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full items-center justify-center bg-white border border-stone-200 text-[#0F172A] shadow-sm hover:bg-[#F97316] hover:text-white hover:border-[#F97316] hover:shadow-md active:scale-[0.96] transition-colors duration-200"
         >
           <ChevronRight className="w-5 h-5" />
@@ -490,7 +551,7 @@ export function FeaturesCarousel() {
           <div
             ref={trackRef}
           onScroll={() => { if (!isAutoScrollingRef.current) stopAutoAdvance(); }}
-          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-210px)]"
+          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-190px)]"
           style={{
             scrollSnapType: 'x mandatory',
             WebkitOverflowScrolling: 'touch',
@@ -498,12 +559,13 @@ export function FeaturesCarousel() {
             touchAction: 'pan-x',
           }}
         >
-          {FEATURES.map((feat, index) => {
-            const isActive = index === activeIndex;
+          {CARDS.map((feat, displayIndex) => {
+            const realIdx = displayIndex % FEATURES.length;
+            const isActive = realIdx === activeIndex;
             return (
               <div
-                key={feat.title}
-                className="flex-shrink-0 w-[280px] md:w-[360px] lg:w-[420px]"
+                key={`${feat.title}-${displayIndex}`}
+                className="flex-shrink-0 w-[280px] md:w-[360px] lg:w-[380px]"
                 style={{ scrollSnapAlign: 'center' }}
               >
                 <div
@@ -579,8 +641,8 @@ export function FeaturesCarousel() {
         }
         @media (min-width: 768px) {
           .carousel-track-mask {
-            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
           }
         }
       `}</style>

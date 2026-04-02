@@ -37,9 +37,9 @@
       "computedHash": "57f470f512f45bdac598e302bc72fd62bf2b649fc7fad032efe97720149cde4d"
     },
     "stripe-best-practices": {
-      "source": "docs.stripe.com",
-      "sourceType": "well-known",
-      "computedHash": "e35a14609076a8a7ffeec41b449dd2d36eebea6c278e73d83f86db40e6232031"
+      "source": "stripe/ai",
+      "sourceType": "github",
+      "computedHash": "bf484097825892cf994ad54db21fb75b82efa8ee703cb88c4e08cf6fb0517c88"
     },
     "trello": {
       "source": "steipete/clawdis",

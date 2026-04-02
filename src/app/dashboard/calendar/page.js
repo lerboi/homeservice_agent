@@ -76,6 +76,15 @@ export default function CalendarPage() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const prefersReduced = useReducedMotion();
+  const [workingHoursData, setWorkingHoursData] = useState(null);
+
+  // Fetch working hours once on mount (stable config, rarely changes)
+  useEffect(() => {
+    fetch('/api/working-hours')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data) setWorkingHoursData(data); })
+      .catch(() => {});
+  }, []);
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -249,6 +258,8 @@ export default function CalendarPage() {
             viewMode={effectiveViewMode}
             loading={loading}
             onAppointmentClick={handleAppointmentClick}
+            workingHoursData={workingHoursData}
+            isMobile={isMobile}
           />
         </div>
       </div>

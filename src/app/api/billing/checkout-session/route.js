@@ -88,12 +88,10 @@ export async function POST(request) {
       .eq('is_current', true)
       .maybeSingle();
 
-    // 6. Build line items — flat-rate plan + metered overage component
+    // 6. Build line items — flat-rate plan only.
+    // Metered overage price is added post-checkout in the webhook handler
+    // because Checkout doesn't support mixing different billing intervals.
     const lineItems = [{ price: priceId, quantity: 1 }];
-    const overagePriceId = planPrices.overage;
-    if (overagePriceId) {
-      lineItems.push({ price: overagePriceId });
-    }
 
     // 7. Create Stripe Checkout Session — no trial period (upgrade/reactivation context)
     const sessionConfig = {

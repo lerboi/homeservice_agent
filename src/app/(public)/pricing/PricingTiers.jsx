@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { PRICING_TIERS, ENTERPRISE_TIER, getAnnualPrice } from './pricingData';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,8 @@ import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components
 
 export default function PricingTiers() {
   const [billing, setBilling] = useState('annual');
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('return');
 
   return (
     <div>
@@ -135,7 +138,7 @@ export default function PricingTiers() {
                           : 'bg-white/[0.08] border border-white/[0.1] text-white hover:bg-white/[0.12]'
                       }`}
                     >
-                      <Link href={`/onboarding?plan=${tier.id}&interval=${billing}`}>
+                      <Link href={returnTo === 'checkout' ? `/onboarding/checkout?plan=${tier.id}&interval=${billing}` : `/onboarding?plan=${tier.id}&interval=${billing}`}>
                         {tier.cta}
                       </Link>
                     </Button>

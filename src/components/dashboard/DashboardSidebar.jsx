@@ -62,7 +62,7 @@ export default function DashboardSidebar({ businessName }) {
           width={100}
           height={32}
           className="h-8"
-          style={{ width: 'auto' }}
+          style={{ width: 'auto', height: 'auto' }}
           priority
         />
       </div>

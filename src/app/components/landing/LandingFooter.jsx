@@ -107,7 +107,7 @@ export function LandingFooter() {
                 width={100}
                 height={36}
                 className="h-9"
-                style={{ width: 'auto' }}
+                style={{ width: 'auto', height: 'auto' }}
               />
               <span className="text-base text-[#71717A]">Every call answered. Every job booked.</span>
             </div>

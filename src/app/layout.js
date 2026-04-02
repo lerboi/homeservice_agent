@@ -23,7 +23,7 @@ export default async function RootLayout({ children }) {
           crossOrigin="anonymous"
         />
       </head>
-      <body>
+      <body className="relative">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

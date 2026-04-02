@@ -65,27 +65,18 @@ export function ScrollLinePath({ children }) {
     offset: ['start 0.85', 'end 0.5'],
   });
 
-  const hiwStartFrac = dims ? dims.hiwTop / dims.h : 0.15;
-  const hiwEndFrac = dims ? dims.hiwBottom / dims.h : 0.55;
+  // Features dot marks where the line begins
+  const featuresDotFrac = dims ? (dims.featuresY + 60) / dims.h : 0.4;
 
-  // Path 1 (pre-HowItWorks): draws from scroll start to hiwStart
-  const path1Length = useTransform(scrollYProgress, [0, hiwStartFrac], [0, 1]);
-  const path1Opacity = useTransform(
+  // Single path: starts at Features dot, draws to scroll end
+  const pathLength = useTransform(scrollYProgress, [featuresDotFrac, 1], [0, 1]);
+  const pathOpacity = useTransform(
     scrollYProgress,
-    [0.05, 0.1, Math.max(hiwStartFrac - 0.02, 0.1), hiwStartFrac],
-    [0, 1, 1, 0.6]
-  );
-
-  // Path 2 (post-HowItWorks): draws from hiwEnd to scroll end
-  const path2Length = useTransform(scrollYProgress, [hiwEndFrac, 1], [0, 1]);
-  const path2Opacity = useTransform(
-    scrollYProgress,
-    [hiwEndFrac, Math.min(hiwEndFrac + 0.03, 1), 0.85, 0.95],
-    [0.6, 1, 1, 0.5]
+    [featuresDotFrac, Math.min(featuresDotFrac + 0.03, 1), 0.85, 0.95],
+    [0, 1, 1, 0.5]
   );
 
   // Features boundary dot
-  const featuresDotFrac = dims ? (dims.featuresY + 60) / dims.h : 0.4;
   const featuresDotOpacity = useTransform(
     scrollYProgress,
     [Math.max(featuresDotFrac - 0.06, 0), featuresDotFrac],
@@ -95,25 +86,20 @@ export function ScrollLinePath({ children }) {
   if (prefersReducedMotion) return <div ref={containerRef}>{children}</div>;
 
   const showSvg = dims !== null;
-  let prePath = '';
-  let postPath = '';
+  let wavePath = '';
   let cx = 0;
   let featuresDotCy = 0;
 
   if (dims) {
-    const { w, h, featuresY, testimonialsY, hiwTop, hiwBottom } = dims;
+    const { w, h, featuresY, testimonialsY } = dims;
     cx = w / 2;
     featuresDotCy = featuresY + 60;
     const waveAmp = Math.min(512 + 120, (w - 48) / 2);
 
-    // Pre-HowItWorks wave
-    if (hiwTop > 100) {
-      prePath = buildSineWave(cx, waveAmp, 0, hiwTop, []);
-    }
-
-    // Post-HowItWorks wave
-    const postCrossings = [featuresY + 60, testimonialsY].filter((y) => y > hiwBottom);
-    postPath = buildSineWave(cx, waveAmp, hiwBottom, h, postCrossings);
+    // Single wave: starts at Features dot, ends at bottom
+    const startY = featuresY + 60;
+    const crossings = [testimonialsY].filter((y) => y > startY);
+    wavePath = buildSineWave(cx, waveAmp, startY, h, crossings);
   }
 
   return (
@@ -129,50 +115,26 @@ export function ScrollLinePath({ children }) {
           style={{ zIndex: 0 }}
           aria-hidden="true"
         >
-          {/* ===== PRE–HOW IT WORKS WAVE ===== */}
-          {prePath && (
+          {/* ===== WAVE: Features dot → end ===== */}
+          {wavePath && (
             <>
-              <path d={prePath} stroke="#F97316" strokeOpacity="0.04" strokeWidth="1.5" fill="none" />
+              <path d={wavePath} stroke="#F97316" strokeOpacity="0.04" strokeWidth="1.5" fill="none" />
               <motion.path
-                d={prePath}
+                d={wavePath}
                 stroke="#F97316"
                 strokeOpacity="0.035"
                 strokeWidth="14"
                 strokeLinecap="round"
                 fill="none"
-                style={{ pathLength: path1Length, opacity: path1Opacity }}
+                style={{ pathLength: pathLength, opacity: pathOpacity }}
               />
               <motion.path
-                d={prePath}
+                d={wavePath}
                 stroke="url(#slpGrad)"
                 strokeWidth="2"
                 strokeLinecap="round"
                 fill="none"
-                style={{ pathLength: path1Length, opacity: path1Opacity }}
-              />
-            </>
-          )}
-
-          {/* ===== POST–HOW IT WORKS WAVE ===== */}
-          {postPath && (
-            <>
-              <path d={postPath} stroke="#F97316" strokeOpacity="0.04" strokeWidth="1.5" fill="none" />
-              <motion.path
-                d={postPath}
-                stroke="#F97316"
-                strokeOpacity="0.035"
-                strokeWidth="14"
-                strokeLinecap="round"
-                fill="none"
-                style={{ pathLength: path2Length, opacity: path2Opacity }}
-              />
-              <motion.path
-                d={postPath}
-                stroke="url(#slpGrad)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                fill="none"
-                style={{ pathLength: path2Length, opacity: path2Opacity }}
+                style={{ pathLength: pathLength, opacity: pathOpacity }}
               />
             </>
           )}

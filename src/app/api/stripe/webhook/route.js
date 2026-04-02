@@ -269,12 +269,49 @@ async function handleCheckoutCompleted(session) {
     }
   }
 
-  // Create the initial subscription row so the dashboard gate doesn't block the user.
-  // Safe because handleSubscriptionEvent does an upsert on stripe_subscription_id,
-  // so the later customer.subscription.created event will just update the same row.
+  // Add metered overage price to the subscription.
+  // This can't be done in the Checkout Session because Checkout doesn't allow
+  // mixing line items with different billing intervals (flat-rate annual + metered monthly).
   if (session.subscription) {
     const subscription = await stripe.subscriptions.retrieve(session.subscription);
-    await handleSubscriptionEvent(subscription);
+
+    // Determine the overage price for this plan
+    const flatRateItem = subscription.items?.data?.find((item) => PLAN_MAP[item.price?.id]);
+    const priceId = flatRateItem?.price?.id;
+    const planKey = Object.entries({
+      [process.env.STRIPE_PRICE_STARTER]: 'starter',
+      [process.env.STRIPE_PRICE_STARTER_ANNUAL]: 'starter',
+      [process.env.STRIPE_PRICE_GROWTH]: 'growth',
+      [process.env.STRIPE_PRICE_GROWTH_ANNUAL]: 'growth',
+      [process.env.STRIPE_PRICE_SCALE]: 'scale',
+      [process.env.STRIPE_PRICE_SCALE_ANNUAL]: 'scale',
+    }).find(([key]) => key === priceId)?.[1];
+
+    const OVERAGE_MAP = {
+      starter: process.env.STRIPE_PRICE_STARTER_OVERAGE,
+      growth: process.env.STRIPE_PRICE_GROWTH_OVERAGE,
+      scale: process.env.STRIPE_PRICE_SCALE_OVERAGE,
+    };
+    const overagePriceId = planKey ? OVERAGE_MAP[planKey] : null;
+
+    // Only add if overage price exists and isn't already on the subscription
+    const hasOverage = subscription.items?.data?.some((item) => OVERAGE_PRICE_IDS.has(item.price?.id));
+    if (overagePriceId && !hasOverage) {
+      try {
+        await stripe.subscriptionItems.create({
+          subscription: subscription.id,
+          price: overagePriceId,
+        });
+        console.log(`[stripe/webhook] Added overage item (${overagePriceId}) to subscription ${subscription.id}`);
+      } catch (overageErr) {
+        // Non-fatal: subscription works without overage, admin can add manually
+        console.error(`[stripe/webhook] Failed to add overage item to subscription ${subscription.id}:`, overageErr.message);
+      }
+    }
+
+    // Re-retrieve subscription with the overage item included
+    const updatedSubscription = await stripe.subscriptions.retrieve(session.subscription);
+    await handleSubscriptionEvent(updatedSubscription);
   }
 }
 

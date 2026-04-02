@@ -8,11 +8,7 @@ const HowItWorksMinimal = dynamic(
   () => import('./HowItWorksMinimal').then((m) => m.HowItWorksMinimal),
   {
     loading: () => (
-      <div>
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="min-h-screen bg-white" />
-        ))}
-      </div>
+      <div style={{ minHeight: '250vh' }} className="bg-[#F5F5F4]" />
     ),
   }
 );

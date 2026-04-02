@@ -54,15 +54,14 @@ export function LandingNav() {
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
 
-          {/* Logo — desktop only */}
-          <Link href="/" className="hidden md:flex items-center group shrink-0">
+          {/* Logo */}
+          <Link href="/" className="flex items-center group shrink-0">
             <Image
               src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
               alt="Voco"
               width={140}
               height={44}
-              className="h-11"
-              style={{ width: 'auto' }}
+              className="h-8 md:h-14 w-auto"
               priority
             />
           </Link>
@@ -154,7 +153,7 @@ export function LandingNav() {
               width={100}
               height={32}
               className="h-8"
-              style={{ width: 'auto' }}
+              style={{ width: 'auto', height: 'auto' }}
             />
           </Link>
           <button

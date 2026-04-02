@@ -64,13 +64,10 @@ export async function POST(request) {
       );
     }
 
-    // 5. Build line items — flat-rate plan + metered overage component
+    // 5. Build line items — flat-rate plan only.
+    // Metered overage price is added post-checkout in the webhook handler
+    // because Checkout doesn't support mixing different billing intervals.
     const lineItems = [{ price: priceId, quantity: 1 }];
-    const overagePriceId = planPrices.overage;
-    if (overagePriceId) {
-      // Metered prices don't take a quantity — Stripe bills based on usage records
-      lineItems.push({ price: overagePriceId });
-    }
 
     // 6. Create Stripe Checkout Session
     const sessionConfig = {
@@ -87,7 +84,7 @@ export async function POST(request) {
 
     if (embedded) {
       // Embedded checkout — returns client_secret, uses return_url
-      sessionConfig.ui_mode = 'embedded';
+      sessionConfig.ui_mode = 'embedded_page';
       sessionConfig.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout?session_id={CHECKOUT_SESSION_ID}`;
     } else {
       // Hosted checkout — returns url, uses success_url/cancel_url
@@ -99,7 +96,7 @@ export async function POST(request) {
 
     // 6. Return appropriate response
     if (embedded) {
-      return NextResponse.json({ clientSecret: session.client_secret });
+      return NextResponse.json({ clientSecret: session.client_secret, sessionId: session.id });
     }
     return NextResponse.json({ url: session.url });
   } catch (error) {
