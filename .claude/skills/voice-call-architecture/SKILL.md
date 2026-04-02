@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Twi
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-03-30 (Python rewrite — Twilio SIP + LiveKit + Gemini 3.1 Flash Live, Python 3.12, in-process tools, asyncio.to_thread for non-blocking DB)
+**Last updated**: 2026-04-02 (Prompt fixes: pacing, language, unit number, address readback. Agent restructure: parallel DB queries + session start. check_availability: time parameter + uncapped slots)
 
 ---
 
@@ -126,18 +126,16 @@ The agent runs as a LiveKit Agents worker on Railway using Python 3.12.
 4. **Call ID** — `ctx.room.name` (e.g., `call-{uuid}`) serves as the call identifier
 5. **Test call detection** — room metadata `{ test_call: true }` set by test-call route
 6. **Tenant lookup** — query `tenants` by `phone_number = to_number` via `asyncio.to_thread()`
-7. **Subscription gate** — fail-open check against blocked statuses
-8. **Calculate initial slots** — today + next 2 days, up to 6 slots (appended to prompt)
-9. **Fetch intake questions** — from `services.intake_questions` for active services
-10. **Build system prompt** — `build_system_prompt(locale, ...)` with keyword args
-11. **Create call record** — upsert into `calls` (status: 'started', call_provider: 'livekit')
-12. **Create tools** — `create_tools(deps)` with direct Supabase access
-13. **Open Gemini session** — `RealtimeModel` + `VocoAgent` + `AgentSession`
-14. **Register event handlers** — transcript collection, error handler, close handler (all BEFORE session.start)
-15. **Start session** — `await session.start(agent=agent, room=ctx.room, room_options=...)`
-16. **Start Egress** — `LiveKitAPI().egress.start_room_composite_egress()` -> Supabase S3
-17. **Greeting** — Gemini starts speaking automatically from system prompt instructions (no `generate_reply()` needed)
-18. **Session close** — async handler stops Egress, runs `run_post_call_pipeline()`
+7. **Build system prompt** — `build_system_prompt(locale, ...)` immediately after tenant lookup (without intake questions — injected later)
+8. **Create tools** — `create_tools(deps)` with mutable `deps` dict (call_uuid=None initially, filled in after call record insert)
+9. **Create Gemini session** — `RealtimeModel` + `VocoAgent` + `AgentSession`
+10. **Register event handlers** — transcript collection, error handler, close handler (all BEFORE session.start)
+11. **Fire DB queries in background** — subscription check, intake questions, call record upsert run as `asyncio.create_task()` (non-blocking)
+12. **Start session** — `await session.start(agent=agent, room=ctx.room, room_options=...)` — runs in parallel with DB queries
+13. **Greeting** — `session.generate_reply(instructions="Greet the caller now.")` fires immediately after session starts
+14. **DB queries complete** — subscription blocked? disconnect. Intake questions? injected via `session.generate_reply(instructions=...)`. Call record? `deps["call_uuid"]` updated.
+15. **Start Egress** — `LiveKitAPI().egress.start_room_composite_egress()` -> Supabase S3 (after DB task completes)
+16. **Session close** — async handler stops Egress, runs `run_post_call_pipeline()`
 
 ### Key Dependencies
 
@@ -216,7 +214,7 @@ await session.start(agent=agent, room=ctx.room, room_options=...)
 - **Server VAD**: Uses Gemini's built-in voice activity detection (client-side VAD disabled to prevent echo/self-interruption)
 - **Minimal thinking**: `thinking_level="minimal"` for lowest latency
 - **Noise cancellation**: `BVCTelephony` for SIP calls, `BVC` for WebRTC
-- **Greeting**: Gemini starts speaking automatically from system prompt — no `generate_reply()` needed
+- **Greeting**: `session.generate_reply(instructions="Greet the caller now.")` called immediately after `session.start()` — DB queries run in background
 
 ### Non-Blocking I/O Pattern
 
@@ -252,18 +250,17 @@ The prompt is assembled from modular section builder functions. Conditional sect
 ### Section Order
 
 1. **Identity** — role, tone, conciseness rule
-2. **Voice Behavior** — energy matching, pacing, tool silence instruction ("do NOT speak while tool is executing")
+2. **Voice Behavior** — energy matching, pacing, tool announcement. PACING subsection: one question per turn, wait for full response, acknowledge before next question.
 3. **Opening Line** — greeting with business name + recording disclosure. Echo awareness.
-4. **Language** — match caller language, ask if unsure, apologize + gather info for unsupported languages
+4. **Language** — default English always. Unclear speech treated as hearing issue ("I didn't catch that"), not language barrier. Only switch if caller explicitly asks. Gather info for unsupported languages.
 5. **Repeat Caller** — empty (all calls treated as new — never reveal prior history)
-6. **Info Gathering** — collect name first, then address + issue. Urgency classified silently.
-7. **Intake Questions** — trade-specific questions asked naturally
+6. **Info Gathering** — collect issue, name, then address (postal/zip, street name, unit/apartment number). ADDRESS CONFIRMATION: read full address back, wait for caller to confirm, re-read if corrected. Urgency classified silently.
+7. **Intake Questions** — trade-specific questions asked naturally (injected via `session.generate_reply` after DB query completes)
 8. **Booking Protocol** — caller-led scheduling flow:
-   - Never offer times first — ask the caller when they prefer
+   - Never list available slots unprompted — ask the caller when they prefer
    - If they give day without time, ask for time; if time without day, ask for day
-   - Check availability only after getting both day and time preference
-   - If unavailable, offer up to 3 closest alternatives
-   - Address confirmation mandatory before booking
+   - Call check_availability with specific date+time for every time the caller asks about — never assume from earlier results
+   - If unavailable, offer 2-3 closest alternatives
    - Handle edge cases (vague, ASAP, fully booked) by narrowing to specific date+time
 9. **Decline Handling** — two-strike: first decline = soft re-offer, second = capture_lead
 10. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
@@ -306,10 +303,12 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 
 **File**: `src/tools/check_availability.py`
 
-- Parameters: `date` (optional YYYY-MM-DD), `urgency` (optional)
+- Parameters: `date` (optional YYYY-MM-DD), `time` (optional HH:MM 24h format), `urgency` (optional)
 - Fetches tenant config + 4 scheduling tables in parallel via `asyncio.gather()`
-- Calculates slots using `calculate_available_slots()` (pure function)
-- Returns numbered list with speech-friendly times + raw ISO start/end for booking
+- Calculates slots using `calculate_available_slots()` with `max_slots=50` (effectively unlimited)
+- **Specific time check**: when both `date` and `time` provided, checks if that exact slot is available. Returns yes + start/end for booking, or no + 3 closest alternatives.
+- **General check**: when only `date` (or neither), returns all available slots for the day(s)
+- Tool description instructs AI to call this for every time the caller asks about — never rely on cached results
 
 ### `book_appointment` — Atomic Slot Booking
 
@@ -342,8 +341,8 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 
 **File**: `src/tools/end_call.py`
 
-- Returns 'Call ending.' immediately
-- After 3-second `asyncio.sleep()`: removes SIP participant via `LiveKitAPI().room.remove_participant()`
+- Returns a space character immediately
+- After 7-second `asyncio.sleep()`: removes SIP participant via `LiveKitAPI().room.remove_participant()`
 - Delay allows farewell audio to play before disconnection
 
 ---

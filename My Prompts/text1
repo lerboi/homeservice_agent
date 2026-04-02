@@ -1,14 +1,5 @@
 Voice Call
 -----------------------
-- The AI tends to talk and continue on and on and get ahead of itself asking for all the details it has to collect at once before getting the callers response first. Always take it one step at a time, and get one detail at a time.
-- When talking in english, sometimes, the AI thinks im talking in another language. Can you configure it such that the first few times the AI didnt understand something, dont immediately assume that the caller is speaking in another language, instead say something like 'Sorry i didnt get that' or something. Only if the caller explicitly asks if can speka in another language, then adapt. 
-- When getting the address, when getting the street name, ask for the Unit number as well. And after you get the streetname/unit number and postal/zip code, read back the address for confirmation.
-- When the call starts at the beggining, there is about a 4 second period where the AI just stays silent and ddeos say anyting before initiating the greeting. How do i remove the 4 second silence at the start of the call?
-- When providing available slots, the AI often does not get the correct updated slots. Im thinking of adding seperate tools for checking wether a slot is available, and adding another tool to give back a list of available dates accoridng to a filter. The goal is that the AI should naturally have access to the calendar such that any curveballs thrown from the caller regarding availability, the AI should be able to access these tools to get the correct available dates and lock in the booking. Currently, it is very often that the AI gives incorrect availability timings, for example the AI can say that there are slots at 9am, 10am, 11am, and 12am, but when i ask if there are slots 2 pm, the AI says there are no available slots for that time, even though according to the timetable in the dashboard,that slot should be free.
-
-
-When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
-
 
 
 
