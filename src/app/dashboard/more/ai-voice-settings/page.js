@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { card } from '@/lib/design-tokens';
 import { supabase } from '@/lib/supabase-browser';
+import { toast } from 'sonner';
 import SettingsAISection from '@/components/dashboard/SettingsAISection';
 
 export default function AIVoiceSettingsPage() {
@@ -11,12 +12,16 @@ export default function AIVoiceSettingsPage() {
   useEffect(() => {
     async function loadTenant() {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('tenants')
           .select('phone_number')
           .single();
+        if (error) throw error;
         setPhoneNumber(data?.phone_number ?? null);
-      } catch { /* ignore */ }
+      } catch (err) {
+        console.error('[ai-voice-settings] Failed to load tenant:', err?.message || err);
+        toast.error('Failed to load voice settings. Please refresh.');
+      }
       setLoading(false);
     }
     loadTenant();

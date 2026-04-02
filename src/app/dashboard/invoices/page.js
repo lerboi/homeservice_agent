@@ -2,23 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
 import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import InvoiceSummaryCards from '@/components/dashboard/InvoiceSummaryCards';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import InvoiceSyncIndicator from '@/components/dashboard/InvoiceSyncIndicator';
 import RecurringBadge from '@/components/dashboard/RecurringBadge';
 import { supabase } from '@/lib/supabase-browser';
+import { useDocumentList } from '@/hooks/useDocumentList';
+import { StatusTabs, ListError, ListSkeleton, EmptyFiltered } from '@/components/dashboard/DocumentListShell';
+import { formatAmount, formatDate } from '@/lib/format-utils';
 
 const STATUS_TABS = [
   { key: 'all',            label: 'All' },
@@ -31,34 +27,23 @@ const STATUS_TABS = [
   { key: 'recurring',      label: 'Recurring' },
 ];
 
-function formatAmount(value) {
-  return '$' + Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return format(new Date(dateStr), 'MMM d, yyyy');
-  } catch {
-    return '—';
-  }
-}
-
 export default function InvoicesPage() {
   const router = useRouter();
 
-  const [invoices, setInvoices] = useState([]);
-  const [summary, setSummary] = useState({});
-  const [statusCounts, setStatusCounts] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeStatus, setActiveStatus] = useState('all');
+  const {
+    items: invoices,
+    summary,
+    statusCounts,
+    loading,
+    error,
+    activeStatus,
+    setActiveStatus,
+    mutate,
+  } = useDocumentList('/api/invoices', { itemsKey: 'invoices' });
+
   const [settingsComplete, setSettingsComplete] = useState(true);
   const [completedLeadsCount, setCompletedLeadsCount] = useState(0);
   const [syncStatusMap, setSyncStatusMap] = useState({});
-
-  // Track whether summary has been loaded yet (only fetch once)
-  const [summaryLoaded, setSummaryLoaded] = useState(false);
 
   // Fetch settings completeness + completed leads count (for empty state)
   useEffect(() => {
@@ -81,67 +66,36 @@ export default function InvoicesPage() {
     fetchContext();
   }, []);
 
+  // Stable key derived from invoice IDs — prevents re-fetch on SWR revalidation with same data
+  const invoiceIdKey = invoices.map((inv) => inv.id).join(',');
+
+  // Fetch sync statuses when the set of invoice IDs changes
   useEffect(() => {
-    async function fetchInvoices() {
-      setLoading(true);
-      setError(null);
+    if (!invoiceIdKey) return;
+    async function fetchSyncStatuses() {
       try {
-        const url =
-          activeStatus === 'all'
-            ? '/api/invoices'
-            : `/api/invoices?status=${activeStatus}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        const loadedInvoices = data.invoices || [];
-        setInvoices(loadedInvoices);
-
-        // Fetch sync statuses for loaded invoices
-        if (loadedInvoices.length > 0) {
-          try {
-            const invoiceIds = loadedInvoices.map((inv) => inv.id);
-            const { data: syncLogs } = await supabase
-              .from('accounting_sync_log')
-              .select('invoice_id, provider, status, error_message')
-              .in('invoice_id', invoiceIds);
-            if (syncLogs && syncLogs.length > 0) {
-              const map = {};
-              syncLogs.forEach((log) => {
-                map[log.invoice_id] = {
-                  provider: log.provider,
-                  status: log.status,
-                  error_message: log.error_message,
-                };
-              });
-              setSyncStatusMap(map);
-            }
-          } catch {
-            // Sync status is non-critical — fail silently
-          }
+        const invoiceIds = invoiceIdKey.split(',');
+        const { data: syncLogs } = await supabase
+          .from('accounting_sync_log')
+          .select('invoice_id, provider, status, error_message')
+          .in('invoice_id', invoiceIds);
+        if (syncLogs && syncLogs.length > 0) {
+          const map = {};
+          syncLogs.forEach((log) => {
+            map[log.invoice_id] = {
+              provider: log.provider,
+              status: log.status,
+              error_message: log.error_message,
+            };
+          });
+          setSyncStatusMap(map);
         }
-
-        // Status counts always come from the response
-        if (data.status_counts) {
-          setStatusCounts(data.status_counts);
-        }
-
-        // Only set summary on first load (represents overall metrics, not filtered)
-        if (!summaryLoaded && data.summary) {
-          setSummary(data.summary);
-          setSummaryLoaded(true);
-        }
-      } catch (err) {
-        console.error('Failed to load invoices:', err);
-        setError('Couldn\'t load invoices. Check your connection and try again.');
-      } finally {
-        setLoading(false);
+      } catch {
+        // Sync status is non-critical — fail silently
       }
     }
-
-    fetchInvoices();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStatus]);
+    fetchSyncStatuses();
+  }, [invoiceIdKey]);
 
   function handleRowClick(invoiceId) {
     router.push(`/dashboard/invoices/${invoiceId}`);
@@ -168,13 +122,11 @@ export default function InvoicesPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Page content */}
       <div className="p-4 sm:p-6 space-y-6 pb-20 sm:pb-6">
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-xl font-semibold text-stone-900">Invoices</h1>
-          {/* Desktop CTA */}
           <button
             onClick={handleCreateInvoice}
             className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"
@@ -185,66 +137,22 @@ export default function InvoicesPage() {
         </div>
 
         {/* Summary cards */}
-        <InvoiceSummaryCards summary={summary} loading={loading && !summaryLoaded} />
+        <InvoiceSummaryCards summary={summary || {}} loading={loading && !summary} />
 
         {/* Status filter tabs */}
-        <div className="border-b border-stone-200">
-          <div className="flex gap-0 overflow-x-auto">
-            {STATUS_TABS.map((tab) => {
-              const isActive = activeStatus === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveStatus(tab.key)}
-                  className={`
-                    flex-shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors
-                    ${
-                      isActive
-                        ? 'border-[#C2410C] text-[#C2410C]'
-                        : 'border-transparent text-stone-500 hover:text-stone-700'
-                    }
-                  `}
-                >
-                  {tab.label}
-                  {!loading && getTabCount(tab.key) !== null && (
-                    <span
-                      className={`ml-1.5 text-xs ${
-                        isActive ? 'text-[#C2410C]' : 'text-stone-400'
-                      }`}
-                    >
-                      ({getTabCount(tab.key)})
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <StatusTabs
+          tabs={STATUS_TABS}
+          activeStatus={activeStatus}
+          onStatusChange={setActiveStatus}
+          loading={loading}
+          getCount={getTabCount}
+        />
 
         {/* Error state */}
-        {error && (
-          <div className="text-center py-12">
-            <p className="text-sm text-red-600 mb-3">{error}</p>
-            <button
-              onClick={() => setActiveStatus(activeStatus)}
-              className="text-sm text-[#C2410C] hover:text-[#9A3412] underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+        {error && <ListError message="Couldn't load invoices. Check your connection and try again." onRetry={mutate} />}
 
         {/* Loading skeleton */}
-        {loading && !error && (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton
-                key={i}
-                className={`h-12 w-full rounded-md ${i % 2 === 0 ? 'opacity-70' : ''}`}
-              />
-            ))}
-          </div>
-        )}
+        {loading && !error && <ListSkeleton />}
 
         {/* Empty state — no invoices at all */}
         {!loading && !error && invoices.length === 0 && activeStatus === 'all' && (
@@ -315,15 +223,7 @@ export default function InvoicesPage() {
 
         {/* Empty state — filtered with no results */}
         {!loading && !error && invoices.length === 0 && activeStatus !== 'all' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <FileText className="w-12 h-12 text-stone-300 mb-4" />
-            <h2 className="text-xl font-semibold text-stone-900 mb-2">
-              No {activeStatus} invoices
-            </h2>
-            <p className="text-sm text-stone-500">
-              You don&apos;t have any invoices with this status.
-            </p>
-          </div>
+          <EmptyFiltered icon={FileText} activeStatus={activeStatus} documentName="invoices" />
         )}
 
         {/* Invoice table — desktop */}
@@ -359,24 +259,12 @@ export default function InvoicesPage() {
                           )}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm text-stone-700">
-                        {invoice.customer_name}
-                      </TableCell>
-                      <TableCell className="text-sm text-stone-500">
-                        {invoice.job_type || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium text-stone-900">
-                        {formatAmount(invoice.total)}
-                      </TableCell>
-                      <TableCell className="text-sm text-stone-500">
-                        {formatDate(invoice.issued_date)}
-                      </TableCell>
-                      <TableCell className="text-sm text-stone-500">
-                        {formatDate(invoice.due_date)}
-                      </TableCell>
-                      <TableCell>
-                        <InvoiceStatusBadge status={invoice.status} />
-                      </TableCell>
+                      <TableCell className="text-sm text-stone-700">{invoice.customer_name}</TableCell>
+                      <TableCell className="text-sm text-stone-500">{invoice.job_type || '\u2014'}</TableCell>
+                      <TableCell className="text-sm font-medium text-stone-900">{formatAmount(invoice.total)}</TableCell>
+                      <TableCell className="text-sm text-stone-500">{formatDate(invoice.issued_date)}</TableCell>
+                      <TableCell className="text-sm text-stone-500">{formatDate(invoice.due_date)}</TableCell>
+                      <TableCell><InvoiceStatusBadge status={invoice.status} /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -403,9 +291,7 @@ export default function InvoicesPage() {
                       </p>
                       <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
                     </div>
-                    <p className="text-sm font-medium text-stone-900 flex-shrink-0">
-                      {formatAmount(invoice.total)}
-                    </p>
+                    <p className="text-sm font-medium text-stone-900 flex-shrink-0">{formatAmount(invoice.total)}</p>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <InvoiceStatusBadge status={invoice.status} />

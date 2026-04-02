@@ -228,7 +228,7 @@ async function handleCheckoutCompleted(session) {
   // Provision phone number based on tenant's country (Phase 27)
   const { data: tenantRow } = await supabase
     .from('tenants')
-    .select('country, phone_number')
+    .select('country, phone_number, owner_email, owner_phone, business_name')
     .eq('id', tenantId)
     .single();
 
@@ -248,6 +248,24 @@ async function handleCheckoutCompleted(session) {
         .update({ provisioning_failed: true })
         .eq('id', tenantId);
       console.error(`[stripe/webhook] Provisioning failed for tenant ${tenantId} (${tenantRow.country}) — flagged for admin`);
+
+      // Notify the business owner about the provisioning failure
+      if (tenantRow.owner_email) {
+        try {
+          await getResendClient().emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'support@getvoco.ai',
+            to: tenantRow.owner_email,
+            subject: 'Action needed: Phone number setup requires attention',
+            html: `<p>Hi${tenantRow.business_name ? ` ${tenantRow.business_name}` : ''},</p>
+<p>Your Voco account is almost ready, but we couldn't automatically assign a phone number for your region (${tenantRow.country || 'unknown'}).</p>
+<p>Our team has been notified and will resolve this shortly. If you need immediate assistance, reply to this email.</p>
+<p>— The Voco Team</p>`,
+          });
+          console.log(`[stripe/webhook] Provisioning failure notification sent to ${tenantRow.owner_email}`);
+        } catch (emailErr) {
+          console.error('[stripe/webhook] Failed to send provisioning failure email:', emailErr?.message);
+        }
+      }
     }
   }
 

@@ -48,7 +48,7 @@ function DashboardLayoutInner({ children }) {
             {!impersonateTenantId && <TrialCountdownBanner />}
 
             {/* Main content — subtle fade on route change */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               <motion.div
                 key={pathname}
                 className="max-w-6xl mx-auto px-4 lg:px-8 py-6"

@@ -28,10 +28,14 @@ export async function GET(request) {
   const search = searchParams.get('search');
   const leadId = searchParams.get('lead_id');
 
+  // Pagination
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 500);
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
+
   // Build list query
   let query = supabase
     .from('estimates')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
 
@@ -47,7 +51,9 @@ export async function GET(request) {
     query = query.eq('lead_id', leadId);
   }
 
-  const { data: estimates, error: listError } = await query;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: estimates, error: listError, count: totalCount } = await query;
   if (listError) {
     return Response.json({ error: listError.message }, { status: 500 });
   }
@@ -171,6 +177,9 @@ export async function GET(request) {
 
   return Response.json({
     estimates: enrichedEstimates,
+    total_count: totalCount ?? (enrichedEstimates || []).length,
+    limit,
+    offset,
     summary: {
       pending_count: sentCount ?? 0,
       approved_value: Number(approved_value.toFixed(2)),

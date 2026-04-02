@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Phone, PhoneIncoming, PhoneOff, PhoneMissed, Search, X,
@@ -278,13 +278,17 @@ const DEFAULT_FILTERS = { search: '', urgency: '', bookingOutcome: '', dateRange
 export default function CallLogsPage() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const searchTimerRef = useRef(null);
 
   const hasFilters = filters.search || filters.urgency || filters.bookingOutcome || filters.dateRange;
 
   const fetchCalls = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams();
       if (filters.urgency) params.set('urgency', filters.urgency);
@@ -308,18 +312,36 @@ export default function CallLogsPage() {
 
       const qs = params.toString();
       const res = await fetch(`/api/calls${qs ? `?${qs}` : ''}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCalls(data.calls ?? []);
-      }
-    } catch { /* ignore */ }
+      if (!res.ok) throw new Error('Failed to load calls');
+      const data = await res.json();
+      setCalls(data.calls ?? []);
+    } catch {
+      setError("Couldn't load calls. Check your connection and refresh the page.");
+    }
     setLoading(false);
   }, [filters]);
 
   useEffect(() => { fetchCalls(); }, [fetchCalls]);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(searchTimerRef.current);
+  }, []);
+
+  function handleSearchChange(e) {
+    const value = e.target.value;
+    setSearchInput(value);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: value }));
+    }, 300);
+  }
+
   const updateFilter = (key, value) => setFilters((prev) => ({ ...prev, [key]: value }));
-  const clearFilters = () => setFilters(DEFAULT_FILTERS);
+  const clearFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setSearchInput('');
+  };
 
   // Summary stats
   const total = calls.length;
@@ -373,13 +395,13 @@ export default function CallLogsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
             <Input
               placeholder="Search by phone number..."
-              value={filters.search}
-              onChange={(e) => updateFilter('search', e.target.value)}
+              value={searchInput}
+              onChange={handleSearchChange}
               className="pl-9 h-9 text-sm"
             />
-            {filters.search && (
+            {searchInput && (
               <button
-                onClick={() => updateFilter('search', '')}
+                onClick={() => { setSearchInput(''); updateFilter('search', ''); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600"
               >
                 <X className="h-3.5 w-3.5" />
@@ -457,7 +479,16 @@ export default function CallLogsPage() {
       </div>
 
       {/* Call list — grouped by date */}
-      {loading ? (
+      {error ? (
+        <div className={`${card.base} p-8`}>
+          <div className="flex flex-col items-center justify-center text-center">
+            <Phone className="h-10 w-10 text-stone-300 mb-3" />
+            <p className="text-sm font-medium text-[#0F172A] mb-1">Failed to load calls</p>
+            <p className="text-xs text-[#475569] mb-4 max-w-xs">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchCalls}>Try again</Button>
+          </div>
+        </div>
+      ) : loading ? (
         <div className={`${card.base} p-4 space-y-3`}>
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex items-center gap-3">

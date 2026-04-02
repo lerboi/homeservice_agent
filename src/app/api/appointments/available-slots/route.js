@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator';
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { addDays, format } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 /**
  * GET /api/appointments/available-slots
@@ -101,11 +101,14 @@ export async function GET(request) {
   // Calculate slots for each day in range
   const allSlots = [];
 
+  // Parse startDate once and anchor to noon in tenant timezone to avoid DST edge cases
+  const [year, month, day] = startDate.split('-').map(Number);
+  const baseInTenantTz = fromZonedTime(new Date(year, month - 1, day, 12, 0, 0), tenantTimezone);
+
   for (let dayOffset = 0; dayOffset < daysToCheck; dayOffset++) {
-    // Compute target date string by offsetting from startDate
-    const [year, month, day] = startDate.split('-').map(Number);
-    const targetDateObj = new Date(year, month - 1, day + dayOffset);
-    const targetDateStr = format(targetDateObj, 'yyyy-MM-dd');
+    const targetUTC = addDays(baseInTenantTz, dayOffset);
+    const zonedTarget = toZonedTime(targetUTC, tenantTimezone);
+    const targetDateStr = format(zonedTarget, 'yyyy-MM-dd');
 
     const daySlots = calculateAvailableSlots({
       workingHours: tenant.working_hours || {},

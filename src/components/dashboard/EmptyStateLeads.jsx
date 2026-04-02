@@ -11,7 +11,7 @@ export function EmptyStateLeads() {
         When callers reach your AI, leads appear here with caller details, job type, and urgency.
       </p>
       <Button asChild>
-        <Link href="/dashboard/settings#ai">Make a Test Call</Link>
+        <Link href="/dashboard/more/ai-voice-settings">Make a Test Call</Link>
       </Button>
     </div>
   );

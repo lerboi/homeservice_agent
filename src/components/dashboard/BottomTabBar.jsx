@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Calendar, Phone, FileText, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Phone, FileText, ClipboardList, MoreHorizontal } from 'lucide-react';
 
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
@@ -11,6 +11,7 @@ const TABS = [
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
+  { href: '/dashboard/estimates', label: 'Estimates', icon: ClipboardList },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 

@@ -188,7 +188,7 @@ export default function ServicesPricingPage() {
     const toastId = toast(
       `${t('remove_undo_toast', { serviceName: service.name })} `,
       {
-        duration: 4000,
+        duration: 5000,
         action: {
           label: t('undo'),
           onClick: () => {
@@ -219,7 +219,7 @@ export default function ServicesPricingPage() {
         // If delete fails, silently log — service is already removed from UI
         console.error('Failed to delete service:', service.id);
       }
-    }, 4100);
+    }, 5500);
 
     pendingDeletions.current[service.id] = timer;
   }

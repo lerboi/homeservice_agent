@@ -11,7 +11,7 @@ export function EmptyStateAnalytics() {
         Analytics populate automatically as calls come in. Make a test call to see your first data point.
       </p>
       <Button asChild>
-        <Link href="/dashboard/settings#ai">Make a Test Call</Link>
+        <Link href="/dashboard/more/ai-voice-settings">Make a Test Call</Link>
       </Button>
     </div>
   );

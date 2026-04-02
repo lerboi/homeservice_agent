@@ -33,6 +33,68 @@ export function getResendClient() {
   return resendClient;
 }
 
+// ─── E.164 phone validation ──────────────────────────────────────────────────
+
+/**
+ * Validate E.164 phone number format: +{country code}{subscriber number}
+ * Examples: +14155552671, +6512345678
+ */
+export function isValidE164(phone) {
+  return typeof phone === 'string' && /^\+[1-9]\d{1,14}$/.test(phone);
+}
+
+// ─── Retry logic for transient errors ────────────────────────────────────────
+
+/**
+ * Twilio error codes that indicate permanent failures — never retry these.
+ */
+const PERMANENT_TWILIO_ERRORS = new Set([
+  21211, // Invalid 'To' Phone Number
+  21210, // Invalid 'From' Phone Number
+  21612, // The 'To' phone number is not a valid mobile number
+  21614, // 'To' number is not a valid mobile number
+  21408, // Permission to send SMS not enabled for the region
+  21610, // Message body is required
+  21602, // Message body is required (variant)
+  21608, // Account not authorized to call this number
+]);
+
+/**
+ * Check if an error is transient and worth retrying.
+ */
+function isTransientError(err) {
+  // Twilio permanent error codes — don't retry
+  if (err?.code && PERMANENT_TWILIO_ERRORS.has(err.code)) return false;
+
+  // HTTP status codes indicating transient issues
+  const status = err?.status || err?.statusCode;
+  if ([429, 503, 504].includes(status)) return true;
+
+  // Network-level errors
+  const code = err?.code;
+  if (['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EPIPE'].includes(code)) return true;
+
+  // Twilio 429/5xx wrapped errors
+  if (err?.code === 20429) return true; // Twilio rate limit
+
+  return false;
+}
+
+/**
+ * Retry wrapper with exponential backoff for transient errors.
+ * Non-transient errors are thrown immediately without retry.
+ */
+async function withRetry(fn, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts || !isTransientError(err)) throw err;
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
+    }
+  }
+}
+
 // ─── Owner SMS alert ──────────────────────────────────────────────────────────
 
 /**
@@ -51,6 +113,15 @@ export async function sendOwnerSMS({
   callbackLink,
   dashboardLink,
 }) {
+  if (!to) {
+    console.warn('[notifications] sendOwnerSMS skipped: no phone number');
+    return;
+  }
+  if (!isValidE164(to)) {
+    console.warn(`[notifications] sendOwnerSMS skipped: invalid E.164 format "${to}"`);
+    return;
+  }
+
   const isEmergency = urgency === 'emergency';
   const name = callerName || 'Unknown';
   const job = jobType || 'General inquiry';
@@ -61,11 +132,13 @@ export async function sendOwnerSMS({
     : `${businessName}: New booking — ${name}, ${job} at ${addr}. Callback: ${callbackLink} | Dashboard: ${dashboardLink}`;
 
   try {
-    const result = await getTwilioClient().messages.create({
-      body,
-      from: process.env.TWILIO_FROM_NUMBER,
-      to,
-    });
+    const result = await withRetry(() =>
+      getTwilioClient().messages.create({
+        body,
+        from: process.env.TWILIO_FROM_NUMBER,
+        to,
+      })
+    );
     console.log('[notifications] Owner SMS sent:', result.sid);
     return result;
   } catch (err) {
@@ -81,6 +154,11 @@ export async function sendOwnerSMS({
  * @param {{ to: string, lead: object, businessName: string, dashboardUrl: string }} params
  */
 export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
+  if (!to) {
+    console.warn('[notifications] sendOwnerEmail skipped: no email');
+    return;
+  }
+
   const urgency = lead?.urgency_classification || lead?.urgency || 'routine';
   const isEmergency = urgency === 'emergency';
   const callerName = lead?.caller_name || 'Unknown caller';
@@ -90,12 +168,14 @@ export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
     : `New booking — ${callerName}`;
 
   try {
-    const result = await getResendClient().emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'alerts@getvoco.ai',
-      to,
-      subject,
-      react: NewLeadEmail({ lead, businessName, dashboardUrl }),
-    });
+    const result = await withRetry(() =>
+      getResendClient().emails.send({
+        from: process.env.RESEND_FROM_EMAIL || 'alerts@getvoco.ai',
+        to,
+        subject,
+        react: NewLeadEmail({ lead, businessName, dashboardUrl }),
+      })
+    );
     console.log('[notifications] Owner email sent:', result?.id);
     return result;
   } catch (err) {
@@ -126,6 +206,10 @@ export async function sendCallerRecoverySMS({
     console.warn('[notifications] sendCallerRecoverySMS skipped: no phone number');
     return { success: false, error: { code: 'NO_PHONE', message: 'No phone number provided' } };
   }
+  if (!isValidE164(to)) {
+    console.warn(`[notifications] sendCallerRecoverySMS skipped: invalid E.164 format "${to}"`);
+    return { success: false, error: { code: 'INVALID_PHONE', message: `Invalid E.164 phone number: ${to}` } };
+  }
 
   const translations = (locale === 'es') ? es : en;
   const isEmergency = urgency === 'emergency';
@@ -143,11 +227,13 @@ export async function sendCallerRecoverySMS({
   });
 
   try {
-    const result = await getTwilioClient().messages.create({
-      body,
-      from: from || process.env.TWILIO_FROM_NUMBER,
-      to,
-    });
+    const result = await withRetry(() =>
+      getTwilioClient().messages.create({
+        body,
+        from: from || process.env.TWILIO_FROM_NUMBER,
+        to,
+      })
+    );
     console.log('[notifications] Caller recovery SMS sent:', result.sid);
     return { success: true, sid: result.sid };
   } catch (err) {
@@ -185,6 +271,10 @@ export async function sendCallerSMS({ to, from, businessName, date, time, addres
     console.warn('[notifications] sendCallerSMS skipped: no phone number');
     return;
   }
+  if (!isValidE164(to)) {
+    console.warn(`[notifications] sendCallerSMS skipped: invalid E.164 format "${to}"`);
+    return;
+  }
 
   const translations = locale === 'es' ? es : en;
   const body = interpolate(translations.notifications.booking_confirmation, {
@@ -195,11 +285,13 @@ export async function sendCallerSMS({ to, from, businessName, date, time, addres
   });
 
   try {
-    const result = await getTwilioClient().messages.create({
-      body,
-      from: from || process.env.TWILIO_FROM_NUMBER,
-      to,
-    });
+    const result = await withRetry(() =>
+      getTwilioClient().messages.create({
+        body,
+        from: from || process.env.TWILIO_FROM_NUMBER,
+        to,
+      })
+    );
     console.log('[notifications] Caller SMS sent:', result.sid);
     return result;
   } catch (err) {

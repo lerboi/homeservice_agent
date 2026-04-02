@@ -38,10 +38,14 @@ export async function GET(request) {
     .eq('status', 'sent')
     .lt('due_date', today);
 
+  // Pagination
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 500);
+  const offset = parseInt(searchParams.get('offset') || '0', 10);
+
   // Build list query
   let query = supabase
     .from('invoices')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
 
@@ -65,7 +69,9 @@ export async function GET(request) {
     query = query.in('lead_id', leadIds.split(',').filter(Boolean));
   }
 
-  const { data: invoices, error: listError } = await query;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: invoices, error: listError, count: totalCount } = await query;
   if (listError) {
     return Response.json({ error: listError.message }, { status: 500 });
   }
@@ -118,6 +124,9 @@ export async function GET(request) {
 
   return Response.json({
     invoices: invoices || [],
+    total_count: totalCount ?? (invoices || []).length,
+    limit,
+    offset,
     summary: {
       total_outstanding: Number(total_outstanding.toFixed(2)),
       overdue_amount: Number(overdue_amount.toFixed(2)),

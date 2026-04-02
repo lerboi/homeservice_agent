@@ -20,6 +20,23 @@ import { sendCallerRecoverySMS } from '@/lib/notifications';
 const BACKOFF_SECONDS = [30, 120]; // 30s before 2nd attempt, 2min before 3rd
 const MAX_ATTEMPTS = 3; // D-14: 3 total attempts then permanent failure
 
+// Twilio error codes that indicate permanent delivery failures — skip retries
+const PERMANENT_ERROR_CODES = new Set([
+  21211, // Invalid 'To' Phone Number
+  21210, // Invalid 'From' Phone Number
+  21612, // 'To' number is not a valid mobile number
+  21614, // 'To' number is not a valid mobile number (variant)
+  21408, // Permission to send SMS not enabled for the region
+  21610, // Message body is required
+  21608, // Account not authorized
+]);
+
+// String error codes from our own validation (notifications.js) that are also permanent
+const PERMANENT_STRING_CODES = new Set([
+  'INVALID_PHONE', // E.164 validation failure
+  'NO_PHONE',      // No phone number provided
+]);
+
 export async function GET(request) {
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
@@ -80,7 +97,7 @@ export async function GET(request) {
 
     if (duration < 15) {
       await supabase.from('calls')
-        .update({ recovery_sms_sent_at: new Date().toISOString(), recovery_sms_status: 'sent' })
+        .update({ recovery_sms_sent_at: new Date().toISOString(), recovery_sms_status: 'skipped' })
         .eq('id', call.id);
       continue;
     }
@@ -88,7 +105,7 @@ export async function GET(request) {
     // Check if a booking was made (booked callers don't need recovery)
     if (bookedCallIds.has(call.id)) {
       await supabase.from('calls')
-        .update({ recovery_sms_sent_at: new Date().toISOString(), recovery_sms_status: 'sent' })
+        .update({ recovery_sms_sent_at: new Date().toISOString(), recovery_sms_status: 'skipped' })
         .eq('id', call.id);
       continue;
     }
@@ -136,9 +153,15 @@ export async function GET(request) {
         .eq('id', call.id);
       sentA++;
     } else {
+      // Check if the error is permanent (invalid phone, etc.) — fail immediately without retry
+      const rawCode = deliveryResult.error.code;
+      const isPermanent =
+        (typeof rawCode === 'number' && PERMANENT_ERROR_CODES.has(rawCode)) ||
+        (typeof rawCode === 'string' && PERMANENT_STRING_CODES.has(rawCode));
+
       await supabase.from('calls')
         .update({
-          recovery_sms_status: 'retrying',
+          recovery_sms_status: isPermanent ? 'failed' : 'retrying',
           recovery_sms_retry_count: 1,
           recovery_sms_last_error: `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
           recovery_sms_last_attempt_at: new Date().toISOString(),
@@ -213,21 +236,29 @@ export async function GET(request) {
         recovery_sms_last_attempt_at: new Date().toISOString(),
       }).eq('id', call.id);
       sentB++;
-    } else if (nextRetryCount >= MAX_ATTEMPTS) {
-      // D-14: exhausted all 3 attempts — permanent failure
-      await supabase.from('calls').update({
-        recovery_sms_status: 'failed',
-        recovery_sms_retry_count: nextRetryCount,
-        recovery_sms_last_error: `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
-        recovery_sms_last_attempt_at: new Date().toISOString(),
-      }).eq('id', call.id);
     } else {
-      await supabase.from('calls').update({
-        recovery_sms_status: 'retrying',
-        recovery_sms_retry_count: nextRetryCount,
-        recovery_sms_last_error: `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
-        recovery_sms_last_attempt_at: new Date().toISOString(),
-      }).eq('id', call.id);
+      // Check if the error is permanent — fail immediately without further retries
+      const rawCode = deliveryResult.error.code;
+      const isPermanent =
+        (typeof rawCode === 'number' && PERMANENT_ERROR_CODES.has(rawCode)) ||
+        (typeof rawCode === 'string' && PERMANENT_STRING_CODES.has(rawCode));
+
+      if (isPermanent || nextRetryCount >= MAX_ATTEMPTS) {
+        // D-14: permanent error or exhausted all 3 attempts — mark as failed
+        await supabase.from('calls').update({
+          recovery_sms_status: 'failed',
+          recovery_sms_retry_count: nextRetryCount,
+          recovery_sms_last_error: `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
+          recovery_sms_last_attempt_at: new Date().toISOString(),
+        }).eq('id', call.id);
+      } else {
+        await supabase.from('calls').update({
+          recovery_sms_status: 'retrying',
+          recovery_sms_retry_count: nextRetryCount,
+          recovery_sms_last_error: `${deliveryResult.error.code}: ${deliveryResult.error.message}`,
+          recovery_sms_last_attempt_at: new Date().toISOString(),
+        }).eq('id', call.id);
+      }
     }
   }
 

@@ -105,40 +105,37 @@ export default function DashboardPage() {
   // Fetch active mode data
   useEffect(() => {
     async function loadActiveData() {
-      // Stats (leads + invoices)
-      try {
-        const statsRes = await fetch('/api/dashboard/stats');
-        if (statsRes.ok) {
-          setStats(await statsRes.json());
-        }
-      } catch {}
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+
+      const [statsResult, apptResult, activityResult] = await Promise.allSettled([
+        fetch('/api/dashboard/stats'),
+        fetch(`/api/appointments?start=${startOfDay}&end=${endOfDay}`),
+        supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(20),
+      ]);
+
+      // Stats
+      if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
+        setStats(await statsResult.value.json());
+      }
 
       // Today's appointments
-      try {
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
-        const apptRes = await fetch(`/api/appointments?start=${startOfDay}&end=${endOfDay}`);
-        if (apptRes.ok) {
-          const apptData = await apptRes.json();
-          const sorted = (apptData.appointments || [])
-            .filter((a) => a.status === 'confirmed' || a.status === 'pending')
-            .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-          setTodayAppointments(sorted);
-        }
-      } catch {}
+      if (apptResult.status === 'fulfilled' && apptResult.value.ok) {
+        const apptData = await apptResult.value.json();
+        const sorted = (apptData.appointments || [])
+          .filter((a) => a.status === 'confirmed' || a.status === 'pending')
+          .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        setTodayAppointments(sorted);
+      }
       setActiveLoading(false);
 
       // Recent activity
-      try {
-        const { data, error } = await supabase
-          .from('activity_log')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20);
+      if (activityResult.status === 'fulfilled') {
+        const { data, error } = activityResult.value;
         if (!error) setActivities(data ?? []);
         else setActivities([]);
-      } catch {
+      } else {
         setActivities([]);
       }
       setActivitiesLoading(false);

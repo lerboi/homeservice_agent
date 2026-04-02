@@ -159,7 +159,9 @@ export async function GET(request) {
 
         if (liError) {
           console.error(`[recurring-invoices] Failed to copy line items for template ${template.id}:`, liError);
-          // Invoice created but line items failed — continue anyway
+          // Rollback: delete the empty invoice to prevent orphans
+          await supabase.from('invoices').delete().eq('id', newInvoice.id);
+          continue;
         }
       }
 

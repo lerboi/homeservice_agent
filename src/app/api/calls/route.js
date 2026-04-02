@@ -35,7 +35,8 @@ export async function GET(request) {
   if (dateTo) query = query.lte('created_at', dateTo);
   if (search) query = query.ilike('from_number', `%${search}%`);
 
-  query = query.order('created_at', { ascending: false }).limit(200);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '200', 10), 500);
+  query = query.order('created_at', { ascending: false }).limit(limit);
 
   const { data, error } = await query;
   if (error) {

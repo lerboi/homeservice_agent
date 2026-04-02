@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase-browser';
+import { useState } from 'react';
 import { card, btn } from '@/lib/design-tokens';
 import { PRICING_TIERS } from '@/app/(public)/pricing/pricingData';
 import UsageRingGauge from '@/components/dashboard/UsageRingGauge';
@@ -10,13 +9,9 @@ import { AlertCircle, Loader2, ExternalLink, Receipt } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
 
 /**
  * Billing page — /dashboard/more/billing
@@ -28,64 +23,15 @@ import {
  * 4. Recent invoices: inline table with portal link
  */
 export default function BillingPage() {
-  const [subscription, setSubscription] = useState(null);
-  const [invoices, setInvoices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
-  useEffect(() => {
-    async function loadBillingData() {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+  const { data: billingData, error: billingError, isLoading: billingLoading } = useSWRFetch('/api/billing/data');
+  const { data: invoicesData, isLoading: invoicesLoading } = useSWRFetch('/api/billing/invoices');
 
-        if (!user) {
-          setError('Not authenticated');
-          setLoading(false);
-          return;
-        }
-
-        const { data: tenant } = await supabase
-          .from('tenants')
-          .select('id')
-          .eq('owner_id', user.id)
-          .maybeSingle();
-
-        if (!tenant) {
-          setError('Tenant not found');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch subscription and invoices in parallel
-        const [subResult, invoicesResult] = await Promise.all([
-          supabase
-            .from('subscriptions')
-            .select(
-              'status, plan_id, calls_used, calls_limit, trial_ends_at, current_period_end, cancel_at_period_end, stripe_customer_id'
-            )
-            .eq('tenant_id', tenant.id)
-            .eq('is_current', true)
-            .maybeSingle(),
-          fetch('/api/billing/invoices').then((r) => (r.ok ? r.json() : { invoices: [] })),
-        ]);
-
-        if (subResult.error) throw subResult.error;
-
-        setSubscription(subResult.data);
-        setInvoices(invoicesResult?.invoices || []);
-      } catch (err) {
-        console.error('Failed to load billing data:', err);
-        setError('Failed to load billing information');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadBillingData();
-  }, []);
+  const loading = billingLoading || invoicesLoading;
+  const error = billingError?.message || null;
+  const subscription = billingData?.subscription ?? null;
+  const invoices = invoicesData?.invoices || [];
 
   function handleManageSubscription() {
     setPortalLoading(true);
@@ -213,14 +159,14 @@ export default function BillingPage() {
   const renewalDate = isTrialing
     ? subscription.trial_ends_at
       ? format(new Date(subscription.trial_ends_at), 'MMM d, yyyy')
-      : '—'
+      : '\u2014'
     : subscription.current_period_end
     ? format(new Date(subscription.current_period_end), 'MMM d, yyyy')
-    : '—';
+    : '\u2014';
 
   const resetDate = subscription.current_period_end
     ? format(new Date(subscription.current_period_end), 'MMM d, yyyy')
-    : '—';
+    : '\u2014';
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
