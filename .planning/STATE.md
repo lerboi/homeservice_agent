@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-04-03T19:10:12.711Z"
+stopped_at: Completed 37-01-PLAN.md
+last_updated: "2026-04-03T19:12:02.240Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 37 (dashboard-ai-chatbot-assistant) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 34]: Convert-to-invoice returns existing invoice_id if already converted (idempotent, not error)
 - [Phase 35]: hasTranscript uses !!invoice.lead_id as proxy — ai-describe endpoint validates transcript availability internally
 - [Phase 37]: parseMessageContent extracted to src/lib/parse-message-content.js instead of inline in ChatMessage.jsx — Jest cannot parse JSX without Babel preset-react; pure JS lib is directly testable
+- [Phase 37-dashboard-ai-chatbot-assistant]: KEYWORD_DOC_MAP places billing before invoices so billing string matches billing.md not invoices.md bill keyword
+- [Phase 37-dashboard-ai-chatbot-assistant]: No edge runtime export in chat route — Node.js runtime required for readFileSync in getRelevantKnowledge
+- [Phase 37-dashboard-ai-chatbot-assistant]: GROQ_API_KEY 503 check placed before getTenantId 401 check — misconfiguration is server error not user error
 
 ### Roadmap Evolution
 
@@ -143,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T19:10:12.693Z
-Stopped at: Completed 37-02-PLAN.md
+Last session: 2026-04-03T19:12:02.233Z
+Stopped at: Completed 37-01-PLAN.md
 Resume file: None
