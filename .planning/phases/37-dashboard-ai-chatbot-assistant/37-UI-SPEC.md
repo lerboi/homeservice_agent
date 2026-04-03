@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: true
 preset: new-york / neutral / cssVariables
 created: 2026-04-03
+revised: 2026-04-03
 ---
 
 # Phase 37 — UI Design Contract
@@ -43,7 +44,7 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | — (not used in this phase) |
 
 Exceptions:
-- Sidebar trigger button: py-2.5 (10px) to match existing NavLink and logout button vertical rhythm exactly
+- Sidebar trigger button: py-2.5 (10px) to match existing NavLink and logout button vertical rhythm exactly — declared exception, not a phase-specific spacing token
 - Mobile bottom sheet: max-h-[85vh] per D-04 — not a spacing token, a viewport constraint
 - Touch targets for send button and nav link chips inside messages: minimum 44px tall
 
@@ -54,15 +55,17 @@ Exceptions:
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (text-sm) | 400 (regular) | 1.5 |
-| Label | 12px (text-xs) | 500 (medium) | 1.4 |
+| Label | 12px (text-xs) | 400 (regular) | 1.4 |
 | Heading | 16px (text-base) | 600 (semibold) | 1.2 |
 | Sheet title | 16px (text-base) | 600 (semibold) | 1.2 |
+
+Retained weights: **400 (regular)** and **600 (semibold)** only. Weight 500 (medium) is not used.
 
 Notes:
 - All chat message text uses Body (14px / 400 / 1.5) — consistent with dashboard card body text established in design-tokens.js
 - Sheet header title ("Voco AI") uses Heading weight (semibold 600)
-- Timestamp labels under messages use Label (12px / 500 / 1.4)
-- Navigation link chips inside message bubbles use Label (12px / 500) with underline decoration
+- Timestamp labels under messages use Label (12px / 400 / 1.4) — reclassified from 500 to 400
+- Navigation link chips inside message bubbles use Label (12px / 400) with underline decoration — reclassified from 500 to 400
 
 Source: `src/lib/design-tokens.js` (`body` = text-[#475569], `heading` = text-[#0F172A] tracking-tight)
 
@@ -87,6 +90,14 @@ Notes:
 - Typing indicator dots: `bg-[#475569]` (bodyText color, pulsing opacity animation)
 
 Source: `src/lib/design-tokens.js`, `src/app/globals.css`, `src/components/dashboard/DashboardSidebar.jsx`
+
+---
+
+## Focal Point
+
+Primary focal point on first open: greeting AI message bubble — it is the only content element present and anchors user attention at the top of the message list.
+
+During active chat: most recent message at scroll bottom, maintained by auto-scroll on each new message. The input field is the persistent action anchor — it holds focus at all times when the sheet is open and the AI is not responding.
 
 ---
 
@@ -159,6 +170,8 @@ Exact DOM structure mirrors the existing logout button:
 ```
 Position: inserted between `<Separator>` and the logout `<div className="space-y-1">` block.
 
+Note: py-2.5 (10px) is a declared exception — it matches the existing NavLink and logout button vertical rhythm exactly. It is not a new spacing choice introduced by this phase.
+
 ### More Page Trigger (Mobile — `lg:hidden`)
 
 Inserted as first item above QUICK_ACCESS array, visually prominent with accent icon background:
@@ -182,17 +195,17 @@ Inserted as first item above QUICK_ACCESS array, visually prominent with accent 
 
 ### User message (right-aligned)
 - `justify-end` row
-- Bubble: `bg-[#C2410C] text-white rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[80%] text-sm`
+- Bubble: `bg-[#C2410C] text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm`
 - No avatar
 
 ### AI message (left-aligned)
 - `justify-start` row with 28px avatar slot on the left
 - Avatar: 28px circle, `bg-[#F5F5F4] border border-stone-200`, `Bot` icon 14px `text-[#475569]`
-- Bubble: `bg-[#F5F5F4] text-[#0F172A] rounded-2xl rounded-bl-sm px-4 py-2.5 max-w-[80%] text-sm leading-relaxed`
+- Bubble: `bg-[#F5F5F4] text-[#0F172A] rounded-2xl rounded-bl-sm px-4 py-2 max-w-[80%] text-sm leading-relaxed`
 - Navigation link chips (if present): rendered below bubble text as a `flex flex-wrap gap-2 mt-2` row
 
 ### Navigation link chip
-- `inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium`
+- `inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-normal`
 - `bg-white border border-stone-200 text-[#C2410C] hover:bg-stone-50 transition-colors`
 - `<ChevronRight className="h-3 w-3" />` trailing icon
 - Acts as `<Link href={url}>` — not a button, navigates and closes the sheet
@@ -241,7 +254,7 @@ This message is injected as a static initial state entry — no streaming, no sk
 | More page item description | Get instant answers about your dashboard |
 | Sheet title | Voco AI |
 | Sheet header subtitle | Help & Navigation |
-| Primary CTA (send button) | Send (sr-only) — icon-only button with `<span className="sr-only">Send</span>` |
+| Primary CTA (send button) | Send message (sr-only) — icon-only button with `<span className="sr-only">Send message</span>` |
 | Greeting message | Hi, I'm Voco AI. I can help you navigate the dashboard, understand your data, or answer questions about how features work. What would you like to know? |
 | Input placeholder | Ask a question... |
 | Empty input submit (disabled state) | Send button non-interactive until input has content (min 1 non-whitespace character) |
@@ -304,6 +317,15 @@ No third-party registries declared. All components are either shadcn official or
 | Sheet component API and animation defaults | src/components/ui/sheet.jsx |
 | shadcn new-york / neutral / cssVariables | components.json |
 | Inter font, global CSS variables | src/app/globals.css |
+
+---
+
+## Revision Log
+
+| Date | Changes |
+|------|---------|
+| 2026-04-03 | Initial draft |
+| 2026-04-03 | Checker revision: dropped weight 500 (medium) — timestamp labels and nav chip text reclassified to 400; message bubble py-2.5 → py-2; nav chip py-1.5 → py-2; send button sr-only text → "Send message"; added focal point declaration |
 
 ---
 
