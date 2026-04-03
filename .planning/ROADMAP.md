@@ -268,20 +268,25 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 34: Estimates, Reminders, and Recurring Invoices** - Estimates with tiers, payment log, automated reminders, late fees, recurring invoices (completed 2026-04-01)
 - [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
-- [ ] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (not yet planned)
+- [ ] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage
 
 ### Phase 37: Dashboard AI Chatbot Assistant
 
 **Goal:** Add an AI-powered chatbot assistant to the dashboard that can answer any question a business owner has about using the dashboard — leveraging a custom LLM API with a RAG knowledge base of all dashboard features, navigation, workflows, and terminology
 **Depends on:** None (standalone feature)
-**Requirements**: TBD
+**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06
 **Success Criteria** (what must be TRUE):
   1. A business owner can open the AI assistant from any dashboard page and ask questions about how to use the platform
   2. The assistant provides accurate, contextual answers about dashboard features, navigation, and workflows
   3. The UI placement is intuitive and non-obstructive on both desktop and mobile
   4. The assistant uses a RAG knowledge base covering all dashboard functionality
-**Plans**: 0 plans
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 37-01-PLAN.md — Knowledge base markdown docs, RAG retrieval function, and Groq chat API route
+- [ ] 37-02-PLAN.md — Chat UI components (ChatbotSheet, ChatMessage, ChatNavLink, TypingIndicator)
+- [ ] 37-03-PLAN.md — Integration wiring (layout mount, sidebar trigger, More page trigger, human verification)
 
 ### Phase 30: Voice Agent Prompt Optimization
 
