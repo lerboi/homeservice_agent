@@ -837,6 +837,28 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 ---
 
+## AI Chatbot Assistant
+
+**Components:**
+- `src/components/dashboard/ChatbotSheet.jsx` — Root chat panel (Sheet wrapper, message state, input handling, API integration). Props: `open`, `onOpenChange`, `currentRoute`. Always mounted at layout level; `open` prop controls visibility.
+- `src/components/dashboard/ChatMessage.jsx` — Single message bubble with user/AI variants. Exports `parseMessageContent()` for link extraction from AI responses.
+- `src/components/dashboard/ChatNavLink.jsx` — Clickable navigation chip rendered inside AI messages. Uses Next.js `Link` with `onNavigate` callback.
+- `src/components/dashboard/TypingIndicator.jsx` — Three-dot pulse animation for AI thinking state. Includes `role="status"` and reduced-motion support.
+
+**API Route:**
+- `src/app/api/chat/route.js` — POST handler. Auth via `getTenantId()`, RAG knowledge injection via `getRelevantKnowledge()`, Groq chat completion (Llama model). Returns `{ reply: string }`.
+
+**Knowledge Base:**
+- `src/lib/chatbot-knowledge/` — 10 static markdown docs (one per dashboard area) + `index.js` RAG retrieval module.
+- `index.js` exports `getRelevantKnowledge(message, currentRoute)` — returns up to 2 docs matched by route + keyword.
+
+**Triggers:**
+- Desktop: "Ask Voco AI" button in `DashboardSidebar.jsx` (between Separator and Logout). Fires `window.dispatchEvent(new Event('open-voco-chat'))`.
+- Mobile: "Ask Voco AI" item at top of More page (`more/page.js`, `lg:hidden`). Same window event.
+- Layout listener in `src/app/dashboard/layout.js` catches `open-voco-chat` event and sets `chatOpen` state.
+
+---
+
 ## Cross-Domain References
 
 - **Call processing → lead creation**: See `voice-call-architecture` skill for how `createOrMergeLead()` is called from `processCallAnalyzed()` and the `capture_lead` webhook handler.
