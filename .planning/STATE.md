@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: In progress
-stopped_at: Phase 37 plans verified
-last_updated: "2026-04-03T18:47:42.720Z"
+status: Ready to execute
+stopped_at: Completed 37-02-PLAN.md
+last_updated: "2026-04-03T19:10:12.711Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** v4.0 — Phases 30-36 (most complete, 30-03 and 32-03 pending, Phase 31 unplanned)
+**Current focus:** Phase 37 — dashboard-ai-chatbot-assistant
 
 ## Current Position
 
-Phase: 30 (partially complete — 30-03 pending)
-Plan: 30-03
+Phase: 37 (dashboard-ai-chatbot-assistant) — EXECUTING
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -75,6 +75,7 @@ Recent decisions affecting current work:
 - [Phase 34]: Inline HTML email template for estimate delivery (not React Email) -- simpler for single send route
 - [Phase 34]: Convert-to-invoice returns existing invoice_id if already converted (idempotent, not error)
 - [Phase 35]: hasTranscript uses !!invoice.lead_id as proxy — ai-describe endpoint validates transcript availability internally
+- [Phase 37]: parseMessageContent extracted to src/lib/parse-message-content.js instead of inline in ChatMessage.jsx — Jest cannot parse JSX without Babel preset-react; pure JS lib is directly testable
 
 ### Roadmap Evolution
 
@@ -142,6 +143,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T18:47:42.710Z
-Stopped at: Phase 37 plans verified
-Resume file: .planning/phases/37-dashboard-ai-chatbot-assistant/37-01-PLAN.md
+Last session: 2026-04-03T19:10:12.693Z
+Stopped at: Completed 37-02-PLAN.md
+Resume file: None
