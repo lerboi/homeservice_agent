@@ -268,7 +268,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 34: Estimates, Reminders, and Recurring Invoices** - Estimates with tiers, payment log, automated reminders, late fees, recurring invoices (completed 2026-04-01)
 - [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
-- [ ] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage
+- [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
 
 ### Phase 37: Dashboard AI Chatbot Assistant
 
@@ -286,14 +286,14 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 Plans:
 - [x] 37-01-PLAN.md — Knowledge base markdown docs, RAG retrieval function, and Groq chat API route
 - [x] 37-02-PLAN.md — Chat UI components (ChatbotSheet, ChatMessage, ChatNavLink, TypingIndicator)
-- [ ] 37-03-PLAN.md — Integration wiring (layout mount, sidebar trigger, More page trigger, human verification)
+- [x] 37-03-PLAN.md — Integration wiring (layout mount, sidebar trigger, More page trigger, human verification)
 
 ### Phase 30: Voice Agent Prompt Optimization
 
 **Goal:** Holistic refinement of the AI receptionist system prompt and supporting tools to maximize booking conversion, improve caller experience, and close behavioral gaps — smart slot preference detection, repeat caller awareness, failed transfer recovery, prompt cleanup, trade-specific questioning, and post-booking recap flow
 **Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06
 **Depends on:** Phase 14
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables

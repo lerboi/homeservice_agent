@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Ready to execute
-stopped_at: Completed 37-01-PLAN.md
-last_updated: "2026-04-03T19:12:02.240Z"
+status: Phase complete — ready for verification
+stopped_at: "Completed 37-03-PLAN.md (checkpoint:human-verify pending)"
+last_updated: "2026-04-03T20:34:03.360Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -79,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 37-dashboard-ai-chatbot-assistant]: KEYWORD_DOC_MAP places billing before invoices so billing string matches billing.md not invoices.md bill keyword
 - [Phase 37-dashboard-ai-chatbot-assistant]: No edge runtime export in chat route — Node.js runtime required for readFileSync in getRelevantKnowledge
 - [Phase 37-dashboard-ai-chatbot-assistant]: GROQ_API_KEY 503 check placed before getTenantId 401 check — misconfiguration is server error not user error
+- [Phase 37-dashboard-ai-chatbot-assistant]: ChatbotSheet always-mounted at layout level (not conditionally rendered) to preserve React message history across open/close cycles
+- [Phase 37-dashboard-ai-chatbot-assistant]: Window event pattern (open-voco-chat) mirrors start-dashboard-tour pattern — zero prop drilling for cross-component communication
 
 ### Roadmap Evolution
 
@@ -146,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T19:12:02.233Z
-Stopped at: Completed 37-01-PLAN.md
+Last session: 2026-04-03T20:34:03.349Z
+Stopped at: Completed 37-03-PLAN.md (checkpoint:human-verify pending)
 Resume file: None
