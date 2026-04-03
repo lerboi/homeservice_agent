@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, Ellipsis, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, BarChart3, MessageSquare } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
-  { href: '/dashboard/estimates', label: 'Estimates', icon: ClipboardList },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 
@@ -81,6 +81,17 @@ export default function DashboardSidebar({ businessName }) {
 
         {/* Separator before Logout */}
         <Separator className="bg-white/[0.06] my-2" />
+
+        {/* Ask Voco AI */}
+        <div className="space-y-1 mb-1">
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-voco-chat'))}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full"
+          >
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            Ask Voco AI
+          </button>
+        </div>
 
         {/* Logout */}
         <div className="space-y-1">

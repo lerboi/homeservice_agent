@@ -9,6 +9,10 @@ import dynamic from 'next/dynamic';
 const DashboardTour = dynamic(() => import('@/components/dashboard/DashboardTour'), { ssr: false });
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Toaster } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import CommandPalette from '@/components/dashboard/CommandPalette';
+import ChatbotSheet from '@/components/dashboard/ChatbotSheet';
+import OfflineBanner from '@/components/dashboard/OfflineBanner';
 import ImpersonationBanner from './ImpersonationBanner';
 import BillingWarningBanner from './BillingWarningBanner';
 import TrialCountdownBanner from './TrialCountdownBanner';
@@ -17,6 +21,7 @@ function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tourRunning, setTourRunning] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const impersonateTenantId = searchParams.get('impersonate');
   const impersonateName = searchParams.get('impersonate_name');
@@ -29,8 +34,14 @@ function DashboardLayoutInner({ children }) {
     return () => window.removeEventListener('start-dashboard-tour', handleStartTour);
   }, []);
 
+  useEffect(() => {
+    function handleOpenChat() { setChatOpen(true); }
+    window.addEventListener('open-voco-chat', handleOpenChat);
+    return () => window.removeEventListener('open-voco-chat', handleOpenChat);
+  }, []);
+
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       {/* Impersonation banner — outside pointer-events-none wrapper so it stays interactive */}
       {impersonateTenantId && (
         <ImpersonationBanner tenantName={impersonateName || 'Unknown Tenant'} />
@@ -43,7 +54,8 @@ function DashboardLayoutInner({ children }) {
           <DashboardSidebar />
 
           <div className="relative lg:pl-60">
-            {/* Billing/trial banners — inside content column so they push content down */}
+            {/* System banners */}
+            <OfflineBanner />
             {!impersonateTenantId && <BillingWarningBanner />}
             {!impersonateTenantId && <TrialCountdownBanner />}
 
@@ -51,7 +63,7 @@ function DashboardLayoutInner({ children }) {
             <AnimatePresence>
               <motion.div
                 key={pathname}
-                className="max-w-6xl mx-auto px-4 lg:px-8 py-6"
+                className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-24 lg:pb-6"
                 data-tour="dashboard-layout"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -73,8 +85,10 @@ function DashboardLayoutInner({ children }) {
           />
         </div>
       </div>
+      <CommandPalette />
+      <ChatbotSheet open={chatOpen} onOpenChange={setChatOpen} currentRoute={pathname} />
       <Toaster richColors position="top-right" />
-    </>
+    </TooltipProvider>
   );
 }
 
