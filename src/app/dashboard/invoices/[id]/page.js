@@ -166,6 +166,9 @@ function InvoicePreview({ invoice, settings, lineItems }) {
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-slate-900">INVOICE</p>
+          {invoice.title && (
+            <p className="text-sm font-medium text-stone-700">{invoice.title}</p>
+          )}
           <p className="text-stone-500 text-xs">#{invoice.invoice_number}</p>
           <p className="text-stone-500 text-xs">Issued: {invoice.issued_date || '—'}</p>
           <p className="text-stone-500 text-xs">Due: {invoice.due_date || '—'}</p>
@@ -425,9 +428,14 @@ export default function InvoiceDetailPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-base font-semibold text-slate-900">
-            Invoice {invoice.invoice_number}
-          </h1>
+          <div className="min-w-0">
+            {invoice.title && (
+              <h1 className="text-base font-semibold text-slate-900 truncate">{invoice.title}</h1>
+            )}
+            <p className={`${invoice.title ? 'text-xs text-stone-500' : 'text-base font-semibold text-slate-900'}`}>
+              {invoice.title ? `#${invoice.invoice_number}` : `Invoice ${invoice.invoice_number}`}
+            </p>
+          </div>
           <InvoiceStatusBadge status={invoice.status} />
           {invoice.is_recurring_template && <RecurringBadge />}
         </div>

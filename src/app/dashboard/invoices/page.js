@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users, Search, X } from 'lucide-react';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -30,6 +31,11 @@ const STATUS_TABS = [
 export default function InvoicesPage() {
   const router = useRouter();
 
+  // Search state
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimerRef = useRef(null);
+
   const {
     items: invoices,
     summary,
@@ -39,7 +45,10 @@ export default function InvoicesPage() {
     activeStatus,
     setActiveStatus,
     mutate,
-  } = useDocumentList('/api/invoices', { itemsKey: 'invoices' });
+  } = useDocumentList('/api/invoices', {
+    itemsKey: 'invoices',
+    extraParams: { search: debouncedSearch },
+  });
 
   const [settingsComplete, setSettingsComplete] = useState(true);
   const [completedLeadsCount, setCompletedLeadsCount] = useState(0);
@@ -105,6 +114,27 @@ export default function InvoicesPage() {
     router.push('/dashboard/invoices/new');
   }
 
+  // Search handlers
+  function handleSearchChange(e) {
+    const value = e.target.value;
+    setSearchInput(value);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+    }, 300);
+  }
+
+  function clearSearch() {
+    setSearchInput('');
+    setDebouncedSearch('');
+    clearTimeout(searchTimerRef.current);
+  }
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(searchTimerRef.current);
+  }, []);
+
   // Total count across all statuses for "All" tab
   const totalCount =
     (statusCounts.draft || 0) +
@@ -127,17 +157,46 @@ export default function InvoicesPage() {
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-xl font-semibold text-stone-900">Invoices</h1>
-          <button
-            onClick={handleCreateInvoice}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create Invoice
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/more/invoice-settings"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-stone-200 bg-white hover:bg-stone-50 transition-colors"
+              aria-label="Invoice settings"
+            >
+              <Settings className="w-4 h-4 text-stone-500" />
+            </Link>
+            <button
+              onClick={handleCreateInvoice}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Invoice
+            </button>
+          </div>
         </div>
 
         {/* Summary cards */}
         <InvoiceSummaryCards summary={summary || {}} loading={loading && !summary} />
+
+        {/* Search bar */}
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <Input
+            placeholder="Search by customer or invoice #..."
+            value={searchInput}
+            onChange={handleSearchChange}
+            className="pl-9 h-9 text-sm"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Status filter tabs */}
         <StatusTabs
@@ -155,7 +214,7 @@ export default function InvoicesPage() {
         {loading && !error && <ListSkeleton />}
 
         {/* Empty state — no invoices at all */}
-        {!loading && !error && invoices.length === 0 && activeStatus === 'all' && (
+        {!loading && !error && invoices.length === 0 && activeStatus === 'all' && !debouncedSearch && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FileText className="w-12 h-12 text-stone-300 mb-6" />
             <h2 className="text-xl font-semibold text-stone-900 mb-2">No invoices yet</h2>
@@ -222,7 +281,7 @@ export default function InvoicesPage() {
         )}
 
         {/* Empty state — filtered with no results */}
-        {!loading && !error && invoices.length === 0 && activeStatus !== 'all' && (
+        {!loading && !error && invoices.length === 0 && (activeStatus !== 'all' || debouncedSearch) && (
           <EmptyFiltered icon={FileText} activeStatus={activeStatus} documentName="invoices" />
         )}
 
@@ -258,6 +317,11 @@ export default function InvoicesPage() {
                             <span className="text-[10px] text-stone-400">Recurring</span>
                           )}
                         </span>
+                        {invoice.title && (
+                          <span className="block text-xs text-stone-500 font-normal truncate max-w-[200px]">
+                            {invoice.title}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-stone-700">{invoice.customer_name}</TableCell>
                       <TableCell className="text-sm text-stone-500">{invoice.job_type || '\u2014'}</TableCell>
@@ -289,6 +353,9 @@ export default function InvoicesPage() {
                           <span className="text-[10px] text-stone-400">Recurring</span>
                         )}
                       </p>
+                      {invoice.title && (
+                        <p className="text-xs text-stone-500 truncate">{invoice.title}</p>
+                      )}
                       <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
                     </div>
                     <p className="text-sm font-medium text-stone-900 flex-shrink-0">{formatAmount(invoice.total)}</p>

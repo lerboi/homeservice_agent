@@ -76,49 +76,35 @@ export async function GET(request) {
     return Response.json({ error: listError.message }, { status: 500 });
   }
 
-  // Aggregate: total outstanding (sent + overdue)
-  const { data: outstandingData } = await supabase
-    .from('invoices')
-    .select('total')
-    .eq('tenant_id', tenantId)
-    .in('status', ['sent', 'overdue']);
-
-  const total_outstanding = (outstandingData || []).reduce((sum, r) => sum + Number(r.total), 0);
-
-  // Aggregate: overdue amount
-  const { data: overdueData } = await supabase
-    .from('invoices')
-    .select('total')
-    .eq('tenant_id', tenantId)
-    .eq('status', 'overdue');
-
-  const overdue_amount = (overdueData || []).reduce((sum, r) => sum + Number(r.total), 0);
-
-  // Aggregate: paid this month
+  // Single aggregate query — replaces 4 separate queries
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-  const { data: paidData } = await supabase
+  const { data: allInvoices } = await supabase
     .from('invoices')
-    .select('total')
-    .eq('tenant_id', tenantId)
-    .eq('status', 'paid')
-    .gte('paid_at', firstOfMonth);
+    .select('status, total, paid_at')
+    .eq('tenant_id', tenantId);
 
-  const paid_this_month = (paidData || []).reduce((sum, r) => sum + Number(r.total), 0);
-
-  // Status counts for tab badges
   const status_counts = {};
   for (const status of VALID_STATUSES) {
     status_counts[status] = 0;
   }
-  // Compute from the full unfiltered list by querying all statuses
-  const { data: allInvoices } = await supabase
-    .from('invoices')
-    .select('status')
-    .eq('tenant_id', tenantId);
+
+  let total_outstanding = 0;
+  let overdue_amount = 0;
+  let paid_this_month = 0;
 
   for (const inv of allInvoices || []) {
+    const total = Number(inv.total) || 0;
     if (status_counts[inv.status] !== undefined) {
       status_counts[inv.status]++;
+    }
+    if (inv.status === 'sent' || inv.status === 'overdue') {
+      total_outstanding += total;
+    }
+    if (inv.status === 'overdue') {
+      overdue_amount += total;
+    }
+    if (inv.status === 'paid' && inv.paid_at && inv.paid_at >= firstOfMonth) {
+      paid_this_month += total;
     }
   }
 
@@ -162,6 +148,7 @@ export async function POST(request) {
 
   const {
     lead_id,
+    title,
     customer_name,
     customer_phone,
     customer_email,
@@ -206,6 +193,7 @@ export async function POST(request) {
     .insert({
       tenant_id: tenantId,
       lead_id: lead_id || null,
+      title: title || null,
       invoice_number: invoiceNumber,
       status: 'draft',
       customer_name: customer_name || null,

@@ -36,7 +36,7 @@ Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-com
 
 voice-call-architecture
 --------------
-Deeply read and understand the voice-call system code — all frontend pages and components (dashboard + backend + the livekit_agent repo), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I want to fix some issues that showed up in the livekit_agent deployed on railway during a call, and some of the AI agents behaviour during a call by changing the prompts in the livekit_agent. But you have to first fully understand the full context. Let me know once you have a full understanding
+Deeply read and understand the voice-call system code — all frontend pages and components (dashboard + backend + the livekit_agent repo), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I want to fix some issues that showed up in the livekit_agent deployed on railway during a call, and some of the AI agents behaviour during a call by changing the prompts in the livekit_agent. But you have to first fully understand the full context. Let me know once you have a full understanding. Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
 
 
 When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
@@ -49,15 +49,13 @@ Can you look at the home landing page for my website. Read any skill files that 
 
 
 Payment Architecture
-
+--------------
 Deeply read and understand the entire onboarding, payment, and schema architecture concerning the payment — all frontend components for onboarding, backend logic and API routes for payment/subscription related info, Supabase DB schema, tables, relationships and RLS policies, all relevant skill files, the My Prompts/STRIPE-OVERAGE-SETUP-GUIDE.md that I finished, and once you have a full understanding, let me know if eveyrthing is correct, in place, and setup as intended and that there are no errors/issues. Understand you understand the billing (monthly, yearly, overage charge, metered billing etc) so you can reach a full 100% correct conclusion. Let me know if you find any issues or potential issues with the payment architecture. Once its done, also create a new skill using the skill-creator skill to explain the payment architecture (name it payment-architecture), and ensure to include its existence in CLAUDE.md
 
 
 
-
-
-
-
+Dashboard + call architecture
+--------------
 Deeply read and understand the dashboard and call architecture — all frontend pages and components (dashboard + livekit_agent), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready. Additionally, i want to improve the UI and UX experience, and make everything in the dashboard feel connected and easy to understand and use. You can also give me some suggestions to combine/merge some tabs in the more tab to 1 tab if it makes sense. Overall, im aiming for a UI and UX feel where the dashboard and every tab feels connected, and has a seamless UI UX. Put yourself in the shoes of a home service business owner using my dashboard, and how you would want the dashabord to feel, what accessibility options you would like for each tab, and wether the overall experience is great and provides a great user experience. Go in depth into each tab and just give recommendations on what would make sense to add/improve to purely from a User experience perspective. Do not make any changes yet, just let me know your findings.
 
 Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
@@ -66,3 +64,4 @@ Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-com
 
 Look through all the issues in PROBLEMS.md and gather all the context and code needed to fully and correctly reach a 100% certain conclusion that the issues/changes/edits are legit and not false positives and 100% correct.. 
 Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, db schema, RLS, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 
+

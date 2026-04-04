@@ -56,7 +56,7 @@ export async function PATCH(request, { params }) {
 
   const { id } = await params;
   const body = await request.json();
-  const { status, revenue_amount, previous_status, sync_source } = body;
+  const { status, revenue_amount, previous_status, sync_source, email, caller_name } = body;
 
   // Validate: status must be one of the allowed values
   const VALID_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
@@ -73,6 +73,8 @@ export async function PATCH(request, { params }) {
   const updateData = { updated_at: new Date().toISOString() };
   if (status) updateData.status = status;
   if (revenue_amount !== undefined) updateData.revenue_amount = revenue_amount;
+  if (email !== undefined) updateData.email = email;
+  if (caller_name !== undefined) updateData.caller_name = caller_name;
 
   const { data, error } = await supabase
     .from('leads')

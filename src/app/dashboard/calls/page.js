@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Phone, PhoneIncoming, PhoneOff, PhoneMissed, Search, X,
   Clock, Filter, ChevronDown, CalendarCheck, AlertTriangle,
-  Globe, Mic,
+  Globe, Mic, PhoneOutgoing, Users, ExternalLink,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { card } from '@/lib/design-tokens';
+import AudioPlayer from '@/components/dashboard/AudioPlayer';
+import { supabase } from '@/lib/supabase-browser';
 
 // ─── Visual maps ──────────────────────────────────────────────────────────────
 
@@ -93,12 +95,28 @@ function groupByDate(calls) {
 
 function CallCard({ call }) {
   const [expanded, setExpanded] = useState(false);
+  const [recordingSrc, setRecordingSrc] = useState(null);
+  const [recordingResolved, setRecordingResolved] = useState(false);
   const urgency = call.urgency_classification;
   const outcome = call.booking_outcome;
   const us = URGENCY_STYLE[urgency] || URGENCY_STYLE.routine;
   const os = OUTCOME_STYLE[outcome];
   const isShort = (call.duration_seconds ?? 0) < 15;
   const hasRecording = !!(call.recording_url || call.recording_storage_path);
+
+  // Resolve recording URL on first expand (same pattern as LeadFlyout)
+  useEffect(() => {
+    if (!expanded || recordingResolved || !hasRecording) return;
+    setRecordingResolved(true);
+    if (call.recording_storage_path) {
+      supabase.storage
+        .from('call-recordings')
+        .createSignedUrl(call.recording_storage_path, 3600)
+        .then(({ data }) => setRecordingSrc(data?.signedUrl || call.recording_url || null));
+    } else {
+      setRecordingSrc(call.recording_url || null);
+    }
+  }, [expanded, recordingResolved, hasRecording, call.recording_storage_path, call.recording_url]);
 
   return (
     <div
@@ -224,8 +242,37 @@ function CallCard({ call }) {
               {/* Triage info */}
               {call.triage_layer_used && (
                 <p className="text-[10px] text-stone-400 mt-2">
-                  Triage: {call.triage_layer_used} · Confidence: {call.urgency_confidence || 'N/A'}
+                  Classified via {call.triage_layer_used === 'layer1' ? 'keywords' : call.triage_layer_used === 'layer2' ? 'AI analysis' : 'service rules'}
                 </p>
+              )}
+
+              {/* Quick actions */}
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
+                {call.from_number && (
+                  <a
+                    href={`tel:${call.from_number}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
+                  >
+                    <PhoneOutgoing className="h-3 w-3" />
+                    Call Back
+                  </a>
+                )}
+                {call.from_number && !isShort && (
+                  <a
+                    href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-[#0F172A] hover:bg-stone-200 transition-colors"
+                  >
+                    <Users className="h-3 w-3" />
+                    View Lead
+                  </a>
+                )}
+              </div>
+
+              {/* Inline audio player */}
+              {hasRecording && (
+                <div className="mt-3">
+                  <AudioPlayer src={recordingSrc} />
+                </div>
               )}
             </div>
           </motion.div>
@@ -283,6 +330,7 @@ export default function CallLogsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const searchTimerRef = useRef(null);
+  const [tenantId, setTenantId] = useState(null);
 
   const hasFilters = filters.search || filters.urgency || filters.bookingOutcome || filters.dateRange;
 
@@ -327,6 +375,58 @@ export default function CallLogsPage() {
   useEffect(() => {
     return () => clearTimeout(searchTimerRef.current);
   }, []);
+
+  // ── Get tenant ID for Realtime subscription ─────────────────────────────
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('tenants')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+        .then(({ data }) => setTenantId(data?.id ?? null));
+    }).catch(() => {});
+  }, []);
+
+  // ── Supabase Realtime subscription for new calls ────────────────────────
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel('calls-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'calls',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          setCalls((prev) => [payload.new, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'calls',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          setCalls((prev) =>
+            prev.map((c) => (c.id === payload.new.id ? payload.new : c))
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId]);
 
   function handleSearchChange(e) {
     const value = e.target.value;

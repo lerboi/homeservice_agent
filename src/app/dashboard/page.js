@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { CalendarDays, Users, FileText, Activity, MapPin, Clock, ChevronRight, Inbox } from 'lucide-react';
+import { CalendarDays, Users, FileText, Activity, MapPin, Clock, ChevronRight, Inbox, PhoneOutgoing, PhoneMissed } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
@@ -46,6 +46,15 @@ function relativeTime(dateStr) {
   }
 }
 
+function formatPhone(number) {
+  if (!number) return 'Unknown caller';
+  const digits = number.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return number;
+}
+
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
 function ActiveModeSkeleton() {
@@ -73,6 +82,7 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState(null);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [activeLoading, setActiveLoading] = useState(true);
+  const [missedCalls, setMissedCalls] = useState([]);
 
   // Fetch checklist data
   useEffect(() => {
@@ -109,10 +119,15 @@ export default function DashboardPage() {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
       const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-      const [statsResult, apptResult, activityResult] = await Promise.allSettled([
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayISO = yesterday.toISOString().split('T')[0];
+
+      const [statsResult, apptResult, activityResult, missedCallsResult] = await Promise.allSettled([
         fetch('/api/dashboard/stats'),
         fetch(`/api/appointments?start=${startOfDay}&end=${endOfDay}`),
         supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(20),
+        fetch(`/api/calls?booking_outcome=not_attempted&date_from=${yesterdayISO}&limit=10`),
       ]);
 
       // Stats
@@ -127,6 +142,14 @@ export default function DashboardPage() {
           .filter((a) => a.status === 'confirmed' || a.status === 'pending')
           .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
         setTodayAppointments(sorted);
+        // Cache for offline access
+        try { localStorage.setItem('voco_today_appts', JSON.stringify(sorted)); } catch {}
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        // Offline fallback: load cached appointments
+        try {
+          const cached = localStorage.getItem('voco_today_appts');
+          if (cached) setTodayAppointments(JSON.parse(cached));
+        } catch {}
       }
       setActiveLoading(false);
 
@@ -139,6 +162,15 @@ export default function DashboardPage() {
         setActivities([]);
       }
       setActivitiesLoading(false);
+
+      // Missed calls (not_attempted, duration >= 15s = real calls that weren't booked)
+      if (missedCallsResult.status === 'fulfilled' && missedCallsResult.value.ok) {
+        const missedData = await missedCallsResult.value.json();
+        const actionable = (missedData.calls || []).filter(
+          (c) => (c.duration_seconds ?? 0) >= 15
+        );
+        setMissedCalls(actionable);
+      }
     }
 
     loadActiveData();
@@ -233,7 +265,50 @@ export default function DashboardPage() {
         <ActiveModeSkeleton />
       ) : (
         <>
-          {/* Section 2: Setup Checklist (if incomplete recommended items) */}
+          {/* Section 2: Missed Calls Alert (only when there are actionable missed calls) */}
+          {missedCalls.length > 0 && (
+            <div className={`${card.base} border-l-4 border-l-[#C2410C] overflow-hidden`}>
+              <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+                <PhoneMissed className="size-4 text-[#C2410C]" />
+                <h2 className="text-sm font-semibold text-[#0F172A]">
+                  {missedCalls.length} Missed Call{missedCalls.length !== 1 ? 's' : ''} — No Booking
+                </h2>
+              </div>
+              <div className="divide-y divide-stone-100">
+                {missedCalls.slice(0, 5).map((mc) => (
+                  <div key={mc.id} className="flex items-center gap-3 px-5 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#0F172A]">
+                        {formatPhone(mc.from_number)}
+                      </p>
+                      <p className="text-xs text-[#475569]">
+                        {relativeTime(mc.created_at)}
+                      </p>
+                    </div>
+                    <a
+                      href={`tel:${mc.from_number}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all shrink-0"
+                    >
+                      <PhoneOutgoing className="size-3" />
+                      Call Back
+                    </a>
+                  </div>
+                ))}
+              </div>
+              {missedCalls.length > 5 && (
+                <div className="px-5 pb-3 pt-1">
+                  <Link
+                    href="/dashboard/calls?booking_outcome=not_attempted"
+                    className="text-xs text-[#C2410C] hover:underline flex items-center gap-0.5"
+                  >
+                    View all {missedCalls.length} missed calls <ChevronRight className="size-3" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Section 2b: Setup Checklist (if incomplete recommended items) */}
           {hasIncompleteRecommended && <SetupChecklist />}
 
           {/* Section 3: Today's Schedule */}

@@ -8,6 +8,13 @@
  * @param {{ status: string, leads: Array, onViewLead: Function }} props
  */
 
+import { Phone } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
+
 const STATUS_COLORS = {
   new: 'text-[#C2410C]',
   booked: 'text-blue-700',
@@ -62,6 +69,7 @@ export default function KanbanColumn({ status, leads, onViewLead }) {
         ) : (
           leads.map((lead) => {
             const urgencyDot = URGENCY_DOT[lead.urgency] || URGENCY_DOT.routine;
+            const displayName = lead.caller_name || lead.from_number || 'Unknown';
             return (
               <button
                 key={lead.id}
@@ -69,7 +77,7 @@ export default function KanbanColumn({ status, leads, onViewLead }) {
                 onClick={() => onViewLead?.(lead.id)}
                 className="
                   w-full text-left rounded-lg border border-stone-200/60 bg-white
-                  p-3 space-y-1.5
+                  p-3 space-y-1
                   shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]
                   hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)] hover:-translate-y-0.5
                   transition-all duration-150 group
@@ -77,15 +85,35 @@ export default function KanbanColumn({ status, leads, onViewLead }) {
               >
                 {/* Top row: caller name + urgency dot */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-[#0F172A] truncate">
-                    {lead.caller_name || 'Unknown Caller'}
-                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-sm font-semibold text-[#0F172A] truncate">
+                        {displayName}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>{displayName}</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <span
                     className={`flex-shrink-0 w-2 h-2 rounded-full ${urgencyDot}`}
                     title={lead.urgency}
                     aria-hidden="true"
                   />
                 </div>
+
+                {/* Phone number */}
+                {lead.from_number && (
+                  <div className="flex items-center gap-1">
+                    <a
+                      href={`tel:${lead.from_number}`}
+                      className="text-xs text-[#C2410C] hover:text-[#9A3412] transition-colors truncate"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {lead.from_number}
+                    </a>
+                  </div>
+                )}
 
                 {/* Job type */}
                 {lead.job_type && (

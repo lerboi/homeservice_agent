@@ -40,6 +40,7 @@ export default function NewInvoicePage() {
           if (invoiceRes.ok) {
             const { invoice, line_items } = await invoiceRes.json();
             setInitialData({
+              title: invoice.title || '',
               customer_name: invoice.customer_name || '',
               customer_phone: invoice.customer_phone || '',
               customer_email: invoice.customer_email || '',
@@ -71,10 +72,11 @@ export default function NewInvoicePage() {
               lead_id: lead.id,
               lead_name: lead.caller_name || '',
               customer_name: lead.caller_name || '',
-              customer_phone: lead.caller_phone || '',
-              customer_email: lead.caller_email || '',
+              customer_phone: lead.from_number || '',
+              customer_email: lead.email || '',
               customer_address: lead.service_address || '',
-              job_type: lead.service_type || '',
+              job_type: lead.job_type || '',
+              title: lead.job_type ? lead.job_type.charAt(0).toUpperCase() + lead.job_type.slice(1) : '',
             });
           }
         }
@@ -140,31 +142,20 @@ export default function NewInvoicePage() {
     }
   }
 
-  async function handleSend(invoiceData) {
+  async function handleContinue(invoiceData) {
     setSaving(true);
     try {
-      let invoiceId;
       if (editInvoiceId) {
-        // Edit mode: PATCH first, then send
         await patchInvoice(editInvoiceId, invoiceData);
-        invoiceId = editInvoiceId;
+        toast.success('Invoice updated');
+        router.push(`/dashboard/invoices/${editInvoiceId}`);
       } else {
-        // Create mode: create first, then send
         const created = await createInvoice(invoiceData);
-        invoiceId = created.id;
+        toast.success('Invoice saved');
+        router.push(`/dashboard/invoices/${created.id}`);
       }
-
-      // Attempt delivery
-      try {
-        await fetch(`/api/invoices/${invoiceId}/send`, { method: 'POST' });
-      } catch {
-        // Silently ignore delivery errors
-      }
-
-      toast.success(editInvoiceId ? 'Invoice updated and sent' : 'Invoice created');
-      router.push(`/dashboard/invoices/${invoiceId}`);
     } catch (err) {
-      toast.error(err.message || 'Could not create invoice');
+      toast.error(err.message || 'Could not save invoice');
     } finally {
       setSaving(false);
     }
@@ -202,7 +193,7 @@ export default function NewInvoicePage() {
         initialData={initialData}
         settings={settings}
         onSave={handleSave}
-        onSend={handleSend}
+        onContinue={handleContinue}
         saving={saving}
         invoiceId={editInvoiceId}
         leadId={editLeadId}

@@ -30,7 +30,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens if I go over my call limit?',
-    a: "We don't cut you off mid-month. Calls beyond your plan limit are charged at a transparent per-call overage rate shown on your invoice. You can upgrade anytime to get a better per-call rate.",
+    a: "We don't cut you off mid-month. Calls beyond your plan limit are charged at a transparent per-call overage rate shown on your invoice. Only calls lasting 20 seconds or more count toward your limit — quick hang-ups and wrong numbers are always free. You can upgrade anytime to get a better per-call rate.",
   },
   {
     q: 'What happens if I upgrade mid-cycle?',

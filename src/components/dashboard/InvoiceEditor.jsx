@@ -72,13 +72,14 @@ function emptyLineItem(sortOrder = 0) {
  *   initialData — optional object for pre-filling (lead data or edit mode)
  *   settings    — invoice settings: { tax_rate, payment_terms, default_notes, invoice_prefix }
  *   onSave(invoiceData) — called when "Save as Draft" is clicked
- *   onSend(invoiceData) — called when "Send Invoice" is clicked
+ *   onContinue(invoiceData) — called when "Continue" is clicked (save + navigate to detail)
  *   saving      — boolean for button loading state
  */
-export default function InvoiceEditor({ initialData, settings, onSave, onSend, saving, invoiceId, leadId, hasTranscript }) {
+export default function InvoiceEditor({ initialData, settings, onSave, onContinue, saving, invoiceId, leadId, hasTranscript }) {
   const defaultTerms = settings?.payment_terms || 'Net 30';
   const today = todayIso();
 
+  const [title, setTitle] = useState(initialData?.title || '');
   const [customerName, setCustomerName] = useState(initialData?.customer_name || '');
   const [customerPhone, setCustomerPhone] = useState(initialData?.customer_phone || '');
   const [customerEmail, setCustomerEmail] = useState(initialData?.customer_email || '');
@@ -106,6 +107,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
   // Re-apply initialData if it arrives after mount (async pre-fill from lead fetch or edit mode)
   useEffect(() => {
     if (!initialData) return;
+    if (initialData.title !== undefined) setTitle(initialData.title);
     if (initialData.customer_name !== undefined) setCustomerName(initialData.customer_name);
     if (initialData.customer_phone !== undefined) setCustomerPhone(initialData.customer_phone);
     if (initialData.customer_email !== undefined) setCustomerEmail(initialData.customer_email);
@@ -160,7 +162,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
     setSelectedLead(lead);
     setCustomerName(lead.caller_name || '');
     setCustomerPhone(lead.from_number || '');
-    setCustomerEmail(lead.caller_email || '');
+    setCustomerEmail(lead.email || '');
     setCustomerAddress(lead.service_address || '');
     setJobType(lead.job_type || '');
     setLeadSearchQuery('');
@@ -246,6 +248,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
   function assembleInvoiceData() {
     return {
       lead_id: selectedLead?.id || initialData?.lead_id || null,
+      title: title || null,
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
@@ -283,6 +286,23 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
           </Link>
         </div>
       )}
+
+      {/* Invoice Title */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-1">
+            <Label htmlFor="invoice-title" className="text-sm font-medium text-stone-700">
+              Invoice Title <span className="text-stone-400 font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="invoice-title"
+              placeholder="e.g. Kitchen Renovation, Bathroom Repair"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Customer Info */}
       <Card>
@@ -380,6 +400,11 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
               />
+              {selectedLead && !customerEmail && (
+                <p className="text-xs text-amber-600 mt-1">
+                  No email on file for this lead. Add one to send the invoice.
+                </p>
+              )}
             </div>
             <div className="space-y-1">
               <Label htmlFor="customer-phone" className="text-sm font-medium text-stone-700">Phone</Label>
@@ -658,10 +683,10 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
           type="button"
           disabled={saving}
           className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
-          onClick={() => onSend(assembleInvoiceData())}
+          onClick={() => onContinue(assembleInvoiceData())}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Send Invoice
+          Continue
         </Button>
       </div>
 
@@ -681,10 +706,10 @@ export default function InvoiceEditor({ initialData, settings, onSave, onSend, s
           type="button"
           disabled={saving}
           className="flex-1 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
-          onClick={() => onSend(assembleInvoiceData())}
+          onClick={() => onContinue(assembleInvoiceData())}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Send Invoice
+          Continue
         </Button>
       </div>
     </div>

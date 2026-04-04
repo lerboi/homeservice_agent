@@ -21,7 +21,7 @@ export async function GET(request) {
   let query = supabase
     .from('leads')
     .select(`
-      id, tenant_id, from_number, caller_name, job_type, service_address,
+      id, tenant_id, from_number, caller_name, email, job_type, service_address,
       postal_code, street_name,
       urgency, status, revenue_amount, primary_call_id, appointment_id,
       created_at, updated_at,

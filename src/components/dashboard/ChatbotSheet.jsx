@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -122,6 +122,9 @@ export default function ChatbotSheet({ open, onOpenChange, currentRoute }) {
           <div className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-[#C2410C]" />
             <SheetTitle className="text-base font-semibold">Voco AI</SheetTitle>
+            <SheetDescription className="sr-only">
+              Ask questions about your dashboard, navigate features, or get help
+            </SheetDescription>
             <Badge variant="secondary" className="text-xs">
               Help &amp; Navigation
             </Badge>

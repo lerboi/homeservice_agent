@@ -1,6 +1,7 @@
 import { LandingNav } from '@/app/components/landing/LandingNav';
 import { LandingFooter } from '@/app/components/landing/LandingFooter';
 import { Toaster } from 'sonner';
+import PublicChatButton from '@/components/landing/PublicChatButton';
 
 export default function PublicLayout({ children }) {
   return (
@@ -9,6 +10,7 @@ export default function PublicLayout({ children }) {
       <main className="relative">{children}</main>
       <LandingFooter />
       <Toaster richColors position="top-center" />
+      <PublicChatButton />
     </>
   );
 }

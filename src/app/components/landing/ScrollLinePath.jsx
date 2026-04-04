@@ -8,9 +8,8 @@ import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion
  * CSS STACKING:
  *   section bg (non-positioned) → SVG (absolute z-0) → content (relative z-1+)
  *
- * The sine wave STOPS at the How It Works section top,
- * then RESUMES from the section bottom through Features & SocialProof.
- * No dots or markers in the How It Works section.
+ * Single sine wave starting from the Features section dot,
+ * drawing through SocialProof to the end. No wave in HowItWorks.
  */
 
 export function ScrollLinePath({ children }) {
@@ -28,7 +27,6 @@ export function ScrollLinePath({ children }) {
 
     const featuresEl = document.getElementById('features');
     const testimonialsEl = document.getElementById('testimonials');
-    const hiwRunwayEl = document.getElementById('hiw-scroll-runway');
 
     const featuresY = featuresEl
       ? featuresEl.getBoundingClientRect().top + window.scrollY - containerTop
@@ -37,16 +35,7 @@ export function ScrollLinePath({ children }) {
       ? testimonialsEl.getBoundingClientRect().top + window.scrollY - containerTop
       : h * 0.65;
 
-    // How It Works section boundaries
-    let hiwTop = 0;
-    let hiwBottom = 0;
-    if (hiwRunwayEl) {
-      const runwayRect = hiwRunwayEl.getBoundingClientRect();
-      hiwTop = runwayRect.top + window.scrollY - containerTop;
-      hiwBottom = hiwTop + hiwRunwayEl.offsetHeight;
-    }
-
-    setDims({ w, h, featuresY, testimonialsY, hiwTop, hiwBottom });
+    setDims({ w, h, featuresY, testimonialsY });
   }, []);
 
   useEffect(() => {
@@ -126,7 +115,7 @@ export function ScrollLinePath({ children }) {
                 strokeWidth="14"
                 strokeLinecap="round"
                 fill="none"
-                style={{ pathLength: pathLength, opacity: pathOpacity }}
+                style={{ pathLength, opacity: pathOpacity }}
               />
               <motion.path
                 d={wavePath}
@@ -134,7 +123,7 @@ export function ScrollLinePath({ children }) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 fill="none"
-                style={{ pathLength: pathLength, opacity: pathOpacity }}
+                style={{ pathLength, opacity: pathOpacity }}
               />
             </>
           )}

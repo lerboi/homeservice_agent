@@ -19,6 +19,7 @@ import {
 import { BookOpen, FileSpreadsheet, Receipt, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
+import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 
 const ACCOUNTING_PROVIDERS = [
   { id: 'quickbooks', name: 'QuickBooks', icon: BookOpen, connectLabel: 'Connect QuickBooks' },
@@ -127,7 +128,16 @@ export default function IntegrationsPage() {
     <div>
       <h1 className="text-xl font-semibold text-stone-900 mb-1">Integrations</h1>
 
-      <h2 className="text-base font-semibold text-stone-900 mt-8 mb-1">Accounting Software</h2>
+      {/* Calendar Connections */}
+      <h2 className="text-base font-semibold text-stone-900 mt-8 mb-1">Calendar Connections</h2>
+      <p className="text-sm text-stone-500 mb-4">
+        Connect your calendar to automatically sync appointments.
+      </p>
+      <div className={`${card.base} p-5`}>
+        <CalendarSyncCard />
+      </div>
+
+      <h2 className="text-base font-semibold text-stone-900 mt-10 mb-1">Accounting Software</h2>
       <p className="text-sm text-stone-500 mb-6">
         Connect your accounting software to automatically sync invoices when you send them.
       </p>

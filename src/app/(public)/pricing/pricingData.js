@@ -17,6 +17,7 @@ export const PRICING_TIERS = [
       'Instant emergency SMS alerts',
       'Detailed dashboard & analytics',
       'Lead capture & CRM',
+      'Invoicing & estimate management',
       'Google & Outlook Calendar sync',
       'Multi-language support (EN/ES)',
       'Recovery SMS fallback',
@@ -87,7 +88,9 @@ export const COMPARISON_FEATURES = [
   { name: 'Outlook Calendar sync', starter: true, growth: true, scale: true, enterprise: true },
   { name: 'Booking-first dispatcher', starter: true, growth: true, scale: true, enterprise: true },
   { name: 'Multi-language (EN/ES)', starter: true, growth: true, scale: true, enterprise: true },
+  { name: 'Invoicing & estimates', starter: true, growth: true, scale: true, enterprise: true },
   { name: 'Recovery SMS fallback', starter: true, growth: true, scale: true, enterprise: true },
+  { name: 'Short-call protection (<20s)', starter: true, growth: true, scale: true, enterprise: true },
   { name: 'Custom integrations', starter: false, growth: false, scale: false, enterprise: true },
 ];
 

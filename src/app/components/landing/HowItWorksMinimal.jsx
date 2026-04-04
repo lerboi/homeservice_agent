@@ -66,7 +66,7 @@ const STEPS = [
     description:
       'Calls, leads, invoices, and calendar — all in one place. Send estimates, track payments, and sync your schedule without switching apps.',
     visualType: 'screenshot',
-    screenshot: '/images/how-it-works/dashboard.png',
+    screenshot: '/images/how-it-works/dashboard-ui.png',
     screenshotAlt: 'Voco dashboard with calls, leads, and revenue overview',
     iconBg: 'bg-violet-100',
     iconColor: 'text-violet-600',
@@ -96,7 +96,8 @@ function lerp(a, b, t) {
 }
 
 function easeOut(t) {
-  return 1 - (1 - t) * (1 - t) * (1 - t);
+  const inv = 1 - t;
+  return 1 - inv * inv * inv * inv * inv;
 }
 
 export function HowItWorksMinimal() {
@@ -163,7 +164,7 @@ export function HowItWorksMinimal() {
       const el = outerRef.current;
       if (el) {
         const isMobile = window.innerWidth < 768;
-        el.style.height = isMobile ? '200vh' : '250vh';
+        el.style.height = isMobile ? '220vh' : '280vh';
         scrollRange = el.offsetHeight - window.innerHeight;
       }
     };
@@ -210,8 +211,8 @@ export function HowItWorksMinimal() {
         const active = Math.min(Math.floor(stepFloat), N - 1);
         const rawProgress = Math.max(0, Math.min(1, stepFloat - active));
 
-        const enterEnd = 0.15;
-        const exitStart = 0.70;
+        const enterEnd = 0.25;
+        const exitStart = 0.65;
         const isFirst = active === 0;
         const isLast = active === N - 1;
         const hasNext = active + 1 < N;
@@ -230,8 +231,8 @@ export function HowItWorksMinimal() {
         } else if (rawProgress > exitStart) {
           const t = easeOut((rawProgress - exitStart) / (1 - exitStart));
           cO = 1 - t;
-          cS = lerp(1, 0.96, t);
-          cY = lerp(0, -40, t);
+          cS = lerp(1, 0.97, t);
+          cY = lerp(0, -30, t);
         } else {
           cO = 1; cS = 1; cY = 0;
         }
@@ -340,9 +341,37 @@ export function HowItWorksMinimal() {
     <div
       ref={outerRef}
       id="hiw-scroll-runway"
-      className="bg-[#F5F5F4]"
-      style={{ height: '250vh' }}
+      className="relative bg-[#F5F5F4]"
+      style={{ height: '280vh' }}
     >
+      <style>{`
+        .hiw-edge-fade {
+          mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to bottom, black 0%, black 65%, transparent 100%);
+        }
+        @media (min-width: 768px) {
+          .hiw-edge-fade[data-fade-dir="to left"] {
+            mask-image:
+              linear-gradient(to right, transparent 0%, black 25%, black 100%),
+              linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+            -webkit-mask-image:
+              linear-gradient(to right, transparent 0%, black 25%, black 100%),
+              linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+            mask-composite: intersect;
+            -webkit-mask-composite: destination-in;
+          }
+          .hiw-edge-fade[data-fade-dir="to right"] {
+            mask-image:
+              linear-gradient(to left, transparent 0%, black 25%, black 100%),
+              linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+            -webkit-mask-image:
+              linear-gradient(to left, transparent 0%, black 25%, black 100%),
+              linear-gradient(to bottom, black 0%, black 75%, transparent 100%);
+            mask-composite: intersect;
+            -webkit-mask-composite: destination-in;
+          }
+        }
+      `}</style>
       <div ref={stickyRef} className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         {STEPS.map((step, i) => {
           const isEven = i % 2 === 1;
@@ -367,9 +396,9 @@ export function HowItWorksMinimal() {
                 className="absolute inset-0 flex items-center justify-center px-6"
                 style={{ willChange: 'transform, opacity' }}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center max-w-5xl mx-auto w-full">
-                  {/* Text column */}
-                  <div className={`flex flex-col gap-4 ${isEven ? 'md:order-2' : 'md:order-1'}`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center max-w-6xl mx-auto w-full">
+                  {/* Text column — always on top, pushed to outer edge */}
+                  <div className={`relative z-20 flex flex-col gap-4 ${isEven ? 'md:order-2 md:pl-4' : 'md:order-1 md:pr-4'}`}>
                     {/* Step badge */}
                     <div>
                       <span
@@ -429,7 +458,7 @@ export function HowItWorksMinimal() {
                       style={{ willChange: 'transform, opacity' }}
                       aria-hidden="true"
                     >
-                      <StepVisual step={step} />
+                      <StepVisual step={step} isEven={isEven} />
                     </div>
                   </div>
                 </div>
@@ -441,7 +470,7 @@ export function HowItWorksMinimal() {
         {/* Progress indicator — desktop */}
         <div
           ref={progressBarRef}
-          className="absolute bottom-8 left-0 right-0 max-w-5xl mx-auto px-6 hidden md:flex items-center gap-4"
+          className="absolute bottom-8 left-0 right-0 max-w-6xl mx-auto px-6 hidden md:flex items-center gap-4"
           role="progressbar"
           aria-valuemin={1}
           aria-valuemax={4}
@@ -505,12 +534,12 @@ export function HowItWorksMinimal() {
 
 /* ── Visual sub-components (unexported) ── */
 
-function StepVisual({ step }) {
+function StepVisual({ step, isEven }) {
   switch (step.visualType) {
     case 'conversation':
-      return <ConversationMockup />;
+      return <ConversationMockup isEven={isEven} />;
     case 'screenshot':
-      return <ScreenshotVisual src={step.screenshot} alt={step.screenshotAlt} />;
+      return <ScreenshotVisual src={step.screenshot} alt={step.screenshotAlt} isEven={isEven} />;
     default:
       return <StepIcon step={step} />;
   }
@@ -532,34 +561,40 @@ function StepIcon({ step }) {
   );
 }
 
-function ScreenshotVisual({ src, alt }) {
+function ScreenshotVisual({ src, alt, isEven }) {
+  const fadeDir = isEven ? 'to right' : 'to left';
   return (
-    <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
-      <div className="rounded-2xl border border-stone-200/60 bg-white p-1.5 shadow-sm">
-        <Image
-          src={src}
-          alt={alt}
-          width={1280}
-          height={800}
-          className="rounded-xl w-full h-auto"
-          quality={90}
-        />
-      </div>
+    <div
+      className="hiw-edge-fade w-full"
+      data-fade-dir={fadeDir}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={1280}
+        height={800}
+        className="w-full h-auto"
+        quality={75}
+      />
     </div>
   );
 }
 
-function ConversationMockup() {
+function ConversationMockup({ isEven }) {
+  const fadeDir = isEven ? 'to right' : 'to left';
   return (
-    <div className="w-full max-w-xs md:max-w-sm rounded-2xl border border-stone-200/60 bg-white p-4 md:p-5 shadow-sm">
-      <div className="flex flex-col gap-3">
+    <div
+      className="hiw-edge-fade w-full"
+      data-fade-dir={fadeDir}
+    >
+      <div className="flex flex-col gap-4">
         {/* Caller bubble 1 */}
         <div>
           <span className="text-[10px] text-[#475569]/60 uppercase tracking-wider font-medium ml-1 mb-1 block">
             Caller
           </span>
-          <div className="bg-stone-100 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%]">
-            <p className="text-sm text-[#0F172A]">
+          <div className="bg-white/80 backdrop-blur-sm shadow-sm border border-stone-200/40 rounded-2xl rounded-bl-md px-5 py-3 max-w-[85%]">
+            <p className="text-sm md:text-base text-[#0F172A]">
               I have a burst pipe in my kitchen&hellip;
             </p>
           </div>
@@ -570,8 +605,8 @@ function ConversationMockup() {
           <span className="text-[10px] text-[#475569]/60 uppercase tracking-wider font-medium mr-1 mb-1 block">
             Voco AI
           </span>
-          <div className="bg-sky-50 border border-sky-200/60 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[85%]">
-            <p className="text-sm text-[#0F172A]">
+          <div className="bg-sky-50/90 backdrop-blur-sm shadow-sm border border-sky-200/40 rounded-2xl rounded-br-md px-5 py-3 max-w-[85%]">
+            <p className="text-sm md:text-base text-[#0F172A]">
               I understand — let me get you scheduled right away.
             </p>
           </div>
@@ -582,8 +617,8 @@ function ConversationMockup() {
           <span className="text-[10px] text-[#475569]/60 uppercase tracking-wider font-medium ml-1 mb-1 block">
             Caller
           </span>
-          <div className="bg-stone-100 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%]">
-            <p className="text-sm text-[#0F172A]">
+          <div className="bg-white/80 backdrop-blur-sm shadow-sm border border-stone-200/40 rounded-2xl rounded-bl-md px-5 py-3 max-w-[85%]">
+            <p className="text-sm md:text-base text-[#0F172A]">
               Can someone come tonight?
             </p>
           </div>

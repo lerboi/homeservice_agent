@@ -114,6 +114,7 @@ export async function PATCH(request, { params }) {
   } else {
     // draft — all fields editable
     const editableFields = [
+      'title',
       'customer_name', 'customer_phone', 'customer_email', 'customer_address',
       'job_type', 'issued_date', 'due_date', 'notes', 'payment_terms',
       'reminders_enabled',

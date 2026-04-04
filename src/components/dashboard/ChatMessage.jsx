@@ -35,9 +35,9 @@ export default function ChatMessage({ role, content, onNavigate }) {
         <p className="whitespace-pre-wrap">{text}</p>
         {links.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {links.map((link) => (
+            {links.map((link, i) => (
               <ChatNavLink
-                key={link.href}
+                key={`${link.href}-${i}`}
                 href={link.href}
                 label={link.label}
                 onNavigate={onNavigate}

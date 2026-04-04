@@ -150,9 +150,9 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
   return (
     <button
       type="button"
-      className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${styles.block}`}
+      className={`absolute ${isMobile ? 'left-0.5 right-0.5' : 'left-1 right-1'} rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${styles.block}`}
       style={finalStyle}
-      onClick={() => onClick(appointment)}
+      onClick={(e) => { e.stopPropagation(); onClick(appointment); }}
     >
       {/* Off-hours indicator */}
       {isOffHours && (
@@ -326,6 +326,8 @@ export default function CalendarView({
   viewMode = 'week',
   loading = false,
   onAppointmentClick,
+  onDayClick,
+  onEmptySlotClick,
   workingHoursData = null,
   isMobile = false,
 }) {
@@ -426,6 +428,85 @@ export default function CalendarView({
 
   if (loading) return <LoadingSkeleton viewMode={viewMode} />;
 
+  // ── Month view ──────────────────────────────────────────────────────────
+  if (viewMode === 'month') {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startOffset = firstDay.getDay(); // 0=Sun
+    const totalDays = lastDay.getDate();
+
+    // Build 6-week grid (42 cells)
+    const cells = [];
+    const gridStart = new Date(firstDay);
+    gridStart.setDate(gridStart.getDate() - startOffset);
+    for (let i = 0; i < 42; i++) {
+      const cellDate = new Date(gridStart);
+      cellDate.setDate(gridStart.getDate() + i);
+      const dayAppts = appointments.filter((a) => isSameDay(new Date(a.start_time), cellDate));
+      cells.push({ date: cellDate, appointments: dayAppts });
+    }
+
+    return (
+      <div className="p-4">
+        {/* Day headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+            <div key={d} className="text-center text-[10px] font-medium text-stone-400 uppercase tracking-wider py-1">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Date grid */}
+        <div className="grid grid-cols-7 border border-stone-200 rounded-lg overflow-hidden">
+          {cells.map((cell, i) => {
+            const isCurrentMonth = cell.date.getMonth() === month;
+            const isTodayCell = isSameDay(cell.date, today);
+            const count = cell.appointments.length;
+
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onDayClick?.(new Date(cell.date))}
+                className={`
+                  relative min-h-[72px] p-1.5 text-left border-b border-r border-stone-100 transition-colors
+                  ${isCurrentMonth ? 'bg-white hover:bg-stone-50' : 'bg-stone-50/50 hover:bg-stone-100/50'}
+                  ${isTodayCell ? 'ring-1 ring-inset ring-[#C2410C]/30' : ''}
+                `}
+              >
+                <span className={`
+                  inline-flex items-center justify-center text-xs font-medium rounded-full size-6
+                  ${isTodayCell ? 'bg-[#C2410C] text-white' : isCurrentMonth ? 'text-[#0F172A]' : 'text-stone-400'}
+                `}>
+                  {cell.date.getDate()}
+                </span>
+
+                {count > 0 && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {cell.appointments.slice(0, 2).map((appt) => (
+                      <div
+                        key={appt.id}
+                        className="text-[9px] leading-tight truncate px-1 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] font-medium"
+                      >
+                        {new Date(appt.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    ))}
+                    {count > 2 && (
+                      <span className="text-[9px] text-stone-400 px-1">+{count - 2} more</span>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   const hasContent = appointments.length > 0 || timedExternalEvents.length > 0 || travelBuffers.length > 0;
   if (!hasContent && allDayEvents.length === 0) return <EmptyState />;
 
@@ -439,8 +520,8 @@ export default function CalendarView({
     : `grid-cols-[${gutterWidth}_1fr]`;
 
   return (
-    <div ref={scrollRef} className="overflow-auto max-h-[700px]">
-      <div className={`grid ${gridCols} min-w-[640px]`}>
+    <div ref={scrollRef} className={`overflow-auto ${isMobile ? 'max-h-[55vh]' : 'max-h-[700px]'}`}>
+      <div className={`grid ${gridCols} ${isMobile && viewMode === 'day' ? 'min-w-0' : 'min-w-[640px]'}`}>
 
         {/* Column headers */}
         <div className="border-b border-stone-200 bg-[#FAFAF9] sticky top-0 z-30" />
@@ -505,8 +586,21 @@ export default function CalendarView({
           return (
             <div
               key={colIndex}
-              className={`relative border-l border-stone-200 ${isToday ? 'bg-[#FFFCFA]' : 'bg-white'}`}
+              className={`relative border-l border-stone-200 cursor-pointer ${isToday ? 'bg-[#FFFCFA]' : 'bg-white'}`}
               style={{ height: `${hours.length * HOUR_HEIGHT}px` }}
+              onClick={(e) => {
+                if (!onEmptySlotClick) return;
+                // Calculate clicked time from position
+                const rect = e.currentTarget.getBoundingClientRect();
+                const offsetY = e.clientY - rect.top;
+                const hourDecimal = gridStartHour + (offsetY / HOUR_HEIGHT);
+                const hour = Math.floor(hourDecimal);
+                const minutes = Math.round((hourDecimal - hour) * 60 / 15) * 15; // Snap to 15-min
+                const slotDate = new Date(day);
+                slotDate.setHours(hour, minutes >= 60 ? 0 : minutes, 0, 0);
+                if (minutes >= 60) slotDate.setHours(hour + 1);
+                onEmptySlotClick(slotDate);
+              }}
             >
               {/* Off-hours shading */}
               {workingHours && hours.map((hour) => {

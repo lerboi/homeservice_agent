@@ -526,7 +526,7 @@ export function FeaturesCarousel() {
       <div
         role="region"
         aria-label="Features"
-        className="relative max-w-[100vw] lg:max-w-6xl lg:mx-auto"
+        className="relative max-w-[100vw] lg:max-w-7xl lg:mx-auto"
       >
         {/* Left arrow */}
         <button
@@ -551,7 +551,7 @@ export function FeaturesCarousel() {
           <div
             ref={trackRef}
           onScroll={() => { if (!isAutoScrollingRef.current) stopAutoAdvance(); }}
-          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-190px)]"
+          className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide py-4 px-[calc(50%-140px)] md:px-[calc(50%-180px)] lg:px-[calc(50%-190px)]"
           style={{
             scrollSnapType: 'x mandatory',
             WebkitOverflowScrolling: 'touch',
@@ -560,8 +560,7 @@ export function FeaturesCarousel() {
           }}
         >
           {CARDS.map((feat, displayIndex) => {
-            const realIdx = displayIndex % FEATURES.length;
-            const isActive = realIdx === activeIndex;
+            const isActive = displayIndex === activeDisplayIndex;
             return (
               <div
                 key={`${feat.title}-${displayIndex}`}

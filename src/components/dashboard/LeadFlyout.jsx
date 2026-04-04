@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList } from 'lucide-react';
+import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList, Mail, Pencil, Check, X } from 'lucide-react';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
+import CustomerTimeline from '@/components/dashboard/CustomerTimeline';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -130,6 +131,12 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
   // Linked invoice state (for Create/View Invoice button)
   const [linkedInvoice, setLinkedInvoice] = useState(null);
 
+  // Inline-editable fields
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+
   // Status change state
   const [selectedStatus, setSelectedStatus] = useState('');
   const [revenueAmount, setRevenueAmount] = useState('');
@@ -184,6 +191,36 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       setLinkedInvoice(null);
     }
   }, [open, leadId, fetchLead]);
+
+  // Inline field save helper
+  async function saveLeadField(field, value) {
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setLead((prev) => ({ ...prev, [field]: value }));
+      toast.success(field === 'email' ? 'Email saved' : 'Name saved');
+    } catch {
+      toast.error(`Could not save ${field}`);
+    }
+  }
+
+  function handleEmailSave() {
+    const trimmed = emailDraft.trim();
+    saveLeadField('email', trimmed || null);
+    setEditingEmail(false);
+  }
+
+  function handleNameSave() {
+    const trimmed = nameDraft.trim();
+    if (trimmed) {
+      saveLeadField('caller_name', trimmed);
+    }
+    setEditingName(false);
+  }
 
   // First call associated with this lead (for recording/transcript)
   const firstCall = lead?.lead_calls?.[0]?.calls ?? null;
@@ -325,9 +362,32 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   </span>
                 </div>
               </div>
-              <SheetTitle className="text-xl font-semibold text-[#0F172A] leading-snug mt-1">
-                {lead.caller_name || 'Unknown Caller'}
-              </SheetTitle>
+              {editingName ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    className="flex-1 text-xl font-semibold text-[#0F172A] leading-snug border-b-2 border-[#C2410C] outline-none bg-transparent"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave(); if (e.key === 'Escape') setEditingName(false); }}
+                    autoFocus
+                  />
+                  <button type="button" onClick={handleNameSave} className="p-1 text-green-600 hover:text-green-700">
+                    <Check className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={() => setEditingName(false)} className="p-1 text-stone-400 hover:text-stone-600">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <SheetTitle
+                  className="text-xl font-semibold text-[#0F172A] leading-snug mt-1 group cursor-pointer"
+                  onClick={() => { setNameDraft(lead.caller_name || ''); setEditingName(true); }}
+                >
+                  {lead.caller_name || 'Unknown Caller'}
+                  <Pencil className="inline-block h-3.5 w-3.5 ml-2 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </SheetTitle>
+              )}
             </SheetHeader>
 
             <div className="px-6 space-y-6 pb-4">
@@ -345,6 +405,45 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     </a>
                   </div>
                 )}
+                {/* Email — inline editable */}
+                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                  <Mail className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  {editingEmail ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        type="email"
+                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        placeholder="customer@example.com"
+                        value={emailDraft}
+                        onChange={(e) => setEmailDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleEmailSave(); if (e.key === 'Escape') setEditingEmail(false); }}
+                        autoFocus
+                      />
+                      <button type="button" onClick={handleEmailSave} className="p-0.5 text-green-600 hover:text-green-700">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => setEditingEmail(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : lead.email ? (
+                    <button
+                      type="button"
+                      className="text-[#0F172A]/80 hover:text-[#C2410C] transition-colors text-left"
+                      onClick={() => { setEmailDraft(lead.email || ''); setEditingEmail(true); }}
+                    >
+                      {lead.email}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      onClick={() => { setEmailDraft(''); setEditingEmail(true); }}
+                    >
+                      + Add email
+                    </button>
+                  )}
+                </div>
                 {firstCall?.start_timestamp && (
                   <div className="flex items-center gap-2 text-sm text-stone-500">
                     <Calendar className="h-4 w-4 text-stone-400 flex-shrink-0" />
@@ -374,15 +473,10 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       : lead.service_address}</span>
                   </div>
                 )}
-                {firstCall && (
+                {firstCall?.urgency_classification && (
                   <div className="flex items-center gap-2 text-xs text-stone-400">
                     <span>
-                      Triage: {firstCall.urgency_classification}
-                      {firstCall.urgency_confidence != null && (
-                        <span className="ml-1">
-                          ({Math.round(firstCall.urgency_confidence * 100)}% confidence)
-                        </span>
-                      )}
+                      {{ emergency: 'Urgent', routine: 'Routine', high_ticket: 'High Value' }[firstCall.urgency_classification] || firstCall.urgency_classification}
                     </span>
                   </div>
                 )}
@@ -450,6 +544,14 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       Create Estimate
                     </button>
                   </div>
+                </>
+              )}
+
+              {/* ── Customer Journey Timeline ── */}
+              {lead.from_number && (
+                <>
+                  <Separator className="bg-stone-100" />
+                  <CustomerTimeline phone={lead.from_number} leadId={lead.id} />
                 </>
               )}
 

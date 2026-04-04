@@ -8,7 +8,7 @@ const HowItWorksMinimal = dynamic(
   () => import('./HowItWorksMinimal').then((m) => m.HowItWorksMinimal),
   {
     loading: () => (
-      <div style={{ minHeight: '250vh' }} className="bg-[#F5F5F4]" />
+      <div style={{ minHeight: '280vh' }} className="bg-[#F5F5F4]" />
     ),
   }
 );

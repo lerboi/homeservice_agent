@@ -45,7 +45,7 @@ export default function PricingTiers() {
 
       {/* Social proof */}
       <p className="text-center text-sm text-white/35 mb-8">
-        Trusted by 500+ home service contractors across the US
+        The contractors booking jobs at 2 AM aren&apos;t working harder &mdash; they&apos;re using AI.
       </p>
 
       {/* Tier cards — 3 columns, equal height */}
@@ -152,6 +152,11 @@ export default function PricingTiers() {
           );
         })}
       </AnimatedStagger>
+
+      {/* Short-call note */}
+      <p className="text-center text-xs text-white/30 mt-4">
+        Calls under 20 seconds are never counted &mdash; you only pay for real conversations.
+      </p>
 
       {/* Enterprise section */}
       <AnimatedSection delay={0.15} className="mt-10 max-w-5xl mx-auto">

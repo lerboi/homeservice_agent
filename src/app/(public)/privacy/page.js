@@ -61,42 +61,14 @@ export default function PrivacyPolicyPage() {
 
           <SectionHeading>3. Third-Party Service Providers</SectionHeading>
           <p>
-            We share data with the following sub-processors solely to operate the platform. Each is bound by data processing agreements and their own privacy policies.
+            We share data with trusted third-party sub-processors solely to operate the platform. These providers handle functions such as database hosting, authentication, telephony, AI processing, payment processing, email delivery, calendar synchronisation, error monitoring, and application hosting. Each sub-processor is bound by data processing agreements and their own privacy policies.
           </p>
-          <div className="overflow-x-auto rounded-lg border border-white/[0.08]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.08] bg-white/[0.03]">
-                  <th className="text-left px-4 py-3 text-[#E4E4E7] font-medium">Provider</th>
-                  <th className="text-left px-4 py-3 text-[#E4E4E7] font-medium">Purpose</th>
-                  <th className="text-left px-4 py-3 text-[#E4E4E7] font-medium">Data shared</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.05]">
-                {[
-                  ['Supabase', 'Database and authentication', 'All structured data'],
-                  ['Twilio', 'Phone number provisioning and SIP trunking', 'Phone numbers, call metadata'],
-                  ['LiveKit', 'Real-time voice infrastructure', 'Audio streams during calls'],
-                  ['Google (Gemini)', 'AI speech processing during calls', 'Audio streams during calls'],
-                  ['Stripe', 'Payment processing', 'Billing information'],
-                  ['Resend', 'Transactional email delivery', 'Email address, notification content'],
-                  ['ElevenLabs', 'Text-to-speech for demo audio', 'Business name (demo only)'],
-                  ['Google / Microsoft', 'Calendar sync (when connected by you)', 'Appointment details'],
-                  ['Sentry', 'Error monitoring', 'Error logs, stack traces'],
-                  ['Vercel', 'Web application hosting', 'Request logs, IP addresses'],
-                  ['Railway', 'AI agent hosting', 'Call-related data during processing'],
-                ].map(([provider, purpose, data]) => (
-                  <tr key={provider} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-4 py-3 text-[#E4E4E7] font-medium whitespace-nowrap">{provider}</td>
-                    <td className="px-4 py-3">{purpose}</td>
-                    <td className="px-4 py-3">{data}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
           <p>
-            Some providers listed above are based outside Singapore. By using our services, you consent to the transfer of your data to these providers in accordance with the PDPA&apos;s cross-border transfer obligations.
+            Some of our service providers are based outside Singapore. By using our services, you consent to the transfer of your data to these providers in accordance with the PDPA&apos;s cross-border transfer obligations.
+          </p>
+          <p>
+            For a full list of our sub-processors, please contact us at{' '}
+            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
           </p>
 
           <SectionHeading>4. Call Recordings and AI Processing</SectionHeading>
@@ -125,14 +97,14 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p>
             To exercise any of these rights, email us at{' '}
-            <a href="mailto:privacy@getvoco.ai" className="text-[#F97316] hover:underline">privacy@getvoco.ai</a>.
+            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
             We will respond within 30 days.
           </p>
 
           <SectionHeading>7. Security</SectionHeading>
           <p>
             We implement industry-standard security measures including encryption in transit (TLS), encryption at rest, row-level security policies on our database, and access controls limiting data access to authorised personnel only. Despite these measures, no system is entirely secure. If you become aware of a security concern, please contact{' '}
-            <a href="mailto:security@getvoco.ai" className="text-[#F97316] hover:underline">security@getvoco.ai</a>.
+            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
           </p>
 
           <SectionHeading>8. Children&apos;s Privacy</SectionHeading>
@@ -152,8 +124,8 @@ export default function PrivacyPolicyPage() {
             <p>Singapore</p>
             <p>
               Email:{' '}
-              <a href="mailto:privacy@getvoco.ai" className="text-[#F97316] hover:underline">
-                privacy@getvoco.ai
+              <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">
+                support@voco.live
               </a>
             </p>
           </div>

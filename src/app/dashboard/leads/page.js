@@ -77,7 +77,6 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [viewMode, setViewMode] = useState('list');
 
   // Flyout state
@@ -94,10 +93,42 @@ export default function LeadsPage() {
   const [selectedLeads, setSelectedLeads] = useState(new Set());
   const [batchCreating, setBatchCreating] = useState(false);
 
-  // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
+  // Read initial filters from URL search params
   const searchParams = useSearchParams();
   const router = useRouter();
   const openHandled = useRef(false);
+
+  const [filters, setFilters] = useState(() => ({
+    status: searchParams.get('status') || 'new',
+    urgency: searchParams.get('urgency') || '',
+    dateFrom: searchParams.get('date_from') || '',
+    dateTo: searchParams.get('date_to') || '',
+    search: searchParams.get('search') || '',
+    jobType: searchParams.get('job_type') || '',
+  }));
+
+  // Sync filters to URL search params (skip initial mount)
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.urgency) params.set('urgency', filters.urgency);
+    if (filters.dateFrom) params.set('date_from', filters.dateFrom);
+    if (filters.dateTo) params.set('date_to', filters.dateTo);
+    if (filters.search) params.set('search', filters.search);
+    if (filters.jobType) params.set('job_type', filters.jobType);
+    // Preserve the 'open' param if present
+    const openParam = searchParams.get('open');
+    if (openParam) params.set('open', openParam);
+    const qs = params.toString();
+    router.replace(`/dashboard/leads${qs ? `?${qs}` : ''}`, { scroll: false });
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
 
   useEffect(() => {
     const openLeadId = searchParams.get('open');

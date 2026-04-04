@@ -11,12 +11,19 @@ import { useSWRFetch } from '@/hooks/useSWRFetch';
  * @param {object} options
  * @param {string} options.itemsKey — response key for the list, e.g. 'invoices' or 'estimates'
  */
-export function useDocumentList(apiBase, { itemsKey }) {
+export function useDocumentList(apiBase, { itemsKey, extraParams = {} }) {
   const [activeStatus, setActiveStatus] = useState('all');
   const summaryRef = useRef(null);
 
-  const url =
-    activeStatus === 'all' ? apiBase : `${apiBase}?status=${activeStatus}`;
+  const url = (() => {
+    const params = new URLSearchParams();
+    if (activeStatus !== 'all') params.set('status', activeStatus);
+    Object.entries(extraParams).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const qs = params.toString();
+    return qs ? `${apiBase}?${qs}` : apiBase;
+  })();
 
   const { data, error, isLoading, mutate } = useSWRFetch(url);
 

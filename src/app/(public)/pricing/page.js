@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { ShieldCheck } from 'lucide-react';
-import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
+import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import PricingTiers from './PricingTiers';
 import ROICalculator from './ROICalculator';
 import ComparisonTable from './ComparisonTable';
@@ -80,41 +80,6 @@ export default function PricingPage() {
       <section className="bg-[#F5F5F4] py-16">
         <div className="max-w-6xl mx-auto px-6">
           <ComparisonTable />
-        </div>
-      </section>
-
-      {/* Testimonials (dark) */}
-      <section className="bg-[#1A1816] py-16">
-        <div className="max-w-5xl mx-auto px-6">
-          <AnimatedStagger className="grid md:grid-cols-3 gap-6">
-            <AnimatedItem>
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
-                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
-                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
-                  Before Voco, I was losing 3-4 calls every weekend. Now my phone&apos;s booked Monday before I&apos;ve had coffee.
-                </p>
-                <p className="text-sm text-white/50 mt-4">&mdash; Mike R., HVAC contractor, Phoenix AZ</p>
-              </div>
-            </AnimatedItem>
-            <AnimatedItem>
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
-                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
-                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
-                  Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup.
-                </p>
-                <p className="text-sm text-white/50 mt-4">&mdash; Sandra T., Plumbing company owner, Austin TX</p>
-              </div>
-            </AnimatedItem>
-            <AnimatedItem>
-              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-7 h-full flex flex-col">
-                <p className="text-5xl font-serif text-[#F97316]/30 leading-none mb-3">&ldquo;</p>
-                <p className="text-lg text-white/80 italic leading-relaxed flex-1">
-                  One emergency booking at 2 AM paid for three months of Voco. I don&apos;t know why I waited so long.
-                </p>
-                <p className="text-sm text-white/50 mt-4">&mdash; Carlos M., Electrician, Miami FL</p>
-              </div>
-            </AnimatedItem>
-          </AnimatedStagger>
         </div>
       </section>
 

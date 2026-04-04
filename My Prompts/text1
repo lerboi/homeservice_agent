@@ -1,12 +1,29 @@
 Voice Call
 -----------------------
-- In dashboard, say Good morning, {name}
+
+- Completely remove/rethink the Triage classification feature (emergency etc) and the rethink wether the Urgency tag should remain in the call card 
+
+- Remove the voice recording
+
+- Check on the issue where a booked call doesnt go in leads 
+
+- In the calls tab, for each call card, check wether the language is correctly showing the right language spoken durnig the actual call, and also check if the Ended: text is accurate
+
+- Rethink the entire Urgency tag system
+
+- check on all the integrations
 
 
 
 Dashboard
 -----------------------
-- When editing/creating an invoice, change the 'send invoice' button below to 'Continue' instead
-- When creating the invoice, add the capability to edit the name of the invoice.
-- When loading up the invoice page, add a loading state.
-- For the Leads tab, each Lead card doesnt contain the name of the Lead, it should include it
+- In dashboard, say Good morning, {name}
+
+
+
+
+- On the front page AI, make the history persistent by session
+
+- AI on front page should be limited to Voco codebase, and rate limited
+
+-
