@@ -1,17 +1,11 @@
 Voice Call
 -----------------------
 
-- Completely remove/rethink the Triage classification feature (emergency etc) and the rethink wether the Urgency tag should remain in the call card 
-
 - Remove the voice recording
 
-- Check on the issue where a booked call doesnt go in leads 
-
-- In the calls tab, for each call card, check wether the language is correctly showing the right language spoken durnig the actual call, and also check if the Ended: text is accurate
-
-- Rethink the entire Urgency tag system
-
 - check on all the integrations
+
+- after a successful google calendar conection, it redirects to my page inside the popup window that is used to login through oauth. thius should happen, it should say something nlike successfully connected or something then the user can clsoe that and on the mian screen it will be coinnected, or even better, the oauth screen automaatically closes and the page refreshes.
 
 
 

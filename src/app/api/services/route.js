@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { getTenantId } from '@/lib/get-tenant-id';
 
-const VALID_TAGS = ['emergency', 'routine', 'high_ticket'];
+const VALID_TAGS = ['emergency', 'routine', 'urgent'];
 
 export async function GET() {
   const tenantId = await getTenantId();

@@ -18,9 +18,9 @@ DO $$ BEGIN RAISE NOTICE 'Seeding data for tenant 3b512e8d-d09b-4b0b-9d0a-9a9e21
 -- ============================================================
 INSERT INTO services (id, tenant_id, name, urgency_tag, is_active, sort_order) VALUES
   ('a0000001-0000-0000-0000-000000000001', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Burst Pipe Repair',       'emergency',   true, 0),
-  ('a0000001-0000-0000-0000-000000000002', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Water Heater Install',    'high_ticket',  true, 1),
+  ('a0000001-0000-0000-0000-000000000002', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Water Heater Install',    'urgent',  true, 1),
   ('a0000001-0000-0000-0000-000000000003', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Drain Cleaning',          'routine',      true, 2),
-  ('a0000001-0000-0000-0000-000000000004', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'AC Unit Replacement',     'high_ticket',  true, 3),
+  ('a0000001-0000-0000-0000-000000000004', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'AC Unit Replacement',     'urgent',  true, 3),
   ('a0000001-0000-0000-0000-000000000005', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Toilet Repair',           'routine',      true, 4),
   ('a0000001-0000-0000-0000-000000000006', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18', 'Gas Leak Detection',      'emergency',    true, 5)
 ON CONFLICT (id) DO NOTHING;
@@ -95,7 +95,7 @@ INSERT INTO calls (id, tenant_id, call_id, from_number, to_number, direction, st
  'call_seed_003', '+15551110003', '+15551234567', 'inbound', 'analyzed',
  1741910400, 1741910760,
  'Caller: I need a quote for a new tankless water heater installation. Agent: I can schedule an assessment. Caller: Actually, I will call back after I compare some prices.',
- 'en', 'high_ticket', 'medium', 'layer2', 'declined', 'standard', 'sent',
+ 'en', 'urgent', 'medium', 'layer2', 'declined', 'standard', 'sent',
  NOW() - INTERVAL '18 days'),
 
 -- Call 4: Emergency gas smell - booked (2 weeks ago)
@@ -119,7 +119,7 @@ INSERT INTO calls (id, tenant_id, call_id, from_number, to_number, direction, st
  'call_seed_006', '+15551110006', '+15551234567', 'inbound', 'analyzed',
  1742342400, 1742342520,
  'Caller: My AC unit is 15 years old and I think it needs replacing. I am just calling around for estimates right now.',
- 'en', 'high_ticket', 'high', 'layer2', 'not_attempted', 'standard', 'sent',
+ 'en', 'urgent', 'high', 'layer2', 'not_attempted', 'standard', 'sent',
  NOW() - INTERVAL '12 days'),
 
 -- Call 7: Repeat caller - drain issue follow-up - booked (11 days ago)
@@ -167,7 +167,7 @@ INSERT INTO calls (id, tenant_id, call_id, from_number, to_number, direction, st
  'call_seed_012', '+15551110011', '+15551234567', 'inbound', 'analyzed',
  1742860800, 1742860980,
  'Caller: I just need a ballpark price for re-piping my bathroom. Agent: I can schedule a free assessment. Caller: No thanks, just a rough number is fine for now.',
- 'en', 'high_ticket', 'medium', 'layer2', 'declined', 'standard', 'sent',
+ 'en', 'urgent', 'medium', 'layer2', 'declined', 'standard', 'sent',
  NOW() - INTERVAL '6 days'),
 
 -- Call 13: Garbage disposal install - booked (5 days ago)
@@ -183,7 +183,7 @@ INSERT INTO calls (id, tenant_id, call_id, from_number, to_number, direction, st
  'call_seed_014', '+15551110013', '+15551234567', 'inbound', 'analyzed',
  1743033600, 1743033720,
  'Caller: I am interested in a whole-house water filtration system. Just gathering information right now.',
- 'en', 'high_ticket', 'high', 'layer2', 'not_attempted', 'standard', 'sent',
+ 'en', 'urgent', 'high', 'layer2', 'not_attempted', 'standard', 'sent',
  NOW() - INTERVAL '4 days'),
 
 -- Call 15: Leaking shower - booked (3 days ago)
@@ -434,13 +434,13 @@ INSERT INTO leads (id, tenant_id, from_number, caller_name, job_type, service_ad
 -- LOST leads (2)
 ('10000001-0000-0000-0000-000000000014', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18',
  '+15551110003', 'Rachel Green', 'Water Heater Install', null, null, null,
- 'high_ticket', 'lost', null,
+ 'urgent', 'lost', null,
  'e0000001-0000-0000-0000-000000000003', null,
  NOW() - INTERVAL '18 days', NOW() - INTERVAL '12 days'),
 
 ('10000001-0000-0000-0000-000000000015', '3b512e8d-d09b-4b0b-9d0a-9a9e21b37a18',
  '+15551110011', 'Victor Lee', 'Bathroom Re-piping', null, null, null,
- 'high_ticket', 'lost', null,
+ 'urgent', 'lost', null,
  'e0000001-0000-0000-0000-000000000012', null,
  NOW() - INTERVAL '6 days', NOW() - INTERVAL '4 days')
 
@@ -858,12 +858,12 @@ COMMIT;
 -- ============================================================
 -- SUMMARY OF SEEDED DATA
 -- ============================================================
--- Services:            6  (2 emergency, 2 high_ticket, 2 routine)
+-- Services:            6  (2 emergency, 2 urgent, 2 routine)
 -- Service Zones:       3  (Downtown, Midtown, Upper East)
 -- Zone Travel Buffers: 3  (20/25/35 min between zones)
 -- Escalation Contacts: 3  (Owner, Office Manager, Senior Tech)
 -- Invoice Settings:    1  (Premier Plumbing & HVAC, 8.75% tax)
--- Calls:              20  (5 emergency, 4 high_ticket, 11 routine)
+-- Calls:              20  (5 emergency, 4 urgent, 11 routine)
 -- Appointments:       14  (8 completed, 5 confirmed, 1 cancelled)
 -- Leads:              15  (3 new, 4 booked, 3 completed, 3 paid, 2 lost)
 -- Lead-Call links:    16  (including 1 repeat caller with 2 calls)

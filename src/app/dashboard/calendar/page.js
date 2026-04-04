@@ -288,13 +288,13 @@ export default function CalendarPage() {
   const urgencyBorderColor = {
     emergency: 'border-l-red-400',
     routine: 'border-l-[#4F6BED]',
-    high_ticket: 'border-l-amber-400',
+    urgent: 'border-l-amber-400',
   };
 
   const urgencyTimeColor = {
     emergency: 'text-red-500',
     routine: 'text-[#4F6BED]',
-    high_ticket: 'text-amber-600',
+    urgent: 'text-amber-600',
   };
 
   return (

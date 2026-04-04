@@ -253,7 +253,7 @@ async function handleCheckoutCompleted(session) {
       if (tenantRow.owner_email) {
         try {
           await getResendClient().emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'support@getvoco.ai',
+            from: process.env.RESEND_FROM_EMAIL || 'support@voco.live',
             to: tenantRow.owner_email,
             subject: 'Action needed: Phone number setup requires attention',
             html: `<p>Hi${tenantRow.business_name ? ` ${tenantRow.business_name}` : ''},</p>
@@ -298,10 +298,10 @@ async function handleCheckoutCompleted(session) {
     const hasOverage = subscription.items?.data?.some((item) => OVERAGE_PRICE_IDS.has(item.price?.id));
     if (overagePriceId && !hasOverage) {
       try {
-        await stripe.subscriptionItems.create({
-          subscription: subscription.id,
-          price: overagePriceId,
-        });
+        await stripe.subscriptionItems.create(
+          { subscription: subscription.id, price: overagePriceId },
+          { idempotencyKey: `add_overage_${subscription.id}` },
+        );
         console.log(`[stripe/webhook] Added overage item (${overagePriceId}) to subscription ${subscription.id}`);
       } catch (overageErr) {
         // Non-fatal: subscription works without overage, admin can add manually
@@ -521,7 +521,7 @@ async function handleTrialWillEnd(subscription) {
     // Send email + SMS via Promise.allSettled — failures logged, never thrown (Pitfall 3)
     const [emailResult, smsResult] = await Promise.allSettled([
       getResendClient().emails.send({
-        from: 'Voco <notifications@getvoco.ai>',
+        from: 'Voco <notifications@voco.live>',
         to: tenant.owner_email,
         subject: 'Your Voco trial ends in 3 days',
         react: TrialReminderEmail({
@@ -613,7 +613,7 @@ async function handleInvoicePaymentFailed(invoice) {
         from: process.env.TWILIO_FROM_NUMBER,
       }),
       getResendClient().emails.send({
-        from: 'Voco <notifications@getvoco.ai>',
+        from: 'Voco <notifications@voco.live>',
         to: tenant.owner_email,
         subject: 'Action needed: Voco payment failed',
         react: PaymentFailedEmail({

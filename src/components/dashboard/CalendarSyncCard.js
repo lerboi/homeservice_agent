@@ -93,8 +93,10 @@ function CalendarProviderRow({
   onConnect,
   onDisconnect,
   onMakePrimary,
+  onSync,
   isConnecting,
   isDisconnecting,
+  isSyncing,
 }) {
   const config = PROVIDER_CONFIG[provider];
 
@@ -168,6 +170,13 @@ function CalendarProviderRow({
             Synced {formatDistanceToNow(new Date(data.last_synced_at), { addSuffix: true })}
           </span>
         )}
+        <button
+          className="text-[11px] text-[#C2410C] hover:underline disabled:opacity-50"
+          onClick={() => onSync(provider)}
+          disabled={isSyncing}
+        >
+          {isSyncing ? 'Syncing...' : 'Sync Now'}
+        </button>
         {!data.is_primary && (
           <button
             className="text-[11px] text-[#C2410C] hover:underline"
@@ -218,6 +227,7 @@ export default function CalendarSyncCard() {
   const [oauthError, setOauthError] = useState(null); // null | 'google' | 'outlook' | 'admin_consent'
   const [connectingProvider, setConnectingProvider] = useState(null); // null | 'google' | 'outlook'
   const [disconnectingProvider, setDisconnectingProvider] = useState(null);
+  const [syncingProvider, setSyncingProvider] = useState(null);
   const popupRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -348,6 +358,21 @@ export default function CalendarSyncCard() {
     }
   }
 
+  async function handleSync(provider) {
+    const config = PROVIDER_CONFIG[provider];
+    setSyncingProvider(provider);
+    try {
+      const res = await fetch('/api/calendar-sync/trigger', { method: 'POST' });
+      if (!res.ok) throw new Error('Sync failed');
+      await loadStatus();
+      toast.success(`${config.label} synced.`);
+    } catch {
+      toast.error(`Couldn't sync ${config.label}. Try again.`);
+    } finally {
+      setSyncingProvider(null);
+    }
+  }
+
   // Loading state
   if (loading) {
     return (
@@ -429,8 +454,10 @@ export default function CalendarSyncCard() {
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onMakePrimary={handleMakePrimary}
+          onSync={handleSync}
           isConnecting={connectingProvider === 'google'}
           isDisconnecting={disconnectingProvider === 'google'}
+          isSyncing={syncingProvider === 'google'}
         />
         <CalendarProviderRow
           provider="outlook"
@@ -438,8 +465,10 @@ export default function CalendarSyncCard() {
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onMakePrimary={handleMakePrimary}
+          onSync={handleSync}
           isConnecting={connectingProvider === 'outlook'}
           isDisconnecting={disconnectingProvider === 'outlook'}
+          isSyncing={syncingProvider === 'outlook'}
         />
       </div>
     </section>

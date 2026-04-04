@@ -43,4 +43,4 @@ All Supabase table definitions, columns, RLS policies, and migrations are docume
 ## Rules
 
 - **Keep skills in sync**: When making changes to any system covered by a skill, read the skill first, make the code changes, then update the skill to reflect the new state.
-- **Brand name is Voco** — not HomeService AI, not homeserviceai. Fallback email domains use `getvoco.ai`.
+- **Brand name is Voco** — not HomeService AI, not homeserviceai. Fallback email domains use `voco.live`.

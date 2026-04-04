@@ -122,10 +122,10 @@ describe('GET /api/services', () => {
 
 describe('POST /api/services', () => {
   it('creates service with valid name and urgency_tag', async () => {
-    const newService = { id: 'svc-new', name: 'AC repair', urgency_tag: 'high_ticket', created_at: '2026-01-01' };
+    const newService = { id: 'svc-new', name: 'AC repair', urgency_tag: 'urgent', created_at: '2026-01-01' };
     mockSingle.mockResolvedValue({ data: newService, error: null });
 
-    const req = makeRequest({ name: 'AC repair', urgency_tag: 'high_ticket' });
+    const req = makeRequest({ name: 'AC repair', urgency_tag: 'urgent' });
     const res = await POST(req);
     const body = await res.json();
 

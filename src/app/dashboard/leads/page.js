@@ -169,7 +169,15 @@ export default function LeadsPage() {
       const res = await fetch(`/api/leads${qs ? `?${qs}` : ''}`);
       if (!res.ok) throw new Error('Failed to load leads');
       const data = await res.json();
-      setLeads(data.leads || []);
+      // Sort by urgency: emergency first, then urgent, then routine
+      const URGENCY_WEIGHT = { emergency: 3, urgent: 2, routine: 1 };
+      const sorted = (data.leads || []).sort((a, b) => {
+        const wa = URGENCY_WEIGHT[a.urgency] || 0;
+        const wb = URGENCY_WEIGHT[b.urgency] || 0;
+        if (wa !== wb) return wb - wa;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      setLeads(sorted);
     } catch {
       setError("Couldn't load leads. Check your connection and refresh the page.");
     } finally {

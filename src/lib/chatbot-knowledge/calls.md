@@ -6,7 +6,7 @@ The Calls section shows a complete log of every call handled by your AI receptio
 ## Key features
 - **Call log** — Full history of all calls, grouped by date
 - **Expandable cards** — Click any call to expand and see recording player and transcript
-- **Triage labels** — Emergency, routine, or high-ticket labels set by the AI based on call content
+- **Triage labels** — Emergency, urgent, or routine labels set by the AI based on call content
 - **Duration and outcome** — See call length and whether the AI booked, captured a lead, or escalated
 - **Filters** — Filter by outcome, urgency label, or date range
 

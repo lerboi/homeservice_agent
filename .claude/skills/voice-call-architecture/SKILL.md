@@ -372,7 +372,7 @@ Runs immediately when the AgentSession closes (in-process, no webhook delay).
 
 **Directory**: `src/lib/triage/`
 
-Three-layer pipeline. Layer 3 can only ESCALATE, never downgrade. Urgency values validated to `{emergency, routine, high_ticket}`.
+Three-layer pipeline. Layer 3 can only ESCALATE, never downgrade. Urgency values validated to `{emergency, routine, urgent}`.
 
 ### Layer 1 — Keywords (`layer1_keywords.py`)
 Synchronous regex matching. Routine patterns checked FIRST (prevents "not urgent" from matching emergency "urgent").
@@ -432,7 +432,7 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 | `TWILIO_AUTH_TOKEN` | Twilio SMS auth |
 | `TWILIO_FROM_NUMBER` | Twilio SMS sender number |
 | `RESEND_API_KEY` | Resend email API |
-| `RESEND_FROM_EMAIL` | Resend sender address (default: alerts@getvoco.ai) |
+| `RESEND_FROM_EMAIL` | Resend sender address (default: alerts@voco.live) |
 | `GROQ_API_KEY` | Groq API for Layer 2 triage (Llama 4 Scout) |
 | `GOOGLE_CLIENT_ID` | Google OAuth (calendar sync) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth (calendar sync) |

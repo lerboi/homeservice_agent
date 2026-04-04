@@ -10,12 +10,19 @@ const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
  * Calculate the number of days remaining in the past_due grace period.
  * Exported for unit testing.
  *
- * @param {string} stripeUpdatedAt - ISO timestamp when subscription entered past_due
+ * Grace = 3 days after current_period_end (the end of the billing cycle that
+ * failed to collect payment). Uses current_period_end because it is stable —
+ * stripe_updated_at advances on every subscription.updated webhook event,
+ * which would reset the countdown on payment retries.
+ *
+ * @param {string} currentPeriodEnd - ISO timestamp of the billing period end date
  * @returns {number} Days remaining (clamped to 0 minimum, rounded up)
  */
-export function calculateGraceDaysRemaining(stripeUpdatedAt) {
-  const elapsed = Date.now() - new Date(stripeUpdatedAt).getTime();
-  return Math.max(0, Math.ceil((GRACE_PERIOD_MS - elapsed) / (24 * 60 * 60 * 1000)));
+export function calculateGraceDaysRemaining(currentPeriodEnd) {
+  if (!currentPeriodEnd) return 0;
+  const graceDeadline = new Date(currentPeriodEnd).getTime() + GRACE_PERIOD_MS;
+  const remaining = graceDeadline - Date.now();
+  return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
 }
 
 /**
@@ -50,14 +57,14 @@ export default function BillingWarningBanner() {
 
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('status, stripe_updated_at')
+        .select('status, current_period_end')
         .eq('tenant_id', tenant.id)
         .eq('is_current', true)
         .maybeSingle();
 
       if (!sub || sub.status !== 'past_due') return;
 
-      const days = calculateGraceDaysRemaining(sub.stripe_updated_at);
+      const days = calculateGraceDaysRemaining(sub.current_period_end);
 
       if (days <= 0) return; // Grace expired — middleware will redirect on next nav
 

@@ -9,7 +9,7 @@ description: Complete architectural reference for the payment, billing, and subs
 
 This document is the single source of truth for the entire payment, billing, and subscription system. Read this before making any changes to Stripe integration, checkout flows, subscription handling, usage tracking, overage billing, or the billing dashboard.
 
-**Last updated**: 2026-03-31
+**Last updated**: 2026-04-05
 
 ---
 
@@ -24,11 +24,11 @@ This document is the single source of truth for the entire payment, billing, and
 | **Usage Tracking** | `supabase/migrations/013_usage_events.sql` (RPC) + Python agent `src/post_call.py` | Per-call counting + Stripe Billing Meter overage reporting |
 | **Subscription Gate** | `src/lib/subscription-gate.js` | Blocks calls for canceled/paused/incomplete tenants |
 | **Billing Dashboard** | `src/app/dashboard/more/billing/page.js`, `UsageRingGauge.js` | Plan info, usage meter, invoices, portal link |
-| **Billing API** | `src/app/api/billing/invoices/route.js`, `portal/route.js` | Invoice list, Stripe Customer Portal redirect |
+| **Billing API** | `src/app/api/billing/data/route.js`, `invoices/route.js`, `portal/route.js` | Subscription data (with billing_interval), invoice list, Stripe Customer Portal redirect |
 | **Banners** | `BillingWarningBanner.js`, `TrialCountdownBanner.js` | Dashboard warnings for past_due and trial countdown |
 | **Notifications** | `src/emails/PaymentFailedEmail.jsx`, `TrialReminderEmail.jsx` | Email templates for billing events |
 | **Stripe SDK** | `src/lib/stripe.js` | Lazy-init Stripe singleton via Proxy |
-| **DB Schema** | Migrations 010, 013, 016, 017, 020, 021 | 4 billing tables + RPC + RLS |
+| **DB Schema** | Migrations 010, 013, 016, 017, 020, 021, 037 | 4 billing tables + RPC + RLS |
 
 ```
 Pricing Page (/pricing)
@@ -39,8 +39,9 @@ Pricing Page (/pricing)
        ↓
   Step 5: Embedded Stripe Checkout
   → POST /api/onboarding/checkout-session
-  → Creates session with 2 line items: flat-rate + metered overage
+  → Creates session with 1 line item: flat-rate plan price
   → 14-day trial, CC required
+  → Metered overage item added post-checkout by webhook (idempotency key protected)
        ↓
   Stripe fires checkout.session.completed webhook
   → Sets onboarding_complete = true
@@ -72,6 +73,7 @@ Pricing Page (/pricing)
 | `src/app/api/onboarding/verify-checkout/route.js` | GET: polls subscription status after checkout for verification |
 | `src/app/onboarding/checkout/page.js` | Step 5: Embedded Stripe Checkout, webhook verification, success celebration |
 | `src/app/api/billing/checkout-session/route.js` | POST: create Stripe Checkout Session (upgrade, no trial, reuses customer) |
+| `src/app/api/billing/data/route.js` | GET: subscription data with computed billing_interval for billing dashboard |
 | `src/app/api/billing/invoices/route.js` | GET: 5 most recent invoices via Stripe API |
 | `src/app/api/billing/portal/route.js` | GET: generates Stripe Customer Portal session, 303 redirect |
 | `src/app/api/stripe/webhook/route.js` | POST: Stripe webhook handler — 9 event types |
@@ -89,6 +91,7 @@ Pricing Page (/pricing)
 | `supabase/migrations/017_overage_billing.sql` | overage_stripe_item_id column on subscriptions |
 | `supabase/migrations/020_billing_notifications_unique.sql` | UNIQUE constraint on billing_notifications |
 | `supabase/migrations/021_fix_subscriptions_rls.sql` | Fix subscriptions RLS policy role restriction |
+| `supabase/migrations/037_fix_overage_off_by_one.sql` | Fix `>=` to `>` in increment_calls_used RPC (off-by-one overage bug) |
 
 ---
 
@@ -263,7 +266,7 @@ Call completes → Python agent post-call pipeline
 
 ## 5. Usage Tracking
 
-### `increment_calls_used` RPC (Migration 013)
+### `increment_calls_used` RPC (Migration 013, fixed in 037)
 
 ```sql
 CREATE FUNCTION increment_calls_used(p_tenant_id uuid, p_call_id text)
@@ -274,6 +277,7 @@ RETURNS TABLE(success boolean, calls_used int, calls_limit int, limit_exceeded b
 - **Atomic increment**: UPDATE subscriptions SET calls_used = calls_used + 1
 - **Duplicate call**: Returns current state without incrementing (FOUND = false)
 - **No subscription**: Returns (false, 0, 0, false)
+- **`limit_exceeded` uses `>` (strictly greater than)**: Returns true only when `calls_used > calls_limit`. Migration 037 fixed an off-by-one where `>=` caused the last included call to be reported as overage.
 
 ### `handleInvoicePaid` — Usage Reset
 
@@ -455,7 +459,7 @@ Both use React Email components with inline styles matching design tokens.
 
 ## 11. Key Design Decisions
 
-- **Two line items per subscription**: Every subscription has a flat-rate price + metered overage price. The overage price has no upfront quantity — Stripe bills based on Billing Meter events.
+- **Two line items per subscription**: Every subscription has a flat-rate price + metered overage price. The Checkout Session only includes the flat-rate item — the metered overage item is added post-checkout by the webhook handler (and verify-checkout fallback) using a Stripe idempotency key (`add_overage_{subscription_id}`) to prevent duplicate items from concurrent processing.
 
 - **Billing Meters (not legacy usage_records)**: The old `POST /v1/subscription_items/{id}/usage_records` endpoint was removed in Stripe API version `2025-03-31.basil`. The new `stripe.billing.meterEvents.create()` uses customer_id + event_name, not subscription item ID.
 
@@ -475,7 +479,7 @@ Both use React Email components with inline styles matching design tokens.
 
 - **Over-quota calls never blocked**: The subscription gate does NOT check usage — overage billing handles over-quota calls automatically.
 
-- **past_due gets 3-day grace period**: Calls continue, BillingWarningBanner shows countdown, SMS + email sent with portal URL.
+- **past_due gets 3-day grace period**: Calls continue, BillingWarningBanner shows countdown (anchored to `current_period_end + 3 days`, not `stripe_updated_at`), SMS + email sent with portal URL. Uses `current_period_end` because it's stable during `past_due` — `stripe_updated_at` advances on every subscription update event, which would incorrectly extend the grace window.
 
 - **Notification failures never crash webhook handlers**: `Promise.allSettled` for email + SMS, errors logged but not thrown. Prevents Stripe retry loops caused by notification service outages.
 

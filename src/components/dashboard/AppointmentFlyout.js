@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
   routine: { badge: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70', label: 'Routine' },
-  high_ticket: { badge: 'bg-amber-100 text-amber-700', label: 'High Ticket' },
+  urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
 };
 
 function formatDateTime(iso) {

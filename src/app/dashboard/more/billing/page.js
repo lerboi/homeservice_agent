@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { card, btn } from '@/lib/design-tokens';
-import { PRICING_TIERS } from '@/app/(public)/pricing/pricingData';
+import { PRICING_TIERS, getAnnualPrice } from '@/app/(public)/pricing/pricingData';
 import UsageRingGauge from '@/components/dashboard/UsageRingGauge';
 import { format } from 'date-fns';
 import { AlertCircle, Loader2, ExternalLink, Receipt } from 'lucide-react';
@@ -133,7 +133,12 @@ export default function BillingPage() {
   // --- Data loaded — look up plan info ---
   const planTier = PRICING_TIERS.find((t) => t.id === subscription.plan_id);
   const planName = planTier?.name || subscription.plan_id || 'Unknown';
-  const planPrice = planTier?.monthlyPrice ? `$${planTier.monthlyPrice}/mo` : '';
+  const isAnnual = subscription.billing_interval === 'annual';
+  const displayPrice = planTier?.monthlyPrice
+    ? isAnnual
+      ? `$${getAnnualPrice(planTier.monthlyPrice)}/mo`
+      : `$${planTier.monthlyPrice}/mo`
+    : '';
   const overageRate = planTier?.overageRate || 0;
   const callsUsed = subscription.calls_used || 0;
   const callsLimit = subscription.calls_limit || 0;
@@ -177,7 +182,11 @@ export default function BillingPage() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xl font-semibold text-[#0F172A]">{planName}</p>
-            {planPrice && <p className="text-sm text-[#475569] mt-0.5">{planPrice}</p>}
+            {displayPrice && (
+              <p className="text-sm text-[#475569] mt-0.5">
+                {displayPrice}{isAnnual && ' (billed annually)'}
+              </p>
+            )}
           </div>
           <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
         </div>

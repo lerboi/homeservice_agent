@@ -94,7 +94,7 @@ function buildPipelineData(leads) {
 const URGENCY_COLORS = {
   routine: '#57534e',
   emergency: '#DC2626',
-  high_ticket: '#C2410C',
+  urgent: '#C2410C',
   unknown: '#94a3b8',
 };
 
@@ -128,7 +128,7 @@ function buildUrgencyData(calls) {
     counts[u] = (counts[u] ?? 0) + 1;
   }
   return Object.entries(counts).map(([key, value]) => ({
-    name: key === 'high_ticket' ? 'High Ticket' : key.charAt(0).toUpperCase() + key.slice(1),
+    name: key === 'urgent' ? 'Urgent' : key.charAt(0).toUpperCase() + key.slice(1),
     value,
     color: URGENCY_COLORS[key] || '#94a3b8',
   })).filter((d) => d.value > 0);

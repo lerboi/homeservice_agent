@@ -92,7 +92,7 @@ export async function POST(request, { params }) {
 
   try {
     await getResendClient().emails.send({
-      from: `${settings.business_name || 'Estimate'} <noreply@getvoco.ai>`,
+      from: `${settings.business_name || 'Estimate'} <noreply@voco.live>`,
       to: estimate.customer_email,
       subject: `Estimate ${estimate.estimate_number} from ${settings.business_name || 'Your Service Provider'}`,
       html: buildEstimateEmailHtml(estimate, settings, tiersWithItems),

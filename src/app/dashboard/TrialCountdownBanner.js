@@ -108,6 +108,13 @@ export default function TrialCountdownBanner() {
       <Icon className={`h-3.5 w-3.5 ${iconClass} shrink-0`} aria-hidden="true" />
       <p className={`text-xs ${textClass} truncate`}>
         {bannerText}
+        <span className="mx-1.5 text-stone-300">·</span>
+        <a
+          href="/dashboard/more/billing"
+          className={`font-medium ${isUrgent ? 'text-amber-800 hover:text-amber-950' : 'text-blue-700 hover:text-blue-900'} underline underline-offset-2 transition-colors`}
+        >
+          {isUrgent ? 'Upgrade now' : 'View plans'}
+        </a>
       </p>
       <button
         onClick={() => setDismissed(true)}

@@ -3,21 +3,21 @@
  * Queries the tenant's active services and escalates urgency if owner has tagged
  * a matching service as higher severity. Never downgrades.
  *
- * Severity ranking: emergency=3, high_ticket=2, routine=1
+ * Severity ranking: emergency=3, urgent=2, routine=1
  */
 
 import { supabase } from '@/lib/supabase';
 
 const SEVERITY = {
   emergency: 3,
-  high_ticket: 2,
+  urgent: 2,
   routine: 1,
 };
 
 /**
  * Apply owner-configured service tag rules to potentially escalate urgency.
  *
- * @param {string} baseUrgency - Urgency from Layer 1 or Layer 2 ('emergency'|'routine'|'high_ticket').
+ * @param {string} baseUrgency - Urgency from Layer 1 or Layer 2 ('emergency'|'routine'|'urgent').
  * @param {string} tenant_id - The tenant UUID to look up services for.
  * @param {string|null} detected_service - The service name extracted from the transcript (optional).
  * @returns {Promise<{ urgency: string, escalated: boolean }>}

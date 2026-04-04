@@ -164,11 +164,18 @@ export default function DashboardPage() {
       setActivitiesLoading(false);
 
       // Missed calls (not_attempted, duration >= 15s = real calls that weren't booked)
+      // Sort by urgency: emergency first, then urgent, then routine
       if (missedCallsResult.status === 'fulfilled' && missedCallsResult.value.ok) {
         const missedData = await missedCallsResult.value.json();
-        const actionable = (missedData.calls || []).filter(
-          (c) => (c.duration_seconds ?? 0) >= 15
-        );
+        const URGENCY_WEIGHT = { emergency: 3, urgent: 2, routine: 1 };
+        const actionable = (missedData.calls || [])
+          .filter((c) => (c.duration_seconds ?? 0) >= 15)
+          .sort((a, b) => {
+            const wa = URGENCY_WEIGHT[a.urgency_classification] || 0;
+            const wb = URGENCY_WEIGHT[b.urgency_classification] || 0;
+            if (wa !== wb) return wb - wa;
+            return new Date(b.created_at) - new Date(a.created_at);
+          });
         setMissedCalls(actionable);
       }
     }
@@ -266,47 +273,74 @@ export default function DashboardPage() {
       ) : (
         <>
           {/* Section 2: Missed Calls Alert (only when there are actionable missed calls) */}
-          {missedCalls.length > 0 && (
-            <div className={`${card.base} border-l-4 border-l-[#C2410C] overflow-hidden`}>
-              <div className="flex items-center gap-2 px-5 pt-4 pb-2">
-                <PhoneMissed className="size-4 text-[#C2410C]" />
-                <h2 className="text-sm font-semibold text-[#0F172A]">
-                  {missedCalls.length} Missed Call{missedCalls.length !== 1 ? 's' : ''} — No Booking
-                </h2>
-              </div>
-              <div className="divide-y divide-stone-100">
-                {missedCalls.slice(0, 5).map((mc) => (
-                  <div key={mc.id} className="flex items-center gap-3 px-5 py-2.5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0F172A]">
-                        {formatPhone(mc.from_number)}
-                      </p>
-                      <p className="text-xs text-[#475569]">
-                        {relativeTime(mc.created_at)}
-                      </p>
-                    </div>
-                    <a
-                      href={`tel:${mc.from_number}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all shrink-0"
-                    >
-                      <PhoneOutgoing className="size-3" />
-                      Call Back
-                    </a>
-                  </div>
-                ))}
-              </div>
-              {missedCalls.length > 5 && (
-                <div className="px-5 pb-3 pt-1">
-                  <Link
-                    href="/dashboard/calls?booking_outcome=not_attempted"
-                    className="text-xs text-[#C2410C] hover:underline flex items-center gap-0.5"
-                  >
-                    View all {missedCalls.length} missed calls <ChevronRight className="size-3" />
-                  </Link>
+          {missedCalls.length > 0 && (() => {
+            const emergencyCount = missedCalls.filter((c) => c.urgency_classification === 'emergency').length;
+            const urgentCount = missedCalls.filter((c) => c.urgency_classification === 'urgent').length;
+            const hasEmergency = emergencyCount > 0;
+            const borderColor = hasEmergency ? 'border-l-red-500' : 'border-l-[#C2410C]';
+            const iconColor = hasEmergency ? 'text-red-600' : 'text-[#C2410C]';
+
+            let headerText;
+            if (hasEmergency) {
+              headerText = `${emergencyCount} Emergency Call${emergencyCount !== 1 ? 's' : ''} — Needs Callback`;
+            } else if (urgentCount > 0) {
+              headerText = `${urgentCount} Urgent Call${urgentCount !== 1 ? 's' : ''} — No Booking`;
+            } else {
+              headerText = `${missedCalls.length} Missed Call${missedCalls.length !== 1 ? 's' : ''} — No Booking`;
+            }
+
+            const URGENCY_DOT = { emergency: 'bg-red-500', urgent: 'bg-amber-500' };
+
+            return (
+              <div className={`${card.base} border-l-4 ${borderColor} overflow-hidden`}>
+                <div className="flex items-center gap-2 px-5 pt-4 pb-2">
+                  <PhoneMissed className={`size-4 ${iconColor}`} />
+                  <h2 className="text-sm font-semibold text-[#0F172A]">
+                    {headerText}
+                  </h2>
                 </div>
-              )}
-            </div>
-          )}
+                <div className="divide-y divide-stone-100">
+                  {missedCalls.slice(0, 5).map((mc) => {
+                    const dotClass = URGENCY_DOT[mc.urgency_classification];
+                    return (
+                      <div key={mc.id} className="flex items-center gap-3 px-5 py-2.5">
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          {dotClass && (
+                            <span className={`size-2 rounded-full shrink-0 ${dotClass}`} />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-[#0F172A]">
+                              {formatPhone(mc.from_number)}
+                            </p>
+                            <p className="text-xs text-[#475569]">
+                              {relativeTime(mc.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={`tel:${mc.from_number}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all shrink-0"
+                        >
+                          <PhoneOutgoing className="size-3" />
+                          Call Back
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+                {missedCalls.length > 5 && (
+                  <div className="px-5 pb-3 pt-1">
+                    <Link
+                      href="/dashboard/calls?booking_outcome=not_attempted"
+                      className="text-xs text-[#C2410C] hover:underline flex items-center gap-0.5"
+                    >
+                      View all {missedCalls.length} missed calls <ChevronRight className="size-3" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Section 2b: Setup Checklist (if incomplete recommended items) */}
           {hasIncompleteRecommended && <SetupChecklist />}

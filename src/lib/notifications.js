@@ -170,7 +170,7 @@ export async function sendOwnerEmail({ to, lead, businessName, dashboardUrl }) {
   try {
     const result = await withRetry(() =>
       getResendClient().emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'alerts@getvoco.ai',
+        from: process.env.RESEND_FROM_EMAIL || 'alerts@voco.live',
         to,
         subject,
         react: NewLeadEmail({ lead, businessName, dashboardUrl }),

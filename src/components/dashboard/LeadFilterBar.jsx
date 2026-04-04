@@ -25,7 +25,7 @@ const URGENCY_OPTIONS = [
   { value: 'all', label: 'All Urgencies' },
   { value: 'emergency', label: 'Emergency' },
   { value: 'routine', label: 'Routine' },
-  { value: 'high_ticket', label: 'High Ticket' },
+  { value: 'urgent', label: 'Urgent' },
 ];
 
 const PILL_LABELS = {

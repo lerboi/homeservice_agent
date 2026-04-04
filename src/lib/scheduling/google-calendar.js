@@ -181,28 +181,39 @@ export async function syncCalendarEvents(tenantId) {
   let items = [];
   let nextSyncToken = null;
 
-  try {
+  if (creds.last_sync_token) {
     // Incremental sync using stored sync token
-    const response = await calendar.events.list({
-      calendarId: creds.calendar_id || 'primary',
-      syncToken: creds.last_sync_token,
-    });
-    items = response.data.items || [];
-    nextSyncToken = response.data.nextSyncToken;
-  } catch (err) {
-    // 410 Gone: sync token is invalid, perform full re-sync
-    if (err.code === 410) {
-      console.log(`[calendar-sync] 410 Gone for tenant ${tenantId} — performing full re-sync`);
+    try {
       const response = await calendar.events.list({
         calendarId: creds.calendar_id || 'primary',
-        timeMin: new Date().toISOString(),
-        singleEvents: true,
+        syncToken: creds.last_sync_token,
       });
       items = response.data.items || [];
       nextSyncToken = response.data.nextSyncToken;
-    } else {
-      throw err;
+    } catch (err) {
+      // 410 Gone: sync token is invalid, fall through to full re-sync
+      if (err.code === 410) {
+        console.log(`[calendar-sync] 410 Gone for tenant ${tenantId} — falling back to full sync`);
+      } else {
+        throw err;
+      }
     }
+  }
+
+  // Full sync: no sync token yet (initial connect) or 410 invalidated it
+  if (!nextSyncToken && items.length === 0) {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+    const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
+    console.log(`[calendar-sync] Full sync for tenant ${tenantId} (${thirtyDaysAgo} → ${sixMonthsAhead})`);
+    const response = await calendar.events.list({
+      calendarId: creds.calendar_id || 'primary',
+      timeMin: thirtyDaysAgo,
+      timeMax: sixMonthsAhead,
+      singleEvents: true,
+      maxResults: 2500,
+    });
+    items = response.data.items || [];
+    nextSyncToken = response.data.nextSyncToken;
   }
 
   // Upsert synced events into local mirror

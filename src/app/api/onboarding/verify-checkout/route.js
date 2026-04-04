@@ -150,10 +150,10 @@ async function fulfillSubscription(session, tenantId) {
 
   if (overagePriceId && !hasOverage) {
     try {
-      await stripe.subscriptionItems.create({
-        subscription: subscription.id,
-        price: overagePriceId,
-      });
+      await stripe.subscriptionItems.create(
+        { subscription: subscription.id, price: overagePriceId },
+        { idempotencyKey: `add_overage_${subscription.id}` },
+      );
       console.log(`[verify-checkout] Added overage item (${overagePriceId}) to subscription ${subscription.id}`);
     } catch (overageErr) {
       console.error(`[verify-checkout] Failed to add overage item:`, overageErr.message);

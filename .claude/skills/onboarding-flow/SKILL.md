@@ -448,14 +448,14 @@ export const TRADE_TEMPLATES = {
     services: [
       { name: 'Gas Leak', urgency_tag: 'emergency' },
       { name: 'Burst Pipe', urgency_tag: 'emergency' },
-      { name: 'Water Heater Replacement', urgency_tag: 'high_ticket' },
+      { name: 'Water Heater Replacement', urgency_tag: 'urgent' },
       { name: 'Drain Cleaning', urgency_tag: 'routine' },
       // ... (10 services total)
     ],
   },
-  hvac: { ... },          // 10 services: 3 emergency, 2 high_ticket, 5 routine
-  electrician: { ... },   // 10 services: 3 emergency, 3 high_ticket, 4 routine
-  general_handyman: { ... } // 10 services: 1 emergency, 2 high_ticket, 7 routine
+  hvac: { ... },          // 10 services: 3 emergency, 2 urgent, 5 routine
+  electrician: { ... },   // 10 services: 3 emergency, 3 urgent, 4 routine
+  general_handyman: { ... } // 10 services: 1 emergency, 2 urgent, 7 routine
 };
 ```
 

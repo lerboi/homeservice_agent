@@ -21,7 +21,7 @@ function getClient() {
  * Score the urgency of a call transcript using Groq (Llama 4 Scout).
  *
  * @param {string} transcript - The call transcript text.
- * @returns {Promise<{ urgency: 'emergency'|'routine'|'high_ticket', confidence: 'high'|'medium'|'low', reason: string }>}
+ * @returns {Promise<{ urgency: 'emergency'|'routine'|'urgent', confidence: 'high'|'medium'|'low', reason: string }>}
  */
 export async function runLLMScorer(transcript) {
   const TIMEOUT_MS = 5000;
@@ -32,9 +32,9 @@ export async function runLLMScorer(transcript) {
         messages: [
           {
             role: 'system',
-            content: `You classify home service calls. Return ONLY a JSON object: {"urgency": "emergency"|"routine"|"high_ticket", "confidence": "high"|"medium"|"low", "reason": "one sentence"}
+            content: `You classify home service calls. Return ONLY a JSON object: {"urgency": "emergency"|"routine"|"urgent", "confidence": "high"|"medium"|"low", "reason": "one sentence"}
 Emergency: immediate safety risk, happening right now, property damage ongoing.
-High-ticket: job likely > $500, complex install/replacement (not repair).
+Urgent: needs prompt attention but not an immediate safety risk — e.g., broken AC in summer, clogged drain, water heater out.
 Routine: future scheduling, quote requests, non-urgent repairs.`,
           },
           { role: 'user', content: `Call transcript:\n${transcript}` },

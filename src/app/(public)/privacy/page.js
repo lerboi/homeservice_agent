@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-3xl mx-auto space-y-6 text-[#A1A1AA] text-[15px] leading-7">
 
           <p>
-            Voco Private Limited (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is incorporated in Singapore. We operate an AI-powered receptionist platform for home service businesses accessible at getvoco.ai.
+            Voco Private Limited (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is incorporated in Singapore. We operate an AI-powered receptionist platform for home service businesses accessible at voco.live.
           </p>
           <p>
             This Privacy Policy explains how we collect, use, disclose, and protect personal data in accordance with Singapore&apos;s <strong className="text-[#E4E4E7] font-medium">Personal Data Protection Act 2012 (PDPA)</strong>. By using our services, you consent to the practices described below.

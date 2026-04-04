@@ -23,7 +23,7 @@ const URGENCY_STYLES = {
     time: 'text-[#4F6BED]',
     name: 'text-[#0F172A]',
   },
-  high_ticket: {
+  urgent: {
     block: 'bg-amber-50 border-l-[3px] border-amber-400 hover:bg-amber-100/70',
     badge: 'bg-amber-100 text-amber-700',
     time: 'text-amber-600',
@@ -34,7 +34,7 @@ const URGENCY_STYLES = {
 const URGENCY_LABEL = {
   emergency: 'Emergency',
   routine: 'Routine',
-  high_ticket: 'High Value',
+  urgent: 'Urgent',
 };
 
 function isSameDay(d1, d2) {

@@ -5,7 +5,7 @@
  * @param {object} params
  * @param {string} [params.callerName]
  * @param {string} [params.jobType]
- * @param {string} [params.urgency] - 'emergency' | 'routine' | 'high_ticket'
+ * @param {string} [params.urgency] - 'emergency' | 'routine' | 'urgent'
  * @param {string} [params.summary]
  * @returns {string}
  */

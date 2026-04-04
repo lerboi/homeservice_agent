@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-03-27 (Pricing page conversion optimization: 3-column additive feature cards, separate Enterprise section, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs, landing CTAs → /pricing; Phase 29 — hero section interactive demo; Phase 21 — volume-based tiers; Phase 13 — premium dark SaaS redesign)
+**Last updated**: 2026-04-04 (Public AI chatbot: floating FAB + chat panel + Groq Llama 4 Scout + RAG knowledge base + IP rate limiting; FeaturesGrid → FeaturesCarousel on homepage; Pricing page conversion optimization: 3-column additive feature cards, separate Enterprise section, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs, landing CTAs → /pricing; Phase 29 — hero section interactive demo; Phase 21 — volume-based tiers; Phase 13 — premium dark SaaS redesign)
 
 ---
 
@@ -16,7 +16,7 @@ This document is the single source of truth for the public marketing site, landi
 | Layer | Files | Purpose |
 |-------|-------|---------|
 | **Route Group** | `src/app/(public)/` | All public pages — grouped to inject LandingNav + LandingFooter via shared layout |
-| **Public Layout** | `src/app/(public)/layout.js` | Wraps all public pages: LandingNav, main, LandingFooter, Toaster |
+| **Public Layout** | `src/app/(public)/layout.js` | Wraps all public pages: LandingNav, main, LandingFooter, Toaster, PublicChatButton |
 | **Landing Page** | `src/app/(public)/page.js` | Homepage: HeroSection + dynamically imported below-fold sections |
 | **Landing Sections** | `src/app/components/landing/` | All landing section components + AnimatedSection + LandingNav + LandingFooter |
 | **Shared Components** | `src/components/landing/AuthAwareCTA.js` | Auth-aware CTA button (authenticated vs unauthenticated routing) |
@@ -30,6 +30,11 @@ This document is the single source of truth for the public marketing site, landi
 | **Contact** | `src/app/(public)/contact/` | Contact page + ContactForm.jsx |
 | **Contact API** | `src/app/api/contact/route.js` | POST handler — Resend email dispatch |
 | **i18n** | `src/i18n/routing.js`, `messages/en.json`, `messages/es.json` | next-intl config, English + Spanish translations |
+| **Public Chat FAB** | `src/components/landing/PublicChatButton.jsx` | Floating action button (64px, Headset icon) + "Ask Voco AI" speech bubble — opens/closes chat panel |
+| **Public Chat Panel** | `src/components/landing/PublicChatPanel.jsx` | Chat panel UI — message list, input, Groq AI responses, reuses TypingIndicator + ChatNavLink from dashboard |
+| **Public Chat API** | `src/app/api/public-chat/route.js` | Unauthenticated POST endpoint — IP rate limiting (5s per IP, 1000/day global cap), Groq Llama 4 Scout |
+| **Chatbot Knowledge** | `src/lib/public-chatbot-knowledge/` | 6 markdown knowledge docs + `index.js` RAG retrieval (route map + keyword map) |
+| **Message Parser** | `src/lib/parse-message-content.js` | Extracts markdown links from AI messages — optional `linkPattern` param for public route links |
 | **Email Template** | `src/emails/NewLeadEmail.jsx` | React Email template for owner lead notifications |
 
 ```
@@ -60,6 +65,16 @@ Hero Demo Flow (Phase 29):
     → HeroDemoPlayer: Web Audio API stitches buffers into single AudioBuffer
         → autoplay, waveform bars progress, elapsed time M:SS
         → on ended: "Start Your Free Trial" CTA appears
+
+Public Chatbot Flow:
+  PublicChatButton (FAB, fixed bottom-right, all public pages via layout.js)
+    → click: opens PublicChatPanel (slide-up dialog)
+    → user types message → POST /api/public-chat
+        → IP rate limit check (5s cooldown, 1000/day global cap)
+        → RAG: getPublicKnowledge(message, currentRoute) → route map + keyword map → up to 2 markdown docs
+        → Groq Llama 4 Scout chat completion (system prompt with knowledge + language detection)
+        → response rendered with parseMessageContent() using PUBLIC_LINK_REGEX for navigation links
+        → ChatNavLink components for in-message navigation (closes panel on click)
 ```
 
 ---
@@ -90,7 +105,8 @@ Hero Demo Flow (Phase 29):
 | `public/audio/demo-intro.mp3` | Pre-rendered caller opening line: "Hey, I'd like to get my AC serviced..." |
 | `public/audio/demo-mid.mp3` | Pre-rendered mid-conversation: address, slot offer, caller acceptance |
 | `public/audio/demo-outro.mp3` | Pre-rendered AI closing: "You're all set — Thursday at 2 PM..." |
-| `src/app/components/landing/FeaturesGrid.jsx` | Bento grid layout for feature highlights |
+| `src/app/components/landing/FeaturesCarousel.jsx` | Feature showcase carousel with micro-visuals, prev/next navigation, dot indicators |
+| `src/app/components/landing/FeaturesGrid.jsx` | (Legacy) Bento grid layout — still exists but no longer imported by homepage |
 | `src/app/components/landing/SocialProofSection.jsx` | Testimonial / social proof cards |
 | `src/app/components/landing/HowItWorksSection.jsx` | Server Component — HowItWorksSticky via dynamic import |
 | `src/app/components/landing/HowItWorksTabs.jsx` | Roving tabindex WAI-ARIA Tabs, AnimatePresence mode=wait |
@@ -98,6 +114,17 @@ Hero Demo Flow (Phase 29):
 | `src/app/components/landing/FinalCTASection.jsx` | Dark CTA section — CSS-only reduced-motion guard, Server Component |
 | `src/app/components/landing/AnimatedSection.jsx` | Framer Motion scroll-triggered animation (AnimatedSection, AnimatedStagger, AnimatedItem) |
 | `src/components/landing/AuthAwareCTA.js` | CTA button — routes authenticated users to /dashboard, new users to /onboarding |
+| `src/components/landing/PublicChatButton.jsx` | Floating 64px FAB (Headset icon) + "Ask Voco AI" speech bubble — toggles chat panel open/closed |
+| `src/components/landing/PublicChatPanel.jsx` | Chat panel: message list, input, Groq AI responses, reuses TypingIndicator + ChatNavLink from dashboard |
+| `src/app/api/public-chat/route.js` | POST /api/public-chat — unauthenticated, IP rate limiting (5s + 1000/day cap), Groq Llama 4 Scout |
+| `src/lib/public-chatbot-knowledge/index.js` | RAG retrieval — route map + keyword map → reads up to 2 markdown knowledge docs |
+| `src/lib/public-chatbot-knowledge/overview.md` | Knowledge doc: Voco product overview |
+| `src/lib/public-chatbot-knowledge/pricing.md` | Knowledge doc: pricing plans and tiers |
+| `src/lib/public-chatbot-knowledge/features.md` | Knowledge doc: feature descriptions |
+| `src/lib/public-chatbot-knowledge/how-it-works.md` | Knowledge doc: setup and how it works |
+| `src/lib/public-chatbot-knowledge/faq.md` | Knowledge doc: frequently asked questions |
+| `src/lib/public-chatbot-knowledge/contact.md` | Knowledge doc: contact and sales info |
+| `src/lib/parse-message-content.js` | Parses AI message text, extracts markdown links — optional `linkPattern` param for public route links |
 | `src/emails/NewLeadEmail.jsx` | React Email template for owner lead notifications |
 | `src/i18n/routing.js` | Locale config: locales ['en', 'es'], defaultLocale 'en' |
 | `messages/en.json` | English translations (agent + UI sections) |
@@ -113,14 +140,16 @@ Hero Demo Flow (Phase 29):
 import { LandingNav } from '@/app/components/landing/LandingNav';
 import { LandingFooter } from '@/app/components/landing/LandingFooter';
 import { Toaster } from 'sonner';
+import PublicChatButton from '@/components/landing/PublicChatButton';
 
 export default function PublicLayout({ children }) {
   return (
     <>
       <LandingNav />
-      <main>{children}</main>
+      <main className="relative">{children}</main>
       <LandingFooter />
       <Toaster richColors position="top-center" />
+      <PublicChatButton />
     </>
   );
 }
@@ -130,6 +159,8 @@ The `(public)` Next.js route group applies `layout.js` to all routes inside it (
 
 The `Toaster` (from sonner) is placed in the root layout so ContactForm toast notifications work across all public pages.
 
+`PublicChatButton` is mounted at the layout level so the floating chat FAB appears on all public pages. It is a direct import (not dynamic) — lightweight client component with no heavy dependencies.
+
 ---
 
 ## 2. Landing Page Structure
@@ -138,7 +169,7 @@ The `Toaster` (from sonner) is placed in the root layout so ContactForm toast no
 
 **Above-fold (static import)**: `HeroSection` — statically imported for best LCP. No loading state.
 
-**Below-fold (dynamic imports)**: `HowItWorksSection`, `FeaturesGrid`, `SocialProofSection`, `FinalCTASection` — all dynamically imported via `next/dynamic` with explicit loading skeletons to prevent CLS.
+**Below-fold (dynamic imports)**: `HowItWorksSection`, `FeaturesCarousel`, `SocialProofSection`, `FinalCTASection` — all dynamically imported via `next/dynamic` with explicit loading skeletons to prevent CLS.
 
 Each loading skeleton has hardcoded `min-height` values that match the section's expected height, preventing layout shift during hydration.
 
@@ -186,9 +217,11 @@ Waveform: 40 bars (desktop) / 28 bars (mobile via `matchMedia`). Pre-computed `A
 
 CTA: "Start Your Free Trial" link → `/onboarding` always visible once player mounts, left-aligned with `rounded-lg`, arrow icon, orange glow hover.
 
-### FeaturesGrid (`src/app/components/landing/FeaturesGrid.jsx`)
+### FeaturesCarousel (`src/app/components/landing/FeaturesCarousel.jsx`)
 
-Bento grid layout: CSS grid with `sm:grid-cols-5` asymmetric cells. Features in non-uniform tiles (col-span-3 / col-span-2 alternating). Section background: `#FAFAF9` (very light warm white). All cells use `AnimatedItem` from `AnimatedSection.jsx`.
+`'use client'`. Feature showcase replacing the legacy FeaturesGrid bento layout. Section background: `#FAFAF9` (very light warm white). Each feature has a unique micro-visual illustration (e.g., language bubbles, waveform, calendar check). Prev/next chevron navigation with dot indicators. Uses `AnimatedSection` for scroll-triggered entrance. `useReducedMotion` from Framer Motion disables transition animations when prefers-reduced-motion is active.
+
+**Legacy note**: `FeaturesGrid.jsx` still exists in the codebase but is no longer imported by the homepage. The homepage uses `FeaturesCarousel` (dynamically imported via `next/dynamic` with loading skeleton).
 
 ### SocialProofSection (`src/app/components/landing/SocialProofSection.jsx`)
 
@@ -485,7 +518,102 @@ export async function POST(request) {
 
 ---
 
-## 10. Email Templates
+## 10. Public Chatbot System
+
+A public-facing AI chatbot available on all public pages, allowing visitors to ask questions about Voco before signing up.
+
+### PublicChatButton (`src/components/landing/PublicChatButton.jsx`)
+
+`'use client'`. Floating action button (FAB) fixed to the bottom-right corner of all public pages. Mounted via direct import in `src/app/(public)/layout.js`.
+
+**FAB**: 64px round button (`h-16 w-16`), `bg-[#C2410C]` (brand orange), Headset icon (Lucide). Toggles to X icon when chat is open. Mount animation: `scale-0 opacity-0` → `scale-100 opacity-100` via 100ms delayed `setTimeout` + CSS `transition-all duration-300`.
+
+**Speech bubble**: "Ask Voco AI" tooltip positioned above the FAB. Appears after 800ms delay. Dismissible via small X button. Auto-dismissed when chat opens. Never reappears after manual dismissal (`bubbleDismissed` state). White card with stone border, downward caret triangle pointing to the FAB.
+
+**Keyboard**: Escape key closes the chat panel when open.
+
+### PublicChatPanel (`src/components/landing/PublicChatPanel.jsx`)
+
+`'use client'`. Props: `onClose: () => void`.
+
+**Position**: Fixed bottom-right (`bottom-28 right-4 lg:right-6`), `z-50`, `w-[calc(100vw-2rem)] sm:w-[380px]`, `max-h-[min(500px,calc(100vh-6rem))]`. Slide-up entry animation via `scale-95 translate-y-2` → `scale-100 translate-y-0` with `origin-bottom-right`.
+
+**Header**: `MessageSquare` icon + "Voco AI" label + "Product Questions" Badge. Close X button.
+
+**Message list**: Scrollable area with `aria-live="polite"`. Auto-scrolls to bottom on new messages. User messages: right-aligned, `bg-[#C2410C]` orange with white text. AI messages: left-aligned, `bg-[#F5F5F4]` with Bot icon avatar.
+
+**Greeting message**: Hardcoded initial AI message: "Hi! I'm Voco AI. Ask me anything about pricing, features, or how Voco works for your business. What would you like to know?"
+
+**Input**: shadcn/ui `Input` + `Button` (Send icon), `maxLength={500}`. Enter key sends. Disabled while loading.
+
+**Component reuse from dashboard**: Imports `TypingIndicator` and `ChatNavLink` from `src/components/dashboard/`. `TypingIndicator` shows animated dots while waiting for AI response. `ChatNavLink` renders navigation link chips extracted from AI messages — clicking a link calls `onClose()` (closes the panel) then navigates.
+
+**Link parsing**: Uses `parseMessageContent()` from `src/lib/parse-message-content.js` with a custom `PUBLIC_LINK_REGEX` pattern: `/\[([^\]]+)\]\((\/(?!dashboard)[^)]+)\)/g`. This matches markdown links to any public route (explicitly excludes `/dashboard/*` paths). The `parseMessageContent` function accepts an optional `linkPattern` parameter — the dashboard chatbot uses the default (dashboard links only), while the public chatbot passes this public-route regex.
+
+**Conversation context**: Sends last 10 messages as `history` array to the API. Also sends `currentRoute` (via `usePathname()`) so the API can provide route-contextual knowledge.
+
+### Public Chat API (`src/app/api/public-chat/route.js`)
+
+`POST /api/public-chat` — unauthenticated endpoint (no auth middleware required).
+
+**Request body**: `{ message: string, currentRoute?: string, history?: Array<{ role: 'user'|'assistant', content: string }> }`
+
+**Response**: `{ reply: string }` on success, `{ error: string }` on failure.
+
+**Rate limiting** (in-memory, per-instance):
+- **Per-IP cooldown**: 5 seconds between requests (module-level `Map`, stale entries cleaned after 30s)
+- **Global daily cap**: 1000 requests/day per server instance (resets at midnight UTC)
+- IP extracted from `x-forwarded-for` (first entry) or `x-real-ip` header
+
+**Groq client**: Lazy singleton using `openai` npm package pointed at `https://api.groq.com/openai/v1`. Model: `meta-llama/llama-4-scout-17b-16e-instruct`. `max_tokens: 400`, `temperature: 0.4`.
+
+**System prompt** includes:
+- **Language detection rule**: Detect user's first message language, respond only in that language for the entire conversation. No mixing.
+- **Topic restriction**: Only answers questions about Voco. Politely declines unrelated topics (general knowledge, coding, math, etc.) and redirects to Voco topics.
+- **Persona**: Friendly, concise (2-4 sentences), references specific pricing ($99/$249/$599), mentions 14-day free trial.
+- **Navigation links**: Instructed to use `[Page Name](/path)` markdown format for page suggestions.
+- **Knowledge injection**: RAG-retrieved content appended to system prompt.
+- **Current route**: Visitor's current page path included for contextual responses.
+
+**Error handling**: Groq API errors return `{ reply: 'Something went wrong...' }` (200 status, graceful degradation). Missing `GROQ_API_KEY` returns 503.
+
+### Knowledge Base RAG (`src/lib/public-chatbot-knowledge/`)
+
+Server-only module. 6 markdown knowledge documents + `index.js` retrieval logic.
+
+**Knowledge docs**:
+| File | Content |
+|------|---------|
+| `overview.md` | Voco product overview — what it is, who it's for |
+| `pricing.md` | Pricing plans, tiers, overage rates |
+| `features.md` | Feature descriptions and capabilities |
+| `how-it-works.md` | Setup process, how the AI receptionist works |
+| `faq.md` | Frequently asked questions |
+| `contact.md` | Contact info, sales, support |
+
+**Retrieval logic** (`getPublicKnowledge(message, currentRoute)`):
+1. **Route map**: Maps current page to a priority doc (e.g., `/pricing` → `pricing.md`, `/` → `overview.md`, `/contact` → `contact.md`). Unknown routes fall back to `overview.md`.
+2. **Keyword map**: Scans message for keyword groups (checked in order, first match wins). Adds up to 1 additional doc that differs from the route doc. Keyword groups: pricing terms, feature terms, setup terms, FAQ terms, contact terms.
+3. **Output**: Reads matched docs via `readFileSync`, returns at most 2 docs joined with `---` separator.
+
+### `parseMessageContent` (`src/lib/parse-message-content.js`)
+
+Shared utility for both dashboard and public chatbots. Extracts markdown-format navigation links from AI message text.
+
+```js
+export function parseMessageContent(content, linkPattern) {
+  const linkRegex = linkPattern || /\[([^\]]+)\]\((\/dashboard[^)]+)\)/g;
+  // ...extracts links, returns { text, links }
+}
+```
+
+**Default behavior** (no `linkPattern`): Extracts only `/dashboard/*` links — used by the dashboard chatbot.
+
+**Public chatbot override**: Passes `PUBLIC_LINK_REGEX` which matches any non-dashboard route: `/\[([^\]]+)\]\((\/(?!dashboard)[^)]+)\)/g`.
+
+---
+
+## 11. Email Templates
 
 **File**: `src/emails/NewLeadEmail.jsx`
 
@@ -507,7 +635,7 @@ Called from `src/lib/notifications.js` `sendOwnerEmail()`. Rendered to HTML via 
 
 ---
 
-## 11. Internationalization (i18n)
+## 12. Internationalization (i18n)
 
 ### Routing Config (`src/i18n/routing.js`)
 
@@ -538,7 +666,7 @@ Cross-domain: See voice-call-architecture skill for how `buildSystemPrompt()` us
 
 ---
 
-## 12. Design Tokens (Landing)
+## 13. Design Tokens (Landing)
 
 Landing pages use a separate set of design tokens from the dashboard. These are NOT in `src/lib/design-tokens.js` (which is dashboard/onboarding). Landing tokens are expressed directly as Tailwind utilities.
 
@@ -557,7 +685,7 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 
 ---
 
-## 13. Key Design Decisions
+## 14. Key Design Decisions
 
 - **(public) route group for layout injection**: The `(public)` route group applies `LandingNav` + `LandingFooter` to all public pages without repeating them in each page component. Parentheses in the folder name exclude it from the URL path.
 
@@ -593,12 +721,25 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 
 - **RotatingText dynamic width via getBoundingClientRect (Phase 29)**: RotatingText now measures the current word's rendered width (not the longest word) via `useRef` on a hidden measurement span + `getBoundingClientRect()` in `useLayoutEffect`. Container width animates with `transition: width 200ms ease`. Words `['Competitor', 'Rival', 'Neighbor']` — all 8 chars — ensure small delta between width states. Replaces the invisible sizer span that caused fixed-width container.
 
+- **FeaturesCarousel replaces FeaturesGrid on homepage**: The homepage (`page.js`) imports `FeaturesCarousel` via `next/dynamic`, not `FeaturesGrid`. `FeaturesGrid.jsx` still exists as a legacy file but is unused by any page. The carousel provides a more focused presentation with micro-visual illustrations per feature, navigation controls, and dot indicators.
+
+- **Public chatbot uses Groq (not Supabase or project's own AI)**: The public chatbot is unauthenticated and does not touch the database. It uses Groq's hosted Llama 4 Scout model via the `openai` npm SDK (pointed at Groq's OpenAI-compatible endpoint). This avoids exposing any tenant data or requiring auth for pre-signup visitors.
+
+- **Public chatbot RAG via filesystem reads**: Knowledge docs are plain markdown files read via `readFileSync` at request time. No vector database or embedding model — simple route+keyword matching selects at most 2 docs. Sufficient for the small (6 doc) knowledge base and avoids infrastructure complexity.
+
+- **Public chatbot reuses dashboard components**: `TypingIndicator` and `ChatNavLink` are imported from `src/components/dashboard/` into the public `PublicChatPanel`. `parseMessageContent` is a shared utility with an optional `linkPattern` parameter — dashboard defaults to `/dashboard/*` links, public chatbot passes a custom regex for public routes. This avoids duplicating chat UI components.
+
+- **Public chatbot IP rate limiting is in-memory per-instance**: Rate limiting uses a module-level `Map` (same pattern as `demo-voice`). In a multi-instance deployment, each instance tracks separately — the 1000/day global cap is per-instance, not truly global. Acceptable tradeoff for simplicity; a distributed rate limiter (Redis/Upstash) could be added if abuse becomes a problem.
+
+- **Public chatbot language detection via system prompt**: Rather than using a separate language detection API, the system prompt instructs the LLM to detect the user's language from their first message and respond exclusively in that language. This leverages Llama 4 Scout's multilingual capabilities at zero additional cost.
+
 ---
 
-## 14. Environment Variables
+## 15. Environment Variables
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
+| `GROQ_API_KEY` | `src/app/api/public-chat/route.js` | Groq API key for public chatbot (Llama 4 Scout); 503 if missing |
 | `ELEVENLABS_API_KEY` | `src/app/api/demo-voice/route.js` | ElevenLabs TTS API key (server-side only, never exposed to client) |
 | `ELEVENLABS_VOICE_ID_AI` | `src/app/api/demo-voice/route.js` | Voice ID for AI receptionist dynamic name segment |
 | `ELEVENLABS_VOICE_ID_CALLER` | Pre-render only | Voice ID for caller (used when pre-rendering static MP3 segments; not used at runtime) |
@@ -617,6 +758,7 @@ Landing pages use a separate set of design tokens from the dashboard. These are 
 - For how `messages/en.json` and `messages/es.json` are consumed by the voice agent, see **voice-call-architecture skill**
 - For the `NewLeadEmail` template as called from notifications, see **voice-call-architecture skill** (notifications section)
 - For design tokens used in dashboard and onboarding (separate from landing tokens), see **dashboard-crm-system skill**
+- For the dashboard AI chatbot that shares `TypingIndicator`, `ChatNavLink`, and `parseMessageContent` with the public chatbot, see **dashboard-crm-system skill**
 
 ---
 
@@ -631,3 +773,4 @@ Key areas to keep current:
 - Design tokens (Landing) — if new color tokens or Tailwind conventions are introduced
 - Animation system — if `AnimatedSection` gains new direction props or variant patterns
 - Contact API — if new inquiry types or email routing is added
+- Public chatbot — if knowledge docs are added/changed, rate limits adjusted, model changed, or system prompt updated

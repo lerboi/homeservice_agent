@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 23 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 36 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-03-27 (Migration 017 — overage_stripe_item_id on subscriptions for metered overage billing)
+**Last updated**: 2026-04-04 (Migration 036 — rename urgency tier 'high_ticket' to 'urgent' across calls, leads, appointments, services)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 23 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 36 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -93,6 +93,20 @@ Realtime subscriptions (browser):
 | `supabase/migrations/021_fix_subscriptions_rls.sql` | Fix subscriptions RLS policies |
 | `supabase/migrations/022_fix_missing_cascades.sql` | Add missing ON DELETE CASCADE to FKs |
 | `supabase/migrations/023_livekit_migration.sql` | Retell→LiveKit renames: retell_call_id→call_id, retell_metadata→call_metadata, retell_phone_number→phone_number + call_provider, egress_id columns |
+| `supabase/migrations/024_schema_hardening.sql` | set_updated_at() trigger on leads, admin_users.role CHECK constraint, indexes on waitlist email + zone_travel_buffers tenant_id |
+| `supabase/migrations/025_fix_book_appointment_atomic.sql` | Re-create book_appointment_atomic RPC — fix "column scheduled does not exist" error from manual DB edit |
+| `supabase/migrations/026_address_fields.sql` | postal_code + street_name columns on appointments and leads, update book_appointment_atomic with new address params |
+| `supabase/migrations/027_lock_rpc_functions.sql` | REVOKE EXECUTE FROM PUBLIC on book_appointment_atomic + assign_sg_number, GRANT to service_role only |
+| `supabase/migrations/028_calls_tenant_cascade.sql` | Add ON DELETE CASCADE to calls.tenant_id FK (was RESTRICT, blocked tenant deletion) |
+| `supabase/migrations/029_invoice_schema.sql` | invoice_settings, invoice_sequences, invoices, invoice_line_items tables + get_next_invoice_number RPC + invoice-logos storage bucket + RLS |
+| `supabase/migrations/030_accounting_integrations.sql` | accounting_credentials, accounting_sync_log tables + RLS (QuickBooks/Xero/FreshBooks integration) |
+| `supabase/migrations/030_estimates_schema.sql` | estimate_sequences, estimates, estimate_tiers, estimate_line_items tables + get_next_estimate_number RPC + estimate_prefix on invoice_settings + RLS |
+| `supabase/migrations/031_payment_log_schema.sql` | invoice_payments table + expand invoices.status CHECK (add partially_paid) + expand invoice_line_items.item_type CHECK (add late_fee) + RLS |
+| `supabase/migrations/032_reminders_recurring.sql` | invoice_reminders table + late fee settings on invoice_settings + recurring invoice columns on invoices + RLS |
+| `supabase/migrations/033_lock_counter_functions.sql` | REVOKE EXECUTE FROM PUBLIC on get_next_invoice_number + get_next_estimate_number, GRANT to service_role + authenticated |
+| `supabase/migrations/034_add_skipped_sms_status.sql` | Expand calls.recovery_sms_status CHECK to add 'skipped' (for short calls and booked callers) |
+| `supabase/migrations/035_lead_email_and_invoice_title.sql` | email column on leads + title column on invoices |
+| `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -329,7 +343,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 23 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 documented in detail below; 018–023 documented in the file map above.
+All 36 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 and 019 documented in detail below; 018, 020–036 documented in the file map above with key migrations also detailed below.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -366,7 +380,7 @@ All 23 migrations are applied sequentially. FK dependencies require this order. 
 | `id` | uuid PK | |
 | `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
 | `name` | text | NOT NULL |
-| `urgency_tag` | text | CHECK 'emergency'|'routine'|'high_ticket', DEFAULT 'routine' |
+| `urgency_tag` | text | CHECK 'emergency'|'routine'|'urgent', DEFAULT 'routine' |
 | `is_active` | boolean | NOT NULL DEFAULT true |
 | `created_at` | timestamptz | |
 
@@ -386,7 +400,7 @@ All 23 migrations are applied sequentially. FK dependencies require this order. 
 
 Key table details:
 
-**appointments**: `id`, `tenant_id` (FK), `call_id` (FK → calls SET NULL), `start_time`, `end_time`, `service_address`, `caller_name`, `caller_phone`, `urgency` (CHECK emergency|routine|high_ticket), `zone_id` (FK → service_zones SET NULL), `status` (CHECK confirmed|cancelled|completed DEFAULT confirmed), `booked_via` (CHECK ai_call|manual DEFAULT ai_call), `google_event_id` (text, renamed in 007), `notes`. Constraint: GiST exclusion `appointments_no_overlap` (see migration 019 below — replaced the original `UNIQUE (tenant_id, start_time)`).
+**appointments**: `id`, `tenant_id` (FK), `call_id` (FK → calls SET NULL), `start_time`, `end_time`, `service_address`, `caller_name`, `caller_phone`, `urgency` (CHECK emergency|routine|urgent), `zone_id` (FK → service_zones SET NULL), `status` (CHECK confirmed|cancelled|completed DEFAULT confirmed), `booked_via` (CHECK ai_call|manual DEFAULT ai_call), `google_event_id` (text, renamed in 007), `notes`. Constraint: GiST exclusion `appointments_no_overlap` (see migration 019 below — replaced the original `UNIQUE (tenant_id, start_time)`).
 
 **calendar_credentials**: `id`, `tenant_id` (FK), `provider` (CHECK google|outlook DEFAULT google), `access_token`, `refresh_token`, `expiry_date` (bigint), `calendar_id` (DEFAULT 'primary'), `calendar_name`, `watch_channel_id`, `watch_resource_id`, `watch_expiration` (bigint), `last_sync_token`, `last_synced_at`. Constraint: `UNIQUE (tenant_id, provider)`.
 
@@ -419,7 +433,7 @@ Cross-domain: See scheduling-calendar-system skill for full slot calculator, boo
 | `caller_name` | text | nullable |
 | `job_type` | text | nullable |
 | `service_address` | text | nullable |
-| `urgency` | text | CHECK emergency|routine|high_ticket |
+| `urgency` | text | CHECK emergency|routine|urgent |
 | `status` | text | CHECK new|booked|completed|paid|lost |
 | `revenue_amount` | numeric(10,2) | nullable |
 | `primary_call_id` | uuid | FK → calls SET NULL |
@@ -650,6 +664,175 @@ No new tables. No RLS changes.
 
 ---
 
+### 024_schema_hardening.sql — Indexes, Constraints, Trigger
+
+**Function created**: `set_updated_at()` — generic trigger function that sets `NEW.updated_at = now()`.
+
+**Trigger**: `trg_leads_updated_at` BEFORE UPDATE on leads — auto-maintains `leads.updated_at`.
+
+**Constraint**: `admin_users_role_check` — CHECK (role IN ('admin', 'super_admin')).
+
+**Indexes added**: `idx_waitlist_email` on phone_inventory_waitlist(email), `idx_zone_travel_buffers_tenant` on zone_travel_buffers(tenant_id).
+
+No new tables. No RLS changes.
+
+---
+
+### 025_fix_book_appointment_atomic.sql — RPC Fix
+
+Re-creates `book_appointment_atomic` to fix "column scheduled does not exist" error caused by a manual DB modification. Restores the correct version from migration 003 (advisory lock + overlap check + insert pattern).
+
+No new tables. No schema changes.
+
+---
+
+### 026_address_fields.sql — Structured Address Columns
+
+**Extends appointments**: `postal_code` (text), `street_name` (text)
+
+**Extends leads**: `postal_code` (text), `street_name` (text)
+
+**Updates book_appointment_atomic**: Drops all overloads dynamically, re-creates with `p_postal_code` and `p_street_name` params (DEFAULT NULL for backward compat). Inserts postal_code + street_name into appointments.
+
+No new tables. No RLS changes.
+
+---
+
+### 027_lock_rpc_functions.sql — SECURITY DEFINER Lockdown
+
+Revokes PUBLIC execute on `book_appointment_atomic` and `assign_sg_number` SECURITY DEFINER functions, grants to `service_role` only. Prevents anonymous/authenticated callers from invoking these RPC functions directly via PostgREST.
+
+No new tables. No schema changes.
+
+---
+
+### 028_calls_tenant_cascade.sql — FK Cascade Fix
+
+Replaces `calls.tenant_id` FK constraint (was RESTRICT, blocking tenant deletion) with ON DELETE CASCADE.
+
+No new tables. No RLS changes.
+
+---
+
+### 029_invoice_schema.sql — Invoice Data Foundation
+
+**Tables created**: `invoice_settings`, `invoice_sequences`, `invoices`, `invoice_line_items`
+
+**invoice_settings columns**: `tenant_id` (uuid PK, FK tenants CASCADE), `business_name`, `address`, `phone`, `email`, `logo_url`, `license_number`, `tax_rate` (numeric(5,4) DEFAULT 0), `payment_terms` (DEFAULT 'Net 30'), `default_notes`, `invoice_prefix` (DEFAULT 'INV'), `created_at`, `updated_at`
+
+**invoice_sequences**: Composite PK `(tenant_id, year)`, `next_number` (int DEFAULT 1). Atomic counter for invoice numbering.
+
+**invoices columns**: `id` (uuid PK), `tenant_id` (FK CASCADE), `lead_id` (FK leads SET NULL), `invoice_number` (text NOT NULL), `status` (CHECK draft|sent|paid|overdue|void|partially_paid, DEFAULT 'draft'), `customer_name`, `customer_phone`, `customer_email`, `customer_address`, `job_type`, `issued_date`, `due_date`, `notes`, `payment_terms`, `subtotal`, `tax_amount`, `total`, `sent_at`, `paid_at`, `voided_at`, `created_at`, `updated_at`. Constraint: UNIQUE(tenant_id, invoice_number).
+
+**invoice_line_items columns**: `id` (uuid PK), `invoice_id` (FK invoices CASCADE), `tenant_id` (FK CASCADE), `sort_order`, `item_type` (CHECK labor|materials|travel|flat_rate|discount|late_fee), `description`, `quantity`, `unit_price`, `markup_pct`, `taxable`, `line_total`, `created_at`.
+
+**RPC**: `get_next_invoice_number(p_tenant_id uuid, p_year int)` — atomic UPSERT on invoice_sequences, returns next number.
+
+**Storage**: `invoice-logos` bucket (public) with tenant-scoped upload policy.
+
+**RLS**: All 4 tables use tenant_id child pattern + service_role bypass.
+
+---
+
+### 030_accounting_integrations.sql — Accounting Provider OAuth
+
+**Tables created**: `accounting_credentials`, `accounting_sync_log`
+
+**accounting_credentials columns**: `id` (uuid PK), `tenant_id` (FK CASCADE), `provider` (CHECK quickbooks|xero|freshbooks), `access_token`, `refresh_token`, `expiry_date` (bigint), `realm_id` (QBO), `xero_tenant_id`, `account_id` (FreshBooks), `display_name`, `connected_at`, `last_synced_at`, `created_at`. Constraint: UNIQUE(tenant_id, provider).
+
+**accounting_sync_log columns**: `id` (uuid PK), `tenant_id` (FK CASCADE), `invoice_id` (FK invoices CASCADE), `provider`, `external_id`, `status` (CHECK pending|synced|failed, DEFAULT 'pending'), `error_message`, `attempted_at`, `synced_at`. Constraint: UNIQUE(invoice_id, provider).
+
+**RLS**: Both tables use tenant_id child pattern + service_role bypass.
+
+---
+
+### 030_estimates_schema.sql — Estimates Data Foundation
+
+**Tables created**: `estimate_sequences`, `estimates`, `estimate_tiers`, `estimate_line_items`
+
+**estimate_sequences**: Composite PK `(tenant_id, year)`, `next_number` (int DEFAULT 1). Same pattern as invoice_sequences.
+
+**estimates columns**: `id` (uuid PK), `tenant_id` (FK CASCADE), `lead_id` (FK leads SET NULL), `estimate_number` (text NOT NULL), `status` (CHECK draft|sent|approved|declined|expired, DEFAULT 'draft'), `customer_name`, `customer_phone`, `customer_email`, `customer_address`, `job_type`, `created_date`, `valid_until`, `notes`, `subtotal`, `tax_amount`, `total`, `converted_to_invoice_id` (FK invoices SET NULL), `sent_at`, `approved_at`, `declined_at`, `created_at`, `updated_at`. Constraint: UNIQUE(tenant_id, estimate_number).
+
+**estimate_tiers columns**: `id` (uuid PK), `estimate_id` (FK estimates CASCADE), `tenant_id` (FK CASCADE), `tier_label` (DEFAULT 'Good'), `sort_order`, `subtotal`, `tax_amount`, `total`, `created_at`. Good/Better/Best tiering.
+
+**estimate_line_items columns**: `id` (uuid PK), `estimate_id` (FK estimates CASCADE), `tier_id` (FK estimate_tiers CASCADE, nullable), `tenant_id` (FK CASCADE), `sort_order`, `item_type` (CHECK labor|materials|travel|flat_rate|discount), `description`, `quantity`, `unit_price`, `markup_pct`, `taxable`, `line_total`, `created_at`.
+
+**RPC**: `get_next_estimate_number(p_tenant_id uuid, p_year int)` — same atomic UPSERT pattern as invoice counter.
+
+**Extends invoice_settings**: `estimate_prefix` (text NOT NULL DEFAULT 'EST').
+
+**RLS**: All 4 tables use tenant_id child pattern + service_role bypass.
+
+---
+
+### 031_payment_log_schema.sql — Invoice Payments + Status Expansion
+
+**Tables created**: `invoice_payments`
+
+**invoice_payments columns**: `id` (uuid PK), `invoice_id` (FK invoices CASCADE), `tenant_id` (FK CASCADE), `amount` (numeric(10,2) NOT NULL), `payment_date` (date DEFAULT CURRENT_DATE), `note`, `created_at`.
+
+**Expands invoices.status CHECK**: Adds 'partially_paid' to allowed values.
+
+**Expands invoice_line_items.item_type CHECK**: Adds 'late_fee' to allowed values.
+
+**RLS**: invoice_payments uses tenant_id child pattern + service_role bypass.
+
+---
+
+### 032_reminders_recurring.sql — Invoice Reminders + Late Fees + Recurring
+
+**Tables created**: `invoice_reminders`
+
+**invoice_reminders columns**: `id` (uuid PK), `invoice_id` (FK invoices CASCADE), `tenant_id` (FK CASCADE), `reminder_type` (CHECK before_3|due_date|overdue_3|overdue_7), `sent_at`. Constraint: UNIQUE(invoice_id, reminder_type) — idempotency.
+
+**Extends invoice_settings**: `late_fee_enabled` (boolean DEFAULT false), `late_fee_type` (CHECK flat|percentage, DEFAULT 'flat'), `late_fee_amount` (numeric(10,2) DEFAULT 0).
+
+**Extends invoices**: `reminders_enabled` (boolean DEFAULT true), `late_fee_applied_at`, `is_recurring_template` (boolean DEFAULT false), `recurring_frequency` (CHECK weekly|monthly|quarterly|annually), `recurring_start_date`, `recurring_end_date`, `recurring_next_date`, `recurring_active` (boolean DEFAULT false), `generated_from_id` (FK invoices SET NULL).
+
+**RLS**: invoice_reminders uses tenant_id child pattern + service_role bypass.
+
+---
+
+### 033_lock_counter_functions.sql — Counter Function Lockdown
+
+Revokes PUBLIC execute on `get_next_invoice_number` and `get_next_estimate_number`, grants to both `service_role` and `authenticated`. Unlike 027 (service_role only), these counters need authenticated access because they are called from API routes using the session client.
+
+No new tables. No schema changes.
+
+---
+
+### 034_add_skipped_sms_status.sql — Recovery SMS Status Expansion
+
+Expands `calls.recovery_sms_status` CHECK to add 'skipped' value (for short calls <15s and booked callers where SMS is intentionally not sent). New allowed values: pending|sent|failed|retrying|skipped.
+
+No new tables. No schema changes.
+
+---
+
+### 035_lead_email_and_invoice_title.sql — Lead Email + Invoice Title
+
+**Extends leads**: `email` (text) — collected manually by owner after initial call.
+
+**Extends invoices**: `title` (text) — friendly invoice name alongside auto-generated invoice_number.
+
+No new tables. No RLS changes.
+
+---
+
+### 036_rename_high_ticket_to_urgent.sql — Urgency Tier Rename
+
+Renames urgency tier 'high_ticket' to 'urgent' across all four tables that carry urgency columns. Includes data migration (UPDATE SET) and CHECK constraint rebuild for each:
+
+- `calls.urgency_classification`: CHECK emergency|routine|urgent
+- `leads.urgency`: CHECK emergency|routine|urgent
+- `appointments.urgency`: CHECK emergency|routine|urgent
+- `services.urgency_tag`: CHECK emergency|routine|urgent
+
+No new tables. No RLS changes.
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -673,6 +856,18 @@ No new tables. No RLS changes.
 | `admin_users` | 012 | Platform admin users — gates /admin/* routes | Authenticated SELECT-own only (user_id = auth.uid()) |
 | `usage_events` | 013 | Per-call idempotency guard for usage counting (call_id PK) | Service role only |
 | `billing_notifications` | 016 | Idempotent billing notification tracking (trial_will_end, payment_failed) | Service role only |
+| `invoice_settings` | 029 | Per-tenant invoice/estimate config: business info, tax rate, payment terms, late fees, prefixes | Tenant child |
+| `invoice_sequences` | 029 | Atomic invoice number counter (composite PK: tenant_id + year) | Tenant child |
+| `invoices` | 029 | Invoice records with status lifecycle, recurring support, and reminder tracking | Tenant child |
+| `invoice_line_items` | 029 | Line items per invoice: labor, materials, travel, flat_rate, discount, late_fee | Tenant child |
+| `accounting_credentials` | 030 | OAuth tokens for QuickBooks/Xero/FreshBooks per tenant | Tenant child |
+| `accounting_sync_log` | 030 | Per-invoice sync status to accounting providers | Tenant child |
+| `estimate_sequences` | 030 | Atomic estimate number counter (composite PK: tenant_id + year) | Tenant child |
+| `estimates` | 030 | Estimate records with Good/Better/Best tiering and convert-to-invoice support | Tenant child |
+| `estimate_tiers` | 030 | Good/Better/Best pricing tiers per estimate | Tenant child |
+| `estimate_line_items` | 030 | Line items per estimate tier | Tenant child |
+| `invoice_payments` | 031 | Payment log entries per invoice (partial payment support) | Tenant child |
+| `invoice_reminders` | 032 | Idempotent reminder tracking per invoice (UNIQUE invoice_id + reminder_type) | Tenant child |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
@@ -682,13 +877,37 @@ No new tables. No RLS changes.
 - 015: `notification_preferences` (JSONB, per-outcome SMS/email toggles)
 - 023: `phone_number` (renamed from `retell_phone_number`)
 
+**Appointments columns added across migrations** (all on `appointments` table):
+- 007: `external_event_id` (renamed from google_event_id), `external_event_provider`
+- 026: `postal_code`, `street_name`
+
 **Calls columns added across migrations** (all on `calls` table):
 - 008: `booking_outcome`, `exception_reason`, `notification_priority`
 - 009: `recovery_sms_status`, `recovery_sms_retry_count`, `recovery_sms_last_error`, `recovery_sms_last_attempt_at`
 - 023: `call_provider` ('retell'|'livekit'), `egress_id`; renames: `retell_call_id`→`call_id`, `retell_metadata`→`call_metadata`
+- 034: `recovery_sms_status` CHECK expanded to add 'skipped'
+- 036: `urgency_classification` CHECK updated: 'high_ticket'→'urgent'
+
+**Leads columns added across migrations** (all on `leads` table):
+- 026: `postal_code`, `street_name`
+- 035: `email`
+- 036: `urgency` CHECK updated: 'high_ticket'→'urgent'
 
 **Services columns added**:
 - 018: `intake_questions` (jsonb)
+- 036: `urgency_tag` CHECK updated: 'high_ticket'→'urgent'
+
+**Invoices columns added across migrations** (all on `invoices` table):
+- 031: `status` CHECK expanded to add 'partially_paid'
+- 032: `reminders_enabled`, `late_fee_applied_at`, `is_recurring_template`, `recurring_frequency`, `recurring_start_date`, `recurring_end_date`, `recurring_next_date`, `recurring_active`, `generated_from_id`
+- 035: `title`
+
+**Invoice_settings columns added across migrations**:
+- 030: `estimate_prefix`
+- 032: `late_fee_enabled`, `late_fee_type`, `late_fee_amount`
+
+**Invoice_line_items columns added across migrations**:
+- 031: `item_type` CHECK expanded to add 'late_fee'
 
 ---
 

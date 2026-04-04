@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabase.js';
  * @param {string}      params.address     - Service address (verbally confirmed by caller)
  * @param {string}      params.callerName  - Caller's full name
  * @param {string}      params.callerPhone - Caller's phone number
- * @param {string}      params.urgency     - 'emergency' | 'routine' | 'high_ticket'
+ * @param {string}      params.urgency     - 'emergency' | 'routine' | 'urgent'
  * @param {string|null} params.zoneId      - Service zone UUID (nullable)
  * @returns {Promise<object>} RPC result: { success: boolean, appointment_id?: string, reason?: string }
  */

@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-04-01 (Phase 33: Invoices tab added to sidebar, Analytics relocated to /dashboard/more/analytics, LeadFlyout Create/View Invoice integration, GET /api/invoices supports lead_id filter)
+**Last updated**: 2026-04-04 (Estimates system, Invoice Settings page, Integrations page, batch invoice review, chatbot RAG detail, More menu updated to 9 settings + 2 quick-access + Ask Voco AI)
 
 ---
 
@@ -17,7 +17,7 @@ This document is the single source of truth for the entire dashboard and CRM sys
 |-------|-------|---------|
 | **Dashboard Pages** | `src/app/dashboard/` | All page routes nested under layout |
 | **CRM Components** | `src/components/dashboard/` | Kanban, flyouts, charts, stats, editors, tour |
-| **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/`, `src/app/api/invoices/` | Lead CRUD, call logs, escalation CRUD, checklist state, invoice CRUD |
+| **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/`, `src/app/api/invoices/`, `src/app/api/estimates/`, `src/app/api/invoice-settings/`, `src/app/api/chat/` | Lead CRUD, call logs, escalation CRUD, checklist state, invoice CRUD, estimate CRUD + send/convert, invoice settings, AI chatbot |
 | **Business Logic** | `src/lib/leads.js` | Lead creation and repeat-caller merge |
 | **Design System** | `src/lib/design-tokens.js` | Shared color palette and component tokens |
 | **Realtime** | Supabase `supabase_realtime` publication | Live lead updates to dashboard via WebSocket |
@@ -34,28 +34,34 @@ Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
                                    DashboardHomeStats updates via Realtime
 ```
 
-### Dashboard Page Structure (Phase 20 + Phase 33)
+### Dashboard Page Structure (Phase 20 + Phase 33+)
 
 ```
-layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour
+layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour + ChatbotSheet
   ├── page.js (/)                ← Adaptive home: setup mode (checklist hero) OR active mode (command center)
   ├── leads/page.js              ← Filter bar + list/kanban toggle + LeadFlyout
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
   ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
-  ├── invoices/page.js           ← Invoice list with status tabs, summary metrics, search (Phase 33)
-  ├── invoices/new/page.js       ← New invoice form — pre-fills from lead_id query param (Phase 33)
-  ├── invoices/[id]/page.js      ← Invoice detail + HTML preview + Send button (Phase 33)
-  └── more/page.js               ← Config hub: 9 section links
+  ├── invoices/page.js           ← Invoice list with status tabs, summary metrics, search
+  ├── invoices/new/page.js       ← New invoice form — pre-fills from lead_id query param
+  ├── invoices/[id]/page.js      ← Invoice detail + HTML preview + Send button
+  ├── invoices/batch-review/page.js ← Batch review of draft invoices before sending (query: ?ids=id1,id2,...)
+  ├── estimates/page.js           ← Estimate list with status tabs (draft/sent/approved/declined/expired), summary cards
+  ├── estimates/new/page.js       ← Estimate editor — single-price or tiered (Good/Better/Best), lead search + link
+  ├── estimates/[id]/page.js      ← Estimate detail preview + actions (send, approve, decline, expire, convert to invoice)
+  └── more/page.js               ← Config hub: Ask Voco AI button (mobile), 2 quick-access links, 9 settings sections
       ├── more/analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut) — relocated from /dashboard/analytics in Phase 33
       ├── more/services-pricing/page.js   ← Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/page.js      ← WorkingHoursEditor
       ├── more/calendar-connections/page.js ← CalendarSyncCard
       ├── more/service-zones/page.js      ← ZoneManager
       ├── more/escalation-contacts/page.js ← EscalationChainSection
-      ├── more/notifications/page.js      ← SMS and email alert preferences
+      ├── more/notifications/page.js      ← Notifications & Escalation preferences
       ├── more/ai-voice-settings/page.js  ← SettingsAISection
       ├── more/billing/page.js            ← Plan, usage meter, invoices
-      └── more/account/page.js            ← Placeholder (future plan)
+      ├── more/invoice-settings/page.js   ← Business identity, tax config, late fees, invoice defaults, numbering
+      ├── more/integrations/page.js       ← Calendar connections (CalendarSyncCard) + accounting software (QuickBooks, Xero, FreshBooks)
+      └── more/account/page.js            ← Profile editor, account details, sign out
 ```
 
 **Note:** `/dashboard/services` redirects to `/dashboard/more/services-pricing`. `/dashboard/settings` redirects to `/dashboard/more`.
@@ -75,7 +81,11 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
 | `src/app/dashboard/analytics/page.js` | Analytics page: fetches all leads, renders AnalyticsCharts |
 | `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner |
-| `src/app/dashboard/more/page.js` | Config hub list: 9 section links with icons, labels, descriptions |
+| `src/app/dashboard/invoices/batch-review/page.js` | Batch review of draft invoices — fetches by ?ids= query, edit/remove/send-all flow |
+| `src/app/dashboard/estimates/page.js` | Estimate list with status tabs (draft/sent/approved/declined/expired), summary cards, mobile cards |
+| `src/app/dashboard/estimates/new/page.js` | Estimate editor — customer info, lead search + link, line items, tiered (Good/Better/Best) mode, dates, notes |
+| `src/app/dashboard/estimates/[id]/page.js` | Estimate detail: preview (single or tiered), metadata sidebar, actions (send, approve, decline, expire, convert to invoice, download PDF) |
+| `src/app/dashboard/more/page.js` | Config hub: Ask Voco AI button (mobile-only), 2 quick-access links (Invoices, Estimates), 9 settings sections |
 | `src/app/dashboard/more/layout.js` | Pass-through layout for more/* route group |
 | `src/app/dashboard/more/services-pricing/page.js` | Service table with DnD, urgency tags, bulk select |
 | `src/app/dashboard/more/working-hours/page.js` | Wraps WorkingHoursEditor |
@@ -89,7 +99,25 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/more/billing/page.js` | Billing page: plan card, usage ring gauge, billing details, recent invoices |
 | `src/components/dashboard/UsageRingGauge.js` | SVG donut ring gauge for call usage visualization |
 | `src/app/dashboard/more/account/page.js` | Account page: profile editor (business_name, owner_name, owner_email, owner_phone), account details, sign out |
+| `src/app/dashboard/more/invoice-settings/page.js` | Invoice settings: business identity (logo upload via Supabase Storage), tax config, late fees (flat/percentage), defaults (payment terms, notes), numbering (prefix, preview) |
+| `src/app/dashboard/more/integrations/page.js` | Integrations hub: CalendarSyncCard + accounting software cards (QuickBooks, Xero, FreshBooks) with connect/disconnect OAuth flows |
 | `src/app/api/account/route.js` | GET/PATCH tenant profile fields (business_name, owner_name, owner_email, owner_phone) |
+| `src/app/api/estimates/route.js` | GET estimates (filtered by status/search/lead_id, with summary aggregates + status counts), POST create estimate (single-price or tiered) |
+| `src/app/api/estimates/[id]/route.js` | GET estimate detail (+ tiers + line items), PATCH update (status transitions + line item/tier replacement), DELETE draft estimates only |
+| `src/app/api/estimates/[id]/send/route.js` | POST send estimate via email (PDF attachment via Resend) + optional SMS (Twilio), updates status to 'sent' |
+| `src/app/api/estimates/[id]/convert/route.js` | POST convert approved estimate to draft invoice, idempotent (returns existing invoice_id if already converted), tier_id required for tiered estimates |
+| `src/app/api/invoice-settings/route.js` | GET/PATCH invoice_settings row (auto-creates on first access seeded from tenant data). Fields: business_name, address, phone, email, logo_url, license_number, tax_rate, payment_terms, default_notes, invoice_prefix |
+| `src/app/api/chat/route.js` | POST chat handler for Voco AI assistant — auth via getTenantId(), RAG knowledge retrieval, Groq Llama 4 Scout completion |
+| `src/lib/chatbot-knowledge/index.js` | RAG retrieval module — ROUTE_DOC_MAP (14 routes) + KEYWORD_DOC_MAP (9 keyword groups), returns up to 2 matched docs |
+| `src/components/dashboard/ChatbotSheet.jsx` | Sheet wrapper for AI chatbot — message state, input handling, API calls to /api/chat, responsive (right sheet desktop, bottom sheet mobile) |
+| `src/components/dashboard/ChatMessage.jsx` | Message bubble with user/AI variants, `parseMessageContent()` for link extraction |
+| `src/components/dashboard/ChatNavLink.jsx` | Clickable navigation chip inside AI messages, uses Next.js Link with onNavigate callback |
+| `src/components/dashboard/TypingIndicator.jsx` | Three-dot pulse animation for AI thinking state, `role="status"`, reduced-motion support |
+| `src/components/dashboard/EstimateSummaryCards.jsx` | Summary stat cards for estimates page (pending count, approved value, conversion rate) |
+| `src/components/dashboard/EstimateStatusBadge.jsx` | Status badge component for estimate statuses |
+| `src/components/dashboard/TierEditor.jsx` | Tier editor panel for Good/Better/Best estimate tiers with line items per tier |
+| `src/hooks/useDocumentList.js` | Shared hook for estimate/invoice list pages — fetches, filters by status, provides summary + statusCounts |
+| `src/components/dashboard/DocumentListShell.jsx` | Shared UI primitives for document lists: StatusTabs, ListError, ListSkeleton, EmptyFiltered |
 | `src/app/dashboard/services/page.js` | redirect() to /dashboard/more/services-pricing |
 | `src/app/dashboard/settings/page.js` | redirect() to /dashboard/more |
 | `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 6 nav items (Home, Leads, Calendar, Calls, Analytics, More), no mobile drawer |
@@ -312,21 +340,36 @@ Shown when all 4 required items are complete.
 
 **File**: `src/app/dashboard/more/page.js`
 
-`/dashboard/more` is the 5th tab destination. Lists 9 config sections as card rows.
+`/dashboard/more` is the 5th tab destination. Three sections:
+
+1. **Ask Voco AI** (mobile-only, `lg:hidden`) — button that fires `window.dispatchEvent(new Event('open-voco-chat'))` to open the chatbot sheet.
+
+2. **Quick Access** (mobile-only, `lg:hidden`) — 2 quick-access links to pages that have their own desktop sidebar entries but not mobile bottom-bar tabs:
+
+```js
+const QUICK_ACCESS = [
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
+  { href: '/dashboard/estimates', label: 'Estimates', icon: ClipboardList },
+];
+```
+
+3. **Settings** — 9 config sections as card rows:
 
 ```js
 const MORE_ITEMS = [
-  { href: '/dashboard/more/services-pricing', label: 'Services & Pricing', ... },
-  { href: '/dashboard/more/working-hours', label: 'Working Hours', ... },
-  { href: '/dashboard/more/calendar-connections', label: 'Calendar Connections', ... },
-  { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', ... },
-  { href: '/dashboard/more/escalation-contacts', label: 'Escalation Contacts', ... },
-  { href: '/dashboard/more/notifications', label: 'Notifications', ... },
-  { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', ... },
-  { href: '/dashboard/more/billing', label: 'Billing', ... },
-  { href: '/dashboard/more/account', label: 'Account', ... },
+  { href: '/dashboard/more/services-pricing', label: 'Services & Pricing', description: 'Manage your service list and urgency tags', icon: Wrench },
+  { href: '/dashboard/more/working-hours', label: 'Working Hours', description: 'Set your weekly availability schedule', icon: Clock },
+  { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
+  { href: '/dashboard/more/notifications', label: 'Notifications & Escalation', description: 'Alerts per call outcome and emergency contact chain', icon: Bell },
+  { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
+  { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
+  { href: '/dashboard/more/integrations', label: 'Integrations', description: 'Connect accounting software for invoice sync', icon: Plug },
+  { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
+  { href: '/dashboard/more/account', label: 'Account', description: 'Profile and account management', icon: UserCircle },
 ];
 ```
+
+**Note:** The old `calendar-connections` and `escalation-contacts` entries were consolidated. Calendar connections is now part of the Integrations page. Escalation contacts is now part of the Notifications & Escalation page.
 
 **Sub-page pattern**: Thin `page.js` files that wrap existing components in `card.base` with an `h1` heading. No duplication of feature logic.
 
@@ -352,6 +395,39 @@ Profile editor with three sections:
 **API Route**: `src/app/api/account/route.js`
 - `GET` — returns tenant profile fields + `user.email` from Supabase Auth
 - `PATCH` — updates only allowed fields (`business_name`, `owner_name`, `owner_email`, `owner_phone`). Validates `business_name` is not empty. Uses service role client for write.
+
+### Invoice Settings Page (`/dashboard/more/invoice-settings`)
+
+**File**: `src/app/dashboard/more/invoice-settings/page.js`
+
+Configures business identity and invoice defaults. Uses `invoice_settings` table (auto-created on first GET via `/api/invoice-settings`). Five sections:
+
+1. **Business Identity** — logo upload (Supabase Storage `invoice-logos` bucket, PNG/JPG max 2MB, path `{tenantId}/logo.{ext}`), business_name, license_number, address, phone, email.
+2. **Tax Configuration** — tax_rate as percentage (stored as decimal 0-1, displayed as percentage 0-100). Applied to taxable line items only.
+3. **Late Fees** — toggle `late_fee_enabled`, fee type (flat amount or percentage per month), fee amount. Uses Switch + Select components.
+4. **Invoice Defaults** — payment_terms (Net 15/30/45/60 via Select dropdown), default_notes (textarea, appears on every invoice).
+5. **Numbering** — invoice_prefix (alphanumeric, max 10 chars), next invoice number preview (format: `{prefix}-{year}-{seq}`).
+
+**API Route**: `src/app/api/invoice-settings/route.js`
+- `GET` — returns `invoice_settings` row. Auto-creates seeded from `tenants.business_name` and `tenants.owner_email` if none exists.
+- `PATCH` — updates allowed fields. Validates: tax_rate (0-1), payment_terms (enum), invoice_prefix (regex `^[a-zA-Z0-9]{1,10}$`).
+
+### Integrations Page (`/dashboard/more/integrations`)
+
+**File**: `src/app/dashboard/more/integrations/page.js`
+
+Two sections:
+
+1. **Calendar Connections** — wraps `CalendarSyncCard` component (Google/Outlook OAuth).
+2. **Accounting Software** — three provider cards (QuickBooks, Xero, FreshBooks). Each card shows connection status + relative last-sync time. Connect triggers OAuth via `GET /api/accounting/{provider}/auth`. Disconnect via `POST /api/accounting/disconnect` with `{ provider }`. AlertDialog confirmation on disconnect. Toast notifications on OAuth callback params (`?connected=`, `?error=`).
+
+```js
+const ACCOUNTING_PROVIDERS = [
+  { id: 'quickbooks', name: 'QuickBooks', icon: BookOpen },
+  { id: 'xero', name: 'Xero', icon: FileSpreadsheet },
+  { id: 'freshbooks', name: 'FreshBooks', icon: Receipt },
+];
+```
 
 ### Billing Page (`/dashboard/more/billing`)
 
@@ -497,6 +573,81 @@ Fetches all leads via `GET /api/leads`, passes to `AnalyticsCharts`. Shows `Empt
 ### Calendar (`src/app/dashboard/calendar/page.js`)
 
 Client component. Week/day view toggle (mobile always forces day view). Fetches from `GET /api/appointments?start=...&end=...&view=...`. Shows `ConflictAlertBanner` for detected conflicts. Today's agenda sidebar shows appointments for current date. `AppointmentFlyout` opens on appointment click. Has `card.base` wrapper and `data-tour="calendar-page"`.
+
+### Estimates (`src/app/dashboard/estimates/page.js`)
+
+Client component. Estimate list with status filter tabs (all/draft/sent/approved/declined/expired) and summary stat cards (pending count, approved value, conversion rate). Uses shared `useDocumentList` hook with `itemsKey: 'estimates'` and shared `DocumentListShell` UI primitives (StatusTabs, ListError, ListSkeleton, EmptyFiltered). Desktop shows table with columns: Estimate #, Customer, Job Type, Amount, Created, Valid Until, Status. Mobile shows compact cards. Tiered estimates display amount as a range (min - max from tier totals). Floating action button on mobile.
+
+### Estimate Editor (`src/app/dashboard/estimates/new/page.js`)
+
+Client component. Dual-purpose: new estimates and editing existing ones (via `?id=` query param). Pre-fills from `?lead_id=` query param. Features:
+
+- **Lead search + link** — debounced search (`/api/leads?search=...`) with dropdown results. Linked lead shown as chip with unlink button. Auto-fills customer info from selected lead.
+- **Customer info** — name (required), email, phone, job type, service address.
+- **Dates** — created date (defaults to today), valid until (optional).
+- **Line items** — single-price mode with add/remove/reorder. Each item has: item_type, description, quantity, unit_price, markup_pct, taxable, sort_order. Uses `LineItemRow` component.
+- **Tiered mode** — "Add Tier" button transitions from single-price to tiered. Up to 3 tiers (Good/Better/Best defaults). Each tier managed by `TierEditor` component with independent line items. Removing tiers until 1 remains reverts to single-price mode.
+- **Totals** — calculated via `calculateInvoiceTotals()` using tax rate from invoice settings.
+- **Notes** — visible to customer on the estimate.
+- **Settings nudge** — amber banner when `business_name` is not set, linking to `/dashboard/more/invoice-settings`.
+- **Save** — "Save as Draft" (status=draft) or "Send Estimate" (status=sent). POST for new, PATCH for edit. Mobile sticky bottom action bar.
+
+### Estimate Detail (`src/app/dashboard/estimates/[id]/page.js`)
+
+Client component. Two-column layout (70/30 split on desktop):
+
+**Left column** — `EstimatePreview` component renders invoice-style document preview:
+- Header: business logo + info (from invoice_settings) | ESTIMATE title + number + dates
+- Customer info section
+- Single-price: line items table with subtotal/tax/total
+- Tiered: side-by-side tier cards (`TierCard`) with independent line item tables and totals
+- Footer: valid-until date + notes
+
+**Right column** — metadata card (status, created, valid until, sent/approved dates, linked lead, converted invoice link) + actions card:
+- Download PDF — always visible
+- Send Estimate — draft only, calls `POST /api/estimates/[id]/send`
+- Edit — draft only, navigates to `/dashboard/estimates/new?id=`
+- Mark as Approved — sent only
+- Mark as Declined — sent only, with AlertDialog confirmation
+- Mark as Expired — sent only
+- Convert to Invoice — approved + not yet converted. Single-price: AlertDialog confirmation → `POST /api/estimates/[id]/convert`. Tiered: Dialog with radio tier selection → `POST /api/estimates/[id]/convert` with `{ tier_id }`.
+
+Mobile sticky bottom bar with key actions.
+
+### Batch Invoice Review (`src/app/dashboard/invoices/batch-review/page.js`)
+
+Client component. Displays batch-created draft invoices for review before sending. URL: `/dashboard/invoices/batch-review?ids=id1,id2,...`.
+
+- Fetches each invoice by ID via `GET /api/invoices/[id]`
+- Invoice cards show number, status badge, customer name/email, amount
+- Per-invoice actions: edit (navigate to detail) or remove (DELETE API call + remove from local list)
+- "Send All" button with AlertDialog confirmation → `POST /api/invoices/batch-send` with `{ invoice_ids }`
+- Progress bar during send
+- Results view: per-invoice success/failure with CheckCircle2/XCircle icons, summary counts
+
+### Estimate API Routes
+
+**`GET /api/estimates`** — `src/app/api/estimates/route.js`
+
+Query params: `status`, `search` (customer_name or estimate_number), `lead_id`, `limit` (default 50, max 500), `offset`. Returns `{ estimates, total_count, summary: { pending_count, approved_value, conversion_rate }, status_counts }`. Enriches each estimate with `tier_count` and `tier_range` (min/max totals from `estimate_tiers`).
+
+**`POST /api/estimates`** — Creates estimate with atomic sequential estimate number via `get_next_estimate_number` RPC. Supports single-price (line items with `tier_id = NULL`) and tiered (creates `estimate_tiers` + `estimate_line_items` per tier). Uses `calculateInvoiceTotals()` and `calculateLineTotal()` from `src/lib/invoice-calculations`. Estimate prefix from `invoice_settings.estimate_prefix` (default 'EST').
+
+**`GET /api/estimates/[id]`** — Returns `{ estimate, tiers, line_items }`.
+
+**`PATCH /api/estimates/[id]`** — Updates editable fields + status transitions (`sent` sets `sent_at`, `approved` sets `approved_at`, `declined` sets `declined_at`). Handles line item/tier replacement (delete-all + re-insert pattern). Fetches tax rate from `invoice_settings` for recalculations.
+
+**`DELETE /api/estimates/[id]`** — Only allowed when status is 'draft'. Cascades to line items and tiers via FK ON DELETE CASCADE.
+
+**`POST /api/estimates/[id]/send`** — Generates PDF via `generateEstimatePDF()`, sends email via Resend (`from: noreply@voco.live`), optional SMS via Twilio (non-fatal on failure). Tiered estimates include price range in SMS. Updates status to 'sent'.
+
+**`POST /api/estimates/[id]/convert`** — Converts approved estimate to draft invoice. Idempotent (returns existing invoice_id if `converted_to_invoice_id` already set). For tiered estimates, `tier_id` is required to select which tier's line items to copy. Creates invoice via `get_next_invoice_number` RPC, copies customer info + selected line items, sets `converted_to_invoice_id` on estimate.
+
+### Invoice Settings API Route
+
+**`GET /api/invoice-settings`** — Returns `{ settings }`. Auto-creates row seeded from `tenants.business_name` and `tenants.owner_email` if none exists.
+
+**`PATCH /api/invoice-settings`** — Updates allowed fields: `business_name`, `address`, `phone`, `email`, `logo_url`, `license_number`, `tax_rate` (0-1), `payment_terms` (Net 15/30/45/60), `default_notes`, `invoice_prefix` (1-10 alphanumeric).
 
 ---
 
@@ -733,7 +884,7 @@ Item hrefs (updated in Phase 20 Plan 02 to point to More sub-pages):
 | `caller_name` | text | nullable |
 | `job_type` | text | nullable |
 | `service_address` | text | nullable |
-| `urgency` | text | CHECK IN ('emergency', 'routine', 'high_ticket') |
+| `urgency` | text | CHECK IN ('emergency', 'routine', 'urgent') |
 | `status` | text | CHECK IN ('new', 'booked', 'completed', 'paid', 'lost') |
 | `revenue_amount` | numeric(10,2) | nullable |
 | `primary_call_id` | uuid | FK → calls, SET NULL |
@@ -792,12 +943,13 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Realtime client + browser client) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client-side Supabase auth + Realtime subscriptions |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side API routes (bypasses RLS for lead/escalation writes) |
+| `GROQ_API_KEY` | Groq API key for AI chatbot assistant (Llama 4 Scout model) |
 
 ---
 
 ## 16. Key Design Decisions
 
-- **6-tab desktop / 5-tab mobile navigation (Phase 20)**: Desktop sidebar: Home, Leads, Calendar, Calls, Analytics, More. Mobile bottom bar: Home, Leads, Calendar, Calls, Analytics (no More — gear icon in top bar links to /dashboard/more). Services and Settings consolidated into More menu. No mobile drawer pattern.
+- **6-tab desktop / 5-tab mobile navigation (Phase 20, updated Phase 33)**: Desktop sidebar: Home, Leads, Calendar, Calls, Invoices, More. Mobile bottom bar: Home, Leads, Calendar, Calls, Invoices (no More — gear icon in top bar links to /dashboard/more). Analytics relocated to `/dashboard/more/analytics`. Estimates accessible via More quick-access links. Services and Settings consolidated into More menu. No mobile drawer pattern.
 
 - **Page-level card ownership (Phase 20)**: Layout no longer wraps children in a card. Each page controls its own `card.base` wrapper. Prevents double-card stacking and gives each page independent padding control.
 
@@ -805,7 +957,7 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 - **Call logs page (Phase 20)**: `/dashboard/calls` — queries `GET /api/calls` (calls table directly, not through leads). Date-grouped expandable cards with urgency border, summary stats bar, search by phone, expandable filters (time range, urgency, booking outcome). Tap to expand detail panel (duration, urgency, booking, language, recording, SMS status, triage info). Short calls (<15s) dimmed with "missed" tag.
 - **Page transitions (Phase 20)**: framer-motion `AnimatePresence` on layout content area — `opacity: 0→1, y: 6→0` on route change. More sub-pages show `MoreBackButton` injected via `more/layout.js` on all sub-pages.
 
-- **More menu as config hub (Phase 20)**: 9 sub-pages under `/dashboard/more/*` wrap existing components (thin wrappers). Old `/dashboard/services` and `/dashboard/settings` redirect to new routes — bookmarks preserved.
+- **More menu as config hub (Phase 20+)**: 9 settings sections under `/dashboard/more/*` plus 2 quick-access links (Invoices, Estimates) and an "Ask Voco AI" button (mobile-only). Settings sub-pages wrap existing components (thin wrappers). Old `/dashboard/services` and `/dashboard/settings` redirect to new routes — bookmarks preserved.
 
 - **Adaptive home page (Phase 20, expanded Phase 30)**: Single page component branches into setup mode (checklist hero) vs active mode (command center) based on `isSetupComplete`. Active mode also renders `SetupChecklist` when any recommended items are incomplete (`hasIncompleteRecommended` state). The checklist appears between "This Week" stats and "Recent Activity" in active mode, so new users see what's left to configure without blocking their dashboard.
 
@@ -839,23 +991,86 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 ## AI Chatbot Assistant
 
-**Components:**
-- `src/components/dashboard/ChatbotSheet.jsx` — Root chat panel (Sheet wrapper, message state, input handling, API integration). Props: `open`, `onOpenChange`, `currentRoute`. Always mounted at layout level; `open` prop controls visibility.
+### Components
+
+- `src/components/dashboard/ChatbotSheet.jsx` — Root chat panel (Sheet wrapper, message state, input handling, API integration). Props: `open`, `onOpenChange`, `currentRoute`. Always mounted at layout level; `open` prop controls visibility. Sheet renders as right panel on desktop (`w-[400px]`) and bottom sheet on mobile (`max-h-[85vh] rounded-t-2xl`) with drag handle. Includes a static greeting message from Voco AI.
 - `src/components/dashboard/ChatMessage.jsx` — Single message bubble with user/AI variants. Exports `parseMessageContent()` for link extraction from AI responses.
-- `src/components/dashboard/ChatNavLink.jsx` — Clickable navigation chip rendered inside AI messages. Uses Next.js `Link` with `onNavigate` callback.
+- `src/components/dashboard/ChatNavLink.jsx` — Clickable navigation chip rendered inside AI messages. Uses Next.js `Link` with `onNavigate` callback (closes sheet on navigation).
 - `src/components/dashboard/TypingIndicator.jsx` — Three-dot pulse animation for AI thinking state. Includes `role="status"` and reduced-motion support.
 
-**API Route:**
-- `src/app/api/chat/route.js` — POST handler. Auth via `getTenantId()`, RAG knowledge injection via `getRelevantKnowledge()`, Groq chat completion (Llama model). Returns `{ reply: string }`.
+### API Route (`src/app/api/chat/route.js`)
 
-**Knowledge Base:**
-- `src/lib/chatbot-knowledge/` — 10 static markdown docs (one per dashboard area) + `index.js` RAG retrieval module.
-- `index.js` exports `getRelevantKnowledge(message, currentRoute)` — returns up to 2 docs matched by route + keyword.
+POST handler. Node.js runtime (not Edge — requires `fs` for knowledge doc reads).
 
-**Triggers:**
-- Desktop: "Ask Voco AI" button in `DashboardSidebar.jsx` (between Separator and Logout). Fires `window.dispatchEvent(new Event('open-voco-chat'))`.
-- Mobile: "Ask Voco AI" item at top of More page (`more/page.js`, `lg:hidden`). Same window event.
-- Layout listener in `src/app/dashboard/layout.js` catches `open-voco-chat` event and sets `chatOpen` state.
+1. **Guard**: `GROQ_API_KEY` env var required (503 if missing).
+2. **Auth**: `getTenantId()` — returns 401 if not authenticated.
+3. **Request body**: `{ message: string, currentRoute?: string, history?: Array }`.
+4. **RAG retrieval**: `getRelevantKnowledge(message, currentRoute)` returns up to 2 knowledge docs.
+5. **System prompt**: Defines Voco AI as a dashboard help assistant. Includes:
+   - Role description (help users understand and navigate the dashboard)
+   - Constraints (does NOT create/edit/delete data, does NOT access user-specific data)
+   - Navigation link format: `[Go to Page Name](/dashboard/path)` on its own line
+   - Current route context: `The user is currently on: ${currentRoute || '/dashboard'}`
+   - Injected knowledge docs from RAG (appended under "Relevant documentation:" heading)
+6. **Message history**: System prompt + last 10 history entries + current user message. History entries from ChatbotSheet map `role: 'ai'` to `role: 'assistant'` for OpenAI-compatible format.
+7. **LLM call**: Groq API via OpenAI-compatible client (`openai` npm package with Groq base URL). Model: `meta-llama/llama-4-scout-17b-16e-instruct`. Settings: `max_tokens: 500`, `temperature: 0.3`.
+8. **Response**: `{ reply: string }`. On error, returns a friendly fallback message (not an error status).
+
+**Groq client**: Lazy-initialized singleton via `getGroqClient()`. Uses `process.env.GROQ_API_KEY` with base URL `https://api.groq.com/openai/v1`.
+
+### RAG Knowledge Retrieval (`src/lib/chatbot-knowledge/index.js`)
+
+Server-only module. Two matching signals:
+
+**1. Route matching** — `ROUTE_DOC_MAP` maps 14 dashboard routes to their primary knowledge doc (more specific routes first):
+
+```js
+const ROUTE_DOC_MAP = {
+  '/dashboard/leads': 'leads.md',
+  '/dashboard/calendar': 'calendar.md',
+  '/dashboard/calls': 'calls.md',
+  '/dashboard/invoices': 'invoices.md',
+  '/dashboard/estimates': 'estimates.md',
+  '/dashboard/more/analytics': 'analytics.md',
+  '/dashboard/more/billing': 'billing.md',
+  '/dashboard/more/services-pricing': 'settings.md',
+  '/dashboard/more/working-hours': 'settings.md',
+  '/dashboard/more/service-zones': 'settings.md',
+  '/dashboard/more/notifications': 'settings.md',
+  '/dashboard/more/ai-voice-settings': 'settings.md',
+  '/dashboard/more/integrations': 'integrations.md',
+  '/dashboard/more/invoice-settings': 'settings.md',
+  '/dashboard': 'getting-started.md',  // fallback for unknown routes
+};
+```
+
+**2. Keyword matching** — `KEYWORD_DOC_MAP` has 9 keyword groups, checked in order (first match wins, adds up to 1 additional doc that differs from the route-matched doc):
+
+```js
+const KEYWORD_DOC_MAP = [
+  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'kanban'], doc: 'leads.md' },
+  { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot'], doc: 'calendar.md' },
+  { keywords: ['call', 'calls', 'transcript', 'recording', 'voicemail'], doc: 'calls.md' },
+  { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },
+  { keywords: ['invoice', 'invoices', 'payment', 'bill', 'pdf', 'send invoice'], doc: 'invoices.md' },
+  { keywords: ['estimate', 'estimates', 'quote'], doc: 'estimates.md' },
+  { keywords: ['analytics', 'revenue', 'chart', 'stats', 'report'], doc: 'analytics.md' },
+  { keywords: ['setting', 'settings', 'service', 'working hours', 'zone', 'notification', 'ai voice'], doc: 'settings.md' },
+  { keywords: ['integration', 'quickbooks', 'xero', 'connect', 'sync'], doc: 'integrations.md' },
+];
+```
+
+**Output**: Returns at most 2 doc sections (route-matched + keyword-matched) joined with `---` separator. Docs are read from `src/lib/chatbot-knowledge/*.md` via `readFileSync`. Missing docs silently skipped.
+
+### Knowledge Base Docs
+
+`src/lib/chatbot-knowledge/` contains static markdown docs — one per dashboard area: `getting-started.md`, `leads.md`, `calendar.md`, `calls.md`, `invoices.md`, `estimates.md`, `analytics.md`, `billing.md`, `settings.md`, `integrations.md`.
+
+### Triggers
+
+- **Desktop**: "Ask Voco AI" button in `DashboardSidebar.jsx` (between Separator and Logout). Fires `window.dispatchEvent(new Event('open-voco-chat'))`.
+- **Mobile**: "Ask Voco AI" item at top of More page (`more/page.js`, `lg:hidden`). Same `open-voco-chat` window event.
+- **Layout integration**: `src/app/dashboard/layout.js` listens for `open-voco-chat` event and sets `chatOpen` state. `ChatbotSheet` is always mounted in the layout; visibility controlled by `open` prop. Current route passed as `currentRoute` prop.
 
 ---
 

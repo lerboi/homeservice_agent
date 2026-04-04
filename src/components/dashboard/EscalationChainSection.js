@@ -39,9 +39,9 @@ function getUrgencyEscalation(t) {
       locked: true,
     },
     {
-      urgency: 'high_ticket',
-      label: t('escalation.high_ticket_label'),
-      description: t('escalation.high_ticket_desc'),
+      urgency: 'urgent',
+      label: t('escalation.urgent_label'),
+      description: t('escalation.urgent_desc'),
       borderClass: 'border-l-4 border-amber-400',
       defaultEnabled: true,
       locked: false,

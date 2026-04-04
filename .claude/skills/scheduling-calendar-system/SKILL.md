@@ -151,7 +151,7 @@ export async function atomicBookSlot({
   address,      // string — service address (verbally confirmed by caller)
   callerName,   // string — caller's full name
   callerPhone,  // string — caller's phone number
-  urgency,      // string — 'emergency' | 'routine' | 'high_ticket'
+  urgency,      // string — 'emergency' | 'routine' | 'urgent'
   zoneId,       // string|null — service zone UUID
 })
 // Returns: Promise<{ success: boolean, appointment_id?: string, reason?: string }>
@@ -432,7 +432,7 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 | `service_address` | text | |
 | `caller_name` | text | |
 | `caller_phone` | text | |
-| `urgency` | text | CHECK IN ('emergency', 'routine', 'high_ticket') |
+| `urgency` | text | CHECK IN ('emergency', 'routine', 'urgent') |
 | `zone_id` | uuid | FK → service_zones(id) ON DELETE SET NULL |
 | `status` | text | CHECK IN ('confirmed', 'cancelled', 'completed'), DEFAULT 'confirmed' |
 | `booked_via` | text | CHECK IN ('ai_call', 'manual'), DEFAULT 'ai_call' |

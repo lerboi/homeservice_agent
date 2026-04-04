@@ -32,7 +32,7 @@ export async function GET() {
   const { data: subscription, error: subError } = await supabase
     .from('subscriptions')
     .select(
-      'status, plan_id, calls_used, calls_limit, trial_ends_at, current_period_end, cancel_at_period_end'
+      'status, plan_id, calls_used, calls_limit, trial_ends_at, current_period_end, cancel_at_period_end, stripe_price_id'
     )
     .eq('tenant_id', tenant.id)
     .eq('is_current', true)
@@ -42,5 +42,20 @@ export async function GET() {
     return Response.json({ error: subError.message }, { status: 500 });
   }
 
-  return Response.json({ subscription });
+  // Determine billing interval from the Stripe price ID
+  let billing_interval = 'monthly';
+  if (subscription?.stripe_price_id) {
+    const annualPriceIds = [
+      process.env.STRIPE_PRICE_STARTER_ANNUAL,
+      process.env.STRIPE_PRICE_GROWTH_ANNUAL,
+      process.env.STRIPE_PRICE_SCALE_ANNUAL,
+    ].filter(Boolean);
+    if (annualPriceIds.includes(subscription.stripe_price_id)) {
+      billing_interval = 'annual';
+    }
+  }
+
+  return Response.json({
+    subscription: subscription ? { ...subscription, billing_interval } : null,
+  });
 }

@@ -14,19 +14,19 @@ import {
 const URGENCY_BORDER = {
   emergency: 'border-l-red-500',
   routine: 'border-l-stone-300',
-  high_ticket: 'border-l-amber-500',
+  urgent: 'border-l-amber-500',
 };
 
 const URGENCY_BADGE = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
   routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
-  high_ticket: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
 };
 
 const URGENCY_LABEL = {
   emergency: 'Emergency',
   routine: 'Routine',
-  high_ticket: 'High Ticket',
+  urgent: 'Urgent',
 };
 
 const STATUS_BADGE = {
@@ -46,9 +46,9 @@ const STATUS_LABEL = {
 };
 
 const TRIAGE_LABEL = {
-  emergency: 'Urgent',
+  emergency: 'Emergency',
   routine: 'Routine',
-  high_ticket: 'High Value',
+  urgent: 'Urgent',
 };
 
 const INVOICE_BADGE_STYLE = {

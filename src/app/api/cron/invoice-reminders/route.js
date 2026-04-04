@@ -119,7 +119,7 @@ export async function GET(request) {
           // Send email via Resend
           try {
             await getResendClient().emails.send({
-              from: 'noreply@getvoco.ai',
+              from: 'noreply@voco.live',
               to: invoice.customer_email,
               subject,
               react: InvoiceReminderEmail({

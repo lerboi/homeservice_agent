@@ -45,7 +45,7 @@ import { supabase } from '@/lib/supabase-browser';
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
   routine: { badge: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70', label: 'Routine' },
-  high_ticket: { badge: 'bg-amber-100 text-amber-700', label: 'High Ticket' },
+  urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
 };
 
 const STATUS_LABELS = {
@@ -476,7 +476,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 {firstCall?.urgency_classification && (
                   <div className="flex items-center gap-2 text-xs text-stone-400">
                     <span>
-                      {{ emergency: 'Urgent', routine: 'Routine', high_ticket: 'High Value' }[firstCall.urgency_classification] || firstCall.urgency_classification}
+                      {{ emergency: 'Emergency', routine: 'Routine', urgent: 'Urgent' }[firstCall.urgency_classification] || firstCall.urgency_classification}
                     </span>
                   </div>
                 )}

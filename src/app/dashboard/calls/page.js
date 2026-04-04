@@ -27,7 +27,7 @@ import { supabase } from '@/lib/supabase-browser';
 const URGENCY_STYLE = {
   emergency: { badge: 'bg-red-100 text-red-700', border: 'border-l-red-500', label: 'Emergency' },
   routine:   { badge: 'bg-stone-100 text-stone-600', border: 'border-l-stone-300', label: 'Routine' },
-  high_ticket: { badge: 'bg-amber-100 text-amber-700', border: 'border-l-amber-500', label: 'High Ticket' },
+  urgent: { badge: 'bg-amber-100 text-amber-700', border: 'border-l-amber-500', label: 'Urgent' },
 };
 
 const OUTCOME_STYLE = {
@@ -73,7 +73,10 @@ function formatPhone(number) {
   return number;
 }
 
-// Group calls by date
+// Urgency weight for sorting (emergency first, then urgent, then routine)
+const URGENCY_WEIGHT = { emergency: 3, urgent: 2, routine: 1 };
+
+// Group calls by date, sorting within each group by urgency then time
 function groupByDate(calls) {
   const groups = [];
   let currentLabel = null;
@@ -88,6 +91,17 @@ function groupByDate(calls) {
     }
     currentGroup.calls.push(call);
   }
+
+  // Sort within each date group: emergency first, then urgent, then routine
+  for (const group of groups) {
+    group.calls.sort((a, b) => {
+      const wa = URGENCY_WEIGHT[a.urgency_classification] || 0;
+      const wb = URGENCY_WEIGHT[b.urgency_classification] || 0;
+      if (wa !== wb) return wb - wa;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }
+
   return groups;
 }
 
@@ -238,13 +252,6 @@ function CallCard({ call }) {
                   </span>
                 )}
               </div>
-
-              {/* Triage info */}
-              {call.triage_layer_used && (
-                <p className="text-[10px] text-stone-400 mt-2">
-                  Classified via {call.triage_layer_used === 'layer1' ? 'keywords' : call.triage_layer_used === 'layer2' ? 'AI analysis' : 'service rules'}
-                </p>
-              )}
 
               {/* Quick actions */}
               <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
@@ -557,7 +564,7 @@ export default function CallLogsPage() {
                   <SelectContent>
                     <SelectItem value="emergency">Emergency</SelectItem>
                     <SelectItem value="routine">Routine</SelectItem>
-                    <SelectItem value="high_ticket">High Ticket</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
                   </SelectContent>
                 </Select>
 

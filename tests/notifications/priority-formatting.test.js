@@ -126,11 +126,11 @@ describe('sendOwnerSMS — routine formatting (NOTIF-P02)', () => {
     expect(body).not.toContain('Call NOW');
   });
 
-  it('high_ticket SMS does NOT start with EMERGENCY:', async () => {
+  it('urgent SMS does NOT start with EMERGENCY:', async () => {
     await sendOwnerSMS({
       to: '+15559998888',
       businessName: 'Acme Plumbing',
-      urgency: 'high_ticket',
+      urgency: 'urgent',
       callbackLink: 'tel:+1',
       dashboardLink: 'https://example.com',
     });
@@ -205,10 +205,10 @@ describe('sendOwnerEmail — routine formatting (NOTIF-P02)', () => {
     expect(callArgs.subject).toContain('New booking');
   });
 
-  it('high_ticket email subject does NOT start with EMERGENCY:', async () => {
+  it('urgent email subject does NOT start with EMERGENCY:', async () => {
     await sendOwnerEmail({
       to: 'owner@acme.com',
-      lead: { caller_name: 'John Smith', urgency: 'high_ticket' },
+      lead: { caller_name: 'John Smith', urgency: 'urgent' },
       businessName: 'Acme Plumbing',
       dashboardUrl: 'https://example.com/dashboard',
     });

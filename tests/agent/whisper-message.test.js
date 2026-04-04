@@ -23,11 +23,11 @@ describe('buildWhisperMessage (D-08 template format)', () => {
     expect(result).not.toContain('Emergency');
   });
 
-  test('high_ticket urgency produces "Routine" label (not emergency)', () => {
+  test('urgent urgency produces "Routine" label (not emergency)', () => {
     const result = buildWhisperMessage({
       callerName: 'Bob Jones',
       jobType: 'whole home remodel',
-      urgency: 'high_ticket',
+      urgency: 'urgent',
       summary: 'Full kitchen renovation',
     });
     expect(result).toContain('Routine');

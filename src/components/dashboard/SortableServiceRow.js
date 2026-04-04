@@ -77,7 +77,7 @@ export function SortableServiceRow({
         >
           {service.urgency_tag === 'emergency' && t('tag_emergency')}
           {service.urgency_tag === 'routine' && t('tag_routine')}
-          {service.urgency_tag === 'high_ticket' && t('tag_high_ticket')}
+          {service.urgency_tag === 'urgent' && t('tag_urgent')}
         </Badge>
         <Select
           value={service.urgency_tag}
@@ -96,8 +96,8 @@ export function SortableServiceRow({
             <SelectItem value="routine">
               <span className="text-[#475569]">{t('tag_routine')}</span>
             </SelectItem>
-            <SelectItem value="high_ticket">
-              <span className="text-amber-700">{t('tag_high_ticket')}</span>
+            <SelectItem value="urgent">
+              <span className="text-amber-700">{t('tag_urgent')}</span>
             </SelectItem>
           </SelectContent>
         </Select>

@@ -25,7 +25,7 @@ const STATUS_COLORS = {
 
 const URGENCY_DOT = {
   emergency: 'bg-red-500',
-  high_ticket: 'bg-amber-500',
+  urgent: 'bg-amber-500',
   routine: 'bg-[#0F172A]/30',
 };
 

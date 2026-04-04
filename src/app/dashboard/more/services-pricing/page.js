@@ -34,11 +34,11 @@ import { SortableServiceRow } from '@/components/dashboard/SortableServiceRow';
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
-  high_ticket: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
   routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
 };
 
-const VALID_URGENCY_TAGS = ['emergency', 'routine', 'high_ticket'];
+const VALID_URGENCY_TAGS = ['emergency', 'routine', 'urgent'];
 
 export default function ServicesPricingPage() {
   const t = useTranslations('services');
@@ -339,8 +339,8 @@ export default function ServicesPricingPage() {
               <SelectItem value="routine">
                 <span className="text-[#475569]">Routine</span>
               </SelectItem>
-              <SelectItem value="high_ticket">
-                <span className="text-amber-700">High Ticket</span>
+              <SelectItem value="urgent">
+                <span className="text-amber-700">Urgent</span>
               </SelectItem>
             </SelectContent>
           </Select>

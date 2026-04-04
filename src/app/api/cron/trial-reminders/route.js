@@ -106,7 +106,7 @@ export async function GET(request) {
 
       try {
         await getResendClient().emails.send({
-          from: 'Voco <notifications@getvoco.ai>',
+          from: 'Voco <notifications@voco.live>',
           to: tenant.owner_email,
           subject,
           react: TrialReminderEmail({

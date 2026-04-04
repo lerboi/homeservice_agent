@@ -13,13 +13,13 @@ import { useWizardSession } from '@/hooks/useWizardSession';
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
-  high_ticket: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
   routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
 };
 
 const URGENCY_LABELS = {
   emergency: 'Emergency',
-  high_ticket: 'High-Ticket',
+  urgent: 'Urgent',
   routine: 'Routine',
 };
 

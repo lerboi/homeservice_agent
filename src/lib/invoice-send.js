@@ -80,7 +80,7 @@ export async function sendSingleInvoice(supabase, tenantId, invoiceId, options =
 
   try {
     await getResendClient().emails.send({
-      from: `${settings.business_name || 'Invoice'} <invoices@getvoco.ai>`,
+      from: `${settings.business_name || 'Invoice'} <invoices@voco.live>`,
       to: invoice.customer_email,
       subject: `Invoice ${invoice.invoice_number} from ${settings.business_name || 'Your Service Provider'}`,
       react: InvoiceEmail({ invoice, settings, lineItems: lineItems || [] }),

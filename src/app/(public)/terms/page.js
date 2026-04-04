@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
           <SectionHeading>2. Account Registration</SectionHeading>
           <p>
             You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Notify us immediately at{' '}
-            <a href="mailto:support@getvoco.ai" className="text-[#F97316] hover:underline">support@getvoco.ai</a>
+            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>
             {' '}if you suspect unauthorised access.
           </p>
           <p>
@@ -185,8 +185,8 @@ export default function TermsOfServicePage() {
             <p>Singapore</p>
             <p>
               Email:{' '}
-              <a href="mailto:legal@getvoco.ai" className="text-[#F97316] hover:underline">
-                legal@getvoco.ai
+              <a href="mailto:legal@voco.live" className="text-[#F97316] hover:underline">
+                legal@voco.live
               </a>
             </p>
           </div>

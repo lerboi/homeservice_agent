@@ -33,7 +33,7 @@ export async function POST(request) {
     // Send email via Resend (instantiated per-request -- correct for serverless API routes)
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@getvoco.ai',
+      from: process.env.RESEND_FROM_EMAIL || 'noreply@voco.live',
       to,
       replyTo: email.trim(),
       subject: `[${inquiryType}] Contact form: ${name.trim()}`,
