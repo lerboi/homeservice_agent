@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase complete — ready for verification
-stopped_at: "Completed 37-03-PLAN.md (checkpoint:human-verify pending)"
-last_updated: "2026-04-03T20:34:03.360Z"
+stopped_at: Phase 38 context gathered
+last_updated: "2026-04-05T22:32:48.750Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -89,6 +89,7 @@ Recent decisions affecting current work:
 - Phase 35 added: Invoice Integrations and AI — QuickBooks/Xero sync, AI work descriptions from transcripts, batch invoicing, customer financing (Wisetack/Hearth)
 - Phase 32 added: Landing Page Redesign — Conversion-Optimized Sections
 - Phase 36 added: Landing Page Section Redesign — How It Works scroll-step minimalism and Features horizontal carousel with icon nav
+- Phase 38 added: Programmatic SEO and Content Engine — sitemap, robots, OG images, data layer, blog/personas/comparisons/integrations/glossary templates, JSON-LD schema, internal linking hubs
 - [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
 - [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
 - [Phase 28-admin-dashboard]: Admin gate returns early from middleware after successful check — admins may not have a tenants row
@@ -148,6 +149,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T20:34:03.349Z
-Stopped at: Completed 37-03-PLAN.md (checkpoint:human-verify pending)
-Resume file: None
+Last session: 2026-04-05T22:32:48.739Z
+Stopped at: Phase 38 context gathered
+Resume file: .planning/phases/38-programmatic-seo-content-engine/38-CONTEXT.md
