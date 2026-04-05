@@ -269,6 +269,34 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
+- [ ] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (5 plans)
+
+### Phase 38: Programmatic SEO and Content Engine
+
+**Goal:** Build a complete programmatic SEO infrastructure — sitemap, robots, dynamic OG images, a static data layer powering five page template types (blog, personas, comparisons, integrations, glossary), JSON-LD structured data, and hub-and-spoke internal linking — so every page is crawlable, rich-snippet ready, and drives organic traffic to signup
+**Depends on:** None (standalone, builds on existing public site layout)
+**Requirements**: SEO-01 (sitemap + robots), SEO-02 (dynamic OG images), SEO-03 (data layer), SEO-04 (blog pages), SEO-05 (persona pages), SEO-06 (comparison pages), SEO-07 (integration pages), SEO-08 (glossary pages), SEO-09 (JSON-LD schema markup), SEO-10 (generateMetadata on all pages), SEO-11 (internal linking hubs)
+**Success Criteria** (what must be TRUE):
+  1. `src/app/sitemap.js` returns all static and dynamic routes; `src/app/robots.js` allows crawling and points to sitemap
+  2. `/og?title=...&type=...` returns a valid branded OG image for any page type
+  3. `generateStaticParams()` on every dynamic route generates pages from the data layer arrays — build produces all expected HTML files
+  4. Every dynamic page uses `generateMetadata()` with title template `{PageName} | Voco`, description, canonical URL, and OG image — all using `await params` (Next.js 16 requirement)
+  5. JSON-LD `<script type="application/ld+json">` renders correct schema (LocalBusiness, FAQPage, WebPage, SoftwareApplication) per page type
+  6. Every programmatic page links to its hub, sibling pages, and a signup CTA — no orphan pages exist
+  7. Blog listing at `/blog` and detail at `/blog/[slug]` render correctly with at least 2-3 seed posts
+  8. Persona pages at `/for/[persona]` render trade-specific copy, pain points, and CTAs for at least 4 trades
+  9. Comparison pages at `/compare/[comparison]` render pros/cons and verdict for at least 3 comparisons
+  10. Integration pages at `/integrations/[tool]` render tool descriptions and use cases for at least 4 tools
+  11. Glossary pages at `/glossary/[term]` render definitions with FAQ schema markup
+**Plans**: 5 plans
+
+Plans:
+- [ ] 38-01-PLAN.md — Data layer arrays, SchemaMarkup component, OG image route, sitemap, robots, Wave 0 tests
+- [ ] 38-02-PLAN.md — Blog hub + detail, Glossary hub + detail pages
+- [ ] 38-03-PLAN.md — Persona hub + detail, Comparison hub + detail pages
+- [ ] 38-04-PLAN.md — Integration hub + detail pages
+- [ ] 38-05-PLAN.md — Footer Resources column + visual verification checkpoint
+**UI hint**: yes
 
 ### Phase 37: Dashboard AI Chatbot Assistant
 
