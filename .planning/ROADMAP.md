@@ -292,8 +292,8 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 Plans:
 - [x] 38-01-PLAN.md — Data layer arrays, SchemaMarkup component, OG image route, sitemap, robots, Wave 0 tests
-- [ ] 38-02-PLAN.md — Blog hub + detail, Glossary hub + detail pages
-- [ ] 38-03-PLAN.md — Persona hub + detail, Comparison hub + detail pages
+- [x] 38-02-PLAN.md — Blog hub + detail, Glossary hub + detail pages
+- [x] 38-03-PLAN.md — Persona hub + detail, Comparison hub + detail pages
 - [x] 38-04-PLAN.md — Integration hub + detail pages
 - [ ] 38-05-PLAN.md — Footer Resources column + visual verification checkpoint
 **UI hint**: yes
@@ -321,7 +321,7 @@ Plans:
 **Goal:** Holistic refinement of the AI receptionist system prompt and supporting tools to maximize booking conversion, improve caller experience, and close behavioral gaps — smart slot preference detection, repeat caller awareness, failed transfer recovery, prompt cleanup, trade-specific questioning, and post-booking recap flow
 **Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06
 **Depends on:** Phase 14
-**Plans:** 2/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables
