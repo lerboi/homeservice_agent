@@ -269,7 +269,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
-- [ ] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (5 plans)
+- [ ] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans)
 
 ### Phase 38: Programmatic SEO and Content Engine
 
@@ -288,7 +288,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
   9. Comparison pages at `/compare/[comparison]` render pros/cons and verdict for at least 3 comparisons
   10. Integration pages at `/integrations/[tool]` render tool descriptions and use cases for at least 4 tools
   11. Glossary pages at `/glossary/[term]` render definitions with FAQ schema markup
-**Plans**: 5 plans
+**Plans**: 7 plans
 
 Plans:
 - [x] 38-01-PLAN.md — Data layer arrays, SchemaMarkup component, OG image route, sitemap, robots, Wave 0 tests
@@ -296,6 +296,8 @@ Plans:
 - [x] 38-03-PLAN.md — Persona hub + detail, Comparison hub + detail pages
 - [x] 38-04-PLAN.md — Integration hub + detail pages
 - [ ] 38-05-PLAN.md — Footer Resources column + visual verification checkpoint
+- [ ] 38-06-PLAN.md — Gap closure: add 2 blog posts + 3 personas (HVAC, electrician, handyman)
+- [ ] 38-07-PLAN.md — Gap closure: add 2 comparisons (vs-answering-service, vs-hire-receptionist) + 3 integrations (outlook-calendar, stripe, twilio)
 **UI hint**: yes
 
 ### Phase 37: Dashboard AI Chatbot Assistant
