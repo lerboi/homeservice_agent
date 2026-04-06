@@ -48,8 +48,8 @@ export function LandingNav() {
         aria-label="Navigation"
         className={`fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-500 ease-in-out border-b border-white/[0.06] ${
           scrolled
-            ? 'bg-[#090807]/90 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
-            : 'bg-transparent'
+            ? 'bg-[#090807]/95 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
+            : 'bg-[#090807]/80 backdrop-blur-sm'
         }`}
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">

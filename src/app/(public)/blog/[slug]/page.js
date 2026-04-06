@@ -82,7 +82,7 @@ export default async function BlogDetailPage({ params }) {
         }}
       />
 
-      <article className="max-w-2xl mx-auto px-6 py-16 md:py-24">
+      <article className="max-w-2xl mx-auto px-6 pt-24 md:pt-32 pb-16 md:pb-24">
         {/* Back to hub */}
         <Link
           href="/blog"
@@ -92,18 +92,8 @@ export default async function BlogDetailPage({ params }) {
           All articles
         </Link>
 
-        {/* Featured image */}
-        <div className="aspect-[16/9] w-full rounded-xl overflow-hidden bg-[#F5F5F4] mb-8">
-          {post.featuredImage && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={post.featuredImage}
-              alt={post.title}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          )}
-        </div>
+        {/* Featured image placeholder */}
+        <div className="aspect-[16/9] w-full rounded-xl overflow-hidden bg-[#F5F5F4] mb-8" />
 
         {/* Article header */}
         <AnimatedSection>

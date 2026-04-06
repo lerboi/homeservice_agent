@@ -73,7 +73,7 @@ export default async function GlossaryDetailPage({ params }) {
     <div className="bg-white">
       <SchemaMarkup schema={faqSchema} />
 
-      <div className="max-w-3xl mx-auto px-6 py-16 md:py-24">
+      <div className="max-w-3xl mx-auto px-6 pt-24 md:pt-32 pb-16 md:pb-24">
         {/* Back to hub */}
         <Link
           href="/glossary"

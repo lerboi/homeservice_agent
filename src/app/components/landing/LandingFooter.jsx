@@ -88,8 +88,8 @@ export function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/for/plumber" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
-                  For Plumbers
+                <Link href="/for" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  For Your Trade
                 </Link>
               </li>
               <li>

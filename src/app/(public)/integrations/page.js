@@ -16,7 +16,7 @@ export default function IntegrationsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header section */}
-      <section className="bg-[#F5F5F4] py-16 md:py-20">
+      <section className="bg-[#F5F5F4] pt-24 md:pt-28 pb-16 md:pb-20">
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection direction="up">
             <h1 className="text-4xl md:text-5xl font-semibold text-[#0F172A]">

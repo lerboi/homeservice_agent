@@ -16,7 +16,7 @@ export default function BlogPage() {
   return (
     <div className="bg-white">
       {/* Header */}
-      <section className="bg-[#F5F5F4] py-16 md:py-20">
+      <section className="bg-[#F5F5F4] pt-24 md:pt-28 pb-16 md:pb-20">
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection>
             <h1 className="text-4xl md:text-5xl font-semibold text-[#0F172A] tracking-tight">
@@ -37,18 +37,8 @@ export default function BlogPage() {
               <AnimatedItem key={post.slug}>
                 <Link href={`/blog/${post.slug}`} className="block group h-full">
                   <Card className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.04),0_1px_2px_-1px_rgba(0,0,0,0.03)] border border-stone-200/60 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 overflow-hidden gap-0 p-0 h-full">
-                    {/* Featured image */}
-                    <div className="aspect-[16/9] bg-[#F5F5F4] rounded-t-2xl overflow-hidden">
-                      {post.featuredImage && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={post.featuredImage}
-                          alt={post.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
-                    </div>
+                    {/* Featured image placeholder */}
+                    <div className="aspect-[16/9] bg-[#F5F5F4] rounded-t-2xl" />
 
                     {/* Card body */}
                     <div className="p-5 flex flex-col gap-3 flex-1">
