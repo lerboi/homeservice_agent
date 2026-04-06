@@ -37,8 +37,8 @@ export function LandingFooter() {
           </div>
         </div>
 
-        {/* Three-column grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-12">
+        {/* Four-column grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Product column */}
           <div>
             <h4 className="text-sm font-semibold text-[#F5F5F5] uppercase tracking-wider mb-4">Product</h4>
@@ -73,6 +73,38 @@ export function LandingFooter() {
               <li>
                 <Link href="/contact" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
                   Contact
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources column */}
+          <div>
+            <h4 className="text-sm font-semibold text-[#F5F5F5] uppercase tracking-wider mb-4">Resources</h4>
+            <ul className="space-y-4">
+              <li>
+                <Link href="/blog" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/for/plumber" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  For Plumbers
+                </Link>
+              </li>
+              <li>
+                <Link href="/compare" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  Compare
+                </Link>
+              </li>
+              <li>
+                <Link href="/integrations" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  Integrations
+                </Link>
+              </li>
+              <li>
+                <Link href="/glossary" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  Glossary
                 </Link>
               </li>
             </ul>
