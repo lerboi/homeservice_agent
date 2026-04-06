@@ -269,7 +269,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 35: Invoice Integrations and AI** - QuickBooks/Xero/FreshBooks OAuth sync, AI line item descriptions, batch invoicing (completed 2026-04-02)
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
-- [ ] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans)
+- [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
 
 ### Phase 38: Programmatic SEO and Content Engine
 
@@ -296,7 +296,7 @@ Plans:
 - [x] 38-03-PLAN.md — Persona hub + detail, Comparison hub + detail pages
 - [x] 38-04-PLAN.md — Integration hub + detail pages
 - [x] 38-05-PLAN.md — Footer Resources column + visual verification checkpoint
-- [ ] 38-06-PLAN.md — Gap closure: add 2 blog posts + 3 personas (HVAC, electrician, handyman)
+- [x] 38-06-PLAN.md — Gap closure: add 2 blog posts + 3 personas (HVAC, electrician, handyman)
 - [x] 38-07-PLAN.md — Gap closure: add 2 comparisons (vs-answering-service, vs-hire-receptionist) + 3 integrations (outlook-calendar, stripe, twilio)
 **UI hint**: yes
 
@@ -323,7 +323,7 @@ Plans:
 **Goal:** Holistic refinement of the AI receptionist system prompt and supporting tools to maximize booking conversion, improve caller experience, and close behavioral gaps — smart slot preference detection, repeat caller awareness, failed transfer recovery, prompt cleanup, trade-specific questioning, and post-booking recap flow
 **Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06
 **Depends on:** Phase 14
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans complete
 
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables
