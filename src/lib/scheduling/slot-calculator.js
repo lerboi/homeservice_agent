@@ -158,7 +158,12 @@ export function calculateAvailableSlots({
     const zonedNow = toZonedTime(now, tenantTimezone);
     const todayStr = `${zonedNow.getFullYear()}-${String(zonedNow.getMonth() + 1).padStart(2, '0')}-${String(zonedNow.getDate()).padStart(2, '0')}`;
     if (targetDate === todayStr) {
-      cursor = new Date(now);
+      // Round cursor up to the next slot-grid-aligned boundary
+      // so offered times match the clean grid (9:00, 10:00, etc.)
+      const elapsedMs = now - windowStart;
+      const slotMs = slotDurationMins * 60000;
+      const slotsElapsed = Math.ceil(elapsedMs / slotMs);
+      cursor = new Date(windowStart.getTime() + slotsElapsed * slotMs);
     }
   }
 

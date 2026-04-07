@@ -129,12 +129,13 @@ export async function GET(request) {
     return Response.json({ error: apptError.message }, { status: 500 });
   }
 
-  // Fetch calendar_events for same range
+  // Fetch calendar_events that overlap the date range (handles multi-day and all-day events)
   const { data: calendarEvents, error: eventsError } = await supabase
     .from('calendar_events')
     .select('id, tenant_id, provider, external_id, title, start_time, end_time, is_all_day, appointment_id, conflict_dismissed, synced_at')
     .eq('tenant_id', tenantId)
-    .or(`and(start_time.gte.${start},start_time.lte.${end}),and(is_all_day.eq.true,start_time.gte.${start},start_time.lte.${end})`);
+    .lte('start_time', end)
+    .gte('end_time', start);
 
   if (eventsError) {
     console.log('500:', eventsError.message);

@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Twi
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-07 (9-issue fix batch: end_call triggers session close via ctx.shutdown(), booking_outcome write moved before calendar push, unit_number param added to book_appointment + capture_lead, past-date rejection in check_availability + slot_calculator, recording_storage_path written at egress start, prompt rewrite: mandatory unit number + verification for all info + goal-oriented end-call instructions)
+**Last updated**: 2026-04-08 (Fix: phone number normalization for tenant lookup, test call metadata fallback, working hours in system prompt, stronger corrections prompt, calls Realtime publication. Previous: close_complete event fix)
 
 ---
 
@@ -122,11 +122,12 @@ The agent runs as a LiveKit Agents worker on Railway using Python 3.12.
 
 1. **Agent connects** — `await ctx.connect()` joins the LiveKit room
 2. **Wait for participant** — `asyncio.wait_for(ctx.wait_for_participant(), timeout=30)` blocks until the SIP caller joins
-3. **Extract phone numbers** — `sip.trunkPhoneNumber` (to_number for tenant lookup), `sip.phoneNumber` (from_number / caller) from `participant.attributes`
+3. **Extract phone numbers** — `sip.trunkPhoneNumber` (to_number for tenant lookup), `sip.phoneNumber` (from_number / caller) from `participant.attributes`. Raw SIP attributes are logged for debugging.
 4. **Call ID** — `ctx.room.name` (e.g., `call-{uuid}`) serves as the call identifier
-5. **Test call detection** — room metadata `{ test_call: true }` set by test-call route
-6. **Tenant lookup** — query `tenants` by `phone_number = to_number` via `asyncio.to_thread()`
-7. **Build system prompt** — `build_system_prompt(locale, ...)` immediately after tenant lookup (without intake questions — injected later)
+5. **Test call detection** — room metadata `{ test_call: true }` set by test-call route. For test calls, `to_number` is read from room metadata (outbound SIP participants don't have `sip.trunkPhoneNumber` set to the tenant's number).
+6. **Phone normalization** — `_normalize_phone()` strips `sip:`/`tel:` prefixes, `@domain` suffixes, and ensures `+` prefix for E.164 format. Applied to both `to_number` and `from_number` before tenant lookup.
+7. **Tenant lookup** — query `tenants` by `phone_number = to_number` via `asyncio.to_thread()`
+8. **Build system prompt** — `build_system_prompt(locale, ..., working_hours=..., tenant_timezone=...)` immediately after tenant lookup (without intake questions — injected later). Includes business hours and corrections sections.
 8. **Create tools** — `create_tools(deps)` with mutable `deps` dict (call_uuid=None initially, filled in after call record insert)
 9. **Create Gemini session** — `RealtimeModel` + `VocoAgent` + `AgentSession`
 10. **Register event handlers** — transcript collection, error handler, close handler (all BEFORE session.start)
@@ -243,7 +244,7 @@ appointments, events, zones, buffers = await asyncio.gather(
 
 **File**: `src/prompt.py`
 
-### `build_system_prompt(locale, *, business_name, onboarding_complete, tone_preset, intake_questions, country)`
+### `build_system_prompt(locale, *, business_name, onboarding_complete, tone_preset, intake_questions, country, working_hours, tenant_timezone)`
 
 The prompt is assembled from modular section builder functions. Conditional sections are filtered via list comprehension.
 
@@ -251,21 +252,23 @@ The prompt is assembled from modular section builder functions. Conditional sect
 
 1. **Identity** — role, tone, conciseness rule
 2. **Voice Behavior** — energy matching, pacing, tool announcement. PACING subsection: one question per turn, wait for full response, acknowledge before next question.
-3. **Opening Line** — greeting with business name + recording disclosure. Echo awareness.
-4. **Language** — default English always. Unclear speech treated as hearing issue ("I didn't catch that"), not language barrier. Only switch if caller explicitly asks. Supported: English, Spanish, Chinese (Mandarin), Malay, Tamil, Vietnamese. Full conversation continuation in the new language without re-asking answered questions. Gather info for unsupported languages.
-5. **Repeat Caller** — empty (all calls treated as new — never reveal prior history)
-6. **Info Gathering** — collect issue, name, then address (postal/zip, street name, unit/apartment number — unit is MANDATORY, only omit if caller explicitly says there isn't one). VERIFICATION: read back each key detail (name, issue, address) for caller confirmation before moving on. Urgency classified silently.
-7. **Intake Questions** — trade-specific questions asked naturally (injected via `session.generate_reply` after DB query completes)
-8. **Booking Protocol** — caller-led scheduling flow:
-   - Only schedule for upcoming dates/times — reject past dates, guide to future slots
-   - Never list available slots unprompted — ask the caller when they prefer
-   - If they give day without time, ask for time; if time without day, ask for day
-   - Call check_availability with specific date+time for every time the caller asks about — never assume from earlier results
-   - If unavailable, offer 2-3 closest alternatives
-   - Handle edge cases (vague, ASAP, fully booked) by narrowing to specific date+time
-9. **Decline Handling** — only injected when `onboarding_complete=True`. Two-strike: first decline = soft re-offer, second = capture_lead
-10. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
-11. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max. Goal-oriented end-call: farewell must be fully heard before disconnect, two separate steps (speak goodbye, then call end_call after pause)
+3. **Corrections** — top-level section with strong language and concrete example. When the caller corrects any information, the correction ALWAYS replaces the old value entirely. The AI must never read back or reference the old incorrect value.
+4. **Business Hours** — computed from `working_hours` JSON. Groups consecutive days with the same schedule (e.g., "Mon-Fri: 9:00 AM - 5:00 PM"). Includes lunch breaks. Instructs AI to use these hours when asked, never guess. Empty if `working_hours` is None.
+5. **Opening Line** — greeting with business name + recording disclosure. Echo awareness.
+6. **Language** — default English always. Unclear speech treated as hearing issue ("I didn't catch that"), not language barrier. Only switch if caller explicitly asks. Supported: English, Spanish, Chinese (Mandarin), Malay, Tamil, Vietnamese. Full conversation continuation in the new language without re-asking answered questions. Gather info for unsupported languages.
+7. **Repeat Caller** — empty (all calls treated as new — never reveal prior history)
+8. **Info Gathering** — collect issue, name, then address (postal/zip, street name, unit/apartment number — unit is MANDATORY, only omit if caller explicitly says there isn't one). VERIFICATION: read back each key detail using the caller's MOST RECENT statement, never an earlier corrected version. Urgency classified silently.
+9. **Intake Questions** — trade-specific questions asked naturally (injected via `session.generate_reply` after DB query completes)
+10. **Booking Protocol** — caller-led scheduling flow:
+    - Only schedule for upcoming dates/times — reject past dates, guide to future slots
+    - Never list available slots unprompted — ask the caller when they prefer
+    - If they give day without time, ask for time; if time without day, ask for day
+    - Call check_availability with specific date+time for every time the caller asks about — never assume from earlier results
+    - If unavailable, offer 2-3 closest alternatives
+    - Handle edge cases (vague, ASAP, fully booked) by narrowing to specific date+time
+11. **Decline Handling** — only injected when `onboarding_complete=True`. Two-strike: first decline = soft re-offer, second = capture_lead
+12. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
+13. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max. Goal-oriented end-call: farewell must be fully heard before disconnect, two separate steps (speak goodbye, then call end_call after pause)
 
 ### Translation Keys (`messages/en.json`, `messages/es.json`)
 
@@ -461,6 +464,7 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 - **Silent repeat caller context**: `check_caller_history` tool returns history but instructs AI to never mention it. AI treats all calls as new unless the caller explicitly asks about prior calls.
 - **Caller-led booking flow**: AI never offers times first. Asks the caller when they prefer, checks availability after getting both day and time preference, offers alternatives if unavailable.
 - **Event handlers before session.start()**: Prevents race conditions where session closes before handlers are registered.
+- **`close_complete` event keeps entrypoint alive**: `entrypoint()` awaits a `close_complete` asyncio.Event at the end. The `on_close` handler's `done_callback` sets this event after `_on_close_async()` finishes. Without this, the LiveKit worker exits the process immediately after `entrypoint()` returns, killing the post-call pipeline mid-flight.
 - **Greeting via generate_reply()**: `session.generate_reply(instructions="Greet the caller now.")` fires after session.start(). This relies on the git-pinned livekit-plugins-google commit (43d3734) which workarounds Gemini 3.1's restriction on `send_client_content`. The official PyPI release (1.5.1) does NOT support `generate_reply()` with Gemini 3.1 — do not switch to the stable release until LiveKit ships an official fix.
 - **Noise cancellation**: `BVCTelephony` for SIP calls, `BVC` for WebRTC — improves audio quality without interfering with VAD.
 - **Atomic booking via Postgres advisory locks**: `book_appointment_atomic` RPC with `tstzrange` overlap checking.
@@ -470,6 +474,11 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 - **recording_storage_path written at egress start**: Safety net — the path is written to the calls table when egress starts, not just in the post-call pipeline. Ensures the dashboard can find recordings even if post-call fails.
 - **Triage never downgrades**: Layer 3 can only escalate urgency.
 - **Fail-open design**: Missing tenant, slots, or subscription errors don't block calls.
+- **Phone number normalization**: `_normalize_phone()` in `agent.py` strips `sip:`/`tel:` prefixes, `@domain` suffixes, and ensures `+` E.164 prefix before tenant lookup. LiveKit SIP attributes may include these prefixes depending on the trunk configuration.
+- **Test call metadata fallback**: For outbound test calls, `sip.trunkPhoneNumber` doesn't contain the tenant's number (it's the outbound trunk's FROM number). The agent reads `to_number` from room metadata (set by test-call route) as a fallback.
+- **Business hours in system prompt**: Working hours JSON is formatted into a grouped schedule (e.g., "Mon-Fri: 9:00 AM - 5:00 PM") and included in the system prompt so the AI can answer "what are your hours?" accurately instead of hallucinating.
+- **Corrections as top-level prompt section**: Corrections are a standalone section placed after Voice Behavior with strong language and a concrete example, rather than a paragraph buried in Info Gathering. This gives it higher visibility in the prompt for Gemini's attention.
+- **Calls table in Realtime publication**: Migration 041 adds calls to `supabase_realtime` with `REPLICA IDENTITY FULL` so the dashboard calls page receives live INSERT/UPDATE events.
 
 ---
 

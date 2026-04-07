@@ -100,7 +100,7 @@ export default function LeadsPage() {
   const openHandled = useRef(false);
 
   const [filters, setFilters] = useState(() => ({
-    status: searchParams.get('status') || 'new',
+    status: searchParams.get('status') || '',
     urgency: searchParams.get('urgency') || '',
     dateFrom: searchParams.get('date_from') || '',
     dateTo: searchParams.get('date_to') || '',
@@ -133,13 +133,13 @@ export default function LeadsPage() {
 
   useEffect(() => {
     const openLeadId = searchParams.get('open');
-    if (openLeadId && !loading && !openHandled.current) {
+    if (openLeadId && !openHandled.current) {
       openHandled.current = true;
       setSelectedLeadId(openLeadId);
       setFlyoutOpen(true);
       router.replace('/dashboard/leads', { scroll: false });
     }
-  }, [searchParams, loading, router]);
+  }, [searchParams, router]);
 
   // ── Inject Realtime animation keyframe once ─────────────────────────────
   useEffect(() => { ensureSlideInKeyframe(); }, []);
@@ -191,10 +191,14 @@ export default function LeadsPage() {
   }, [filters, fetchLeads]);
 
   // ── Batch-fetch invoice statuses for lead cards ────────────────────────
+  // Use a stable string key derived from lead IDs so the effect only re-runs
+  // when leads are actually added/removed, not on every Realtime UPDATE
+  // (which creates a new array reference via .map() even if content is unchanged).
+  const leadIdKey = useMemo(() => leads.map((l) => l.id).join(','), [leads]);
+
   useEffect(() => {
-    if (!leads.length) return;
-    const ids = leads.map((l) => l.id).join(',');
-    fetch(`/api/invoices?lead_ids=${ids}`)
+    if (!leadIdKey) return;
+    fetch(`/api/invoices?lead_ids=${leadIdKey}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!data?.invoices) return;
@@ -205,9 +209,14 @@ export default function LeadsPage() {
         setInvoiceStatusMap(map);
       })
       .catch(() => {});
-  }, [leads]);
+  }, [leadIdKey]);
 
   // ── Supabase Realtime subscription ─────────────────────────────────────
+  // Use a ref for filters so the INSERT callback reads the latest values
+  // without including filters in the effect deps (which would destroy and
+  // recreate the WebSocket channel on every filter change).
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
   useEffect(() => {
     if (!tenantId) return;
@@ -224,12 +233,13 @@ export default function LeadsPage() {
         },
         (payload) => {
           const newLead = { ...payload.new, _isNew: true };
+          const f = filtersRef.current;
           // Only add if it matches current filters or no filters are active
-          const matchesFilters = !hasActiveFilters(filters) || (
-            (!filters.status || filters.status === newLead.status) &&
-            (!filters.urgency || filters.urgency === newLead.urgency_tag) &&
-            (!filters.jobType || filters.jobType === newLead.job_type) &&
-            (!filters.search || (newLead.caller_name || '').toLowerCase().includes(filters.search.toLowerCase()))
+          const matchesFilters = !hasActiveFilters(f) || (
+            (!f.status || f.status === newLead.status) &&
+            (!f.urgency || f.urgency === newLead.urgency_tag) &&
+            (!f.jobType || f.jobType === newLead.job_type) &&
+            (!f.search || (newLead.caller_name || '').toLowerCase().includes(f.search.toLowerCase()))
           );
           if (matchesFilters) {
             setLeads((prev) => [newLead, ...prev]);
@@ -257,7 +267,7 @@ export default function LeadsPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tenantId, filters]);
+  }, [tenantId]);
 
   // ── Batch eligibility ──────────────────────────────────────────────────
 

@@ -297,8 +297,8 @@ export async function syncOutlookCalendarEvents(tenantId) {
       provider: 'outlook',
       external_id: evt.id,
       title: evt.subject || '',
-      start_time: evt.start?.dateTime,
-      end_time: evt.end?.dateTime,
+      start_time: evt.start?.dateTime || evt.start?.date,
+      end_time: evt.end?.dateTime || evt.end?.date,
       is_all_day: evt.isAllDay || false,
       synced_at: new Date().toISOString(),
     }));
