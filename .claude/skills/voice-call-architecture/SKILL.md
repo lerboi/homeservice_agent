@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Twi
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-02 (Prompt fixes: pacing, language, unit number, address readback. Agent restructure: parallel DB queries + session start. check_availability: time parameter + uncapped slots)
+**Last updated**: 2026-04-07 (9-issue fix batch: end_call triggers session close via ctx.shutdown(), booking_outcome write moved before calendar push, unit_number param added to book_appointment + capture_lead, past-date rejection in check_availability + slot_calculator, recording_storage_path written at egress start, prompt rewrite: mandatory unit number + verification for all info + goal-oriented end-call instructions)
 
 ---
 
@@ -243,7 +243,7 @@ appointments, events, zones, buffers = await asyncio.gather(
 
 **File**: `src/prompt.py`
 
-### `build_system_prompt(locale, *, business_name, onboarding_complete, tone_preset, intake_questions)`
+### `build_system_prompt(locale, *, business_name, onboarding_complete, tone_preset, intake_questions, country)`
 
 The prompt is assembled from modular section builder functions. Conditional sections are filtered via list comprehension.
 
@@ -252,19 +252,20 @@ The prompt is assembled from modular section builder functions. Conditional sect
 1. **Identity** — role, tone, conciseness rule
 2. **Voice Behavior** — energy matching, pacing, tool announcement. PACING subsection: one question per turn, wait for full response, acknowledge before next question.
 3. **Opening Line** — greeting with business name + recording disclosure. Echo awareness.
-4. **Language** — default English always. Unclear speech treated as hearing issue ("I didn't catch that"), not language barrier. Only switch if caller explicitly asks. Gather info for unsupported languages.
+4. **Language** — default English always. Unclear speech treated as hearing issue ("I didn't catch that"), not language barrier. Only switch if caller explicitly asks. Supported: English, Spanish, Chinese (Mandarin), Malay, Tamil, Vietnamese. Full conversation continuation in the new language without re-asking answered questions. Gather info for unsupported languages.
 5. **Repeat Caller** — empty (all calls treated as new — never reveal prior history)
-6. **Info Gathering** — collect issue, name, then address (postal/zip, street name, unit/apartment number). ADDRESS CONFIRMATION: read full address back, wait for caller to confirm, re-read if corrected. Urgency classified silently.
+6. **Info Gathering** — collect issue, name, then address (postal/zip, street name, unit/apartment number — unit is MANDATORY, only omit if caller explicitly says there isn't one). VERIFICATION: read back each key detail (name, issue, address) for caller confirmation before moving on. Urgency classified silently.
 7. **Intake Questions** — trade-specific questions asked naturally (injected via `session.generate_reply` after DB query completes)
 8. **Booking Protocol** — caller-led scheduling flow:
+   - Only schedule for upcoming dates/times — reject past dates, guide to future slots
    - Never list available slots unprompted — ask the caller when they prefer
    - If they give day without time, ask for time; if time without day, ask for day
    - Call check_availability with specific date+time for every time the caller asks about — never assume from earlier results
    - If unavailable, offer 2-3 closest alternatives
    - Handle edge cases (vague, ASAP, fully booked) by narrowing to specific date+time
-9. **Decline Handling** — two-strike: first decline = soft re-offer, second = capture_lead
+9. **Decline Handling** — only injected when `onboarding_complete=True`. Two-strike: first decline = soft re-offer, second = capture_lead
 10. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
-11. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max
+11. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max. Goal-oriented end-call: farewell must be fully heard before disconnect, two separate steps (speak goodbye, then call end_call after pause)
 
 ### Translation Keys (`messages/en.json`, `messages/es.json`)
 
@@ -304,6 +305,8 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 **File**: `src/tools/check_availability.py`
 
 - Parameters: `date` (optional YYYY-MM-DD), `time` (optional HH:MM 24h format), `urgency` (optional)
+- **Past-date validation**: rejects dates before today in tenant timezone with a natural message
+- **Minimum buffer**: rejects times within the next 1 hour for today's date
 - Fetches tenant config + 4 scheduling tables in parallel via `asyncio.gather()`
 - Calculates slots using `calculate_available_slots()` with `max_slots=50` (effectively unlimited)
 - **Specific time check**: when both `date` and `time` provided, checks if that exact slot is available. Returns yes + start/end for booking, or no + 3 closest alternatives.
@@ -314,9 +317,9 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 
 **File**: `src/tools/book_appointment.py`
 
-- Parameters: `slot_start`, `slot_end`, `service_address`, `caller_name`, `urgency`
+- Parameters: `slot_start`, `slot_end`, `street_name`, `postal_code`, `caller_name`, `unit_number` (optional), `urgency` (default "routine")
 - Calls `atomic_book_slot()` via Supabase RPC
-- **On success**: calendar push (fire-and-forget), booking_outcome='booked', caller SMS
+- **On success**: booking_outcome='booked' written IMMEDIATELY (before side effects), then calendar push (fire-and-forget), caller SMS
 - **On slot taken**: recalculates next available (parallel queries), booking_outcome='attempted', recovery SMS
 - Recovery SMS tracks pending/sent/retrying status in calls table
 
@@ -324,7 +327,7 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 
 **File**: `src/tools/capture_lead.py`
 
-- Parameters: `caller_name` (required), `phone`, `address`, `job_type`, `notes` (optional)
+- Parameters: `caller_name` (required), `phone`, `street_name`, `unit_number`, `postal_code`, `job_type`, `notes` (optional)
 - Computes mid-call duration from `start_timestamp` (milliseconds)
 - Calls `create_or_merge_lead()`, writes booking_outcome='declined'
 
@@ -342,8 +345,9 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 **File**: `src/tools/end_call.py`
 
 - Returns a space character immediately
-- After 7-second `asyncio.sleep()`: removes SIP participant via `LiveKitAPI().room.remove_participant()`
-- Delay allows farewell audio to play before disconnection
+- After 12-second `asyncio.sleep()`: removes SIP participant via `LiveKitAPI().room.remove_participant()`
+- After removing participant, calls `ctx.shutdown()` to disconnect the agent from the room, which triggers session close and the post-call pipeline
+- Delay allows farewell audio to play through SIP buffering before disconnection
 
 ---
 
@@ -359,9 +363,9 @@ Runs immediately when the AgentSession closes (in-process, no webhook delay).
 2. **Update call record** — status='analyzed', transcript, recording path, disconnection_reason
 3. **Test call auto-cancel** — cancel appointment + reset lead if `is_test_call`
 4. **Usage tracking** — `increment_calls_used` RPC; Stripe overage if limit_exceeded
-5. **Language detection** — Spanish markers regex (>=2 matches -> 'es', else 'en')
+5. **Language detection** — multi-language regex detection: CJK→'zh', Tamil Unicode→'ta', Vietnamese diacriticals (>=3)→'vi', Spanish keywords (>=2)→'es', Malay keywords (>=2)→'ms', default→'en'
 6. **Triage classification** — `classify_call()` three-layer pipeline
-7. **Suggested slots** — for unbooked calls, next 3 slots from tomorrow
+7. **Suggested slots** — for unbooked calls, up to 3 slots spread across the next 3 days (tomorrow through day+3)
 8. **Update call with triage** — urgency, confidence, layer, language, notification_priority
 9. **Create/merge lead** — if duration >= 15s, via `create_or_merge_lead()`
 10. **Owner notifications** — SMS/email per outcome preferences, emergency always sends both
@@ -395,7 +399,8 @@ await lk.egress.start_room_composite_egress(
         room_name=call_id,
         audio_only=True,
         file_outputs=[api.EncodedFileOutput(
-            filepath=f"{call_id}.mp4",
+            file_type=api.EncodedFileType.OGG,
+            filepath=f"{tenant_id}/{call_id}.ogg",
             s3=api.S3Upload(...)
         )],
     )
@@ -403,8 +408,10 @@ await lk.egress.start_room_composite_egress(
 ```
 
 - **Storage**: Supabase Storage -> `call-recordings` bucket via S3 protocol
-- **Format**: MP4 (audio-only)
-- **Lifecycle**: starts after session begins, stops on session close
+- **Format**: OGG (audio-only)
+- **Path**: `{tenant_id}/{call_id}.ogg`
+- **Early path persistence**: `recording_storage_path` is written to the calls table at egress start (if `call_uuid` is populated), not just in the post-call pipeline. This is a safety net so the dashboard can find recordings even if post-call fails.
+- **Lifecycle**: starts as a background task after session.start(), waits for DB task first (to get call_uuid), stops on session close
 
 ### Transcripts
 
@@ -454,9 +461,13 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 - **Silent repeat caller context**: `check_caller_history` tool returns history but instructs AI to never mention it. AI treats all calls as new unless the caller explicitly asks about prior calls.
 - **Caller-led booking flow**: AI never offers times first. Asks the caller when they prefer, checks availability after getting both day and time preference, offers alternatives if unavailable.
 - **Event handlers before session.start()**: Prevents race conditions where session closes before handlers are registered.
-- **Greeting via system prompt**: Gemini starts speaking automatically from the OPENING LINE section — no `generate_reply()` call needed.
+- **Greeting via generate_reply()**: `session.generate_reply(instructions="Greet the caller now.")` fires after session.start(). This relies on the git-pinned livekit-plugins-google commit (43d3734) which workarounds Gemini 3.1's restriction on `send_client_content`. The official PyPI release (1.5.1) does NOT support `generate_reply()` with Gemini 3.1 — do not switch to the stable release until LiveKit ships an official fix.
 - **Noise cancellation**: `BVCTelephony` for SIP calls, `BVC` for WebRTC — improves audio quality without interfering with VAD.
 - **Atomic booking via Postgres advisory locks**: `book_appointment_atomic` RPC with `tstzrange` overlap checking.
+- **booking_outcome written before side effects**: The `booking_outcome='booked'` write happens immediately after the booking RPC succeeds, before calendar push or SMS. This ensures the outcome persists even if the caller hangs up during side effects.
+- **end_call triggers ctx.shutdown()**: After removing the SIP participant, `ctx.shutdown()` disconnects the agent from the room, which cascades into session close → post-call pipeline. Without this, the agent stays in the room and post-call never runs.
+- **Past-date validation**: check_availability rejects past dates. slot_calculator returns [] if the entire working window is past. 1-hour minimum buffer for today's slots.
+- **recording_storage_path written at egress start**: Safety net — the path is written to the calls table when egress starts, not just in the post-call pipeline. Ensures the dashboard can find recordings even if post-call fails.
 - **Triage never downgrades**: Layer 3 can only escalate urgency.
 - **Fail-open design**: Missing tenant, slots, or subscription errors don't block calls.
 

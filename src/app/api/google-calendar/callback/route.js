@@ -54,7 +54,7 @@ export async function GET(request) {
     const isPrimary = count === 0;
 
     // Upsert credentials into DB
-    await supabase.from('calendar_credentials').upsert(
+    const { error: upsertError } = await supabase.from('calendar_credentials').upsert(
       {
         tenant_id: tenantId,
         provider: 'google',
@@ -68,19 +68,36 @@ export async function GET(request) {
       { onConflict: 'tenant_id,provider' }
     );
 
-    // Register push notification watch channel
-    await registerWatch(tenantId, { access_token, refresh_token, expiry_date });
+    if (upsertError) {
+      throw new Error(`Failed to save calendar credentials: ${upsertError.message}`);
+    }
 
-    // Perform initial full sync
-    await syncCalendarEvents(tenantId);
+    // Register push notification watch channel (non-fatal — manual sync still works)
+    try {
+      const watchResult = await registerWatch(tenantId, { access_token, refresh_token, expiry_date });
+      console.log(`[google-calendar-callback] Watch registered: channel=${watchResult.id}, expiration=${watchResult.expiration}`);
+    } catch (watchErr) {
+      console.error(`[google-calendar-callback] Watch registration FAILED for tenant ${tenantId}:`, watchErr?.message || watchErr);
+      console.error('[google-calendar-callback] Webhook URL was:', `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/google-calendar`);
+      console.error('[google-calendar-callback] This usually means the domain is not verified in Google Search Console.');
+      // Connection still works — user can use manual "Sync Now" button
+    }
+
+    // Perform initial full sync (non-fatal — connection is still valid without sync)
+    try {
+      await syncCalendarEvents(tenantId);
+      console.log(`[google-calendar-callback] Initial sync completed for tenant ${tenantId}`);
+    } catch (syncErr) {
+      console.error(`[google-calendar-callback] Initial sync FAILED for tenant ${tenantId}:`, syncErr?.message || syncErr);
+    }
 
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=google`
     );
   } catch (err) {
     console.error('[google-calendar-callback] Error:', err);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=google&error=true`
     );
   }
 }

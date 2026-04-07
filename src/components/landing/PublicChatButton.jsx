@@ -52,7 +52,7 @@ export default function PublicChatButton() {
       {open && <PublicChatPanel onClose={() => setOpen(false)} />}
 
       <div className="fixed bottom-6 right-4 lg:right-6 z-40 flex flex-col items-center">
-        {/* Speech bubble — positioned above FAB, dismissed manually */}
+        {/* Speech bubble — in flow so FAB centers under it */}
         <div
           className={`mb-3 relative bg-white text-[#0F172A] text-sm font-medium
             pl-4 pr-2 py-2 rounded-xl shadow-lg border border-stone-200 whitespace-nowrap
@@ -78,14 +78,15 @@ export default function PublicChatButton() {
           />
         </div>
 
-        {/* FAB — 64px, Headset icon */}
+        {/* FAB — 64px, Headset icon. Slides right when bubble is not visible */}
         <button
           onClick={() => setOpen((prev) => !prev)}
           className={`h-16 w-16 rounded-full
             bg-[#C2410C] hover:bg-[#C2410C]/90 text-white shadow-lg
             flex items-center justify-center transition-all duration-300
             focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-2
-            ${mounted ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}
+            ${mounted ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+            ${showBubble && !open ? '' : 'translate-x-9'}`}
           aria-label={open ? 'Close chat' : 'Open Voco AI chat'}
         >
           {open ? (

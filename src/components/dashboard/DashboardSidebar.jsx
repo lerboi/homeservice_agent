@@ -43,7 +43,7 @@ function NavLink({ item, pathname }) {
   );
 }
 
-export default function DashboardSidebar({ businessName }) {
+export default function DashboardSidebar() {
   const pathname = usePathname();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -105,12 +105,6 @@ export default function DashboardSidebar({ businessName }) {
         </div>
       </nav>
 
-      {/* Business name */}
-      {businessName && (
-        <div className="px-4 py-4 border-t border-white/[0.06]">
-          <p className="text-xs text-white/40 truncate">{businessName}</p>
-        </div>
-      )}
     </div>
   );
 

@@ -89,8 +89,8 @@ export default function TrialCountdownBanner() {
   // Determine urgency copy
   const bannerText = isUrgent
     ? isLastDay
-      ? 'Your trial ends today - upgrade to keep your AI receptionist'
-      : `Your trial ends in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} - upgrade to keep your AI receptionist`
+      ? 'Your free trial ends today — billing starts automatically'
+      : `Your free trial ends in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} — billing starts automatically`
     : `${daysRemaining} days left in your free trial`;
 
   const bgClass = isUrgent
@@ -113,7 +113,7 @@ export default function TrialCountdownBanner() {
           href="/dashboard/more/billing"
           className={`font-medium ${isUrgent ? 'text-amber-800 hover:text-amber-950' : 'text-blue-700 hover:text-blue-900'} underline underline-offset-2 transition-colors`}
         >
-          {isUrgent ? 'Upgrade now' : 'View plans'}
+          View Billing
         </a>
       </p>
       <button

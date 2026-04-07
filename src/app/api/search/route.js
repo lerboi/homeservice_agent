@@ -20,7 +20,7 @@ export async function GET(request) {
 
   const pattern = `%${q}%`;
 
-  const [leadsRes, callsRes, invoicesRes, appointmentsRes] = await Promise.all([
+  const [leadsRes, callsRes, invoicesRes, appointmentsRes, estimatesRes] = await Promise.all([
     supabase
       .from('leads')
       .select('id, caller_name, from_number, job_type, status')
@@ -48,6 +48,12 @@ export async function GET(request) {
       .eq('tenant_id', tenantId)
       .ilike('caller_name', pattern)
       .order('start_time', { ascending: false })
+      .limit(5),
+    supabase
+      .from('estimates')
+      .select('id, estimate_number, customer_name, total, status')
+      .eq('tenant_id', tenantId)
+      .or(`estimate_number.ilike.${pattern},customer_name.ilike.${pattern}`)
       .limit(5),
   ]);
 
@@ -103,6 +109,19 @@ export async function GET(request) {
           ? new Date(a.start_time).toLocaleDateString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
           : '',
         href: '/dashboard/calendar',
+      })),
+    });
+  }
+
+  if (estimatesRes.data?.length) {
+    results.push({
+      type: 'estimates',
+      label: 'Estimates',
+      items: estimatesRes.data.map((est) => ({
+        id: est.id,
+        title: est.estimate_number,
+        subtitle: est.customer_name || '',
+        href: `/dashboard/estimates/${est.id}`,
       })),
     });
   }

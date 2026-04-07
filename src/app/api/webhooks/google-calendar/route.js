@@ -15,8 +15,11 @@ export async function POST(request) {
   const tenantId = request.headers.get('X-Goog-Channel-Token');
   const channelId = request.headers.get('X-Goog-Channel-ID');
 
+  console.log(`[google-webhook] Received: state=${state}, channelId=${channelId}, tenantId=${tenantId}`);
+
   // Handshake — acknowledge immediately
   if (state === 'sync') {
+    console.log('[google-webhook] Handshake acknowledged');
     return Response.json({ ok: true });
   }
 
@@ -37,8 +40,14 @@ export async function POST(request) {
     // Use the trusted DB tenant_id for sync, not the header value
     if (state === 'exists' && creds.tenant_id) {
       const verifiedTenantId = creds.tenant_id;
+      console.log(`[google-webhook] Triggering sync for tenant ${verifiedTenantId}`);
       after(async () => {
-        await syncCalendarEvents(verifiedTenantId);
+        try {
+          await syncCalendarEvents(verifiedTenantId);
+          console.log(`[google-webhook] Sync completed for tenant ${verifiedTenantId}`);
+        } catch (err) {
+          console.error(`[google-webhook] Sync FAILED for tenant ${verifiedTenantId}:`, err?.message || err);
+        }
       });
     }
 

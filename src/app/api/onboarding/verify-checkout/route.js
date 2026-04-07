@@ -12,29 +12,7 @@ import { stripe } from '@/lib/stripe';
  *    idempotency guard (stripe_webhook_events UNIQUE constraint + out-of-order timestamp check).
  */
 
-// Price ID -> plan mapping (must match webhook route)
-const PLAN_MAP = {
-  [process.env.STRIPE_PRICE_STARTER]:       { plan_id: 'starter', calls_limit: 40 },
-  [process.env.STRIPE_PRICE_STARTER_ANNUAL]: { plan_id: 'starter', calls_limit: 480 },
-  [process.env.STRIPE_PRICE_GROWTH]:        { plan_id: 'growth',  calls_limit: 120 },
-  [process.env.STRIPE_PRICE_GROWTH_ANNUAL]: { plan_id: 'growth',  calls_limit: 1440 },
-  [process.env.STRIPE_PRICE_SCALE]:         { plan_id: 'scale',   calls_limit: 400 },
-  [process.env.STRIPE_PRICE_SCALE_ANNUAL]:  { plan_id: 'scale',   calls_limit: 4800 },
-};
-
-const OVERAGE_PRICE_IDS = new Set([
-  process.env.STRIPE_PRICE_STARTER_OVERAGE,
-  process.env.STRIPE_PRICE_GROWTH_OVERAGE,
-  process.env.STRIPE_PRICE_SCALE_OVERAGE,
-].filter(Boolean));
-
-const OVERAGE_MAP = {
-  starter: process.env.STRIPE_PRICE_STARTER_OVERAGE,
-  growth: process.env.STRIPE_PRICE_GROWTH_OVERAGE,
-  scale: process.env.STRIPE_PRICE_SCALE_OVERAGE,
-};
-
-const PLAN_NAMES = { starter: 'Starter', growth: 'Growth', scale: 'Scale' };
+import { PLAN_MAP, OVERAGE_PRICE_IDS, OVERAGE_MAP, PLAN_NAMES } from '@/lib/stripe-plans';
 
 export async function GET(request) {
   const supabaseServer = await createSupabaseServer();

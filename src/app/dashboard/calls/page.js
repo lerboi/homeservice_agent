@@ -305,20 +305,18 @@ function DetailItem({ icon: Icon, label, value }) {
 
 function EmptyState({ hasFilters, onClear }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-      <div className="h-14 w-14 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-        <Phone className="h-6 w-6 text-stone-400" />
-      </div>
+    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+      <Phone className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
       {hasFilters ? (
         <>
-          <p className="text-sm font-medium text-[#0F172A] mb-1">No calls match your filters</p>
-          <p className="text-xs text-[#475569] mb-4 max-w-xs">Try adjusting your search or removing some filters to see more results.</p>
+          <h2 className="text-base font-semibold text-[#0F172A] mb-2">No calls match your filters</h2>
+          <p className="text-sm text-[#475569] mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
           <Button variant="outline" size="sm" onClick={onClear}>Clear all filters</Button>
         </>
       ) : (
         <>
-          <p className="text-sm font-medium text-[#0F172A] mb-1">No calls yet</p>
-          <p className="text-xs text-[#475569] max-w-xs">When your AI receptionist answers a call, it will show up here with all the details.</p>
+          <h2 className="text-base font-semibold text-[#0F172A] mb-2">No calls yet</h2>
+          <p className="text-sm text-[#475569] max-w-sm">When your AI receptionist answers a call, it will show up here with all the details.</p>
         </>
       )}
     </div>

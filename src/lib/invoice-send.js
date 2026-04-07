@@ -103,24 +103,24 @@ export async function sendSingleInvoice(supabase, tenantId, invoiceId, options =
     try {
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('retell_phone_number')
+        .select('phone_number')
         .eq('id', tenantId)
         .maybeSingle();
 
-      if (tenant?.retell_phone_number) {
+      if (tenant?.phone_number) {
         const smsBody =
           `${settings.business_name || 'Your service provider'}: Invoice #${invoice.invoice_number} ` +
           `for $${Number(invoice.total).toFixed(2)} due ${invoice.due_date || 'upon receipt'}. ` +
-          `Full invoice sent to your email. Questions? Call ${settings.phone || tenant.retell_phone_number}`;
+          `Full invoice sent to your email. Questions? Call ${settings.phone || tenant.phone_number}`;
 
         await getTwilioClient().messages.create({
           body: smsBody,
-          from: tenant.retell_phone_number,
+          from: tenant.phone_number,
           to: invoice.customer_phone,
         });
         console.log('[invoice-send] SMS sent to:', invoice.customer_phone);
       } else {
-        console.warn('[invoice-send] SMS requested but tenant has no retell_phone_number');
+        console.warn('[invoice-send] SMS requested but tenant has no phone_number');
       }
     } catch (err) {
       // SMS failure must NOT fail the send — email already delivered

@@ -111,14 +111,16 @@ export function calculateAvailableSlots({
 2. Look up `workingHours[dayKey]` — if day is disabled or missing, return `[]`
 3. Convert `open`/`close` times (HH:MM) to UTC Date objects via `fromZonedTime`
 4. Convert `lunchStart`/`lunchEnd` similarly (if configured)
-5. Walk forward from `windowStart` in `slotDurationMins` steps until `windowEnd` or `maxSlots` reached
-6. For each candidate slot, skip if:
+5. **Past-date guard**: if `windowEnd <= now`, return `[]` immediately (entire working window is in the past)
+6. **Today adjustment**: if target date is today and `cursor < now`, advance cursor to `now` (skip past times)
+7. Walk forward from `windowStart` (or `now` for today) in `slotDurationMins` steps until `windowEnd` or `maxSlots` reached
+8. For each candidate slot, skip if:
    - Slot end exceeds `windowEnd`
    - Overlaps with lunch break
    - Overlaps any `existingBookings` interval
    - Overlaps any `externalBlocks` interval (Google/Outlook calendar events)
    - Violates travel buffer from the most recent prior booking (see travel buffer rules)
-7. Accepted slots are returned as `{ start, end }` ISO strings
+9. Accepted slots are returned as `{ start, end }` ISO strings
 
 ### Travel Buffer Rules
 

@@ -271,9 +271,9 @@ export async function syncOutlookCalendarEvents(tenantId) {
     url = creds.last_sync_token;
   } else {
     // Initial full sync — use calendarView/delta with date range (Pitfall 2)
-    const now = new Date().toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
     const sixMonths = new Date(Date.now() + 180 * 86400000).toISOString();
-    url = `${GRAPH_BASE}/me/calendarView/delta?startDateTime=${now}&endDateTime=${sixMonths}`;
+    url = `${GRAPH_BASE}/me/calendarView/delta?startDateTime=${thirtyDaysAgo}&endDateTime=${sixMonths}`;
   }
 
   let allEvents = [];

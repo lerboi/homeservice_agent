@@ -155,6 +155,7 @@ export async function GET(request) {
           await supabase.from('invoice_reminders').upsert(
             {
               invoice_id: invoice.id,
+              tenant_id: invoice.tenant_id,
               reminder_type: point.type,
               sent_at: new Date().toISOString(),
             },
@@ -236,6 +237,7 @@ export async function GET(request) {
         // Insert late fee line item
         await supabase.from('invoice_line_items').insert({
           invoice_id: invoice.id,
+          tenant_id: invoice.tenant_id,
           item_type: 'late_fee',
           description: `Late fee -- ${daysOverdue} days overdue`,
           quantity: 1,

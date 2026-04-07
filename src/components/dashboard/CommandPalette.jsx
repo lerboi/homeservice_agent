@@ -9,6 +9,7 @@ const TYPE_ICONS = {
   calls: Phone,
   invoices: FileText,
   appointments: Calendar,
+  estimates: FileText,
 };
 
 export default function CommandPalette() {
@@ -126,7 +127,7 @@ export default function CommandPalette() {
               value={query}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Search leads, calls, invoices..."
+              placeholder="Search leads, calls, invoices, estimates..."
               className="flex-1 h-12 text-sm text-[#0F172A] placeholder:text-stone-400 bg-transparent outline-none"
             />
             {loading && <Loader2 className="size-4 text-stone-400 animate-spin shrink-0" />}

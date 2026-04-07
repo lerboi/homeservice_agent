@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { CalendarDays, Users, FileText, Activity, MapPin, Clock, ChevronRight, Inbox, PhoneOutgoing, PhoneMissed } from 'lucide-react';
+import { CalendarDays, Users, FileText, Activity, MapPin, Clock, ChevronRight, Inbox, PhoneOutgoing, PhoneMissed, HelpCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
@@ -266,6 +266,17 @@ export default function DashboardPage() {
         <span className="text-xs text-green-600 font-medium bg-green-50 px-2.5 py-1 rounded-full hidden sm:block">
           AI Active
         </span>
+        <button
+          onClick={() => {
+            localStorage.removeItem('gsd_has_seen_tour');
+            window.dispatchEvent(new CustomEvent('start-dashboard-tour'));
+          }}
+          className="text-xs text-stone-400 hover:text-stone-600 transition-colors flex items-center gap-1"
+          aria-label="Take a guided tour"
+        >
+          <HelpCircle className="size-3.5" />
+          Tour
+        </button>
       </div>
 
       {activeLoading ? (

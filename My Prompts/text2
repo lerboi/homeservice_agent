@@ -1,174 +1,108 @@
-Twilio Elastic SIP Trunking + LiveKit Setup Guide
-==================================================
+Got it. Here's the full roadmap:
 
-## What is Elastic SIP Trunking (Simple Terms)
+───
 
-Right now your phone numbers live in Twilio. When someone calls one of your numbers, Twilio needs to know where to send that call. Previously, Retell told Twilio "send it to me." Now you need to tell Twilio "send it to LiveKit."
+Part 1 — Skills to Install
 
-A SIP trunk is just a pipe between Twilio and LiveKit. It carries voice calls in both directions:
+Run these via clawhub CLI (some may need retry if rate limited):
 
-  Caller dials your Twilio number
-    -> Twilio says "this number is on a SIP trunk"
-    -> Twilio sends the call through the trunk to LiveKit
-    -> LiveKit creates a room, your agent joins and answers
+clawhub install abm-schema-markup
+clawhub install abm-competitor-alternatives
 
-"Elastic" just means it scales automatically -- 1 call or 100 simultaneous calls, same trunk.
+Skills you'll have:
 
-## Why You Need It
+• abm-programmatic-seo ✅ (already installed)
+• abm-seo-audit ✅ (already installed)
+• abm-schema-markup ⏳ (install it)
+• abm-competitor-alternatives ⏳ (install it)
 
-Without it, calls to your Twilio numbers go nowhere. The SIP trunk is the bridge that replaced Retell's connection.
+───
 
-## Cost
+Part 2 — Infrastructure
 
-| Item                           | Cost                                    |
-|--------------------------------|-----------------------------------------|
-| SIP trunk itself               | Free (no monthly fee)                   |
-| Inbound calls (US)             | ~$0.0040/min                            |
-| Inbound calls (SG)             | ~$0.0050/min                            |
-| Outbound calls (test calls)    | ~$0.0140/min US, varies by country      |
+src/app/sitemap.js — Next.js 15+ native sitemap (no package needed). Returns all static + dynamic routes. Should include: landing, pricing, blog, personas, comparisons, integrations, glossary.
 
-For comparison, Retell was charging $0.07-0.15/min for the same call routing plus STT/TTS. SIP trunking is just the pipe -- much cheaper.
+src/app/robots.txt — Allow all, point to sitemap.
 
-A typical 3-minute call costs about $0.012 in SIP trunking fees. At 1,000 calls/month, that's ~$36/month for SIP alone.
+src/app/(public)/og/route.jsx — Dynamic OG image generation via next/og. One route, query params for title/service/type.
 
+───
 
-## Step-by-Step Setup
+Part 3 — Data Layer
 
-### Step 1: Create the SIP Trunk
+Create src/data/ with:
 
-1. Go to https://console.twilio.com
-2. In the left sidebar: Explore Products -> search for "Elastic SIP Trunking" -> click it
-3. If it asks you to enable it, enable it
-4. Click "Trunks" in the left sidebar
-5. Click "Create new SIP Trunk" (or the "+" button)
-6. Name it: voco-livekit
-7. Click "Create"
+• services.js — trades you serve (plumber, HVAC, handyman, electrician, etc.)
+• personas.js — each persona: slug, title, meta description, pain points, objections, testimonials, CTAs
+• comparisons.js — each comparison: slug, who you're vs, pros/cons, verdict
+• integrations.js — each integration: slug, tool name, description, use cases
+• blog-posts.js — post metadata: slug, title, description, date, author, category, tags
 
-### Step 2: Configure Origination (Inbound: Twilio -> LiveKit)
+Each file exports an array. This is your programmatic generation engine.
 
-This tells Twilio where to send incoming calls.
+───
 
-1. You're now on the trunk detail page. Click the "Origination" tab
-2. Click "Add new Origination URI"
-3. For the URI, you need your LiveKit SIP endpoint. It follows this format:
-     sip:vocolive-levf4sh1.livekit.cloud;transport=tcp
-   (Take your LiveKit URL wss://vocolive-levf4sh1.livekit.cloud, drop the wss://, put sip: in front)
-4. Priority: 10
-5. Weight: 10
-6. Click "Add"
+Part 4 — Page Templates to Build
 
-### Step 3: Configure Termination (Outbound: LiveKit -> Twilio -> Phone Network)
+Blog — /blog listing + /blog/[slug] detail. Use generateStaticParams + generateMetadata.
 
-This is needed for outbound calls (test calls during onboarding).
+Personas — /for/[persona] with template that renders persona-specific copy, pain points, features, social proof. Target: plumbers, HVAC contractors, handymen, electricians.
 
-1. Click the "Termination" tab
-2. Set a "Termination SIP URI" -- pick a unique name, e.g.: voco-livekit.pstn.twilio.com
-3. Under "Authentication", click "Create new Credential List"
-   - Name: voco-livekit-creds
-   - Username: pick something (e.g. voco_sip)
-   - Password: pick a strong password
-   - SAVE THESE -- you'll need them for the LiveKit outbound trunk config
-4. Click "Save"
+Comparisons — /compare/[comparison] with template. Start with: voicemail vs AI receptionist, ringcentral vs voco, jobber vs manual scheduling.
 
-### Step 4: Associate Your Phone Numbers
+Integrations — /integrations/[tool] with template. Start with: jobber, housecall-pro, stripe, google-calendar.
 
-1. Click the "Numbers" tab
-2. Click "Add a Number"
-3. You'll see your Twilio numbers listed. Select the ones that should be answered by the AI agent (e.g. +14783755631)
-4. Click "Add Selected"
+Glossary — /glossary/[term] with template. FAQ schema markup here is a must.
 
-For future numbers purchased during onboarding -- they're automatically associated via the TWILIO_SIP_TRUNK_SID env var in the Stripe webhook.
+───
 
-### Step 5: Enable PSTN Transfer (for call transfers to owner)
+Part 5 — Schema Markup Component
 
-1. Go back to the "General" tab of your trunk
-2. Look for "Transfer Mode" or "PSTN Transfer" setting
-3. Make sure "SIP REFER" is enabled (this allows the AI to transfer calls to the business owner's phone)
+Build src/components/SchemaMarkup.jsx that accepts type + data, renders <script type="application/ld+json">. Types to implement:
 
-### Step 6: Create LiveKit Inbound Trunk
+• LocalBusiness — for landing page
+• FAQPage — for glossary + blog posts
+• WebPage — base for all pages
+• SoftwareApplication — for integrations pages
 
-Now tell LiveKit to accept calls from your Twilio SIP trunk. Go to your terminal:
+───
 
-  winget install LiveKit.LiveKitCLI
-  (restart terminal)
-  lk cloud auth
+Part 6 — Metadata Per Page Type
 
-Then update and deploy the inbound trunk config. Edit sip-inbound-trunk.json:
+Every dynamic page needs generateMetadata() returning:
 
-  {
-    "trunk": {
-      "name": "voco-twilio-inbound",
-      "numbers": ["+14783755631"],
-      "krisp_enabled": true
-    }
-  }
+• title — template: {PageName} | Voco
+• description — from data layer
+• openGraph — image from /og/route?title=...
+• alternates — canonical URL
+• robots — index, follow for public pages
 
-Deploy it:
+───
 
-  lk sip inbound create sip-inbound-trunk.json
+Part 7 — Internal Linking
 
-### Step 7: Create LiveKit Outbound Trunk
+Every page should link to:
 
-Edit sip-outbound-trunk.json with the termination credentials from Step 3:
+• Related pages of same type (blog → blog, integration → integration)
+• Hub page (persona pages → /for, glossary → /glossary)
+• Relevant CTAs to signup/trial
 
-  {
-    "trunk": {
-      "name": "voco-twilio-outbound",
-      "address": "voco-livekit.pstn.twilio.com",
-      "numbers": ["],
-      "auth_username": "voco_sip",
-      "auth_password": "your-password-from-step-3"
-    }
-  }
+No orphan pages. Every programmatic page reachable from a hub.
 
-Deploy it:
+───
 
-  lk sip outbound create sip-outbound-trunk.json
+Execution Order
 
-This prints the trunk ID -- that's your LIVEKIT_SIP_OUTBOUND_TRUNK_ID. Set it once, never touch it again.
+1. Install remaining skills
+2. sitemap.js + robots.txt (foundation)
+3. OG image route (used everywhere)
+4. Data layer files (your content config)
+5. Schema markup component
+6. Blog scaffold → write 2-3 posts
+7. Personas pages (your top-of-funnel B2B play)
+8. Comparisons pages (high commercial intent)
+9. Integrations pages (warm leads from existing tool users)
+10. Glossary pages (bottom funnel + authority)
+11. Audit with abm-seo-audit
 
-### Step 8: Create Dispatch Rule
-
-Deploy the existing dispatch rule:
-
-  lk sip dispatch create sip-dispatch-rule.json
-
-### Step 9: Verify
-
-Call your Twilio number. If the SIP trunk + LiveKit agent are both running, the agent should answer. If the agent isn't deployed yet, the call will connect to LiveKit but nobody answers (it'll timeout after ~30s).
-
-
-## Important Notes
-
-- Number association is per-trunk, not per-number. The Twilio SIP trunk is a "catch-all" -- any number associated with it routes through automatically.
-- New numbers purchased during onboarding are auto-associated via the TWILIO_SIP_TRUNK_SID env var.
-- The Trunk SID (starts with TK) is found on the trunk detail page in Twilio Console -- add it as TWILIO_SIP_TRUNK_SID in your Next.js .env.local.
-
-
-## Env Vars Summary
-
-Next.js .env.local (add these):
-  LIVEKIT_URL=wss://vocolive-levf4sh1.livekit.cloud
-  LIVEKIT_API_KEY=
-  LIVEKIT_API_SECRET=
-  LIVEKIT_SIP_OUTBOUND_TRUNK_ID=
-  TWILIO_SIP_TRUNK_SID=
-
-LiveKit Agent .env:
-  LIVEKIT_URL=wss://vocolive-levf4sh1.livekit.cloud
-  LIVEKIT_API_KEY=
-  LIVEKIT_API_SECRET=
-  GOOGLE_API_KEY=
-  NEXT_PUBLIC_SUPABASE_URL=
-  SUPABASE_SERVICE_ROLE_KEY=
-  SUPABASE_S3_ACCESS_KEY=
-  SUPABASE_S3_SECRET_KEY=
-  SUPABASE_S3_ENDPOINT=
-  SUPABASE_S3_REGION=
-  TWILIO_ACCOUNT_SID=
-  TWILIO_AUTH_TOKEN=
-  TWILIO_FROM_NUMBER=
-  RESEND_API_KEY=
-  GROQ_API_KEY=
-  STRIPE_SECRET_KEY=
-  NEXT_PUBLIC_APP_URL=
+───

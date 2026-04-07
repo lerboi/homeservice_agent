@@ -216,9 +216,9 @@ export default function InvoicesPage() {
         {/* Empty state — no invoices at all */}
         {!loading && !error && invoices.length === 0 && activeStatus === 'all' && !debouncedSearch && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <FileText className="w-12 h-12 text-stone-300 mb-6" />
-            <h2 className="text-xl font-semibold text-stone-900 mb-2">No invoices yet</h2>
-            <p className="text-sm text-stone-500 max-w-md mb-6">
+            <FileText className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+            <h2 className="text-base font-semibold text-[#0F172A] mb-2">No invoices yet</h2>
+            <p className="text-sm text-[#475569] max-w-sm mb-6">
               Send professional, white-labeled invoices to your customers in three simple steps.
             </p>
 
@@ -306,6 +306,8 @@ export default function InvoicesPage() {
                     <TableRow
                       key={invoice.id}
                       onClick={() => handleRowClick(invoice.id)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(invoice.id); }}}
                       className="cursor-pointer hover:bg-stone-50 transition-colors"
                     >
                       <TableCell className="text-sm font-medium text-stone-900">
@@ -341,6 +343,9 @@ export default function InvoicesPage() {
                 <div
                   key={invoice.id}
                   onClick={() => handleRowClick(invoice.id)}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(invoice.id); }}}
+                  role="button"
                   className="bg-white border border-stone-200 rounded-lg p-4 cursor-pointer hover:bg-stone-50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">

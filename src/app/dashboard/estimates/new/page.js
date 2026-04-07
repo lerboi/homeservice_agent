@@ -72,7 +72,7 @@ export default function EstimateEditorPage() {
 
   // Load settings
   useEffect(() => {
-    fetch('/api/invoices/settings')
+    fetch('/api/invoice-settings')
       .then((r) => r.ok ? r.json() : null)
       .then((data) => { if (data) setSettings(data); })
       .catch(() => {});

@@ -115,11 +115,11 @@ export async function POST(request, { params }) {
     try {
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('retell_phone_number')
+        .select('phone_number')
         .eq('id', tenantId)
         .maybeSingle();
 
-      if (tenant?.retell_phone_number) {
+      if (tenant?.phone_number) {
         const isTiered = tiersWithItems.length > 0;
         let smsBody;
 
@@ -130,22 +130,22 @@ export async function POST(request, { params }) {
           smsBody =
             `${settings.business_name || 'Your service provider'}: Estimate #${estimate.estimate_number} ` +
             `with options from $${min.toFixed(2)} to $${max.toFixed(2)}. ` +
-            `Full estimate sent to your email. Questions? Call ${settings.phone || tenant.retell_phone_number}`;
+            `Full estimate sent to your email. Questions? Call ${settings.phone || tenant.phone_number}`;
         } else {
           smsBody =
             `${settings.business_name || 'Your service provider'}: Estimate #${estimate.estimate_number} ` +
             `for $${Number(estimate.total || 0).toFixed(2)}. ` +
-            `Full estimate sent to your email. Questions? Call ${settings.phone || tenant.retell_phone_number}`;
+            `Full estimate sent to your email. Questions? Call ${settings.phone || tenant.phone_number}`;
         }
 
         await getTwilioClient().messages.create({
           body: smsBody,
-          from: tenant.retell_phone_number,
+          from: tenant.phone_number,
           to: estimate.customer_phone,
         });
         console.log('[estimate-send] SMS sent to:', estimate.customer_phone);
       } else {
-        console.warn('[estimate-send] SMS skipped: tenant has no retell_phone_number');
+        console.warn('[estimate-send] SMS skipped: tenant has no phone_number');
       }
     } catch (err) {
       // SMS failure is non-fatal -- email already delivered

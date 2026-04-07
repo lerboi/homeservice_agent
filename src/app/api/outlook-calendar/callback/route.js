@@ -34,13 +34,13 @@ export async function GET(request) {
     if (isAdminConsentError) {
       console.log('400:', 'Admin consent required');
       return Response.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=admin_consent`
+        `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=outlook&error=true&reason=admin_consent`
       );
     }
 
     console.log('400:', 'OAuth error:', error, errorDescription);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=outlook&error=true`
     );
   }
 
@@ -50,7 +50,7 @@ export async function GET(request) {
   if (!code || !tenantId) {
     console.log('400:', 'Missing code or invalid state');
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=outlook&error=true`
     );
   }
 
@@ -81,7 +81,7 @@ export async function GET(request) {
     const isPrimary = count === 0;
 
     // Upsert credentials into DB
-    await supabase.from('calendar_credentials').upsert(
+    const { error: upsertError } = await supabase.from('calendar_credentials').upsert(
       {
         tenant_id: tenantId,
         provider: 'outlook',
@@ -95,6 +95,10 @@ export async function GET(request) {
       { onConflict: 'tenant_id,provider' }
     );
 
+    if (upsertError) {
+      throw new Error(`Failed to save calendar credentials: ${upsertError.message}`);
+    }
+
     // Register Graph subscription for push notifications
     await createOutlookSubscription(tenantId, tokenResponse.accessToken);
 
@@ -102,12 +106,12 @@ export async function GET(request) {
     await syncOutlookCalendarEvents(tenantId);
 
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=outlook`
     );
   } catch (err) {
     console.error('[outlook-calendar-callback] Error:', err);
     return Response.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/calendar?calendar=outlook_error`
+      `${process.env.NEXT_PUBLIC_APP_URL}/auth/calendar-connected?provider=outlook&error=true`
     );
   }
 }

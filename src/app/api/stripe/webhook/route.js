@@ -108,22 +108,7 @@ async function provisionPhoneNumber(tenantId, country) {
   }
 }
 
-// Price ID -> plan mapping (D-12) — includes monthly, annual, and overage prices
-const PLAN_MAP = {
-  [process.env.STRIPE_PRICE_STARTER]:        { plan_id: 'starter', calls_limit: 40 },
-  [process.env.STRIPE_PRICE_STARTER_ANNUAL]: { plan_id: 'starter', calls_limit: 480 },
-  [process.env.STRIPE_PRICE_GROWTH]:         { plan_id: 'growth',  calls_limit: 120 },
-  [process.env.STRIPE_PRICE_GROWTH_ANNUAL]:  { plan_id: 'growth',  calls_limit: 1440 },
-  [process.env.STRIPE_PRICE_SCALE]:          { plan_id: 'scale',   calls_limit: 400 },
-  [process.env.STRIPE_PRICE_SCALE_ANNUAL]:   { plan_id: 'scale',   calls_limit: 4800 },
-};
-
-// Overage metered price IDs — used to identify the metered subscription item
-const OVERAGE_PRICE_IDS = new Set([
-  process.env.STRIPE_PRICE_STARTER_OVERAGE,
-  process.env.STRIPE_PRICE_GROWTH_OVERAGE,
-  process.env.STRIPE_PRICE_SCALE_OVERAGE,
-].filter(Boolean));
+import { PLAN_MAP, OVERAGE_PRICE_IDS, OVERAGE_MAP } from '@/lib/stripe-plans';
 
 /**
  * Stripe webhook handler — processes all subscription lifecycle events.
@@ -287,11 +272,6 @@ async function handleCheckoutCompleted(session) {
       [process.env.STRIPE_PRICE_SCALE_ANNUAL]: 'scale',
     }).find(([key]) => key === priceId)?.[1];
 
-    const OVERAGE_MAP = {
-      starter: process.env.STRIPE_PRICE_STARTER_OVERAGE,
-      growth: process.env.STRIPE_PRICE_GROWTH_OVERAGE,
-      scale: process.env.STRIPE_PRICE_SCALE_OVERAGE,
-    };
     const overagePriceId = planKey ? OVERAGE_MAP[planKey] : null;
 
     // Only add if overage price exists and isn't already on the subscription

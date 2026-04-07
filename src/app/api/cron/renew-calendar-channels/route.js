@@ -53,7 +53,7 @@ export async function GET(request) {
           access_token: cred.access_token,
           refresh_token: cred.refresh_token,
           expiry_date: cred.expiry_date,
-        });
+        }, cred.watch_channel_id, cred.watch_resource_id);
       } else if (cred.provider === 'outlook') {
         await renewOutlookSubscription(cred);
       }

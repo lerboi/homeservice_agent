@@ -14,9 +14,10 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const since = new Date(Date.now() - 90 * 86400000).toISOString();
         const [leadsRes, callsRes] = await Promise.all([
-          fetch('/api/leads?limit=0'),
-          fetch('/api/calls'),
+          fetch(`/api/leads?date_from=${since}&limit=0`),
+          fetch(`/api/calls?dateFrom=${since}&limit=500`),
         ]);
         const leadsData = leadsRes.ok ? await leadsRes.json() : { leads: [] };
         const callsData = callsRes.ok ? await callsRes.json() : { calls: [] };

@@ -1,11 +1,25 @@
 Voice Call
 -----------------------
+- When in a call and booking a slot, when the caller says out the unit number, the bot just hangs and nothing happens. After a while, when the AI is reconfirming the address and reading back all the parts, when it reaches the unit number, it just hangs again. Im not sure what the issue is. Can you look through the code and try to identify the issue. Do not edit any code yet, just let me know what the issue is, and the plan of implementation for the fix.
 
-- Remove the voice recording
+- When a call ends, in livekit_agent railway deployment, i get the below error:
 
-- check on all the integrations
+[2026-04-06T21:26:28.755436142Z] [info] [agent] Session closed: room=call-_+6587528516_yQdHCUJhZM2U duration=158s
+[2026-04-06T21:26:31.303617890Z] [error] [agent] Post-call pipeline error: {'message': 'new row for relation "calls" violates check constraint "calls_urgency_classification_check"', 'code': '23514', 'hint': None, 'details': 'Failing row contains (cffb9647-676e-4e8e-b6fd-81566d6395e8, 7954aa5c-8248-4b17-82f1-66ba9a42bc87, call-_+6587528516_yQdHCUJhZM2U, 2026-04-06 21:23:42.18846+00, +6587528516, +14783755631, inbound, analyzed, caller_hangup, 1775510621081, 1775510778779, 157, null, 7954aa5c-8248-4b17-82f1-66ba9a42bc87/call-_+6587528516_yQdHCUJhZ..., Caller: Okay, cool.\nAI: Thank you for calling voco. This call ma..., [{"role": "user", "content": "Okay, cool."}, {"role": "agent", "..., en, f, null, null, urgent, medium, layer2, [{"end": "2026-04-08T01:00:00+00:00", "start": "2026-04-08T00:00..., null, null, null, high, null, 0, null, null, livekit, EG_5cW3rrAPkKtC).'}
 
-- after a successful google calendar conection, it redirects to my page inside the popup window that is used to login through oauth. thius should happen, it should say something nlike successfully connected or something then the user can clsoe that and on the mian screen it will be coinnected, or even better, the oauth screen automaatically closes and the page refreshes.
+- Currently, during the booking, If the caller gives a date that has already passed or a date too close to the call time, the AI just books it anyway. There needs to be an instruction somewhere that prevents this from happening. You need to find a way to make sure that everytime the AI checks an available date, the date and time the AI checks is fetched fresh from the actual calendar. This is very important, and the code has to be set up in the most effecient and funcitonal way possible.
+
+- At the end of the call, when the AI wants to end the call, its speech gets cut off very suddenly. Can you identify the issue.
+
+- If the AI ends the call with its tool, the post call thign is never initialised, and in the calls tab in the dashboard it says the call was missed.
+
+- I want to add a new behaviour where the AI MUST read back any information given to the caller, and only if the caller verifies the information is correct, should the AI move on. For example, when the AI asks for name, and the caller gives name, the AI has to briefly repeat the name and ask the caller to verify, and when the caller verifies only move on to address collection etc.  
+
+- The AI does not ask for Unit number sometimes, and only asks for Streetname and zip/postal code. can you make the prompt better structured or something such that its mandatory to collect the 3 pieces of information for the address (Zip/postal code, street name, unit number). Only if the user explicitly mentions there is no unbit number, should the AI move on. 
+
+- Even where there is a booking made in the call, in the call log, it says no booking. Can you help me check if the booking tool ahs an issue, or if its a dashboard issue? Identify the issue.
+
+- The recording transcript is not showing up in the call log, or the leads page, even though it exists in the supabase s3 storage bucket. 
 
 
 
@@ -13,11 +27,6 @@ Dashboard
 -----------------------
 - In dashboard, say Good morning, {name}
 
+- In the Leads page, the UI/UX for batch selecting qualified leads to create invoices is very poorly designed and confusing. Can you take a look at it, and propose a plan of implementation to fix the current UI?UX to a better looking and imore importantly better user experience design? 
 
-
-
-- On the front page AI, make the history persistent by session
-
-- AI on front page should be limited to Voco codebase, and rate limited
-
--
+- Can the Calendar correctly handle the scenario where there are periods of time that are unavailable?

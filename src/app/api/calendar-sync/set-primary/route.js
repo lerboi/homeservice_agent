@@ -28,15 +28,8 @@ export async function POST(request) {
       return Response.json({ error: 'Provider not connected' }, { status: 400 });
     }
 
-    // Set all to false, then set chosen to true
-    await supabase.from('calendar_credentials')
-      .update({ is_primary: false })
-      .eq('tenant_id', tenantId);
-
-    await supabase.from('calendar_credentials')
-      .update({ is_primary: true })
-      .eq('tenant_id', tenantId)
-      .eq('provider', provider);
+    // Atomic primary calendar swap via DB function (no race window)
+    await supabase.rpc('set_primary_calendar', { p_tenant_id: tenantId, p_provider: provider });
 
     return Response.json({ primary: provider });
   } catch (err) {

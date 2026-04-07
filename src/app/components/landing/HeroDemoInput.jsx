@@ -54,7 +54,7 @@ export function HeroDemoInput({ onAudioReady }) {
   }
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-xl">
       <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
         {/* Input + button container — pill shape */}
         <div className="flex flex-col sm:flex-row bg-white/[0.10] border border-white/[0.12] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316] transition-shadow">
@@ -66,12 +66,12 @@ export function HeroDemoInput({ onAudioReady }) {
             disabled={state === 'loading'}
             aria-label="Your business name"
             aria-required="true"
-            className="flex-1 bg-transparent px-4 py-3 text-white placeholder:text-white/30 text-sm focus:outline-none min-h-[52px]"
+            className="flex-1 bg-transparent px-3 sm:px-4 py-3 text-white placeholder:text-white/30 text-xs sm:text-sm focus:outline-none min-h-[48px] sm:min-h-[52px]"
           />
           <button
             type="submit"
             disabled={businessName.trim().length < 2 || state === 'loading'}
-            className="bg-[#F97316] text-white text-sm px-5 py-3 rounded-b-xl sm:rounded-bl-none sm:rounded-r-xl font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F97316]/90 min-h-[52px] flex items-center justify-center gap-2 whitespace-nowrap"
+            className="bg-[#F97316] text-white text-xs sm:text-sm px-4 sm:px-5 py-3 rounded-b-xl sm:rounded-bl-none sm:rounded-r-xl font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F97316]/90 min-h-[48px] sm:min-h-[52px] flex items-center justify-center gap-2 whitespace-nowrap"
           >
             {state === 'loading' ? (
               <>
@@ -89,7 +89,7 @@ export function HeroDemoInput({ onAudioReady }) {
       <div className="mt-4 text-center">
         <Link
           href={isLoggedIn ? '/dashboard' : '/pricing'}
-          className="text-sm text-white/30 hover:text-white/50 transition-colors"
+          className="text-xs sm:text-sm text-white/30 hover:text-white/50 transition-colors"
         >
           {isLoggedIn ? 'Go to Dashboard' : 'Skip the demo \u2014 Start your free trial'}
         </Link>

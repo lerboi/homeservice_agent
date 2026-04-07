@@ -132,7 +132,6 @@ export async function proxy(request) {
 
       // Subscription status is checked but no longer blocks dashboard access.
       // The BillingWarningBanner component shows warnings directly on the dashboard.
-      const blockedStatuses = ['canceled', 'paused', 'incomplete'];
     }
   }
 

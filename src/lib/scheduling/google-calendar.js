@@ -110,7 +110,7 @@ export async function createCalendarEvent({ credentials, appointment }) {
  * @param {{ access_token: string, refresh_token: string, expiry_date: number }} credentials
  * @returns {Promise<object>} Watch response data
  */
-export async function registerWatch(tenantId, credentials) {
+export async function registerWatch(tenantId, credentials, oldChannelId = null, oldResourceId = null) {
   const oauth2Client = createOAuth2Client();
   oauth2Client.setCredentials({
     access_token: credentials.access_token,
@@ -119,6 +119,18 @@ export async function registerWatch(tenantId, credentials) {
   });
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  // Stop the old watch channel before creating a new one (prevents orphans)
+  if (oldChannelId && oldResourceId) {
+    try {
+      await calendar.channels.stop({
+        requestBody: { id: oldChannelId, resourceId: oldResourceId },
+      });
+    } catch (err) {
+      // Old channel may already be expired — ignore 404
+      console.log(`[google-calendar] Old channel stop (non-fatal): ${err.message}`);
+    }
+  }
 
   const response = await calendar.events.watch({
     calendarId: 'primary',

@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Calendar, Phone, MoreHorizontal } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, FileText, MoreHorizontal } from 'lucide-react';
 
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/dashboard/calls', label: 'Calls', icon: Phone },
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 

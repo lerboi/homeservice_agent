@@ -98,9 +98,9 @@ export default function EstimatesPage() {
         {/* Empty state - no estimates at all */}
         {!loading && !error && estimates.length === 0 && activeStatus === 'all' && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <ClipboardList className="w-12 h-12 text-stone-300 mb-6" />
-            <h2 className="text-xl font-semibold text-stone-900 mb-2">No estimates yet</h2>
-            <p className="text-sm text-stone-500 max-w-md mb-6">
+            <ClipboardList className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+            <h2 className="text-base font-semibold text-[#0F172A] mb-2">No estimates yet</h2>
+            <p className="text-sm text-[#475569] max-w-sm mb-6">
               Send professional estimates to your customers and convert more leads into paying jobs.
             </p>
             <Link
@@ -139,6 +139,8 @@ export default function EstimatesPage() {
                     <TableRow
                       key={estimate.id}
                       onClick={() => handleRowClick(estimate.id)}
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(estimate.id); }}}
                       className="cursor-pointer hover:bg-stone-50 transition-colors"
                     >
                       <TableCell className="text-sm font-medium text-stone-900">{estimate.estimate_number}</TableCell>
@@ -160,6 +162,9 @@ export default function EstimatesPage() {
                 <div
                   key={estimate.id}
                   onClick={() => handleRowClick(estimate.id)}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(estimate.id); }}}
+                  role="button"
                   className="bg-white border border-stone-200 rounded-lg p-4 cursor-pointer hover:bg-stone-50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">

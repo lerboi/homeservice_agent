@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { LayoutList, Columns3, Users } from 'lucide-react';
+import { LayoutList, Columns3, Users, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -90,6 +90,7 @@ export default function LeadsPage() {
   const [invoiceStatusMap, setInvoiceStatusMap] = useState({});
 
   // Batch select state
+  const [selectMode, setSelectMode] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState(new Set());
   const [batchCreating, setBatchCreating] = useState(false);
 
@@ -384,50 +385,53 @@ export default function LeadsPage() {
         )}
       </div>
 
-      {/* View toggle */}
-      <div className="flex items-center rounded-lg overflow-hidden border border-stone-200">
-        <button
-          type="button"
-          onClick={() => setViewMode('list')}
-          className={`flex items-center justify-center h-8 w-9 transition-colors ${
-            viewMode === 'list'
-              ? 'bg-[#0F172A] text-white'
-              : 'bg-white text-stone-500 hover:bg-stone-50'
-          }`}
-          aria-label="List view"
-          aria-pressed={viewMode === 'list'}
-        >
-          <LayoutList className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode('kanban')}
-          className={`flex items-center justify-center h-8 w-9 transition-colors border-l border-stone-200 ${
-            viewMode === 'kanban'
-              ? 'bg-[#0F172A] text-white'
-              : 'bg-white text-stone-500 hover:bg-stone-50'
-          }`}
-          aria-label="Kanban view"
-          aria-pressed={viewMode === 'kanban'}
-        >
-          <Columns3 className="h-4 w-4" />
-        </button>
+      <div className="flex items-center gap-2">
+        {/* Select mode toggle — only in list view with eligible leads */}
+        {viewMode === 'list' && eligibleLeads.length > 0 && (
+          <button
+            type="button"
+            onClick={() => { setSelectMode((prev) => { if (prev) setSelectedLeads(new Set()); return !prev; }); }}
+            className={`flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-medium transition-colors ${
+              selectMode
+                ? 'bg-[#C2410C] text-white hover:bg-[#9A3412]'
+                : 'border border-stone-200 text-stone-600 bg-white hover:bg-stone-50'
+            }`}
+            aria-pressed={selectMode}
+          >
+            {selectMode ? <><Check className="h-3.5 w-3.5" /> Done</> : 'Select'}
+          </button>
+        )}
+
+        {/* View toggle */}
+        <div className="flex items-center rounded-lg overflow-hidden border border-stone-200">
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            className={`flex items-center justify-center h-8 w-9 transition-colors ${
+              viewMode === 'list'
+                ? 'bg-[#0F172A] text-white'
+                : 'bg-white text-stone-500 hover:bg-stone-50'
+            }`}
+            aria-label="List view"
+            aria-pressed={viewMode === 'list'}
+          >
+            <LayoutList className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('kanban')}
+            className={`flex items-center justify-center h-8 w-9 transition-colors border-l border-stone-200 ${
+              viewMode === 'kanban'
+                ? 'bg-[#0F172A] text-white'
+                : 'bg-white text-stone-500 hover:bg-stone-50'
+            }`}
+            aria-label="Kanban view"
+            aria-pressed={viewMode === 'kanban'}
+          >
+            <Columns3 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-    </div>
-  );
-
-  // ── Select all eligible header (list view only) ─────────────────────────
-
-  const selectAllHeader = viewMode === 'list' && eligibleLeads.length > 0 && (
-    <div className="flex items-center gap-2 px-6 pb-2">
-      <Checkbox
-        checked={selectedLeads.size === eligibleLeads.length && eligibleLeads.length > 0}
-        onCheckedChange={toggleSelectAllEligible}
-        aria-label="Select all eligible leads"
-      />
-      <span className="text-xs text-stone-500">
-        Select all eligible ({eligibleLeads.length})
-      </span>
     </div>
   );
 
@@ -466,23 +470,16 @@ export default function LeadsPage() {
         {leads.map((lead) => (
           <div
             key={lead.id}
-            className={`flex items-center gap-2 ${lead._isNew ? 'animate-slide-in-from-top' : ''}`}
+            className={lead._isNew ? 'animate-slide-in-from-top' : ''}
           >
-            {isEligibleForBatch(lead) && (
-              <Checkbox
-                checked={selectedLeads.has(lead.id)}
-                onCheckedChange={() => toggleLeadSelection(lead.id)}
-                aria-label={`Select ${lead.caller_name || 'lead'} for batch invoice`}
-                className="shrink-0"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <LeadCard
-                lead={lead}
-                onView={handleView}
-                invoiceStatus={invoiceStatusMap[lead.id]}
-              />
-            </div>
+            <LeadCard
+              lead={lead}
+              onView={handleView}
+              invoiceStatus={invoiceStatusMap[lead.id]}
+              selectable={selectMode && isEligibleForBatch(lead)}
+              selected={selectedLeads.has(lead.id)}
+              onToggle={() => toggleLeadSelection(lead.id)}
+            />
           </div>
         ))}
       </div>
@@ -491,26 +488,63 @@ export default function LeadsPage() {
 
   // ── Batch select bar ───────────────────────────────────────────────────
 
+  // Compute estimated revenue for selected leads
+  const selectedRevenue = useMemo(() => {
+    return leads
+      .filter((l) => selectedLeads.has(l.id))
+      .reduce((sum, l) => sum + Number(l.revenue_amount || 0), 0);
+  }, [leads, selectedLeads]);
+
+  const selectedLeadDetails = useMemo(() => {
+    return leads.filter((l) => selectedLeads.has(l.id));
+  }, [leads, selectedLeads]);
+
   const batchSelectBar = selectedLeads.size > 0 && (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-stone-900 text-white px-6 py-3 flex items-center justify-between shadow-lg">
-      <span className="text-sm font-medium">
-        {selectedLeads.size} lead(s) selected
-      </span>
+    <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200 shadow-[0_-4px_12px_0_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
+      <div className="flex items-center gap-3 min-w-0">
+        {eligibleLeads.length > 1 && (
+          <Checkbox
+            checked={selectedLeads.size === eligibleLeads.length}
+            onCheckedChange={toggleSelectAllEligible}
+            aria-label="Select all eligible leads"
+          />
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[#0F172A]">
+            {selectedLeads.size} of {eligibleLeads.length} selected
+          </p>
+          {selectedRevenue > 0 && (
+            <p className="text-xs text-[#475569]">
+              ${selectedRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} estimated revenue
+            </p>
+          )}
+        </div>
+      </div>
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <button
             type="button"
             disabled={batchCreating}
-            className="bg-white text-stone-900 hover:bg-stone-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="bg-[#C2410C] hover:bg-[#9A3412] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
           >
-            {batchCreating ? 'Creating...' : 'Create Invoices'}
+            {batchCreating ? 'Creating...' : 'Review & Create'}
           </button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create {selectedLeads.size} invoices?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A draft invoice will be created for each selected lead with pre-filled customer information.
+            <AlertDialogTitle>Create {selectedLeads.size} draft {selectedLeads.size === 1 ? 'invoice' : 'invoices'}?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="mb-3">Draft invoices will be created with pre-filled customer information. You can review and edit each one before sending.</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {selectedLeadDetails.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-stone-50">
+                      <span className="font-medium text-[#0F172A] truncate">{lead.caller_name || lead.from_number || 'Unknown'}</span>
+                      <span className="text-xs text-[#475569] shrink-0 ml-2">{lead.job_type || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -519,7 +553,7 @@ export default function LeadsPage() {
               onClick={handleBatchCreate}
               className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
             >
-              Create {selectedLeads.size} Drafts
+              Create {selectedLeads.size} {selectedLeads.size === 1 ? 'Draft' : 'Drafts'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -537,8 +571,6 @@ export default function LeadsPage() {
           onFilterChange={handleFilterChange}
           onClear={handleClearFilters}
         />
-
-        {selectAllHeader}
 
         <div className="px-6 py-4">
           {mainContent}

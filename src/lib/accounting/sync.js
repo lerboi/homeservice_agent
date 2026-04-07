@@ -48,13 +48,13 @@ export async function pushToAccounting(supabase, tenantId, invoice, lineItems, s
     const adapter = await getAccountingAdapter(freshCreds.provider);
 
     // Initialize adapter with credentials
-    adapter.credentials = {
+    adapter.setCredentials({
       access_token: freshCreds.access_token,
       refresh_token: freshCreds.refresh_token,
       realm_id: freshCreds.realm_id,
       xero_tenant_id: freshCreds.xero_tenant_id,
       account_id: freshCreds.account_id,
-    };
+    });
 
     // Find or create customer in accounting platform
     await adapter.findOrCreateCustomer(
@@ -151,13 +151,13 @@ export async function pushStatusUpdate(supabase, tenantId, invoiceId, newStatus)
 
   // Get adapter and update status
   const adapter = await getAccountingAdapter(freshCreds.provider);
-  adapter.credentials = {
+  adapter.setCredentials({
     access_token: freshCreds.access_token,
     refresh_token: freshCreds.refresh_token,
     realm_id: freshCreds.realm_id,
     xero_tenant_id: freshCreds.xero_tenant_id,
     account_id: freshCreds.account_id,
-  };
+  });
 
   await adapter.updateInvoiceStatus(syncLog.external_id, newStatus);
 }

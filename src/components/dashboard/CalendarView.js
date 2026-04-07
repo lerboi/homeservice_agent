@@ -445,7 +445,8 @@ export default function CalendarView({
       const cellDate = new Date(gridStart);
       cellDate.setDate(gridStart.getDate() + i);
       const dayAppts = appointments.filter((a) => isSameDay(new Date(a.start_time), cellDate));
-      cells.push({ date: cellDate, appointments: dayAppts });
+      const dayExternal = externalEvents.filter((e) => isSameDay(new Date(e.start_time), cellDate));
+      cells.push({ date: cellDate, appointments: dayAppts, externalEvents: dayExternal });
     }
 
     return (
@@ -464,7 +465,13 @@ export default function CalendarView({
           {cells.map((cell, i) => {
             const isCurrentMonth = cell.date.getMonth() === month;
             const isTodayCell = isSameDay(cell.date, today);
-            const count = cell.appointments.length;
+            const totalCount = cell.appointments.length + cell.externalEvents.length;
+
+            // Interleave appointments and external events, sorted by time, show up to 2
+            const allItems = [
+              ...cell.appointments.map((a) => ({ ...a, _type: 'appt' })),
+              ...cell.externalEvents.map((e) => ({ ...e, _type: 'ext' })),
+            ].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
             return (
               <button
@@ -484,18 +491,30 @@ export default function CalendarView({
                   {cell.date.getDate()}
                 </span>
 
-                {count > 0 && (
+                {totalCount > 0 && (
                   <div className="mt-0.5 space-y-0.5">
-                    {cell.appointments.slice(0, 2).map((appt) => (
-                      <div
-                        key={appt.id}
-                        className="text-[9px] leading-tight truncate px-1 py-0.5 rounded bg-[#C2410C]/10 text-[#C2410C] font-medium"
-                      >
-                        {new Date(appt.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      </div>
-                    ))}
-                    {count > 2 && (
-                      <span className="text-[9px] text-stone-400 px-1">+{count - 2} more</span>
+                    {allItems.slice(0, 2).map((item) => {
+                      const label = item._type === 'ext'
+                        ? (item.title || 'Event')
+                        : (item.caller_name || item.job_type || 'Appt');
+                      const time = item.is_all_day
+                        ? null
+                        : new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                      return (
+                        <div
+                          key={item.id || item.external_id}
+                          className={`text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium ${
+                            item._type === 'ext'
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'bg-[#C2410C]/10 text-[#C2410C]'
+                          }`}
+                        >
+                          {time ? `${time} ${label}` : label}
+                        </div>
+                      );
+                    })}
+                    {totalCount > 2 && (
+                      <span className="text-[9px] text-stone-400 px-1">+{totalCount - 2} more</span>
                     )}
                   </div>
                 )}

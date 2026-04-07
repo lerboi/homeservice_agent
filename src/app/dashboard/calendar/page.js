@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
+import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import { card } from '@/lib/design-tokens';
 
 function startOfWeek(date) {
@@ -65,10 +66,47 @@ function isSameDay(d1, d2) {
     d1.getDate() === d2.getDate();
 }
 
+const WH_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const WH_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
+
+function formatTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hr = h % 12 || 12;
+  return m === 0 ? `${hr} ${ampm}` : `${hr}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function summarizeWorkingHours(wh) {
+  if (!wh) return [];
+  // Group consecutive days with same hours
+  const groups = [];
+  for (const day of WH_DAYS) {
+    const config = wh[day];
+    const key = config?.enabled ? `${config.open}-${config.close}` : 'closed';
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.days.push(day);
+    } else {
+      groups.push({ key, days: [day], config });
+    }
+  }
+  return groups.map((g) => {
+    const first = WH_LABELS[g.days[0]];
+    const last = WH_LABELS[g.days[g.days.length - 1]];
+    const label = g.days.length === 1 ? first : `${first}–${last}`;
+    if (g.key === 'closed' || !g.config?.enabled) {
+      return { label, hours: 'Closed', closed: true };
+    }
+    return { label, hours: `${formatTime12(g.config.open)} – ${formatTime12(g.config.close)}`, closed: false };
+  });
+}
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('week');
+  const [viewMode, setViewMode] = useState('month');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [fading, setFading] = useState(false);
   const [data, setData] = useState({
     appointments: [],
@@ -91,12 +129,19 @@ export default function CalendarPage() {
   const [quickBookForm, setQuickBookForm] = useState({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
   const [quickBookSaving, setQuickBookSaving] = useState(false);
 
+  // Working hours editor sheet
+  const [whSheetOpen, setWhSheetOpen] = useState(false);
+
   // Fetch working hours once on mount (stable config, rarely changes)
-  useEffect(() => {
+  function fetchWorkingHours() {
     fetch('/api/working-hours')
       .then((res) => res.ok ? res.json() : null)
       .then((data) => { if (data) setWorkingHoursData(data); })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    fetchWorkingHours();
   }, []);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -107,9 +152,7 @@ export default function CalendarPage() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const effectiveViewMode = isMobile
-    ? (viewMode === 'week' ? 'day' : viewMode)
-    : viewMode;
+  const effectiveViewMode = viewMode;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -127,9 +170,6 @@ export default function CalendarPage() {
         gridEnd.setHours(23, 59, 59);
         start = gridStart.toISOString();
         end = gridEnd.toISOString();
-      } else if (effectiveViewMode === 'week') {
-        start = startOfWeek(currentDate).toISOString();
-        end = endOfWeek(currentDate).toISOString();
       } else {
         start = startOfDay(currentDate).toISOString();
         end = endOfDay(currentDate).toISOString();
@@ -150,6 +190,17 @@ export default function CalendarPage() {
     fetchData();
   }, [fetchData]);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await fetch('/api/calendar-sync/trigger', { method: 'POST' });
+    } catch {
+      // Sync failure is non-fatal — still refresh local data
+    }
+    await fetchData();
+    setRefreshing(false);
+  }
+
   function handleDayClick(date) {
     setFading(true);
     setTimeout(() => {
@@ -166,8 +217,6 @@ export default function CalendarPage() {
         const d = new Date(prev);
         if (effectiveViewMode === 'month') {
           d.setMonth(d.getMonth() + (direction === 'next' ? 1 : -1));
-        } else if (effectiveViewMode === 'week') {
-          d.setDate(d.getDate() + (direction === 'next' ? 7 : -7));
         } else {
           d.setDate(d.getDate() + (direction === 'next' ? 1 : -1));
         }
@@ -272,9 +321,7 @@ export default function CalendarPage() {
   const isToday = isSameDay(currentDate, new Date());
   const dateLabel = effectiveViewMode === 'month'
     ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : effectiveViewMode === 'week'
-      ? formatWeekRange(currentDate)
-      : formatDayLabel(currentDate);
+    : formatDayLabel(currentDate);
 
   // Today's agenda — all appointments for today, sorted by time
   const todayAppts = data.appointments
@@ -361,48 +408,33 @@ export default function CalendarPage() {
               Today
             </Button>
 
-            {isMobile ? (
-              <div className="flex rounded-lg border border-stone-200 overflow-hidden">
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${effectiveViewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                  onClick={() => setViewMode('day')}
-                >
-                  Day
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                  onClick={() => setViewMode('month')}
-                >
-                  Month
-                </button>
-              </div>
-            ) : (
-              <div className="flex rounded-lg border border-stone-200 overflow-hidden">
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                  onClick={() => setViewMode('month')}
-                >
-                  Month
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-stone-200 ${viewMode === 'week' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                  onClick={() => setViewMode('week')}
-                >
-                  Week
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-stone-200 ${viewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                  onClick={() => setViewMode('day')}
-                >
-                  Day
-                </button>
-              </div>
-            )}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              aria-label="Refresh calendar"
+              className="h-8 w-8"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+
+            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+                onClick={() => setViewMode('month')}
+              >
+                Month
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+                onClick={() => setViewMode('day')}
+              >
+                Day
+              </button>
+            </div>
           </div>
         </div>
 
@@ -449,8 +481,8 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* ── Bottom row: Agenda + Connections ────────────────────── */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isMobile ? 'hidden' : ''}`}>
+      {/* ── Bottom row: Agenda + Connections + Working Hours ────── */}
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${isMobile ? 'hidden' : ''}`}>
 
         {/* Today's Agenda */}
         <div className={`${card.base} p-5`}>
@@ -519,17 +551,85 @@ export default function CalendarPage() {
           </div>
           <CalendarSyncCard />
         </div>
-      </div>
 
-      {/* Calendar Connections — mobile only (desktop shows in grid above) */}
-      {isMobile && (
+        {/* Working Hours */}
         <div className={`${card.base} p-5`}>
           <div className="flex items-center gap-2 mb-4">
-            <Link2 className="size-4 text-[#C2410C]" />
-            <h2 className="text-sm font-semibold text-[#0F172A]">Calendar Connections</h2>
+            <Clock className="size-4 text-[#C2410C]" />
+            <h2 className="text-sm font-semibold text-[#0F172A]">Working Hours</h2>
+            <button
+              onClick={() => setWhSheetOpen(true)}
+              className="ml-auto text-[11px] text-[#C2410C] hover:underline flex items-center gap-1"
+            >
+              <Pencil className="size-3" />
+              Edit
+            </button>
           </div>
-          <CalendarSyncCard />
+          {workingHoursData?.working_hours ? (
+            <div className="space-y-1.5">
+              {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
+                <div key={row.label} className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-[#0F172A]">{row.label}</span>
+                  <span className={row.closed ? 'text-stone-400' : 'text-[#475569]'}>{row.hours}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={() => setWhSheetOpen(true)}
+              className="w-full py-6 text-center"
+            >
+              <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+              <p className="text-sm font-medium text-[#0F172A]">Not configured</p>
+              <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Mobile cards — stacked below calendar */}
+      {isMobile && (
+        <>
+          <div className={`${card.base} p-5`}>
+            <div className="flex items-center gap-2 mb-4">
+              <Link2 className="size-4 text-[#C2410C]" />
+              <h2 className="text-sm font-semibold text-[#0F172A]">Calendar Connections</h2>
+            </div>
+            <CalendarSyncCard />
+          </div>
+          <div className={`${card.base} p-5`}>
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="size-4 text-[#C2410C]" />
+              <h2 className="text-sm font-semibold text-[#0F172A]">Working Hours</h2>
+              <button
+                onClick={() => setWhSheetOpen(true)}
+                className="ml-auto text-[11px] text-[#C2410C] hover:underline flex items-center gap-1"
+              >
+                <Pencil className="size-3" />
+                Edit
+              </button>
+            </div>
+            {workingHoursData?.working_hours ? (
+              <div className="space-y-1.5">
+                {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-[#0F172A]">{row.label}</span>
+                    <span className={row.closed ? 'text-stone-400' : 'text-[#475569]'}>{row.hours}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <button
+                onClick={() => setWhSheetOpen(true)}
+                className="w-full py-6 text-center"
+              >
+                <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                <p className="text-sm font-medium text-[#0F172A]">Not configured</p>
+                <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
+              </button>
+            )}
+          </div>
+        </>
       )}
 
       {/* Appointment Flyout */}
@@ -604,6 +704,22 @@ export default function CalendarPage() {
               {quickBookSaving ? 'Booking...' : 'Book Appointment'}
             </Button>
           </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Working Hours Editor Sheet */}
+      <Sheet open={whSheetOpen} onOpenChange={(open) => {
+        setWhSheetOpen(open);
+        if (!open) fetchWorkingHours(); // re-fetch after closing to update summary + calendar grid
+      }}>
+        <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "max-h-[85vh] rounded-t-2xl overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
+          <SheetHeader>
+            <SheetTitle>Working Hours</SheetTitle>
+            <p className="text-sm text-[#475569]">Set when you&apos;re available so your AI only books open slots.</p>
+          </SheetHeader>
+          <div className="px-6 py-4">
+            <WorkingHoursEditor />
+          </div>
         </SheetContent>
       </Sheet>
     </div>

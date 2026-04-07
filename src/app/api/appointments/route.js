@@ -164,3 +164,48 @@ export async function GET(request) {
     conflicts,
   });
 }
+
+export async function POST(request) {
+  const tenantId = await getTenantId();
+  if (!tenantId) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { caller_name, caller_phone, start_time, end_time, notes, status } = await request.json();
+
+  if (!caller_name || !start_time) {
+    return Response.json({ error: 'caller_name and start_time are required' }, { status: 400 });
+  }
+
+  const { data: result, error: rpcError } = await supabase.rpc('book_appointment_atomic', {
+    p_tenant_id: tenantId,
+    p_call_id: null,
+    p_start_time: start_time,
+    p_end_time: end_time,
+    p_service_address: 'TBD',
+    p_caller_name: caller_name,
+    p_caller_phone: caller_phone || '',
+    p_urgency: 'routine',
+  });
+
+  if (rpcError) {
+    return Response.json({ error: rpcError.message }, { status: 500 });
+  }
+
+  if (!result.success) {
+    return Response.json({ error: 'Time slot is no longer available' }, { status: 409 });
+  }
+
+  await supabase.from('appointments').update({
+    booked_via: 'manual',
+    ...(notes ? { notes } : {}),
+  }).eq('id', result.appointment_id);
+
+  const { data } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('id', result.appointment_id)
+    .single();
+
+  return Response.json({ appointment: data });
+}
