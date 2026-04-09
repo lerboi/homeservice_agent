@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Milestone complete
-stopped_at: Completed 38-06-PLAN.md
-last_updated: "2026-04-06T18:44:22.274Z"
+stopped_at: Phase 39 context gathered
+last_updated: "2026-04-09T07:49:11.176Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -145,6 +145,9 @@ Recent decisions affecting current work:
 - Phase 29 added: Hero Section Interactive Demo (2026-03-26)
 - Phase 30 added: Voice Agent Prompt Optimization (2026-03-27)
 - Phase 31 added: Voice Call Feature Showcase PDF (2026-03-27)
+- Phase 39 added: Call Routing Webhook Foundation — backend infrastructure for conditional call routing (time-based AI vs owner pickup), FastAPI webhook service on Railway, schedule evaluator, soft caps, DB schema (2026-04-09)
+- Phase 40 added: Call Routing Provisioning Cutover — switch Twilio numbers to webhook routing, implement schedule evaluation + parallel ring + SMS forwarding logic, migrate existing tenants (2026-04-09)
+- Phase 41 added: Call Routing Dashboard and Launch — user-facing settings page, pickup number management, usage meter, routing mode badges on dashboard calls page (2026-04-09)
 
 ### Pending Todos
 
@@ -159,6 +162,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-06T18:39:33.686Z
-Stopped at: Completed 38-06-PLAN.md
-Resume file: None
+Last session: 2026-04-09T07:49:11.167Z
+Stopped at: Phase 39 context gathered
+Resume file: .planning/phases/39-call-routing-webhook-foundation/39-CONTEXT.md
