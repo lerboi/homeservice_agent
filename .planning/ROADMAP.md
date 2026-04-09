@@ -433,6 +433,69 @@ Plans:
 - [ ] 36-03-PLAN.md -- Build verification, ScrollLinePath integration, visual checkpoint
 **UI hint**: yes
 
+### Phase 39: Call Routing Webhook Foundation
+
+**Goal:** Build the backend infrastructure for conditional call routing (time-based AI vs owner pickup) as purely additive work that does not affect any existing tenant's current routing. Ships a new FastAPI webhook service alongside the LiveKit agent on Railway, a schedule evaluator, per-country soft caps, and the database schema to support per-day scheduling and parallel-ring pickup numbers.
+**Depends on:** Phase 38 (latest completed phase — no hard dependency, but sequential in roadmap)
+**Requirements**: ROUTE-01 through ROUTE-06 (to be added in REQUIREMENTS.md during planning)
+**Success Criteria** (what must be TRUE):
+  1. Migration adds `call_forwarding_schedule JSONB`, `pickup_numbers JSONB` (array supporting up to 5 entries with `{number, label, sms_forward}` shape), `dial_timeout_seconds INTEGER DEFAULT 15` columns on `tenants`; `routing_mode TEXT CHECK IN ('ai','owner_pickup','fallback_to_ai')` and `outbound_dial_duration_sec INTEGER` columns on `calls`
+  2. A FastAPI server runs in the livekit-agent Railway process exposing `POST /twilio/incoming-call`, `POST /twilio/dial-status`, `POST /twilio/dial-fallback`, `POST /twilio/incoming-sms` — all four endpoints return valid responses to Twilio test requests
+  3. All webhook endpoints verify `X-Twilio-Signature` header and reject unsigned or mis-signed requests with HTTP 403
+  4. Pure-function `evaluate_schedule(tenant, current_utc)` returns `{mode, reason}` and passes unit tests covering: empty schedule (defaults to AI), per-day ranges in tenant timezone, DST spring-forward and fall-back transitions, overnight ranges (7pm-9am crossing midnight), day boundaries, and "all day owner pickup" mode
+  5. `check_outbound_cap(tenant_id, country)` enforces per-country monthly limits (US/CA: 5000 min, SG: 2500 min) by summing `outbound_dial_duration_sec` from current calendar month
+  6. Zero production traffic is routed through the new webhook — no existing Twilio numbers are reconfigured; the `incoming-call` endpoint returns a default "always-AI" TwiML as a compatibility baseline
+**Plans:** 7 plans
+
+Plans:
+- [ ] 39-01-PLAN.md - Wave 0: REQUIREMENTS.md ROUTE-01..06 + pytest config + tests/webhook/ stub package
+- [ ] 39-02-PLAN.md - Wave 1: Migration 042 (tenants + calls schema additions + idx_calls_tenant_month)
+- [ ] 39-03-PLAN.md - Wave 1: src/webhook/schedule.py (evaluate_schedule pure function) + 16 unit tests
+- [ ] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 7 unit tests
+- [ ] 39-05-PLAN.md - Wave 2: FastAPI app + security.py + twilio_routes.py (4 endpoints) + agent.py boot swap + delete health.py
+- [ ] 39-06-PLAN.md - Wave 2: Fill in test_routes.py (6 integration) + test_security.py (4 signature tests)
+- [ ] 39-07-PLAN.md - Wave 3: Update voice-call-architecture SKILL.md + final verification sweep
+
+### Phase 40: Call Routing Provisioning Cutover
+
+**Goal:** Switch Twilio phone number configuration from the current Elastic SIP Trunk direct routing to the new Railway webhook, implement the real routing logic (schedule evaluation, soft cap enforcement, parallel ring TwiML, SMS forwarding to pickup numbers with `sms_forward=true`), and migrate all existing tenant numbers to the webhook without breaking inbound calls. This is the architectural cutover phase.
+**Depends on:** Phase 39 (webhook must be deployed and verified before cutover)
+**Requirements**: ROUTE-07 through ROUTE-12 (to be added in REQUIREMENTS.md during planning)
+**Success Criteria** (what must be TRUE):
+  1. `provisionPhoneNumber` in `src/app/api/stripe/webhook/route.js` sets `voice_url`, `voice_fallback_url`, and `sms_url` on newly purchased Twilio numbers pointing at the Railway webhook — fallback URL returns static TwiML that dials SIP unconditionally as a safety net
+  2. The incoming-call webhook evaluates the tenant's schedule and returns correct TwiML: `<Dial><Sip>` for AI mode, `<Dial timeout="{dial_timeout_seconds}" callerId="{original_caller}"><Number>...</Number>...</Dial>` for owner mode with ALL pickup_numbers ringing in parallel (up to 5), fallback to AI on timeout/no-answer
+  3. Subscription gate is checked before routing — canceled/paused/incomplete tenants follow existing `BLOCKED_STATUSES` behavior
+  4. Soft cap is checked per call — when exceeded, the webhook returns AI TwiML instead of owner TwiML and logs a cap-breach event
+  5. Owner-pickup calls insert a `calls` row with `routing_mode='owner_pickup'` and a minimal metadata set; `increment_calls_used` does NOT fire for these calls (they don't count toward the AI quota)
+  6. SMS forwarding: when a customer texts the Twilio number, the webhook forwards the message text to every `pickup_numbers` entry where `sms_forward=true`, prefixed with `"[Voco] From {original_sender}: {body}"`; MMS dropped with a `[Media attached]` note; forwarded messages logged to a new `sms_messages` table
+  7. A migration script iterates every existing tenant's Twilio number and updates its voice/sms configuration to use the Railway webhook — dry-run mode verified first, then production run
+  8. End-to-end test: real call to a test tenant's number with schedule=all-AI → hits LiveKit agent as before; schedule=all-owner → rings owner's pickup number(s); schedule=AI-after-hours + call during owner window → rings owner; owner no-answer → falls back to AI; all scenarios produce correct `calls` rows
+  9. Twilio status callback fires on dial completion and writes `outbound_dial_duration_sec` to the corresponding `calls` row for cost tracking
+**Plans:** 0 plans (run /gsd:plan-phase 40 to break down)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 40 to break down)
+
+### Phase 41: Call Routing Dashboard and Launch
+
+**Goal:** Ship the user-facing surface for the call routing feature — a new dedicated dashboard page where tenants configure their per-day schedule, manage pickup numbers (up to 5), adjust the dial timeout, toggle SMS forwarding per number, and see their monthly outbound minute usage. Also surface owner-pickup calls in the existing dashboard calls page with a routing mode badge, so owners have a single view of all call activity regardless of routing.
+**Depends on:** Phase 40 (webhook routing + provisioning must be live so the dashboard configures a feature that actually works)
+**Requirements**: ROUTE-13 through ROUTE-18 (to be added in REQUIREMENTS.md during planning)
+**Success Criteria** (what must be TRUE):
+  1. A new dashboard page at `/dashboard/more/call-routing` lets tenants configure the feature with per-day schedule editing (one range per day), dial timeout slider (10-30s, default 15s), pickup number management (add/remove up to 5, edit label, toggle `sms_forward` per entry)
+  2. `GET /api/call-routing` and `PUT /api/call-routing` API routes serve the schedule + pickup_numbers + dial_timeout state and validate updates (E.164 phone numbers, no duplicates, no self-reference to the Twilio number, 5-entry max, valid time ranges)
+  3. The page shows a usage meter — "X of Y outbound minutes used this month" — based on `sum(outbound_dial_duration_sec)` for the current calendar month
+  4. The existing dashboard calls page (`/dashboard/calls`) shows a routing mode badge on each call row: "AI", "You picked up", "You missed (fell back to AI)" — based on the `routing_mode` column
+  5. Owner-pickup calls appear in the dashboard calls page (not hidden) with duration and any metadata available, even though they don't have transcripts or recordings
+  6. Onboarding: the setup checklist includes an optional "Configure call routing" step that links to the new page; users can skip it and configure later
+  7. Validation: submitting zero pickup numbers while the schedule is enabled shows a blocking warning "Add at least one pickup number to route calls to you"
+  8. The AI Voice Settings page in `/dashboard/more/ai-voice-settings` links to the new Call Routing page
+  9. End-to-end test: user configures schedule in the dashboard → call comes in during owner hours → correct pickup numbers ring in parallel → call appears in dashboard with `routing_mode='owner_pickup'` badge
+**Plans:** 0 plans (run /gsd:plan-phase 41 to break down)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 41 to break down)
+
 ---
 
 ## Milestone v2.0 Phases
