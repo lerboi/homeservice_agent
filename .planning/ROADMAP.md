@@ -450,8 +450,8 @@ Plans:
 Plans:
 - [ ] 39-01-PLAN.md - Wave 0: REQUIREMENTS.md ROUTE-01..06 + pytest config + tests/webhook/ stub package
 - [ ] 39-02-PLAN.md - Wave 1: Migration 042 (tenants + calls schema additions + idx_calls_tenant_month)
-- [ ] 39-03-PLAN.md - Wave 1: src/webhook/schedule.py (evaluate_schedule pure function) + 16 unit tests
-- [ ] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 7 unit tests
+- [ ] 39-03-PLAN.md - Wave 1: src/webhook/schedule.py (evaluate_schedule pure function) + 17 unit tests
+- [ ] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 8 unit tests
 - [ ] 39-05-PLAN.md - Wave 2: FastAPI app + security.py + twilio_routes.py (4 endpoints) + agent.py boot swap + delete health.py
 - [ ] 39-06-PLAN.md - Wave 2: Fill in test_routes.py (6 integration) + test_security.py (4 signature tests)
 - [ ] 39-07-PLAN.md - Wave 3: Update voice-call-architecture SKILL.md + final verification sweep
