@@ -445,13 +445,13 @@ Plans:
   4. Pure-function `evaluate_schedule(tenant, current_utc)` returns `{mode, reason}` and passes unit tests covering: empty schedule (defaults to AI), per-day ranges in tenant timezone, DST spring-forward and fall-back transitions, overnight ranges (7pm-9am crossing midnight), day boundaries, and "all day owner pickup" mode
   5. `check_outbound_cap(tenant_id, country)` enforces per-country monthly limits (US/CA: 5000 min, SG: 2500 min) by summing `outbound_dial_duration_sec` from current calendar month
   6. Zero production traffic is routed through the new webhook — no existing Twilio numbers are reconfigured; the `incoming-call` endpoint returns a default "always-AI" TwiML as a compatibility baseline
-**Plans:** 3/7 plans executed
+**Plans:** 4/7 plans executed
 
 Plans:
 - [x] 39-01-PLAN.md - Wave 0: REQUIREMENTS.md ROUTE-01..06 + pytest config + tests/webhook/ stub package
 - [x] 39-02-PLAN.md - Wave 1: Migration 042 (tenants + calls schema additions + idx_calls_tenant_month)
 - [x] 39-03-PLAN.md - Wave 1: src/webhook/schedule.py (evaluate_schedule pure function) + 17 unit tests
-- [ ] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 8 unit tests
+- [x] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 8 unit tests
 - [ ] 39-05-PLAN.md - Wave 2: FastAPI app + security.py + twilio_routes.py (4 endpoints) + agent.py boot swap + delete health.py
 - [ ] 39-06-PLAN.md - Wave 2: Fill in test_routes.py (6 integration) + test_security.py (4 signature tests)
 - [ ] 39-07-PLAN.md - Wave 3: Update voice-call-architecture SKILL.md + final verification sweep

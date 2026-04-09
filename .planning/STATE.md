@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 39-02-PLAN.md
-last_updated: "2026-04-09T15:59:03.113Z"
+stopped_at: Completed 39-04-PLAN.md (parallel with 39-02, 39-03)
+last_updated: "2026-04-09T16:00:42.468Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -99,6 +99,10 @@ Recent decisions affecting current work:
 - [Phase 39]: [Phase 39-03]: Overnight ranges encoded as end < start; _in_range uses 'local >= start or local < end' two-branch check; same-day lookup only (no cross-day synthesis — Phase 41 UI must write range under both day keys if cross-day matching is required)
 - [Phase 39]: [Phase 39-03]: src/webhook/__init__.py is deliberately import-free so Plan 39-05 can add FastAPI app wiring without circular-import risk during unit tests of schedule.py
 - [Phase 39]: Migration 042: additive-only schema, routing_mode nullable (NULL = legacy AI per D-19), pickup_numbers item-shape validation deferred to API layer
+- [Phase 39]: [Phase 39-04]: _normalize_phone extracted to src/lib/phone.py as module function so webhook handler in 39-05 can reuse verbatim logic (resolves OQ-3)
+- [Phase 39]: [Phase 39-04]: check_outbound_cap is async + asyncio.to_thread around supabase-py chain; Python-side SUM over returned rows avoids RPC aggregate migration (resolves OQ-1 and OQ-2)
+- [Phase 39]: [Phase 39-04]: Unknown-country fallback in check_outbound_cap routes to US 300000s limit (fail-open safe default per D-17); cap breach emits logger.warning only in Phase 39 — dedicated event logging deferred to Phase 40 per D-11
+- [Phase 39]: [Phase 39-04]: get_supabase_admin lazy-imported inside check_outbound_cap so tests monkeypatch the real symbol path (src.supabase_client.get_supabase_admin) before first call; MagicMock chain mimics supabase-py fluent builder
 
 ### Roadmap Evolution
 
@@ -170,6 +174,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-09T15:59:03.106Z
-Stopped at: Completed 39-02-PLAN.md
+Last session: 2026-04-09T16:00:42.461Z
+Stopped at: Completed 39-04-PLAN.md (parallel with 39-02, 39-03)
 Resume file: None
