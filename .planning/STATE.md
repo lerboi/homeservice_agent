@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 39-01-PLAN.md
-last_updated: "2026-04-09T15:51:14.067Z"
+stopped_at: Completed 39-03-PLAN.md
+last_updated: "2026-04-09T15:58:52.869Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 39 (call-routing-webhook-foundation) — EXECUTING
-Plan: 2 of 7
+Plan: 4 of 7
 
 ## Accumulated Context
 
@@ -94,6 +94,10 @@ Recent decisions affecting current work:
 - [Phase 39]: Wave 0 stubs use module-level pytestmark = skipif(True) — downstream plans flip True to False and fill in bodies
 - [Phase 39]: Test infrastructure at livekit-agent/tests/ with pythonpath=["."] so pytest imports src.webhook.* cleanly
 - [Phase 39]: Dev deps declared explicitly (pytest>=8.0, pytest-asyncio>=0.23, httpx>=0.27) via [project.optional-dependencies] dev; fastapi/uvicorn deferred to Plan 39-05
+- [Phase 39]: [Phase 39-03]: evaluate_schedule is a pure function with signature (schedule, tenant_timezone, now_utc) -> ScheduleDecision — zero DB, zero FastAPI coupling; ScheduleDecision is a frozen dataclass with Literal-typed mode + reason fields
+- [Phase 39]: [Phase 39-03]: DST handled entirely by now_utc.astimezone(ZoneInfo(tenant_timezone)) — no fold inspection, no gap detection; verified against NY spring-forward 2026-03-08 and fall-back 2026-11-01
+- [Phase 39]: [Phase 39-03]: Overnight ranges encoded as end < start; _in_range uses 'local >= start or local < end' two-branch check; same-day lookup only (no cross-day synthesis — Phase 41 UI must write range under both day keys if cross-day matching is required)
+- [Phase 39]: [Phase 39-03]: src/webhook/__init__.py is deliberately import-free so Plan 39-05 can add FastAPI app wiring without circular-import risk during unit tests of schedule.py
 
 ### Roadmap Evolution
 
@@ -165,6 +169,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-09T15:51:14.056Z
-Stopped at: Completed 39-01-PLAN.md
+Last session: 2026-04-09T15:58:39.384Z
+Stopped at: Completed 39-03-PLAN.md
 Resume file: None
