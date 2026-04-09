@@ -699,7 +699,7 @@ No migration test framework exists in this repo. Migrations are applied manually
 
 ---
 
-## 8. Validation Architecture
+## Validation Architecture
 
 ### Test Framework
 
