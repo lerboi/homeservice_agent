@@ -69,6 +69,15 @@
 - [ ] **BILLF-01**: 80% usage alert — SMS + email to owner when calls_used >= 0.8 * calls_limit with usage_alert_sent flag to prevent repeats
 - [ ] **BILLF-02**: Per-call overage billing beyond plan limit via Stripe Billing Meters v2 — requires metered price configuration
 
+### Call Routing Webhook Foundation (Phase 39)
+
+- [ ] **ROUTE-01**: Migration `042_call_routing_schema.sql` adds `call_forwarding_schedule JSONB NOT NULL DEFAULT '{"enabled":false,"days":{}}'::jsonb`, `pickup_numbers JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_array_length(pickup_numbers) <= 5)`, and `dial_timeout_seconds INTEGER NOT NULL DEFAULT 15` on `tenants`; `routing_mode TEXT CHECK (routing_mode IN ('ai','owner_pickup','fallback_to_ai'))` nullable and `outbound_dial_duration_sec INTEGER` nullable on `calls`; creates `idx_calls_tenant_month ON calls (tenant_id, created_at)`
+- [ ] **ROUTE-02**: FastAPI webhook service runs in the livekit-agent Railway process on port 8080, exposing `POST /twilio/incoming-call`, `POST /twilio/dial-status`, `POST /twilio/dial-fallback`, `POST /twilio/incoming-sms`, plus `GET /health` and `GET /health/db` ports of the deleted `src/health.py` routes; booted via `start_webhook_server()` daemon thread from `src/agent.py` before `cli.run_app(...)`
+- [ ] **ROUTE-03**: All `/twilio/*` endpoints verify `X-Twilio-Signature` via a router-level FastAPI dependency that reconstructs the URL using `x-forwarded-proto` + `host` headers; invalid/missing signature → HTTP 403; `ALLOW_UNSIGNED_WEBHOOKS=true` env var bypasses verification with a warning log (dev only; fail-closed default)
+- [ ] **ROUTE-04**: Pure function `evaluate_schedule(schedule: dict, tenant_timezone: str, now_utc: datetime) -> ScheduleDecision` in `src/webhook/schedule.py` correctly handles empty/missing schedule, `enabled:false`, per-day ranges in tenant timezone, overnight ranges encoded as `end < start`, DST spring-forward gaps, DST fall-back folds, and exact start/end boundary moments (start inclusive, end exclusive) — verified by unit tests in `tests/webhook/test_schedule.py`
+- [ ] **ROUTE-05**: Function `check_outbound_cap(tenant_id: str, country: str) -> bool` in `src/webhook/caps.py` enforces US/CA 5000-minute and SG 2500-minute monthly caps by summing `outbound_dial_duration_sec` from `calls` where `created_at >= date_trunc('month', now())` for the given tenant; returns True if under cap, False if at/over; unknown country falls back to US limit
+- [ ] **ROUTE-06**: Zero production Twilio numbers are reconfigured — `/twilio/incoming-call` performs a tenant lookup via `_normalize_phone(To)` but always returns a hardcoded "always-AI" `<Response><Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial></Response>` TwiML regardless of result, exercising the full wiring path (signature → URL reconstruction → form parse → tenant lookup → TwiML render) so that Phase 40's diff is a one-line replacement of the hardcoded branch with `evaluate_schedule` + `check_outbound_cap` composition
+
 ## v2.0 Requirements
 
 ### Booking-First Agent Behavior
@@ -391,6 +400,12 @@ n| DEMO-01 | Phase 29 | Complete |
 | DEMO-03 | Phase 29 | Complete |
 | DEMO-04 | Phase 29 | Complete |
 | DEMO-05 | Phase 29 | Complete |
+| ROUTE-01 | Phase 39 | Pending |
+| ROUTE-02 | Phase 39 | Pending |
+| ROUTE-03 | Phase 39 | Pending |
+| ROUTE-04 | Phase 39 | Pending |
+| ROUTE-05 | Phase 39 | Pending |
+| ROUTE-06 | Phase 39 | Pending |
 
 **v3.0 Coverage:**
 - v3.0 requirements: 35 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07, DEMO-01-05)
