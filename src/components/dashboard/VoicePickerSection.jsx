@@ -1,33 +1,40 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Loader2 } from 'lucide-react';
-import { card, btn, selected, focus } from '@/lib/design-tokens';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Play, Pause, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VOICES = [
-  { name: 'Aoede', description: 'Warm and upbeat', gender: 'female' },
-  { name: 'Erinome', description: 'Bright and expressive', gender: 'female' },
-  { name: 'Sulafat', description: 'Warm and gentle', gender: 'female' },
-  { name: 'Zephyr', description: 'Bright and clear', gender: 'male' },
-  { name: 'Achird', description: 'Relaxed, neighborly', gender: 'male' },
-  { name: 'Charon', description: 'Deep and authoritative', gender: 'male' },
+  { name: 'Aoede', description: 'Warm and upbeat' },
+  { name: 'Erinome', description: 'Bright and expressive' },
+  { name: 'Sulafat', description: 'Warm and gentle' },
+  { name: 'Zephyr', description: 'Bright and clear' },
+  { name: 'Achird', description: 'Relaxed, neighborly' },
+  { name: 'Charon', description: 'Deep and authoritative' },
 ];
 
-const femaleVoices = VOICES.filter((v) => v.gender === 'female');
-const maleVoices = VOICES.filter((v) => v.gender === 'male');
-
 export default function VoicePickerSection({ initialVoice, loading }) {
-  const [selectedVoice, setSelectedVoice] = useState(initialVoice ?? null);
+  const [selectedVoice, setSelectedVoice] = useState(initialVoice ?? '');
+  const [open, setOpen] = useState(false);
   const [playingVoice, setPlayingVoice] = useState(null);
   const [saving, setSaving] = useState(false);
   const audioRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-  // Sync selectedVoice when initialVoice prop changes (after page data loads)
   useEffect(() => {
-    setSelectedVoice(initialVoice ?? null);
+    setSelectedVoice(initialVoice ?? '');
   }, [initialVoice]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -39,7 +46,8 @@ export default function VoicePickerSection({ initialVoice, loading }) {
     };
   }, []);
 
-  function handlePlay(voiceName) {
+  function handlePlay(e, voiceName) {
+    e.stopPropagation();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -55,154 +63,96 @@ export default function VoicePickerSection({ initialVoice, loading }) {
     setPlayingVoice(voiceName);
   }
 
-  async function handleSave() {
-    if (!selectedVoice) return;
+  async function handleSelect(voiceName) {
+    setSelectedVoice(voiceName);
+    setOpen(false);
     setSaving(true);
     try {
       const res = await fetch('/api/ai-voice-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_voice: selectedVoice }),
+        body: JSON.stringify({ ai_voice: voiceName }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Save failed');
       }
       toast.success('Voice updated');
-    } catch (err) {
-      toast.error("Couldn't save your voice selection. Try again.");
+    } catch {
+      toast.error("Couldn't save voice. Try again.");
     }
     setSaving(false);
   }
 
+  const current = VOICES.find((v) => v.name === selectedVoice);
+
   if (loading) {
     return (
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-[#0F172A]">AI Voice</h2>
-        <p className="text-sm text-[#475569] mt-1">Choose the voice your AI receptionist uses on calls.</p>
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          {VOICES.map((v) => (
-            <Skeleton key={v.name} className="h-20 w-full rounded-2xl" />
-          ))}
-        </div>
+        <label className="text-sm font-medium text-[#0F172A]">Voice</label>
+        <div className="mt-1.5 h-10 w-full max-w-xs rounded-lg bg-stone-100 animate-pulse" />
       </div>
     );
   }
 
   return (
     <div className="mb-6">
-      <h2 className="text-base font-semibold text-[#0F172A]">AI Voice</h2>
-      <p className="text-sm text-[#475569] mt-1">Choose the voice your AI receptionist uses on calls.</p>
-
-      <div className="mt-4">
-        {/* Female group */}
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8] mb-2">Female</p>
-        <div role="radiogroup" aria-label="Female voices" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {femaleVoices.map((voice) => {
-            const isSelected = selectedVoice === voice.name;
-            const isPlaying = playingVoice === voice.name;
-            return (
-              <div
-                key={voice.name}
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={0}
-                onClick={() => setSelectedVoice(voice.name)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedVoice(voice.name);
-                  }
-                }}
-                className={`${card.base} ${isSelected ? selected.card : selected.cardIdle} ${!isSelected ? card.hover : ''} relative p-4 cursor-pointer ${focus.ring}`}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlay(voice.name);
-                  }}
-                  aria-label={isPlaying ? `Pause ${voice.name} preview` : `Play ${voice.name} preview`}
-                  className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full hover:bg-stone-100"
-                >
-                  {isPlaying ? (
-                    <Pause size={16} className="text-[#C2410C]" />
-                  ) : (
-                    <Play size={16} className="text-stone-500" />
-                  )}
-                </button>
-                <p className="text-sm font-semibold text-[#0F172A]">{voice.name}</p>
-                <p className="text-xs text-[#475569] mt-1">{voice.description}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* 24px spacer */}
-        <div className="h-6" />
-
-        {/* Male group */}
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8] mb-2">Male</p>
-        <div role="radiogroup" aria-label="Male voices" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {maleVoices.map((voice) => {
-            const isSelected = selectedVoice === voice.name;
-            const isPlaying = playingVoice === voice.name;
-            return (
-              <div
-                key={voice.name}
-                role="radio"
-                aria-checked={isSelected}
-                tabIndex={0}
-                onClick={() => setSelectedVoice(voice.name)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedVoice(voice.name);
-                  }
-                }}
-                className={`${card.base} ${isSelected ? selected.card : selected.cardIdle} ${!isSelected ? card.hover : ''} relative p-4 cursor-pointer ${focus.ring}`}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlay(voice.name);
-                  }}
-                  aria-label={isPlaying ? `Pause ${voice.name} preview` : `Play ${voice.name} preview`}
-                  className="absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full hover:bg-stone-100"
-                >
-                  {isPlaying ? (
-                    <Pause size={16} className="text-[#C2410C]" />
-                  ) : (
-                    <Play size={16} className="text-stone-500" />
-                  )}
-                </button>
-                <p className="text-sm font-semibold text-[#0F172A]">{voice.name}</p>
-                <p className="text-xs text-[#475569] mt-1">{voice.description}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        <p className="text-xs text-[#94A3B8] mt-3">Takes effect on the next inbound call.</p>
-
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={handleSave}
-            disabled={saving || !selectedVoice}
-            aria-busy={saving}
-            aria-label="Save voice selection"
-            className={`${btn.primary} px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2`}
-          >
-            {saving ? (
+      <label className="text-sm font-medium text-[#0F172A]">Voice</label>
+      <div ref={dropdownRef} className="relative mt-1.5 w-full max-w-xs">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex items-center justify-between w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-[#0F172A] hover:border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]"
+        >
+          <span>
+            {current ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Saving...
+                {current.name}
+                <span className="text-[#475569] ml-1.5">— {current.description}</span>
               </>
             ) : (
-              'Save Voice'
+              <span className="text-[#94A3B8]">Select a voice</span>
             )}
-          </button>
-        </div>
+          </span>
+          <ChevronDown size={16} className={`text-[#94A3B8] transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+
+        {open && (
+          <div className="absolute z-10 mt-1 w-full rounded-lg border border-stone-200 bg-white shadow-lg py-1">
+            {VOICES.map((voice) => {
+              const isSelected = selectedVoice === voice.name;
+              const isPlaying = playingVoice === voice.name;
+              return (
+                <div
+                  key={voice.name}
+                  onClick={() => handleSelect(voice.name)}
+                  className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-stone-50 ${isSelected ? 'bg-stone-50' : ''}`}
+                >
+                  <div>
+                    <span className={`text-sm ${isSelected ? 'font-semibold text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                      {voice.name}
+                    </span>
+                    <span className="text-xs text-[#475569] ml-1.5">— {voice.description}</span>
+                  </div>
+                  <button
+                    onClick={(e) => handlePlay(e, voice.name)}
+                    aria-label={isPlaying ? `Pause ${voice.name}` : `Play ${voice.name}`}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100"
+                  >
+                    {isPlaying ? (
+                      <Pause size={14} className="text-[#C2410C]" />
+                    ) : (
+                      <Play size={14} className="text-stone-400" />
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+      {saving && <p className="text-xs text-[#94A3B8] mt-1.5">Saving...</p>}
+      <p className="text-xs text-[#94A3B8] mt-1.5">Takes effect on the next inbound call.</p>
     </div>
   );
 }

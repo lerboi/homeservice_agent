@@ -15,11 +15,14 @@ export default function AIVoiceSettingsPage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('phone_number, ai_voice')
+          .select('phone_number, ai_voice, tone_preset')
           .single();
         if (error) throw error;
         setPhoneNumber(data?.phone_number ?? null);
-        setCurrentVoice(data?.ai_voice ?? null);
+        // Resolve effective voice: explicit ai_voice > tone-based mapping > fallback
+        const VOICE_MAP = { professional: 'Zephyr', friendly: 'Aoede', local_expert: 'Achird' };
+        const effective = data?.ai_voice ?? VOICE_MAP[data?.tone_preset] ?? 'Zephyr';
+        setCurrentVoice(effective);
       } catch (err) {
         console.error('[ai-voice-settings] Failed to load tenant:', err?.message || err);
         toast.error('Failed to load voice settings. Please refresh.');
