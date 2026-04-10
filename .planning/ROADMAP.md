@@ -154,7 +154,7 @@ Plans:
 ### Phase 12: Dashboard-configurable triage and call escalation
 
 **Goal:** [To be planned]
-**Requirements**: TBD
+**Requirements**: VOICE-SEL-01 through VOICE-SEL-08
 **Depends on:** Phase 11
 **Plans:** 3/3 plans complete
 
@@ -270,6 +270,13 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 36: Landing Page Section Redesign** - How It Works scroll steps, Features horizontal carousel (completed 2026-03-28)
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
 - [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
+- [x] **Phase 39: Call Routing Webhook Foundation** - FastAPI webhook service on Railway, Twilio signature verification, schedule evaluator, outbound cap, 4 POST endpoints (completed 2026-04-10)
+- [ ] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration
+- [ ] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout
+- [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
+- [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
+- [ ] **Phase 44: AI Voice Selection** - Voice picker UI with 6 Gemini voices, audio previews, tenant persistence, agent voice override
+- [ ] **Phase 45: In-Browser Voice Test** - Direct Gemini Live API WebSocket voice test in dashboard, sandbox mode, same system prompt
 
 ### Phase 38: Programmatic SEO and Content Engine
 
@@ -333,9 +340,9 @@ Plans:
 ### Phase 31: Voice Call Feature Showcase PDF
 
 **Goal:** Generate a non-technical, sales-ready PDF showcasing all voice call features and capabilities. Output to `docs/` directory. Covers: AI receptionist capabilities, booking flow, triage, transfer, recovery SMS, calendar sync, multi-language support, and all smart features from Phase 30.
-**Requirements**: TBD
+**Requirements**: VOICE-SEL-01 through VOICE-SEL-08
 **Depends on:** Phase 30
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 31 to break down)
@@ -519,6 +526,28 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 43 to break down)
+
+### Phase 44: AI Voice Selection
+
+**Goal:** Let business owners choose their AI receptionist's voice from a curated set of 6 Gemini voices in the AI & Voice Settings dashboard page. Voice picker UI with pre-recorded audio preview clips, grouped by gender. Selection persists to tenants table and the LiveKit agent reads it at call time. Backward-compatible — NULL defaults to existing tone-based voice mapping.
+**Depends on:** None (independent of phases 40-43)
+**Requirements**: VOICE-SEL-01 through VOICE-SEL-08
+**Plans:** 3 plans
+
+Plans:
+- [ ] 44-01-PLAN.md — DB migration, API route, unit tests, placeholder audio
+- [ ] 44-02-PLAN.md — VoicePickerSection UI, page integration, visual verification
+- [ ] 44-03-PLAN.md — Python agent voice override in livekit-agent
+
+### Phase 45: In-Browser Voice Test
+
+**Goal:** Business owners can talk to their AI directly in the browser from AI & Voice Settings — same system prompt, business name, working hours, tone, and personality as a real call, but powered by a direct Gemini Live API WebSocket session (no LiveKit/Railway). Sandbox mode: AI simulates the full conversation flow including booking confirmations but commits no real side effects (no DB writes, no SMS, no calendar events). Uses the owner's selected voice from Phase 44.
+**Depends on:** Phase 44 (uses the selected voice)
+**Requirements**: VOICE-SEL-01 through VOICE-SEL-08
+**Plans:** 3 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 45 to break down)
 
 ---
 
