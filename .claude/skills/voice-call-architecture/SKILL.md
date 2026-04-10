@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Twi
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-10 (Phase 39: FastAPI webhook service replaces `src/health.py`. New `src/webhook/` subpackage with `app.py` (FastAPI instance + `/health` + `/health/db`), `twilio_routes.py` (4 signature-gated POST endpoints under `/twilio`), `security.py` (`verify_twilio_signature` dependency), `schedule.py` (pure-function `evaluate_schedule` + frozen `ScheduleDecision` dataclass), `caps.py` (`check_outbound_cap` async function with US/CA 5000-min and SG 2500-min monthly limits). `_normalize_phone` extracted from `agent.py` inline closure to `src/lib/phone.py` for reuse between webhook + agent. Migration 042 adds `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds` to `tenants`; `routing_mode`, `outbound_dial_duration_sec` to `calls`; `idx_calls_tenant_month` compound index. Phase 39 is purely additive — zero production Twilio numbers reconfigured; `/twilio/incoming-call` always returns hardcoded AI TwiML per D-13 dead-weight pattern so Phase 40's diff is a one-line branch swap. Webhook test suite: 35 tests (17 schedule + 8 caps + 6 routes + 4 security) green in ~1.3s. New deps: `fastapi>=0.115,<1`, `uvicorn[standard]>=0.30,<1`, `python-multipart>=0.0.9,<1`. Previous: Pin fix — livekit-agents, livekit-plugins-silero, livekit-plugins-turn-detector locked to ==1.5.1 in pyproject.toml. PyPI livekit-agents 1.5.2 shipped Apr 8 2026 with PR #5211, which added a required 7th field `per_response_tool_choice` to `llm.RealtimeCapabilities`. The git-pinned google plugin at commit 43d3734 still constructs RealtimeCapabilities with 6 fields, so any Railway rebuild after Apr 8 produced a TypeError at RealtimeModel.__init__ on every inbound call. The plugin pin must stay because commit 43d3734 is the only google plugin version supporting `generate_reply()` with `gemini-3.1-flash-live-preview` (via the `A2A_ONLY_MODELS` branch). See "Why livekit-agents and sibling plugins are pinned to 1.5.1" in section 1 for details. Previous: book_appointment tool now truly fire-and-forget for calendar push and caller SMS — was previously blocking for 1-4s while awaited, causing the AI to go silent and triggering duplicate invocations that fired spurious recovery SMS. Added idempotency cache keyed on slot_start|slot_end stored in deps, and a late-duplicate guard in the slot_taken branch. check_availability general-summary return no longer leaks earliest/latest slot time anchors — AI was mining them to fabricate specific times. Added anti-shortcut rules to booking section (different-time re-check, vague-window handling) with a concrete 2pm/3pm example. Updated check_availability tool description to forbid picking times for vague windows like "afternoon.")
+**Last updated**: 2026-04-11 (Phase 40: Live webhook routing composition wired in `/twilio/incoming-call` (tenant lookup -> sub check -> evaluate_schedule -> check_outbound_cap -> TwiML), dial-status writeback, dial-fallback AI TwiML, SMS forwarding to pickup_numbers with sms_forward=true, migration 045 (sms_messages table + call_sid on calls), provisioning update sets voice_url/voice_fallback_url/sms_url from RAILWAY_WEBHOOK_URL on new Twilio numbers, cutover script updates existing tenant numbers. Phase 39: FastAPI webhook service replaces `src/health.py`. New `src/webhook/` subpackage with `app.py` (FastAPI instance + `/health` + `/health/db`), `twilio_routes.py` (4 signature-gated POST endpoints under `/twilio`), `security.py` (`verify_twilio_signature` dependency), `schedule.py` (pure-function `evaluate_schedule` + frozen `ScheduleDecision` dataclass), `caps.py` (`check_outbound_cap` async function with US/CA 5000-min and SG 2500-min monthly limits). `_normalize_phone` extracted from `agent.py` inline closure to `src/lib/phone.py` for reuse between webhook + agent. Migration 042 adds `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds` to `tenants`; `routing_mode`, `outbound_dial_duration_sec` to `calls`; `idx_calls_tenant_month` compound index. Phase 39 is purely additive — zero production Twilio numbers reconfigured; `/twilio/incoming-call` always returns hardcoded AI TwiML per D-13 dead-weight pattern so Phase 40's diff is a one-line branch swap. Webhook test suite: 35 tests (17 schedule + 8 caps + 6 routes + 4 security) green in ~1.3s. New deps: `fastapi>=0.115,<1`, `uvicorn[standard]>=0.30,<1`, `python-multipart>=0.0.9,<1`. Previous: Pin fix — livekit-agents, livekit-plugins-silero, livekit-plugins-turn-detector locked to ==1.5.1 in pyproject.toml. PyPI livekit-agents 1.5.2 shipped Apr 8 2026 with PR #5211, which added a required 7th field `per_response_tool_choice` to `llm.RealtimeCapabilities`. The git-pinned google plugin at commit 43d3734 still constructs RealtimeCapabilities with 6 fields, so any Railway rebuild after Apr 8 produced a TypeError at RealtimeModel.__init__ on every inbound call. The plugin pin must stay because commit 43d3734 is the only google plugin version supporting `generate_reply()` with `gemini-3.1-flash-live-preview` (via the `A2A_ONLY_MODELS` branch). See "Why livekit-agents and sibling plugins are pinned to 1.5.1" in section 1 for details. Previous: book_appointment tool now truly fire-and-forget for calendar push and caller SMS — was previously blocking for 1-4s while awaited, causing the AI to go silent and triggering duplicate invocations that fired spurious recovery SMS. Added idempotency cache keyed on slot_start|slot_end stored in deps, and a late-duplicate guard in the slot_taken branch. check_availability general-summary return no longer leaks earliest/latest slot time anchors — AI was mining them to fabricate specific times. Added anti-shortcut rules to booking section (different-time re-check, vague-window handling) with a concrete 2pm/3pm example. Updated check_availability tool description to forbid picking times for vague windows like "afternoon.")
 
 ---
 
@@ -22,14 +22,27 @@ Two separate services work together:
 
 The agent is a **separate repo** (`lerboi/livekit_agent`) at `C:/Users/leheh/.Projects/livekit-agent/`.
 
-**LiveKit Railway service webhook surface (Phase 39):** The LiveKit Voice Agent Python process also runs a FastAPI webhook server on port 8080 via a daemon thread started before `cli.run_app()`. This surface exposes `GET /health`, `GET /health/db` (ported from the deleted `src/health.py`), and four signature-gated Twilio endpoints: `POST /twilio/incoming-call`, `POST /twilio/dial-status`, `POST /twilio/dial-fallback`, `POST /twilio/incoming-sms`. In Phase 39, `/twilio/incoming-call` always returns a hardcoded AI `<Dial><Sip>` TwiML — Phase 40 wires the live `evaluate_schedule` / `check_outbound_cap` composition. No production Twilio numbers are reconfigured in Phase 39.
+**LiveKit Railway service webhook surface (Phase 39 + 40):** The LiveKit Voice Agent Python process also runs a FastAPI webhook server on port 8080 via a daemon thread started before `cli.run_app()`. This surface exposes `GET /health`, `GET /health/db` (ported from the deleted `src/health.py`), and four signature-gated Twilio endpoints: `POST /twilio/incoming-call` (live routing composition: tenant lookup -> sub check -> evaluate_schedule -> check_outbound_cap -> AI or owner-pickup TwiML), `POST /twilio/dial-status` (writes duration + routing_mode to calls row), `POST /twilio/dial-fallback` (returns AI SIP TwiML for unanswered owner calls), `POST /twilio/incoming-sms` (forwards to sms_forward=true pickup_numbers, logs to sms_messages). All production Twilio numbers route through this webhook via `voice_url` set during provisioning or cutover.
 
 ```
 Caller dials Twilio number
        |
-  Twilio routes via Elastic SIP Trunk -> LiveKit Cloud
-       |                                 (SIP inbound trunk: voco-twilio-inbound)
-  LiveKit SIP dispatch rule creates room: "call-{uuid}"
+  Twilio voice_url -> Railway webhook /twilio/incoming-call (Phase 40)
+       |  (SIP trunk preserved as rollback safety net — Twilio prioritizes voice_url over SIP trunk)
+       |
+  Webhook routing composition:
+       |  1. Tenant lookup by To number (_normalize_phone -> tenants.phone_number)
+       |  2. Subscription check (fail-open: blocked/unknown -> AI)
+       |  3. evaluate_schedule(call_forwarding_schedule, tenant_timezone, now_utc)
+       |  4. If owner_pickup: check_outbound_cap(tenant_id, country)
+       |     - Cap breach -> downgrade to AI
+       |  5. Return TwiML:
+       |     - AI mode: <Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>
+       |     - Owner pickup: <Dial timeout callerId action="/twilio/dial-status">
+       |                       <Number>pickup1</Number>...<Number>pickup5</Number>
+       |                     </Dial>
+       |
+  [AI path] LiveKit SIP dispatch rule creates room: "call-{uuid}"
        |
   Agent joins room (entrypoint function, agent_name="voco-voice-agent")
        |  Looks up tenant by to_number (sip.trunkPhoneNumber)
@@ -60,6 +73,17 @@ Caller dials Twilio number
        |  Owner notifications (SMS + email, preference-gated)
        |
   ~60s after call -> Recovery SMS cron (for not_attempted calls, with retry)
+
+  [Owner pickup path] Twilio dials up to 5 pickup numbers simultaneously
+       |  Owner answers -> call connected, dial-status writes duration + routing_mode='owner_pickup'
+       |  No answer -> voice_fallback_url fires /twilio/dial-fallback -> returns AI SIP TwiML
+       |               dial-status writes routing_mode='fallback_to_ai'
+       |               Caller enters AI path (same greeting as direct AI, no fallback-aware behavior)
+
+  [SMS path] /twilio/incoming-sms forwards to pickup_numbers with sms_forward=true
+       |  Format: "[Voco] From {sender}: {body}"
+       |  MMS: "[Media attached - view in Twilio console]" note appended
+       |  Logged to sms_messages table (inbound + forwarded rows)
 ```
 
 ---
@@ -77,7 +101,7 @@ Caller dials Twilio number
 | `src/utils.py` | Date formatting, initial slot calculation |
 | `src/webhook/__init__.py` | Webhook subpackage entry — exports `app` and `start_webhook_server` (daemon thread uvicorn boot) |
 | `src/webhook/app.py` | FastAPI app instance — `GET /health`, `GET /health/db` (ported from deleted `src/health.py`); mounts `twilio_routes` router |
-| `src/webhook/twilio_routes.py` | APIRouter with prefix `/twilio`, router-level signature dependency, 4 POST endpoints (`incoming-call`, `dial-status`, `dial-fallback`, `incoming-sms`); Phase 39 `incoming-call` returns hardcoded AI TwiML per D-13 |
+| `src/webhook/twilio_routes.py` | APIRouter with prefix `/twilio`, router-level signature dependency, 4 live POST endpoints: `incoming-call` (tenant lookup -> sub check -> evaluate_schedule -> check_outbound_cap -> AI or owner-pickup TwiML), `dial-status` (writes duration + routing_mode to calls row), `dial-fallback` (returns AI SIP TwiML for unanswered owner calls), `incoming-sms` (forwards to sms_forward=true pickup_numbers, logs to sms_messages) |
 | `src/webhook/security.py` | `verify_twilio_signature` FastAPI dependency — URL reconstruction via `x-forwarded-proto` + `host` headers, twilio `RequestValidator`, `ALLOW_UNSIGNED_WEBHOOKS` bypass for dev |
 | `src/webhook/schedule.py` | Pure-function `evaluate_schedule()` + frozen `ScheduleDecision` dataclass — DST-aware via `zoneinfo`, handles overnight ranges and empty/disabled schedules |
 | `src/webhook/caps.py` | Async `check_outbound_cap()` — monthly outbound-minute soft cap per country (US/CA 5000 min, SG 2500 min); sums `calls.outbound_dial_duration_sec` via `idx_calls_tenant_month` index |
@@ -112,7 +136,8 @@ Caller dials Twilio number
 
 | File | Role |
 |------|------|
-| `src/app/api/stripe/webhook/route.js` | Phone provisioning (US/CA Twilio purchase, SG inventory) + SIP trunk association |
+| `src/app/api/stripe/webhook/route.js` | Phone provisioning (US/CA Twilio purchase, SG inventory) + SIP trunk association + webhook URL config (voice_url, voice_fallback_url, sms_url from RAILWAY_WEBHOOK_URL) |
+| `scripts/cutover-existing-numbers.js` | One-time script to update all existing tenant Twilio numbers to webhook routing (idempotent, supports --dry-run) |
 | `src/app/api/onboarding/test-call/route.js` | LiveKit SIP outbound test call trigger |
 | `src/lib/subscription-gate.js` | Subscription enforcement gate for the agent |
 | `src/app/api/cron/send-recovery-sms/route.js` | Recovery SMS cron job |
@@ -508,7 +533,13 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 | `NEXT_PUBLIC_APP_URL` | Base URL for dashboard links in notifications |
 | `SENTRY_DSN` | Sentry error tracking |
 | `ALLOW_UNSIGNED_WEBHOOKS` | Dev/staging only — bypass Twilio signature verification for `src/webhook/*` routes. Never set in production. Fail-closed default (signature enforced when unset). |
-| `LIVEKIT_SIP_URI` | Default SIP URI dialed by the Phase 39 hardcoded AI TwiML branch in `/twilio/incoming-call`. Phase 40 uses this when composing real routing TwiML. Defaults to `sip:voco@sip.livekit.cloud` placeholder if unset. |
+| `LIVEKIT_SIP_URI` | SIP URI used in AI TwiML responses (`<Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>`) for both direct AI routing and dial-fallback. Defaults to `sip:voco@sip.livekit.cloud` placeholder if unset. |
+
+### Main Repo (Vercel)
+
+| Variable | Purpose |
+|---|---|
+| `RAILWAY_WEBHOOK_URL` | Base URL of the Railway webhook service (e.g., `https://livekitagent-production.up.railway.app`). Used by `provisionPhoneNumber` to set `voice_url` (`{base}/twilio/incoming-call`), `voice_fallback_url` (`{base}/twilio/dial-fallback`), and `sms_url` (`{base}/twilio/incoming-sms`) on new Twilio numbers. If unset, numbers use SIP trunk routing only (warning logged). Also used by `scripts/cutover-existing-numbers.js` for existing number migration. |
 
 ---
 
@@ -541,12 +572,20 @@ Collected via `conversation_item_added` session events. Stored as both `transcri
 - **Calls table in Realtime publication**: Migration 041 adds calls to `supabase_realtime` with `REPLICA IDENTITY FULL` so the dashboard calls page receives live INSERT/UPDATE events.
 - **FastAPI replaces stdlib HTTPServer on port 8080 (Phase 39)**: The deleted `src/health.py` used Python's `http.server.HTTPServer` in a daemon thread. Phase 39 swaps this for a FastAPI app on the same port, same boot pattern (daemon thread before `cli.run_app()`), unified logging, and room to grow the `/twilio/*` surface without a second port. Dockerfile HEALTHCHECK line is unchanged because FastAPI serves the same `/health` path on the same port.
 - **Router-level Twilio signature dependency (Phase 39)**: `APIRouter(prefix="/twilio", dependencies=[Depends(verify_twilio_signature)])` applies the signature check once to all four `/twilio/*` endpoints — no per-route boilerplate. The dependency caches form data on `request.state.form_data` so handlers don't re-parse.
-- **Pure-function schedule evaluator (Phase 39)**: `evaluate_schedule(schedule, tenant_timezone, now_utc)` in `src/webhook/schedule.py` has zero side effects — no DB access, no HTTP, no logging. Trivially unit-testable (17 tests in `tests/webhook/test_schedule.py`). Phase 40 wires it into the live routing handler; Phase 39 freezes the contract.
-- **D-13 dead-weight tenant lookup (Phase 39)**: Phase 39's `/twilio/incoming-call` handler performs a real Supabase tenant lookup by the `To` number (same `_normalize_phone` pattern as `src/agent.py`), but always returns the hardcoded AI `<Dial><Sip>` TwiML regardless of result. This exercises the full wiring path (signature → URL reconstruction → form parse → tenant lookup → TwiML render) so Phase 40's diff is a one-line swap of the hardcoded branch for the `evaluate_schedule` + `check_outbound_cap` composition. Zero production risk because no real Twilio numbers are reconfigured in Phase 39.
+- **Pure-function schedule evaluator (Phase 39, wired in Phase 40)**: `evaluate_schedule(schedule, tenant_timezone, now_utc)` in `src/webhook/schedule.py` has zero side effects -- no DB access, no HTTP, no logging. Trivially unit-testable (17 tests in `tests/webhook/test_schedule.py`). Phase 40 wired it into the live `/twilio/incoming-call` routing handler.
+- **D-13 dead-weight tenant lookup (Phase 39, superseded by Phase 40)**: Phase 39's `/twilio/incoming-call` originally returned hardcoded AI TwiML per D-13. Phase 40 replaced this with the live routing composition (evaluate_schedule + check_outbound_cap). The dead-weight pattern served its purpose -- Phase 40's diff was a clean branch swap on the existing wiring.
 - **`_normalize_phone` extracted to `src/lib/phone.py` (Phase 39)**: Phase 39 extracted the inline closure from `src/agent.py::entrypoint()` to a module-level function in `src/lib/phone.py`. Both `src/agent.py` and `src/webhook/twilio_routes.py` import from the same module — no duplication.
 - **`calls.routing_mode` is nullable with NULL = AI (Phase 39, D-19)**: No historical backfill. Phase 41's dashboard badge interprets `NULL` as "AI" for pre-cutover calls. Legacy calls keep rendering correctly without a data migration.
 - **UTC-anchored monthly cap (Phase 39)**: `check_outbound_cap` anchors to `date_trunc('month', now())` in UTC, not tenant-local time. Up to 8 hours of pre-month calls near the boundary are excluded from the cap for tenants not at UTC. Acceptable at current scale per D-17 — revisit only if it materially affects enforcement.
 - **Form-stashing dependency overrides in tests (Phase 39-06)**: FastAPI `dependency_overrides` that replace a dependency producing request-scoped state must replicate that state mutation, not return `None`. `client_no_auth` in `tests/webhook/conftest.py` uses an async override that calls `await request.form()` and sets `request.state.form_data`, mirroring `verify_twilio_signature`'s side effect so the incoming-call handler doesn't crash with `AttributeError` on `request.state.form_data`.
+- **Webhook routing replaces SIP-only routing (Phase 40)**: All Twilio numbers now have `voice_url` set to `/twilio/incoming-call` on Railway. Twilio prioritizes `voice_url` over SIP trunk, so the webhook receives all inbound calls first and decides routing (AI vs owner-pickup). SIP trunk associations are preserved as rollback — clearing `voice_url` on a number restores SIP trunk routing automatically (D-21).
+- **Fail-open at every stage (Phase 40)**: Blocked tenants (canceled/paused/incomplete), unknown numbers (no tenant match), subscription check errors, schedule evaluation errors, and cap check errors all route to AI. No call is ever rejected or given a busy signal at the webhook layer (D-01).
+- **Pre-TwiML calls row insert (Phase 40, D-22)**: Owner-pickup calls insert a minimal `calls` row (tenant_id, from_number, to_number, routing_mode='owner_pickup', call_sid) BEFORE returning TwiML to Twilio. This ensures the row exists before the dial-status callback fires.
+- **Owner-pickup calls are lightweight (Phase 40, D-07/D-08)**: No transcript, no recording, no triage, no lead creation, no notifications, no `increment_calls_used`. The owner talked to the customer directly.
+- **Same AI greeting for all paths (Phase 40, D-05)**: Whether a call goes directly to AI or falls back after owner no-answer, the caller gets the identical greeting. No fallback-aware behavior.
+- **Soft cap gates owner-pickup only (Phase 40, D-11)**: Cap breach downgrades `owner_pickup` to AI and logs a warning. AI calls are always allowed regardless of cap status — the cap only gates the outbound dial leg.
+- **SMS forwarding is non-fatal per-recipient (Phase 40, D-16)**: If forwarding to one pickup number fails, others still proceed. Errors logged but not surfaced to the original sender. MMS not forwarded — `[Media attached]` note appended instead (D-14).
+- **call_sid for dial-status correlation (Phase 40)**: The `calls` row uses Twilio's `CallSid` (passed in the webhook form data) to correlate the dial-status callback with the calls row. This is more reliable than from_number + to_number + timestamp window matching.
 - **`python-multipart` required in production (Phase 39-06)**: FastAPI cannot parse Twilio's `application/x-www-form-urlencoded` webhook bodies without `python-multipart`. Discovered when the first integration test raised `AssertionError` on form parsing. Added to `[project.dependencies]` (not dev) so Railway picks it up on deploy. Without it, every production Twilio webhook would 500 on first hit.
 
 ---
@@ -563,14 +602,14 @@ See the File Map table above. The subpackage is `src/webhook/` with `app.py`, `t
 
 ### Endpoints
 
-| Method | Path | Purpose | Phase 39 behavior |
-|--------|------|---------|-------------------|
+| Method | Path | Purpose | Behavior |
+|--------|------|---------|----------|
 | GET | `/health` | Liveness probe | Returns `{"status":"ok","uptime":<int>,"version":"1.0.0"}` (Dockerfile HEALTHCHECK) |
 | GET | `/health/db` | DB connectivity probe | 200 if `SELECT id FROM tenants LIMIT 1` succeeds, 503 otherwise |
-| POST | `/twilio/incoming-call` | Twilio voice webhook | Tenant lookup via `_normalize_phone(To)` (dead-weight per D-13); always returns hardcoded `<Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>` TwiML |
-| POST | `/twilio/dial-status` | Dial-status callback | Returns `<Response/>` (Phase 40 wires duration writeback) |
-| POST | `/twilio/dial-fallback` | Dial-fallback | Returns `<Response/>` (Phase 40 returns AI TwiML here) |
-| POST | `/twilio/incoming-sms` | SMS webhook | Returns `<Response/>` (Phase 40 wires forwarding to `pickup_numbers`) |
+| POST | `/twilio/incoming-call` | Twilio voice webhook | Routing composition: tenant lookup -> subscription check (fail-open) -> `evaluate_schedule` -> `check_outbound_cap` (owner_pickup only) -> returns AI `<Dial><Sip>` or owner-pickup `<Dial><Number>` TwiML. Inserts `calls` row for owner-pickup before returning TwiML. |
+| POST | `/twilio/dial-status` | Dial-status callback | Writes `outbound_dial_duration_sec` and `routing_mode` (`owner_pickup` or `fallback_to_ai`) to the calls row via `call_sid`. Returns `<Response/>`. |
+| POST | `/twilio/dial-fallback` | Dial-fallback (owner no-answer) | Returns AI SIP TwiML `<Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>` — same as direct AI path. No fallback-aware greeting. |
+| POST | `/twilio/incoming-sms` | SMS forwarding webhook | Forwards message text to `pickup_numbers` entries with `sms_forward=true`. Format: `[Voco] From {sender}: {body}`. MMS gets `[Media attached]` note. Logs inbound + forwarded rows to `sms_messages` table. Non-fatal per-recipient. |
 
 All `/twilio/*` endpoints are signature-gated via a single router-level FastAPI dependency — zero per-route boilerplate.
 
@@ -613,7 +652,7 @@ Pure function — no DB access, no HTTP, no logging. Schedule JSONB shape is `{e
 
 Same-day lookup only: a `mon 19:00-09:00` range matches Mon 08:00 local (morning branch) and Mon 20:00 local (evening branch) because the evaluator only reads `days[current_day_key]`. Phase 41 UI writes the range under both day keys if true cross-day matching is required — the evaluator does NOT synthesize cross-day lookups.
 
-Phase 39's evaluator emits only `ai` or `owner_pickup`; Phase 40 may add `fallback_to_ai` as a post-call observation written by the dial-status handler when Twilio reports a no-answer.
+The evaluator emits `ai` or `owner_pickup`. `fallback_to_ai` is written by the dial-status handler when Twilio reports a no-answer on the owner-pickup dial -- it is a post-call observation on the `calls.routing_mode` column, not a schedule evaluator output.
 
 ### Outbound Cap
 
@@ -638,6 +677,13 @@ Returns `True` if the tenant is under the monthly outbound cap, `False` at/over.
 
 `pickup_numbers` item shape (enforced at Phase 41 API layer, not DB): `{number: string (E.164), label: string, sms_forward: boolean}`.
 
+### Database Schema (Phase 40 Migration 045)
+
+`supabase/migrations/045_sms_messages_and_call_sid.sql` adds:
+
+- **`sms_messages` table**: `id` (UUID PK), `tenant_id` (FK), `from_number` (text), `to_number` (text), `body` (text), `direction` (text, 'inbound' or 'forwarded'), `created_at` (timestamptz). RLS enabled with tenant isolation. One row for the inbound message, one row per forwarded copy.
+- **`calls.call_sid` column**: `TEXT` — Twilio's CallSid, used by `/twilio/dial-status` to find the calls row for duration writeback. Populated at owner-pickup call insert time (before TwiML response).
+
 ### Test Infrastructure
 
 pytest lives in `livekit-agent/tests/webhook/` (Phase 39 Wave 0). Test files:
@@ -651,13 +697,24 @@ Configured via `[tool.pytest.ini_options]` in `pyproject.toml` with `testpaths =
 
 Run: `cd livekit-agent && python -m pytest tests/webhook/ -q` — target runtime <10 seconds, current wall ~1.3s for all 35 tests.
 
-### Phase 40 + 41 Extension Points
+### Phase 40 Completed Changes
 
-- Phase 40 replaces the hardcoded AI TwiML branch in `/twilio/incoming-call` with `evaluate_schedule` + `check_outbound_cap` composition
-- Phase 40 wires `/twilio/dial-status` to write `outbound_dial_duration_sec` back to the calls row
-- Phase 40 wires `/twilio/incoming-sms` to forward messages to `pickup_numbers` entries with `sms_forward=true`
+Phase 40 completed the architectural cutover from SIP-only routing to webhook-based routing:
+
+- `/twilio/incoming-call` now runs the live routing composition: tenant lookup -> subscription check (fail-open) -> `evaluate_schedule` -> `check_outbound_cap` (if owner_pickup) -> AI or owner-pickup TwiML
+- `/twilio/dial-status` writes `outbound_dial_duration_sec` and `routing_mode` to the calls row via `call_sid`
+- `/twilio/dial-fallback` returns AI SIP TwiML for unanswered owner-pickup calls (same greeting as direct AI, no fallback-aware behavior per D-05)
+- `/twilio/incoming-sms` forwards messages to `pickup_numbers` entries with `sms_forward=true`, logs to `sms_messages` table
+- `provisionPhoneNumber` in `src/app/api/stripe/webhook/route.js` sets `voice_url`, `voice_fallback_url`, `sms_url` from `RAILWAY_WEBHOOK_URL` on new Twilio numbers (both US/CA at purchase time and SG after assignment)
+- SIP trunk associations preserved on all numbers as rollback safety net (D-21): clearing `voice_url` restores SIP trunk routing
+- All existing tenant numbers cutover to webhook routing via `scripts/cutover-existing-numbers.js`
+- Migration 045 adds `sms_messages` table and `call_sid` column on `calls`
+
+### Phase 41 Extension Points
+
 - Phase 41 ships the dashboard UI at `/dashboard/more/call-routing` that writes `call_forwarding_schedule` + `pickup_numbers` + `dial_timeout_seconds`
-- Phase 40 also updates `provisionPhoneNumber` in `src/app/api/stripe/webhook/route.js` to set `voice_url` / `voice_fallback_url` / `sms_url` on newly purchased Twilio numbers pointing at the Railway webhook
+- Phase 41 adds routing mode badges on the dashboard calls page (NULL = AI for pre-cutover calls per D-19)
+- Phase 41 adds a usage meter showing outbound minutes used this month
 
 ---
 
