@@ -63,15 +63,16 @@ completed: 2026-04-11
 - **Files modified:** 3
 
 ## Accomplishments
-- Created VoicePickerSection.jsx with 6 voice cards grouped by Female/Male gender labels
+- Created VoicePickerSection.jsx with dropdown voice selector and inline play buttons per item
 - Audio preview plays/pauses with mutual exclusion (only one plays at a time); cleanup on unmount
-- Design tokens applied throughout (selected.card copper border, selected.cardIdle idle state, card.hover, btn.primary, focus.ring)
+- Selecting a voice auto-saves immediately via PATCH (no separate Save button)
 - SettingsAISection updated to accept initialVoice prop and render VoicePickerSection above phone block
-- page.js Supabase query extended to fetch ai_voice field; pre-selects the matching card on load
+- page.js fetches ai_voice + tone_preset; resolves effective voice via VOICE_MAP fallback (matches LiveKit agent logic)
 
 ## Task Commits
 
 1. **Task 1: VoicePickerSection component + page integration** - `444b54d` (feat)
+2. **Task 2: Simplify to dropdown + resolve default from tone_preset** - `baabdcf` (refactor)
 
 **Plan metadata:** pending final docs commit
 
@@ -87,7 +88,8 @@ completed: 2026-04-11
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+- **UI simplified per user feedback:** 2x3 card grid replaced with a simple "Voice" label + dropdown. Each dropdown item has a play button. Selecting auto-saves (no separate Save button). Removed gender group labels, design token card styling, radiogroup pattern.
+- **Default voice resolution added:** Page now fetches `tone_preset` alongside `ai_voice` and resolves the effective voice using the same VOICE_MAP as the LiveKit agent, so the dropdown always shows the voice currently in use.
 
 ## Known Stubs
 
@@ -98,7 +100,7 @@ None — build passed cleanly on first attempt.
 
 ## Next Phase Readiness
 - VoicePickerSection is wired end-to-end (UI → PATCH API → DB)
-- Awaiting human visual verification (Task 2 checkpoint) before plan is considered fully complete
+- Human visual verification approved — simplified dropdown UI accepted
 - Audio preview files at `/public/audio/voices/*.mp3` must be added before voice previews work
 - Phase 45 (In-Browser Voice Test) can proceed — depends on Phase 44 voice selection which is now complete
 
