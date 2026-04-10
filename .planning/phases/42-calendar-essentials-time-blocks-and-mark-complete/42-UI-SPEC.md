@@ -129,7 +129,7 @@ Focal point: appointment blocks dominate via solid urgency color and z-10 layeri
 | Component | Import | Use |
 |-----------|--------|-----|
 | `Sheet`, `SheetContent`, `SheetHeader`, `SheetTitle`, `SheetFooter` | `@/components/ui/sheet` | TimeBlockSheet (create/edit) |
-| `Button` | `@/components/ui/button` | "Add Time Block", "Mark Complete", "Delete", "Undo" |
+| `Button` | `@/components/ui/button` | "Save Block", "Mark Complete", "Delete", "Undo" |
 | `Input` | `@/components/ui/input` | Title field, time fields in TimeBlockSheet |
 | `Label` | `@/components/ui/label` | All form field labels in TimeBlockSheet |
 | `Switch` | `@/components/ui/switch` | All-day toggle in TimeBlockSheet; "Show completed" toggle |
@@ -153,7 +153,7 @@ Focal point: appointment blocks dominate via solid urgency color and z-10 layeri
    - **End time** — `Input` type="time", required (hidden when all-day is on)
    - **All-day** — `Switch` + `Label` inline row; toggling hides start/end time fields and sets times to span full working hours window
    - **Note** — `Textarea`, placeholder "Optional note", not required
-4. SheetFooter: "Save Block" button (accent, full-width) + "Cancel" ghost button
+4. SheetFooter: "Save Block" button (accent, full-width) + "Discard" ghost button
 5. On save: POST `/api/calendar-blocks` → optimistic UI update → Sheet closes → success toast "Time block saved"
 6. Validation: If title empty or times invalid, show inline error below the field (`text-destructive text-12px`)
 
@@ -236,6 +236,7 @@ Focal point: appointment blocks dominate via solid urgency color and z-10 layeri
 |---------|------|
 | Primary CTA (time block) | "Save Block" |
 | Primary CTA (mark complete) | "Mark Complete" / "Confirm Complete" (two-step) |
+| Sheet dismiss button (time block create/edit) | "Discard" |
 | TimeBlockSheet heading (create) | "Add Time Block" |
 | TimeBlockSheet heading (edit) | "Edit Time Block" |
 | Title field placeholder | "Lunch break" |
