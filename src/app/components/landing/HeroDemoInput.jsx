@@ -66,7 +66,7 @@ export function HeroDemoInput({ onAudioReady }) {
             disabled={state === 'loading'}
             aria-label="Your business name"
             aria-required="true"
-            className="flex-1 bg-transparent px-3 sm:px-4 py-3 text-white placeholder:text-white/30 text-xs sm:text-sm focus:outline-none min-h-[48px] sm:min-h-[52px]"
+            className="flex-1 min-w-0 bg-transparent px-3 sm:px-4 py-3 text-white placeholder:text-white/30 text-xs sm:text-sm focus:outline-none min-h-[48px] sm:min-h-[52px]"
           />
           <button
             type="submit"

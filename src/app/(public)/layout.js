@@ -7,7 +7,7 @@ export default function PublicLayout({ children }) {
   return (
     <>
       <LandingNav />
-      <main className="relative">{children}</main>
+      <main className="relative overflow-x-clip">{children}</main>
       <LandingFooter />
       <Toaster richColors position="top-center" />
       <PublicChatButton />

@@ -16,7 +16,7 @@ CREATE INDEX idx_sms_messages_tenant_created ON sms_messages (tenant_id, created
 ALTER TABLE sms_messages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "tenant_select_sms" ON sms_messages
-  FOR SELECT USING (tenant_id = (SELECT id FROM tenants WHERE user_id = auth.uid()));
+  FOR SELECT USING (tenant_id = (SELECT id FROM tenants WHERE owner_id = auth.uid()));
 
 -- Section 2: call_sid column on calls table
 ALTER TABLE calls ADD COLUMN call_sid TEXT;

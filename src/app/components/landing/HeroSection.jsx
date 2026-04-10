@@ -27,7 +27,7 @@ const SPLINE_SCENE_URL = 'https://prod.spline.design/CN1NeDZqows-DMX0/scene.spli
 
 export function HeroSection() {
   return (
-    <section className="relative bg-[#050505] overflow-hidden min-h-[100svh] md:min-h-[700px] flex flex-col md:block">
+    <section className="relative bg-[#050505] overflow-hidden min-h-[100svh] md:min-h-[700px] flex flex-col">
       {/* Spline 3D scene — full-bleed canvas, centered */}
       <div className="absolute inset-0 hidden md:block">
         <SplineScene
@@ -48,10 +48,10 @@ export function HeroSection() {
         <div className="absolute top-[45%] right-[20%] w-[200px] h-[200px] rounded-full bg-[radial-gradient(circle,rgba(253,186,116,0.08)_0%,transparent_60%)]" />
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-6 py-12 md:pt-36 md:pb-28 flex-1 flex flex-col justify-center md:justify-start pointer-events-none">
-        <div className="md:max-w-[50%]">
+      <div className="relative w-full max-w-6xl mx-auto px-6 py-12 md:py-32 flex-1 flex flex-col justify-center pointer-events-none">
+        <div className="w-full max-w-full min-w-0 md:max-w-[50%]">
           <AnimatedSection>
-            <h1 className="text-[2.25rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white leading-[1.2] tracking-tight">
+            <h1 className="text-[2.25rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white leading-[1.2] tracking-tight break-words">
               Let Voco Handle Your
               <br />
               <span className="text-[2.75rem] md:text-[3rem] lg:text-[3.75rem]">

@@ -43,6 +43,108 @@ function isSameDay(d1, d2) {
     d1.getDate() === d2.getDate();
 }
 
+/**
+ * Lane-assignment (interval graph coloring) for overlapping calendar events.
+ *
+ * Day / Week views render overlapping events side-by-side by splitting the column
+ * width (same behavior as Google Calendar / Outlook). This function takes a flat
+ * array of typed wrappers `{ item, type }` and returns each one annotated with
+ * `{ laneIndex, laneCount }`:
+ *   - laneIndex: 0-based horizontal slot (0 = leftmost)
+ *   - laneCount: total lanes used by the event's overlap cluster, so
+ *     width = 100% / laneCount for every event in that cluster.
+ *
+ * Appointments and timed external events MUST be laid out in the same call so
+ * that an appointment at 9am and a Google Calendar event at 9am get distinct
+ * lanes (never collapse onto each other). Travel buffers are NOT laid out here —
+ * they remain full-column-width background decorations behind the foreground
+ * event blocks.
+ *
+ * Pure function — never mutates the caller's `item` objects.
+ */
+function layoutEventsInLanes(wrappers) {
+  if (!wrappers || wrappers.length === 0) return [];
+
+  // 1. Normalize — compute numeric start/end ms, guard against bad data
+  const normalized = wrappers.map((w) => {
+    const startMs = Date.parse(w.item.start_time);
+    let endMs = Date.parse(w.item.end_time);
+    if (!(endMs > startMs)) endMs = startMs + 1;
+    return { ...w, _startMs: startMs, _endMs: endMs };
+  });
+
+  // 2. Sort ascending by start, tie-break by end descending (longer events first)
+  normalized.sort((a, b) => {
+    if (a._startMs !== b._startMs) return a._startMs - b._startMs;
+    return b._endMs - a._endMs;
+  });
+
+  // 3. Pack lanes: lanes[i] = current end time of event occupying lane i
+  const lanes = [];
+  for (const w of normalized) {
+    let placed = false;
+    for (let i = 0; i < lanes.length; i++) {
+      if (lanes[i] <= w._startMs) {
+        lanes[i] = w._endMs;
+        w.laneIndex = i;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      w.laneIndex = lanes.length;
+      lanes.push(w._endMs);
+    }
+  }
+
+  // 4. Detect clusters of transitively overlapping events
+  const clusters = [];
+  let currentCluster = [];
+  let clusterEndMax = -Infinity;
+  for (const w of normalized) {
+    if (w._startMs >= clusterEndMax) {
+      if (currentCluster.length > 0) clusters.push(currentCluster);
+      currentCluster = [w];
+      clusterEndMax = w._endMs;
+    } else {
+      currentCluster.push(w);
+      if (w._endMs > clusterEndMax) clusterEndMax = w._endMs;
+    }
+  }
+  if (currentCluster.length > 0) clusters.push(currentCluster);
+
+  // 5. Assign laneCount per cluster (shared across the cluster for consistent widths)
+  for (const cluster of clusters) {
+    let maxLane = 0;
+    for (const w of cluster) {
+      if (w.laneIndex > maxLane) maxLane = w.laneIndex;
+    }
+    const laneCount = maxLane + 1;
+    for (const w of cluster) {
+      w.laneCount = laneCount;
+    }
+  }
+
+  // Strip internal ms fields before returning
+  return normalized.map(({ _startMs, _endMs, ...rest }) => rest);
+}
+
+/**
+ * Return { left, width } CSS calc() strings for a lane in a multi-lane column.
+ * For laneCount=1, this reproduces the existing `left-1 right-1` (4px desktop)
+ * / `left-0.5 right-0.5` (2px mobile) Tailwind classes pixel-for-pixel, so
+ * single-event layouts are unchanged from today.
+ */
+function getLaneLayout(laneIndex, laneCount, isMobile) {
+  const outerMargin = isMobile ? 2 : 4;
+  const laneGap = laneCount > 1 ? 2 : 0;
+  const slotFormula = `(100% - ${2 * outerMargin}px - ${(laneCount - 1) * laneGap}px) / ${laneCount}`;
+  return {
+    left: `calc(${outerMargin}px + ${laneIndex} * (${slotFormula}) + ${laneIndex * laneGap}px)`,
+    width: `calc(${slotFormula})`,
+  };
+}
+
 function getWeekDays(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -132,16 +234,18 @@ function CurrentTimeIndicator({ gridStartHour, gridEndHour }) {
   );
 }
 
-function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPositionStyle }) {
+function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPositionStyle, laneIndex = 0, laneCount = 1 }) {
   const style = getPositionStyle(appointment.start_time, appointment.end_time);
   const urgency = appointment.urgency || 'routine';
   const styles = URGENCY_STYLES[urgency] || URGENCY_STYLES.routine;
   const heightPx = parseInt(style.height, 10);
   const minHeight = isMobile ? 44 : 28;
-  const finalStyle = { ...style, height: `${Math.max(heightPx, minHeight)}px` };
+  const laneStyle = getLaneLayout(laneIndex, laneCount, isMobile);
+  const finalStyle = { ...style, ...laneStyle, height: `${Math.max(heightPx, minHeight)}px` };
   const effectiveHeight = Math.max(heightPx, minHeight);
-  const isCompact = effectiveHeight < 52;
-  const isVeryCompact = effectiveHeight < 36;
+  const isNarrow = laneCount >= 3;
+  const isCompact = effectiveHeight < 52 || isNarrow;
+  const isVeryCompact = effectiveHeight < 36 || (isNarrow && effectiveHeight < 64);
 
   const addressLine = appointment.street_name && appointment.postal_code
     ? `${appointment.street_name}, ${appointment.postal_code}`
@@ -150,7 +254,7 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
   return (
     <button
       type="button"
-      className={`absolute ${isMobile ? 'left-0.5 right-0.5' : 'left-1 right-1'} rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${styles.block}`}
+      className={`absolute rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${styles.block}`}
       style={finalStyle}
       onClick={(e) => { e.stopPropagation(); onClick(appointment); }}
     >
@@ -220,15 +324,16 @@ function TravelBufferBlock({ buffer, getPositionStyle }) {
   );
 }
 
-function ExternalEventBlock({ event, getPositionStyle }) {
+function ExternalEventBlock({ event, getPositionStyle, laneIndex = 0, laneCount = 1, isMobile = false }) {
   const style = getPositionStyle(event.start_time, event.end_time);
   const heightPx = parseInt(style.height, 10);
   const providerLabel = event.provider === 'outlook' ? 'Outlook' : 'Google Calendar';
+  const laneStyle = getLaneLayout(laneIndex, laneCount, isMobile);
 
   return (
     <div
-      className="absolute left-1 right-1 bg-violet-50 border-l-[3px] border-violet-400 rounded-md pointer-events-none px-2 py-1 overflow-hidden shadow-sm"
-      style={style}
+      className="absolute bg-violet-50 border-l-[3px] border-violet-400 rounded-md pointer-events-none px-2 py-1 overflow-hidden shadow-sm"
+      style={{ ...style, ...laneStyle }}
     >
       <div className="text-[11px] font-semibold text-violet-700 truncate leading-tight">{event.title}</div>
       {heightPx >= 40 && (
@@ -387,8 +492,27 @@ export default function CalendarView({
     return { top: `${top}px`, height: `${height}px` };
   }, [gridStartHour, gridEndHour]);
 
-  const allDayEvents = externalEvents.filter((e) => e.is_all_day);
-  const timedExternalEvents = externalEvents.filter((e) => !e.is_all_day);
+  const { allDayEvents, timedExternalEvents } = useMemo(() => ({
+    allDayEvents:        externalEvents.filter((e) =>  e.is_all_day),
+    timedExternalEvents: externalEvents.filter((e) => !e.is_all_day),
+  }), [externalEvents]);
+
+  // Pre-compute lane assignments per day so overlapping appointments and timed
+  // external events render side-by-side instead of stacking on top of each other.
+  // See layoutEventsInLanes() for the algorithm.
+  const layoutByDay = useMemo(() => {
+    const map = new Map();
+    for (const day of columns) {
+      const key = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+      const dayAppts = appointments.filter((a) => isSameDay(new Date(a.start_time), day));
+      const dayExt   = timedExternalEvents.filter((e) => isSameDay(new Date(e.start_time), day));
+      map.set(key, layoutEventsInLanes([
+        ...dayAppts.map((item) => ({ item, type: 'appt' })),
+        ...dayExt.map((item)   => ({ item, type: 'ext'  })),
+      ]));
+    }
+    return map;
+  }, [columns, appointments, timedExternalEvents]);
 
   // Auto-scroll to relevant time after load
   useEffect(() => {
@@ -596,9 +720,9 @@ export default function CalendarView({
         {/* Day columns */}
         {columns.map((day, colIndex) => {
           const isToday = isSameDay(day, today);
-          const dayAppointments = getItemsForDay(day, appointments);
+          const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+          const laidOut = layoutByDay.get(dayKey) || [];
           const dayBuffers = getItemsForDay(day, travelBuffers);
-          const dayExternal = getItemsForDay(day, timedExternalEvents);
           const config = getDayConfig(day, workingHours);
           const isDayClosed = config && !config.enabled;
 
@@ -661,24 +785,33 @@ export default function CalendarView({
                 />
               )}
 
-              {/* External events */}
-              {dayExternal.map((event) => (
-                <ExternalEventBlock key={event.id} event={event} getPositionStyle={getPositionStyle} />
+              {/* External events (lane-aware) */}
+              {laidOut.filter((w) => w.type === 'ext').map((w) => (
+                <ExternalEventBlock
+                  key={`ext-${w.item.id}`}
+                  event={w.item}
+                  laneIndex={w.laneIndex}
+                  laneCount={w.laneCount}
+                  isMobile={isMobile}
+                  getPositionStyle={getPositionStyle}
+                />
               ))}
 
-              {/* Travel buffers */}
+              {/* Travel buffers (full-column background decoration, unchanged) */}
               {dayBuffers.map((buffer, i) => (
                 <TravelBufferBlock key={`buf-${i}`} buffer={buffer} getPositionStyle={getPositionStyle} />
               ))}
 
-              {/* Appointments */}
-              {dayAppointments.map((appt) => (
+              {/* Appointments (lane-aware) */}
+              {laidOut.filter((w) => w.type === 'appt').map((w) => (
                 <AppointmentBlock
-                  key={appt.id}
-                  appointment={appt}
+                  key={`appt-${w.item.id}`}
+                  appointment={w.item}
                   onClick={onAppointmentClick}
-                  isOffHours={isOutsideWorkingHours(appt, workingHours)}
+                  isOffHours={isOutsideWorkingHours(w.item, workingHours)}
                   isMobile={isMobile}
+                  laneIndex={w.laneIndex}
+                  laneCount={w.laneCount}
                   getPositionStyle={getPositionStyle}
                 />
               ))}

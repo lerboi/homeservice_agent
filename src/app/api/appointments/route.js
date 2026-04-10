@@ -129,6 +129,15 @@ export async function GET(request) {
     return Response.json({ error: apptError.message }, { status: 500 });
   }
 
+  // Voice-agent bookings get pushed to Google/Outlook, then the webhook mirrors
+  // them back into calendar_events. Collect the pushed event IDs so we can filter
+  // the mirrors out of the externalEvents response and prevent double-rendering.
+  const mirroredExternalIds = new Set(
+    (appointments || [])
+      .map((a) => a.external_event_id)
+      .filter(Boolean)
+  );
+
   // Fetch calendar_events that overlap the date range (handles multi-day and all-day events)
   const { data: calendarEvents, error: eventsError } = await supabase
     .from('calendar_events')
@@ -141,6 +150,12 @@ export async function GET(request) {
     console.log('500:', eventsError.message);
     return Response.json({ error: eventsError.message }, { status: 500 });
   }
+
+  // Drop calendar_events rows that are just Voco's own bookings mirrored back
+  // from Google/Outlook — same event, different table, would render twice.
+  const filteredCalendarEvents = (calendarEvents || []).filter(
+    (e) => !mirroredExternalIds.has(e.external_id)
+  );
 
   // Fetch zone travel buffers
   const { data: zoneTravelBuffers } = await supabase
@@ -156,11 +171,11 @@ export async function GET(request) {
   }
 
   const travelBuffers = computeTravelBuffers(appointments || [], travelBufferMap);
-  const conflicts = detectConflicts(appointments || [], calendarEvents || []);
+  const conflicts = detectConflicts(appointments || [], filteredCalendarEvents);
 
   return Response.json({
     appointments: appointments || [],
-    externalEvents: calendarEvents || [],
+    externalEvents: filteredCalendarEvents,
     travelBuffers,
     conflicts,
   });

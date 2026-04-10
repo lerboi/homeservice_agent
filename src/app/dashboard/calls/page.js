@@ -92,14 +92,9 @@ function groupByDate(calls) {
     currentGroup.calls.push(call);
   }
 
-  // Sort within each date group: emergency first, then urgent, then routine
+  // Sort within each date group by most recent first
   for (const group of groups) {
-    group.calls.sort((a, b) => {
-      const wa = URGENCY_WEIGHT[a.urgency_classification] || 0;
-      const wb = URGENCY_WEIGHT[b.urgency_classification] || 0;
-      if (wa !== wb) return wb - wa;
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
+    group.calls.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
   return groups;
@@ -163,7 +158,12 @@ function CallCard({ call }) {
               {formatPhone(call.from_number)}
             </p>
             {isShort && (
-              <span className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded">missed</span>
+              <span
+                className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded"
+                title="This call was too brief to count as a lead (under 15 seconds)."
+              >
+                too short
+              </span>
             )}
           </div>
           <p className="text-xs text-[#475569] mt-0.5">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
@@ -15,6 +15,7 @@ import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import { card } from '@/lib/design-tokens';
+import { supabase } from '@/lib/supabase-browser';
 
 function startOfWeek(date) {
   const d = new Date(date);
@@ -119,6 +120,10 @@ export default function CalendarPage() {
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const prefersReduced = useReducedMotion();
   const [workingHoursData, setWorkingHoursData] = useState(null);
+  const [tenantId, setTenantId] = useState(null);
+  // Holds the most recent fetch range so the Realtime callback can range-filter
+  // INSERT events against whatever view the user is currently looking at.
+  const currentRangeRef = useRef({ start: null, end: null });
 
   // Swipe gesture controls for mobile day navigation
   const dragControls = useAnimation();
@@ -142,6 +147,21 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchWorkingHours();
+  }, []);
+
+  // Fetch tenant ID once for the Realtime subscription (user.id !== tenant.id).
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setTenantId(null); return; }
+      supabase
+        .from('tenants')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+        .then(({ data }) => setTenantId(data?.id ?? null));
+    }).catch(() => {
+      setTenantId(null);
+    });
   }, []);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -175,6 +195,10 @@ export default function CalendarPage() {
         end = endOfDay(currentDate).toISOString();
       }
 
+      // Store the active fetch range so the Realtime callback can filter
+      // incoming events to only those that match the currently-displayed view.
+      currentRangeRef.current = { start, end };
+
       const res = await fetch(`/api/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&view=${effectiveViewMode}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const json = await res.json();
@@ -189,6 +213,106 @@ export default function CalendarPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ── Supabase Realtime subscription for appointments ────────────────────
+  // Keeps the calendar view in sync with AI-booked appointments from the
+  // voice agent and changes made in other browser tabs. The subscription
+  // persists across view-mode / date navigations (we read the latest fetch
+  // range from currentRangeRef so it stays in sync with whatever the user
+  // is looking at without recreating the channel).
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel('calendar-appointments-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointments',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const appt = payload.new;
+          if (!appt || appt.status === 'cancelled') return;
+          // Range filter: only add if the appointment falls inside the
+          // currently-fetched date range. Otherwise it would appear in
+          // the "wrong" view until the user navigates.
+          const range = currentRangeRef.current;
+          if (!range.start || !range.end) return;
+          const apptStart = new Date(appt.start_time).toISOString();
+          if (apptStart < range.start || apptStart > range.end) return;
+          setData((prev) => {
+            // Dedup: the optimistic update in handleQuickBook may have
+            // already added this row.
+            if (prev.appointments.some((a) => a.id === appt.id)) return prev;
+            return {
+              ...prev,
+              appointments: [...prev.appointments, appt].sort(
+                (a, b) => new Date(a.start_time) - new Date(b.start_time)
+              ),
+            };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'appointments',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const appt = payload.new;
+          if (!appt) return;
+          setData((prev) => {
+            // If the update cancelled the appointment, remove it (the GET
+            // endpoint filters out cancelled rows, so keeping it would
+            // drift the view out of sync).
+            if (appt.status === 'cancelled') {
+              return {
+                ...prev,
+                appointments: prev.appointments.filter((a) => a.id !== appt.id),
+              };
+            }
+            // Replace if already in state; otherwise ignore (the update
+            // landed on a row outside the current fetch range).
+            const exists = prev.appointments.some((a) => a.id === appt.id);
+            if (!exists) return prev;
+            return {
+              ...prev,
+              appointments: prev.appointments
+                .map((a) => (a.id === appt.id ? appt : a))
+                .sort((a, b) => new Date(a.start_time) - new Date(b.start_time)),
+            };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'appointments',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const id = payload.old?.id;
+          if (!id) return;
+          setData((prev) => ({
+            ...prev,
+            appointments: prev.appointments.filter((a) => a.id !== id),
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -292,11 +416,15 @@ export default function CalendarPage() {
       });
       if (!res.ok) throw new Error('Failed to book');
       const result = await res.json();
+      // Dedup against Realtime INSERT — the subscription may have already
+      // added this row if the websocket event landed before the HTTP response.
       setData((prev) => ({
         ...prev,
-        appointments: [...prev.appointments, result.appointment].sort(
-          (a, b) => new Date(a.start_time) - new Date(b.start_time)
-        ),
+        appointments: prev.appointments.some((a) => a.id === result.appointment.id)
+          ? prev.appointments
+          : [...prev.appointments, result.appointment].sort(
+              (a, b) => new Date(a.start_time) - new Date(b.start_time)
+            ),
       }));
       setQuickBookOpen(false);
       toast.success('Appointment booked');

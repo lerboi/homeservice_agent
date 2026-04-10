@@ -9,9 +9,9 @@ requires:
   - phase: 44-01
     provides: PATCH /api/ai-voice-settings route and ai_voice column on tenants table
 provides:
-  - VoicePickerSection component with 2x3 voice card grid, audio preview playback, selection state, and Save button
+  - VoicePickerSection component with dropdown voice selector, audio preview playback, auto-save on select
   - SettingsAISection updated to render VoicePickerSection above phone number block
-  - ai-voice-settings page.js extended to fetch ai_voice and pass as initialVoice prop
+  - ai-voice-settings page.js extended to fetch ai_voice + tone_preset and resolve effective voice
 affects:
   - 45-in-browser-voice-test (depends on voice selection UI from this phase)
 
@@ -59,7 +59,7 @@ completed: 2026-04-11
 - **Duration:** 15 min
 - **Started:** 2026-04-11T00:00:00Z
 - **Completed:** 2026-04-11T00:15:00Z
-- **Tasks:** 1 of 2 complete (Task 2 is a human-verify checkpoint — awaiting approval)
+- **Tasks:** 2 of 2 complete
 - **Files modified:** 3
 
 ## Accomplishments

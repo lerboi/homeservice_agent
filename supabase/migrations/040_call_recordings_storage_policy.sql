@@ -14,10 +14,13 @@ VALUES ('call-recordings', 'call-recordings', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- Allow tenant owners to read their own call recordings
-CREATE POLICY "tenant_read_recordings" ON storage.objects
-  FOR SELECT USING (
-    bucket_id = 'call-recordings'
-    AND (storage.foldername(name))[1] IN (
-      SELECT id::text FROM tenants WHERE owner_id = auth.uid()
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "tenant_read_recordings" ON storage.objects
+    FOR SELECT USING (
+      bucket_id = 'call-recordings'
+      AND (storage.foldername(name))[1] IN (
+        SELECT id::text FROM tenants WHERE owner_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

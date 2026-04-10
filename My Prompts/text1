@@ -7,15 +7,3 @@ Dashboard
 -----------------------
 - In dashboard, say Good morning, {name}
 
-- The timings given are completely incorrect. They do not line up with the Working hours or calendar timings shown in the dashboard. When i ask about the working hours, the AI does not give a working hour that is accurate to the dashboard. Can you look at the entire integration and tool to ensure that its all working as intended?
-
-- When getting some information from the caller, for example, the address, and when the AI rereads it and its incorrect, then when the caller corrects the AI and gives the correct information, the AI always reads back the old incorrect info. No matter how many times i correct the AI and give the correct information, the AI always reads back the initial wrong information. Can you look into this? 
-
-- The calls are not ending up iun the call tab in dashboard. Also, when i do a test call and book a apointment, its not showin gup at all in the dashboard under anywhere as well. Can you find the issue?
-
-
-
-
-
-
-When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.

@@ -60,3 +60,9 @@ Look through all the issues and gather all the context and code needed to fully 
 
 
 When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
+
+
+
+
+
+This is a cross-repo phase. Changes happen in both C:\Users\leheh\.Projects\homeservice_agent (main) and C:\Users\leheh\.Projects\livekit-agent (Python agent, deploys to Railway separately). Read the voice-call-architecture and scheduling-calendar-system skill files and relevant code base for authoritative context on how the agent and calendar currently work.
