@@ -478,10 +478,12 @@ Plans:
   7. A migration script iterates every existing tenant's Twilio number and updates its voice/sms configuration to use the Railway webhook — dry-run mode verified first, then production run
   8. End-to-end test: real call to a test tenant's number with schedule=all-AI → hits LiveKit agent as before; schedule=all-owner → rings owner's pickup number(s); schedule=AI-after-hours + call during owner window → rings owner; owner no-answer → falls back to AI; all scenarios produce correct `calls` rows
   9. Twilio status callback fires on dial completion and writes `outbound_dial_duration_sec` to the corresponding `calls` row for cost tracking
-**Plans:** 0 plans (run /gsd:plan-phase 40 to break down)
+**Plans:** 3 plans in 3 waves
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 40 to break down)
+- [ ] 40-01-PLAN.md — Migration 045 (sms_messages + call_sid) and incoming-call handler rewrite with live routing logic
+- [ ] 40-02-PLAN.md — Dial-status, dial-fallback, and SMS forwarding handlers
+- [ ] 40-03-PLAN.md — Provisioning update (webhook URLs on new numbers) and existing-tenant cutover script
 
 ### Phase 41: Call Routing Dashboard and Launch
 
