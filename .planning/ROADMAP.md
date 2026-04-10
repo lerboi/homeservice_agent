@@ -271,7 +271,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
 - [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
 - [x] **Phase 39: Call Routing Webhook Foundation** - FastAPI webhook service on Railway, Twilio signature verification, schedule evaluator, outbound cap, 4 POST endpoints (completed 2026-04-10)
-- [ ] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration
+- [x] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration (completed 2026-04-10)
 - [ ] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout
 - [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
 - [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
@@ -478,12 +478,12 @@ Plans:
   7. A migration script iterates every existing tenant's Twilio number and updates its voice/sms configuration to use the Railway webhook — dry-run mode verified first, then production run
   8. End-to-end test: real call to a test tenant's number with schedule=all-AI → hits LiveKit agent as before; schedule=all-owner → rings owner's pickup number(s); schedule=AI-after-hours + call during owner window → rings owner; owner no-answer → falls back to AI; all scenarios produce correct `calls` rows
   9. Twilio status callback fires on dial completion and writes `outbound_dial_duration_sec` to the corresponding `calls` row for cost tracking
-**Plans:** 3 plans in 3 waves
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 40-01-PLAN.md — Migration 045 (sms_messages + call_sid) and incoming-call handler rewrite with live routing logic
-- [ ] 40-02-PLAN.md — Dial-status, dial-fallback, and SMS forwarding handlers
-- [ ] 40-03-PLAN.md — Provisioning update (webhook URLs on new numbers) and existing-tenant cutover script
+- [x] 40-01-PLAN.md — Migration 045 (sms_messages + call_sid) and incoming-call handler rewrite with live routing logic
+- [x] 40-02-PLAN.md — Dial-status, dial-fallback, and SMS forwarding handlers
+- [x] 40-03-PLAN.md — Provisioning update (webhook URLs on new numbers) and existing-tenant cutover script
 
 ### Phase 41: Call Routing Dashboard and Launch
 
