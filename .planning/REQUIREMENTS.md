@@ -78,6 +78,20 @@
 - [x] **ROUTE-05**: Function `check_outbound_cap(tenant_id: str, country: str) -> bool` in `src/webhook/caps.py` enforces US/CA 5000-minute and SG 2500-minute monthly caps by summing `outbound_dial_duration_sec` from `calls` where `created_at >= date_trunc('month', now())` for the given tenant; returns True if under cap, False if at/over; unknown country falls back to US limit
 - [x] **ROUTE-06**: Zero production Twilio numbers are reconfigured — `/twilio/incoming-call` performs a tenant lookup via `_normalize_phone(To)` but always returns a hardcoded "always-AI" `<Response><Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial></Response>` TwiML regardless of result, exercising the full wiring path (signature → URL reconstruction → form parse → tenant lookup → TwiML render) so that Phase 40's diff is a one-line replacement of the hardcoded branch with `evaluate_schedule` + `check_outbound_cap` composition
 
+
+### Calendar Essentials — Time Blocks and Mark Complete (Phase 42)
+
+- [ ] **CAL-01**: Migration `044_calendar_blocks_and_completed_at.sql` creates `calendar_blocks` table with `id uuid PK`, `tenant_id uuid NOT NULL REFERENCES tenants(id)`, `title text NOT NULL`, `start_time timestamptz NOT NULL`, `end_time timestamptz NOT NULL`, `is_all_day boolean NOT NULL DEFAULT false`, `note text`, `created_at timestamptz NOT NULL DEFAULT now()` — 4 RLS policies (SELECT, INSERT, UPDATE, DELETE) restricting to tenant owner, index on `(tenant_id, start_time, end_time)`
+- [ ] **CAL-02**: Same migration adds `completed_at timestamptz` nullable column to `appointments` table
+- [ ] **CAL-03**: CRUD API at `/api/calendar-blocks` (GET list with date range filter, POST create) and `/api/calendar-blocks/[id]` (PATCH update, DELETE) — all routes use `getTenantId()` + service-role Supabase with `.eq('tenant_id', tenantId)` guard
+- [ ] **CAL-04**: `PATCH /api/appointments/[id]` extended with `status: 'completed'` branch (sets `completed_at` timestamp, appends optional notes with `[Completed]` prefix) and `status: 'confirmed'` branch (undo — clears `completed_at`)
+- [ ] **CAL-05**: `TimeBlockSheet` component — Sheet (side=right) for creating and editing time blocks with title, date, start/end time, all-day toggle, optional note; single component handles create mode (selectedBlock=null) and edit mode (selectedBlock=object) with Delete button
+- [ ] **CAL-06**: `TimeBlockEvent` renders on calendar as full-width hatched/striped background (diagonal `repeating-linear-gradient` at 45deg, slate-100 background, slate-400 border-left) at z-index 1 behind appointment blocks (z-index 10) — does NOT participate in `layoutEventsInLanes`
+- [ ] **CAL-07**: "Mark Complete" two-step button in `AppointmentFlyout` — click reveals expandable `Textarea` for optional completion notes, then "Confirm Complete" sends PATCH; flyout closes; sonner toast with 5-second "Undo" action that PATCHes back to confirmed
+- [ ] **CAL-08**: Completed appointments render at `opacity-40` with a 16x16 green circle checkmark badge (`bg-green-100 text-green-700`) at bottom-right corner; urgency color tint preserved; block remains clickable; flyout shows "Completed" badge and timestamp
+- [ ] **CAL-09**: "Show completed jobs" `Switch` toggle above calendar grid, default ON, persisted in `localStorage` key `voco_calendar_show_completed` — filters completed appointments client-side (no API change)
+- [ ] **CAL-10**: `available-slots/route.js` extended to 5-way parallel fetch including `calendar_blocks` — merged into `externalBlocks` parameter of `calculateAvailableSlots`; appointments query also excludes `status = 'completed'`
+- [ ] **CAL-11**: Python `check_availability.py` extended to 5-way `asyncio.gather` including `calendar_blocks` query — merged into `external_blocks` parameter; appointments query excludes both `cancelled` and `completed` via chained `.neq()` calls
 ## v2.0 Requirements
 
 ### Booking-First Agent Behavior
