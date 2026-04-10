@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Executing Phase 44
-stopped_at: Phase 44 plans verified
-last_updated: "2026-04-10T20:28:17.615Z"
+status: Ready to execute
+stopped_at: Completed 44-03-PLAN.md
+last_updated: "2026-04-10T20:39:07.457Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 44 (ai-voice-selection) — EXECUTING
-Plan: 1 of 3
+Plan: 2 of 3
 
 ## Accumulated Context
 
@@ -110,6 +110,7 @@ Recent decisions affecting current work:
 - [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: client_no_auth fixture override is an async function that calls await request.form() and stashes form data on request.state.form_data, instead of a plain lambda — this is the correct pattern for overriding any FastAPI dependency that produces request-scoped state for downstream handlers
 - [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: python-multipart>=0.0.9 added to pyproject.toml — was missing from 39-05's deps; FastAPI cannot parse Twilio's application/x-www-form-urlencoded webhook bodies without it (would 500 every production webhook on first hit)
 - [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: Tests use twilio-python's RequestValidator.compute_signature(url, params) directly — confirmed available in installed twilio 9.x — no manual HMAC-SHA1 fallback needed
+- [Phase 44]: Voice resolution is 3-tier: tenant.ai_voice -> VOICE_MAP[tone_preset] -> Kore default (Phase 44)
 
 ### Roadmap Evolution
 
@@ -185,6 +186,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T17:48:02.287Z
-Stopped at: Phase 44 plans verified
-Resume file: .planning/phases/44-ai-voice-selection/44-01-PLAN.md
+Last session: 2026-04-10T20:39:07.449Z
+Stopped at: Completed 44-03-PLAN.md
+Resume file: None

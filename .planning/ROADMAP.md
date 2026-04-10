@@ -534,12 +534,12 @@ Plans:
 **Goal:** Let business owners choose their AI receptionist's voice from a curated set of 6 Gemini voices in the AI & Voice Settings dashboard page. Voice picker UI with pre-recorded audio preview clips, grouped by gender. Selection persists to tenants table and the LiveKit agent reads it at call time. Backward-compatible — NULL defaults to existing tone-based voice mapping.
 **Depends on:** None (independent of phases 40-43)
 **Requirements**: VOICE-SEL-01 through VOICE-SEL-08
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
-- [ ] 44-01-PLAN.md — DB migration, API route, unit tests, placeholder audio
+- [x] 44-01-PLAN.md — DB migration, API route, unit tests, placeholder audio
 - [ ] 44-02-PLAN.md — VoicePickerSection UI, page integration, visual verification
-- [ ] 44-03-PLAN.md — Python agent voice override in livekit-agent
+- [x] 44-03-PLAN.md — Python agent voice override in livekit-agent
 
 ### Phase 45: In-Browser Voice Test
 
