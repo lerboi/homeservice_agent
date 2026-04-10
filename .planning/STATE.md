@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 39-05-PLAN.md
-last_updated: "2026-04-09T19:05:46.229Z"
+stopped_at: Completed 39-06-PLAN.md
+last_updated: "2026-04-10T00:30:52.984Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 39 (call-routing-webhook-foundation) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 
 ## Accumulated Context
 
@@ -107,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 39]: [Phase 39-05]: @app.on_event('startup') retained over lifespan context manager — trivial one-line log; deprecation warning acceptable, Phase 40 can migrate
 - [Phase 39]: [Phase 39-05]: Lazy uvicorn import inside start_webhook_server + lazy get_supabase_admin import inside /health/db and /incoming-call handlers so pytest can import src.webhook.app without spawning the server or requiring Supabase env vars
 - [Phase 39]: [Phase 39-05]: /twilio/incoming-call performs dead-weight tenant lookup per D-13 — exercises full wiring path (signature -> form parse -> _normalize_phone -> tenants select -> TwiML render) so Phase 40 diff is a single branch replacement
+- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: client_no_auth fixture override is an async function that calls await request.form() and stashes form data on request.state.form_data, instead of a plain lambda — this is the correct pattern for overriding any FastAPI dependency that produces request-scoped state for downstream handlers
+- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: python-multipart>=0.0.9 added to pyproject.toml — was missing from 39-05's deps; FastAPI cannot parse Twilio's application/x-www-form-urlencoded webhook bodies without it (would 500 every production webhook on first hit)
+- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: Tests use twilio-python's RequestValidator.compute_signature(url, params) directly — confirmed available in installed twilio 9.x — no manual HMAC-SHA1 fallback needed
 
 ### Roadmap Evolution
 
@@ -180,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-09T19:05:46.220Z
-Stopped at: Completed 39-05-PLAN.md
+Last session: 2026-04-10T00:30:52.976Z
+Stopped at: Completed 39-06-PLAN.md
 Resume file: None
