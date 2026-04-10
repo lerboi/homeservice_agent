@@ -53,14 +53,15 @@ Exceptions:
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 12px | 500 (medium) | 1.4 |
+| Label | 12px | 400 (regular) | 1.4 |
 | Heading | 16px | 600 (semibold) | 1.2 |
 | Display | 20px | 600 (semibold) | 1.2 |
 
 Notes:
 - SheetTitle uses 20px / weight 600 (matches existing `text-xl` in AppointmentFlyout)
-- Calendar block title text: 12px / weight 500 (compact block label)
+- Calendar block title text: 12px / weight 400 (compact block label; legible at regular weight on slate-100 background)
 - All text uses Inter via `var(--font-inter)`
+- Two weights only: 400 (body, labels, block titles) and 600 (headings, display, SheetTitle)
 
 Source: Existing AppointmentFlyout (`SheetTitle className="text-xl"`), design-tokens.js (`heading`, `body`)
 
@@ -72,13 +73,13 @@ Source: Existing AppointmentFlyout (`SheetTitle className="text-xl"`), design-to
 |------|-------|-------|
 | Dominant (60%) | `oklch(1 0 0)` = white / `#F5F5F4` warm surface | Page background, SheetContent background, calendar grid |
 | Secondary (30%) | `oklch(0.97 0 0)` = neutral-50 / `oklch(0.985 0 0)` sidebar | Card backgrounds, sidebar, column headers, hour ruler |
-| Accent (10%) | `#C2410C` (brand orange, oklch(0.533 0.154 27.5)) | Primary CTA button, focus ring, SheetFooter "Save" button, toggle switch active state |
+| Accent (10%) | `#C2410C` (brand orange, oklch(0.533 0.154 27.5)) | Primary CTA button, focus ring on Sheet and flyout inputs, SheetFooter "Save" button, toggle switch active state |
 | Destructive | `oklch(0.577 0.245 27.325)` = red-600 approx | "Delete time block" button inside Sheet (edit mode only) |
 
 Accent reserved for:
 1. "Add Time Block" submit button (SheetFooter)
 2. "Mark Complete" button in AppointmentFlyout
-3. Focus ring on all interactive inputs (`focus:ring-[#C2410C]`)
+3. Focus ring on Sheet and flyout inputs (phase 42 components: `TimeBlockSheet` and `AppointmentFlyout` only — `focus:ring-[#C2410C]`)
 4. Active state of the "Show completed" toggle switch
 5. "+" icon button for adding a time block
 
@@ -93,8 +94,14 @@ Source: `src/lib/design-tokens.js` (brandOrange: #C2410C), `src/app/globals.css`
 | Time block border-left | `border-l-[3px] border-slate-400` | Consistent with appointment block border-left pattern |
 | Time block text | `text-slate-600` | Legible on slate-100 background |
 | Completed appointment overlay | `opacity-40` on existing urgency block | Preserves urgency tint, signals "done" |
-| Completed checkmark badge | `bg-green-100 text-green-700` | Positioned bottom-right corner of block, 12px, weight 500 |
+| Completed checkmark badge | `bg-green-100 text-green-700` | Positioned bottom-right corner of block, 12px, weight 400 |
 | "Show completed" toggle label | `text-slate-600` at 14px | Consistent with body label styling |
+
+---
+
+## Visuals
+
+Focal point: appointment blocks dominate via solid urgency color and z-10 layering; time blocks recede as muted background elements (slate-100 stripe pattern at z-0), ensuring the contractor's booked work remains the primary visual signal on the calendar screen.
 
 ---
 
@@ -205,7 +212,7 @@ Source: `src/lib/design-tokens.js` (brandOrange: #C2410C), `src/app/globals.css`
   ), #F1F5F9;
   ```
 - Border-left: 3px solid `#94A3B8` (slate-400)
-- Title text: 12px / weight 500 / `text-slate-600`, single line, truncated with ellipsis
+- Title text: 12px / weight 400 / `text-slate-600`, single line, truncated with ellipsis
 - All-day blocks: span full working hours height (`(DEFAULT_END - DEFAULT_START) * HOUR_HEIGHT` = 832px)
 
 ---
@@ -265,6 +272,7 @@ No third-party registries declared for this phase.
 
 - All `Switch` components have an associated `Label` with `htmlFor` binding
 - `TimeBlockSheet` traps focus when open (Radix Sheet handles this natively)
+- "+" toolbar icon button has `aria-label="Add time block"`
 - Delete button has `aria-label="Delete time block"` for screen readers
 - Stripe CSS pattern has `aria-hidden="true"` on the pattern layer — the block title conveys meaning
 - "Show completed" toggle has `aria-label="Show completed jobs on calendar"`
