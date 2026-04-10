@@ -275,7 +275,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [ ] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout
 - [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
 - [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
-- [ ] **Phase 44: AI Voice Selection** - Voice picker UI with 6 Gemini voices, audio previews, tenant persistence, agent voice override
+- [x] **Phase 44: AI Voice Selection** - Voice picker UI with 6 Gemini voices, audio previews, tenant persistence, agent voice override (completed 2026-04-10)
 - [ ] **Phase 45: In-Browser Voice Test** - Direct Gemini Live API WebSocket voice test in dashboard, sandbox mode, same system prompt
 
 ### Phase 38: Programmatic SEO and Content Engine
@@ -534,11 +534,11 @@ Plans:
 **Goal:** Let business owners choose their AI receptionist's voice from a curated set of 6 Gemini voices in the AI & Voice Settings dashboard page. Voice picker UI with pre-recorded audio preview clips, grouped by gender. Selection persists to tenants table and the LiveKit agent reads it at call time. Backward-compatible — NULL defaults to existing tone-based voice mapping.
 **Depends on:** None (independent of phases 40-43)
 **Requirements**: VOICE-SEL-01 through VOICE-SEL-08
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 44-01-PLAN.md — DB migration, API route, unit tests, placeholder audio
-- [ ] 44-02-PLAN.md — VoicePickerSection UI, page integration, visual verification
+- [x] 44-02-PLAN.md — VoicePickerSection UI, page integration, visual verification
 - [x] 44-03-PLAN.md — Python agent voice override in livekit-agent
 
 ### Phase 45: In-Browser Voice Test

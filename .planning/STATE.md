@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 44-03-PLAN.md
-last_updated: "2026-04-10T20:39:07.457Z"
+stopped_at: "44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval"
+last_updated: "2026-04-10T20:40:15.295Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -111,6 +111,8 @@ Recent decisions affecting current work:
 - [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: python-multipart>=0.0.9 added to pyproject.toml — was missing from 39-05's deps; FastAPI cannot parse Twilio's application/x-www-form-urlencoded webhook bodies without it (would 500 every production webhook on first hit)
 - [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: Tests use twilio-python's RequestValidator.compute_signature(url, params) directly — confirmed available in installed twilio 9.x — no manual HMAC-SHA1 fallback needed
 - [Phase 44]: Voice resolution is 3-tier: tenant.ai_voice -> VOICE_MAP[tone_preset] -> Kore default (Phase 44)
+- [Phase 44]: Single audioRef pattern for audio mutual exclusion in VoicePickerSection — pause current before starting new, no per-card audio state needed
+- [Phase 44]: initialVoice synced to selectedVoice via useEffect (not useState initializer) so component updates when async page data loads after mount
 
 ### Roadmap Evolution
 
@@ -186,6 +188,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T20:39:07.449Z
-Stopped at: Completed 44-03-PLAN.md
+Last session: 2026-04-10T20:40:04.828Z
+Stopped at: 44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval
 Resume file: None
