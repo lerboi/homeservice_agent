@@ -222,13 +222,42 @@ model = google.realtime.RealtimeModel(
 )
 ```
 
-### Voice Mapping (tone_preset -> Gemini voice)
+### Voice Resolution (Phase 44: AI Voice Selection)
+
+Voice name is resolved via a two-step priority check:
+
+```python
+# Use explicitly selected voice if set, else fall back to tone-based mapping (Phase 44: AI Voice Selection)
+ai_voice = tenant.get("ai_voice") if tenant else None
+voice_name = ai_voice if ai_voice else VOICE_MAP.get(tone_preset, "Kore")
+```
+
+1. **`tenant.ai_voice`** (explicit user selection): checked first. Set via `PATCH /api/ai-voice-settings` in the Next.js app and stored in `tenants.ai_voice` (varchar, nullable). Read by the agent at call time.
+2. **`VOICE_MAP[tone_preset]`** fallback: used when `ai_voice` is NULL (tenant has not explicitly chosen a voice).
+3. **`"Kore"`**: final default if both are missing.
+
+### Voice Map (tone_preset -> Gemini voice)
 
 | `tone_preset` | Voice | Character |
 |----------------|-------|-----------|
 | `professional` | Zephyr | Clear and measured |
 | `friendly` | Aoede | Upbeat and warm |
 | `local_expert` | Achird | Relaxed and neighborly |
+
+### Available Voices for Selection (Phase 44)
+
+6 curated Gemini voices available in the AI Voice Settings dashboard:
+
+| Voice | Style |
+|-------|-------|
+| Aoede | Warm and friendly |
+| Erinome | Calm and clear |
+| Sulafat | Smooth and professional |
+| Zephyr | Clear and measured |
+| Achird | Relaxed and neighborly |
+| Charon | Deep and authoritative |
+
+Voice names are stored in DB with exact Gemini capitalization (e.g., `Aoede` not `aoede`). The `tenants.ai_voice` column has a CHECK constraint enforcing only these 6 values or NULL.
 
 ### Session Architecture
 
