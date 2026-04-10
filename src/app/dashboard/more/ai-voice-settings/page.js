@@ -7,6 +7,7 @@ import SettingsAISection from '@/components/dashboard/SettingsAISection';
 
 export default function AIVoiceSettingsPage() {
   const [phoneNumber, setPhoneNumber] = useState(null);
+  const [currentVoice, setCurrentVoice] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,10 +15,11 @@ export default function AIVoiceSettingsPage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('phone_number')
+          .select('phone_number, ai_voice')
           .single();
         if (error) throw error;
         setPhoneNumber(data?.phone_number ?? null);
+        setCurrentVoice(data?.ai_voice ?? null);
       } catch (err) {
         console.error('[ai-voice-settings] Failed to load tenant:', err?.message || err);
         toast.error('Failed to load voice settings. Please refresh.');
@@ -31,7 +33,7 @@ export default function AIVoiceSettingsPage() {
     <div className={`${card.base} p-6`}>
       <h1 className="text-xl font-semibold text-[#0F172A] mb-1">AI & Voice Settings</h1>
       <p className="text-sm text-[#475569] mb-6">Your AI phone number and test call.</p>
-      <SettingsAISection phoneNumber={phoneNumber} loading={loading} />
+      <SettingsAISection phoneNumber={phoneNumber} initialVoice={currentVoice} loading={loading} />
     </div>
   );
 }

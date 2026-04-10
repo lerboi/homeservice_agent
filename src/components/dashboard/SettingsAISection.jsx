@@ -2,10 +2,15 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { TestCallPanel } from '@/components/onboarding/TestCallPanel';
+import VoicePickerSection from './VoicePickerSection';
 
-export default function SettingsAISection({ phoneNumber, loading }) {
+export default function SettingsAISection({ phoneNumber, initialVoice, loading }) {
   return (
     <div id="ai">
+      <VoicePickerSection initialVoice={initialVoice} loading={loading} />
+
+      <hr className="my-6 border-stone-200" />
+
       {/* Phone number display */}
       {loading ? (
         <Skeleton className="h-10 w-48 mb-4" />
