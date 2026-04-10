@@ -38,13 +38,13 @@ created: 2026-04-11
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 44-01-01 | 01 | 1 | DB migration | unit | `npx jest tests/unit/ai-voice-settings.test.js -x` | ❌ W0 | ⬜ pending |
-| 44-02-01 | 02 | 1 | API rejects invalid voice | unit | `npx jest tests/unit/ai-voice-settings.test.js -x` | ❌ W0 | ⬜ pending |
-| 44-02-02 | 02 | 1 | API rejects unauthed | unit | `npx jest tests/unit/ai-voice-settings.test.js -x` | ❌ W0 | ⬜ pending |
-| 44-02-03 | 02 | 1 | API saves valid voice | unit | `npx jest tests/unit/ai-voice-settings.test.js -x` | ❌ W0 | ⬜ pending |
-| 44-03-01 | 03 | 2 | Audio mutual exclusion | manual | visual verification in browser | N/A | ⬜ pending |
-| 44-04-01 | 04 | 2 | Agent voice override set | manual smoke | call test call endpoint | N/A | ⬜ pending |
-| 44-04-02 | 04 | 2 | Agent NULL fallback | manual smoke | call test call endpoint | N/A | ⬜ pending |
+| 44-01-01 | 01 | 1 | DB migration + API route + tests | unit (TDD) | `npx jest tests/unit/ai-voice-settings.test.js -x` | ❌ W0 (created in task) | ⬜ pending |
+| 44-01-02 | 01 | 1 | Audio placeholder files | file check | `ls -la public/audio/voices/*.mp3 \| wc -l` | N/A | ⬜ pending |
+| 44-01-03 | 01 | 1 | Skill sync (auth-database) | grep check | `grep -c "ai_voice" .claude/skills/auth-database-multitenancy/SKILL.md` | N/A | ⬜ pending |
+| 44-02-01 | 02 | 2 | VoicePickerSection UI + integration | build | `npx next build 2>&1 \| tail -20` | N/A | ⬜ pending |
+| 44-02-02 | 02 | 2 | Visual checkpoint | manual | human verification in browser | N/A | ⬜ pending |
+| 44-03-01 | 03 | 2 | Agent voice override | syntax | `python -c "import ast; ast.parse(...)"` | N/A | ⬜ pending |
+| 44-03-02 | 03 | 2 | Skill sync (voice-call) | grep check | `grep -c "ai_voice" .claude/skills/voice-call-architecture/SKILL.md` | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -62,6 +62,7 @@ created: 2026-04-11
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
 | Audio mutual exclusion | D-08 | UI interaction — requires browser playback | Play voice A, then play voice B; verify A stops |
+| Voice card selection + save | D-11/D-12 | UI interaction — requires browser | Click card, click Save Voice, verify toast "Voice updated" |
 | Agent voice override (ai_voice set) | D-14 | Cross-repo Python agent on Railway | Make test call after setting ai_voice; verify voice matches |
 | Agent voice override (NULL fallback) | D-15 | Cross-repo Python agent on Railway | Clear ai_voice; make test call; verify tone-based voice used |
 
