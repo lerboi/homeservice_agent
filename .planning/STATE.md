@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Phase 39 complete
-stopped_at: Phase 44 context gathered
-last_updated: "2026-04-10T17:13:49.056Z"
+status: Milestone complete
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-04-10T19:45:30.748Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 39 — call-routing-webhook-foundation
+**Current focus:** Phase 38 — programmatic-seo-content-engine
 
 ## Current Position
 
-Phase: 39 (call-routing-webhook-foundation) — EXECUTING
-Plan: 6 of 7
+Phase: 38
+Plan: Not started
 
 ## Accumulated Context
 
@@ -91,25 +91,9 @@ Recent decisions affecting current work:
 - [Phase 38]: ICON_MAP constraint respected — all integration useCases use Calendar/Clock/Bell/RefreshCw only
 - [Phase 38]: Blog posts use inline markdown heading split pattern (no markdown library) per Phase 38 precedent
 - [Phase 38]: Persona relatedSlugs use slug values matching the for/[persona] router
-- [Phase 39]: Wave 0 stubs use module-level pytestmark = skipif(True) — downstream plans flip True to False and fill in bodies
-- [Phase 39]: Test infrastructure at livekit-agent/tests/ with pythonpath=["."] so pytest imports src.webhook.* cleanly
-- [Phase 39]: Dev deps declared explicitly (pytest>=8.0, pytest-asyncio>=0.23, httpx>=0.27) via [project.optional-dependencies] dev; fastapi/uvicorn deferred to Plan 39-05
-- [Phase 39]: [Phase 39-03]: evaluate_schedule is a pure function with signature (schedule, tenant_timezone, now_utc) -> ScheduleDecision — zero DB, zero FastAPI coupling; ScheduleDecision is a frozen dataclass with Literal-typed mode + reason fields
-- [Phase 39]: [Phase 39-03]: DST handled entirely by now_utc.astimezone(ZoneInfo(tenant_timezone)) — no fold inspection, no gap detection; verified against NY spring-forward 2026-03-08 and fall-back 2026-11-01
-- [Phase 39]: [Phase 39-03]: Overnight ranges encoded as end < start; _in_range uses 'local >= start or local < end' two-branch check; same-day lookup only (no cross-day synthesis — Phase 41 UI must write range under both day keys if cross-day matching is required)
-- [Phase 39]: [Phase 39-03]: src/webhook/__init__.py is deliberately import-free so Plan 39-05 can add FastAPI app wiring without circular-import risk during unit tests of schedule.py
-- [Phase 39]: Migration 042: additive-only schema, routing_mode nullable (NULL = legacy AI per D-19), pickup_numbers item-shape validation deferred to API layer
-- [Phase 39]: [Phase 39-04]: _normalize_phone extracted to src/lib/phone.py as module function so webhook handler in 39-05 can reuse verbatim logic (resolves OQ-3)
-- [Phase 39]: [Phase 39-04]: check_outbound_cap is async + asyncio.to_thread around supabase-py chain; Python-side SUM over returned rows avoids RPC aggregate migration (resolves OQ-1 and OQ-2)
-- [Phase 39]: [Phase 39-04]: Unknown-country fallback in check_outbound_cap routes to US 300000s limit (fail-open safe default per D-17); cap breach emits logger.warning only in Phase 39 — dedicated event logging deferred to Phase 40 per D-11
-- [Phase 39]: [Phase 39-04]: get_supabase_admin lazy-imported inside check_outbound_cap so tests monkeypatch the real symbol path (src.supabase_client.get_supabase_admin) before first call; MagicMock chain mimics supabase-py fluent builder
-- [Phase 39]: [Phase 39-05]: FastAPI app.include_router with router-level Depends mounts all /twilio/* endpoints behind a single signature dependency — no per-route @Depends decoration
-- [Phase 39]: [Phase 39-05]: @app.on_event('startup') retained over lifespan context manager — trivial one-line log; deprecation warning acceptable, Phase 40 can migrate
-- [Phase 39]: [Phase 39-05]: Lazy uvicorn import inside start_webhook_server + lazy get_supabase_admin import inside /health/db and /incoming-call handlers so pytest can import src.webhook.app without spawning the server or requiring Supabase env vars
-- [Phase 39]: [Phase 39-05]: /twilio/incoming-call performs dead-weight tenant lookup per D-13 — exercises full wiring path (signature -> form parse -> _normalize_phone -> tenants select -> TwiML render) so Phase 40 diff is a single branch replacement
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: client_no_auth fixture override is an async function that calls await request.form() and stashes form data on request.state.form_data, instead of a plain lambda — this is the correct pattern for overriding any FastAPI dependency that produces request-scoped state for downstream handlers
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: python-multipart>=0.0.9 added to pyproject.toml — was missing from 39-05's deps; FastAPI cannot parse Twilio's application/x-www-form-urlencoded webhook bodies without it (would 500 every production webhook on first hit)
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: Tests use twilio-python's RequestValidator.compute_signature(url, params) directly — confirmed available in installed twilio 9.x — no manual HMAC-SHA1 fallback needed
+- [Phase 40]: BLOCKED_STATUSES duplicated from agent.py into twilio_routes.py (avoid cross-module import coupling)
+- [Phase 40]: Fail-open at every routing stage: DB down, sub check fail, cap check fail all fall through to AI TwiML
+- [Phase 40]: calls row inserted BEFORE TwiML response to ensure dial-status callback can link back
 
 ### Roadmap Evolution
 
@@ -164,13 +148,6 @@ Recent decisions affecting current work:
 - Phase 29 added: Hero Section Interactive Demo (2026-03-26)
 - Phase 30 added: Voice Agent Prompt Optimization (2026-03-27)
 - Phase 31 added: Voice Call Feature Showcase PDF (2026-03-27)
-- Phase 39 added: Call Routing Webhook Foundation — backend infrastructure for conditional call routing (time-based AI vs owner pickup), FastAPI webhook service on Railway, schedule evaluator, soft caps, DB schema (2026-04-09)
-- Phase 40 added: Call Routing Provisioning Cutover — switch Twilio numbers to webhook routing, implement schedule evaluation + parallel ring + SMS forwarding logic, migrate existing tenants (2026-04-09)
-- Phase 41 added: Call Routing Dashboard and Launch — user-facing settings page, pickup number management, usage meter, routing mode badges on dashboard calls page (2026-04-09)
-- Phase 42 added: Calendar Essentials — Time Blocks and Mark Complete — personal time blocks (lunch/vacation) that the voice agent respects as unavailable, plus a mark-complete transition for appointments with a muted visual state. Cross-repo: both main repo and livekit-agent repo. Intentionally scoped small; drag/resize, recurring appointments, technicians deferred to later phases (2026-04-10)
-- Phase 43 added: Recurring Appointments — Maintenance Contracts — weekly/monthly/quarterly recurring appointments with fixed end date, materialized by a daily cron job. Covers HVAC tune-ups, pest control, lawn care recurring revenue segment. Scoped to three common frequencies only, no rrule exception dates. UI surface (flyout vs new Contracts surface) is a discuss-phase decision. Depends on Phase 42 for time-block awareness in the spawner (2026-04-10)
-- Phase 44 added: AI Voice Selection — voice picker UI with 6 curated Gemini voices (Aoede, Erinome, Sulafat, Zephyr, Achird, Charon), pre-recorded audio previews, tenant DB persistence, agent voice override. Independent of phases 40-43 (2026-04-11)
-- Phase 45 added: In-Browser Voice Test — direct Gemini Live API WebSocket voice test in AI & Voice Settings dashboard, sandbox mode (no real bookings/leads/notifications), same system prompt and personality as real calls. Depends on Phase 44 for voice selection (2026-04-11)
 
 ### Pending Todos
 
@@ -185,6 +162,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T17:13:49.039Z
-Stopped at: Phase 44 context gathered
-Resume file: .planning/phases/44-ai-voice-selection/44-CONTEXT.md
+Last session: 2026-04-10T19:45:30.737Z
+Stopped at: Completed 40-01-PLAN.md
+Resume file: None
