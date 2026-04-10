@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase 39 complete
-stopped_at: Phase 40 context gathered
-last_updated: "2026-04-10T16:21:40.369Z"
+stopped_at: Phase 44 context gathered
+last_updated: "2026-04-10T17:13:49.056Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -169,6 +169,8 @@ Recent decisions affecting current work:
 - Phase 41 added: Call Routing Dashboard and Launch — user-facing settings page, pickup number management, usage meter, routing mode badges on dashboard calls page (2026-04-09)
 - Phase 42 added: Calendar Essentials — Time Blocks and Mark Complete — personal time blocks (lunch/vacation) that the voice agent respects as unavailable, plus a mark-complete transition for appointments with a muted visual state. Cross-repo: both main repo and livekit-agent repo. Intentionally scoped small; drag/resize, recurring appointments, technicians deferred to later phases (2026-04-10)
 - Phase 43 added: Recurring Appointments — Maintenance Contracts — weekly/monthly/quarterly recurring appointments with fixed end date, materialized by a daily cron job. Covers HVAC tune-ups, pest control, lawn care recurring revenue segment. Scoped to three common frequencies only, no rrule exception dates. UI surface (flyout vs new Contracts surface) is a discuss-phase decision. Depends on Phase 42 for time-block awareness in the spawner (2026-04-10)
+- Phase 44 added: AI Voice Selection — voice picker UI with 6 curated Gemini voices (Aoede, Erinome, Sulafat, Zephyr, Achird, Charon), pre-recorded audio previews, tenant DB persistence, agent voice override. Independent of phases 40-43 (2026-04-11)
+- Phase 45 added: In-Browser Voice Test — direct Gemini Live API WebSocket voice test in AI & Voice Settings dashboard, sandbox mode (no real bookings/leads/notifications), same system prompt and personality as real calls. Depends on Phase 44 for voice selection (2026-04-11)
 
 ### Pending Todos
 
@@ -183,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T16:21:40.361Z
-Stopped at: Phase 40 context gathered
-Resume file: .planning/phases/40-call-routing-provisioning-cutover/40-CONTEXT.md
+Last session: 2026-04-10T17:13:49.039Z
+Stopped at: Phase 44 context gathered
+Resume file: .planning/phases/44-ai-voice-selection/44-CONTEXT.md
