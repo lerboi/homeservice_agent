@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Phase 39 complete
-stopped_at: Phase 39 complete — ready for Phase 40
-last_updated: "2026-04-11T00:00:00.000Z"
+stopped_at: Phase 40 context gathered
+last_updated: "2026-04-10T16:21:40.369Z"
 progress:
-  total_phases: 13
-  completed_phases: 13
-  total_plans: 52
-  completed_plans: 52
+  total_phases: 12
+  completed_phases: 12
+  total_plans: 51
+  completed_plans: 51
 ---
 
 # Project State
@@ -183,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T14:15:59.342Z
-Stopped at: Phase 42 UI-SPEC approved
-Resume file: .planning/phases/42-calendar-essentials-time-blocks-and-mark-complete/42-UI-SPEC.md
+Last session: 2026-04-10T16:21:40.361Z
+Stopped at: Phase 40 context gathered
+Resume file: .planning/phases/40-call-routing-provisioning-cutover/40-CONTEXT.md
