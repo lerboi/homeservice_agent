@@ -108,6 +108,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/035_lead_email_and_invoice_title.sql` | email column on leads + title column on invoices |
 | `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
 | `supabase/migrations/042_call_routing_schema.sql` | Phase 39 — call routing schema: tenants gains call_forwarding_schedule JSONB (schedule evaluator input), pickup_numbers JSONB (CHECK len ≤ 5), dial_timeout_seconds INTEGER; calls gains routing_mode TEXT (nullable, CHECK IN ('ai','owner_pickup','fallback_to_ai')) + outbound_dial_duration_sec INTEGER; idx_calls_tenant_month index supports monthly outbound cap SUM query |
+| `supabase/migrations/044_ai_voice_column.sql` | Phase 44 — Add ai_voice TEXT column to tenants with CHECK constraint (Phase 44: AI Voice Selection). NULL = fallback to tone-based VOICE_MAP. |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -834,6 +835,29 @@ No new tables. No RLS changes.
 
 ---
 
+### 044_ai_voice_column.sql — AI Voice Selection (Phase 44)
+
+**Extends tenants**: `ai_voice` (TEXT, nullable) — The chosen Gemini voice for the AI receptionist. NULL means fall back to `VOICE_MAP[tone_preset]` in the LiveKit agent.
+
+```sql
+ALTER TABLE tenants
+  ADD COLUMN ai_voice TEXT CHECK (
+    ai_voice IS NULL OR ai_voice IN ('Aoede', 'Erinome', 'Sulafat', 'Zephyr', 'Achird', 'Charon')
+  );
+```
+
+**Key properties**:
+- Nullable — existing tenants keep NULL (backward compatible, D-17)
+- CHECK constraint is case-sensitive — 'aoede' would be rejected
+- 6 allowed values (curated Gemini voices): Aoede, Erinome, Sulafat (female); Zephyr, Achird, Charon (male)
+- No migration backfill — tenants choose explicitly via `PATCH /api/ai-voice-settings`
+
+**API route**: `PATCH /api/ai-voice-settings` — tenant-scoped, uses `getTenantId()` + service role client. Validates against `VALID_VOICES` allowlist in `src/lib/ai-voice-validation.js`.
+
+No new tables. No RLS changes (existing tenants RLS covers new column).
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -877,6 +901,8 @@ No new tables. No RLS changes.
 - 011: `owner_name`, `country`, `provisioning_failed`
 - 015: `notification_preferences` (JSONB, per-outcome SMS/email toggles)
 - 023: `phone_number` (renamed from `retell_phone_number`)
+- 039: `call_forwarding_schedule` (JSONB), `pickup_numbers` (JSONB), `dial_timeout_seconds` (INTEGER)
+- 044: `ai_voice` (TEXT, nullable) — curated Gemini voice override; NULL = VOICE_MAP[tone_preset] fallback; CHECK (IN 'Aoede','Erinome','Sulafat','Zephyr','Achird','Charon')
 
 **Appointments columns added across migrations** (all on `appointments` table):
 - 007: `external_event_id` (renamed from google_event_id), `external_event_provider`
