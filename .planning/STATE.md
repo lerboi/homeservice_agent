@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 39-04-PLAN.md (parallel with 39-02, 39-03)
-last_updated: "2026-04-09T16:00:42.468Z"
+stopped_at: Completed 39-05-PLAN.md
+last_updated: "2026-04-09T19:05:46.229Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 39 (call-routing-webhook-foundation) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 
 ## Accumulated Context
 
@@ -103,6 +103,10 @@ Recent decisions affecting current work:
 - [Phase 39]: [Phase 39-04]: check_outbound_cap is async + asyncio.to_thread around supabase-py chain; Python-side SUM over returned rows avoids RPC aggregate migration (resolves OQ-1 and OQ-2)
 - [Phase 39]: [Phase 39-04]: Unknown-country fallback in check_outbound_cap routes to US 300000s limit (fail-open safe default per D-17); cap breach emits logger.warning only in Phase 39 — dedicated event logging deferred to Phase 40 per D-11
 - [Phase 39]: [Phase 39-04]: get_supabase_admin lazy-imported inside check_outbound_cap so tests monkeypatch the real symbol path (src.supabase_client.get_supabase_admin) before first call; MagicMock chain mimics supabase-py fluent builder
+- [Phase 39]: [Phase 39-05]: FastAPI app.include_router with router-level Depends mounts all /twilio/* endpoints behind a single signature dependency — no per-route @Depends decoration
+- [Phase 39]: [Phase 39-05]: @app.on_event('startup') retained over lifespan context manager — trivial one-line log; deprecation warning acceptable, Phase 40 can migrate
+- [Phase 39]: [Phase 39-05]: Lazy uvicorn import inside start_webhook_server + lazy get_supabase_admin import inside /health/db and /incoming-call handlers so pytest can import src.webhook.app without spawning the server or requiring Supabase env vars
+- [Phase 39]: [Phase 39-05]: /twilio/incoming-call performs dead-weight tenant lookup per D-13 — exercises full wiring path (signature -> form parse -> _normalize_phone -> tenants select -> TwiML render) so Phase 40 diff is a single branch replacement
 
 ### Roadmap Evolution
 
@@ -160,6 +164,8 @@ Recent decisions affecting current work:
 - Phase 39 added: Call Routing Webhook Foundation — backend infrastructure for conditional call routing (time-based AI vs owner pickup), FastAPI webhook service on Railway, schedule evaluator, soft caps, DB schema (2026-04-09)
 - Phase 40 added: Call Routing Provisioning Cutover — switch Twilio numbers to webhook routing, implement schedule evaluation + parallel ring + SMS forwarding logic, migrate existing tenants (2026-04-09)
 - Phase 41 added: Call Routing Dashboard and Launch — user-facing settings page, pickup number management, usage meter, routing mode badges on dashboard calls page (2026-04-09)
+- Phase 42 added: Calendar Essentials — Time Blocks and Mark Complete — personal time blocks (lunch/vacation) that the voice agent respects as unavailable, plus a mark-complete transition for appointments with a muted visual state. Cross-repo: both main repo and livekit-agent repo. Intentionally scoped small; drag/resize, recurring appointments, technicians deferred to later phases (2026-04-10)
+- Phase 43 added: Recurring Appointments — Maintenance Contracts — weekly/monthly/quarterly recurring appointments with fixed end date, materialized by a daily cron job. Covers HVAC tune-ups, pest control, lawn care recurring revenue segment. Scoped to three common frequencies only, no rrule exception dates. UI surface (flyout vs new Contracts surface) is a discuss-phase decision. Depends on Phase 42 for time-block awareness in the spawner (2026-04-10)
 
 ### Pending Todos
 
@@ -174,6 +180,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-09T16:00:42.461Z
-Stopped at: Completed 39-04-PLAN.md (parallel with 39-02, 39-03)
+Last session: 2026-04-09T19:05:46.220Z
+Stopped at: Completed 39-05-PLAN.md
 Resume file: None

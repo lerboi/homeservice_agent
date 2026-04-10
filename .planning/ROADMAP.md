@@ -445,14 +445,14 @@ Plans:
   4. Pure-function `evaluate_schedule(tenant, current_utc)` returns `{mode, reason}` and passes unit tests covering: empty schedule (defaults to AI), per-day ranges in tenant timezone, DST spring-forward and fall-back transitions, overnight ranges (7pm-9am crossing midnight), day boundaries, and "all day owner pickup" mode
   5. `check_outbound_cap(tenant_id, country)` enforces per-country monthly limits (US/CA: 5000 min, SG: 2500 min) by summing `outbound_dial_duration_sec` from current calendar month
   6. Zero production traffic is routed through the new webhook — no existing Twilio numbers are reconfigured; the `incoming-call` endpoint returns a default "always-AI" TwiML as a compatibility baseline
-**Plans:** 4/7 plans executed
+**Plans:** 5/7 plans executed
 
 Plans:
 - [x] 39-01-PLAN.md - Wave 0: REQUIREMENTS.md ROUTE-01..06 + pytest config + tests/webhook/ stub package
 - [x] 39-02-PLAN.md - Wave 1: Migration 042 (tenants + calls schema additions + idx_calls_tenant_month)
 - [x] 39-03-PLAN.md - Wave 1: src/webhook/schedule.py (evaluate_schedule pure function) + 17 unit tests
 - [x] 39-04-PLAN.md - Wave 1: src/lib/phone.py extraction + src/webhook/caps.py (check_outbound_cap) + 8 unit tests
-- [ ] 39-05-PLAN.md - Wave 2: FastAPI app + security.py + twilio_routes.py (4 endpoints) + agent.py boot swap + delete health.py
+- [x] 39-05-PLAN.md - Wave 2: FastAPI app + security.py + twilio_routes.py (4 endpoints) + agent.py boot swap + delete health.py
 - [ ] 39-06-PLAN.md - Wave 2: Fill in test_routes.py (6 integration) + test_security.py (4 signature tests)
 - [ ] 39-07-PLAN.md - Wave 3: Update voice-call-architecture SKILL.md + final verification sweep
 
@@ -495,6 +495,26 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 41 to break down)
+
+### Phase 42: Calendar Essentials — Time Blocks and Mark Complete
+
+**Goal:** Add personal time blocks (lunch, vacation, errands) that render on the dashboard calendar and that the voice agent's check_availability tool respects as unavailable, plus a "mark complete" transition on appointments with a muted visual state for completed jobs. Cross-repo phase: changes both the Next.js main repo (new calendar_blocks table + UI) and the LiveKit Python agent repo (check_availability.py + slot_calculator.py). Intentionally scoped small — no drag/resize, no realtime, no technician assignment, no shared-drawer refactor.
+**Depends on:** Phase 41 (call routing dashboard and launch)
+**Requirements**: TBD (to be added in REQUIREMENTS.md during planning)
+**Plans:** 0 plans (run /gsd:plan-phase 42 to break down)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 42 to break down)
+
+### Phase 43: Recurring Appointments — Maintenance Contracts
+
+**Goal:** Enable weekly / monthly / quarterly recurring appointments with a fixed end date, materialized into the appointments table by a daily cron job. Covers the core home service recurring-revenue stream (HVAC tune-ups, pest control, lawn care) without opening the full rrule complexity box — no exception dates, no arbitrary rules, just the three common frequencies with an end date. Where the recurrence management UI lives (AppointmentFlyout, new modal, or a dedicated Contracts surface) is a Phase 43 discussion decision. Cross-repo awareness required: recurring instances must respect the same slot/overlap rules as one-off bookings via book_appointment_atomic.
+**Depends on:** Phase 42 (calendar essentials should ship first so the UI entry point for "make recurring" exists, and time blocks are respected by the recurring-spawn cron)
+**Requirements**: TBD (to be added in REQUIREMENTS.md during planning)
+**Plans:** 0 plans (run /gsd:plan-phase 43 to break down)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 43 to break down)
 
 ---
 
