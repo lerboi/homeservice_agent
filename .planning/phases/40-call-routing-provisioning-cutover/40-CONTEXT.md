@@ -55,7 +55,7 @@ Ships:
 
 - **D-13:** When a customer texts the Twilio number, the webhook forwards the message text to every `pickup_numbers` entry where `sms_forward=true`. Format: `[Voco] From {original_sender}: {body}`.
 - **D-14:** MMS is not forwarded — a `[Media attached - view in Twilio console]` note is appended instead. Forwarding only sends SMS via Twilio's Messages API.
-- **D-15:** Forwarded messages are logged to a new `sms_messages` table (migration 043). Schema: `id`, `tenant_id`, `from_number`, `to_number`, `body`, `direction` ('inbound'|'forwarded'), `created_at`. One row for the inbound message, one row per forwarded copy.
+- **D-15:** Forwarded messages are logged to a new `sms_messages` table (migration 045). Schema: `id`, `tenant_id`, `from_number`, `to_number`, `body`, `direction` ('inbound'|'forwarded'), `created_at`. One row for the inbound message, one row per forwarded copy.
 - **D-16:** SMS forwarding failures are non-fatal per recipient — if forwarding to one number fails, others still proceed. Errors are logged but not surfaced to the original sender.
 
 ### Provisioning Update
