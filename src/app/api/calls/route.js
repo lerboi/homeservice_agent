@@ -24,7 +24,8 @@ export async function GET(request) {
       recording_url, recording_storage_path, detected_language, language_barrier,
       urgency_classification, urgency_confidence, triage_layer_used,
       booking_outcome, exception_reason, notification_priority,
-      recovery_sms_status, created_at
+      recovery_sms_status, created_at,
+      routing_mode, outbound_dial_duration_sec
     `)
     .eq('tenant_id', tenantId);
 
