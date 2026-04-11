@@ -557,12 +557,14 @@ Plans:
 ### Phase 46: VIP Caller Direct Routing
 
 **Goal:** Owner selects specific phone numbers or leads whose calls bypass AI and route directly to the owner's phone, regardless of schedule. Covers webhook routing logic (livekit-agent), tenant settings API, and dashboard UI.
-**Requirements**: TBD
+**Requirements**: VIP-01, VIP-02, VIP-03, VIP-04, VIP-05, VIP-06, VIP-07, VIP-08, VIP-09, VIP-10, VIP-11, VIP-12, VIP-13
 **Depends on:** Phase 41
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 46 to break down)
+- [ ] 46-01-PLAN.md -- Database migration (vip_numbers + is_vip) and API extensions (call-routing, leads)
+- [ ] 46-02-PLAN.md -- Webhook VIP check in livekit-agent (two-source lookup, routing bypass)
+- [ ] 46-03-PLAN.md -- Dashboard UI (VIP Callers section, LeadCard badge, LeadFlyout toggle)
 
 ---
 

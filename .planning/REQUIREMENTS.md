@@ -102,6 +102,22 @@
 - [x] **CAL-09**: "Show completed jobs" `Switch` toggle above calendar grid, default ON, persisted in `localStorage` key `voco_calendar_show_completed` — filters completed appointments client-side (no API change)
 - [x] **CAL-10**: `available-slots/route.js` extended to 5-way parallel fetch including `calendar_blocks` — merged into `externalBlocks` parameter of `calculateAvailableSlots`; appointments query also excludes `status = 'completed'`
 - [x] **CAL-11**: Python `check_availability.py` extended to 5-way `asyncio.gather` including `calendar_blocks` query — merged into `external_blocks` parameter; appointments query excludes both `cancelled` and `completed` via chained `.neq()` calls
+### VIP Caller Direct Routing (Phase 46)
+
+- [ ] **VIP-01**: Migration 049 adds vip_numbers JSONB NOT NULL DEFAULT [] to tenants (no array length cap) and is_vip BOOLEAN NOT NULL DEFAULT false to leads with partial index idx_leads_vip_lookup ON leads (tenant_id, from_number) WHERE is_vip = true
+- [ ] **VIP-02**: GET /api/call-routing returns vip_numbers in response alongside schedule, pickup_numbers, dial_timeout
+- [ ] **VIP-03**: PUT /api/call-routing validates vip_numbers (E.164 format, no duplicates, array type) and persists alongside existing fields; no array length cap
+- [ ] **VIP-04**: PATCH /api/leads/[id] accepts is_vip boolean and persists it
+- [ ] **VIP-05**: GET /api/leads list endpoint includes is_vip in explicit column select so LeadCard can render VIP badge
+- [ ] **VIP-06**: _is_vip_caller(tenant, from_number) function in twilio_routes.py checks both tenant vip_numbers JSONB array (in-memory) and leads table is_vip=true query (DB hit); returns True if either matches; fail-open on error
+- [ ] **VIP-07**: VIP check inserted in incoming_call routing AFTER subscription check and BEFORE evaluate_schedule; VIP match routes to _owner_pickup_twiml bypassing schedule and cap checks; VIP match with no pickup_numbers falls through to AI TwiML
+- [ ] **VIP-08**: Tenant lookup SELECT in twilio_routes.py includes vip_numbers field
+- [ ] **VIP-09**: VIP Callers section on /dashboard/more/call-routing rendered OUTSIDE AnimatePresence (always visible regardless of schedule toggle), with inline card list + add form pattern matching pickup numbers section
+- [ ] **VIP-10**: VIP numbers on call routing page support add, edit, delete with E.164 validation, duplicate detection, no length cap; saved via existing PUT alongside schedule/pickup/timeout
+- [ ] **VIP-11**: VIP badge (violet-100/violet-700, filled Star icon, VIP text) renders on LeadCard before urgency badge when lead.is_vip === true
+- [ ] **VIP-12**: VIP Caller toggle (Switch) in LeadFlyout between contact details and Pipeline Status PATCHes /api/leads/[id] with is_vip boolean; optimistic UI with revert on error; guarded by lead.from_number presence
+- [ ] **VIP-13**: VIP routing uses existing owner_pickup routing_mode (no new enum value); VIP calls appear with same blue You answered badge on calls page
+
 ## v2.0 Requirements
 
 ### Booking-First Agent Behavior
