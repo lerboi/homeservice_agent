@@ -79,6 +79,16 @@
 - [x] **ROUTE-06**: Zero production Twilio numbers are reconfigured — `/twilio/incoming-call` performs a tenant lookup via `_normalize_phone(To)` but always returns a hardcoded "always-AI" `<Response><Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial></Response>` TwiML regardless of result, exercising the full wiring path (signature → URL reconstruction → form parse → tenant lookup → TwiML render) so that Phase 40's diff is a one-line replacement of the hardcoded branch with `evaluate_schedule` + `check_outbound_cap` composition
 
 
+
+### Call Routing Dashboard and Launch (Phase 41)
+
+- [ ] **ROUTE-13**: Dashboard page at `/dashboard/more/call-routing` with schedule editor (Mon-Sun day list, per-day enable toggle, start/end time pickers using native HTML time inputs), master ON/OFF toggle mapping to `call_forwarding_schedule.enabled`, "Copy from working hours" button that transforms `tenants.working_hours` (full day name keys) to routing schedule (3-letter keys), and dial timeout slider (10-30s, default 15s) using shadcn Slider component
+- [ ] **ROUTE-14**: `GET /api/call-routing` returns `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds`, current month outbound minutes usage (`SUM(outbound_dial_duration_sec)` from calls table with null-safe coercion), and `working_hours` for copy feature; `PUT /api/call-routing` validates E.164 phone numbers, no duplicates, no self-reference to tenant Twilio number, max 5 entries, valid HH:MM time ranges (start != end), dial_timeout 10-30, and cross-field guard (enabled schedule + zero pickup numbers = 400)
+- [ ] **ROUTE-15**: Usage meter section showing "X of Y outbound minutes used this month" with horizontal progress bar, color thresholds (green <70%, amber 70-90%, red >90%), cap value displayed (US/CA 5000 min, SG 2500 min based on `tenants.country`), and "Resets on the 1st of each month" footnote
+- [ ] **ROUTE-16**: Routing mode badges on calls page: `ROUTING_STYLE` map with `ai` (stone "AI"), `owner_pickup` (blue "You answered"), `fallback_to_ai` (amber "Missed -> AI"); `routing_mode` and `outbound_dial_duration_sec` added to calls API select query; null routing_mode renders no badge
+- [ ] **ROUTE-17**: Owner-pickup call cards in calls page show caller phone + duration + "You handled this call directly" text + Call Back action; AI-specific expanded details (urgency, booking outcome, recording, language) hidden for owner-pickup; owner-pickup calls appear in same list as AI calls (no separate tab/filter)
+- [ ] **ROUTE-18**: Setup checklist includes optional "Configure call routing" step (`id: configure_call_routing`) that links to `/dashboard/more/call-routing` and is complete when `call_forwarding_schedule.enabled === true` AND `pickup_numbers.length >= 1`; call routing entry added to More page `MORE_ITEMS` array; AI Voice Settings page links to call routing page
+
 ### Calendar Essentials — Time Blocks and Mark Complete (Phase 42)
 
 - [x] **CAL-01**: Migration `044_calendar_blocks_and_completed_at.sql` creates `calendar_blocks` table with `id uuid PK`, `tenant_id uuid NOT NULL REFERENCES tenants(id)`, `title text NOT NULL`, `start_time timestamptz NOT NULL`, `end_time timestamptz NOT NULL`, `is_all_day boolean NOT NULL DEFAULT false`, `note text`, `created_at timestamptz NOT NULL DEFAULT now()` — 4 RLS policies (SELECT, INSERT, UPDATE, DELETE) restricting to tenant owner, index on `(tenant_id, start_time, end_time)`
@@ -420,6 +430,12 @@ n| DEMO-01 | Phase 29 | Complete |
 | ROUTE-04 | Phase 39 | Complete |
 | ROUTE-05 | Phase 39 | Complete |
 | ROUTE-06 | Phase 39 | Complete |
+| ROUTE-13 | Phase 41 | Pending |
+| ROUTE-14 | Phase 41 | Pending |
+| ROUTE-15 | Phase 41 | Pending |
+| ROUTE-16 | Phase 41 | Pending |
+| ROUTE-17 | Phase 41 | Pending |
+| ROUTE-18 | Phase 41 | Pending |
 
 **v3.0 Coverage:**
 - v3.0 requirements: 35 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07, DEMO-01-05)

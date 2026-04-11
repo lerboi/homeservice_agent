@@ -489,7 +489,7 @@ Plans:
 
 **Goal:** Ship the user-facing surface for the call routing feature — a new dedicated dashboard page where tenants configure their per-day schedule, manage pickup numbers (up to 5), adjust the dial timeout, toggle SMS forwarding per number, and see their monthly outbound minute usage. Also surface owner-pickup calls in the existing dashboard calls page with a routing mode badge, so owners have a single view of all call activity regardless of routing.
 **Depends on:** Phase 40 (webhook routing + provisioning must be live so the dashboard configures a feature that actually works)
-**Requirements**: ROUTE-13 through ROUTE-18 (to be added in REQUIREMENTS.md during planning)
+**Requirements**: ROUTE-13, ROUTE-14, ROUTE-15, ROUTE-16, ROUTE-17, ROUTE-18
 **Success Criteria** (what must be TRUE):
   1. A new dashboard page at `/dashboard/more/call-routing` lets tenants configure the feature with per-day schedule editing (one range per day), dial timeout slider (10-30s, default 15s), pickup number management (add/remove up to 5, edit label, toggle `sms_forward` per entry)
   2. `GET /api/call-routing` and `PUT /api/call-routing` API routes serve the schedule + pickup_numbers + dial_timeout state and validate updates (E.164 phone numbers, no duplicates, no self-reference to the Twilio number, 5-entry max, valid time ranges)
@@ -500,10 +500,13 @@ Plans:
   7. Validation: submitting zero pickup numbers while the schedule is enabled shows a blocking warning "Add at least one pickup number to route calls to you"
   8. The AI Voice Settings page in `/dashboard/more/ai-voice-settings` links to the new Call Routing page
   9. End-to-end test: user configures schedule in the dashboard → call comes in during owner hours → correct pickup numbers ring in parallel → call appears in dashboard with `routing_mode='owner_pickup'` badge
-**Plans:** 0 plans (run /gsd:plan-phase 41 to break down)
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 41 to break down)
+- [ ] 41-01-PLAN.md — Call routing API routes (GET + PUT) with validation + extend calls API select
+- [ ] 41-02-PLAN.md — Call routing settings page (schedule editor, pickup numbers, usage meter, dial timeout)
+- [ ] 41-03-PLAN.md — Routing badges on calls page, More page link, AI voice settings link, setup checklist step
+- [ ] 41-04-PLAN.md — Visual verification checkpoint
 
 ### Phase 42: Calendar Essentials — Time Blocks and Mark Complete
 
