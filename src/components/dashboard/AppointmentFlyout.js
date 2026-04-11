@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, ExternalLink, FileText, AlertTriangle, Clock } from 'lucide-react';
+import { MapPin, Phone, ExternalLink, FileText, AlertTriangle, Clock, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Sheet,
   SheetContent,
@@ -64,10 +65,24 @@ function formatRelativeTime(iso) {
   return `${days}d ago`;
 }
 
-export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled }) {
+export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled, onStatusChange }) {
   const [cancelling, setCancelling] = useState(false);
   const [dismissingConflict, setDismissingConflict] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
+
+  // Mark-complete two-step flow state
+  const [showCompletionNotes, setShowCompletionNotes] = useState(false);
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  // Reset mark-complete state when flyout opens/closes
+  useEffect(() => {
+    if (!open) {
+      setShowCompletionNotes(false);
+      setCompletionNotes('');
+      setIsCompleting(false);
+    }
+  }, [open]);
 
   // Resolve recording URL — prefer Supabase Storage (new calls), fall back to recording_url (historical)
   const call = appointment?.calls;
@@ -128,12 +143,53 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
     }
   }
 
+  const handleConfirmComplete = async () => {
+    setIsCompleting(true);
+    const appointmentId = appointment.id; // capture primitive to avoid stale closure
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'completed',
+          ...(completionNotes.trim() ? { notes: completionNotes.trim() } : {}),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed');
+
+      onOpenChange(false); // close flyout
+      onStatusChange?.(appointmentId, 'completed'); // notify parent
+
+      toast.success('Job marked as complete', {
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            await fetch(`/api/appointments/${appointmentId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'confirmed' }),
+            });
+            onStatusChange?.(appointmentId, 'confirmed');
+          },
+        },
+      });
+    } catch (err) {
+      toast.error("Couldn't update appointment. Try again.");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <div className="flex items-center gap-2">
             <Badge className={urgency.badge}>{urgency.label}</Badge>
+            {appointment.status === 'completed' && (
+              <Badge className="bg-green-100 text-green-700">Completed</Badge>
+            )}
           </div>
           <SheetTitle className="text-xl">{appointment.caller_name}</SheetTitle>
           <SheetDescription>{appointment.notes || 'Appointment details'}</SheetDescription>
@@ -158,6 +214,13 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
               {appointment.booked_via && (
                 <div className="text-xs text-stone-400">
                   Booked via {appointment.booked_via}
+                </div>
+              )}
+              {/* Completed on display */}
+              {appointment.status === 'completed' && appointment.completed_at && (
+                <div className="flex items-center gap-2 text-sm text-green-700">
+                  <Check className="h-4 w-4" />
+                  <span>Completed on {formatDateTime(appointment.completed_at)}</span>
                 </div>
               )}
             </div>
@@ -248,33 +311,66 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           )}
         </div>
 
-        <SheetFooter>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full">
-                Cancel Appointment
+        <SheetFooter className="flex-col gap-2">
+          {/* Completion notes input — shown when Mark Complete is clicked */}
+          {showCompletionNotes && (
+            <div className="w-full space-y-3 animate-in slide-in-from-top-2 duration-200">
+              <Textarea
+                placeholder="Add completion notes (optional) — e.g., Replaced water heater thermostat"
+                value={completionNotes}
+                onChange={(e) => setCompletionNotes(e.target.value)}
+                className="min-h-[80px]"
+              />
+              <Button
+                onClick={handleConfirmComplete}
+                disabled={isCompleting}
+                className="w-full bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+              >
+                {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Confirm Complete
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will cancel the appointment with {appointment.caller_name}.
-                  {appointment.external_event_id && ' The calendar event will also be removed.'}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {cancelling ? 'Cancelling...' : 'Yes, Cancel Appointment'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </div>
+          )}
+
+          {/* Mark Complete button — only shown for confirmed appointments when notes panel is not open */}
+          {appointment.status === 'confirmed' && !showCompletionNotes && (
+            <Button
+              onClick={() => setShowCompletionNotes(true)}
+              className="w-full bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            >
+              Mark Complete
+            </Button>
+          )}
+
+          {/* Cancel Appointment — hidden for already completed appointments */}
+          {appointment.status !== 'completed' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full">
+                  Cancel Appointment
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel this appointment?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will cancel the appointment with {appointment.caller_name}.
+                    {appointment.external_event_id && ' The calendar event will also be removed.'}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {cancelling ? 'Cancelling...' : 'Yes, Cancel Appointment'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>

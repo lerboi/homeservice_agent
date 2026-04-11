@@ -261,7 +261,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 ### v4.0 Phase Checklist
 
-- [x] **Phase 30: Voice Agent Prompt Optimization** - Smart slot preference, repeat caller awareness, trade-specific questioning, post-booking recap (2/3 plans, 30-03 skill file pending)
+- [x] **Phase 30: Voice Agent Prompt Optimization** - Smart slot preference, repeat caller awareness, trade-specific questioning, post-booking recap (3/3 plans complete)
 - [ ] **Phase 31: Voice Call Feature Showcase PDF** - Sales-ready PDF showcasing all voice call features (not yet planned)
 - [x] **Phase 32: Landing Page Redesign — Conversion-Optimized Sections** - Hero copy, Features grid, How It Works expansion (2/3 plans, 32-03 visual checkpoint pending)
 - [x] **Phase 33: Invoice Core** - Invoice CRUD, PDF generation, email/SMS send, settings, dashboard (completed 2026-03-31)
@@ -335,7 +335,7 @@ Plans:
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables
 - [x] 30-02-PLAN.md — Agent prompt restructure (all 6 decisions) + server.js new tool definition
-- [ ] 30-03-PLAN.md — Skill file update + prompt quality verification checkpoint
+- [x] 30-03-PLAN.md — Skill file update + prompt quality verification checkpoint
 
 ### Phase 31: Voice Call Feature Showcase PDF
 

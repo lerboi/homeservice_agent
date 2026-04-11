@@ -347,7 +347,7 @@ The prompt is assembled from modular section builder functions. Conditional sect
     - **BEFORE BOOKING**: name + verbally confirmed address + caller-chosen slot
     - **AFTER BOOKING**: confirm full details, ask if anything else
 11. **Decline Handling** — only injected when `onboarding_complete=True`. Judgment-based (not a two-strike counter): if the caller hesitates, try once more with a different angle; if they firmly refuse, capture lead and wrap up. Silence, topic changes, and thinking pauses are NOT declines.
-12. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications
+12. **Transfer Rules** — only 2 triggers: caller asks for human, or 3 failed clarifications. **Transfer recovery**: if the transfer fails, AI offers to book a callback appointment instead; if the caller declines, captures their info as a lead for follow-up. If no transfer number is available, AI takes the caller's info and promises someone will reach out.
 13. **Call Duration** — 9-minute wrap-up warning, 10-minute hard max. Goal-oriented end-call: farewell must be fully heard before disconnect, two separate steps (speak goodbye, then call end_call after pause)
 
 ### Translation Keys (`messages/en.json`, `messages/es.json`)
@@ -425,6 +425,7 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 - Writes `exception_reason` to calls record
 - Performs SIP REFER via `LiveKitAPI().sip.transfer_sip_participant()`
 - Destination: `sip:{ownerPhone}@pstn.twilio.com`
+- Returns: `transfer_initiated` (success), `transfer_failed` (SIP error — AI should offer callback booking), or `transfer_unavailable` (no owner phone — AI takes caller info)
 
 ### `end_call` — Graceful Termination
 
