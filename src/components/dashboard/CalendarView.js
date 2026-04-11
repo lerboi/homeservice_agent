@@ -372,14 +372,14 @@ function AllDayEvents({ events }) {
   const remaining = events.length - 2;
 
   return (
-    <div className="flex flex-wrap gap-1 px-1.5 py-1 min-h-[26px]">
+    <div className="flex flex-wrap gap-1 px-1.5 py-1.5 min-h-[36px]">
       {visible.map((e) => (
-        <div key={e.id} className="bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 text-[10px] text-violet-600 font-medium truncate max-w-full">
+        <div key={e.id} className="bg-violet-50 border border-violet-200 rounded-md px-1.5 py-0.5 text-xs text-violet-600 font-medium truncate max-w-full">
           {e.title}
         </div>
       ))}
       {remaining > 0 && (
-        <span className="text-[10px] text-stone-400 self-center">+{remaining}</span>
+        <span className="text-xs text-stone-400 self-center">+{remaining}</span>
       )}
     </div>
   );
@@ -675,7 +675,7 @@ export default function CalendarView({
           return (
             <div
               key={i}
-              className={`border-b border-l border-stone-200 text-center py-2.5 sticky top-0 z-30 ${isToday ? 'bg-[#FFF7ED]' : 'bg-[#FAFAF9]'}`}
+              className={`border-b border-l border-stone-200 text-center py-2 sticky top-0 z-30 ${isToday ? 'bg-[#FFF7ED]' : 'bg-[#FAFAF9]'}`}
             >
               <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[#C2410C]' : isClosed ? 'text-stone-300' : 'text-[#94A3B8]'}`}>
                 {DAY_ABBREVS[day.getDay()]}
@@ -691,7 +691,7 @@ export default function CalendarView({
         {/* All-day events row */}
         {allDayEvents.length > 0 && (
           <>
-            <div className="border-b border-stone-200 bg-[#FAFAF9] text-[10px] text-stone-400 text-right pr-2 pt-1.5 font-medium">all&#x2011;day</div>
+            <div className="border-b border-stone-200 bg-[#FAFAF9] text-xs text-stone-400 text-right pr-2 pt-1.5 font-medium">all&#x2011;day</div>
             {columns.map((day, i) => (
               <div key={i} className="border-b border-l border-stone-200 bg-[#FAFAF9]">
                 <AllDayEvents events={getItemsForDay(day, allDayEvents)} />
@@ -708,7 +708,7 @@ export default function CalendarView({
             return (
               <div
                 key={hour}
-                className={`text-right pr-2.5 text-[11px] font-medium select-none ${anyWorking ? 'text-stone-400' : 'text-stone-300'}`}
+                className={`text-right pr-2.5 text-xs font-medium select-none ${anyWorking ? 'text-stone-500' : 'text-stone-300'}`}
                 style={{ height: `${HOUR_HEIGHT}px`, lineHeight: `${HOUR_HEIGHT}px` }}
               >
                 {formatHour(hour, isMobile)}
@@ -752,7 +752,7 @@ export default function CalendarView({
                 return (
                   <div
                     key={`off-${hour}`}
-                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/30' : 'bg-stone-50/80'}`}
+                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50' : 'bg-stone-100/60'}`}
                     style={{ top: `${(hour - gridStartHour) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                   />
                 );
@@ -762,7 +762,7 @@ export default function CalendarView({
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className={`absolute left-0 right-0 border-b ${hour % 2 === 0 ? 'border-stone-150' : 'border-stone-100'}`}
+                  className="absolute left-0 right-0 border-b border-stone-200"
                   style={{ top: `${(hour - gridStartHour) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
                 />
               ))}
@@ -771,7 +771,7 @@ export default function CalendarView({
               {hours.map((hour) => (
                 <div
                   key={`half-${hour}`}
-                  className="absolute left-0 right-0 border-b border-stone-50"
+                  className="absolute left-0 right-0 border-b border-dashed border-stone-100"
                   style={{ top: `${(hour - gridStartHour) * HOUR_HEIGHT + HOUR_HEIGHT / 2}px` }}
                 />
               ))}
