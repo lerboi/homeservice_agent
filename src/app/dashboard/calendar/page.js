@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2, RefreshCw, Clock, Pencil, Ban } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/com
 import { toast } from 'sonner';
 import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
+import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
@@ -114,6 +115,7 @@ export default function CalendarPage() {
     externalEvents: [],
     travelBuffers: [],
     conflicts: [],
+    timeBlocks: [],
   });
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -133,6 +135,10 @@ export default function CalendarPage() {
   const [quickBookSlot, setQuickBookSlot] = useState(null);
   const [quickBookForm, setQuickBookForm] = useState({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
   const [quickBookSaving, setQuickBookSaving] = useState(false);
+
+  // Time block sheet state
+  const [timeBlockSheetOpen, setTimeBlockSheetOpen] = useState(false);
+  const [selectedTimeBlock, setSelectedTimeBlock] = useState(null); // null = create, object = edit
 
   // Working hours editor sheet
   const [whSheetOpen, setWhSheetOpen] = useState(false);
@@ -199,12 +205,18 @@ export default function CalendarPage() {
       // incoming events to only those that match the currently-displayed view.
       currentRangeRef.current = { start, end };
 
-      const res = await fetch(`/api/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&view=${effectiveViewMode}`);
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = await res.json();
-      setData(json);
+      const [json, blocksResult] = await Promise.all([
+        fetch(`/api/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&view=${effectiveViewMode}`)
+          .then((r) => { if (!r.ok) throw new Error('Failed to fetch'); return r.json(); }),
+        fetch(`/api/calendar-blocks?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+          .then((r) => r.json())
+          .then((d) => d.blocks || [])
+          .catch(() => []),
+      ]);
+
+      setData({ ...json, timeBlocks: blocksResult });
     } catch {
-      setData({ appointments: [], externalEvents: [], travelBuffers: [], conflicts: [] });
+      setData({ appointments: [], externalEvents: [], travelBuffers: [], conflicts: [], timeBlocks: [] });
     } finally {
       setLoading(false);
     }
@@ -395,6 +407,115 @@ export default function CalendarPage() {
     setQuickBookOpen(true);
   }
 
+  function handleTimeBlockClick(block) {
+    setSelectedTimeBlock(block);
+    setTimeBlockSheetOpen(true);
+  }
+
+  async function handleTimeBlockSave({ title, date, start_time, end_time, is_all_day, note }) {
+    // Resolve times for all-day blocks using DEFAULT_START=7 / DEFAULT_END=20
+    let resolvedStart, resolvedEnd;
+    if (is_all_day) {
+      resolvedStart = `${date}T07:00:00`;
+      resolvedEnd = `${date}T20:00:00`;
+    } else {
+      resolvedStart = `${date}T${start_time}:00`;
+      resolvedEnd = `${date}T${end_time}:00`;
+    }
+
+    try {
+      if (selectedTimeBlock) {
+        // Edit mode — PATCH
+        const res = await fetch(`/api/calendar-blocks/${selectedTimeBlock.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, start_time: resolvedStart, end_time: resolvedEnd, is_all_day, note }),
+        });
+        if (!res.ok) throw new Error('Failed to update');
+        const result = await res.json();
+        setData((prev) => ({
+          ...prev,
+          timeBlocks: prev.timeBlocks.map((b) => (b.id === selectedTimeBlock.id ? result.block : b)),
+        }));
+      } else {
+        // Create mode — POST
+        const res = await fetch('/api/calendar-blocks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, start_time: resolvedStart, end_time: resolvedEnd, is_all_day, note }),
+        });
+        if (!res.ok) throw new Error('Failed to create');
+        const result = await res.json();
+        setData((prev) => ({
+          ...prev,
+          timeBlocks: [...prev.timeBlocks, result.block],
+        }));
+      }
+      setTimeBlockSheetOpen(false);
+      setSelectedTimeBlock(null);
+      toast.success('Time block saved');
+    } catch {
+      toast.error("Couldn't save time block. Try again.");
+    }
+  }
+
+  async function handleTimeBlockDelete(id) {
+    // Capture the block for undo
+    const deletedBlock = data.timeBlocks.find((b) => b.id === id);
+
+    // Optimistic remove
+    setData((prev) => ({
+      ...prev,
+      timeBlocks: prev.timeBlocks.filter((b) => b.id !== id),
+    }));
+    setTimeBlockSheetOpen(false);
+    setSelectedTimeBlock(null);
+
+    try {
+      const res = await fetch(`/api/calendar-blocks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      toast.success('Time block deleted', {
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            if (!deletedBlock) return;
+            try {
+              const reRes = await fetch('/api/calendar-blocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: deletedBlock.title,
+                  start_time: deletedBlock.start_time,
+                  end_time: deletedBlock.end_time,
+                  is_all_day: deletedBlock.is_all_day,
+                  note: deletedBlock.note,
+                }),
+              });
+              if (!reRes.ok) throw new Error('Undo failed');
+              const result = await reRes.json();
+              setData((prev) => ({
+                ...prev,
+                timeBlocks: [...prev.timeBlocks, result.block],
+              }));
+            } catch {
+              toast.error("Couldn't undo. Please add the block manually.");
+            }
+          },
+        },
+      });
+    } catch {
+      // Rollback optimistic remove
+      if (deletedBlock) {
+        setData((prev) => ({
+          ...prev,
+          timeBlocks: [...prev.timeBlocks, deletedBlock],
+        }));
+      }
+      toast.error("Couldn't delete time block. Try again.");
+    }
+  }
+
   async function handleQuickBook() {
     if (!quickBookSlot || !quickBookForm.caller_name.trim()) return;
     setQuickBookSaving(true);
@@ -547,6 +668,17 @@ export default function CalendarPage() {
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
 
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => { setSelectedTimeBlock(null); setTimeBlockSheetOpen(true); }}
+              aria-label="Add time block"
+              className="h-8 w-8 min-w-[44px] min-h-[44px] text-[#C2410C] border-[#C2410C]/30 hover:bg-[#C2410C]/5"
+              title="Add time block"
+            >
+              <Ban className="h-3.5 w-3.5" />
+            </Button>
+
             <div className="flex rounded-lg border border-stone-200 overflow-hidden">
               <button
                 type="button"
@@ -581,12 +713,14 @@ export default function CalendarPage() {
                 appointments={data.appointments}
                 externalEvents={data.externalEvents}
                 travelBuffers={data.travelBuffers}
+                timeBlocks={data.timeBlocks}
                 currentDate={currentDate}
                 viewMode={effectiveViewMode}
                 loading={loading}
                 onAppointmentClick={handleAppointmentClick}
                 onDayClick={handleDayClick}
                 onEmptySlotClick={handleEmptySlotClick}
+                onTimeBlockClick={handleTimeBlockClick}
                 workingHoursData={workingHoursData}
                 isMobile={isMobile}
               />
@@ -596,12 +730,14 @@ export default function CalendarPage() {
               appointments={data.appointments}
               externalEvents={data.externalEvents}
               travelBuffers={data.travelBuffers}
+              timeBlocks={data.timeBlocks}
               currentDate={currentDate}
               viewMode={effectiveViewMode}
               loading={loading}
               onAppointmentClick={handleAppointmentClick}
               onDayClick={handleDayClick}
               onEmptySlotClick={handleEmptySlotClick}
+              onTimeBlockClick={handleTimeBlockClick}
               workingHoursData={workingHoursData}
               isMobile={isMobile}
             />
@@ -767,6 +903,15 @@ export default function CalendarPage() {
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         onCancelled={handleCancelled}
+      />
+
+      {/* Time Block Sheet */}
+      <TimeBlockSheet
+        open={timeBlockSheetOpen}
+        onOpenChange={setTimeBlockSheetOpen}
+        selectedBlock={selectedTimeBlock}
+        onSave={handleTimeBlockSave}
+        onDelete={handleTimeBlockDelete}
       />
 
       {/* Quick-book Sheet */}
