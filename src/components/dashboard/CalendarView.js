@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Check } from 'lucide-react';
 
 const HOUR_HEIGHT = 64;
 const DEFAULT_START = 7;
@@ -236,6 +236,7 @@ function CurrentTimeIndicator({ gridStartHour, gridEndHour }) {
 
 function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPositionStyle, laneIndex = 0, laneCount = 1 }) {
   const style = getPositionStyle(appointment.start_time, appointment.end_time);
+  const isCompleted = appointment.status === 'completed';
   const urgency = appointment.urgency || 'routine';
   const styles = URGENCY_STYLES[urgency] || URGENCY_STYLES.routine;
   const heightPx = parseInt(style.height, 10);
@@ -247,6 +248,11 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
   const isCompact = effectiveHeight < 52 || isNarrow;
   const isVeryCompact = effectiveHeight < 36 || (isNarrow && effectiveHeight < 64);
 
+  // Wrap existing block class with opacity-40 when completed
+  const blockClass = isCompleted
+    ? `${styles.block} opacity-40`
+    : styles.block;
+
   const addressLine = appointment.street_name && appointment.postal_code
     ? `${appointment.street_name}, ${appointment.postal_code}`
     : appointment.service_address || '';
@@ -254,7 +260,7 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
   return (
     <button
       type="button"
-      className={`absolute rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${styles.block}`}
+      className={`absolute rounded-md px-2 overflow-hidden cursor-pointer transition-all shadow-sm hover:shadow-md ${blockClass}`}
       style={finalStyle}
       onClick={(e) => { e.stopPropagation(); onClick(appointment); }}
     >
@@ -262,6 +268,13 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
       {isOffHours && (
         <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-stone-200/80 flex items-center justify-center z-10" title="Outside working hours">
           <Clock className="w-2.5 h-2.5 text-stone-500" />
+        </div>
+      )}
+
+      {/* Completed checkmark badge */}
+      {isCompleted && (
+        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
+          <Check className="w-[10px] h-[10px] text-green-700" />
         </div>
       )}
 
@@ -307,6 +320,38 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
           )}
         </div>
       )}
+    </button>
+  );
+}
+
+function TimeBlockEvent({ block, onBlockClick, isMobile }) {
+  const startDate = new Date(block.start_time);
+  const endDate = new Date(block.end_time);
+  const startHour = startDate.getHours() + startDate.getMinutes() / 60;
+  const endHour = endDate.getHours() + endDate.getMinutes() / 60;
+  const top = (startHour - DEFAULT_START) * HOUR_HEIGHT;
+  const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 20);
+  const margin = isMobile ? 2 : 4;
+
+  return (
+    <button
+      type="button"
+      className="absolute rounded-md overflow-hidden cursor-pointer border border-slate-200 hover:border-slate-300"
+      style={{
+        top: `${top}px`,
+        height: `${height}px`,
+        left: `${margin}px`,
+        right: `${margin}px`,
+        zIndex: 1,
+        backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(100,116,139,0.25) 4px, rgba(100,116,139,0.25) 8px)`,
+        backgroundColor: '#F1F5F9',
+      }}
+      aria-hidden="false"
+      onClick={(e) => { e.stopPropagation(); onBlockClick(block); }}
+    >
+      <div className="border-l-[3px] border-slate-400 h-full px-2 py-1">
+        <span className="text-xs text-slate-600 truncate block">{block.title}</span>
+      </div>
     </button>
   );
 }
@@ -427,12 +472,14 @@ export default function CalendarView({
   appointments = [],
   externalEvents = [],
   travelBuffers = [],
+  timeBlocks = [],
   currentDate,
   viewMode = 'week',
   loading = false,
   onAppointmentClick,
   onDayClick,
   onEmptySlotClick,
+  onTimeBlockClick,
   workingHoursData = null,
   isMobile = false,
 }) {
@@ -784,6 +831,16 @@ export default function CalendarView({
                   gridStartHour={gridStartHour}
                 />
               )}
+
+              {/* Time blocks — z-index: 1, full-width behind appointment lanes (D-05) */}
+              {timeBlocks.filter((block) => isSameDay(new Date(block.start_time), day)).map((block) => (
+                <TimeBlockEvent
+                  key={`tb-${block.id}`}
+                  block={block}
+                  onBlockClick={onTimeBlockClick || (() => {})}
+                  isMobile={isMobile}
+                />
+              ))}
 
               {/* External events (lane-aware) */}
               {laidOut.filter((w) => w.type === 'ext').map((w) => (
