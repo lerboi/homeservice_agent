@@ -156,6 +156,53 @@ export async function PATCH(request, { params }) {
     return Response.json({ appointment: updated });
   }
 
+  // Branch 3: Mark as completed
+  if (body.status === 'completed') {
+    const updatePayload = {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    };
+
+    // Handle optional completion notes (D-08)
+    if (body.notes !== undefined && body.notes !== null && body.notes.trim() !== '') {
+      const { data: existing } = await supabase
+        .from('appointments')
+        .select('notes')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      updatePayload.notes = existing?.notes
+        ? `${existing.notes}\n\n[Completed] ${body.notes.trim()}`
+        : body.notes.trim();
+    }
+
+    const { data: updated, error } = await supabase
+      .from('appointments')
+      .update(updatePayload)
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .select('id, status, completed_at, notes, start_time, end_time, caller_name')
+      .single();
+
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ appointment: updated });
+  }
+
+  // Branch 4: Undo complete (revert to confirmed)
+  if (body.status === 'confirmed') {
+    const { data: updated, error } = await supabase
+      .from('appointments')
+      .update({ status: 'confirmed', completed_at: null })
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .select('id, status, completed_at, notes, start_time, end_time, caller_name')
+      .single();
+
+    if (error) return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ appointment: updated });
+  }
+
   console.log('400: Invalid patch body');
   return Response.json({ error: 'Invalid patch body' }, { status: 400 });
 }

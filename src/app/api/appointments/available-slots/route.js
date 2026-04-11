@@ -76,12 +76,13 @@ export async function GET(request) {
 
   // Load scheduling data in parallel
   const now = new Date();
-  const [appointmentsResult, eventsResult, zonesResult, buffersResult] = await Promise.all([
+  const [appointmentsResult, eventsResult, zonesResult, buffersResult, blocksResult] = await Promise.all([
     supabase
       .from('appointments')
       .select('start_time, end_time, zone_id')
       .eq('tenant_id', tenant.id)
       .neq('status', 'cancelled')
+      .neq('status', 'completed')
       .gte('end_time', now.toISOString()),
     supabase
       .from('calendar_events')
@@ -96,6 +97,11 @@ export async function GET(request) {
       .from('zone_travel_buffers')
       .select('zone_a_id, zone_b_id, buffer_mins')
       .eq('tenant_id', tenant.id),
+    supabase
+      .from('calendar_blocks')
+      .select('start_time, end_time')
+      .eq('tenant_id', tenant.id)
+      .gte('end_time', now.toISOString()),
   ]);
 
   // Calculate slots for each day in range
@@ -114,7 +120,7 @@ export async function GET(request) {
       workingHours: tenant.working_hours || {},
       slotDurationMins: tenant.slot_duration_mins || 60,
       existingBookings: appointmentsResult.data || [],
-      externalBlocks: eventsResult.data || [],
+      externalBlocks: [...(eventsResult.data || []), ...(blocksResult.data || [])],
       zones: zonesResult.data || [],
       zonePairBuffers: buffersResult.data || [],
       targetDate: targetDateStr,
