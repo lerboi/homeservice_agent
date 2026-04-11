@@ -37,6 +37,12 @@ const OUTCOME_STYLE = {
   not_attempted: { badge: 'bg-stone-50 text-stone-400', icon: PhoneMissed, label: 'No Booking' },
 };
 
+const ROUTING_STYLE = {
+  ai:             { badge: 'bg-stone-100 text-stone-600',  border: 'border-l-stone-300',  label: 'AI' },
+  owner_pickup:   { badge: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-500',   label: 'You answered' },
+  fallback_to_ai: { badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-500',  label: 'Missed \u2192 AI' },
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDuration(seconds) {
@@ -110,6 +116,8 @@ function CallCard({ call }) {
   const outcome = call.booking_outcome;
   const us = URGENCY_STYLE[urgency] || URGENCY_STYLE.routine;
   const os = OUTCOME_STYLE[outcome];
+  const rs = call.routing_mode ? ROUTING_STYLE[call.routing_mode] : null;
+  const isOwnerPickup = call.routing_mode === 'owner_pickup';
   const isShort = (call.duration_seconds ?? 0) < 15;
   const hasRecording = !!(call.recording_url || call.recording_storage_path);
 
@@ -175,10 +183,13 @@ function CallCard({ call }) {
 
         {/* Key badge — show the most important info at a glance */}
         <div className="flex items-center gap-2 shrink-0">
-          {os && !isShort && (
+          {rs && (
+            <Badge className={`${rs.badge} text-xs`}>{rs.label}</Badge>
+          )}
+          {os && !isShort && !isOwnerPickup && (
             <Badge className={`${os.badge} text-xs`}>{os.label}</Badge>
           )}
-          {urgency && urgency !== 'routine' && !isShort && (
+          {urgency && urgency !== 'routine' && !isShort && !isOwnerPickup && (
             <Badge className={`${us.badge} text-xs`}>{us.label}</Badge>
           )}
         </div>
@@ -198,88 +209,114 @@ function CallCard({ call }) {
             style={{ overflow: 'hidden' }}
           >
             <div className="px-4 pb-4 pt-1 border-t border-stone-100">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-                {/* Duration */}
-                <DetailItem
-                  icon={Clock}
-                  label="Duration"
-                  value={call.duration_seconds > 0 ? formatDuration(call.duration_seconds) : 'N/A'}
-                />
+              {isOwnerPickup ? (
+                <>
+                  <p className="text-sm text-[#475569] mt-2">You handled this call directly.</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-[#475569]">
+                    {call.duration_seconds > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> {formatDuration(call.duration_seconds)}
+                      </span>
+                    )}
+                  </div>
+                  {call.from_number && (
+                    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
+                      <a
+                        href={`tel:${call.from_number}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
+                      >
+                        <PhoneOutgoing className="h-3 w-3" />
+                        Call Back
+                      </a>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
+                    {/* Duration */}
+                    <DetailItem
+                      icon={Clock}
+                      label="Duration"
+                      value={call.duration_seconds > 0 ? formatDuration(call.duration_seconds) : 'N/A'}
+                    />
 
-                {/* Urgency */}
-                <DetailItem
-                  icon={AlertTriangle}
-                  label="Urgency"
-                  value={urgency ? (URGENCY_STYLE[urgency]?.label || urgency) : 'Not classified'}
-                />
+                    {/* Urgency */}
+                    <DetailItem
+                      icon={AlertTriangle}
+                      label="Urgency"
+                      value={urgency ? (URGENCY_STYLE[urgency]?.label || urgency) : 'Not classified'}
+                    />
 
-                {/* Booking outcome */}
-                <DetailItem
-                  icon={CalendarCheck}
-                  label="Booking"
-                  value={outcome ? (OUTCOME_STYLE[outcome]?.label || outcome) : 'N/A'}
-                />
+                    {/* Booking outcome */}
+                    <DetailItem
+                      icon={CalendarCheck}
+                      label="Booking"
+                      value={outcome ? (OUTCOME_STYLE[outcome]?.label || outcome) : 'N/A'}
+                    />
 
-                {/* Language */}
-                <DetailItem
-                  icon={Globe}
-                  label="Language"
-                  value={
-                    call.language_barrier ? `${(call.detected_language || '?').toUpperCase()} (barrier)` :
-                    call.detected_language ? call.detected_language.toUpperCase() :
-                    'N/A'
-                  }
-                />
-              </div>
+                    {/* Language */}
+                    <DetailItem
+                      icon={Globe}
+                      label="Language"
+                      value={
+                        call.language_barrier ? `${(call.detected_language || '?').toUpperCase()} (barrier)` :
+                        call.detected_language ? call.detected_language.toUpperCase() :
+                        'N/A'
+                      }
+                    />
+                  </div>
 
-              {/* Extra info row */}
-              <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#475569]">
-                {call.disconnection_reason && (
-                  <span>Ended: {call.disconnection_reason.replace(/_/g, ' ')}</span>
-                )}
-                {call.notification_priority === 'high' && (
-                  <Badge className="bg-red-50 text-red-600 text-[10px]">High Priority</Badge>
-                )}
-                {call.recovery_sms_status === 'sent' && (
-                  <Badge className="bg-blue-50 text-blue-600 text-[10px]">Recovery SMS Sent</Badge>
-                )}
-                {call.exception_reason && (
-                  <span>Exception: {call.exception_reason.replace(/_/g, ' ')}</span>
-                )}
-                {hasRecording && (
-                  <span className="inline-flex items-center gap-1 text-[#C2410C]">
-                    <Mic className="h-3 w-3" /> Recording available
-                  </span>
-                )}
-              </div>
+                  {/* Extra info row */}
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#475569]">
+                    {call.disconnection_reason && (
+                      <span>Ended: {call.disconnection_reason.replace(/_/g, ' ')}</span>
+                    )}
+                    {call.notification_priority === 'high' && (
+                      <Badge className="bg-red-50 text-red-600 text-[10px]">High Priority</Badge>
+                    )}
+                    {call.recovery_sms_status === 'sent' && (
+                      <Badge className="bg-blue-50 text-blue-600 text-[10px]">Recovery SMS Sent</Badge>
+                    )}
+                    {call.exception_reason && (
+                      <span>Exception: {call.exception_reason.replace(/_/g, ' ')}</span>
+                    )}
+                    {hasRecording && (
+                      <span className="inline-flex items-center gap-1 text-[#C2410C]">
+                        <Mic className="h-3 w-3" /> Recording available
+                      </span>
+                    )}
+                  </div>
 
-              {/* Quick actions */}
-              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
-                {call.from_number && (
-                  <a
-                    href={`tel:${call.from_number}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
-                  >
-                    <PhoneOutgoing className="h-3 w-3" />
-                    Call Back
-                  </a>
-                )}
-                {call.from_number && !isShort && (
-                  <a
-                    href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-[#0F172A] hover:bg-stone-200 transition-colors"
-                  >
-                    <Users className="h-3 w-3" />
-                    View Lead
-                  </a>
-                )}
-              </div>
+                  {/* Quick actions */}
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
+                    {call.from_number && (
+                      <a
+                        href={`tel:${call.from_number}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
+                      >
+                        <PhoneOutgoing className="h-3 w-3" />
+                        Call Back
+                      </a>
+                    )}
+                    {call.from_number && !isShort && (
+                      <a
+                        href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-[#0F172A] hover:bg-stone-200 transition-colors"
+                      >
+                        <Users className="h-3 w-3" />
+                        View Lead
+                      </a>
+                    )}
+                  </div>
 
-              {/* Inline audio player */}
-              {hasRecording && (
-                <div className="mt-3">
-                  <AudioPlayer src={recordingSrc} />
-                </div>
+                  {/* Inline audio player */}
+                  {hasRecording && (
+                    <div className="mt-3">
+                      <AudioPlayer src={recordingSrc} />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </motion.div>
