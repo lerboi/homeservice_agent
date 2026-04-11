@@ -65,6 +65,17 @@ function deriveChecklistItems(tenant, serviceCount, calendarConnected, zoneCount
       locked: false,
       href: '/dashboard/more/notifications',
     },
+    {
+      id: 'configure_call_routing',
+      label: 'Configure call routing',
+      complete: !!(
+        tenant.call_forwarding_schedule?.enabled === true &&
+        Array.isArray(tenant.pickup_numbers) &&
+        tenant.pickup_numbers.length >= 1
+      ),
+      locked: false,
+      href: '/dashboard/more/call-routing',
+    },
   ];
 }
 
@@ -81,7 +92,7 @@ export async function GET() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, business_name, working_hours, onboarding_complete, phone_number, setup_checklist_dismissed, notification_preferences')
+    .select('id, business_name, working_hours, onboarding_complete, phone_number, setup_checklist_dismissed, notification_preferences, call_forwarding_schedule, pickup_numbers')
     .eq('owner_id', user.id)
     .single();
 

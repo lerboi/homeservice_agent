@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { PhoneForwarded } from 'lucide-react';
 import { card } from '@/lib/design-tokens';
 import { supabase } from '@/lib/supabase-browser';
 import { toast } from 'sonner';
@@ -37,6 +39,16 @@ export default function AIVoiceSettingsPage() {
       <h1 className="text-xl font-semibold text-[#0F172A] mb-1">AI & Voice Settings</h1>
       <p className="text-sm text-[#475569] mb-6">Your AI phone number and test call.</p>
       <SettingsAISection phoneNumber={phoneNumber} initialVoice={currentVoice} loading={loading} />
+      <div className="mt-6 pt-6 border-t border-stone-200">
+        <Link
+          href="/dashboard/more/call-routing"
+          className="flex items-center gap-3 text-sm text-[#475569] hover:text-[#0F172A] transition-colors"
+        >
+          <PhoneForwarded className="h-4 w-4" />
+          <span>Configure call routing</span>
+          <span className="text-xs text-stone-400 ml-auto">Route calls to your phone during business hours</span>
+        </Link>
+      </div>
     </div>
   );
 }
