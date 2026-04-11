@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Executing Phase 42
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-04-11T08:27:20.249Z"
+status: Ready to execute
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-04-11T08:34:53.997Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 42 (calendar-essentials-time-blocks-and-mark-complete) — EXECUTING
-Plan: 1 of 5
+Plan: 3 of 5
 
 ## Accumulated Context
 
@@ -117,6 +117,9 @@ Recent decisions affecting current work:
 - [Phase 40]: RAILWAY_WEBHOOK_URL env var drives webhook URL construction in provisioning and cutover
 - [Phase 42]: Migration renumbered 046 (044/045 were already taken by Phase 44 and SMS schema)
 - [Phase 42]: calendar_blocks merged into externalBlocks for slot calculator — no separate blocking logic needed
+- [Phase 42]: Two chained .neq() calls used in Python agent to exclude cancelled and completed appointments — more explicit than .not_(in) per RESEARCH.md
+- [Phase 42]: calendar_blocks merged into external_blocks via (events_result.data or []) + (blocks_result.data or []) — same shape as calendar_events, no separate blocking logic needed
+- [Phase 42]: TimeBlockEvent uses DEFAULT_START (7) for top calc matching spec D-04; Ban icon chosen for Add time block toolbar button
 
 ### Roadmap Evolution
 
@@ -192,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T08:27:20.241Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-04-11T08:34:53.990Z
+Stopped at: Completed 42-02-PLAN.md
 Resume file: None
