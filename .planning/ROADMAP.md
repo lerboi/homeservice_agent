@@ -272,7 +272,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
 - [x] **Phase 39: Call Routing Webhook Foundation** - FastAPI webhook service on Railway, Twilio signature verification, schedule evaluator, outbound cap, 4 POST endpoints (completed 2026-04-10)
 - [x] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration (completed 2026-04-10)
-- [ ] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout
+- [x] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout (completed 2026-04-11)
 - [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
 - [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
 - [x] **Phase 44: AI Voice Selection** - Voice picker UI with 6 Gemini voices, audio previews, tenant persistence, agent voice override (completed 2026-04-10)
@@ -500,7 +500,7 @@ Plans:
   7. Validation: submitting zero pickup numbers while the schedule is enabled shows a blocking warning "Add at least one pickup number to route calls to you"
   8. The AI Voice Settings page in `/dashboard/more/ai-voice-settings` links to the new Call Routing page
   9. End-to-end test: user configures schedule in the dashboard → call comes in during owner hours → correct pickup numbers ring in parallel → call appears in dashboard with `routing_mode='owner_pickup'` badge
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 41-01-PLAN.md — Call routing API routes (GET + PUT) with validation + extend calls API select
