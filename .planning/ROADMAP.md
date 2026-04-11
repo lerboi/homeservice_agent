@@ -261,7 +261,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 
 ### v4.0 Phase Checklist
 
-- [x] **Phase 30: Voice Agent Prompt Optimization** - Smart slot preference, repeat caller awareness, trade-specific questioning, post-booking recap (2/3 plans, 30-03 skill file pending)
+- [x] **Phase 30: Voice Agent Prompt Optimization** - Smart slot preference, repeat caller awareness, trade-specific questioning, post-booking recap (3/3 plans complete)
 - [ ] **Phase 31: Voice Call Feature Showcase PDF** - Sales-ready PDF showcasing all voice call features (not yet planned)
 - [x] **Phase 32: Landing Page Redesign — Conversion-Optimized Sections** - Hero copy, Features grid, How It Works expansion (2/3 plans, 32-03 visual checkpoint pending)
 - [x] **Phase 33: Invoice Core** - Invoice CRUD, PDF generation, email/SMS send, settings, dashboard (completed 2026-03-31)
@@ -271,7 +271,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
 - [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
 - [x] **Phase 39: Call Routing Webhook Foundation** - FastAPI webhook service on Railway, Twilio signature verification, schedule evaluator, outbound cap, 4 POST endpoints (completed 2026-04-10)
-- [ ] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration
+- [x] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration (completed 2026-04-10)
 - [ ] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout
 - [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
 - [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
@@ -335,7 +335,7 @@ Plans:
 Plans:
 - [x] 30-01-PLAN.md — DB migration + trade templates + check_caller_history webhook handler + handleInbound dynamic variables
 - [x] 30-02-PLAN.md — Agent prompt restructure (all 6 decisions) + server.js new tool definition
-- [ ] 30-03-PLAN.md — Skill file update + prompt quality verification checkpoint
+- [x] 30-03-PLAN.md — Skill file update + prompt quality verification checkpoint
 
 ### Phase 31: Voice Call Feature Showcase PDF
 
@@ -478,12 +478,12 @@ Plans:
   7. A migration script iterates every existing tenant's Twilio number and updates its voice/sms configuration to use the Railway webhook — dry-run mode verified first, then production run
   8. End-to-end test: real call to a test tenant's number with schedule=all-AI → hits LiveKit agent as before; schedule=all-owner → rings owner's pickup number(s); schedule=AI-after-hours + call during owner window → rings owner; owner no-answer → falls back to AI; all scenarios produce correct `calls` rows
   9. Twilio status callback fires on dial completion and writes `outbound_dial_duration_sec` to the corresponding `calls` row for cost tracking
-**Plans:** 3 plans in 3 waves
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 40-01-PLAN.md — Migration 045 (sms_messages + call_sid) and incoming-call handler rewrite with live routing logic
-- [ ] 40-02-PLAN.md — Dial-status, dial-fallback, and SMS forwarding handlers
-- [ ] 40-03-PLAN.md — Provisioning update (webhook URLs on new numbers) and existing-tenant cutover script
+- [x] 40-01-PLAN.md — Migration 045 (sms_messages + call_sid) and incoming-call handler rewrite with live routing logic
+- [x] 40-02-PLAN.md — Dial-status, dial-fallback, and SMS forwarding handlers
+- [x] 40-03-PLAN.md — Provisioning update (webhook URLs on new numbers) and existing-tenant cutover script
 
 ### Phase 41: Call Routing Dashboard and Launch
 
@@ -510,13 +510,13 @@ Plans:
 **Goal:** Add personal time blocks (lunch, vacation, errands) that render on the dashboard calendar and that the voice agent's check_availability tool respects as unavailable, plus a "mark complete" transition on appointments with a muted visual state for completed jobs. Cross-repo phase: changes both the Next.js main repo (new calendar_blocks table + UI) and the LiveKit Python agent repo (check_availability.py + slot_calculator.py). Intentionally scoped small — no drag/resize, no realtime, no technician assignment, no shared-drawer refactor.
 **Depends on:** Phase 41 (call routing dashboard and launch)
 **Requirements**: CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06, CAL-07, CAL-08, CAL-09, CAL-10, CAL-11
-**Plans:** 5 plans
+**Plans:** 2/5 plans executed
 
 Plans:
-- [ ] 42-01-PLAN.md — DB migration (calendar_blocks table + completed_at) + CRUD API + mark-complete PATCH + available-slots integration
+- [x] 42-01-PLAN.md — DB migration (calendar_blocks table + completed_at) + CRUD API + mark-complete PATCH + available-slots integration
 - [ ] 42-02-PLAN.md — Time block UI (TimeBlockSheet, TimeBlockEvent rendering, calendar page state)
 - [ ] 42-03-PLAN.md — Mark complete UI (AppointmentFlyout, completed visual state, show-completed toggle)
-- [ ] 42-04-PLAN.md — Slot calculator integration (Python voice agent + JS test)
+- [x] 42-04-PLAN.md — Slot calculator integration (Python voice agent + JS test)
 - [ ] 42-05-PLAN.md — Visual verification checkpoint
 
 ### Phase 43: Recurring Appointments — Maintenance Contracts

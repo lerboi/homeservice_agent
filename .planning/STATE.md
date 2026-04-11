@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: "44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval"
-last_updated: "2026-04-10T20:40:15.295Z"
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-04-11T08:34:53.997Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 44 — ai-voice-selection
+**Current focus:** Phase 42 — calendar-essentials-time-blocks-and-mark-complete
 
 ## Current Position
 
-Phase: 44 (ai-voice-selection) — EXECUTING
-Plan: 2 of 3
+Phase: 42 (calendar-essentials-time-blocks-and-mark-complete) — EXECUTING
+Plan: 3 of 5
 
 ## Accumulated Context
 
@@ -113,6 +113,13 @@ Recent decisions affecting current work:
 - [Phase 44]: Voice resolution is 3-tier: tenant.ai_voice -> VOICE_MAP[tone_preset] -> Kore default (Phase 44)
 - [Phase 44]: Single audioRef pattern for audio mutual exclusion in VoicePickerSection — pause current before starting new, no per-card audio state needed
 - [Phase 44]: initialVoice synced to selectedVoice via useEffect (not useState initializer) so component updates when async page data loads after mount
+- [Phase 40]: SIP trunk preserved as rollback safety net on all Twilio numbers (D-21)
+- [Phase 40]: RAILWAY_WEBHOOK_URL env var drives webhook URL construction in provisioning and cutover
+- [Phase 42]: Migration renumbered 046 (044/045 were already taken by Phase 44 and SMS schema)
+- [Phase 42]: calendar_blocks merged into externalBlocks for slot calculator — no separate blocking logic needed
+- [Phase 42]: Two chained .neq() calls used in Python agent to exclude cancelled and completed appointments — more explicit than .not_(in) per RESEARCH.md
+- [Phase 42]: calendar_blocks merged into external_blocks via (events_result.data or []) + (blocks_result.data or []) — same shape as calendar_events, no separate blocking logic needed
+- [Phase 42]: TimeBlockEvent uses DEFAULT_START (7) for top calc matching spec D-04; Ban icon chosen for Add time block toolbar button
 
 ### Roadmap Evolution
 
@@ -188,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T20:40:04.828Z
-Stopped at: 44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval
+Last session: 2026-04-11T08:34:53.990Z
+Stopped at: Completed 42-02-PLAN.md
 Resume file: None
