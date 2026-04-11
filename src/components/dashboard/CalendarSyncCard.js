@@ -98,12 +98,11 @@ function CalendarProviderRow({
 }) {
   const config = PROVIDER_CONFIG[provider];
 
-  // Derive sync status based on last_synced_at freshness
+  // Derive sync status — connected calendars are "synced" unless the watch channel expired
   function deriveSyncStatus() {
-    if (!data?.last_synced_at) return 'synced'; // just connected, no sync yet
-    const elapsed = Date.now() - new Date(data.last_synced_at).getTime();
-    if (elapsed < 5 * 60 * 1000) return 'synced';
-    if (elapsed > 60 * 60 * 1000) return 'error'; // stale > 1 hour
+    if (!data) return 'synced';
+    // If watch channel has expired, the webhook can't deliver updates
+    if (data.watch_expiration && data.watch_expiration < Date.now()) return 'error';
     return 'synced';
   }
 

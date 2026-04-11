@@ -318,6 +318,19 @@ export async function syncOutlookCalendarEvents(tenantId) {
       .eq('tenant_id', tenantId)
       .eq('provider', 'outlook')
       .in('external_id', toDelete);
+
+    // Unlink orphaned calendar_blocks and appointments whose external event was deleted
+    await supabase
+      .from('calendar_blocks')
+      .update({ external_event_id: null })
+      .eq('tenant_id', tenantId)
+      .in('external_event_id', toDelete);
+
+    await supabase
+      .from('appointments')
+      .update({ external_event_id: null })
+      .eq('tenant_id', tenantId)
+      .in('external_event_id', toDelete);
   }
 
   // Persist deltaLink and update last_synced_at

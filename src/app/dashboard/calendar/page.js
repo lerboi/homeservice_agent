@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, Link2, Plus, Loader2, RefreshCw, Clock, Pencil, Ban } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, UserPlus, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
+import QuickBookSheet from '@/components/dashboard/QuickBookSheet';
 import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
+import ExternalEventSheet from '@/components/dashboard/ExternalEventSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
@@ -131,27 +133,31 @@ export default function CalendarPage() {
   // Swipe gesture controls for mobile day navigation
   const dragControls = useAnimation();
 
+  // Create popover state
+  const [createPopoverOpen, setCreatePopoverOpen] = useState(false);
+
   // Quick-book state
   const [quickBookOpen, setQuickBookOpen] = useState(false);
   const [quickBookSlot, setQuickBookSlot] = useState(null);
-  const [quickBookForm, setQuickBookForm] = useState({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
-  const [quickBookSaving, setQuickBookSaving] = useState(false);
 
   // Time block sheet state
   const [timeBlockSheetOpen, setTimeBlockSheetOpen] = useState(false);
   const [selectedTimeBlock, setSelectedTimeBlock] = useState(null); // null = create, object = edit
 
+  // External event sheet state
+  const [externalEventSheetOpen, setExternalEventSheetOpen] = useState(false);
+  const [selectedExternalEvent, setSelectedExternalEvent] = useState(null);
+
   // Working hours editor sheet
   const [whSheetOpen, setWhSheetOpen] = useState(false);
 
-  // Show completed toggle — persists in localStorage
-  const [showCompleted, setShowCompleted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('voco_calendar_show_completed');
-      return stored !== null ? stored === 'true' : true; // default ON
-    }
-    return true;
-  });
+  // Show completed toggle — persists in localStorage (hydration-safe: read in useEffect)
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('voco_calendar_show_completed');
+    if (stored !== null) setShowCompleted(stored === 'true');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('voco_calendar_show_completed', String(showCompleted));
@@ -422,7 +428,6 @@ export default function CalendarPage() {
 
   function handleEmptySlotClick(slotDate) {
     setQuickBookSlot(slotDate);
-    setQuickBookForm({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
     setQuickBookOpen(true);
   }
 
@@ -431,7 +436,7 @@ export default function CalendarPage() {
     setTimeBlockSheetOpen(true);
   }
 
-  async function handleTimeBlockSave({ title, date, start_time, end_time, is_all_day, note }) {
+  async function handleTimeBlockSave({ title, date, start_time, end_time, is_all_day, note, sync_to_calendar, group_id }) {
     // Resolve times for all-day blocks using DEFAULT_START=7 / DEFAULT_END=20
     let resolvedStart, resolvedEnd;
     if (is_all_day) {
@@ -461,7 +466,7 @@ export default function CalendarPage() {
         const res = await fetch('/api/calendar-blocks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, start_time: resolvedStart, end_time: resolvedEnd, is_all_day, note }),
+          body: JSON.stringify({ title, start_time: resolvedStart, end_time: resolvedEnd, is_all_day, note, sync_to_calendar, group_id }),
         });
         if (!res.ok) throw new Error('Failed to create');
         const result = await res.json();
@@ -470,11 +475,8 @@ export default function CalendarPage() {
           timeBlocks: [...prev.timeBlocks, result.block],
         }));
       }
-      setTimeBlockSheetOpen(false);
-      setSelectedTimeBlock(null);
-      toast.success('Time block saved');
     } catch {
-      toast.error("Couldn't save time block. Try again.");
+      throw new Error('save failed');
     }
   }
 
@@ -535,44 +537,62 @@ export default function CalendarPage() {
     }
   }
 
-  async function handleQuickBook() {
-    if (!quickBookSlot || !quickBookForm.caller_name.trim()) return;
-    setQuickBookSaving(true);
+  async function handleTimeBlockDeleteGroup(id, groupId) {
+    // Find visible blocks in this group for optimistic removal
+    const groupBlocks = data.timeBlocks.filter((b) => b.group_id === groupId);
+    // Use group_count from API (covers blocks outside current view)
+    const totalCount = groupBlocks[0]?.group_count || groupBlocks.length;
+
+    // Optimistic remove all visible group blocks
+    setData((prev) => ({
+      ...prev,
+      timeBlocks: prev.timeBlocks.filter((b) => b.group_id !== groupId),
+    }));
+    setTimeBlockSheetOpen(false);
+    setSelectedTimeBlock(null);
+
     try {
-      const startTime = quickBookSlot.toISOString();
-      const endTime = new Date(quickBookSlot.getTime() + 60 * 60 * 1000).toISOString(); // 1 hour default
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          caller_name: quickBookForm.caller_name.trim(),
-          caller_phone: quickBookForm.caller_phone.trim() || null,
-          job_type: quickBookForm.job_type.trim() || null,
-          notes: quickBookForm.notes.trim() || null,
-          start_time: startTime,
-          end_time: endTime,
-          status: 'confirmed',
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to book');
-      const result = await res.json();
-      // Dedup against Realtime INSERT — the subscription may have already
-      // added this row if the websocket event landed before the HTTP response.
+      const res = await fetch(`/api/calendar-blocks/${id}?group=true`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      toast.success(`${totalCount} time block${totalCount !== 1 ? 's' : ''} deleted`);
+      fetchData();
+    } catch {
+      // Rollback visible blocks
       setData((prev) => ({
         ...prev,
-        appointments: prev.appointments.some((a) => a.id === result.appointment.id)
-          ? prev.appointments
-          : [...prev.appointments, result.appointment].sort(
-              (a, b) => new Date(a.start_time) - new Date(b.start_time)
-            ),
+        timeBlocks: [...prev.timeBlocks, ...groupBlocks],
       }));
-      setQuickBookOpen(false);
-      toast.success('Appointment booked');
-    } catch {
-      toast.error('Failed to book appointment');
-    } finally {
-      setQuickBookSaving(false);
+      toast.error("Couldn't delete time blocks. Try again.");
     }
+  }
+
+  async function handleQuickBook({ caller_name, caller_phone, job_type, notes, start_time, end_time, sync_to_calendar }) {
+    const res = await fetch('/api/appointments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        caller_name,
+        caller_phone,
+        job_type,
+        notes,
+        start_time,
+        end_time,
+        status: 'confirmed',
+        sync_to_calendar,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to book');
+    const result = await res.json();
+    setData((prev) => ({
+      ...prev,
+      appointments: prev.appointments.some((a) => a.id === result.appointment.id)
+        ? prev.appointments
+        : [...prev.appointments, result.appointment].sort(
+            (a, b) => new Date(a.start_time) - new Date(b.start_time)
+          ),
+    }));
+    setQuickBookOpen(false);
+    toast.success('Appointment booked');
   }
 
   function handleReviewConflicts() {
@@ -659,8 +679,8 @@ export default function CalendarPage() {
 
       {/* ── Calendar Card (full width) ───────────────────────────── */}
       <div className={`${card.base} p-0 overflow-hidden`}>
-        {/* Calendar toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-stone-200/60 bg-[#FAFAF9]">
+        {/* Calendar toolbar — row 1: navigation + view toggle */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-200/60 bg-[#FAFAF9]">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous">
               <ChevronLeft className="h-4 w-4" />
@@ -671,66 +691,108 @@ export default function CalendarPage() {
             <span className="text-base font-semibold text-[#0F172A] ml-1 tabular-nums">{dateLabel}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+            <button
+              type="button"
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+              onClick={() => setViewMode('month')}
+            >
+              Month
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+              onClick={() => setViewMode('day')}
+            >
+              Day
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar toolbar — row 2: actions */}
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-stone-100 bg-white">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={goToday}
               disabled={isToday}
+              className="h-8 text-xs md:text-sm"
             >
               Today
             </Button>
-
             <Button
               variant="outline"
               size="icon"
               onClick={handleRefresh}
               disabled={refreshing}
               aria-label="Refresh calendar"
-              className="h-8 w-8"
+              className="h-8 w-8 shrink-0"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
+          </div>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => { setSelectedTimeBlock(null); setTimeBlockSheetOpen(true); }}
-              aria-label="Add time block"
-              className="h-8 w-8 min-w-[44px] min-h-[44px] text-[#C2410C] border-[#C2410C]/30 hover:bg-[#C2410C]/5"
-              title="Add time block"
-            >
-              <Ban className="h-3.5 w-3.5" />
-            </Button>
-
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-1.5">
               <Switch
                 id="show-completed"
                 checked={showCompleted}
                 onCheckedChange={setShowCompleted}
                 aria-label="Show completed jobs on calendar"
               />
-              <Label htmlFor="show-completed" className="text-sm text-slate-600 whitespace-nowrap">
-                Show completed jobs
+              <Label htmlFor="show-completed" className="text-xs md:text-sm text-slate-500 whitespace-nowrap cursor-pointer hidden sm:inline">
+                Show completed
               </Label>
             </div>
 
-            <div className="flex rounded-lg border border-stone-200 overflow-hidden">
-              <button
-                type="button"
-                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                onClick={() => setViewMode('month')}
-              >
-                Month
-              </button>
-              <button
-                type="button"
-                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
-                onClick={() => setViewMode('day')}
-              >
-                Day
-              </button>
-            </div>
+            <Popover open={createPopoverOpen} onOpenChange={setCreatePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  aria-label="Create new event"
+                  className="h-8 px-2.5 md:px-3 bg-[#C2410C] hover:bg-[#9A3412] text-white rounded-lg"
+                >
+                  <Plus className="h-4 w-4 md:mr-1.5" />
+                  <span className="hidden md:inline text-sm font-medium">New</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={8} className="w-60 p-1.5">
+                <button
+                  type="button"
+                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-stone-50 active:bg-stone-100 text-left transition-colors"
+                  onClick={() => {
+                    setCreatePopoverOpen(false);
+                    setQuickBookSlot(null);
+                    setQuickBookOpen(true);
+                  }}
+                >
+                  <div className="size-9 rounded-lg bg-[#C2410C]/[0.08] flex items-center justify-center shrink-0">
+                    <UserPlus className="size-4 text-[#C2410C]" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#0F172A]">Book appointment</div>
+                    <div className="text-xs text-[#64748B] mt-0.5">Add a customer job</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-stone-50 active:bg-stone-100 text-left transition-colors"
+                  onClick={() => {
+                    setCreatePopoverOpen(false);
+                    setSelectedTimeBlock(null);
+                    setTimeBlockSheetOpen(true);
+                  }}
+                >
+                  <div className="size-9 rounded-lg bg-[#C2410C]/[0.08] flex items-center justify-center shrink-0">
+                    <CalendarPlus className="size-4 text-[#C2410C]" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-[#0F172A]">Block time</div>
+                    <div className="text-xs text-[#64748B] mt-0.5">Lunch, personal, vacation</div>
+                  </div>
+                </button>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -757,6 +819,7 @@ export default function CalendarPage() {
                 onDayClick={handleDayClick}
                 onEmptySlotClick={handleEmptySlotClick}
                 onTimeBlockClick={handleTimeBlockClick}
+                onExternalEventClick={(evt) => { setSelectedExternalEvent(evt); setExternalEventSheetOpen(true); }}
                 workingHoursData={workingHoursData}
                 isMobile={isMobile}
               />
@@ -774,6 +837,7 @@ export default function CalendarPage() {
               onDayClick={handleDayClick}
               onEmptySlotClick={handleEmptySlotClick}
               onTimeBlockClick={handleTimeBlockClick}
+              onExternalEventClick={(evt) => { setSelectedExternalEvent(evt); setExternalEventSheetOpen(true); }}
               workingHoursData={workingHoursData}
               isMobile={isMobile}
             />
@@ -949,73 +1013,26 @@ export default function CalendarPage() {
         selectedBlock={selectedTimeBlock}
         onSave={handleTimeBlockSave}
         onDelete={handleTimeBlockDelete}
+        onDeleteGroup={handleTimeBlockDeleteGroup}
+        isMobile={isMobile}
+      />
+
+      {/* External Event Sheet */}
+      <ExternalEventSheet
+        event={selectedExternalEvent}
+        open={externalEventSheetOpen}
+        onOpenChange={setExternalEventSheetOpen}
+        isMobile={isMobile}
       />
 
       {/* Quick-book Sheet */}
-      <Sheet open={quickBookOpen} onOpenChange={setQuickBookOpen}>
-        <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "max-h-[85vh] rounded-t-2xl" : "sm:max-w-md"}>
-          <SheetHeader>
-            <SheetTitle>Quick Book</SheetTitle>
-            {quickBookSlot && (
-              <p className="text-sm text-[#475569]">
-                {quickBookSlot.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at{' '}
-                {quickBookSlot.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-              </p>
-            )}
-          </SheetHeader>
-
-          <div className="px-6 py-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="qb-name">Customer Name *</Label>
-              <Input
-                id="qb-name"
-                value={quickBookForm.caller_name}
-                onChange={(e) => setQuickBookForm((f) => ({ ...f, caller_name: e.target.value }))}
-                placeholder="e.g. John Smith"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qb-phone">Phone</Label>
-              <Input
-                id="qb-phone"
-                type="tel"
-                value={quickBookForm.caller_phone}
-                onChange={(e) => setQuickBookForm((f) => ({ ...f, caller_phone: e.target.value }))}
-                placeholder="e.g. +1 555 123 4567"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qb-job">Job Type</Label>
-              <Input
-                id="qb-job"
-                value={quickBookForm.job_type}
-                onChange={(e) => setQuickBookForm((f) => ({ ...f, job_type: e.target.value }))}
-                placeholder="e.g. Plumbing repair"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qb-notes">Notes</Label>
-              <Input
-                id="qb-notes"
-                value={quickBookForm.notes}
-                onChange={(e) => setQuickBookForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Optional notes"
-              />
-            </div>
-          </div>
-
-          <SheetFooter className="px-6 pb-6">
-            <Button
-              onClick={handleQuickBook}
-              disabled={quickBookSaving || !quickBookForm.caller_name.trim()}
-              className="w-full bg-[#C2410C] hover:bg-[#9A3412] text-white"
-            >
-              {quickBookSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}
-              {quickBookSaving ? 'Booking...' : 'Book Appointment'}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <QuickBookSheet
+        open={quickBookOpen}
+        onOpenChange={setQuickBookOpen}
+        slotDate={quickBookSlot}
+        onSave={handleQuickBook}
+        isMobile={isMobile}
+      />
 
       {/* Working Hours Editor Sheet */}
       <Sheet open={whSheetOpen} onOpenChange={(open) => {

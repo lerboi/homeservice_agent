@@ -195,95 +195,77 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           <SheetDescription>{appointment.notes || 'Appointment details'}</SheetDescription>
         </SheetHeader>
 
-        <div className="px-6 space-y-6">
-          {/* Appointment Details */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Details</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
-                <Clock className="h-4 w-4 text-stone-400" />
-                <span>{formatDateTime(appointment.start_time)}</span>
-                <span className="text-stone-400">({formatDuration(appointment.start_time, appointment.end_time)})</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
-                <MapPin className="h-4 w-4 text-stone-400" />
-                <span>{appointment.street_name && appointment.postal_code
-                  ? `${appointment.street_name}, ${appointment.postal_code}`
-                  : appointment.service_address || 'No address'}</span>
-              </div>
-              {appointment.booked_via && (
-                <div className="text-xs text-stone-400">
-                  Booked via {appointment.booked_via}
-                </div>
-              )}
-              {/* Completed on display */}
-              {appointment.status === 'completed' && appointment.completed_at && (
-                <div className="flex items-center gap-2 text-sm text-green-700">
-                  <Check className="h-4 w-4" />
-                  <span>Completed on {formatDateTime(appointment.completed_at)}</span>
-                </div>
-              )}
+        <div className="px-6 space-y-4">
+          {/* Details card */}
+          <div className="rounded-lg border border-stone-200/60 bg-[#FAFAF9] p-3 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm text-[#0F172A]">
+              <Clock className="h-4 w-4 text-stone-400 shrink-0" />
+              <span className="font-medium">{formatDateTime(appointment.start_time)}</span>
+              <span className="text-stone-400 text-xs">({formatDuration(appointment.start_time, appointment.end_time)})</span>
             </div>
-          </div>
-
-          {/* Caller */}
-          {appointment.caller_phone && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Caller</h3>
+            <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+              <MapPin className="h-4 w-4 text-stone-400 shrink-0" />
+              <span>{appointment.street_name && appointment.postal_code
+                ? `${appointment.street_name}, ${appointment.postal_code}`
+                : appointment.service_address || 'No address'}</span>
+            </div>
+            {appointment.caller_phone && (
               <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
-                <Phone className="h-4 w-4 text-stone-400" />
+                <Phone className="h-4 w-4 text-stone-400 shrink-0" />
                 <span>{appointment.caller_phone}</span>
               </div>
-              {call?.created_at && (
-                <div className="text-xs text-stone-400">
-                  Called {formatRelativeTime(call.created_at)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Links */}
-          {call && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Links</h3>
-              <div className="flex flex-col gap-2">
-                {recordingSrc && (
-                  <a
-                    href={recordingSrc}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412]"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Listen to Recording
-                  </a>
-                )}
-                {call.transcript_text && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowTranscript(!showTranscript)}
-                      className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left"
-                    >
-                      <FileText className="h-4 w-4" />
-                      {showTranscript ? 'Hide Transcript' : 'View Transcript'}
-                    </button>
-                    {showTranscript && (
-                      <div className="mt-2 p-3 bg-zinc-800/50 rounded-lg text-sm text-zinc-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
-                        {call.transcript_text}
-                      </div>
-                    )}
-                  </>
-                )}
+            )}
+            {appointment.booked_via && (
+              <div className="text-xs text-stone-400 ml-6">
+                Booked via {appointment.booked_via}{call?.created_at ? ` · Called ${formatRelativeTime(call.created_at)}` : ''}
               </div>
+            )}
+            {appointment.status === 'completed' && appointment.completed_at && (
+              <div className="flex items-center gap-2 text-sm text-emerald-700 pt-1 border-t border-stone-200/60">
+                <Check className="h-4 w-4 shrink-0" />
+                <span>Completed on {formatDateTime(appointment.completed_at)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Call recording + transcript */}
+          {call && (recordingSrc || call.transcript_text) && (
+            <div className="rounded-lg border border-stone-200/60 p-3 space-y-2">
+              {recordingSrc && (
+                <a
+                  href={recordingSrc}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] font-medium"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Listen to Recording
+                </a>
+              )}
+              {call.transcript_text && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowTranscript(!showTranscript)}
+                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left font-medium"
+                  >
+                    <FileText className="h-4 w-4" />
+                    {showTranscript ? 'Hide Transcript' : 'View Transcript'}
+                  </button>
+                  {showTranscript && (
+                    <div className="mt-1 p-3 bg-stone-900 rounded-lg text-sm text-stone-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                      {call.transcript_text}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
           {/* Notes */}
           {appointment.notes && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-[#475569] uppercase tracking-wider">Notes</h3>
-              <p className="text-sm text-[#0F172A]/80">{appointment.notes}</p>
+            <div className="rounded-lg border border-stone-200/60 p-3">
+              <p className="text-sm text-[#0F172A]/80 leading-relaxed">{appointment.notes}</p>
             </div>
           )}
 
@@ -321,14 +303,24 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 onChange={(e) => setCompletionNotes(e.target.value)}
                 className="min-h-[80px]"
               />
-              <Button
-                onClick={handleConfirmComplete}
-                disabled={isCompleting}
-                className="w-full bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
-              >
-                {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Confirm Complete
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => { setCompletionNotes(''); handleConfirmComplete(); }}
+                  disabled={isCompleting}
+                  className="flex-1 h-11 text-sm"
+                >
+                  Skip & Complete
+                </Button>
+                <Button
+                  onClick={handleConfirmComplete}
+                  disabled={isCompleting}
+                  className="flex-1 h-11 text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                  Save & Complete
+                </Button>
+              </div>
             </div>
           )}
 
@@ -336,10 +328,54 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {appointment.status === 'confirmed' && !showCompletionNotes && (
             <Button
               onClick={() => setShowCompletionNotes(true)}
-              className="w-full bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
             >
+              <Check className="h-4 w-4 mr-2" />
               Mark Complete
             </Button>
+          )}
+
+          {/* Undo Completion — shown for completed appointments */}
+          {appointment.status === 'completed' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full h-11">
+                  Undo Completion
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Revert to confirmed?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will mark the appointment with {appointment.caller_name} as confirmed again.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Completed</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      const appointmentId = appointment.id;
+                      try {
+                        const res = await fetch(`/api/appointments/${appointmentId}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'confirmed' }),
+                        });
+                        if (!res.ok) throw new Error('Failed');
+                        onOpenChange(false);
+                        onStatusChange?.(appointmentId, 'confirmed');
+                        toast.success('Appointment restored to confirmed');
+                      } catch {
+                        toast.error("Couldn't undo completion. Try again.");
+                      }
+                    }}
+                    className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
+                  >
+                    Yes, Revert
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {/* Cancel Appointment — hidden for already completed appointments */}

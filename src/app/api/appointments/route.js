@@ -1,3 +1,4 @@
+import { after } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
 
@@ -129,14 +130,25 @@ export async function GET(request) {
     return Response.json({ error: apptError.message }, { status: 500 });
   }
 
-  // Voice-agent bookings get pushed to Google/Outlook, then the webhook mirrors
-  // them back into calendar_events. Collect the pushed event IDs so we can filter
-  // the mirrors out of the externalEvents response and prevent double-rendering.
+  // Voice-agent bookings and time blocks get pushed to Google/Outlook, then the
+  // webhook mirrors them back into calendar_events. Collect the pushed event IDs
+  // so we can filter the mirrors out and prevent double-rendering.
   const mirroredExternalIds = new Set(
     (appointments || [])
       .map((a) => a.external_event_id)
       .filter(Boolean)
   );
+
+  // Also collect external_event_ids from calendar_blocks to filter those mirrors too
+  const { data: blockExternalIds } = await supabase
+    .from('calendar_blocks')
+    .select('external_event_id')
+    .eq('tenant_id', tenantId)
+    .not('external_event_id', 'is', null);
+
+  for (const row of (blockExternalIds || [])) {
+    if (row.external_event_id) mirroredExternalIds.add(row.external_event_id);
+  }
 
   // Fetch calendar_events that overlap the date range (handles multi-day and all-day events)
   const { data: calendarEvents, error: eventsError } = await supabase
@@ -187,7 +199,7 @@ export async function POST(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { caller_name, caller_phone, start_time, end_time, notes, status } = await request.json();
+  const { caller_name, caller_phone, start_time, end_time, notes, status, job_type, sync_to_calendar } = await request.json();
 
   if (!caller_name || !start_time) {
     return Response.json({ error: 'caller_name and start_time are required' }, { status: 400 });
@@ -222,6 +234,64 @@ export async function POST(request) {
     .select('*')
     .eq('id', result.appointment_id)
     .single();
+
+  // Async: push to connected calendar if requested (default true)
+  if (sync_to_calendar !== false && data) {
+    after(async () => {
+      try {
+        const { data: creds } = await supabase
+          .from('calendar_credentials')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('is_primary', true)
+          .single();
+
+        if (!creds) return;
+
+        let eventId;
+        if (creds.provider === 'google') {
+          const { createCalendarEvent } = await import('@/lib/scheduling/google-calendar.js');
+          eventId = await createCalendarEvent({
+            credentials: creds,
+            appointment: {
+              id: data.id,
+              tenant_id: tenantId,
+              start_time: data.start_time,
+              end_time: data.end_time,
+              job_type: job_type || 'Service',
+              caller_name: data.caller_name,
+              service_address: data.service_address || '',
+              urgency: data.urgency || 'routine',
+            },
+          });
+        } else if (creds.provider === 'outlook') {
+          const { createOutlookCalendarEvent } = await import('@/lib/scheduling/outlook-calendar.js');
+          eventId = await createOutlookCalendarEvent({
+            credentials: creds,
+            appointment: {
+              id: data.id,
+              tenant_id: tenantId,
+              start_time: data.start_time,
+              end_time: data.end_time,
+              job_type: job_type || 'Service',
+              caller_name: data.caller_name,
+              service_address: data.service_address || '',
+              urgency: data.urgency || 'routine',
+            },
+          });
+        }
+
+        if (eventId) {
+          await supabase
+            .from('appointments')
+            .update({ external_event_id: eventId })
+            .eq('id', data.id);
+        }
+      } catch (err) {
+        console.error('[appointments] Calendar sync failed:', err.message);
+      }
+    });
+  }
 
   return Response.json({ appointment: data });
 }
