@@ -82,7 +82,7 @@
 
 ### Call Routing Dashboard and Launch (Phase 41)
 
-- [ ] **ROUTE-13**: Dashboard page at `/dashboard/more/call-routing` with schedule editor (Mon-Sun day list, per-day enable toggle, start/end time pickers using native HTML time inputs), master ON/OFF toggle mapping to `call_forwarding_schedule.enabled`, "Copy from working hours" button that transforms `tenants.working_hours` (full day name keys) to routing schedule (3-letter keys), and dial timeout slider (10-30s, default 15s) using shadcn Slider component
+- [x] **ROUTE-13**: Dashboard page at `/dashboard/more/call-routing` with schedule editor (Mon-Sun day list, per-day enable toggle, start/end time pickers using native HTML time inputs), master ON/OFF toggle mapping to `call_forwarding_schedule.enabled`, "Copy from working hours" button that transforms `tenants.working_hours` (full day name keys) to routing schedule (3-letter keys), and dial timeout slider (10-30s, default 15s) using shadcn Slider component
 - [x] **ROUTE-14**: `GET /api/call-routing` returns `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds`, current month outbound minutes usage (`SUM(outbound_dial_duration_sec)` from calls table with null-safe coercion), and `working_hours` for copy feature; `PUT /api/call-routing` validates E.164 phone numbers, no duplicates, no self-reference to tenant Twilio number, max 5 entries, valid HH:MM time ranges (start != end), dial_timeout 10-30, and cross-field guard (enabled schedule + zero pickup numbers = 400)
 - [x] **ROUTE-15**: Usage meter section showing "X of Y outbound minutes used this month" with horizontal progress bar, color thresholds (green <70%, amber 70-90%, red >90%), cap value displayed (US/CA 5000 min, SG 2500 min based on `tenants.country`), and "Resets on the 1st of each month" footnote
 - [x] **ROUTE-16**: Routing mode badges on calls page: `ROUTING_STYLE` map with `ai` (stone "AI"), `owner_pickup` (blue "You answered"), `fallback_to_ai` (amber "Missed -> AI"); `routing_mode` and `outbound_dial_duration_sec` added to calls API select query; null routing_mode renders no badge
@@ -430,7 +430,7 @@ n| DEMO-01 | Phase 29 | Complete |
 | ROUTE-04 | Phase 39 | Complete |
 | ROUTE-05 | Phase 39 | Complete |
 | ROUTE-06 | Phase 39 | Complete |
-| ROUTE-13 | Phase 41 | Pending |
+| ROUTE-13 | Phase 41 | Complete |
 | ROUTE-14 | Phase 41 | Complete |
 | ROUTE-15 | Phase 41 | Complete |
 | ROUTE-16 | Phase 41 | Complete |
