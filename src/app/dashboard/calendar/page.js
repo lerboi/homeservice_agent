@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import CalendarView from '@/components/dashboard/CalendarView';
 import AppointmentFlyout from '@/components/dashboard/AppointmentFlyout';
@@ -142,6 +143,19 @@ export default function CalendarPage() {
 
   // Working hours editor sheet
   const [whSheetOpen, setWhSheetOpen] = useState(false);
+
+  // Show completed toggle — persists in localStorage
+  const [showCompleted, setShowCompleted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('voco_calendar_show_completed');
+      return stored !== null ? stored === 'true' : true; // default ON
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('voco_calendar_show_completed', String(showCompleted));
+  }, [showCompleted]);
 
   // Fetch working hours once on mount (stable config, rarely changes)
   function fetchWorkingHours() {
@@ -401,6 +415,11 @@ export default function CalendarPage() {
     }));
   }
 
+  function handleStatusChange(id, newStatus) {
+    // Refetch to get fresh appointment states (completed_at, etc.)
+    fetchData();
+  }
+
   function handleEmptySlotClick(slotDate) {
     setQuickBookSlot(slotDate);
     setQuickBookForm({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
@@ -572,6 +591,11 @@ export default function CalendarPage() {
     ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : formatDayLabel(currentDate);
 
+  // Filter completed appointments client-side for the calendar view
+  const filteredAppointments = showCompleted
+    ? data.appointments
+    : data.appointments.filter((a) => a.status !== 'completed');
+
   // Today's agenda — all appointments for today, sorted by time
   const todayAppts = data.appointments
     .filter((a) => isSameDay(new Date(a.start_time), new Date()))
@@ -679,6 +703,18 @@ export default function CalendarPage() {
               <Ban className="h-3.5 w-3.5" />
             </Button>
 
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-completed"
+                checked={showCompleted}
+                onCheckedChange={setShowCompleted}
+                aria-label="Show completed jobs on calendar"
+              />
+              <Label htmlFor="show-completed" className="text-sm text-slate-600 whitespace-nowrap">
+                Show completed jobs
+              </Label>
+            </div>
+
             <div className="flex rounded-lg border border-stone-200 overflow-hidden">
               <button
                 type="button"
@@ -710,7 +746,7 @@ export default function CalendarPage() {
               style={{ touchAction: 'pan-y' }}
             >
               <CalendarView
-                appointments={data.appointments}
+                appointments={filteredAppointments}
                 externalEvents={data.externalEvents}
                 travelBuffers={data.travelBuffers}
                 timeBlocks={data.timeBlocks}
@@ -727,7 +763,7 @@ export default function CalendarPage() {
             </motion.div>
           ) : (
             <CalendarView
-              appointments={data.appointments}
+              appointments={filteredAppointments}
               externalEvents={data.externalEvents}
               travelBuffers={data.travelBuffers}
               timeBlocks={data.timeBlocks}
@@ -903,6 +939,7 @@ export default function CalendarPage() {
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         onCancelled={handleCancelled}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Time Block Sheet */}
