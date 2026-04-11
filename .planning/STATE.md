@@ -187,6 +187,7 @@ Recent decisions affecting current work:
 - Phase 43 added: Recurring Appointments — Maintenance Contracts — weekly/monthly/quarterly recurring appointments with fixed end date, materialized by a daily cron job. Covers HVAC tune-ups, pest control, lawn care recurring revenue segment. Scoped to three common frequencies only, no rrule exception dates. UI surface (flyout vs new Contracts surface) is a discuss-phase decision. Depends on Phase 42 for time-block awareness in the spawner (2026-04-10)
 - Phase 44 added: AI Voice Selection — voice picker UI with 6 curated Gemini voices (Aoede, Erinome, Sulafat, Zephyr, Achird, Charon), pre-recorded audio previews, tenant DB persistence, agent voice override. Independent of phases 40-43 (2026-04-11)
 - Phase 45 added: In-Browser Voice Test — direct Gemini Live API WebSocket voice test in AI & Voice Settings dashboard, sandbox mode (no real bookings/leads/notifications), same system prompt and personality as real calls. Depends on Phase 44 for voice selection (2026-04-11)
+- Phase 46 added: VIP Caller Direct Routing — owner selects specific phone numbers or leads whose calls bypass AI and route directly to owner's phone regardless of schedule. Depends on Phase 41 pickup_numbers infrastructure (2026-04-12)
 
 ### Pending Todos
 

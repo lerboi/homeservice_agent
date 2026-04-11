@@ -554,6 +554,16 @@ Plans:
 Plans:
 - [ ] TBD (run /gsd:plan-phase 45 to break down)
 
+### Phase 46: VIP Caller Direct Routing
+
+**Goal:** Owner selects specific phone numbers or leads whose calls bypass AI and route directly to the owner's phone, regardless of schedule. Covers webhook routing logic (livekit-agent), tenant settings API, and dashboard UI.
+**Requirements**: TBD
+**Depends on:** Phase 41
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 46 to break down)
+
 ---
 
 ## Milestone v2.0 Phases
