@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: "44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval"
-last_updated: "2026-04-10T20:40:15.295Z"
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-04-11T08:27:20.249Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 44 (ai-voice-selection) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -113,6 +113,8 @@ Recent decisions affecting current work:
 - [Phase 44]: Voice resolution is 3-tier: tenant.ai_voice -> VOICE_MAP[tone_preset] -> Kore default (Phase 44)
 - [Phase 44]: Single audioRef pattern for audio mutual exclusion in VoicePickerSection — pause current before starting new, no per-card audio state needed
 - [Phase 44]: initialVoice synced to selectedVoice via useEffect (not useState initializer) so component updates when async page data loads after mount
+- [Phase 42]: Migration renumbered 046 (044/045 were already taken by Phase 44 and SMS schema)
+- [Phase 42]: calendar_blocks merged into externalBlocks for slot calculator — no separate blocking logic needed
 
 ### Roadmap Evolution
 
@@ -188,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T20:40:04.828Z
-Stopped at: 44-02 checkpoint:human-verify — Task 1 complete, awaiting visual approval
+Last session: 2026-04-11T08:27:20.241Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None

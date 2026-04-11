@@ -510,7 +510,7 @@ Plans:
 **Goal:** Add personal time blocks (lunch, vacation, errands) that render on the dashboard calendar and that the voice agent's check_availability tool respects as unavailable, plus a "mark complete" transition on appointments with a muted visual state for completed jobs. Cross-repo phase: changes both the Next.js main repo (new calendar_blocks table + UI) and the LiveKit Python agent repo (check_availability.py + slot_calculator.py). Intentionally scoped small — no drag/resize, no realtime, no technician assignment, no shared-drawer refactor.
 **Depends on:** Phase 41 (call routing dashboard and launch)
 **Requirements**: CAL-01, CAL-02, CAL-03, CAL-04, CAL-05, CAL-06, CAL-07, CAL-08, CAL-09, CAL-10, CAL-11
-**Plans:** 5 plans
+**Plans:** 0/5 plans executed
 
 Plans:
 - [ ] 42-01-PLAN.md — DB migration (calendar_blocks table + completed_at) + CRUD API + mark-complete PATCH + available-slots integration
