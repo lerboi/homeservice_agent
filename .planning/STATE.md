@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 40-03-PLAN.md
-last_updated: "2026-04-10T21:16:01.301Z"
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-04-11T08:27:20.249Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -115,6 +115,8 @@ Recent decisions affecting current work:
 - [Phase 44]: initialVoice synced to selectedVoice via useEffect (not useState initializer) so component updates when async page data loads after mount
 - [Phase 40]: SIP trunk preserved as rollback safety net on all Twilio numbers (D-21)
 - [Phase 40]: RAILWAY_WEBHOOK_URL env var drives webhook URL construction in provisioning and cutover
+- [Phase 42]: Migration renumbered 046 (044/045 were already taken by Phase 44 and SMS schema)
+- [Phase 42]: calendar_blocks merged into externalBlocks for slot calculator — no separate blocking logic needed
 
 ### Roadmap Evolution
 
@@ -190,6 +192,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T21:16:01.293Z
-Stopped at: Completed 40-03-PLAN.md
+Last session: 2026-04-11T08:27:20.241Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None

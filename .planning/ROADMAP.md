@@ -513,7 +513,7 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 42-01-PLAN.md — DB migration (calendar_blocks table + completed_at) + CRUD API + mark-complete PATCH + available-slots integration
+- [x] 42-01-PLAN.md — DB migration (calendar_blocks table + completed_at) + CRUD API + mark-complete PATCH + available-slots integration
 - [ ] 42-02-PLAN.md — Time block UI (TimeBlockSheet, TimeBlockEvent rendering, calendar page state)
 - [ ] 42-03-PLAN.md — Mark complete UI (AppointmentFlyout, completed visual state, show-completed toggle)
 - [ ] 42-04-PLAN.md — Slot calculator integration (Python voice agent + JS test)
