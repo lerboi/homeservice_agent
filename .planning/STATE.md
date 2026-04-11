@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-04-11T08:34:53.997Z"
+stopped_at: Completed 42-03-PLAN.md
+last_updated: "2026-04-11T08:36:15.687Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 42 (calendar-essentials-time-blocks-and-mark-complete) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 
 ## Accumulated Context
 
@@ -120,6 +120,8 @@ Recent decisions affecting current work:
 - [Phase 42]: Two chained .neq() calls used in Python agent to exclude cancelled and completed appointments — more explicit than .not_(in) per RESEARCH.md
 - [Phase 42]: calendar_blocks merged into external_blocks via (events_result.data or []) + (blocks_result.data or []) — same shape as calendar_events, no separate blocking logic needed
 - [Phase 42]: TimeBlockEvent uses DEFAULT_START (7) for top calc matching spec D-04; Ban icon chosen for Add time block toolbar button
+- [Phase 42]: Textarea component created manually (shadcn pattern) — npx shadcn add requires interactive terminal
+- [Phase 42]: handleStatusChange calls fetchData() for full refetch after mark-complete/undo — ensures completed_at is fresh from DB
 
 ### Roadmap Evolution
 
@@ -195,6 +197,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T08:34:53.990Z
-Stopped at: Completed 42-02-PLAN.md
+Last session: 2026-04-11T08:36:15.679Z
+Stopped at: Completed 42-03-PLAN.md
 Resume file: None
