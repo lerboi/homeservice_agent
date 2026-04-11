@@ -52,7 +52,7 @@ Existing codebase patterns from `src/app/dashboard/more/working-hours/page.js` a
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (text-sm) | 400 regular | 1.5 |
-| Label | 12px (text-xs) | 500 medium | 1.4 |
+| Label | 12px (text-xs) | 400 regular | 1.4 |
 | Heading (page/section) | 20px (text-xl) | 600 semibold | 1.2 |
 | Sub-heading (card section) | 14px (text-sm) | 600 semibold | 1.4 |
 
@@ -232,8 +232,10 @@ Source: CONTEXT.md D-11, D-13, success criteria #7.
 | Setup checklist step description | "Set hours to forward calls to your phone." |
 | Page heading | "Call Routing" |
 | Page description | "Route calls to yourself during business hours. AI answers when you're unavailable." |
+| Edit pickup number icon aria-label | "Edit pickup number" |
+| Remove pickup number icon aria-label | "Remove pickup number" |
 
-Destructive actions in this phase: Delete pickup number (icon button) — no confirmation dialog (action is low-risk, instantly undoable by re-adding). No other destructive actions.
+Destructive actions in this phase: Delete pickup number (icon button) — no confirmation dialog (action is low-risk, instantly undoable by re-adding). No other destructive actions. Icon-only buttons MUST include aria-label for accessibility (see copywriting entries above).
 
 Source: CONTEXT.md D-08 through D-21, REQUIREMENTS.md success criteria.
 
