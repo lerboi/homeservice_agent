@@ -494,7 +494,7 @@ Plans:
   1. A new dashboard page at `/dashboard/more/call-routing` lets tenants configure the feature with per-day schedule editing (one range per day), dial timeout slider (10-30s, default 15s), pickup number management (add/remove up to 5, edit label, toggle `sms_forward` per entry)
   2. `GET /api/call-routing` and `PUT /api/call-routing` API routes serve the schedule + pickup_numbers + dial_timeout state and validate updates (E.164 phone numbers, no duplicates, no self-reference to the Twilio number, 5-entry max, valid time ranges)
   3. The page shows a usage meter — "X of Y outbound minutes used this month" — based on `sum(outbound_dial_duration_sec)` for the current calendar month
-  4. The existing dashboard calls page (`/dashboard/calls`) shows a routing mode badge on each call row: "AI", "You picked up", "You missed (fell back to AI)" — based on the `routing_mode` column
+  4. The existing dashboard calls page (`/dashboard/calls`) shows a routing mode badge on each call row: "AI", "You answered", "Missed → AI" — based on the `routing_mode` column
   5. Owner-pickup calls appear in the dashboard calls page (not hidden) with duration and any metadata available, even though they don't have transcripts or recordings
   6. Onboarding: the setup checklist includes an optional "Configure call routing" step that links to the new page; users can skip it and configure later
   7. Validation: submitting zero pickup numbers while the schedule is enabled shows a blocking warning "Add at least one pickup number to route calls to you"

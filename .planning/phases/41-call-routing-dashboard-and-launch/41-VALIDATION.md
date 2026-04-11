@@ -2,7 +2,7 @@
 phase: 41
 slug: call-routing-dashboard-and-launch
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-11
 ---
@@ -38,14 +38,14 @@ created: 2026-04-11
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 41-01-01 | 01 | 0 | ROUTE-14 | unit | `npx jest tests/api/call-routing.test.js -t "GET"` | ❌ W0 | ⬜ pending |
-| 41-01-02 | 01 | 0 | ROUTE-14 | unit | `npx jest tests/api/call-routing.test.js -t "PUT"` | ❌ W0 | ⬜ pending |
-| 41-01-03 | 01 | 0 | ROUTE-14 | unit | `npx jest tests/api/call-routing.test.js -t "zero pickup"` | ❌ W0 | ⬜ pending |
-| 41-01-04 | 01 | 0 | ROUTE-15 | unit | `npx jest tests/api/call-routing.test.js -t "usage"` | ❌ W0 | ⬜ pending |
-| 41-02-01 | 02 | 1 | ROUTE-16 | unit | `npx jest tests/unit/routing-style.test.js` | ❌ W0 | ⬜ pending |
-| 41-02-02 | 02 | 1 | ROUTE-17 | unit | `npx jest tests/api/calls-routing.test.js` | ❌ W0 | ⬜ pending |
-| 41-03-01 | 03 | 1 | ROUTE-18 | unit | `npx jest tests/agent/setup-checklist.test.js -t "call routing"` | ✅ | ⬜ pending |
-| 41-04-01 | 04 | 1 | ROUTE-13 | manual | — | N/A | ⬜ pending |
+| 41-01-01 | 01 | 0 | ROUTE-14, ROUTE-15, ROUTE-17 | stub | structural check (file existence + pattern match) | Created in this task (W0) | ⬜ pending |
+| 41-01-02 | 01 | 1 | ROUTE-14 | unit | `npx jest tests/api/call-routing.test.js --no-coverage` | ✅ (from 41-01-01) | ⬜ pending |
+| 41-01-03 | 01 | 1 | ROUTE-15 | structural | `npx jest tests/api/calls-routing.test.js --no-coverage` | ✅ (from 41-01-01) | ⬜ pending |
+| 41-02-01 | 02 | 1 | ROUTE-13 | structural | pattern match on page.js | N/A | ⬜ pending |
+| 41-03-01 | 03 | 2 | ROUTE-16 | unit | `npx jest tests/unit/routing-style.test.js --no-coverage` | Created in 41-03-03 | ⬜ pending |
+| 41-03-02 | 03 | 2 | ROUTE-17, ROUTE-18 | structural | pattern match on 3 files | N/A | ⬜ pending |
+| 41-03-03 | 03 | 2 | ROUTE-16 | unit | `npx jest tests/unit/routing-style.test.js --no-coverage` | Created in this task | ⬜ pending |
+| 41-04-01 | 04 | 3 | ROUTE-13 | manual | — | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -53,11 +53,13 @@ created: 2026-04-11
 
 ## Wave 0 Requirements
 
-- [ ] `tests/api/call-routing.test.js` — stubs for ROUTE-14 (GET + PUT validation) and ROUTE-15 (usage null guard)
-- [ ] `tests/unit/routing-style.test.js` — trivial map coverage for ROUTE-16
-- [ ] `tests/api/calls-routing.test.js` — verifies calls API does not filter owner-pickup calls
-- [ ] Slider component install: `npx shadcn add slider` — required before implementation
-- [ ] Add `call routing` test case to existing `tests/agent/setup-checklist.test.js` — covers ROUTE-18
+All Wave 0 test stubs are created in **Plan 01, Task 1** (first task executed):
+
+- [x] `tests/api/call-routing.test.js` — stubs for ROUTE-14 (GET + PUT validation) and ROUTE-15 (usage null guard) — **Plan 01 Task 1**
+- [x] `tests/api/calls-routing.test.js` — verifies calls API includes routing columns and does not filter owner-pickup calls (ROUTE-17) — **Plan 01 Task 1**
+- [ ] `tests/unit/routing-style.test.js` — trivial map coverage for ROUTE-16 — **Plan 03 Task 3** (Wave 2, after calls page is modified)
+- [ ] Slider component install: `npx shadcn add slider` — required before implementation — **Plan 02 Task 0**
+- [ ] Add `call routing` test case to existing `tests/agent/setup-checklist.test.js` — covers ROUTE-18 — **Plan 03 Task 2** (integrated into setup checklist changes)
 
 ---
 
@@ -73,11 +75,11 @@ created: 2026-04-11
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references — test stubs created in Plan 01 Task 1 BEFORE implementation
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
