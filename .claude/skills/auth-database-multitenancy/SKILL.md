@@ -109,6 +109,10 @@ Realtime subscriptions (browser):
 | `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
 | `supabase/migrations/042_call_routing_schema.sql` | Phase 39 — call routing schema: tenants gains call_forwarding_schedule JSONB (schedule evaluator input), pickup_numbers JSONB (CHECK len ≤ 5), dial_timeout_seconds INTEGER; calls gains routing_mode TEXT (nullable, CHECK IN ('ai','owner_pickup','fallback_to_ai')) + outbound_dial_duration_sec INTEGER; idx_calls_tenant_month index supports monthly outbound cap SUM query |
 | `supabase/migrations/044_ai_voice_column.sql` | Phase 44 — Add ai_voice TEXT column to tenants with CHECK constraint (Phase 44: AI Voice Selection). NULL = fallback to tone-based VOICE_MAP. |
+| `supabase/migrations/045_sms_messages_and_call_sid.sql` | Phase 40 — sms_messages table + call_sid on calls |
+| `supabase/migrations/046_calendar_blocks_and_completed_at.sql` | Phase 42 — calendar_blocks table (id, tenant_id, title, start_time, end_time, is_all_day, note, created_at) with 4 RLS tenant policies + index; appointments gains completed_at timestamptz |
+| `supabase/migrations/047_calendar_blocks_external_event.sql` | Phase 42 — calendar_blocks gains external_event_id TEXT for Google/Outlook sync |
+| `supabase/migrations/048_calendar_blocks_group_id.sql` | Phase 42 — calendar_blocks gains group_id UUID to link multi-day blocks for bulk delete; partial index on group_id WHERE NOT NULL |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -870,6 +874,7 @@ No new tables. No RLS changes (existing tenants RLS covers new column).
 | `zone_travel_buffers` | 003 | Travel time between zone pairs | Tenant child |
 | `calendar_credentials` | 003 | Google + Outlook OAuth tokens and sync state | Tenant child |
 | `calendar_events` | 003 | Local mirror of Google/Outlook events | Tenant child |
+| `calendar_blocks` | 046 | Personal time blocks (lunch, vacation, errands). Columns: id, tenant_id, title, start_time, end_time, is_all_day, note, external_event_id (047), group_id (048), created_at. 4 RLS policies. Syncs to Google/Outlook. Multi-day blocks share a group_id for bulk delete. | Tenant child |
 | `leads` | 004 | CRM records with Realtime enabled | Tenant child |
 | `lead_calls` | 004 | Junction: many calls → one lead | Via leads.tenant_id |
 | `activity_log` | 004 | Dashboard event feed | Tenant child |

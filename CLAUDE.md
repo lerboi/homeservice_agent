@@ -38,7 +38,7 @@ Each skill below is a complete architectural reference for one part of the codeb
 
 ### Where to Find Database Tables
 
-All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The 24 migrations are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `leads`, `lead_calls`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
+All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The 48 migrations are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `leads`, `lead_calls`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `calendar_blocks`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
 
 ## Rules
 

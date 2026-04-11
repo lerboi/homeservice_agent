@@ -572,7 +572,23 @@ Fetches all leads via `GET /api/leads`, passes to `AnalyticsCharts`. Shows `Empt
 
 ### Calendar (`src/app/dashboard/calendar/page.js`)
 
-Client component. Week/day view toggle (mobile always forces day view). Fetches from `GET /api/appointments?start=...&end=...&view=...`. Shows `ConflictAlertBanner` for detected conflicts. Today's agenda sidebar shows appointments for current date. `AppointmentFlyout` opens on appointment click. Has `card.base` wrapper and `data-tour="calendar-page"`.
+Client component. Month/day view toggle (mobile always forces day view). Two-row toolbar: Row 1 = navigation + view toggle, Row 2 = Today/Refresh + Show completed toggle + unified "+ New" popover.
+
+**"+ New" popover**: Single orange button opens a Popover with two options: "Book appointment" (opens `QuickBookSheet`) and "Block time" (opens `TimeBlockSheet`).
+
+**Data fetching**: Parallel `Promise.all` fetching `GET /api/appointments` and `GET /api/calendar-blocks`. Time blocks stored in `data.timeBlocks`.
+
+**Components orchestrated**:
+- `CalendarView` — month grid + day/week hourly grid. Day view uses 48px hour rows (vs 64px week). Grid range adapts to working hours ±1hr padding.
+- `AppointmentFlyout` — appointment details. Mark complete (emerald, two-step + "Skip & Complete"). Undo completion with confirmation. All destructive actions have AlertDialog.
+- `TimeBlockSheet` — create/edit time blocks. Quick presets (Lunch/Personal/Errand/Vacation). Multi-day with group_id. "Sync to calendar" toggle. Group delete ("Delete all N days" via server-side group_count).
+- `QuickBookSheet` — booking form. Two modes: slot-click (time pre-filled) and toolbar (editable date/time). "Sync to calendar" toggle.
+- `ExternalEventSheet` — view Google/Outlook events. "Open in {provider}" button links to event date.
+- `ConflictAlertBanner`, `CalendarSyncCard`, `WorkingHoursEditor`
+
+**Show completed toggle**: localStorage-persisted, hydration-safe. Filters appointments client-side. Month view shows completed jobs with emerald background + checkmark + strikethrough.
+
+**CalendarView visual hierarchy**: Blue appointments (z-10) > Violet external events (z-5) > Amber time blocks (z-1) > Stone off-hours shading. All-day blocks/events in dedicated row above hourly grid.
 
 ### Estimates (`src/app/dashboard/estimates/page.js`)
 

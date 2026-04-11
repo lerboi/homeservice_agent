@@ -388,6 +388,24 @@ For each notification:
 
 Travel buffers are computed in-memory via `computeTravelBuffers()` (groups appointments by day, checks adjacent pairs for zone differences, creates buffer blocks). Conflicts are detected by `detectConflicts()` (iterates all confirmed appointments × all calendar events, applies interval overlap test).
 
+**Mirrored event dedup**: The GET response filters out `calendar_events` whose `external_id` matches any `appointments.external_event_id` OR any `calendar_blocks.external_event_id`. This prevents double-rendering when Voco pushes a booking/block to Google/Outlook and the webhook syncs the mirror back into `calendar_events`.
+
+### Calendar Blocks API
+
+**`GET /api/calendar-blocks`** — Returns blocks in date range with `group_count` (server-side count of blocks sharing the same `group_id`, enabling "Delete all N days" even when viewing a single day).
+
+**`POST /api/calendar-blocks`** — Creates a block. If `sync_to_calendar !== false`, synchronously pushes to primary connected calendar (Google or Outlook). All-day blocks use date-only format (`start: { date: "2026-04-27" }`) to avoid timezone issues. Accepts optional `group_id` for multi-day blocks.
+
+**`PATCH /api/calendar-blocks/[id]`** — Updates block fields. If `external_event_id` exists, asynchronously updates the external calendar event via `after()`.
+
+**`DELETE /api/calendar-blocks/[id]`** — Deletes a block. Supports `?group=true` query param to delete all blocks sharing the same `group_id` (bulk delete for multi-day blocks). Asynchronously removes external calendar events for all deleted blocks.
+
+### Calendar Sync Patterns
+
+**Orphan cleanup**: When `syncCalendarEvents` or `syncOutlookCalendarEvents` processes a deleted/cancelled external event, it also clears `external_event_id` on any `calendar_blocks` or `appointments` row that referenced that event. This prevents stale references to deleted external events.
+
+**Sync status**: `CalendarSyncCard` derives status from `watch_expiration` — shows "error" only if the webhook watch channel has expired, not based on `last_synced_at` freshness.
+
 ### `GET /api/appointments/[id]`
 
 Returns single appointment with associated call data (`recording_url`, `transcript`).
