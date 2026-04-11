@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 41-01-PLAN.md
-last_updated: "2026-04-11T14:07:42.879Z"
+stopped_at: Completed 41-03-PLAN.md
+last_updated: "2026-04-11T14:13:35.805Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 41 (call-routing-dashboard-and-launch) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 
 ## Accumulated Context
 
@@ -123,6 +123,7 @@ Recent decisions affecting current work:
 - [Phase 42]: Textarea component created manually (shadcn pattern) — npx shadcn add requires interactive terminal
 - [Phase 42]: handleStatusChange calls fetchData() for full refetch after mark-complete/undo — ensures completed_at is fresh from DB
 - [Phase 41]: ESM test pattern (jest.unstable_mockModule) used for call-routing tests matching project --experimental-vm-modules infrastructure
+- [Phase 41]: Owner-pickup calls hide outcome/urgency badges via !isOwnerPickup guard since AI classification is absent
 
 ### Roadmap Evolution
 
@@ -198,6 +199,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-11T14:07:42.871Z
-Stopped at: Completed 41-01-PLAN.md
+Last session: 2026-04-11T14:13:27.904Z
+Stopped at: Completed 41-03-PLAN.md
 Resume file: None

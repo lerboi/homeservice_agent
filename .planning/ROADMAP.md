@@ -500,12 +500,12 @@ Plans:
   7. Validation: submitting zero pickup numbers while the schedule is enabled shows a blocking warning "Add at least one pickup number to route calls to you"
   8. The AI Voice Settings page in `/dashboard/more/ai-voice-settings` links to the new Call Routing page
   9. End-to-end test: user configures schedule in the dashboard → call comes in during owner hours → correct pickup numbers ring in parallel → call appears in dashboard with `routing_mode='owner_pickup'` badge
-**Plans:** 1/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 41-01-PLAN.md — Call routing API routes (GET + PUT) with validation + extend calls API select
-- [ ] 41-02-PLAN.md — Call routing settings page (schedule editor, pickup numbers, usage meter, dial timeout)
-- [ ] 41-03-PLAN.md — Routing badges on calls page, More page link, AI voice settings link, setup checklist step
+- [x] 41-02-PLAN.md — Call routing settings page (schedule editor, pickup numbers, usage meter, dial timeout)
+- [x] 41-03-PLAN.md — Routing badges on calls page, More page link, AI voice settings link, setup checklist step
 - [ ] 41-04-PLAN.md — Visual verification checkpoint
 
 ### Phase 42: Calendar Essentials — Time Blocks and Mark Complete
