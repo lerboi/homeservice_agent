@@ -67,7 +67,7 @@ function deriveChecklistItems(tenant, serviceCount, calendarConnected, zoneCount
     },
     {
       id: 'configure_call_routing',
-      label: 'Configure call routing',
+      label: 'Set up call answering',
       complete: !!(
         tenant.call_forwarding_schedule?.enabled === true &&
         Array.isArray(tenant.pickup_numbers) &&
