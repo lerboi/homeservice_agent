@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye, FileText, Mail, Star } from 'lucide-react';
+import { Eye, FileText, Mail, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -174,7 +174,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             )}
             {lead.is_vip && (
               <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-xs shrink-0 gap-1">
-                <Star className="h-3 w-3 fill-current" />
+                <UserCheck className="h-3 w-3" />
                 Priority
               </Badge>
             )}
@@ -266,7 +266,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             )}
             {lead.is_vip && (
               <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-[10px] shrink-0 gap-0.5">
-                <Star className="h-2.5 w-2.5 fill-current" />
+                <UserCheck className="h-2.5 w-2.5" />
                 Priority
               </Badge>
             )}

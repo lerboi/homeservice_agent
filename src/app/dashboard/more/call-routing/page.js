@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Phone, PhoneForwarded, Copy, Pencil, Trash2, AlertTriangle, Star } from 'lucide-react';
+import { Phone, PhoneForwarded, Copy, Pencil, Trash2, AlertTriangle, UserCheck } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -489,7 +489,7 @@ export default function CallRoutingPage() {
       >
         <div className={`${card.base} p-6`}>
           <div className="flex items-center gap-2 mb-1">
-            <Star className="h-5 w-5 text-violet-500" />
+            <UserCheck className="h-5 w-5 text-violet-500" />
             <h2 className="text-lg font-semibold text-[#0F172A]">Priority Callers</h2>
           </div>
           <p className="text-sm text-[#475569] mb-4">
@@ -534,7 +534,7 @@ export default function CallRoutingPage() {
                   /* Display row */
                   <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <Star className="h-4 w-4 text-violet-500 shrink-0" />
+                      <UserCheck className="h-4 w-4 text-violet-500 shrink-0" />
                       <div className="min-w-0">
                         <span className="text-sm font-medium text-[#0F172A] block truncate">
                           {entry.number}
