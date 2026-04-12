@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: Phase complete — ready for verification
-stopped_at: Completed 46-03-PLAN.md
-last_updated: "2026-04-12T13:38:48.942Z"
+status: Executing Phase 46
+stopped_at: Completed 46-04-PLAN.md
+last_updated: "2026-04-12T17:25:03.100Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 46 (vip-caller-direct-routing) — EXECUTING
-Plan: 3 of 3
+Plan: 1 of 4
 
 ## Accumulated Context
 
@@ -130,6 +130,7 @@ Recent decisions affecting current work:
 - [Phase 46]: VIP check uses two-source lookup (vip_numbers JSONB + leads is_vip) with tenant row first (no DB), then leads query at call time
 - [Phase 46]: _make_tenant_mock updated to dispatch leads table to empty response — prevents false VIP matches in Phase 40 test suite
 - [Phase 46]: VIP→Priority rename: DB columns (vip_numbers, is_vip) preserved; only UI copy changed to 'Priority Callers'/'Priority Caller' — priority-flag pattern established for future features where DB naming differs from user-facing copy
+- [Phase 46]: source-aware unified list merges vip_numbers + vip_leads client-side with source discriminator; lead removes are immediate PATCH (not deferred to save bar); UserCheck replaces Star on Priority badge per user request
 
 ### Roadmap Evolution
 
@@ -206,6 +207,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:38:48.932Z
-Stopped at: Completed 46-03-PLAN.md
+Last session: 2026-04-12T17:25:03.091Z
+Stopped at: Completed 46-04-PLAN.md
 Resume file: None

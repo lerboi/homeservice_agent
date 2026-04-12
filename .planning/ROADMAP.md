@@ -559,7 +559,7 @@ Plans:
 **Goal:** Owner selects specific phone numbers or leads whose calls bypass AI and route directly to the owner's phone, regardless of schedule. Covers webhook routing logic (livekit-agent), tenant settings API, and dashboard UI.
 **Requirements**: VIP-01, VIP-02, VIP-03, VIP-04, VIP-05, VIP-06, VIP-07, VIP-08, VIP-09, VIP-10, VIP-11, VIP-12, VIP-13
 **Depends on:** Phase 41
-**Plans:** 3/3 plans complete
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 46-01-PLAN.md -- Database migration (vip_numbers + is_vip) and API extensions (call-routing, leads)
