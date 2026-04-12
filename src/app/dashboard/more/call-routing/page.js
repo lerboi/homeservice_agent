@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { card } from '@/lib/design-tokens';
 import { Switch } from '@/components/ui/switch';
@@ -98,6 +99,10 @@ export default function CallRoutingPage() {
   const [editVipLabel, setEditVipLabel] = useState('');
   const [editVipPhoneError, setEditVipPhoneError] = useState('');
 
+  // Lead-sourced priority callers (read-only — mutations go through PATCH /api/leads/[id])
+  const [vipLeads, setVipLeads] = useState([]);
+  const router = useRouter();
+
   // Dirty state
   const isDirty =
     JSON.stringify(schedule) !== JSON.stringify(savedSchedule) ||
@@ -119,6 +124,8 @@ export default function CallRoutingPage() {
         const loadedTimeout = typeof data.dial_timeout_seconds === 'number' ? data.dial_timeout_seconds : 15;
 
         const loadedVipNumbers = data.vip_numbers || [];
+        const loadedVipLeads = data.vip_leads || [];
+        setVipLeads(loadedVipLeads);
 
         setSchedule(loadedSchedule);
         setPickupNumbers(loadedNumbers);
@@ -310,6 +317,32 @@ export default function CallRoutingPage() {
     setEditingVipIdx(null);
   }
 
+  async function handleRemoveVipLead(leadId) {
+    // Optimistic remove
+    const prevLeads = vipLeads;
+    setVipLeads((prev) => prev.filter((l) => l.id !== leadId));
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_vip: false }),
+      });
+      if (!res.ok) {
+        setVipLeads(prevLeads); // revert
+        toast.error('Could not update priority status — try again');
+        return;
+      }
+      toast.success('Priority status removed');
+    } catch {
+      setVipLeads(prevLeads); // revert
+      toast.error('Could not update priority status — try again');
+    }
+  }
+
+  function handleOpenLead(leadId) {
+    router.push(`/dashboard/leads?open=${leadId}`);
+  }
+
   // ── Save / Discard handlers ───────────────────────────────────────────────
 
   async function handleSave() {
@@ -355,6 +388,34 @@ export default function CallRoutingPage() {
     setVipNumbers(savedVipNumbers);
     setShowZeroNumbersWarning(false);
   }
+
+  // ── Unified Priority Callers list ─────────────────────────────────────────
+  // Merge both sources with source metadata
+  // Sort: alphabetical by displayName (case-insensitive), ties broken by phone number
+  const unifiedPriority = [
+    ...vipNumbers.map((vn, idx) => ({
+      source: 'standalone',
+      key: `standalone-${idx}`,
+      idx,                           // needed for edit/delete handlers
+      id: null,
+      number: vn.number,
+      displayName: vn.label || '',
+    })),
+    ...vipLeads.map((l) => ({
+      source: 'lead',
+      key: `lead-${l.id}`,
+      idx: null,
+      id: l.id,
+      number: l.from_number,
+      displayName: l.caller_name || '',
+    })),
+  ].sort((a, b) => {
+    const an = (a.displayName || a.number).toLowerCase();
+    const bn = (b.displayName || b.number).toLowerCase();
+    if (an < bn) return -1;
+    if (an > bn) return 1;
+    return a.number.localeCompare(b.number);
+  });
 
   // ── Loading state ─────────────────────────────────────────────────────────
 
@@ -435,17 +496,17 @@ export default function CallRoutingPage() {
             These callers always ring your phone — day or night, regardless of schedule.
           </p>
 
-          {/* Priority numbers list */}
+          {/* Unified Priority Callers list */}
           <div className="space-y-2 mb-4">
-            {vipNumbers.length === 0 && (
+            {unifiedPriority.length === 0 && (
               <p className="text-sm text-stone-400 py-2">
                 No priority callers yet. Add a phone number below to give someone priority access.
               </p>
             )}
-            {vipNumbers.map((vn, idx) => (
-              <div key={idx}>
-                {editingVipIdx === idx ? (
-                  /* Editing row */
+            {unifiedPriority.map((entry) => (
+              <div key={entry.key}>
+                {entry.source === 'standalone' && editingVipIdx === entry.idx ? (
+                  /* Editing row — standalone only */
                   <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 space-y-3">
                     <div className="space-y-1">
                       <Input
@@ -476,27 +537,44 @@ export default function CallRoutingPage() {
                       <Star className="h-4 w-4 text-violet-500 shrink-0" />
                       <div className="min-w-0">
                         <span className="text-sm font-medium text-[#0F172A] block truncate">
-                          {vn.number}
+                          {entry.number}
                         </span>
-                        {vn.label && (
-                          <span className="text-xs text-[#475569]">{vn.label}</span>
+                        {entry.displayName && (
+                          <span className="text-xs text-[#475569]">{entry.displayName}</span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      {entry.source === 'lead' && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLead(entry.id)}
+                          className="min-h-[44px] px-2 flex items-center justify-center rounded-lg text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                          title="View lead"
+                          aria-label="View lead"
+                        >
+                          Lead ↗
+                        </button>
+                      )}
+                      {entry.source === 'standalone' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStartVipEdit(entry.idx)}
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors"
+                          aria-label="Edit priority number"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => handleStartVipEdit(idx)}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors"
-                        aria-label="Edit priority number"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteVipNumber(idx)}
+                        onClick={() =>
+                          entry.source === 'lead'
+                            ? handleRemoveVipLead(entry.id)
+                            : handleDeleteVipNumber(entry.idx)
+                        }
                         className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-destructive hover:bg-red-50 transition-colors"
-                        aria-label="Remove priority number"
+                        aria-label={entry.source === 'lead' ? 'Remove priority status from lead' : 'Remove priority number'}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
