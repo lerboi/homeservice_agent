@@ -104,11 +104,11 @@
 - [x] **CAL-11**: Python `check_availability.py` extended to 5-way `asyncio.gather` including `calendar_blocks` query — merged into `external_blocks` parameter; appointments query excludes both `cancelled` and `completed` via chained `.neq()` calls
 ### VIP Caller Direct Routing (Phase 46)
 
-- [ ] **VIP-01**: Migration 049 adds vip_numbers JSONB NOT NULL DEFAULT [] to tenants (no array length cap) and is_vip BOOLEAN NOT NULL DEFAULT false to leads with partial index idx_leads_vip_lookup ON leads (tenant_id, from_number) WHERE is_vip = true
-- [ ] **VIP-02**: GET /api/call-routing returns vip_numbers in response alongside schedule, pickup_numbers, dial_timeout
-- [ ] **VIP-03**: PUT /api/call-routing validates vip_numbers (E.164 format, no duplicates, array type) and persists alongside existing fields; no array length cap
-- [ ] **VIP-04**: PATCH /api/leads/[id] accepts is_vip boolean and persists it
-- [ ] **VIP-05**: GET /api/leads list endpoint includes is_vip in explicit column select so LeadCard can render VIP badge
+- [x] **VIP-01**: Migration 049 adds vip_numbers JSONB NOT NULL DEFAULT [] to tenants (no array length cap) and is_vip BOOLEAN NOT NULL DEFAULT false to leads with partial index idx_leads_vip_lookup ON leads (tenant_id, from_number) WHERE is_vip = true
+- [x] **VIP-02**: GET /api/call-routing returns vip_numbers in response alongside schedule, pickup_numbers, dial_timeout
+- [x] **VIP-03**: PUT /api/call-routing validates vip_numbers (E.164 format, no duplicates, array type) and persists alongside existing fields; no array length cap
+- [x] **VIP-04**: PATCH /api/leads/[id] accepts is_vip boolean and persists it
+- [x] **VIP-05**: GET /api/leads list endpoint includes is_vip in explicit column select so LeadCard can render VIP badge
 - [ ] **VIP-06**: _is_vip_caller(tenant, from_number) function in twilio_routes.py checks both tenant vip_numbers JSONB array (in-memory) and leads table is_vip=true query (DB hit); returns True if either matches; fail-open on error
 - [ ] **VIP-07**: VIP check inserted in incoming_call routing AFTER subscription check and BEFORE evaluate_schedule; VIP match routes to _owner_pickup_twiml bypassing schedule and cap checks; VIP match with no pickup_numbers falls through to AI TwiML
 - [ ] **VIP-08**: Tenant lookup SELECT in twilio_routes.py includes vip_numbers field
