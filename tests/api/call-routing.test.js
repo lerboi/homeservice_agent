@@ -274,6 +274,116 @@ describe('PUT /api/call-routing', () => {
   });
 });
 
+// ─── PUT VIP numbers validation tests ────────────────────────────────────────
+
+describe('PUT /api/call-routing — VIP numbers', () => {
+  test('PUT with valid vip_numbers saves successfully', async () => {
+    const singleForPhone = jest.fn().mockResolvedValue({
+      data: { phone_number: '+18005550000' },
+      error: null,
+    });
+    const singleForUpdate = jest.fn().mockResolvedValue({
+      data: {
+        call_forwarding_schedule: validSchedule(),
+        pickup_numbers: [],
+        dial_timeout_seconds: 15,
+        vip_numbers: [{ number: '+15551112222', label: 'Best customer' }],
+      },
+      error: null,
+    });
+
+    let callCount = 0;
+    mockSupabase.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: singleForPhone,
+            }),
+          }),
+        };
+      }
+      return {
+        update: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: singleForUpdate,
+            }),
+          }),
+        }),
+      };
+    });
+
+    const req = makePutRequest({
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: validPickupNumbers(),
+      dial_timeout_seconds: 15,
+      vip_numbers: [{ number: '+15551112222', label: 'Best customer' }],
+    });
+    const res = await PUT(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.vip_numbers).toBeDefined();
+  });
+
+  test('PUT with invalid VIP number format returns 400', async () => {
+    mockTenantLookup();
+    const req = makePutRequest({
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: validPickupNumbers(),
+      dial_timeout_seconds: 15,
+      vip_numbers: [{ number: 'not-a-phone' }],
+    });
+    const res = await PUT(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Invalid VIP phone number format');
+  });
+
+  test('PUT with duplicate VIP numbers returns 400', async () => {
+    mockTenantLookup();
+    const req = makePutRequest({
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: validPickupNumbers(),
+      dial_timeout_seconds: 15,
+      vip_numbers: [{ number: '+15551112222' }, { number: '+15551112222' }],
+    });
+    const res = await PUT(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Duplicate VIP phone number');
+  });
+
+  test('PUT with vip_numbers not an array returns 400', async () => {
+    mockTenantLookup();
+    const req = makePutRequest({
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: validPickupNumbers(),
+      dial_timeout_seconds: 15,
+      vip_numbers: 'not-array',
+    });
+    const res = await PUT(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('vip_numbers must be an array');
+  });
+
+  test('PUT with VIP number missing number field returns 400', async () => {
+    mockTenantLookup();
+    const req = makePutRequest({
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: validPickupNumbers(),
+      dial_timeout_seconds: 15,
+      vip_numbers: [{ label: 'no number' }],
+    });
+    const res = await PUT(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Each VIP number must have a number field');
+  });
+});
+
 // ─── GET tests ───────────────────────────────────────────────────────────────
 
 describe('GET /api/call-routing', () => {
@@ -322,5 +432,47 @@ describe('GET /api/call-routing', () => {
     // Ensure not null or NaN
     expect(body.usage.used_minutes).not.toBeNull();
     expect(body.usage.used_minutes).not.toBeNaN();
+  });
+
+  test('GET returns vip_numbers in response', async () => {
+    const tenantData = {
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: [],
+      dial_timeout_seconds: 15,
+      vip_numbers: [{ number: '+15551112222', label: 'VIP' }],
+      working_hours: {},
+      phone_number: '+18005550000',
+      country: 'US',
+    };
+
+    mockSupabase.from.mockImplementation((table) => {
+      if (table === 'tenants') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({ data: tenantData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'calls') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              gte: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+    });
+
+    const req = new Request('http://localhost/api/call-routing');
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.vip_numbers)).toBe(true);
+    expect(body.vip_numbers).toHaveLength(1);
+    expect(body.vip_numbers[0].number).toBe('+15551112222');
   });
 });
