@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye, FileText, Mail } from 'lucide-react';
+import { Eye, FileText, Mail, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -172,6 +172,12 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
                 <TooltipContent side="top"><p>{lead.job_type}</p></TooltipContent>
               </Tooltip>
             )}
+            {lead.is_vip && (
+              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-xs shrink-0 gap-1">
+                <Star className="h-3 w-3 fill-current" />
+                VIP
+              </Badge>
+            )}
             {urgency && (
               <Badge className={`${urgencyBadgeClass} text-xs shrink-0`}>
                 {URGENCY_LABEL[urgency] || urgency}
@@ -257,6 +263,12 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
               <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-700 px-2 py-0.5 text-[10px] font-medium truncate max-w-[100px]">
                 {lead.job_type}
               </span>
+            )}
+            {lead.is_vip && (
+              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-[10px] shrink-0 gap-0.5">
+                <Star className="h-2.5 w-2.5 fill-current" />
+                VIP
+              </Badge>
             )}
             {urgency !== 'routine' && (
               <Badge className={`${urgencyBadgeClass} text-[10px] shrink-0`}>

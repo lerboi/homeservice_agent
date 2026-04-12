@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList, Mail, Pencil, Check, X } from 'lucide-react';
+import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList, Mail, Pencil, Check, X, Star } from 'lucide-react';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import CustomerTimeline from '@/components/dashboard/CustomerTimeline';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import {
   Sheet,
   SheetContent,
@@ -552,6 +553,43 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <>
                   <Separator className="bg-stone-100" />
                   <CustomerTimeline phone={lead.from_number} leadId={lead.id} />
+                </>
+              )}
+
+              {/* -- VIP Caller toggle -- */}
+              {lead.from_number && (
+                <>
+                  <Separator className="bg-stone-100" />
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <Star className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500 fill-violet-500' : 'text-stone-400'}`} />
+                      <div>
+                        <span className="text-sm font-medium text-[#0F172A]">VIP Caller</span>
+                        <p className="text-xs text-[#475569]">Always ring your phone when this caller dials in.</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={lead.is_vip || false}
+                      onCheckedChange={async (checked) => {
+                        // Optimistic update
+                        setLead(prev => ({ ...prev, is_vip: checked }));
+                        try {
+                          const res = await fetch(`/api/leads/${lead.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ is_vip: checked }),
+                          });
+                          if (!res.ok) throw new Error();
+                          toast.success(checked ? 'Caller marked as VIP' : 'VIP status removed');
+                        } catch {
+                          // Revert optimistic update
+                          setLead(prev => ({ ...prev, is_vip: !checked }));
+                          toast.error('Could not update VIP status -- try again');
+                        }
+                      }}
+                      aria-label="Toggle VIP status"
+                    />
+                  </div>
                 </>
               )}
 
