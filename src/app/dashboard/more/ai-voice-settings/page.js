@@ -45,8 +45,8 @@ export default function AIVoiceSettingsPage() {
           className="flex items-center gap-3 text-sm text-[#475569] hover:text-[#0F172A] transition-colors"
         >
           <PhoneForwarded className="h-4 w-4" />
-          <span>Answer your own calls</span>
-          <span className="text-xs text-stone-400 ml-auto">Pick up calls yourself during set hours</span>
+          <span>Call routing</span>
+          <span className="text-xs text-stone-400 ml-auto">Forward calls on a schedule or set priority callers</span>
         </Link>
       </div>
     </div>

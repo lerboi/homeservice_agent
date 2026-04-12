@@ -175,7 +175,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             {lead.is_vip && (
               <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-xs shrink-0 gap-1">
                 <Star className="h-3 w-3 fill-current" />
-                VIP
+                Priority
               </Badge>
             )}
             {urgency && (
@@ -267,7 +267,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             {lead.is_vip && (
               <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-[10px] shrink-0 gap-0.5">
                 <Star className="h-2.5 w-2.5 fill-current" />
-                VIP
+                Priority
               </Badge>
             )}
             {urgency !== 'routine' && (

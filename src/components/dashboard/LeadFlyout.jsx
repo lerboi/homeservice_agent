@@ -564,7 +564,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     <div className="flex items-center gap-2">
                       <Star className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500 fill-violet-500' : 'text-stone-400'}`} />
                       <div>
-                        <span className="text-sm font-medium text-[#0F172A]">VIP Caller</span>
+                        <span className="text-sm font-medium text-[#0F172A]">Priority Caller</span>
                         <p className="text-xs text-[#475569]">Always ring your phone when this caller dials in.</p>
                       </div>
                     </div>
@@ -580,7 +580,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                             body: JSON.stringify({ is_vip: checked }),
                           });
                           if (!res.ok) throw new Error();
-                          toast.success(checked ? 'Caller marked as VIP' : 'VIP status removed');
+                          toast.success(checked ? 'Caller marked as priority' : 'Priority status removed');
                         } catch {
                           // Revert optimistic update
                           setLead(prev => ({ ...prev, is_vip: !checked }));

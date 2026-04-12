@@ -29,7 +29,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/working-hours', label: 'Working Hours', description: 'Set your weekly availability schedule', icon: Clock },
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
   { href: '/dashboard/more/notifications', label: 'Notifications & Escalation', description: 'Alerts per call outcome and emergency contact chain', icon: Bell },
-  { href: '/dashboard/more/call-routing', label: 'Answer Your Own Calls', description: 'Pick up calls yourself during set hours — AI handles the rest', icon: PhoneForwarded },
+  { href: '/dashboard/more/call-routing', label: 'Call Routing', description: 'Forward calls on a schedule and set priority callers who always ring through', icon: PhoneForwarded },
   { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
   { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
   { href: '/dashboard/more/integrations', label: 'Integrations', description: 'Connect accounting software for invoice sync', icon: Plug },
