@@ -488,7 +488,7 @@ n| DEMO-01 | Phase 29 | Complete |
 | OBJ-04 | Phase 47 | Pending |
 | OBJ-05 | Phase 47 | Pending |
 | OBJ-06 | Phase 47 | Pending |
-| OBJ-07 | Phase 47 | Pending |
+| OBJ-07 | — | Addressed elsewhere (pricing page ROICalculator) |
 | OBJ-08 | Phase 47 | Pending |
 | OBJ-09 | Phase 47 | Pending |
 | REPOS-01 | Phase 47 | Pending |
@@ -541,7 +541,7 @@ n| DEMO-01 | Phase 29 | Complete |
 - [ ] **OBJ-04**: Visitor sees a "5-minute setup" 3-step visual strip (forward number → set hours → live) countering the tech-savvy objection
 - [ ] **OBJ-05**: Visitor sees a trust/hybrid-backup badge row highlighting human escalation, recorded + transcribed calls, and owner-controlled escalation chain
 - [ ] **OBJ-06**: Visitor sees an identity/change-aversion block with emotional copy framing Voco as complement ("your voice, just always-on"), not replacement
-- [ ] **OBJ-07**: Visitor can use an interactive revenue-loss calculator (calls/month + conversion rate + avg job value → annual $ lost) with real-time results, no page reload
+- [~] **OBJ-07**: ~~Visitor can use an interactive revenue-loss calculator~~ — **Addressed elsewhere:** Already implemented on `/pricing` page (`src/app/(public)/pricing/ROICalculator.jsx`). Duplicating on landing deemed redundant during Phase 47 discuss-phase (2026-04-13). Moved out of Phase 47 scope; landing will instead anchor OBJ-03 cost-of-inaction stat with a link to pricing calculator.
 - [ ] **OBJ-08**: Visitor sees a Before-vs-After workflow comparison strip showing miss-call-lose-lead vs every-call-answered outcome
 - [ ] **OBJ-09**: Visitor sees a trade-specificity proof block demonstrating Voco's understanding of plumbing/HVAC/electrical terminology
 
