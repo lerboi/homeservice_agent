@@ -112,11 +112,11 @@
 - [x] **VIP-06**: _is_vip_caller(tenant, from_number) function in twilio_routes.py checks both tenant vip_numbers JSONB array (in-memory) and leads table is_vip=true query (DB hit); returns True if either matches; fail-open on error
 - [x] **VIP-07**: VIP check inserted in incoming_call routing AFTER subscription check and BEFORE evaluate_schedule; VIP match routes to _owner_pickup_twiml bypassing schedule and cap checks; VIP match with no pickup_numbers falls through to AI TwiML
 - [x] **VIP-08**: Tenant lookup SELECT in twilio_routes.py includes vip_numbers field
-- [ ] **VIP-09**: VIP Callers section on /dashboard/more/call-routing rendered OUTSIDE AnimatePresence (always visible regardless of schedule toggle), with inline card list + add form pattern matching pickup numbers section
-- [ ] **VIP-10**: VIP numbers on call routing page support add, edit, delete with E.164 validation, duplicate detection, no length cap; saved via existing PUT alongside schedule/pickup/timeout
-- [ ] **VIP-11**: VIP badge (violet-100/violet-700, filled Star icon, VIP text) renders on LeadCard before urgency badge when lead.is_vip === true
-- [ ] **VIP-12**: VIP Caller toggle (Switch) in LeadFlyout between contact details and Pipeline Status PATCHes /api/leads/[id] with is_vip boolean; optimistic UI with revert on error; guarded by lead.from_number presence
-- [ ] **VIP-13**: VIP routing uses existing owner_pickup routing_mode (no new enum value); VIP calls appear with same blue You answered badge on calls page
+- [x] **VIP-09**: VIP Callers section on /dashboard/more/call-routing rendered OUTSIDE AnimatePresence (always visible regardless of schedule toggle), with inline card list + add form pattern matching pickup numbers section
+- [x] **VIP-10**: VIP numbers on call routing page support add, edit, delete with E.164 validation, duplicate detection, no length cap; saved via existing PUT alongside schedule/pickup/timeout
+- [x] **VIP-11**: VIP badge (violet-100/violet-700, filled Star icon, VIP text) renders on LeadCard before urgency badge when lead.is_vip === true
+- [x] **VIP-12**: VIP Caller toggle (Switch) in LeadFlyout between contact details and Pipeline Status PATCHes /api/leads/[id] with is_vip boolean; optimistic UI with revert on error; guarded by lead.from_number presence
+- [x] **VIP-13**: VIP routing uses existing owner_pickup routing_mode (no new enum value); VIP calls appear with same blue You answered badge on calls page
 
 ## v2.0 Requirements
 
