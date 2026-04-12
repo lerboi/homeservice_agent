@@ -10,12 +10,13 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 
 ## Current Milestone: v5.0 Trust & Polish
 
-**Goal:** Harden Voco's visual and conversion surface — address the 5 most common home-service-owner objections to AI receptionists via new landing page sections, reposition Voco as a complementary full-stack AI workflow, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard to lift the product's perceived quality end-to-end.
+**Goal:** Harden Voco's visual and conversion surface and elevate day-to-day usefulness — address the 5 most common home-service-owner objections to AI receptionists via new landing page sections, reposition Voco as a complementary full-stack AI workflow, redesign the dashboard home page into a daily-use hub for owners, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard to lift the product's perceived quality end-to-end.
 
 **Target features:**
 - Landing page objection-busting sections countering all 5 PROBLEMS.md objections (robotic voice, trust/hallucination, price, trade specificity, tech-savvy setup) plus the identity objection (change aversion)
 - Landing page repositioning: hero, value props, and final CTA reframe Voco as complement-not-replacement full-stack AI workflow (captures lost revenue, zero downsides, owner stays in control)
 - Proof-driven sections leveraging existing dashboard/voice features as credibility (trade-specific training, escalation chain, hybrid AI+human backup, calendar sync, 5-minute setup)
+- Dashboard home page redesign as daily-use command center: improved setup checklist/todo system, integrated AI chat surface, at-a-glance daily operations (today's appointments, recent calls, hot leads, usage), clearer paths to "where do I go to do X" and "where do I find the answer to Y"
 - Full dark mode parity across every dashboard page, flyout, settings panel, analytics chart, Kanban, and modal
 - Persisted theme toggle per user with design token audit for color correctness in both modes
 - Overall UI/UX polish pass: typography, spacing, motion, empty states, loading states, hover/focus states, error states, mobile responsiveness, and visual consistency across public site + dashboard

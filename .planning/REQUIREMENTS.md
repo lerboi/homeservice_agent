@@ -459,5 +459,83 @@ n| DEMO-01 | Phase 29 | Complete |
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0)*
-*Last updated: 2026-03-26 — v3.0 traceability complete (23 requirements mapped to phases 22-26)*
+
+## v5.0 Requirements — Trust & Polish
+
+### Objection-Busting Landing Sections
+
+- [ ] **OBJ-01**: Visitor can read an FAQ accordion (≥7 questions) covering all 5 PROBLEMS.md objections + the identity/change-aversion objection, placed just above FinalCTASection
+- [ ] **OBJ-02**: Visitor sees a "sounds robotic" counter section linking back to the live hero demo as proof, including the 85% blind-test stat
+- [ ] **OBJ-03**: Visitor sees a "cost of inaction" stat block with the $260,400/year-lost-to-voicemail figure contextualized against Voco's starting price
+- [ ] **OBJ-04**: Visitor sees a "5-minute setup" 3-step visual strip (forward number → set hours → live) countering the tech-savvy objection
+- [ ] **OBJ-05**: Visitor sees a trust/hybrid-backup badge row highlighting human escalation, recorded + transcribed calls, and owner-controlled escalation chain
+- [ ] **OBJ-06**: Visitor sees an identity/change-aversion block with emotional copy framing Voco as complement ("your voice, just always-on"), not replacement
+- [ ] **OBJ-07**: Visitor can use an interactive revenue-loss calculator (calls/month + conversion rate + avg job value → annual $ lost) with real-time results, no page reload
+- [ ] **OBJ-08**: Visitor sees a Before-vs-After workflow comparison strip showing miss-call-lose-lead vs every-call-answered outcome
+- [ ] **OBJ-09**: Visitor sees a trade-specificity proof block demonstrating Voco's understanding of plumbing/HVAC/electrical terminology
+
+### Landing Page Repositioning
+
+- [ ] **REPOS-01**: Landing hero H1 and subtitle copy reframed to complement-not-replacement language ("answers when you can't", "you stay in charge")
+- [ ] **REPOS-02**: FinalCTASection subtitle reinforces owner-control framing ("your rules, your schedule")
+- [ ] **REPOS-03**: Visitor sees a 5-icon full-stack workflow positioning strip (answer → triage → book → notify → CRM) making whole-workflow positioning visible
+- [ ] **REPOS-04**: Visitor sees an owner-control emphasis callout/pull-quote ("You set the rules. Voco follows them.")
+
+### Dashboard Home Redesign
+
+- [ ] **HOME-01**: Dashboard home shows a redesigned setup checklist with a progress indicator, items grouped by theme (profile, voice, calendar, billing), each with dismiss / mark-done / jump-to-page actions
+- [ ] **HOME-02**: Dashboard home shows a daily-ops hub with at-a-glance cards: today's appointments, recent calls (last 24h), hot/new leads, usage meter
+- [ ] **HOME-03**: Setup checklist auto-detects completion of onboarding items (phone, services, hours, calendar, billing) and updates progress without user action
+- [ ] **HOME-04**: Dashboard home includes an integrated AI chat surface (card/panel, not just a floating button) where owners can ask questions and get dashboard navigation help from first paint
+- [ ] **HOME-05**: AI chat surface on home shares message history with the existing ChatbotSheet so conversations continue across entry points
+- [ ] **HOME-06**: Dashboard home includes a Help & Discoverability section with quick-links to common tasks ("how do I add a service", "where do I find invoices") that deep-link into the correct page
+- [ ] **HOME-07**: Dashboard home is fully responsive at 375px — card stacks reflow to single column without horizontal scroll
+
+### Dashboard Dark Mode
+
+- [ ] **DARK-01**: Theme provider (next-themes) is wired into root layout with `suppressHydrationWarning` on `<html>`, `defaultTheme=system`, `enableSystem=true`, and no hydration flash
+- [ ] **DARK-02**: Owner can toggle between light/dark/system via a theme toggle button in the dashboard sidebar; preference persists across sessions via localStorage
+- [ ] **DARK-03**: All dashboard component files replace hardcoded hex color classes with dark-mode-aware equivalents (`dark:` prefix or CSS-variable-backed tokens)
+- [ ] **DARK-04**: `design-tokens.js` exports dark variants for all tokens (card.base, glass.topBar, heading, body, focus, selected) so shared consumers theme consistently
+- [ ] **DARK-05**: `AnalyticsCharts.jsx` reads the current theme via `useTheme()` and swaps Recharts stroke/fill/tooltip colors so charts remain readable and on-brand in dark mode
+- [ ] **DARK-06**: All flyouts and modals (LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet, settings modals) render correctly in dark mode with readable content
+- [ ] **DARK-07**: Status badges, urgency pills, and LeadStatusPills have dark-mode variants that preserve contrast and category meaning
+- [ ] **DARK-08**: Dashboard layout background, sidebar, bottom tab bar, and system banners (impersonation, billing warning, trial countdown) all respond correctly to theme
+- [ ] **DARK-09**: Body smoothly transitions background and text color (150ms) on theme switch without jank
+- [ ] **DARK-10**: CalendarView urgency colors (dynamic class concatenation) render correctly in dark mode
+
+### UI/UX Polish (Dashboard + Landing)
+
+- [ ] **POLISH-01**: All dashboard list views (leads, calls, calendar, analytics) have dedicated empty states with icon + headline + primary CTA when no data exists
+- [ ] **POLISH-02**: All dashboard pages show layout-matching loading skeletons during data fetch (not blank flashes), preventing CLS
+- [ ] **POLISH-03**: All interactive elements (buttons, inputs, nav items, pill filters) have consistent `focus-visible` rings using the design-token focus color
+- [ ] **POLISH-04**: All data-fetching pages show an error state with a retry action when fetches fail, instead of frozen UI
+- [ ] **POLISH-05**: Async action buttons show spinner + disabled state during pending operations (save settings, send invoice, sync calendar)
+- [ ] **POLISH-06**: DashboardHomeStats cards have a hover state (translate-y + shadow) with 200ms transition
+- [ ] **POLISH-07**: Lead status changes in LeadFlyout animate in the list via AnimatePresence + layout prop for clear user feedback
+- [ ] **POLISH-08**: Dashboard typography consolidated to design-token color values (no lingering hardcoded hex text classes)
+- [ ] **POLISH-09**: CommandPalette registers all major dashboard destinations; audit confirms no major page is missing
+- [ ] **POLISH-10**: Dashboard page content renders correctly at 375px viewport (week calendar, analytics charts, invoice tables, settings forms)
+- [ ] **POLISH-11**: All new objection and repositioning landing sections use the existing AnimatedSection wrapper with useReducedMotion compliance and match the established warm-neutral background rhythm
+- [ ] **POLISH-12**: All new landing sections render single-column at 375px and grid/multi-column at md+ breakpoint
+
+## v5.0 Future Requirements (Deferred)
+
+- Cross-device theme sync via Supabase user preferences row (future milestone — localStorage sufficient for v5.0)
+- Customizable dashboard home layout (drag-to-reorder widgets, show/hide cards) — deferred from v5.0 scoping as too high-effort for must-have value
+- Anchor-linked landing-nav for new objection sections — low incremental conversion value
+- Full mobile responsiveness deep audit beyond the 375px check — ongoing maintenance, not a milestone deliverable
+
+## v5.0 Out of Scope
+
+- Dark mode applied to public/landing pages (art-direction conflict; landing uses hardcoded hex as intentional brand)
+- Video explainer embeds on landing (third-party cookie + LCP penalty; HeroDemoBlock already serves as interactive proof)
+- Landing page competitor comparison tables (primes comparison-shopping in a trust-building context — frame vs voicemail, not vs competitors)
+- Pop-up modal lead capture on landing (low-trust demographic; sticky CTA patterns serve the goal without "salesy" feel)
+- Customer logo bar with enterprise logos (demographic mismatch — plumbers don't identify with enterprise brands)
+- Storing theme preference in Supabase (localStorage via next-themes is sufficient for v5.0)
+- Landing page chatbot (HeroDemoBlock already demonstrates product; adding chat creates mode confusion)
+
+---
+*Requirements defined: 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0), 2026-04-13 (v5.0)*
+*Last updated: 2026-04-13 — v5.0 (Trust & Polish) requirements added: 42 requirements across 5 categories (OBJ, REPOS, HOME, DARK, POLISH)*
