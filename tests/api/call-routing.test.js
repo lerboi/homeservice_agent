@@ -420,6 +420,15 @@ describe('GET /api/call-routing', () => {
           }),
         };
       }
+      if (table === 'leads') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
     });
 
     const req = new Request('http://localhost/api/call-routing');
@@ -464,6 +473,15 @@ describe('GET /api/call-routing', () => {
           }),
         };
       }
+      if (table === 'leads') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
     });
 
     const req = new Request('http://localhost/api/call-routing');
@@ -474,5 +492,64 @@ describe('GET /api/call-routing', () => {
     expect(Array.isArray(body.vip_numbers)).toBe(true);
     expect(body.vip_numbers).toHaveLength(1);
     expect(body.vip_numbers[0].number).toBe('+15551112222');
+  });
+
+  test('GET returns vip_leads scoped to current tenant', async () => {
+    const tenantData = {
+      call_forwarding_schedule: validSchedule(),
+      pickup_numbers: [],
+      dial_timeout_seconds: 15,
+      vip_numbers: [],
+      working_hours: {},
+      phone_number: '+18005550000',
+      country: 'US',
+    };
+
+    const mockLeadsEq2 = jest.fn().mockResolvedValue({
+      data: [
+        { id: 'lead-1', caller_name: 'Jane Best', from_number: '+15551119999' },
+        { id: 'lead-2', caller_name: null, from_number: '+15552228888' },
+      ],
+      error: null,
+    });
+    const mockLeadsEq1 = jest.fn().mockReturnValue({ eq: mockLeadsEq2 });
+
+    mockSupabase.from.mockImplementation((table) => {
+      if (table === 'tenants') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({ data: tenantData, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'calls') {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              gte: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'leads') {
+        return {
+          select: jest.fn().mockReturnValue({ eq: mockLeadsEq1 }),
+        };
+      }
+    });
+
+    const req = new Request('http://localhost/api/call-routing');
+    const res = await GET(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.vip_leads)).toBe(true);
+    expect(body.vip_leads).toHaveLength(2);
+    expect(body.vip_leads[0]).toEqual({ id: 'lead-1', caller_name: 'Jane Best', from_number: '+15551119999' });
+    // Assert tenant scoping: tenant_id filter applied first, then is_vip filter
+    expect(mockLeadsEq1).toHaveBeenCalledWith('tenant_id', 'tenant-abc');
+    expect(mockLeadsEq2).toHaveBeenCalledWith('is_vip', true);
   });
 });

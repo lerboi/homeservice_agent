@@ -44,11 +44,24 @@ export async function GET() {
     );
     const capMinutes = tenant.country === 'SG' ? 2500 : 5000;
 
+    // Fetch leads marked as priority for this tenant
+    const { data: vipLeadsRows, error: vipLeadsError } = await supabase
+      .from('leads')
+      .select('id, caller_name, from_number')
+      .eq('tenant_id', tenantId)
+      .eq('is_vip', true);
+
+    if (vipLeadsError) {
+      console.log('500:', vipLeadsError.message);
+      return Response.json({ error: vipLeadsError.message }, { status: 500 });
+    }
+
     return Response.json({
       call_forwarding_schedule: tenant.call_forwarding_schedule,
       pickup_numbers: tenant.pickup_numbers,
       dial_timeout_seconds: tenant.dial_timeout_seconds,
       vip_numbers: tenant.vip_numbers,
+      vip_leads: vipLeadsRows || [],      // NEW — lead-sourced priority entries
       usage: {
         used_seconds: usedSeconds,
         used_minutes: Math.floor(usedSeconds / 60),
