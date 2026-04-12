@@ -584,10 +584,10 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                         } catch {
                           // Revert optimistic update
                           setLead(prev => ({ ...prev, is_vip: !checked }));
-                          toast.error('Could not update VIP status -- try again');
+                          toast.error('Could not update priority status -- try again');
                         }
                       }}
-                      aria-label="Toggle VIP status"
+                      aria-label="Toggle priority status"
                     />
                   </div>
                 </>
