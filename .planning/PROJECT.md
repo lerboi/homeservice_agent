@@ -8,21 +8,17 @@ An all-in-one AI platform for home service SMEs (plumbers, HVAC, electricians, e
 
 Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
-## Current Milestone: v4.0 Invoicing, Voice Polish, and Landing Page
+## Current Milestone: v5.0 Trust & Polish
 
-**Goal:** Add a full invoicing system (core + estimates + reminders + recurring + accounting integrations + AI descriptions), optimize the voice agent prompt for higher booking conversion, and redesign landing page sections for better conversion.
+**Goal:** Harden Voco's visual and conversion surface — address the 5 most common home-service-owner objections to AI receptionists via new landing page sections, reposition Voco as a complementary full-stack AI workflow, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard to lift the product's perceived quality end-to-end.
 
 **Target features:**
-- Invoice CRUD with typed line items, PDF generation, email/SMS delivery
-- Estimates with good/better/best tiers, convert-to-invoice flow
-- Payment log with partial payments and auto-calculated balance
-- Automated payment reminders and late fee calculation
-- Recurring invoices on configurable schedules
-- Accounting integrations (QuickBooks, Xero, FreshBooks) via OAuth with push-on-send sync
-- AI-generated line item descriptions from call transcripts (Gemini Flash)
-- Batch invoice creation from multiple leads with review-then-send
-- Voice agent prompt optimization (slot preference, repeat caller, trade-specific questioning)
-- Landing page redesign (conversion-focused hero, features grid, How It Works expansion)
+- Landing page objection-busting sections countering all 5 PROBLEMS.md objections (robotic voice, trust/hallucination, price, trade specificity, tech-savvy setup) plus the identity objection (change aversion)
+- Landing page repositioning: hero, value props, and final CTA reframe Voco as complement-not-replacement full-stack AI workflow (captures lost revenue, zero downsides, owner stays in control)
+- Proof-driven sections leveraging existing dashboard/voice features as credibility (trade-specific training, escalation chain, hybrid AI+human backup, calendar sync, 5-minute setup)
+- Full dark mode parity across every dashboard page, flyout, settings panel, analytics chart, Kanban, and modal
+- Persisted theme toggle per user with design token audit for color correctness in both modes
+- Overall UI/UX polish pass: typography, spacing, motion, empty states, loading states, hover/focus states, error states, mobile responsiveness, and visual consistency across public site + dashboard
 
 ## Requirements
 
@@ -124,4 +120,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 — Phase 46 (VIP/Priority caller direct routing) complete*
+*Last updated: 2026-04-13 — Milestone v5.0 (Trust & Polish) started*
