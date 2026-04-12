@@ -1,325 +1,326 @@
-# Feature Landscape
+# Feature Research
 
-**Domain:** SaaS subscription billing and usage enforcement for AI voice receptionist platform
-**Milestone:** v3.0 — Stripe subscription billing, per-call usage metering, plan limit enforcement
-**Researched:** 2026-03-26
-**Confidence:** HIGH (Stripe official docs, verified patterns) / MEDIUM (UX conventions, competitor billing patterns)
-
----
-
-## Scope
-
-This file covers ONLY the new features for milestone v3.0: turning a free platform into a revenue-generating SaaS by adding Stripe subscription billing, per-call usage tracking, plan limit enforcement, and a billing management dashboard.
-
-The existing platform (voice receptionist, triage, booking, calendar sync, lead CRM, notifications, onboarding wizard, marketing site) is treated as a stable dependency. "Existing" means already built in v1.0–v2.0.
-
-Pricing tiers already defined in the UI (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls, Enterprise custom/unlimited) are taken as given — this research covers the billing mechanics, not tier design.
+**Domain:** SaaS landing page trust/objection-busting + dashboard dark mode + UI/UX polish
+**Milestone:** v5.0 Trust & Polish
+**Researched:** 2026-04-13
+**Confidence:** HIGH (landing page patterns, dark mode) | MEDIUM (UI polish specifics)
 
 ---
 
-## Table Stakes
+## Context: What's Already Built
 
-Features users expect. Missing these = the billing system feels incomplete, broken, or untrustworthy.
+Before cataloguing new features, these existing sections must NOT be duplicated:
 
-| Feature | Why Expected | Complexity | Depends On |
-|---------|--------------|------------|------------|
-| 14-day free trial, no credit card required | Industry standard for B2B SaaS — plumbers and HVAC owners won't enter card details before experiencing the product; credit-card-required trials cut conversion dramatically | LOW | Stripe Checkout with `payment_method_collection: 'if_required'` + `trial_period_days: 14` |
-| Hard paywall when trial expires | If the product still works after trial ends, there is no conversion pressure; trial-expired tenants must hit a blocking upgrade prompt on every dashboard page | MEDIUM | `customer.subscription.deleted` webhook → `subscription_status` flag in `tenants` table → middleware gate |
-| Stripe Checkout for plan selection | Users expect to enter payment info on a Stripe-hosted page (trusted, PCI compliant) rather than a custom form; custom card input forms are a trust red flag for SME owners | LOW | Stripe Checkout Session API, `mode: 'subscription'` |
-| Per-call usage tracking | Usage-metered plans are only meaningful if every call is counted accurately; undercounting = revenue loss, overcounting = support tickets | MEDIUM | Call completion webhook (Retell) → increment `usage_calls` counter in DB, scoped per tenant per billing period |
-| Usage meter visible in dashboard | Owners need to see "32 of 40 calls used" before they hit the limit — surprise paywalls generate churn; usage visibility is the most common billing dashboard feature requested | LOW | `usage_calls` + `plan_call_limit` from `subscriptions` table; display in existing dashboard |
-| Plan limit enforcement (hard stop at limit) | When call quota is exhausted, the AI must not answer additional calls — if it does, the owner gets free service while Stripe charges nothing | MEDIUM | Pre-call quota check in Retell webhook → reject/redirect call if `usage_calls >= plan_call_limit` |
-| Upgrade/downgrade via Stripe Customer Portal | Owners need self-serve plan changes; building a custom plan-change UI from scratch is unnecessary when Stripe Customer Portal handles it; owners also expect this from every SaaS product they use | LOW | Stripe Customer Portal configuration (`portal_configuration` API), exposed from billing dashboard page |
-| Cancellation via Stripe Customer Portal | Making cancellation hard does not prevent churn — it generates negative reviews; owners must be able to cancel without contacting support | LOW | Stripe Customer Portal handles cancellation with optional reason survey and retention offer |
-| Invoice history and PDF download | Finance-conscious SME owners need to download invoices for their accountant; this is the #1 billing support ticket driver when absent | LOW | Stripe Customer Portal invoice section (built-in) OR Stripe API `invoices.list` rendered in dashboard |
-| Payment method update | Card expiry is the leading cause of involuntary churn (failed payments = 9% of annual billings, 20–40% of total churn); owners must be able to update their card | LOW | Stripe Customer Portal payment method section (built-in) |
-| Failed payment grace period and retry | Stripe Smart Retries recovers 35–50% of failed payments; without retries, every failed payment is instant churn | LOW | Stripe Smart Retries (configure in Stripe dashboard); `invoice.payment_failed` webhook → notify owner |
-| Trial countdown and upgrade prompt in dashboard | Owners who do not see their trial expiring will not convert; a countdown banner with "X days left" and a visible upgrade button is required for any no-CC trial | MEDIUM | `trial_end` from Stripe subscription → compute days remaining → conditional banner in dashboard layout |
-| Post-trial paywall (access gate) | After trial expires with no payment method, the dashboard and AI service must be gated; trial accounts that convert to cancelled status must land on an upgrade page, not their normal dashboard | MEDIUM | Middleware reads `subscription_status` from DB (synced via webhooks); gate on `trialing`, `active`, `past_due` statuses |
+| Section | Location | What it does |
+|---------|----------|--------------|
+| HeroSection | `HeroSection.jsx` | Dark hero, rotating text ("Phone Calls / Bookings / Invoices / Paperwork"), live demo input, integration logo marquee |
+| HowItWorksSection | `HowItWorksSection.jsx` → `HowItWorksMinimal.jsx` | 4-step sticky scroll flow |
+| FeaturesCarousel | `FeaturesCarousel.jsx` | 7-feature swipe carousel with micro-visuals (languages, clock, booking, SMS, analytics, leads, calendar) |
+| SocialProofSection | `SocialProofSection.jsx` | 3 testimonial cards with metric badges (Dave R./plumber, James K./HVAC, Mark T./electrician) |
+| FinalCTASection | `FinalCTASection.jsx` | Dark CTA — "Your next emergency call is tonight. Set up in 5 minutes." |
+
+**New sections must insert between FeaturesCarousel → SocialProofSection → FinalCTASection or after SocialProofSection, not replace existing sections.**
+
+The landing page currently has NO objection-handling section, NO FAQ, NO pricing counter, NO comparison table, NO repositioning section addressing the "complement not replacement" angle, and NO identity/change-aversion counter.
+
+The dashboard has `.dark {}` CSS variables defined in `globals.css` (oklch tokens for background, card, border, muted, chart-1 through chart-5), the `next-themes` package installed (`^0.4.6`), and a `@custom-variant dark (&:is(.dark *))` directive. However, zero dashboard components use `dark:` Tailwind classes — hardcoded hex colors throughout (`bg-[#F5F5F4]`, `bg-white`, `text-[#0F172A]`, etc.). Chart colors are hardcoded hex in `AnalyticsCharts.jsx`. The `design-tokens.js` file has no dark variants.
 
 ---
 
-## Differentiators
+## Category 1: Objection-Busting Landing Page Sections
 
-Features that are not strictly required but add competitive or product value beyond a bare-bones billing implementation.
+### Table Stakes (Must Have)
 
-| Feature | Value Proposition | Complexity | Depends On |
-|---------|-------------------|------------|------------|
-| Overage billing (per-call beyond plan limit) | Instead of hard-stopping at 40/120/400 calls, charge $X per additional call; reduces friction for high-volume periods (busy season, emergency surge) and turns limit exhaustion into revenue rather than churn | HIGH | Stripe metered billing add-on price OR custom overage calculation at billing cycle end; requires DB tracking of overage calls separately |
-| Trial-end email series (days 3, 7, 12) | Triggered by `customer.subscription.trial_will_end` (Stripe sends 3 days before end); custom email at day 7 and day 12 are not Stripe-native and require a cron job; email series increases trial conversion 2–3x | MEDIUM | Cron jobs firing at trial day 7 and 12; Resend email templates; `trial_end` stored in DB |
-| Pause instead of cancel on missed payment | When a payment method is missing at trial end, pausing the subscription (vs cancelling) lets the owner add a card and resume without losing their data or re-onboarding; reduces involuntary churn | LOW | Stripe `trial_settings.end_behavior.missing_payment_method: 'pause'` instead of `'cancel'`; handle `customer.subscription.paused` webhook |
-| In-dashboard plan comparison on upgrade prompt | When the trial countdown banner is clicked, show a plan comparison table (Starter vs Growth vs Scale) rather than redirecting directly to Checkout; owners who understand the tier difference convert at higher rates | LOW | Static plan table in UI (already exists on marketing pricing page); reuse or adapt |
-| Real-time usage alert at 80% of limit | Notify owner via SMS/email when they hit 80% of their call quota (e.g., 32/40 calls); gives them time to upgrade before hitting the wall rather than discovering the limit mid-call | MEDIUM | Threshold check in call completion handler; `usage_alert_sent` flag in `subscriptions` table to prevent repeat alerts; Twilio SMS + Resend email |
-| Subscription reactivation flow | After cancellation, allow owners to reactivate their subscription from the dashboard without going through full onboarding again; reduces re-acquisition cost | LOW | Stripe `subscriptions.create` with existing `customer_id`; OR Stripe Customer Portal reactivation (if configured) |
-| MRR and revenue display in admin view | For the product owner (not the tenant), a simple admin page showing total active subscriptions, MRR, and trial conversion rate; not needed for launch but useful for product decisions | HIGH | Admin-only dashboard page; requires separate admin auth gate; aggregate queries on `subscriptions` table |
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| FAQ accordion section | 48% of visitors exit without converting — FAQ catches 90%-convinced-but-one-doubt visitors. Industry standard for AI/SaaS. | LOW | Radix Accordion (shadcn) already installed. 5–7 questions covering all 5 PROBLEMS.md objections. Place just above FinalCTASection. |
+| "Sounds robotic" counter block | #1 objection by volume per PROBLEMS.md. Must be addressed visually, not buried in FAQ. | LOW–MED | Audio waveform icon or "hear it" CTA. Reinforce the live demo already in HeroSection — link back to it as proof. "85% of callers can't tell it's AI" stat. |
+| Pricing objection reframe | #3 objection. "It's too expensive" without anchoring to cost of inaction loses the price-sensitive segment. | LOW | A dedicated cost-comparison callout or single stat card: "$260,400/year lost to voicemail" vs "starts at $X/month". NOT a full pricing page — FinalCTA links to pricing. |
+| Trust/accuracy objection counter | #2 objection — contractors fear hallucination and losing job details. | LOW | Short copy block: "AI captures the lead, you make the call." Escalation chain visual (human backup badge). |
+| Identity/change-aversion section | The "bonus" objection from PROBLEMS.md — the real one nobody says out loud. Owner identity is tied to being the one who answers. | MED | Requires emotional reframe copy, not feature bullets. "Your voice. Your business. Just always-on." Frame it as amplification, not replacement. |
+
+### Differentiators (Competitive Advantage)
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Interactive revenue loss calculator | "What's voicemail costing you?" — user inputs calls/month, conversion rate, average job value → outputs annual revenue lost. Interactive widgets convert at 40%+ vs 2-12% for static pages. | MED | Build in React with controlled inputs. No external dependency needed. Outputs: "You're losing $X/year to voicemail." Ties directly into PROBLEMS.md objection #3. |
+| "Before vs After" workflow comparison strip | Repositioning as complement-not-replacement requires a side-by-side: "Before Voco" (miss calls, lose leads) vs "With Voco" (every call answered, jobs booked). Distinct from feature carousel which shows individual features. | LOW–MED | Two-column card or toggle layout. Addresses the identity objection by showing owner still dispatches jobs — AI only captures them. |
+| Trade specificity proof block | PROBLEMS.md objection #4 — "generic AI won't know my trade." Trades-specific terminology display builds immediate credibility. | LOW | Icon grid of supported trades + one trade-specific call transcript snippet showing correct terminology (e.g., "tankless vs tank", "240V circuit"). Leverages existing trade-specific training. |
+| Setup simplicity counter | PROBLEMS.md objection #5 — "I'm not tech-savvy." "4-minute setup" is already in SocialProofSection (Mark T.'s testimonial), but needs dedicated visual proof. | LOW | 3-step numbered flow: "1. Forward your number → 2. Set your hours → 3. You're live." Timer graphic. |
+| Trust/hybrid backup badge row | Positions hybrid AI+human escalation chain as proof that nothing falls through cracks. | LOW | Row of badges/chips: "Human backup if AI can't handle it", "All calls recorded + transcribed", "You control the escalation chain". Leverages existing escalation chain feature. |
+
+### Anti-Features (Avoid)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Full pricing table on landing page | Users want to see cost upfront | Anchors price conversation before trust is built; existing /pricing page handles this | Teaser: "Starts at $X/month — less than one missed job" with link to pricing |
+| Live chatbot on landing page (AI-powered) | Demo of product | Existing HeroDemoBlock already serves this role; adding a chatbot creates mode confusion and competes with the live audio demo | Keep HeroDemoBlock, don't duplicate with text chatbot |
+| Video explainer embed (YouTube/Vimeo) | Common objection-busting pattern | Adds third-party cookie consent complexity, hurts LCP, competes with Spline scene and audio demo | Use the live audio demo (HeroDemoBlock) — it's the same proof, interactive and on-brand |
+| Customer logo bar (enterprise logos) | Social proof pattern | Target market (plumbers, HVAC, electricians) does not identify with enterprise logos; creates aspiration mismatch | Trade-specific testimonial cards (already in SocialProofSection) are more resonant |
+| "Compare us to competitors" table | Shows buyers alternatives exist | In a trust-building context, name-dropping competitors primes comparison shopping | Frame vs the pain (voicemail), not vs competitors. "Better than voicemail" not "better than [Competitor]" |
+| Pop-up modal for lead capture | Common conversion tactic | Kills the premium feel; home service owners are skeptical of "salesy" patterns; the demographic has low tolerance | Sticky CTA bar (low-friction) or inline CTAs in objection sections |
 
 ---
 
-## Anti-Features
+## Category 2: Landing Page Repositioning
 
-Features that are commonly considered, sound reasonable, but cause more harm than good in this context.
+### Table Stakes (Must Have)
 
-| Anti-Feature | Why Requested | Why Problematic | What to Do Instead |
-|--------------|---------------|-----------------|-------------------|
-| Custom card input form (no Stripe Checkout) | "We want full UI control over the payment experience" | Building a custom payment form means handling raw card data, which triggers PCI DSS compliance scope; Stripe Checkout is pre-built, trusted, and converts better for SME owners who recognize Stripe's UI | Use Stripe Checkout Session for all payment collection; redirect back to dashboard on success |
-| Soft limit with no enforcement (just a warning) | "We don't want to interrupt the AI service, just warn the owner" | Without a hard limit, the product can be exploited indefinitely; tenants who discover there's no enforcement will not upgrade; limits that don't limit are marketing theater | Hard stop at plan limit; overage billing (differentiator) is the right escape valve, not removing the limit |
-| Building a custom invoice PDF generator | "We want invoices to match our brand" | Stripe already generates legally compliant invoices and stores them on the customer account; building a custom PDF generator adds development time with negligible user value | Use Stripe Customer Portal invoice history (built-in) or `invoice.invoice_pdf` URL from Stripe API |
-| Prorate immediately on downgrade (charge for less) | "Customers should pay less immediately when they downgrade" | Immediate proration creates a confusing mid-cycle credit, triggers an immediate partial invoice, and adds accounting complexity; owners expect subscription changes to take effect at the next billing cycle | Schedule downgrades at end of billing period (`schedule_at_period_end: true`); upgrades can be immediate with proration (owners expect to pay more immediately) |
-| Building a custom dunning email system | "We need to control the failed payment email copy" | Stripe's built-in Smart Retry + email system recovers 35–50% of failed payments with zero engineering; building a custom dunning system duplicates effort and is unlikely to outperform Stripe's ML-based retry timing | Use Stripe Smart Retries + configure Stripe's built-in payment failure emails; only add custom logic if Stripe's defaults prove insufficient |
-| Enterprise plan with custom billing logic | "We should handle enterprise customers manually" | Enterprise billing requires manual invoicing, custom contracts, and sales negotiation; building custom Enterprise billing mechanics in v3.0 adds scope for one hypothetical customer | Ship Enterprise tier as "contact us" CTA with no automated billing; handle manually via Stripe dashboard direct invoice until there is an actual enterprise customer |
-| Billing for inbound calls to AI that didn't connect | "Count every Retell webhook event" | Retell fires webhooks for calls that never connected (ring-no-answer, voicemail redirects, early hangups); counting these as "calls used" will generate support tickets from owners who feel charged for non-service | Only increment usage counter on `call_ended` webhook with `call_status: 'ended'` and a minimum duration threshold (e.g., >10 seconds); exclude failed/short calls |
-| Mid-cycle usage reset on plan upgrade | "If they upgrade mid-cycle, reset their call count" | Resetting usage on upgrade means a tenant who used 38/40 calls can upgrade to Growth and immediately get 120 fresh calls; this exploits the upgrade mechanic as a usage reset | Do NOT reset usage on upgrade; usage resets only on billing cycle renewal; upgraded plan limit applies to remaining calls in current period |
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Hero copy reframe: complement not replacement | Current H1 "Let Voco Handle Your Phone Calls" implies replacement. The identity objection requires "your voice, just always-on" framing. | LOW | Copy change only — no new component. Subtitle update: "Voco answers when you can't. You stay in charge of every job." RotatingText can stay. |
+| FinalCTA reframe | Current CTA: "Your next emergency call is tonight." Strong but doesn't reinforce the control/complement angle. | LOW | Update subtitle copy. No structural change. Add: "Your rules. Your schedule. AI does the answering." |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| "Full-stack workflow" positioning strip | New messaging frame: Voco as AI that handles the whole inbound workflow (answer → triage → book → notify → CRM), not just a voice bot. | LOW | 5-icon horizontal strip showing the workflow chain. Inserted after HeroSection or before FeaturesCarousel. |
+| Owner-control emphasis callout | Addresses change-aversion by showing owner retains every important decision — only the "answering the phone at 2am" part is delegated. | LOW | Small callout card or pull-quote block. "You set the rules. Voco follows them." |
+
+### Anti-Features
+
+| Feature | Why Problematic | Alternative |
+|---------|-----------------|-------------|
+| "AI replacing receptionist" framing | Activates loss aversion in owners who feel personal connection to their customer relationships | "AI answering when you're on-site" — situational framing, not replacement framing |
+| Feature-first above-the-fold | Features without emotional context don't convert skeptical trades owners | Lead with the pain (missed calls = lost money), then features as proof |
+
+---
+
+## Category 3: Dashboard Dark Mode
+
+### Table Stakes (Must Have)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| ThemeProvider wrapper in root layout | Without it, next-themes cannot detect system preference or persist user choice. `next-themes ^0.4.6` is already installed. | LOW | Add `<ThemeProvider attribute="class" defaultTheme="system" enableSystem>` to `src/app/layout.js`. Must wrap Suspense boundaries carefully to avoid hydration mismatch. `suppressHydrationWarning` on `<html>` tag is required. |
+| Theme toggle in DashboardSidebar | Best-in-class placement per industry convention: sidebar bottom or header. User must have access without hunting for it. | LOW | Sun/Moon icon button using `useTheme()` from next-themes. Persists to localStorage automatically via next-themes. |
+| Design token audit: replace all hardcoded hex in dashboard | This is the bulk of the dark mode work. Every `bg-white`, `bg-[#F5F5F4]`, `text-[#0F172A]`, `border-stone-200`, `text-[#475569]` in dashboard components needs a dark-mode counterpart. Tailwind `dark:` prefix is the mechanism (globals.css already defines `.dark {}` variables). | HIGH | Scope: all files in `src/components/dashboard/` and `src/app/dashboard/**/*.js`. `design-tokens.js` must gain dark variants. DashboardSidebar, layout, all page content, flyouts, modals, settings panels. |
+| Dashboard layout background | `min-h-screen bg-[#F5F5F4]` in `layout.js` must become `dark:bg-[#0F172A]` or use CSS variable. GridTexture variant must swap. | LOW | Single-file change in `layout.js` + `GridTexture` component. |
+| Sidebar dark mode | `DashboardSidebar.jsx` hardcodes light colors throughout. Nav items, active state, logo area, bottom section. | MED | Replace with `dark:` prefixed equivalents. |
+| Bottom tab bar dark mode | `BottomTabBar.jsx` hardcodes light background. Mobile users see persistent light bar in dark mode — visually broken. | LOW | Single component, limited tokens. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Chart dark mode via CSS variables | `AnalyticsCharts.jsx` uses Recharts with hardcoded hex colors. In dark mode, dark text on dark backgrounds becomes unreadable. Shadcn chart approach: route through `--chart-1` through `--chart-5` CSS vars which already have dark values in globals.css. | MED | Requires updating `AnalyticsCharts.jsx` chartConfig to use `var(--chart-1)` etc. instead of hex. Also affects axis labels, grid lines, tooltip background. |
+| System preference detection | Users expect the product to honor `prefers-color-scheme: dark` without needing to manually toggle. next-themes `enableSystem` prop handles this. | LOW | Enabled via ThemeProvider config. Zero additional code beyond the ThemeProvider setup. |
+| Smooth theme transition | Abrupt color flips feel unfinished. 150–200ms transition on body or layout prevents jarring switch. | LOW | One CSS rule on `body` in globals.css: `transition: background-color 150ms, color 150ms`. Apply carefully to avoid slowing non-theme transitions. |
+| Flyout and modal dark mode | LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet — all use Sheet from shadcn (which respects CSS variables). The card content inside is hardcoded. | MED | Flyout interiors need `dark:` audit. shadcn Sheet itself uses `--card` variable which dark mode already defines. The card interiors are the issue. |
+| Status badges and urgency pills dark mode | LeadStatusPills, urgency badges use hardcoded colors (`bg-red-50 text-red-700`). In dark mode these become barely readable. | LOW | Map to semantic Tailwind classes (`dark:bg-red-900/30 dark:text-red-400`) for each badge variant. |
+
+### Anti-Features
+
+| Feature | Why Problematic | Alternative |
+|---------|-----------------|-------------|
+| `filter: invert()` on chart SVGs for dark mode | Inverts all colors including brand orange; produces muddy, incorrect results | CSS variables routed through shadcn chart config |
+| Auto-generated dark palette from light palette | "Darken everything by X%" produces murky mid-tones, not a proper dark theme | Use the existing `.dark` oklch values already in globals.css — they are well-designed |
+| Dark mode on the public/landing pages | Landing page uses a dark hero section intentionally (art direction). Adding OS-level dark mode to landing page risks making light sections too dark and breaking contrast. | Scope dark mode to dashboard only — use the `.dark` class which next-themes applies to `<html>`, then conditionally apply it only when on dashboard routes, OR accept it applies globally but keep landing page colors as hardcoded (non-variable) hex so they don't shift. |
+| Storing theme preference in database | Adds a round-trip on every load; next-themes localStorage persistence is sufficient and instant | localStorage via next-themes default behavior |
+
+---
+
+## Category 4: UI/UX Polish — Dashboard
+
+### Table Stakes (Must Have)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Empty states for all list views | Leads page (no leads yet), Calls page (no calls yet), Calendar (no appointments), Analytics (no data). Currently unclear what empty state renders. Empty states reduce churn for new users who haven't received calls yet. | LOW–MED | Pattern: Icon + "Nothing here yet" headline + primary action CTA. For leads: "Your first call will appear here the moment it comes in." |
+| Loading skeletons matching layout | Dashboard pages may show blank flashes during data fetch. Skeleton widths must match final content layout to prevent CLS. | LOW–MED | Use Tailwind `animate-pulse` with `bg-stone-200 dark:bg-stone-700` placeholders. One skeleton per page type (leads, calendar, calls, analytics). |
+| Consistent focus states | `design-tokens.js` has a focus ring token (`focus:ring-[#C2410C]`) but not all interactive elements use it. Missing focus states fail WCAG 2.1 AA. | LOW | Audit: all buttons, inputs, nav items, pill filters. Apply `focus-visible:` ring consistently (not `focus:` which fires on mouse click too). |
+| Error states for data fetches | When API calls fail, users see nothing or a frozen UI. Every page with a fetch needs an error state. | LOW | Pattern: "Something went wrong. Try refreshing." with retry button. Use Sonner toast for transient errors, inline error component for load failures. |
+| Mobile responsiveness audit | All page content must work at 375px viewport. DashboardSidebar is desktop-only; BottomTabBar is mobile-only — these are correct. The page content within is the concern. | MED | Focus: calendar grid (week view at 375px), analytics charts (Recharts ResponsiveContainer handles width but chart labels may overflow at small sizes), invoice/estimate tables (need horizontal scroll or card layout on mobile). |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Micro-interaction on lead status change | When a lead status is updated in LeadFlyout, a brief scale + opacity animation on the list item reinforces the action. Framer Motion `AnimatePresence` + `layout` prop on the lead list. Already uses framer-motion in layout.js. | LOW | Pattern already established in codebase. |
+| Button loading states | CTA buttons during async operations (save settings, send invoice, sync calendar) should show spinner + disable, not silently process. | LOW | Replace button text with `<Loader2 className="animate-spin" />` during pending state. Standard pattern. |
+| Hover states on stat cards | DashboardHomeStats 4 cards animate on mount but have no hover state. `hover:-translate-y-0.5 hover:shadow-md` adds polish at zero cost. | LOW | CSS only. Apply `transition-all duration-200` to each stat card wrapper. |
+| Command palette completeness | CommandPalette is mounted at layout level. Ensure all major navigation targets are in it (all pages from SKILL.md file map). | LOW | Audit existing commands against full page list. Estimated 3–4 missing destinations. |
+| Typography consistency pass | Dashboard mixes hardcoded hex (`text-[#0F172A]`, `text-[#475569]`) with Tailwind semantic colors (`text-slate-900`, `text-gray-600`). Consolidate to design-token values. | LOW–MED | Pure CSS/Tailwind find-and-replace. No behavior changes. |
+
+### Anti-Features
+
+| Feature | Why Problematic | Alternative |
+|---------|-----------------|-------------|
+| Page-level loading spinners (full-page overlay) | Blocks the entire UI; users lose context of where they are | Skeleton screens that mirror the page layout |
+| Animated route transitions with slide in/out | Creates perceptual lag in a data-heavy dashboard; users are navigating efficiently | The existing `opacity: 0 → 1, y: 6 → 0` in layout.js is already correct — subtle and functional, don't change it |
+| Tooltips on every element | Tooltip overload creates cognitive noise in a tool used repeatedly | Reserve tooltips for icon-only buttons that need a label, or for data points in charts |
+| "Success" confetti on booking | Cute in consumer apps; operators use this 50+ times/day — confetti becomes noise | A brief green checkmark animation on the status pill is sufficient |
+
+---
+
+## Category 5: UI/UX Polish — Landing Page
+
+### Table Stakes (Must Have)
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Consistent section spacing | Current landing alternates bg-white / bg-[#FAFAF9] / bg-[#F5F5F4] / bg-[#1C1412]. New objection sections must match this rhythm or feel grafted on. | LOW | Use established background colors. New sections should alternate between the existing warm-neutral palette. |
+| Mobile layout for new sections | New objection sections must work at 375px. Single-column stack at mobile, two-column or grid at md+. | LOW | Standard Tailwind responsive grid pattern. |
+| AnimatedSection wrapper for all new blocks | All existing below-fold sections use `AnimatedSection` (Framer Motion fade-up on scroll). New sections must follow this for visual consistency. | LOW | Import and wrap. Zero implementation complexity — pattern is established throughout landing. |
+
+### Differentiators
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| Reduced motion compliance for new animations | FeaturesCarousel already respects `prefersReducedMotion`. Any new animated counters, number tickers, or waveform animations must check this. | LOW | `useReducedMotion()` from framer-motion is already used in codebase — follow the same pattern. |
 
 ---
 
 ## Feature Dependencies
 
 ```
-Stripe Products & Prices (Starter, Growth, Scale)
-    |-- required before --> Stripe Checkout Session
-    |-- required before --> Stripe Customer Portal plan switching
+ThemeProvider (root layout)
+    └──required by──> Theme Toggle (DashboardSidebar)
+    └──required by──> dark: classes across all dashboard components
+    └──required by──> Chart dark mode (CSS variable routing)
 
-14-Day Free Trial (Checkout Session with trial_period_days)
-    |-- creates --> Stripe Customer (customer_id)
-    |-- creates --> Stripe Subscription (subscription_id, status: 'trialing')
-    |-- stored in --> subscriptions table (tenant_id, stripe_customer_id, stripe_subscription_id, status, trial_end, plan_id, call_limit)
-    |-- enables --> Trial countdown banner (dashboard)
-    |-- triggers (day 11) --> customer.subscription.trial_will_end webhook (Stripe fires 3 days before end)
+Design Token Audit (design-tokens.js dark variants)
+    └──feeds into──> All dashboard component dark: classes
 
-Stripe Webhook Handler (/api/webhooks/stripe)
-    |-- consumes --> customer.subscription.created
-    |-- consumes --> customer.subscription.updated (status changes: trialing→active, active→past_due, etc.)
-    |-- consumes --> customer.subscription.deleted (trial expired, cancelled)
-    |-- consumes --> customer.subscription.trial_will_end (3 days before trial end)
-    |-- consumes --> invoice.payment_succeeded (reset/confirm billing cycle)
-    |-- consumes --> invoice.payment_failed (notify owner, trigger grace period)
-    |-- updates --> subscriptions table (status, current_period_start, current_period_end)
+FAQ Accordion Section
+    └──no dependencies — standalone new component using existing shadcn Accordion
 
-Per-Call Usage Tracking
-    |-- triggered by --> Retell call_ended webhook (existing)
-    |-- requires --> tenant resolution from call metadata (existing)
-    |-- increments --> usage_calls in subscriptions or usage_periods table
-    |-- feeds --> Usage meter UI component
-    |-- feeds --> 80% threshold alert (differentiator)
-    |-- feeds --> Hard limit enforcement check
+Revenue Calculator Widget
+    └──no external deps — pure React controlled inputs
 
-Hard Limit Enforcement
-    |-- requires --> Per-call usage tracking (usage_calls current value)
-    |-- requires --> plan_call_limit in subscriptions table
-    |-- check fires --> On Retell call_started webhook (before call is accepted)
-    |-- on limit reached --> Reject call OR play "service unavailable" message to caller
+Objection Counter Sections (5+ blocks)
+    └──insert between──> existing landing page sections
+    └──must respect──> AnimatedSection wrapper pattern
+    └──must coordinate with──> ScrollLinePath boundary
 
-Subscription Status Gate (Middleware)
-    |-- reads --> subscription_status from subscriptions table (synced by webhook handler)
-    |-- gates --> All dashboard routes (trialing/active/past_due = allow; cancelled/paused = block)
-    |-- gates --> AI call acceptance (active/trialing only)
-    |-- redirects --> /billing/upgrade on blocked access
-
-Billing Dashboard Page (/dashboard/billing)
-    |-- reads --> subscriptions table (plan, status, usage, trial_end, current_period_end)
-    |-- renders --> Current plan card + usage meter
-    |-- renders --> Trial countdown banner (when status = trialing)
-    |-- links to --> Stripe Customer Portal (manage plan, invoices, payment method, cancel)
-    |-- links to --> Stripe Checkout (upgrade from trial)
-
-Stripe Customer Portal
-    |-- requires --> stripe_customer_id in subscriptions table
-    |-- provides --> Plan upgrade/downgrade
-    |-- provides --> Cancellation with reason survey
-    |-- provides --> Invoice history + PDF download
-    |-- provides --> Payment method update
-    |-- fires webhooks back --> Stripe Webhook Handler on any subscription change
+Chart Dark Mode
+    └──requires──> ThemeProvider (above)
+    └──requires──> AnalyticsCharts.jsx color config updated to var(--chart-N)
+    └──already has──> dark chart vars in globals.css (.dark { --chart-1: oklch(...) })
 ```
 
 ### Dependency Notes
 
-- **Stripe Products and Prices must be created first.** Everything else references the Price IDs. These are created once in the Stripe dashboard or via API during setup; Price IDs are stored in environment variables.
-- **The `subscriptions` table is the billing source of truth.** Webhooks keep it in sync with Stripe. The application must never query Stripe API in the hot path (call acceptance, page load); it reads from its own DB.
-- **Usage tracking attaches to the existing Retell call webhook.** No new webhook infrastructure is needed; the existing Retell webhook handler gains a usage-increment step.
-- **Hard limit enforcement must fire before Retell connects the call.** If the check happens after the call starts, the owner is already billed by Retell for the minute. Enforcement must be in the `call_started` webhook or equivalent pre-call hook.
-- **Stripe Customer Portal eliminates the need for custom plan-change UI.** The portal handles upgrade, downgrade, cancellation, invoice history, and payment method update. The only custom UI needed is the portal redirect button in the billing dashboard.
-- **Trial end behavior must be configured before launch.** `trial_settings.end_behavior.missing_payment_method: 'pause'` (vs `cancel`) is a key product decision that affects churn. Pausing is recommended (differentiator).
+- **ThemeProvider requires `suppressHydrationWarning` on `<html>`:** This is a next-themes requirement. Without it, server/client mismatch on the `class` attribute causes hydration errors.
+- **Dark mode requires complete token audit before shipping:** Partial dark mode where the sidebar is dark but page content remains `bg-white` looks broken. The token audit (HIGH complexity) must be done as a coherent single pass.
+- **ScrollLinePath boundary for new landing sections:** The SVG scroll-draw line wraps `HowItWorksSection → FeaturesCarousel → SocialProofSection`. New sections placed between or after must not extend the SVG path unexpectedly. Recommended placement: new objection sections AFTER `SocialProofSection` but INSIDE the `ScrollLinePath` wrapper (or between `ScrollLinePath` closing and `FinalCTASection`). Verify path alignment when inserting.
+- **Landing page dark mode scoping:** Since next-themes applies `.dark` class to `<html>`, and landing pages use hardcoded hex colors (not CSS variables), they naturally won't shift with the theme. This is correct and intentional — no extra scoping needed. Only dashboard components that use CSS variables or `dark:` Tailwind classes will respond to the theme.
 
 ---
 
-## MVP Definition
+## MVP Definition (v5.0 Scope)
 
-### Launch With (v3.0)
+### Launch With (P1)
 
-- [ ] **Stripe products and prices created** (Starter, Growth, Scale; Price IDs in env vars) — Required before any billing flows work
-- [ ] **14-day free trial via Stripe Checkout (no CC required)** — Auto-starts after onboarding completion; `payment_method_collection: 'if_required'`
-- [ ] **`subscriptions` database table** (tenant_id, stripe_customer_id, stripe_subscription_id, status, plan_id, call_limit, usage_calls, current_period_start, current_period_end, trial_end) — Billing source of truth
-- [ ] **Stripe webhook handler** syncing subscription status changes to DB — Required for all enforcement to work
-- [ ] **Per-call usage increment** on `call_ended` webhook (minimum duration filter: >10 seconds) — Drives usage meter and limit enforcement
-- [ ] **Hard limit enforcement** on pre-call hook: reject call if `usage_calls >= call_limit` — Core monetization gate
-- [ ] **Subscription status middleware gate** — Block dashboard + AI service for `cancelled`/`paused` status; redirect to `/billing/upgrade`
-- [ ] **Trial countdown banner in dashboard** — Show "X days left in trial" when `status = trialing`; include upgrade CTA button
-- [ ] **Billing dashboard page (`/dashboard/billing`)** — Current plan, usage meter (X of Y calls), trial/renewal date, link to Stripe Customer Portal
-- [ ] **Stripe Customer Portal integration** — Plan changes, cancellation, invoice history, payment method update; link from billing dashboard
-- [ ] **Failed payment notification** — On `invoice.payment_failed` webhook, send SMS + email to owner with payment update link
-- [ ] **Post-trial paywall page (`/billing/upgrade`)** — Landing page for expired/cancelled tenants with plan selection and Stripe Checkout link
+- [ ] **FAQ accordion** — highest ROI, lowest complexity, addresses all 5 objections in one component
+- [ ] **Hero + FinalCTA copy reframe** — complement-not-replacement repositioning, copy changes only
+- [ ] **"Cost of inaction" stat block** — objection #3 (price), the $260k/year number from PROBLEMS.md rendered as a visual callout
+- [ ] **"Sounds robotic" counter** — objection #1, most common, link back to live demo as proof
+- [ ] **"5-minute setup" visual strip** — objection #5, 3-step flow graphic
+- [ ] **ThemeProvider + theme toggle** — foundation for dark mode, must be in place before any dark: classes work
+- [ ] **Dashboard layout dark mode** — layout.js background + GridTexture + sidebar + bottom tab bar
+- [ ] **Design token audit pass** — replace hardcoded hex with dark-mode-aware values across all dashboard components
+- [ ] **Empty states for leads and calls pages** — highest-value polish for new users pre-first-call
 
-### Add After Validation (v3.x)
+### Add After Core Is Working (P2)
 
-- [ ] **80% usage alert** (SMS + email when `usage_calls >= 0.8 * call_limit`) — High value but not blocking for launch
-- [ ] **Trial email series (day 7 and day 12 reminders)** — Stripe fires `trial_will_end` at day 11; custom day 7 needs a cron job
-- [ ] **Pause on trial end** (instead of cancel) — Set `end_behavior.missing_payment_method: 'pause'`; reduces involuntary churn; add after base flow is validated
-- [ ] **Overage billing** (per-call charges beyond plan limit) — Requires Stripe metered billing configuration; high revenue upside but high complexity; do not ship until base billing is stable
+- [ ] **Chart dark mode** — dependent on ThemeProvider; add after layout dark mode is confirmed stable
+- [ ] **Identity/change-aversion section** — emotional copy block, requires copy iteration
+- [ ] **Revenue calculator widget** — high conversion value but needs design iteration
+- [ ] **"Before vs After" workflow comparison** — repositioning content, lower urgency than objection blockers
+- [ ] **Flyout and modal dark mode** — second-pass dark mode after layout + pages are done
+- [ ] **Loading skeleton screens** — polish pass after dark mode is stable
+- [ ] **Button loading states + hover micro-interactions** — polish layer
 
-### Future Consideration (v4+)
+### Defer (P3)
 
-- [ ] **Enterprise manual billing** — Custom contracts, manual invoicing; do not automate until first enterprise customer signs
-- [ ] **Admin MRR dashboard** — Total ARR, trial conversion rate, churn metrics; needed for product decisions but not for launch
-- [ ] **Annual billing option** (discount for annual prepay) — Common upsell lever; add when monthly billing is stable
-- [ ] **Coupon/promo codes for early adopters** — Stripe supports this in Checkout; add when sales/marketing motion requires it
+- [ ] **Trade specificity proof block** — FeaturesCarousel already covers "built for the trades"; duplication risk
+- [ ] **Anchor-linked section navigation in LandingNav** — low incremental conversion value vs added nav complexity
+- [ ] **Full mobile responsiveness deep audit** — app is already mobile-responsive; deep audit is ongoing maintenance
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature | Revenue Impact | Implementation Cost | Priority |
-|---------|---------------|---------------------|----------|
-| Stripe products + prices | BLOCKER | LOW | P0 |
-| `subscriptions` table | BLOCKER | LOW | P0 |
-| Stripe Checkout (trial signup) | HIGH | LOW | P1 |
-| Stripe webhook handler | HIGH | MEDIUM | P1 |
-| Per-call usage increment | HIGH | LOW | P1 |
-| Hard limit enforcement | HIGH | MEDIUM | P1 |
-| Subscription status middleware | HIGH | MEDIUM | P1 |
-| Trial countdown banner | MEDIUM | LOW | P1 |
-| Billing dashboard page | MEDIUM | LOW | P1 |
-| Stripe Customer Portal link | MEDIUM | LOW | P1 |
-| Failed payment notification | MEDIUM | LOW | P1 |
-| Post-trial paywall page | MEDIUM | LOW | P1 |
-| 80% usage alert | MEDIUM | LOW | P2 |
-| Trial email day 7 + 12 | MEDIUM | LOW | P2 |
-| Pause on trial end | MEDIUM | LOW | P2 |
-| Overage billing | HIGH (deferred) | HIGH | P3 |
-| Admin MRR dashboard | LOW | HIGH | P4 |
-
-**Priority key:**
-- P0: Blocking — nothing works without this
-- P1: Must have for v3.0 launch
-- P2: Should have, add after P1 is stable
-- P3: Significant revenue upside but significant complexity; defer
-- P4: Operational/product insight; not user-facing
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| FAQ Accordion (objections 1–5) | HIGH | LOW | P1 |
+| Hero/CTA copy reframe | HIGH | LOW | P1 |
+| "Sounds robotic" counter block | HIGH | LOW | P1 |
+| "Cost of inaction" stat block | HIGH | LOW | P1 |
+| ThemeProvider + theme toggle | HIGH | LOW | P1 |
+| Dashboard design token audit (dark mode) | HIGH | HIGH | P1 |
+| Empty states (leads, calls) | MED | LOW | P1 |
+| "5-minute setup" visual strip | MED | LOW | P2 |
+| Trust/hybrid backup badges | MED | LOW | P2 |
+| Chart dark mode (CSS variables) | MED | MED | P2 |
+| Identity/change-aversion section | HIGH | MED | P2 |
+| Flyout/modal dark mode | MED | MED | P2 |
+| Revenue calculator widget | HIGH | MED | P2 |
+| Loading skeleton screens | MED | LOW | P2 |
+| Button loading states | MED | LOW | P2 |
+| Hover micro-interactions on stat cards | LOW | LOW | P2 |
+| "Before vs After" comparison strip | MED | MED | P3 |
+| Trade specificity proof block | MED | LOW | P3 |
+| Anchor-linked landing nav | LOW | MED | P3 |
 
 ---
 
-## Billing Lifecycle State Machine
+## Implementation Notes for Roadmap
+
+### Landing Page Section Insertion Order
+
+Recommended order after research:
 
 ```
-[Tenant completes onboarding]
-    |
-    v
-[14-day trial starts]
-    |-- status: trialing
-    |-- no payment method required
-    |-- usage counts accumulate
-    |-- AI service: active
-    |-- dashboard: active (with countdown banner)
-    |
-    v (day 11)
-[Stripe fires: customer.subscription.trial_will_end]
-    |-- Trigger: in-app countdown banner update
-    |-- Trigger (optional): email reminder
-    |
-    v (day 14)
-    |
-    |--[Tenant adds CC before expiry]----> [Subscription activates]
-    |                                          |-- status: active
-    |                                          |-- billing cycle starts
-    |                                          |-- usage resets
-    |                                          |-- AI service: active
-    |
-    |--[No CC added]----> [Subscription pauses] (recommended)
-                              |-- status: paused
-                              |-- AI service: BLOCKED
-                              |-- dashboard: BLOCKED → /billing/upgrade
-                              |
-                              v [Tenant adds CC]
-                              [Subscription resumes]
-                                  |-- status: active
-
-[Active subscription]
-    |
-    |--[Monthly renewal]----> [invoice.payment_succeeded]
-    |                              |-- usage_calls reset to 0
-    |                              |-- current_period updated
-    |
-    |--[Payment fails]----> [invoice.payment_failed]
-    |                           |-- SMS + email to owner
-    |                           |-- Stripe Smart Retries (up to 8 over 28 days)
-    |                           |-- status: past_due (still active during grace)
-    |                           |
-    |                           v [retries exhausted]
-    |                           [status: cancelled]
-    |                               |-- AI service: BLOCKED
-    |
-    |--[Plan upgrade]----> [Immediate proration, new call_limit applies]
-    |
-    |--[Plan downgrade]---> [Scheduled end-of-period, current limit until cycle end]
-    |
-    |--[Cancellation via portal]----> [Access until period_end, then BLOCKED]
-    |
-    |--[Quota reached]----> [Hard stop: calls rejected until cycle resets or upgrade]
+HeroSection (existing — copy update only)
+ScrollLinePath {
+  HowItWorksSection (existing)
+  FeaturesCarousel (existing)
+  [NEW] ObjectionCounterSection — 5 objection counter cards in responsive grid
+  SocialProofSection (existing)
+}
+[NEW] FAQSection — Radix Accordion, just above FinalCTASection
+FinalCTASection (existing — copy update only)
 ```
 
----
+The "full-stack workflow positioning strip" can be a lightweight addition inside the existing HowItWorksSection header or between HeroSection and ScrollLinePath — no new section needed if the copy is updated in HowItWorks heading.
 
-## Expected Stripe Webhook Events to Handle
+### Dark Mode Implementation Order (Phase Within Milestone)
 
-| Event | When It Fires | Action Required |
-|-------|---------------|-----------------|
-| `checkout.session.completed` | Tenant completes Checkout | Create/update `subscriptions` row with `stripe_customer_id` and `stripe_subscription_id` |
-| `customer.subscription.created` | After Checkout completes | Set `status: trialing`, store `trial_end`, `current_period_start/end`, `plan_id`, `call_limit` |
-| `customer.subscription.trial_will_end` | 3 days before trial ends | Update UI flag in DB; optionally trigger reminder email |
-| `customer.subscription.updated` | Status change, plan change | Sync `status`, `plan_id`, `call_limit`, `current_period_start/end` to DB |
-| `customer.subscription.deleted` | Trial cancelled (no CC) or manual cancel | Set `status: cancelled`; block access |
-| `customer.subscription.paused` | Trial end with no CC (if pause configured) | Set `status: paused`; block access |
-| `customer.subscription.resumed` | Owner adds CC and resumes paused sub | Set `status: active`; unblock access |
-| `invoice.payment_succeeded` | Monthly renewal charges successfully | Reset `usage_calls` to 0; update `current_period_start/end` |
-| `invoice.payment_failed` | Card declined on renewal | Send SMS + email to owner; Stripe handles retries |
+1. Add ThemeProvider to root layout (`src/app/layout.js`) + `suppressHydrationWarning` on `<html>`
+2. Add theme toggle to DashboardSidebar
+3. Update `layout.js` background, GridTexture, system banners (ImpersonationBanner, BillingWarningBanner, TrialCountdownBanner)
+4. Update `design-tokens.js` with dark variants for all tokens (card.base, glass.topBar, heading, body, focus, selected)
+5. Audit and update all dashboard page components file by file
+6. Audit and update flyouts, modals, settings panels
+7. Update AnalyticsCharts.jsx chart colors to `var(--chart-N)` CSS variable routing
+8. Test status badges, urgency pills, all colored UI elements in dark mode
 
----
+### Chart CSS Variable Routing (Confirmed Pattern)
 
-## Competitor Billing Feature Benchmarks
+The globals.css already defines:
+- Light: `--chart-1: oklch(0.646 0.222 41.116)` through `--chart-5`
+- Dark: `.dark { --chart-1: oklch(0.488 0.243 264.376) }` through `--chart-5`
 
-Reference: How similar B2B SaaS tools (especially SME-focused) handle billing.
-
-| Feature | Typical B2B SaaS | This Product (v3.0) |
-|---------|-----------------|---------------------|
-| Trial | 14-day, CC required | 14-day, NO CC required |
-| Trial conversion prompt | Email only | In-dashboard countdown banner + email |
-| Plan limit enforcement | Soft warning | Hard stop + redirect |
-| Overage | Not common at SME tier | Deferred to v3.x |
-| Self-serve plan change | Stripe Portal or custom | Stripe Customer Portal |
-| Invoice access | Email or portal | Stripe Customer Portal |
-| Failed payment recovery | Stripe retries only | Stripe retries + SMS/email to owner |
-| Cancellation | Portal or contact support | Stripe Customer Portal (self-serve) |
-
-The no-CC trial is deliberately more generous than most B2B SaaS (which require a card). This is appropriate for the SME plumber/HVAC market where trust barriers are high and owners are skeptical of software subscriptions. The tradeoff is lower intent signal at signup — addressed by the in-app countdown banner and mandatory paywall at expiry.
+`AnalyticsCharts.jsx` currently uses hardcoded hex. Migration: replace with `color: "var(--chart-1)"` in the Recharts chartConfig. Axis colors, grid line colors, and tooltip backgrounds also need CSS variable routing.
 
 ---
 
 ## Sources
 
-- [Stripe Billing — Recurring Payments & Subscription Solutions](https://stripe.com/billing) — HIGH confidence (official)
-- [Stripe: Use trial periods on subscriptions](https://docs.stripe.com/billing/subscriptions/trials) — HIGH confidence (official docs)
-- [Stripe: Configure free trials (Checkout)](https://docs.stripe.com/payments/checkout/free-trials) — HIGH confidence (official docs)
-- [Stripe: Upgrade and downgrade subscriptions](https://docs.stripe.com/billing/subscriptions/upgrade-downgrade) — HIGH confidence (official docs)
-- [Stripe: Prorations](https://docs.stripe.com/billing/subscriptions/prorations) — HIGH confidence (official docs)
-- [Stripe: Configure the customer portal](https://docs.stripe.com/customer-management/configure-portal) — HIGH confidence (official docs)
-- [Stripe: Scheduled downgrades in customer portal (2024-10-28)](https://docs.stripe.com/changelog/acacia/2024-10-28/customer-portal-schedule-downgrades) — HIGH confidence (official changelog)
-- [Stripe: Automate payment retries (Smart Retries)](https://docs.stripe.com/billing/revenue-recovery/smart-retries) — HIGH confidence (official docs)
-- [Stripe: Using webhooks with subscriptions](https://docs.stripe.com/billing/subscriptions/webhooks) — HIGH confidence (official docs)
-- [Stripe: Build a subscriptions solution for AI startup (usage-based)](https://docs.stripe.com/get-started/use-cases/usage-based-billing) — HIGH confidence (official docs)
-- [Failed Payment Recovery 2025: Stripe Smart Retries & Dunning](https://www.quantledger.app/blog/how-to-recover-failed-payments-stripe) — MEDIUM confidence (verified against official docs)
-- [SaaS Stripe Integration: Billing Made Simple 2026](https://designrevision.com/blog/saas-stripe-integration) — MEDIUM confidence (industry guide)
-- [Kinde: Dunning Strategies for SaaS](https://www.kinde.com/learn/billing/churn/dunning-strategies-for-saas-email-flows-and-retry-logic/) — MEDIUM confidence (industry guide)
-- [10 Best SaaS Billing Platforms 2026 (Outseta)](https://www.outseta.com/posts/best-saas-billing-platforms) — MEDIUM confidence (survey, competitor analysis)
+- PROBLEMS.md — 5 objections and counters sourced directly from owner/market research (PRIMARY SOURCE)
+- Codebase reading — all existing sections inventoried from `src/app/(public)/page.js` and `src/app/components/landing/`
+- `src/app/globals.css` — confirmed existing `.dark` CSS variable set (oklch tokens, chart-1 through chart-5 dark values already defined)
+- `package.json` — `next-themes ^0.4.6` already installed; confirmed via grep
+- shadcn/ui chart docs (https://ui.shadcn.com/docs/components/radix/chart) — CSS variable approach for Recharts dark mode (HIGH confidence)
+- WebSearch: SaaS landing page objection patterns 2025 — FAQ as objection handler, 48% exit stat, "cost of inaction" technique
+- WebSearch: AI receptionist trust objections — 85-95% blind test stat for modern AI voice quality
+- WebSearch: Revenue calculator widget 40%+ conversion rate (MEDIUM confidence — from Outgrow marketing material, not independent research)
+- WebSearch: empty state UX best practices 2025, micro-interaction patterns, skeleton screen vs spinner guidance
 
 ---
 
-*Feature research for: HomeService AI Agent — v3.0 Subscription Billing & Usage Enforcement*
-*Researched: 2026-03-26*
+*Feature research for: v5.0 Trust & Polish — Objection-Busting Landing Page, Dark Mode, UI/UX Polish*
+*Researched: 2026-04-13*

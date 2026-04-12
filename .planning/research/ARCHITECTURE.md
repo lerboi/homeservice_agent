@@ -1,786 +1,459 @@
-# Architecture: Stripe Billing Integration
+# Architecture Research
 
-**Domain:** Subscription billing, usage metering, and plan enforcement in existing Next.js 15 + Supabase + Retell platform
-**Researched:** 2026-03-26
-**Confidence:** HIGH (direct codebase audit + verified against Stripe official docs)
-
----
-
-## Integration Philosophy: Additive Wiring, Not Structural Change
-
-The existing platform has a stable, proven architecture. Stripe billing plugs into it at four defined seams:
-
-1. **Lifecycle management** — Stripe webhooks sync subscription state into Supabase
-2. **Usage metering** — Retell `call_ended` / `call_analyzed` events increment a call counter in Postgres (not Stripe Billing Meters — see rationale below)
-3. **Enforcement gate** — `handleInbound` checks subscription status before returning `dynamic_variables`; if blocked, returns `booking_enabled: 'false'` and a paywall message
-4. **Billing UI** — A new `/dashboard/more/billing` page under the existing More hub
-
-No new infrastructure services. No Redis. No job queues. No separate billing microservice. All billing logic runs in Next.js API routes + Supabase.
+**Domain:** Next.js App Router SaaS — dark mode + landing page integration
+**Researched:** 2026-04-13
+**Confidence:** HIGH (all findings from direct codebase inspection)
 
 ---
 
-## System Overview
+## Standard Architecture
+
+### System Overview
 
 ```
-EXISTING ARCHITECTURE (unchanged components shown with ✓)
-=========================================================
-
-Stripe Dashboard
-    |
-    | Products / Prices / Customer Portal config
-    |
-    v
-[/api/stripe/webhook] ─────────────── NEW ENDPOINT
-    |
-    | Subscription lifecycle events
-    | (created, updated, deleted, invoice.paid, trial_will_end, payment_failed)
-    v
-[subscriptions table] ────────────── NEW TABLE (Supabase)
-    |
-    | stripe_customer_id, stripe_subscription_id,
-    | status, plan_id, calls_limit, calls_used,
-    | trial_ends_at, current_period_end
-    |
-    +── FK → tenants.id (one-to-one)
-    |
-    v
-[ENFORCEMENT GATE] ─────────────── MODIFY handleInbound()
-    |
-    | Check: subscriptions.status IN ('active', 'trialing')
-    | Check: subscriptions.calls_used < subscriptions.calls_limit
-    |
-    | PASS → existing slot calculation, return dynamic_variables with booking_enabled: 'true'
-    | BLOCK → return dynamic_variables with booking_enabled: 'false', paywall_reason: '...'
-    v
-[Retell call_inbound webhook] ────────── ✓ EXISTING (gate added here)
-    |
-    v
-[WebSocket LLM Server] ─────────────── ✓ EXISTING (unchanged)
-    |
-    v
-[call_ended webhook] ───────────────── ✓ EXISTING
-    |
-    +── INCREMENT calls_used ─────── MODIFY processCallEnded()
-    v
-[call_analyzed webhook] ────────────── ✓ EXISTING
-    |
-    v
-[triage + lead creation + notifications] ── ✓ EXISTING (unchanged)
-
-BILLING UI
-==========
-
-/dashboard/more/billing ──────────── NEW PAGE
-    |
-    | Reads: subscriptions table (current plan, usage, trial status)
-    | Reads: usage_events table (per-billing-period call history)
-    |
-    | Server Action: createCheckoutSession() → Stripe Checkout URL
-    | Server Action: createPortalSession() → Stripe Customer Portal URL
-    |
-    v
-/api/stripe/checkout ─────────────── NEW ENDPOINT
-/api/stripe/portal ───────────────── NEW ENDPOINT
-
-TRIAL AUTO-START
-================
-
-/api/onboarding/complete (existing) ─── MODIFY
-    |
-    | After marking onboarding_complete = true:
-    | → Create Stripe customer
-    | → Create 14-day trial subscription (no payment method)
-    | → Insert subscriptions row (status='trialing')
-    |
-    v
-[subscriptions table] ← trial_ends_at = now() + 14 days
+src/app/
+├── layout.js                    ← ROOT: NextIntlClientProvider only — NO ThemeProvider yet
+│
+├── (public)/
+│   ├── layout.js                ← LandingNav + LandingFooter + PublicChatButton
+│   └── page.js                  ← Landing entry: HeroSection + ScrollLinePath + sections
+│
+└── dashboard/
+    ├── layout.js                ← 'use client', hardcoded bg-[#F5F5F4], NO ThemeProvider
+    └── */page.js                ← All pages use hardcoded hex colors, no semantic tokens
 ```
+
+**Current state:** `next-themes` v0.4.6 is installed but has no `ThemeProvider` anywhere in the tree. Only `sonner.jsx` calls `useTheme()` — it will silently fall back to `"system"` since no provider exists. The `.dark {}` CSS variable block and `@custom-variant dark` are already defined in `globals.css`. The CSS infrastructure exists; the provider wiring and token migration are what's missing.
 
 ---
 
-## Component-by-Component Integration Plan
+## Integration Architecture for v5.0
 
-### 1. Stripe Webhook Handler (`/api/stripe/webhook`) — NEW ENDPOINT
+### (a) Where the ThemeProvider Lives
 
-**Location:** `src/app/api/stripe/webhook/route.js`
+**Place `ThemeProvider` in `src/app/layout.js` — the root layout.**
 
-**Purpose:** Receive Stripe lifecycle events and keep `subscriptions` table in sync. This is the single source of truth update path — all subscription state changes flow through here.
+This is the only correct answer for this codebase. Here is why:
 
-**Events handled:**
+- The root layout wraps both `(public)/layout.js` and `dashboard/layout.js`. One provider placement covers everything.
+- `next-themes` requires a single `ThemeProvider` ancestor. Placing it in `dashboard/layout.js` only would exclude the public site; placing it in `(public)/layout.js` would exclude the dashboard.
+- `dashboard/layout.js` is `'use client'` but `layout.js` (root) is a Server Component — `ThemeProvider` must be wrapped in a `'use client'` boundary. The pattern is a thin `src/components/providers/ThemeProvider.jsx` client wrapper that re-exports `next-themes`' ThemeProvider.
 
-| Stripe Event | Action |
-|---|---|
-| `checkout.session.completed` | Extract `tenant_id` from session metadata; upsert `subscriptions` row with `stripe_subscription_id`, `stripe_customer_id`, plan details, `status: 'active'` |
-| `customer.subscription.created` | Upsert subscription with status, `current_period_end`, `trial_end` |
-| `customer.subscription.updated` | Update status, plan_id, `current_period_end`, `cancel_at_period_end`; handle plan upgrade/downgrade (update `calls_limit` from plan config) |
-| `customer.subscription.deleted` | Set `status: 'canceled'`; set `canceled_at` timestamp |
-| `invoice.paid` | Set `status: 'active'`, reset `calls_used = 0`, update `current_period_end` from invoice period |
-| `invoice.payment_failed` | Set `status: 'past_due'`; trigger email to owner via Resend (reuse existing email client) |
-| `customer.subscription.trial_will_end` | Send "trial ending in 3 days" email to owner with upgrade CTA |
-
-**Critical pattern — webhook verification:**
-
-```javascript
-// MUST use raw body, not parsed JSON, for signature verification
-const rawBody = await request.text();
-const signature = request.headers.get('stripe-signature');
-const event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
+```
+src/app/layout.js  (Server Component, stays server)
+  └── <NextIntlClientProvider>
+        └── <ThemeProviderWrapper>        ← NEW: 'use client' wrapper component
+              └── {children}
 ```
 
-This is the same pattern already used for Retell webhooks in the existing codebase — consistent approach.
+The `ThemeProviderWrapper` component lives at `src/components/providers/ThemeProvider.jsx`. It is the only new file needed at the provider layer.
 
-**Idempotency:** Upsert on `stripe_subscription_id` as the conflict key. Stripe may deliver the same event multiple times; upsert is safe for all subscription state updates. For `calls_used` reset (on `invoice.paid`), only reset if `current_period_start` from the event is newer than the stored value — prevents double-reset on retry.
-
-**RLS bypass:** Use `supabase` (service role) client, same as all other webhook handlers. Service role bypasses RLS, which is correct — webhooks act on behalf of Stripe, not an authenticated user.
+**Public site dark mode scope:** The public site landing sections use hardcoded colors (`bg-[#050505]`, `bg-white`, `bg-[#F5F5F4]`) — they are effectively dark-on-dark-hero already. Do NOT apply dark-mode toggling to the public site in this milestone. Set `ThemeProvider` with `enableSystem={false}` and scope dark class application to dashboard only via `attribute="class"` on a dashboard-level wrapper element rather than `<html>`. See section (c) for the exact pattern.
 
 ---
 
-### 2. Subscriptions Table — NEW DATABASE TABLE
+### (b) Theme Preference Storage
 
-**Location:** `supabase/migrations/010_billing.sql`
+**Use cookie storage via `next-themes` built-in `storageKey` + `attribute="class"` — no Supabase column needed for v5.0.**
 
-**Schema:**
+Analysis of options:
 
-```sql
-CREATE TABLE subscriptions (
-  id                      uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id               uuid UNIQUE NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  stripe_customer_id      text UNIQUE NOT NULL,
-  stripe_subscription_id  text UNIQUE,
-  status                  text NOT NULL DEFAULT 'trialing'
-    CHECK (status IN ('trialing', 'active', 'past_due', 'canceled', 'paused', 'incomplete')),
-  plan_id                 text,
-  calls_limit             int NOT NULL DEFAULT 300,
-  calls_used              int NOT NULL DEFAULT 0,
-  trial_ends_at           timestamptz,
-  current_period_start    timestamptz,
-  current_period_end      timestamptz,
-  cancel_at_period_end    boolean NOT NULL DEFAULT false,
-  canceled_at             timestamptz,
-  stripe_price_id         text,
-  created_at              timestamptz NOT NULL DEFAULT now(),
-  updated_at              timestamptz NOT NULL DEFAULT now()
-);
+| Option | SSR Flash Risk | Complexity | Cross-device | Verdict |
+|--------|---------------|------------|--------------|---------|
+| `localStorage` (next-themes default) | HIGH — value unavailable on server | Low | No | Reject |
+| Cookie (`next-themes` + `storageKey`) | NONE when read in middleware | Low | No | Accept for v5.0 |
+| Supabase `tenants.ui_preferences` JSONB | NONE | High — requires migration + API | Yes | Defer to v6+ |
 
--- RLS: owner reads own subscription
-ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+`next-themes` has a `storageKey` prop (defaults to `"theme"`) and stores the preference in `localStorage` by default. To get SSR-safe cookie storage, use the `ThemeProvider` with `storageKey="voco-theme"` and add a middleware cookie read OR use the `next-themes` `attribute="class"` approach with the hydration suppression technique described in (c).
 
-CREATE POLICY "subscriptions_read_own" ON subscriptions
-  FOR SELECT
-  USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
+**For v5.0:** Use `next-themes` with `attribute="class"`, `defaultTheme="light"`, `enableSystem={false}`, `disableTransitionOnChange`. The localStorage read on the client is fast enough that the flash suppression script (described in (c)) eliminates visible flicker. Skip the Supabase migration — preferences that don't sync across devices are acceptable for a polish milestone.
 
-CREATE POLICY "subscriptions_update_own" ON subscriptions
-  FOR UPDATE
-  USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
-
-CREATE POLICY "service_role_all_subscriptions" ON subscriptions
-  FOR ALL USING (auth.role() = 'service_role');
-
--- Index for enforcement gate (called on every inbound call)
-CREATE INDEX idx_subscriptions_tenant_id ON subscriptions(tenant_id);
-CREATE INDEX idx_subscriptions_stripe_customer ON subscriptions(stripe_customer_id);
-```
-
-**`calls_limit` by plan:**
-
-| Plan | `calls_limit` | Monthly Price |
-|---|---|---|
-| Starter | 100 | $49 |
-| Growth | 300 | $99 |
-| Pro | 1000 | $199 |
-| Enterprise | -1 (unlimited) | Custom |
-
-These are set by the webhook handler when a plan is created/updated based on the `stripe_price_id` lookup in a plan config map.
-
-**`calls_used` reset cycle:** Reset to 0 on `invoice.paid` event (every billing period). Combined with `current_period_start` to avoid double-reset.
-
-**Usage events table** (separate from `subscriptions` for detailed per-period audit trail):
-
-```sql
-CREATE TABLE usage_events (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id   uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  call_id     uuid REFERENCES calls(id) ON DELETE SET NULL,
-  event_type  text NOT NULL DEFAULT 'call_answered',
-  period_start timestamptz,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-
-ALTER TABLE usage_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "usage_events_read_own" ON usage_events
-  FOR SELECT
-  USING (tenant_id IN (SELECT id FROM tenants WHERE owner_id = auth.uid()));
-CREATE POLICY "service_role_all_usage" ON usage_events
-  FOR ALL USING (auth.role() = 'service_role');
-CREATE INDEX idx_usage_tenant_period ON usage_events(tenant_id, period_start DESC);
-```
-
-The `usage_events` table powers the billing dashboard's call history display and allows usage reconciliation without querying Stripe's API on every page load.
+**No new migration needed.** The `notification_preferences` JSONB pattern on `tenants` table (migration 015) could be extended with `ui_preferences` in a future milestone when cross-device sync matters.
 
 ---
 
-### 3. Enforcement Gate — MODIFY `handleInbound()`
+### (c) Avoiding Hydration Flash on Dark Mode
 
-**Location:** `src/app/api/webhooks/retell/route.js` (existing file, `handleInbound` function)
+**The hydration flash problem:** On first SSR render, the server emits HTML with no class. The client reads `localStorage`, finds `"dark"`, and adds `.dark` to the DOM. If this happens after paint, there is a visible white flash.
 
-**Current state:** `handleInbound` queries tenants + scheduling data in parallel, returns `dynamic_variables`. No subscription check.
+**The fix: `suppressHydrationWarning` on `<html>` + `next-themes` built-in script injection.**
 
-**What changes:**
+`next-themes` automatically injects a blocking inline `<script>` into `<head>` that reads localStorage and applies the theme class before first paint — this is their core anti-flash mechanism. It works IF `suppressHydrationWarning={true}` is set on the `<html>` element (because the server-rendered HTML and client-hydrated HTML will differ in the `class` attribute).
 
-Add a subscription check to the parallel Supabase queries already running in `handleInbound`. This is the correct injection point because `handleInbound` already does tenant resolution and already has the gate that returns `booking_enabled: 'false'` for no-tenant or no-slot scenarios.
+Required changes to `src/app/layout.js`:
 
-```javascript
-// Add to the parallel queries in handleInbound:
-const [appointmentsResult, eventsResult, zonesResult, buffersResult, subscriptionResult] = await Promise.all([
-  // ... existing queries unchanged ...
-  supabase
-    .from('subscriptions')
-    .select('status, calls_limit, calls_used, trial_ends_at, cancel_at_period_end')
-    .eq('tenant_id', tenant.id)
-    .single(),
-]);
+```jsx
+// src/app/layout.js — root layout changes
+<html lang={locale} className={inter.variable} suppressHydrationWarning>
 ```
 
-**Gate logic (after tenant lookup, before slot calculation):**
+And in `src/components/providers/ThemeProvider.jsx`:
 
-```javascript
-const sub = subscriptionResult.data;
-const now = new Date();
+```jsx
+'use client';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-// ALLOW: active subscription within limits
-const isActive = sub?.status === 'active' || sub?.status === 'trialing';
-const withinTrial = sub?.status === 'trialing' && sub?.trial_ends_at && new Date(sub.trial_ends_at) > now;
-const withinLimit = sub?.calls_limit === -1 || (sub?.calls_used ?? 0) < (sub?.calls_limit ?? 0);
-const subscriptionAllowed = (isActive || withinTrial) && withinLimit;
-
-// BLOCK: return paywall response
-if (!subscriptionAllowed) {
-  const reason = !isActive && !withinTrial
-    ? 'subscription_expired'
-    : 'call_limit_reached';
-  return Response.json({
-    dynamic_variables: {
-      business_name: tenant.business_name || 'Voco',
-      default_locale: tenant.default_locale || 'en',
-      onboarding_complete: String(tenant.onboarding_complete ?? false),
-      caller_number: from_number || '',
-      booking_enabled: 'false',
-      paywall_reason: reason,
-      // Provide a graceful message the AI can speak to the caller
-      available_slots: 'No slots available at this time',
-    },
-  });
+export function ThemeProviderWrapper({ children }) {
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem={false}
+      disableTransitionOnChange
+      storageKey="voco-theme"
+    >
+      {children}
+    </NextThemesProvider>
+  );
 }
 ```
 
-**Grace period for `past_due`:** Allow calls for 3 days after `past_due` transitions (Stripe retries payment automatically; most recover). Set a `past_due_grace_end` computed from `updated_at` in the subscriptions table. This prevents blocking legitimate customers during transient payment failures.
+**Scoping dark mode to the dashboard only (keeping public site always-light):**
 
-**Performance consideration:** The subscription check is a single indexed query (`tenant_id` is the PK on subscriptions, unique). It runs in parallel with the 4 existing queries. Net additional latency: ~0ms (parallel). No caching needed at current scale.
+The `attribute="class"` prop makes `next-themes` toggle the class on `<html>`. This would affect the public site too. To scope it:
 
----
+Option A: Keep `attribute="class"` on `<html>` but override public site sections with explicit light colors (they already use hardcoded colors so they're immune — `bg-[#050505]` ignores `.dark` body background).
 
-### 4. Usage Metering — MODIFY `processCallEnded()`
+Option B: Pass a custom `attribute` selector targeting only the dashboard wrapper div. This is more complex and non-standard.
 
-**Location:** `src/lib/call-processor.js` (existing file, `processCallEnded` function)
-
-**Why `call_ended` (not `call_analyzed`):** `call_ended` fires immediately when the call disconnects, before recording processing. Metering at `call_ended` means a call is counted as soon as it is answered, preventing circumvention by hanging up before analysis. `call_analyzed` fires later and is not guaranteed (analysis can fail/timeout).
-
-**Why Postgres counter (not Stripe Billing Meters):** The PROJECT.md specifies "per-call usage tracking" and "plan limit enforcement." Stripe Billing Meters are designed for pay-as-you-go overage invoicing (billing customers per-call beyond a limit). The plan here is flat-rate subscriptions with per-call caps, not per-call overage billing. Storing `calls_used` in Postgres keeps the enforcement gate simple (one indexed query) and avoids Stripe API calls on every inbound call.
-
-**What changes:**
-
-```javascript
-// In processCallEnded, after the call upsert succeeds:
-// Increment calls_used for the tenant
-if (tenantId) {
-  await supabase.rpc('increment_calls_used', { p_tenant_id: tenantId });
-
-  // Also log to usage_events for audit trail
-  await supabase.from('usage_events').insert({
-    tenant_id: tenantId,
-    call_id: callRecord?.id || null,
-    event_type: 'call_answered',
-    period_start: periodStart, // from subscriptions.current_period_start
-  });
-}
-```
-
-**Postgres RPC for atomic increment:**
-
-```sql
--- In migration 010_billing.sql
-CREATE OR REPLACE FUNCTION increment_calls_used(p_tenant_id uuid)
-RETURNS void AS $$
-  UPDATE subscriptions
-  SET calls_used = calls_used + 1,
-      updated_at = now()
-  WHERE tenant_id = p_tenant_id
-    AND status IN ('active', 'trialing', 'past_due');
-$$ LANGUAGE sql;
-```
-
-Using `supabase.rpc()` for the increment ensures the counter is updated atomically — concurrent calls from the same tenant cannot corrupt the counter.
-
-**Test calls excluded:** The existing test call check (`isTestCall` from metadata) should also gate the increment. Test calls during onboarding must not consume the usage counter.
+**Recommendation: Use Option A.** The public site landing sections are dark-hero by design and use hardcoded values — they will not be affected by `.dark` on `<html>`. The only public site components using semantic Tailwind tokens (like `bg-background`, `text-foreground`) would need audit, but the public layout uses hardcoded colors throughout. This is safe.
 
 ---
 
-### 5. Trial Auto-Start — MODIFY `/api/onboarding/complete`
+### (d) Landing Section Insertion Points
 
-**Location:** `src/app/api/onboarding/complete/route.js`
+The landing page flow is defined in `src/app/(public)/page.js`:
 
-**Current state:** Marks `onboarding_complete = true` on the tenant. Does nothing else.
-
-**What changes:** After marking onboarding complete, create the Stripe customer and trial subscription:
-
-```javascript
-// After tenants.update({ onboarding_complete: true }):
-const stripe = getStripeClient();
-
-// Create or retrieve Stripe customer
-const customer = await stripe.customers.create({
-  email: tenant.owner_email,
-  name: tenant.business_name,
-  metadata: { tenant_id: tenantId },
-});
-
-// Create 14-day trial subscription (no payment method required)
-const subscription = await stripe.subscriptions.create({
-  customer: customer.id,
-  items: [{ price: process.env.STRIPE_GROWTH_PRICE_ID }],
-  trial_period_days: 14,
-  trial_settings: {
-    end_behavior: {
-      missing_payment_method: 'cancel', // subscription cancels if no card added before trial ends
-    },
-  },
-  payment_settings: {
-    save_default_payment_method: 'on_subscription',
-  },
-  expand: ['latest_invoice.payment_intent'],
-  metadata: { tenant_id: tenantId },
-});
-
-// Write to subscriptions table (webhook will also arrive, upsert is idempotent)
-await supabase.from('subscriptions').upsert({
-  tenant_id: tenantId,
-  stripe_customer_id: customer.id,
-  stripe_subscription_id: subscription.id,
-  stripe_price_id: subscription.items.data[0].price.id,
-  status: 'trialing',
-  plan_id: 'growth',
-  calls_limit: 300,
-  calls_used: 0,
-  trial_ends_at: new Date(subscription.trial_end * 1000).toISOString(),
-  current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-  current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-}, { onConflict: 'tenant_id' });
+```
+Current structure:
+  <ScrollProgress />
+  <HeroSection />
+  <ScrollLinePath>
+    <HowItWorksSection />
+    <FeaturesCarousel />
+    <SocialProofSection />
+  </ScrollLinePath>
+  <FinalCTASection />
 ```
 
-**Why write to DB here AND rely on webhook:** The webhook arrives async (seconds later). Writing immediately ensures the enforcement gate has subscription data as soon as the user finishes onboarding — no race condition where a call comes in before the webhook arrives.
+**Where new objection-busting sections slot in:**
+
+```
+Proposed structure:
+  <ScrollProgress />
+  <HeroSection />                     ← MODIFY: reposition copy + CTA framing
+  <ScrollLinePath>
+    <HowItWorksSection />             ← existing, may get copy tweaks
+    <FeaturesCarousel />              ← existing, audit for feature completeness
+    [ObjectionSection]                ← NEW: after features, before social proof
+                                         Addresses: robotic voice, trust, trade specificity,
+                                         tech-savvy setup, price, identity/change aversion
+    <SocialProofSection />            ← existing, may add more proof points
+    [IdentityObjectionSection]        ← OPTIONAL NEW: "you're still in control" section
+                                         OR fold into ObjectionSection as a sub-block
+  </ScrollLinePath>
+  <FinalCTASection />                 ← MODIFY: reframe CTA copy (complement not replace)
+```
+
+**Insertion rules:**
+
+1. New sections use `dynamic()` with a loading skeleton — same pattern as existing sections. Static import only for HeroSection (LCP-critical).
+2. New sections live in `src/app/components/landing/` alongside existing ones (not in `src/components/landing/` — note the two different landing component directories; `src/app/components/landing/` is the primary location).
+3. `<ScrollLinePath>` wraps the middle sections and manages the SVG copper sine wave animation. Any new section inside `ScrollLinePath` automatically participates in the scroll-draw. Verify `ScrollLinePath` height calculations if adding tall sections.
+4. `<HeroSection>` and `<FinalCTASection>` are modified in-place — they are not replaced with new components.
+
+**Hero modification note:** `HeroSection` uses `AnimatedSection` (client wrapper with framer-motion). It imports `RotatingText`, `SplineScene`, and `HeroDemoBlock` dynamically. Modifying copy and CTA structure does not require changing the dynamic import pattern.
 
 ---
 
-### 6. Checkout Session Endpoint — NEW ENDPOINT
+## Component Inventory: New vs Modified
 
-**Location:** `src/app/api/stripe/checkout/route.js`
+### New Components
 
-**Purpose:** Create a Stripe Checkout Session when a user wants to subscribe (trial-to-paid conversion) or upgrade their plan.
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `ThemeProviderWrapper` | `src/components/providers/ThemeProvider.jsx` | Wraps `next-themes` ThemeProvider as a client boundary |
+| `ThemeToggle` | `src/components/dashboard/ThemeToggle.jsx` | Sun/moon toggle button for dashboard sidebar or settings |
+| `ObjectionSection` (name TBD) | `src/app/components/landing/ObjectionSection.jsx` | 6-objection bust section, dynamic import |
+| Optionally: `IdentityObjectionSection` | `src/app/components/landing/IdentityObjectionSection.jsx` | "Still in control" framing, or folded into ObjectionSection |
 
-**Flow:**
+### Modified Components/Files
 
-```
-POST /api/stripe/checkout
-  Body: { priceId, successUrl, cancelUrl }
-  Auth: getTenantId() (uses existing auth pattern)
+| Component/File | Change Required |
+|----------------|----------------|
+| `src/app/layout.js` | Add `suppressHydrationWarning` to `<html>`. Wrap children with `ThemeProviderWrapper`. |
+| `src/app/dashboard/layout.js` | Replace hardcoded `bg-[#F5F5F4]` with `bg-background` (semantic token). Remove hardcoded Suspense fallback color. Add `ThemeToggle` to sidebar or header area. |
+| `src/app/(public)/page.js` | Insert new objection section(s) into the JSX order. Modify `HeroSection` and `FinalCTASection` imports if they remain named exports. |
+| `src/app/components/landing/HeroSection.jsx` | Copy/CTA reposition — structural changes to h1, p, CTA framing. No import changes. |
+| `src/app/components/landing/FinalCTASection.jsx` | Copy reframe — "complement not replacement" messaging. |
+| `src/components/dashboard/DashboardSidebar.jsx` | Add `ThemeToggle` button. Hardcoded `bg-white/[0.06]` and `bg-white/[0.04]` on NavLink are relative to sidebar background — audit against dark sidebar background. |
+| `src/app/globals.css` | The `.dark {}` block exists but needs audit. Dashboard-specific color overrides may need addition (e.g., `bg-[#F5F5F4]` does not respond to `.dark`). |
+| Every dashboard component with hardcoded hex colors | Replace `bg-[#F5F5F4]` → `bg-background`, `bg-white` → `bg-card`, `text-[#0F172A]` → `text-foreground` etc. across ~42 files. |
 
-1. getTenantId() → tenantId
-2. Look up subscriptions.stripe_customer_id for this tenant
-3. stripe.checkout.sessions.create({
-     customer: stripe_customer_id,
-     line_items: [{ price: priceId, quantity: 1 }],
-     mode: 'subscription',
-     success_url: successUrl + '?session_id={CHECKOUT_SESSION_ID}',
-     cancel_url: cancelUrl,
-     metadata: { tenant_id: tenantId },
-   })
-4. Return { url: session.url }
-```
-
-The client redirects to `session.url`. Stripe handles payment. On success, Stripe fires `checkout.session.completed` → webhook updates subscriptions table → billing page reflects new plan.
+**Scale of token migration:** The Grep found 130 occurrences of raw color classes across 42 dashboard component files. This is the largest effort in the milestone — not the provider wiring, which is trivial.
 
 ---
 
-### 7. Customer Portal Endpoint — NEW ENDPOINT
+## Data Flow
 
-**Location:** `src/app/api/stripe/portal/route.js`
-
-**Purpose:** Redirect user to Stripe-hosted portal for plan management (upgrade, downgrade, cancel, update payment method, view invoices).
+### Theme Toggle Flow
 
 ```
-POST /api/stripe/portal
-  Body: { returnUrl }
-
-1. getTenantId() → tenantId
-2. Look up subscriptions.stripe_customer_id
-3. stripe.billingPortal.sessions.create({
-     customer: stripe_customer_id,
-     return_url: returnUrl,
-   })
-4. Return { url: session.url }
+User clicks ThemeToggle
+    ↓
+useTheme().setTheme('dark' | 'light')    [next-themes hook]
+    ↓
+next-themes writes localStorage 'voco-theme'
+    ↓
+next-themes toggles .dark class on <html>
+    ↓
+CSS custom properties in .dark {} block activate
+    ↓
+All Tailwind dark: variants + semantic tokens flip simultaneously
+    ↓
+(No server round-trip, no API call, no Supabase write)
 ```
 
-This is the only endpoint needed for all self-service billing actions. Stripe's portal handles the UI.
-
----
-
-### 8. Billing Dashboard Page — NEW DASHBOARD PAGE
-
-**Location:** `src/app/dashboard/more/billing/page.js`
-
-**Integration point:** Placed under the existing More hub at `/dashboard/more/billing`. Requires adding a "Billing" entry to `MORE_ITEMS` in `src/app/dashboard/more/page.js` with the CreditCard icon from lucide-react.
-
-**Page structure:**
+### SSR Theme Resolution Flow (page load)
 
 ```
-/dashboard/more/billing
-├── PlanStatusCard
-│   ├── Current plan name (Starter / Growth / Pro)
-│   ├── Status badge (Active | Trialing | Past Due | Canceled)
-│   ├── Trial countdown if status='trialing' ("8 days remaining")
-│   └── Billing period (resets on [date])
-│
-├── UsageMeterCard
-│   ├── Progress bar: calls_used / calls_limit
-│   ├── "X of Y calls used this period"
-│   └── Warning at 80%+ usage
-│
-├── InvoiceHistorySection (optional v1 — can defer to portal)
-│   └── "Manage invoices in the billing portal →"
-│
-├── UpgradeSection (shown if trialing or on lower plan)
-│   └── Plan comparison cards with "Upgrade" CTA
-│
-└── ManageBillingButton
-    └── Calls /api/stripe/portal → redirects to Customer Portal
+Next.js renders root layout on server
+    ↓
+<html> emitted WITHOUT .dark class (server has no localStorage access)
+    ↓
+next-themes inline script injected into <head>
+    ↓
+Script reads localStorage synchronously before paint
+    ↓
+If 'dark' found: adds .dark to <html> before first paint
+    ↓
+React hydrates — suppressHydrationWarning suppresses class mismatch warning
+    ↓
+No flash visible to user
 ```
 
-**Data fetching:** The billing page reads from the `subscriptions` table directly via Supabase client (same RLS pattern as every other dashboard page). The `usage_events` table provides the per-period breakdown if needed.
-
-**Trial banner (dashboard-wide, not just billing page):** A dismissible banner in `DashboardLayout` that shows "X days left in your free trial" when `status = 'trialing'` and `trial_ends_at` is within 7 days. Disappears when subscription is active. This requires reading subscription status in the layout component.
-
----
-
-## Data Flow: Stripe Billing Lifecycle
+### Landing Section Data Flow
 
 ```
-1. ONBOARDING COMPLETE
-   /api/onboarding/complete
-   → stripe.customers.create({ metadata: { tenant_id } })
-   → stripe.subscriptions.create({ trial_period_days: 14, missing_payment_method: 'cancel' })
-   → INSERT INTO subscriptions (status: 'trialing', trial_ends_at: +14d)
-   → Stripe fires customer.subscription.created → webhook upserts (idempotent)
-
-2. TRIAL ACTIVE (days 1-14)
-   Every inbound call:
-   → handleInbound queries subscriptions
-   → Gate: status='trialing' AND trial_ends_at > now() → ALLOW
-   → processCallEnded increments calls_used
-
-   Day 11 (3 days before trial end):
-   → Stripe fires customer.subscription.trial_will_end
-   → Webhook sends upgrade email to owner via Resend
-
-3. TRIAL-TO-PAID CONVERSION
-   Owner clicks "Start Subscription" in billing page:
-   → POST /api/stripe/checkout → session URL
-   → Owner enters card in Stripe Checkout
-   → Stripe fires checkout.session.completed, customer.subscription.updated
-   → Webhook updates status: 'active', trial_ends_at: null
-
-4. TRIAL EXPIRES (no card added)
-   → Stripe fires customer.subscription.deleted (end_behavior: 'cancel')
-   → Webhook sets status: 'canceled'
-   → Next inbound call: gate blocks, returns booking_enabled: 'false', paywall_reason: 'subscription_expired'
-   → AI says: "Sorry, I'm unable to take bookings right now. Please contact [business] directly."
-
-5. BILLING CYCLE (monthly)
-   Stripe charges card:
-   → Payment succeeds → invoice.paid → webhook resets calls_used = 0, updates current_period_end
-   → Payment fails → invoice.payment_failed → webhook sets status: 'past_due', sends payment failure email
-
-   3-day grace on past_due:
-   → Gate allows calls for 3 days (Stripe retries automatically)
-   → If payment never recovers → customer.subscription.deleted → gate blocks
-
-6. PLAN MANAGEMENT (self-service)
-   Owner clicks "Manage Billing" in billing page:
-   → POST /api/stripe/portal → Customer Portal URL
-   → Owner upgrades/downgrades/cancels in Stripe's UI
-   → Stripe fires customer.subscription.updated (plan change or cancel_at_period_end)
-   → Webhook updates plan_id, calls_limit, cancel_at_period_end
-
-7. OVERAGE HANDLING
-   calls_used reaches calls_limit mid-period:
-   → Gate blocks new calls with paywall_reason: 'call_limit_reached'
-   → AI: "I'm unable to take new bookings right now. Please call back or visit [link]."
-   → Billing page shows "Upgrade your plan to continue receiving calls"
-   → Owner upgrades → webhook updates calls_limit → gate unblocks immediately
+page.js (Server Component)
+    ↓
+dynamic() import with loading skeleton (prevents CLS)
+    ↓
+<ObjectionSection /> — Server Component (static content, no client state)
+    ↓
+AnimatedSection client wrapper handles scroll-triggered animation
+    ↓
+No API calls, no Supabase reads — purely static marketing content
 ```
 
 ---
 
-## Component Boundaries
+## Recommended Project Structure (additions only)
 
-| Component | Responsibility | Reads From | Writes To |
-|---|---|---|---|
-| `/api/stripe/webhook` | Sync Stripe events to DB | Stripe events | `subscriptions` table |
-| `handleInbound` (modified) | Enforce subscription gate per call | `subscriptions` table | — |
-| `processCallEnded` (modified) | Increment usage counter | `subscriptions` table | `subscriptions.calls_used`, `usage_events` |
-| `/api/onboarding/complete` (modified) | Create Stripe customer + trial | Stripe API | `subscriptions` table |
-| `/api/stripe/checkout` | Create checkout session | `subscriptions` table | Stripe API |
-| `/api/stripe/portal` | Create portal session | `subscriptions` table | Stripe API |
-| `/dashboard/more/billing` | Display plan, usage, invoke actions | `subscriptions` table, `usage_events` | — (read-only page) |
-| `DashboardLayout` (modified) | Show trial countdown banner | `subscriptions` table | — |
+```
+src/
+├── components/
+│   ├── providers/
+│   │   └── ThemeProvider.jsx       ← NEW: 'use client' ThemeProvider wrapper
+│   └── dashboard/
+│       └── ThemeToggle.jsx         ← NEW: toggle button component
+└── app/
+    └── components/
+        └── landing/
+            └── ObjectionSection.jsx  ← NEW: objection-busting section
+```
 
----
-
-## New vs. Modified Components
-
-### New Files
-
-| File | Type | Purpose |
-|---|---|---|
-| `src/app/api/stripe/webhook/route.js` | NEW | Stripe lifecycle event handler |
-| `src/app/api/stripe/checkout/route.js` | NEW | Create Stripe Checkout Session |
-| `src/app/api/stripe/portal/route.js` | NEW | Create Stripe Customer Portal session |
-| `src/app/dashboard/more/billing/page.js` | NEW | Billing dashboard UI |
-| `src/lib/stripe.js` | NEW | Lazy-instantiated Stripe client (mirrors pattern in notifications.js for Twilio/Resend) |
-| `src/lib/billing.js` | NEW | Business logic: plan config map, gate check helper, trial helpers |
-| `supabase/migrations/010_billing.sql` | NEW | `subscriptions` table, `usage_events` table, `increment_calls_used` RPC |
-
-### Modified Files
-
-| File | Change Scope | What Changes |
-|---|---|---|
-| `src/app/api/webhooks/retell/route.js` | MINOR | Add subscription gate query + block logic to `handleInbound` |
-| `src/lib/call-processor.js` | MINOR | Add `increment_calls_used` RPC call in `processCallEnded`; skip for test calls |
-| `src/app/api/onboarding/complete/route.js` | MODERATE | Create Stripe customer + trial subscription after marking onboarding complete |
-| `src/app/dashboard/more/page.js` | MINOR | Add "Billing" item to `MORE_ITEMS` list |
-| `src/app/dashboard/layout.js` | MODERATE | Add trial countdown banner component (reads subscription status server-side) |
-
-### Unchanged Files (explicitly confirmed)
-
-| File | Why Unchanged |
-|---|---|
-| `src/server/retell-llm-ws.js` | WebSocket server handles live call conversation; billing enforcement is pre-call (at `call_inbound`), not mid-call |
-| `src/lib/triage/classifier.js` | Billing doesn't affect call classification |
-| `src/lib/notifications.js` | No notification changes (billing emails handled in webhook handler inline) |
-| `src/lib/scheduling/booking.js` | `atomicBookSlot` is unaffected; enforcement happens before the AI reaches booking |
-| All other dashboard pages | Read-only views; no billing data flows through them |
+No new directories needed beyond `src/components/providers/`.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Sync-to-Postgres (not Stripe API on hot paths)
+### Pattern 1: Semantic Token Migration Pattern
 
-**What:** Stripe webhook events update the `subscriptions` table. All enforcement and UI reads from Postgres, never from Stripe's API.
+**What:** Replace hardcoded hex colors in dashboard components with shadcn/ui semantic CSS variable tokens so `.dark {}` overrides propagate automatically.
 
-**Why:** The Retell `call_inbound` webhook fires on every incoming call. Reading from Stripe's API here would add 200-400ms latency and create a Stripe API rate limit dependency on the critical call pickup path. Postgres reads are sub-5ms.
+**When to use:** Every dashboard component touched during polish pass.
 
-**Trade-off:** There is a brief window (seconds) between a Stripe event and the webhook being processed where the local state could be stale. Acceptable — subscription state changes happen on human timescales (minutes to hours), not call timescales (milliseconds).
+**Token mapping for this codebase:**
 
-### Pattern 2: Enforcement at the First Gate (call_inbound)
+| Hardcoded class | Semantic replacement | Notes |
+|-----------------|---------------------|-------|
+| `bg-[#F5F5F4]` | `bg-background` or `bg-muted` | `--background` is white in light, near-black in dark |
+| `bg-white` | `bg-card` | Use `bg-card` for surface cards |
+| `text-[#0F172A]` | `text-foreground` | Dark slate → foreground token |
+| `border-stone-200` | `border-border` | |
+| `bg-[#0F172A]/[0.06]` | `bg-muted` | Low-opacity dark → muted |
+| `text-[#A1A1AA]` | `text-muted-foreground` | Zinc-400 → muted-foreground |
 
-**What:** Block calls at `handleInbound` before any processing, slot calculation, or AI conversation starts.
+**Sidebar exception:** `DashboardSidebar` uses a fixed dark sidebar with `bg-white/[0.06]` hover states relative to a dark base. Dark mode should not change the sidebar's dark appearance. Do not migrate sidebar-internal colors to semantic tokens.
 
-**Why:** If enforcement runs at `call_analyzed` (post-call), the AI has already had a full conversation and potentially booked a slot. Blocking at `call_inbound` returns `booking_enabled: 'false'` to Retell, which the AI prompt already handles gracefully ("I'm unable to take bookings right now").
+**Trade-off:** Semantic tokens lose color precision vs design intent. Audit `.dark {}` values in `globals.css` to ensure they match the intended dark palette (the current dark values are shadcn defaults, not Voco-specific — they will need tuning).
 
-**Implementation note:** The existing `dynamic_variables` schema already has a `booking_enabled` field used by the AI. The gate just changes its value from `'true'` to `'false'` and adds a `paywall_reason` variable. No AI prompt changes needed if the prompt already handles `booking_enabled: 'false'`.
+### Pattern 2: Dynamic Import with Loading Skeleton for Landing Sections
 
-### Pattern 3: Trial Without Credit Card (end_behavior: cancel)
+**What:** All below-the-fold landing sections use `dynamic()` with an `{ loading: () => <skeleton /> }` that reserves the correct height to prevent CLS.
 
-**What:** 14-day trial created at onboarding with `payment_method_collection: 'if_required'` and `trial_settings.end_behavior.missing_payment_method: 'cancel'`.
+**When to use:** Every new landing section.
 
-**Why:** No-friction onboarding maximizes trial starts. When the trial expires without a card, Stripe fires `customer.subscription.deleted`, the gate blocks calls, and the owner sees a clear upgrade prompt in the dashboard. Stripe's "pause" alternative is overly lenient and can confuse owners about whether they're actually subscribed.
+**Example (from existing codebase pattern):**
 
-**Source:** Confirmed in official Stripe docs: https://docs.stripe.com/payments/checkout/free-trials
-
-### Pattern 4: Atomic Usage Counter (Postgres RPC)
-
-**What:** `calls_used` is incremented via a Postgres `UPDATE` with `calls_used = calls_used + 1` wrapped in a named RPC function.
-
-**Why:** Multiple concurrent calls from the same tenant's number are possible (call forwarding, parallel lines). A naive `SELECT ... INSERT` pattern would lose increments. The Postgres UPDATE is atomic — concurrent increments do not corrupt the counter.
-
----
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: Blocking Mid-Call (at call_analyzed)
-
-**What people do:** Check subscription at `call_analyzed` and refuse to process the lead if subscription is expired.
-
-**Why it's wrong:** The AI has already spoken to the caller, potentially booked a slot, and the caller has hung up. Refusing to create the lead record at this point produces a ghost booking (slot is taken in DB but no lead record). The caller has been promised confirmation that will never arrive.
-
-**Do this instead:** Block at `call_inbound`. The AI gets `booking_enabled: 'false'` before the conversation starts and can tell the caller gracefully.
-
-### Anti-Pattern 2: Calling Stripe API in the Hot Path
-
-**What people do:** In `handleInbound`, call `stripe.subscriptions.retrieve(subscriptionId)` to check subscription status.
-
-**Why it's wrong:** Adds 200-400ms to every inbound call webhook. Stripe API calls can fail or be rate-limited. The `call_inbound` response must be fast — Retell uses it to configure the call before pickup.
-
-**Do this instead:** Read `subscriptions` table in Postgres. Keep it current via webhook sync.
-
-### Anti-Pattern 3: Using Stripe Billing Meters for Call Enforcement
-
-**What people do:** Report a `billing_meter_event` to Stripe on every call and rely on Stripe to enforce limits.
-
-**Why it's wrong:** Stripe Billing Meters are designed for pay-per-use invoicing (charge per API call beyond a base fee). The enforcement model here is "flat rate + hard cap at N calls." Stripe does not provide real-time hard-blocking via meters — it bills after the fact. The enforcement gate must be in the application layer.
-
-**Do this instead:** Store `calls_used` counter in Postgres. Reset it on `invoice.paid`. Check it in `handleInbound`.
-
-### Anti-Pattern 4: Separate Billing Microservice
-
-**What people do:** Create a dedicated "billing service" with its own API and database for subscription management.
-
-**Why it's wrong:** Adds a new service to maintain, deploy, and monitor. The billing data model is three tables (`subscriptions`, `usage_events`, and the Stripe webhook handler). This fits cleanly into the existing Next.js + Supabase architecture.
-
-**Do this instead:** Keep billing logic in the monolith. Create `src/lib/billing.js` for business logic helpers. API routes at `/api/stripe/*` follow the same pattern as existing `/api/leads`, `/api/appointments` routes.
-
-### Anti-Pattern 5: Writing Duplicate Billing Emails Outside the Webhook
-
-**What people do:** Add billing-specific email sends in `notifications.js` or in separate cron jobs.
-
-**Why it's wrong:** The Stripe webhook is the authoritative source of truth for billing events. Billing emails (trial ending, payment failed, subscription canceled) belong in the webhook handler where the events are processed. Duplicating them elsewhere creates double-sends when Stripe retries events.
-
-**Do this instead:** Send billing emails inline in the `/api/stripe/webhook` handler for each relevant event. Reuse the existing `getResendClient()` from `notifications.js`.
-
----
-
-## Schema Impact Assessment
-
-### New Tables
-
-| Table | Rows at 50 tenants | Growth |
-|---|---|---|
-| `subscriptions` | 50 (one per tenant) | Linear with tenant count |
-| `usage_events` | ~1,500/month (50 tenants × 30 calls/month avg) | Linear with call volume |
-
-### Modified Tables
-
-None. All billing changes are additive new tables.
-
-### New Database Objects
-
-| Object | Type | Purpose |
-|---|---|---|
-| `increment_calls_used` | Postgres RPC function | Atomic counter increment for concurrent safety |
-
----
-
-## Build Order (Dependency-Driven)
-
-```
-Step 1: Database Migration (no dependencies)
-  File: supabase/migrations/010_billing.sql
-  Contents: subscriptions table, usage_events table, increment_calls_used RPC, RLS policies
-  Why first: Everything else depends on this schema existing
-
-Step 2: Stripe Client + Billing Helpers (no dependencies)
-  Files: src/lib/stripe.js, src/lib/billing.js
-  Contents: Lazy Stripe client, plan config map (plan_id → calls_limit), gate check helper
-  Why second: All API routes and enforcement depend on this
-
-Step 3: Stripe Webhook Handler (depends on Step 1 + 2)
-  File: src/app/api/stripe/webhook/route.js
-  Test with: Stripe CLI (stripe listen --forward-to localhost:3000/api/stripe/webhook)
-  Why third: Must exist before any Stripe events can be processed
-
-Step 4: Onboarding Complete Modification (depends on Step 1 + 2 + 3)
-  File: src/app/api/onboarding/complete/route.js
-  Changes: Create Stripe customer + trial subscription on onboarding complete
-  Why fourth: Webhook (Step 3) must be running to process the subscription.created event this triggers
-
-Step 5: Enforcement Gate (depends on Step 1)
-  File: src/app/api/webhooks/retell/route.js (handleInbound)
-  Changes: Add subscription query + block logic
-  Why fifth: Gate reads from subscriptions table (Step 1); does not depend on Stripe API working
-  Risk: LOW — if subscriptions table is empty (no row for tenant), gate defaults to ALLOW
-        This prevents blocking existing users during deployment
-
-Step 6: Usage Metering (depends on Step 1 + 2)
-  File: src/lib/call-processor.js (processCallEnded)
-  Changes: Add increment_calls_used RPC call, skip test calls
-  Why sixth: Needs subscriptions table and RPC function from Step 1
-
-Step 7: Checkout + Portal Endpoints (depends on Step 1 + 2)
-  Files: src/app/api/stripe/checkout/route.js, src/app/api/stripe/portal/route.js
-  Why seventh: Needed by billing UI; can be tested independently with Stripe test mode
-
-Step 8: Billing Dashboard Page (depends on Steps 1, 7)
-  Files: src/app/dashboard/more/billing/page.js
-  Changes: Add Billing to MORE_ITEMS in more/page.js
-  Why eighth: All data sources and endpoints must exist first
-
-Step 9: Trial Countdown Banner (depends on Step 8)
-  File: src/app/dashboard/layout.js
-  Changes: Add server-side subscription status read + banner component
-  Why ninth: Lowest priority — cosmetic; does not block any other feature
+```jsx
+const ObjectionSection = dynamic(
+  () => import('@/app/components/landing/ObjectionSection').then((m) => m.ObjectionSection),
+  {
+    loading: () => (
+      <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
+        <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
+        <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
+      </section>
+    ),
+  }
+);
 ```
 
-**Parallelizable steps:** Steps 2 and migration setup (Step 1) can run simultaneously. Steps 5 and 6 can be developed in parallel after Step 1 is done. Steps 7 and 8 can be developed in parallel after Step 2.
+New sections should be Server Components if they contain only static content — only wrap in `AnimatedSection` (client component) for scroll-triggered animation, per the existing pattern in `HowItWorksSection.jsx` and `SocialProofSection.jsx`.
 
-**Safe deployment order:** Steps 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9. Each step is independently deployable and does not break existing functionality if the next step hasn't been deployed yet.
+### Pattern 3: Dashboard Layout Dark Mode Scoping
 
----
+**What:** The dashboard layout shell (`dashboard/layout.js`) needs its own dark surface. The hardcoded `bg-[#F5F5F4]` must become `bg-background` to respond to the theme class.
 
-## Scaling Considerations
+**Complication:** The Suspense fallback at the bottom of `dashboard/layout.js` also has `bg-[#F5F5F4]`. Both must be migrated together to avoid flash-on-navigation.
 
-| Scale | Billing Architecture |
-|---|---|
-| 1-100 tenants | Current architecture is correct. One `subscriptions` row per tenant. Postgres counter is fast. Webhook handler processes events synchronously. |
-| 100-1,000 tenants | `usage_events` table grows to ~1M rows/year. Add index on `(tenant_id, created_at)`. Webhook handler may need to handle event bursts (Stripe retries) — add a `processed_event_ids` deduplication table. |
-| 1,000+ tenants | Postgres `calls_used` counter under concurrent writes from heavy tenants. Switch to Postgres advisory locks or use Stripe Billing Meters for usage tracking (report events to Stripe, query Stripe for enforcement). Webhook processing may need a separate worker (pg-boss). |
+**Pattern:**
 
----
+```jsx
+// dashboard/layout.js — before
+<div className="min-h-screen bg-[#F5F5F4] relative">
 
-## Integration Points with Existing Architecture
-
-### External Services
-
-| Service | New Integration | Impact on Existing |
-|---|---|---|
-| Stripe | New: Checkout, Customer Portal, Webhook, Subscriptions API | None — net new |
-| Retell Webhook | Modified: `handleInbound` adds subscription gate | Adds one parallel Supabase query; no latency impact |
-| Supabase | New tables: `subscriptions`, `usage_events`. New RPC: `increment_calls_used` | Additive; no existing table changes |
-| Resend | Reuse existing `getResendClient()` in webhook handler for billing emails | No change to existing email flow |
-| Twilio | No change | Unchanged |
-
-### Internal Boundaries
-
-| Boundary | Change |
-|---|---|
-| `handleInbound` → `subscriptions` | NEW: parallel query, gate check |
-| `processCallEnded` → `subscriptions` | NEW: increment RPC call |
-| `/api/onboarding/complete` → Stripe API | NEW: customer + subscription creation |
-| `/dashboard/more/billing` → `subscriptions` | NEW: read-only data fetch |
-| `DashboardLayout` → `subscriptions` | NEW: server-side status read for banner |
+// dashboard/layout.js — after
+<div className="min-h-screen bg-background relative transition-colors duration-200">
+```
 
 ---
 
-## Sources
+## Suggested Build Order (Phase Dependencies)
 
-- Stripe Billing Subscriptions docs: https://docs.stripe.com/billing/subscriptions/build-subscriptions — HIGH confidence
-- Stripe Free Trials (no credit card): https://docs.stripe.com/payments/checkout/free-trials — HIGH confidence
-- Stripe Billing Meters: https://docs.stripe.com/billing/subscriptions/usage-based/implementation-guide — HIGH confidence
-- Stripe Customer Portal: https://docs.stripe.com/customer-management/integrate-customer-portal — HIGH confidence
-- Supabase Stripe Integration guide: https://dev.to/flnzba/33-stripe-integration-guide-for-nextjs-15-with-supabase-13b5 — MEDIUM confidence
-- Next.js Stripe Subscription Lifecycle (2026): https://dev.to/thekarlesi/stripe-subscription-lifecycle-in-nextjs-the-complete-developer-guide-2026-4l9d — MEDIUM confidence
-- Direct codebase audit: `handleInbound`, `processCallEnded`, `getTenantId`, dashboard layout, migrations 001-009 — HIGH confidence
+This order ensures each phase builds on a stable foundation and dark mode doesn't cause regressions:
+
+### Phase 1 — Foundation (required before any visible work)
+1. Add `suppressHydrationWarning` to `<html>` in `layout.js`
+2. Create `src/components/providers/ThemeProvider.jsx`
+3. Wire `ThemeProviderWrapper` into `layout.js` (inside `NextIntlClientProvider`)
+4. Audit `globals.css` dark token values — replace shadcn defaults with Voco-appropriate dark values for `--background`, `--card`, `--muted`, `--border`
+5. Create `ThemeToggle` component
+6. Wire `ThemeToggle` into `DashboardSidebar` — verify no visual regression in light mode
+
+**Gate:** Toggle works, no hydration warning in console, no flash on hard reload, sidebar unaffected.
+
+### Phase 2 — Dashboard Token Migration
+7. Migrate `dashboard/layout.js` hardcoded colors to semantic tokens
+8. Migrate dashboard page files (`/dashboard`, `/dashboard/leads`, `/dashboard/calendar`, `/dashboard/calls`, `/dashboard/analytics`, `/dashboard/more/*`)
+9. Migrate flyout components (`LeadFlyout`, `AppointmentFlyout`, `QuickBookSheet`) — these are modal surfaces; critical for dark mode feel
+10. Migrate dashboard component library files (42 files, prioritize by user-facing visibility)
+11. Audit chart components (`AnalyticsCharts.jsx`, recharts) — recharts colors are passed as props/inline styles, not Tailwind classes; they need explicit dark mode color switching via `useTheme()` hook
+
+**Gate:** All dashboard pages render correctly in both light and dark mode with no white flashes on navigation.
+
+### Phase 3 — Landing Page Repositioning
+12. Modify `HeroSection.jsx` — copy/CTA reframe (no structural changes to import pattern)
+13. Modify `FinalCTASection.jsx` — copy reframe
+14. Create `ObjectionSection.jsx` — new component with static content + `AnimatedSection` wrappers
+15. Wire into `page.js` — add `dynamic()` import + insert between `FeaturesCarousel` and `SocialProofSection`
+16. Verify `ScrollLinePath` path rendering with added section height
+
+**Gate:** Landing page lighthouse score maintained, no CLS regression, objection section visible on all breakpoints.
+
+### Phase 4 — Polish Pass
+17. Typography, spacing, motion audit across public + dashboard
+18. Empty states, loading states, hover/focus/error states
+19. Mobile responsiveness audit
+20. Cross-browser dark mode validation
 
 ---
 
-*Architecture research for: v3.0 Stripe Billing Integration*
-*Researched: 2026-03-26*
+## Anti-Patterns
+
+### Anti-Pattern 1: ThemeProvider in Dashboard Layout Only
+
+**What people do:** Place `ThemeProvider` in `dashboard/layout.js` to scope it to the dashboard.
+
+**Why it's wrong:** `next-themes` injects its SSR anti-flash script into `<head>` only when the provider is in the root layout. Placing it in the dashboard layout means the script doesn't run on the dashboard route's initial server render, causing the flash on first load even if localStorage has the user's preference.
+
+**Do this instead:** Root layout placement with a `'use client'` wrapper component.
+
+### Anti-Pattern 2: Migrating Landing Page Colors to Semantic Tokens
+
+**What people do:** Replace `bg-[#050505]` in `HeroSection` with `bg-background` to make it "dark mode aware."
+
+**Why it's wrong:** The landing page is intentionally dark-hero-then-light-sections. These are brand decisions, not light/dark theme decisions. `bg-background` in dark mode resolves to near-black — the hero would become near-black on near-black with no contrast.
+
+**Do this instead:** Leave all landing page colors as hardcoded hex values. The `.dark` class on `<html>` does not affect Tailwind arbitrary values.
+
+### Anti-Pattern 3: Using `enableSystem: true` Without Explicit Default
+
+**What people do:** Enable system preference detection without setting `defaultTheme="light"`.
+
+**Why it's wrong:** For a B2B SaaS dashboard, demos occur in daylight. System dark mode on a demo would make the product look unpolished if the dark tokens aren't fully audited.
+
+**Do this instead:** `defaultTheme="light"`, `enableSystem={false}`. Add system preference support after the dark token audit is complete.
+
+### Anti-Pattern 4: Migrating recharts Colors via Tailwind Classes
+
+**What people do:** Try to make recharts charts dark-mode-aware by changing Tailwind classes on wrapper divs.
+
+**Why it's wrong:** recharts renders SVG. SVG fill/stroke colors are set via recharts props (`stroke="#8884d8"`, `fill="..."`) or inline styles — not via CSS classes on a container div.
+
+**Do this instead:** Read `useTheme()` in chart components and conditionally pass color props: `stroke={theme === 'dark' ? '#fff' : '#0F172A'}`. This requires the chart component to be `'use client'`.
+
+---
+
+## Integration Points
+
+### Provider Chain in Root Layout
+
+| Layer | Component | Notes |
+|-------|-----------|-------|
+| Root layout | `<html suppressHydrationWarning>` | Required for next-themes |
+| L1 | `<NextIntlClientProvider>` | Already exists, wraps everything |
+| L2 (NEW) | `<ThemeProviderWrapper>` | Goes inside NextIntlClientProvider |
+| L3 | `{children}` | Dashboard + public routes |
+
+### Internal Component Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `ThemeProviderWrapper` → dashboard components | CSS `.dark` class on `<html>` | Tailwind dark: variants activate |
+| `ThemeToggle` → theme state | `useTheme().setTheme()` | next-themes context |
+| Chart components → dark tokens | `useTheme()` hook | Must be 'use client' |
+| Landing sections → dark mode | None (isolated by hardcoded colors) | No wiring needed |
+
+### External Libraries
+
+| Library | Dark Mode Integration | Notes |
+|---------|----------------------|-------|
+| `next-themes` v0.4.6 | Built-in via `attribute="class"` | Already installed, just needs wiring |
+| `sonner` / `Toaster` | `useTheme()` already wired in `sonner.jsx` | Will work once provider exists |
+| `recharts` | Manual via `useTheme()` hook in chart components | Requires explicit color prop switching |
+| `framer-motion` | Theme-agnostic | No integration needed |
+| `radix-ui` / `shadcn` | CSS variables respond to `.dark` | Works automatically once tokens audited |
+
+---
+
+## Confidence Assessment
+
+| Finding | Confidence | Basis |
+|---------|------------|-------|
+| `next-themes` v0.4.6 installed, no provider wired | HIGH | Direct `package.json` + grep of codebase |
+| `.dark {}` CSS block exists in `globals.css` | HIGH | Direct file read |
+| `@custom-variant dark` in Tailwind v4 syntax | HIGH | Direct `globals.css` read |
+| 130 hardcoded color occurrences across 42 dashboard files | HIGH | Direct grep count |
+| No `theme_preference` Supabase column exists | HIGH | All migrations inspected |
+| `sonner.jsx` has `useTheme()` but no provider | HIGH | Direct file read |
+| Landing page colors are hardcoded hex, immune to `.dark` | HIGH | Direct file read of all landing sections |
+| `suppressHydrationWarning` approach for SSR flash | HIGH | next-themes standard documented pattern |
+
+---
+
+*Architecture research for: v5.0 Trust & Polish — dark mode + landing integration*
+*Researched: 2026-04-13*

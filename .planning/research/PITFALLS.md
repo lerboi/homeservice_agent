@@ -1,428 +1,326 @@
-# Domain Pitfalls: Stripe Billing & Usage Enforcement
+# Pitfalls Research
 
-**Domain:** Adding Stripe subscription billing and per-call usage metering to an existing multi-tenant voice AI platform (Next.js + Supabase + Retell)
-**Researched:** 2026-03-26
-**Confidence:** HIGH (Stripe official docs + Retell community findings + Supabase RLS patterns + codebase analysis)
+**Domain:** SaaS landing page trust-building + dark mode retrofit + UI/UX polish (Next.js + Tailwind + shadcn + framer-motion)
+**Researched:** 2026-04-13
+**Confidence:** HIGH (code-verified where marked; MEDIUM for framer-motion/recharts dark mode specifics based on official docs + community patterns)
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes in this section cause data loss, double-charges, free access leakage, or require production migrations.
-
----
-
-### Pitfall 1: Stripe Webhook Idempotency Not Enforced — Double-Counting Subscriptions and Usage
+### Pitfall 1: Defensiveness Signals Guilt
 
 **What goes wrong:**
-Stripe guarantees at-least-once delivery of webhook events. The same `customer.subscription.updated`, `invoice.paid`, or `invoice.payment_failed` event will occasionally be delivered 2–3 times, typically during Stripe retry windows. If the webhook handler does not check whether it has already processed an event before acting on it, subscriptions get updated twice, usage resets happen twice, plan upgrades double-charge, and access revocations fire on already-revoked accounts.
-
-Retell webhooks have the same problem: `call_analyzed` fires once per call, but `call_ended` and `call_started` fire for the same call. If the usage increment is wired to `call_ended` instead of `call_analyzed`, or if the handler does not check for an existing record with the same `call_id`, each call gets counted 3 times.
+The objection-busting sections read like a company under attack rather than a confident market leader. Visitors who had no specific fear get one planted by the copy. "No, we're NOT robotic" triggers skepticism more than silence would.
 
 **Why it happens:**
-Developers test against Stripe's CLI (which delivers each event exactly once) and against Retell's test calls (which rarely retry). Duplicate delivery only surfaces in production under load or during brief network partitions. By the time it's discovered, usage counts are corrupted.
+Founders write directly to the customer quote they found on Reddit. The framing becomes reactive ("you think X but actually...") instead of proof-first ("here's what happens when you use Voco"). The PROBLEMS.md objections are research artifacts, not headline copy.
 
-**Consequences:**
-- Usage counter inflated — tenants hit plan limits prematurely, see billing errors, churn
-- Subscription records toggled active/inactive rapidly — access flapping during high webhook delivery
-- Overage charges on calls that were already counted — chargebacks from tenants
+**How to avoid:**
+Never mirror the fear back at the visitor. Instead, demonstrate the counter with evidence: show a waveform, a booking confirmation, a "4-minute setup" timer. Write the section heading to the outcome, not the objection. "Voco sounds like a real person — here's proof" beats "Worried AI sounds robotic? It doesn't." Bury the objection language and lead with the positive assertion.
 
-**Prevention:**
-1. Store processed Stripe event IDs in a `stripe_webhook_events` table with a `UNIQUE` constraint on `event_id`. Before processing any webhook, attempt an insert. If it fails (duplicate), return 200 immediately without processing. This is the database idempotency key pattern.
-2. For Retell call counting, use `call_id` as the idempotency key on the `usage_events` table. Use `INSERT ... ON CONFLICT (call_id) DO NOTHING` so retried Retell webhooks are silently ignored.
-3. Wire usage increment to `call_analyzed` only (not `call_started` or `call_ended`). `call_analyzed` fires exactly once per call with the complete record, making it the correct metering point.
-4. For Stripe meter events (if using Stripe's usage-based billing API), pass the `call_id` as the `identifier` field in the meter event — Stripe deduplicates meter events by identifier.
+**Warning signs:**
+Any heading that starts with "You might be wondering...", "But what about...", "Many contractors worry...", or any copy that mentions "AI" and "robotic" in the same sentence.
 
-**Detection:**
-- Usage counts that grow faster than call volume
-- Subscription records with `updated_at` changing twice within milliseconds
-- `stripe_webhook_events` table with duplicate `event_id` entries (before idempotency was added)
-
-**Phase to address:** v3.0 Phase 1 (Stripe Integration Foundation) — must be the first thing built, before any other billing logic. All subsequent phases depend on correct event processing.
+**Phase to address:**
+Whichever phase writes the landing copy. Do a pass specifically asking: "Would this sentence exist if there were no objection?" If yes, keep it. If it only exists as a rebuttal, rewrite it as a standalone claim.
 
 ---
 
-### Pitfall 2: Enforcement Gate Adds Latency to Sub-Second Call Pickup
+### Pitfall 2: Section Proliferation Buries the CTA
 
 **What goes wrong:**
-Calls through Retell must be answered in under 1 second. The inbound webhook handler (`/api/webhooks/retell/route.js`) currently runs slot calculation, triage setup, and dynamic variable injection in that window. Adding a synchronous Stripe API call to check subscription status (`stripe.subscriptions.retrieve()`) in this path adds 200–500ms of Stripe API latency, pushing call pickup past 1 second and causing Retell to timeout.
-
-Even a synchronous Supabase query for subscription status adds 50–150ms round-trip from Railway to Supabase — acceptable in isolation, but stacked on top of existing operations it creates a latency cliff.
+Adding six objection-busting sections between HowItWorks and FinalCTA means the conversion moment (AuthAwareCTA) appears 80%+ of the way down the page — after most visitors have already bounced or made their decision. The page now has 7 scroll regions with no momentum funnel.
 
 **Why it happens:**
-The billing enforcement check feels natural to put at the call entry point: "Is this tenant allowed to take a call?" Developers reach for the most authoritative source (Stripe API) for that check, not realizing the latency budget is already spent by the time the webhook fires.
+Each objection feels equally important. The natural response is to give each equal visual weight and sequence them one after another. The scroll experience becomes a list, not a story.
 
-**Consequences:**
-- Retell drops the call or answers with silence
-- The AI receptionist — the product's core value prop — fails at the moment of first caller contact
-- Callers hang up and call the competitor
+**How to avoid:**
+The existing page structure is: Hero → HowItWorks → FeaturesCarousel → SocialProof → FinalCTA. Any new objection content must be embedded inside an existing section (e.g., a collapsible FAQ block inside SocialProof, proof stats inside FeaturesCarousel) or collapsed into a single "Why Voco" section that addresses all 5 objections in tabs or accordions. The FinalCTA must remain the last thing a visitor sees before footer. Do not insert a new top-level section after SocialProof.
 
-**Prevention:**
-1. **Never call the Stripe API synchronously from the inbound call webhook.** The Stripe API is not a real-time enforcement endpoint.
-2. Maintain a `tenant_billing_status` field directly on the `tenants` table (or a `subscriptions` table with a direct row per tenant). This field (`active | trialing | past_due | suspended | cancelled`) is updated by Stripe webhook handlers asynchronously. The inbound webhook reads only from the local Supabase row — a single indexed query that costs 5–20ms.
-3. Keep the local `subscriptions` table in sync via Stripe webhooks: `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. The local cache is the enforcement source; Stripe is the source of truth for billing data only.
-4. Accept a maximum staleness of 30 seconds on the enforcement status. If Stripe's `invoice.payment_failed` webhook takes 30 seconds to deliver and update local state, the tenant gets 30 extra seconds of access. This is acceptable — it is not exploitable in real-time and is standard SaaS practice.
-5. For the actual `billing_status` check: use a Postgres function or indexed query on `tenant_id` only — do not join to other tables on this hot path.
+**Warning signs:**
+The `page.js` in `src/app/(public)/page.js` imports more than 5 distinct section components. The FinalCTASection is not the penultimate element before footer.
 
-**Detection:**
-- Retell call pickup time > 800ms after adding billing enforcement
-- `customer_webhook_events` processing time exceeding 500ms in logs
-- Calls answered by silence followed by Retell timeout errors
-
-**Phase to address:** v3.0 Phase 1 (Foundation) and repeated in Phase 2 (Enforcement Gate). The cache-first pattern must be established in Phase 1 so enforcement in Phase 2 never touches the Stripe API on the call path.
+**Phase to address:**
+Landing page architecture phase. The page composition in `page.js` is the enforcement point — treat it as the gate.
 
 ---
 
-### Pitfall 3: Trial Expiry Without Payment Method — Silent "Free Forever" Access
+### Pitfall 3: Tone Mismatch Between Sections
 
 **What goes wrong:**
-The 14-day free trial requires no credit card. When the trial ends, if the tenant has no payment method on file, Stripe either cancels or pauses the subscription (depending on `trial_settings.end_behavior.missing_payment_method`). Stripe sends `customer.subscription.trial_will_end` 3 days before, then `customer.subscription.deleted` or `customer.subscription.paused` at expiry.
-
-If the application only listens for `invoice.paid` to confirm active status, and never listens for `customer.subscription.deleted` or `customer.subscription.paused`, the local `billing_status` never updates on trial expiry without a payment method. The tenant continues receiving full service indefinitely.
+The existing landing page tone is confident, sparse, and trade-owner-direct ("Your next emergency call is tonight." / "Real trades. Real results."). Objection sections written from a different author model or at a different time read corporate, anxious, or SaaS-generic and break the voice. The visitor subconsciously feels the page was stitched together.
 
 **Why it happens:**
-Developers test the "happy path": tenant starts trial, adds card, pays first invoice, continues on paid plan. The no-card trial expiry path is never tested because it requires waiting 14 days or using Stripe's test clock (which many teams skip). The `customer.subscription.trial_will_end` event is only 3 days before expiry, so the bug isn't caught in manual testing.
+The trust sections get written to address stakeholder concerns ("we need to handle the hallucination objection") rather than to continue the existing narrative voice.
 
-**Consequences:**
-- Free indefinite access leaking revenue
-- The hard paywall requirement ("trial expires = hard stop") is violated
-- Tenants never convert to paid because there's no enforcement pressure
+**How to avoid:**
+Before writing any new section, read HeroSection → HowItWorksSection → SocialProofSection aloud. Note: short sentences. Orange accent labels in uppercase. Data point first, explanation second. The word "voicemail" as a villain. Any new copy must pass the same read-aloud test.
 
-**Prevention:**
-1. Listen for ALL subscription lifecycle events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.trial_will_end`, `customer.subscription.resumed`.
-2. Map Stripe subscription `status` directly to local `billing_status` on every event, not just on `invoice.paid`. The mapping: `trialing` → `trialing`, `active` → `active`, `past_due` → `past_due`, `paused` → `suspended`, `canceled` → `cancelled`, `incomplete_expired` → `cancelled`.
-3. Set `trial_settings.end_behavior.missing_payment_method = 'cancel'` (not `pause`). Cancellation sends a clear `customer.subscription.deleted` event and creates a simpler local state machine. Pause creates a third state (`suspended`) that needs its own enforcement logic.
-4. Test with Stripe Test Clocks. A Stripe Test Clock lets you advance time to trial end without waiting 14 days. This is non-negotiable for billing — never skip it.
-5. On `customer.subscription.trial_will_end` (3 days before): trigger in-app notification, email, and dashboard banner prompting card entry. Do not wait for the expiry event.
+**Warning signs:**
+New sections use words like "solution", "leverage", "utilize", "platform", or sentences longer than 20 words in the hero copy area. Any paragraph over 3 sentences in a hero/proof context.
 
-**Detection:**
-- Tenants with `trial_ends_at` in the past but `billing_status = 'trialing'` still in local DB
-- No `customer.subscription.deleted` events logged for tenants who started trials without cards
-- Dashboard showing "active trial" for tenants whose Stripe subscription status is `canceled`
-
-**Phase to address:** v3.0 Phase 1 (webhook listeners and status sync) + Phase 3 (trial enforcement hardening, test clock validation).
+**Phase to address:**
+Landing copy phase. Run a find on the new section files for any of the above words before marking the phase complete.
 
 ---
 
-### Pitfall 4: Race Condition Between Call Completion and Usage Enforcement
+### Pitfall 4: Dark Mode Hydration Flash (FOUC)
 
 **What goes wrong:**
-Two concurrent calls can both pass the enforcement gate simultaneously with `calls_used = 9` and `plan_limit = 10`. Both get approved. Both complete. Both increment the counter. The tenant ends up at `calls_used = 11` with 1 overage that was never shown or charged.
-
-A second variant: the enforcement gate reads `calls_used = 10`, `plan_limit = 10`, and blocks the new call. Simultaneously, a Retell webhook for a just-completed call is still in flight — it hasn't incremented the counter yet. The real count is 9, and the new call was blocked incorrectly.
+The `<html>` tag in `src/app/layout.js` does not have `suppressHydrationWarning`. `next-themes` is installed (confirmed: `package.json` has `next-themes: ^0.4.6`) but `ThemeProvider` is not present in `layout.js`. On first load, the browser renders the server HTML with no dark class, then the client adds `.dark` — causing a white flash on dark-preferring users.
 
 **Why it happens:**
-Read-then-write patterns on usage counters are not atomic. Any gap between "read current usage" and "write new usage" creates a race window. At low call volumes (1-2 calls/day) this never happens. At peak (5-10 simultaneous calls), it's routine.
+`next-themes` requires wrapping the app in `<ThemeProvider>` AND setting `suppressHydrationWarning` on the `<html>` tag. Without both, Next.js App Router throws a hydration mismatch warning and the flash appears. Neither is present in the current `layout.js`.
 
-**Consequences:**
-- Overage not detected: lost revenue on per-call overage billing
-- False blocking: a paying tenant is told they've hit their limit when they haven't
-- Under-enforcement: usage limit is exceeded silently without overage charge or block
+**How to avoid:**
+1. Create a `ThemeProvider` client component wrapper.
+2. In `layout.js`, add `suppressHydrationWarning` to the `<html>` tag.
+3. Pass `attribute="class"` and `defaultTheme="system"` (or `"light"` to keep current UX for existing users) to `ThemeProvider`.
+4. Store user preference in Supabase `tenants` table (or `localStorage` for anonymous public site visitors) — do not rely on cookie-based persistence without an explicit cookie strategy.
 
-**Prevention:**
-1. Use an atomic increment function in Postgres for usage tracking: `UPDATE usage_counters SET calls_used = calls_used + 1 WHERE tenant_id = $1 AND billing_period_start = $2 RETURNING calls_used`. The returned value is the authoritative post-increment count.
-2. For enforcement at call start, use a Postgres advisory lock or a `SELECT ... FOR UPDATE` on the usage row when the enforcement check and increment need to be atomic. For the common case (well below plan limit), skip the lock and accept minor over-delivery. Only lock when `calls_used >= plan_limit - 2` (the "near limit" zone).
-3. Never read usage from an application-layer cache for enforcement decisions. The cache can be stale by multiple increments. Always read from Postgres for the enforcement check.
-4. For the Retell-specific case: the enforcement check happens at `call_started` (webhook fires before AI responds). The increment happens at `call_analyzed` (call is complete). These events are seconds apart, not milliseconds — less concurrency risk, but still requires atomic increment.
-5. Use the `call_id` as the idempotency key for the increment (as covered in Pitfall 1) to ensure the increment fires exactly once regardless of webhook retries.
+**Warning signs:**
+Visible white flash on page load in dark OS mode. React console warning: "Warning: Prop `className` did not match."
 
-**Detection:**
-- `calls_used` exceeding `plan_limit` in the DB without a corresponding overage record
-- Tenants blocked when their `calls_used` is below the limit
-- Usage counter incrementing by 2 for single calls (duplicate increment)
-
-**Phase to address:** v3.0 Phase 2 (Usage Tracking Schema) and verified in Phase 4 (Enforcement Gate).
+**Phase to address:**
+Dark mode foundation phase (must be the FIRST dark mode task before any color work).
 
 ---
 
-### Pitfall 5: Proration Creates Unexpected Charges on Plan Downgrades
+### Pitfall 5: Hardcoded Color Classes Across 51 Dashboard Components
 
 **What goes wrong:**
-When a tenant upgrades mid-cycle, Stripe generates an immediate proration invoice. When they downgrade mid-cycle, Stripe generates a negative proration credit but does not automatically refund it — it applies to the next invoice. If the product grants the new (lower) plan limits immediately on downgrade, the tenant may be denied features they've technically paid for (they paid for the higher plan through the end of the cycle) while Stripe still has their money as a credit.
+A grep of `src/components/dashboard` reveals 293 occurrences of hardcoded color classes (`bg-white`, `bg-gray-*`, `text-[#...]`, `border-gray-*`) across 51 files, and 454 occurrences of semantic-looking but hardcoded values (`bg-stone-*`, `text-[#0F172A]`, `text-[#475569]`). Additionally, `src/lib/design-tokens.js` hardcodes colors as JS string constants (`bg-white`, `bg-[#F5F5F4]`) that are used across onboarding and dashboard. When `.dark` is added to `<html>`, none of these classes respond to it — every component stays light.
 
-A second problem: if downgrade is to a plan with a lower call limit and the tenant has already used more calls this cycle than the new plan allows, the enforcement gate needs to decide: block immediately (unfair — they paid for calls this cycle) or allow until cycle reset (creates an enforcement gap). Neither is right without a clear policy.
+**How to avoid:**
+Before adding any dark mode CSS variables, do a systematic replacement pass:
+- `bg-white` in card/surface contexts → `bg-card`
+- `bg-white` in page/body contexts → `bg-background`
+- `text-[#0F172A]` → `text-foreground`
+- `text-[#475569]` → `text-muted-foreground`
+- `bg-stone-200` / `bg-stone-100` → `bg-muted`
+- `border-stone-200` → `border-border`
+
+Run `grep -r "bg-white" src/components/dashboard` and `grep -r "bg-white" src/app/dashboard` to get the complete list (the counts above are from the component directory only; the dashboard page directory adds 41 more `bg-white` instances across 15 files). Do NOT do this as a single bulk find-replace — each instance needs context review (a white logo background should stay white; a card surface should become `bg-card`).
+
+**Warning signs:**
+Any dashboard component that still has `bg-white` or `text-[#0F172A]` as a static class after the color audit.
+
+**Phase to address:**
+Dark mode color audit phase — must complete before any dark mode toggle is user-accessible.
+
+---
+
+### Pitfall 6: Recharts Chart Colors Break in Dark Mode
+
+**What goes wrong:**
+`AnalyticsCharts.jsx` uses inline hex strings everywhere: `stroke="#e5e7eb"` (grid lines), `fill="#C2410C"` (bar/line fills), `tick={{ fill: '#475569' }}` (axis text), `contentStyle={{ border: '1px solid #e2e8f0', background: 'white' }}` (tooltip). Recharts renders these via SVG/inline styles, bypassing Tailwind entirely. Adding `.dark` to `<html>` does nothing for these colors — the charts will show white tooltips on dark backgrounds and light-gray grid lines that disappear.
+
+**How to avoid:**
+Use a `useTheme()` hook (from `next-themes`) inside `AnalyticsCharts.jsx` to resolve theme at render time, then pass conditional color values:
+```js
+const { resolvedTheme } = useTheme();
+const isDark = resolvedTheme === 'dark';
+const gridColor = isDark ? '#374151' : '#e5e7eb';
+const tickColor = isDark ? '#9ca3af' : '#475569';
+const tooltipBg = isDark ? '#1f2937' : 'white';
+const tooltipBorder = isDark ? '#374151' : '#e2e8f0';
+```
+This is the only reliable pattern for Recharts in dark mode. CSS variables cannot be used inside SVG `stroke`/`fill` attributes rendered by Recharts.
+
+The same issue applies to the `STATUS_COLORS` and `URGENCY_COLORS` palette objects (hardcoded hex) — these feed `<Cell fill={entry.color} />` and will not adapt. Those specific colors may be acceptable as semantic data colors (red = emergency is correct in both modes), but verify contrast ratios against dark card backgrounds.
+
+**Warning signs:**
+White tooltip box floating over dark chart background. Invisible gray grid lines (light gray on dark gray).
+
+**Phase to address:**
+Dark mode — analytics phase. Separate from the general color audit because Recharts requires a different fix pattern.
+
+---
+
+### Pitfall 7: Missing ThemeProvider Means No Toggle at All
+
+**What goes wrong:**
+`next-themes` is in `package.json` but `ThemeProvider` is not wired into `layout.js` (verified: no import, no usage). `useTheme()` called in any component (currently only `sonner.jsx`) will return `undefined` theme with no error in development — it silently falls back. Building a theme toggle UI before `ThemeProvider` is in the tree results in a toggle that does nothing.
+
+**How to avoid:**
+The `ThemeProvider` setup in `layout.js` is a gating prerequisite. No theme toggle work should proceed until `ThemeProvider` is wired in and `document.documentElement.classList` responds to theme changes. Verify with: open DevTools → toggle `.dark` class on `<html>` → confirm at least one known shadcn component changes appearance.
+
+**Warning signs:**
+`useTheme()` returns `{ theme: undefined, setTheme: () => {} }`. Toggling theme in UI has no visible effect.
+
+**Phase to address:**
+Dark mode foundation phase — first task, blocks all other dark mode work.
+
+---
+
+### Pitfall 8: CSS Variable Drift Between shadcn and Custom Dashboard Tokens
+
+**What goes wrong:**
+`globals.css` defines a complete shadcn v2 token set for both `:root` and `.dark`, but `design-tokens.js` defines parallel colors as raw hex strings (`brandOrange: '#C2410C'`, `card.base: 'bg-white rounded-2xl...'`). These tokens are imported and used in onboarding and dashboard components. When dark mode is added, the CSS variables adapt but the JS-token-derived classes do not — any component using `card.base` will have a hardcoded `bg-white` that ignores `.dark`.
+
+**How to avoid:**
+Deprecate hardcoded values in `design-tokens.js` and replace with Tailwind semantic equivalents:
+- `card.base` → replace `bg-white` with `bg-card`
+- `glass.topBar` → replace `bg-white/80` with `bg-card/80`
+- `colors.navy` / `heading` → replace usages with `text-foreground`
+- `colors.bodyText` / `body` → replace usages with `text-muted-foreground`
+
+Then audit all import sites of `design-tokens.js` for the dashboard and onboarding components.
+
+**Warning signs:**
+`grep -r "design-tokens" src/` shows imports — check each import site for hardcoded white/dark values.
+
+**Phase to address:**
+Dark mode color audit phase. The `design-tokens.js` file is a centralization trap: it looks like tokens but they are hardcoded strings.
+
+---
+
+### Pitfall 9: Dashboard Sidebar Already Has Its Own Dark Background — Double-Dark Problem
+
+**What goes wrong:**
+`DashboardSidebar.jsx` uses `bg-[#0F172A]` (dark navy) as its background — this looks intentional and correct in light mode. In dark mode, if the main content area also goes dark (`bg-background` resolves to near-black), the sidebar and content area may become indistinguishable from each other. The page loses its visual hierarchy.
+
+**How to avoid:**
+The sidebar's dark navy (`#0F172A`) must remain its dark mode color too — it should not respond to the theme token. Use a raw hex class that is NOT a semantic token: `bg-[#0F172A]` is already correct for this purpose. Ensure the dark mode main content area uses a lighter dark (e.g., `oklch(0.145 0 0)` which is the current `--background`) and cards use `oklch(0.205 0 0)` (`--card`), creating visible separation. Do not make the sidebar `bg-background` — that would destroy the sidebar's identity.
+
+**Warning signs:**
+In dark mode, sidebar and content area appear as one undifferentiated dark region.
+
+**Phase to address:**
+Dark mode visual review phase (after color audit and before shipping).
+
+---
+
+### Pitfall 10: CalendarView Has 22+ Hardcoded Color Classes Including Urgency State Blocks
+
+**What goes wrong:**
+`CalendarView.js` defines `URGENCY_STYLES` with hardcoded Tailwind classes: `bg-red-50 border-l-[3px] border-red-400 hover:bg-red-100/70` for emergency, `bg-[#F0F4FF]` for routine. These are light-mode colors. In dark mode, `bg-red-50` is near-white — invisible or near-invisible against dark backgrounds. The calendar event blocks will be unreadable.
+
+**How to avoid:**
+Add explicit dark mode variants for each urgency state. Either use Tailwind dark variants:
+```
+emergency: 'bg-red-50 dark:bg-red-950/30 border-l-[3px] border-red-400 dark:border-red-500 hover:bg-red-100/70 dark:hover:bg-red-900/40'
+routine: 'bg-[#F0F4FF] dark:bg-blue-950/30 border-l-[3px] border-[#4F6BED] hover:bg-[#E8EFFE] dark:hover:bg-blue-900/30'
+```
+Or conditionally apply classes based on `useTheme()` resolvedTheme. The routine block uses a hardcoded hex `bg-[#F0F4FF]` which has no dark variant at all.
+
+**Warning signs:**
+In dark mode, calendar events appear as near-white blocks on dark gray backgrounds (extremely low contrast). Emergency blocks in particular (red-50) will be nearly invisible.
+
+**Phase to address:**
+Dark mode — calendar-specific color pass. This is a separate task from the general color audit because `CalendarView.js` uses dynamic class-concatenation strings that cannot be found by a simple grep for `bg-white`.
+
+---
+
+### Pitfall 11: Framer-Motion Animations on New Landing Sections Must Use AnimatedSection, Not Raw motion.div
+
+**What goes wrong:**
+`AnimatedSection.jsx` already correctly implements `useReducedMotion()` — it skips all animations for users who have enabled "reduce motion" in their OS. If objection-busting sections are built with raw `<motion.div>` elements (copying from examples online), they bypass this accessibility guard entirely. Users who need reduced motion get animations anyway.
 
 **Why it happens:**
-Proration behavior (`proration_behavior: 'create_prorations' | 'none' | 'always_invoice'`) is a Stripe API parameter that most tutorials gloss over. Developers use the default and discover the side effects when a real customer complains about an unexpected charge.
+The pattern `<motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}>` works visually but skips the `useReducedMotion()` check that `AnimatedSection` applies.
 
-**Consequences:**
-- Tenant charged immediately on upgrade mid-cycle (expected), but also immediately loses credit on downgrade without a refund (unexpected to tenant)
-- Billing complaints and chargebacks
-- Enforcement gate behaving incorrectly in the cycle after a plan change
+**How to avoid:**
+All new landing section animations must use `<AnimatedSection>`, `<AnimatedStagger>`, and `<AnimatedItem>` from `src/app/components/landing/AnimatedSection.jsx`. These are the established wrappers. If a new animation pattern is needed that doesn't fit these wrappers, extend the file — do not create new raw `motion.div` usages.
 
-**Prevention:**
-1. **Upgrades:** Use `proration_behavior: 'always_invoice'` so the proration is charged immediately and the tenant gains new features right away. This is the least confusing behavior for upgrades.
-2. **Downgrades:** Use `proration_behavior: 'none'` and schedule the downgrade at the end of the current billing cycle using Stripe Subscription Schedules. The tenant keeps the current plan until cycle end, then drops to the lower plan. No mid-cycle proration charge or confusing credit.
-3. For usage limits on downgrade: grant the current cycle's limit at the current plan. On the next cycle start (Stripe sends `customer.subscription.updated` with the new price), enforce the new lower limit.
-4. Preview prorations before applying them: use `stripe.invoices.retrieveUpcoming()` to show the tenant exactly what they'll be charged before confirming a plan change. This eliminates surprise charges.
-5. Document the policy explicitly in the billing dashboard UI: "Upgrades take effect immediately. Downgrades take effect at the end of your current billing period."
+**Warning signs:**
+`grep -r "motion.div" src/app/components/landing/` shows results outside of `AnimatedSection.jsx`, `ScrollProgress.jsx`, `ScrollLinePath.jsx`, and `HowItWorksMinimal.jsx` (which handle their own reduced-motion logic).
 
-**Detection:**
-- Tenants complaining about unexpected charges after upgrading
-- Negative balance on Stripe customer account (credit sitting unused)
-- `calls_used` exceeding the new plan limit on the same day as a downgrade
-
-**Phase to address:** v3.0 Phase 3 (Subscription Lifecycle Management) and Phase 5 (Billing Dashboard).
+**Phase to address:**
+Landing content phase. Add to the phase's "definition of done" checklist.
 
 ---
 
-### Pitfall 6: Failed Payment Dunning — Service Suspended Before Customer Can Fix It
+### Pitfall 12: Polish Pass Scope Creep Breaks What Works
 
 **What goes wrong:**
-Stripe's Smart Retries will attempt a failed invoice payment multiple times over several days. The default Stripe configuration marks subscriptions as `past_due` during retry windows. If the enforcement gate treats `past_due` the same as `cancelled` and immediately suspends service, tenants who had a transient card decline (expired card, bank hold) lose service before they have a chance to update their payment method. This is the number-one churn cause for subscription SaaS — involuntary churn from payment failure accounts for 20-40% of cancellations.
+"Polish pass" is undefined scope. A developer touching spacing tokens ends up refactoring the LeadFlyout, which breaks the status update flow, which requires a fix to the API route, which is now a feature change disguised as polish. The milestone ships late and introduces regressions.
 
 **Why it happens:**
-The billing status state machine has three states: `active`, `past_due`, `cancelled`. The simplest enforcement logic is `active → allow, anything else → block`. This feels correct but is too aggressive.
+UI/UX polish touches everything visually. Every element is adjacent to logic. Without hard boundaries, the pass expands until it encompasses the entire codebase.
 
-**Consequences:**
-- Tenants in `past_due` (recoverable) lose service immediately
-- Their AI receptionist stops answering calls — they lose live leads during the grace period
-- They churn not because they wanted to cancel but because of a payment hiccup
-- High involuntary churn rate (industry average is 1-3%; hitting 10%+ means dunning logic is wrong)
+**How to avoid:**
+Define "polish" as: typography scale, spacing, hover/focus states, empty states, loading states, and error states — with NO changes to: component API contracts, data flow, API routes, or business logic. Each polish sub-task should be completable and verifiable in isolation. The rule: if the change would require updating an API or a database query, it is NOT polish — it is a feature and belongs in a different milestone.
 
-**Prevention:**
-1. Implement a grace period: allow `past_due` tenants full service for a configurable grace period (default: 7 days for B2B SaaS). During this period, the enforcement gate treats them as `active`.
-2. After the grace period expires without payment, downgrade to a limited mode (not full suspension): allow incoming calls to be answered but do not process new bookings. This keeps the core promise (calls answered) while creating urgency to pay.
-3. Send escalating notifications during the grace period: Day 1 (email with payment link), Day 3 (email + SMS), Day 5 (in-app banner), Day 7 (final notice before suspension).
-4. Use Stripe's Customer Portal for payment method updates — do not build your own payment update form. The portal handles 3DS, card validation, and retry triggering automatically.
-5. On `invoice.payment_succeeded` after dunning: immediately restore full service and reset the grace period counter. Do not require a manual admin action to restore.
-6. Never immediately cancel on `invoice.payment_failed`. Wait for Stripe's retry cycle to complete (Smart Retries over 14 days) before moving from `past_due` to `cancelled`.
+**Warning signs:**
+A polish PR that modifies any file in `src/app/api/`, `src/lib/` (except design tokens), or `supabase/migrations/`.
 
-**Detection:**
-- High involuntary churn rate (> 3% monthly)
-- Tenants complaining calls aren't being answered right after a declined card
-- `billing_status = 'past_due'` tenants with active usage counters (they're paying attention and using the product — they'll fix the payment)
-
-**Phase to address:** v3.0 Phase 3 (Dunning & Grace Periods) — must be designed alongside the enforcement gate, not added later.
+**Phase to address:**
+Polish planning phase. Write the scope exclusion list before any code is touched.
 
 ---
 
-### Pitfall 7: Supabase RLS on Billing Tables — Service Role Bypass Silently Breaks Enforcement
+### Pitfall 13: Focus State Regressions During Color Audit
 
 **What goes wrong:**
-Supabase RLS policies enforce tenant isolation on data reads. Billing tables (`subscriptions`, `usage_counters`, `billing_events`) need to be readable by the tenant (for the dashboard) but writable only by server-side webhook handlers (Stripe webhooks, Retell webhooks). If RLS is not set up correctly, two failure modes occur:
+When replacing `bg-white` and `text-[#0F172A]` with semantic tokens, focus ring colors also get swept up. The current `design-tokens.js` focus ring is `focus:ring-[#C2410C]` (brand orange). If this gets replaced with `focus:ring-ring` (shadcn default which is currently `oklch(0.533 0.154 27.5)` — also orange-ish in light mode but potentially different in dark), focus states may become invisible or inconsistent. Keyboard navigation becomes inaccessible.
 
-**Mode A (too permissive):** Tenant can `UPDATE` their own `subscriptions` row via the Supabase client SDK. A motivated tenant sets `billing_status = 'active'` and `plan_limit = 999` directly. There is no amount of application-level validation that catches this if the RLS policy has `USING (tenant_id = auth.uid())` on both SELECT and UPDATE.
+**How to avoid:**
+Do not replace focus ring classes during the color sweep. Keep `focus:ring-[#C2410C]` as a hardcoded exception for interactive elements — brand-orange focus rings are a deliberate accessibility choice that should work in both modes. After dark mode is enabled, test keyboard navigation specifically: Tab through all interactive elements in dark mode and verify the ring is visible against dark backgrounds (orange on dark gray is typically fine).
 
-**Mode B (too restrictive):** Webhook handlers using the Supabase `service_role` key bypass RLS entirely. If developers assume RLS protects the billing tables and rely on it for authorization in the webhook handler itself, they may not add application-level tenant verification. A malicious actor who discovers the webhook endpoint can submit a crafted payload (without Stripe signature verification) and modify any tenant's billing status.
+**Warning signs:**
+Tab-navigating the dashboard in dark mode reveals invisible or very faint focus rings.
 
-**Why it happens:**
-The existing codebase already has RLS on all tables (a valid pattern for this project). Developers add billing tables following the same pattern — RLS for tenant isolation — without recognizing that billing tables have a different trust boundary: they should be immutable from the client SDK but mutable from authenticated server-side processes only.
-
-**Consequences:**
-- Mode A: Trivial billing bypass — any tenant can give themselves free access
-- Mode B: Stripe signature verification is the only gate; if it's skipped in testing or misconfigured, billing state becomes externally writable
-- Misconfigured RLS also causes Supabase RealTime subscription updates to broadcast billing data to wrong tenants
-
-**Prevention:**
-1. **Billing tables must have `WITH CHECK (false)` on INSERT and UPDATE for authenticated users.** Only the `service_role` (used by server-side webhook handlers) can write to billing tables. Tenants can only read their own rows.
-2. RLS policy pattern for billing tables:
-   ```sql
-   -- SELECT: tenant can see their own billing status
-   CREATE POLICY "tenant_read_own_subscription"
-     ON subscriptions FOR SELECT
-     USING (tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid()));
-
-   -- INSERT/UPDATE/DELETE: only service_role (no policy = default deny for authenticated users)
-   -- service_role bypasses RLS entirely
-   ```
-3. Always verify Stripe webhook signatures with `stripe.webhooks.constructEvent()` before processing. Never skip this in any environment. The signature prevents forged webhook payloads.
-4. Never expose the `service_role` key to the browser. All Stripe webhook handlers and billing mutations run server-side only (Next.js API routes, not client-side SDK calls).
-5. Validate `tenant_id` from the Stripe customer metadata, not from the request body: `const tenantId = stripeCustomer.metadata.tenant_id` — then look up the subscription by that `tenant_id`. Don't trust any tenant identifier from the webhook payload without cross-referencing Stripe's customer object.
-
-**Detection:**
-- Supabase Dashboard: RLS policy test — try updating `billing_status` as an authenticated tenant user; the update should fail
-- `subscriptions` table audit log showing `UPDATE` operations with `auth.role() = 'authenticated'` (should not exist)
-- Stripe webhook handler processing events without checking `stripe.webhooks.constructEvent()` return value
-
-**Phase to address:** v3.0 Phase 1 (Database Schema) — RLS policies must be correct before any billing data is written to production.
+**Phase to address:**
+Dark mode visual review phase — dedicated keyboard navigation pass.
 
 ---
 
-### Pitfall 8: Usage Counter Reset at Billing Cycle Boundary — Off-by-One and Race Conditions
+### Pitfall 14: Image Contrast in Dark Mode (Logos, Avatars, Social Proof Initials)
 
 **What goes wrong:**
-Monthly billing cycles reset the call usage counter on the billing anniversary date (e.g., the 15th of each month). Two failure modes:
+The brand logo used in `DashboardSidebar.jsx` is `WHITE VOCO LOGO V1 (no bg).png` — a white PNG with transparent background. It renders correctly on the dark sidebar (`bg-[#0F172A]`). But if any page section changes to a light background in dark mode, the white logo becomes invisible. The testimonial initial avatars in `SocialProofSection.jsx` use solid colors (`bg-amber-600`, `bg-sky-600`, `bg-emerald-600`) that are fine in light mode but may be too saturated on dark backgrounds.
 
-**Mode A (wrong reset trigger):** Usage is reset by a cron job running on a fixed schedule (midnight UTC on the 1st, or "every 30 days"). Stripe's billing cycle is tied to the subscription's `current_period_start`, which is not necessarily the 1st and shifts when trials end, plans are changed, or invoices are manually generated. A cron-based reset drifts from the actual billing cycle, creating periods where tenants are over- or under-charged for usage.
+**How to avoid:**
+Audit all image usages: anything with brand imagery needs a dark-mode-safe container. The sidebar logo is safe (sidebar stays dark). Dark mode is dashboard-only per PROJECT.md — the public landing page (which includes testimonials) is NOT scoped for dark mode in v5.0. For the dashboard, verify logo appears only inside `DashboardSidebar` which keeps its dark background.
 
-**Mode B (race during reset):** The usage counter is reset to 0 at cycle start. A call completes at the exact moment of reset. The increment fires, reads the fresh 0, increments to 1. Simultaneously, the reset job is also running and writes 0, erasing the just-completed call. The call is never counted.
+**Warning signs:**
+Invisible logo (white-on-white). This would only occur if a new layout places the logo outside the dark sidebar.
 
-**Why it happens:**
-Usage reset feels like a simple cron task. The connection between Stripe's billing cycle and the reset trigger is not obvious from the Stripe docs, which recommend listening to `invoice.paid` for this purpose but many developers use cron instead because it's simpler.
-
-**Consequences:**
-- Tenants get "free" extra calls when the reset fires early
-- Tenants hit limits prematurely when the reset fires late
-- Per-call overage billing is incorrect (overage calculated on a counter that's out of sync with the billing period)
-
-**Prevention:**
-1. Always reset usage counters in response to Stripe webhooks, not cron jobs. The correct event is `invoice.paid` for the subscription invoice (not a one-time invoice). On `invoice.paid`, check `invoice.subscription` is non-null and `invoice.billing_reason = 'subscription_cycle'`, then reset the counter for the period `invoice.period.start` to `invoice.period.end`.
-2. Store `billing_period_start` and `billing_period_end` on the `usage_counters` row, sourced from the Stripe invoice. This makes the counter period explicit and queryable.
-3. For the race condition: use `INSERT ... ON CONFLICT (tenant_id, billing_period_start) DO UPDATE SET calls_used = 0` for the reset, and `UPDATE usage_counters SET calls_used = calls_used + 1 WHERE tenant_id = $1 AND billing_period_start = $2` for increments. These are separate rows — the old period row is not overwritten when a new period starts.
-4. Keep the previous period's usage row (don't delete it). It's needed for invoice reconciliation and overage billing.
-
-**Detection:**
-- `usage_counters.calls_used` resetting to 0 on a fixed-date schedule that doesn't match `subscriptions.current_period_start`
-- Calls missing from usage count after a billing cycle rollover
-- Discrepancy between Stripe invoice line items and local `calls_used` counter
-
-**Phase to address:** v3.0 Phase 2 (Usage Tracking Schema) — the reset mechanism must be tied to `invoice.paid` from day one.
+**Phase to address:**
+Dark mode visual review phase.
 
 ---
 
-### Pitfall 9: Stripe Event Out-of-Order Delivery Corrupts Local State
+### Pitfall 15: The ScrollLinePath SVG Animation Will Break If Section Order Changes
 
 **What goes wrong:**
-Stripe does not guarantee delivery order. `customer.subscription.updated` may arrive before `customer.subscription.created`. An `invoice.paid` for a renewed subscription can arrive before the `customer.subscription.updated` that changed the plan price. If the webhook handler blindly applies each event's embedded data to the local DB, events processed out of order overwrite newer state with older state.
+The landing page uses a `ScrollLinePath` SVG that draws a copper sine wave through the HowItWorks → FeaturesCarousel → SocialProof section sequence (documented in the `scroll-line-path` skill). If new objection-busting sections are inserted into this sequence — inside the `<ScrollLinePath>` wrapper — the SVG path anchor points will misalign. The line will stop mid-section or skip entire areas.
 
-Example: `subscription.updated` (plan upgraded, `status = active`) arrives. Handler updates local DB. Then `subscription.created` (initial state, `status = trialing`) arrives and overwrites the active record with trialing status. Tenant is on a paid plan but local DB shows trialing.
+**How to avoid:**
+Check `src/app/(public)/page.js` — the `<ScrollLinePath>` wrapper currently contains exactly three children: `HowItWorksSection`, `FeaturesCarousel`, `SocialProofSection`. If new sections must appear in this flow, they must be added as children of `ScrollLinePath` AND the SVG path coordinates in `ScrollLinePath.jsx` must be recalculated. Alternatively, place new sections either before `<ScrollLinePath>` (after hero, before how-it-works) or after it (between `SocialProofSection` and `FinalCTASection`) where the SVG line has already ended.
 
-**Why it happens:**
-Webhook handlers are usually written as "take the event data, write to DB." Out-of-order delivery is not tested because Stripe's test webhook delivery is sequential, and this issue only manifests when Stripe's infrastructure has delivery delays across different event types.
+**Warning signs:**
+The copper sine wave SVG line ends abruptly or appears disconnected from section content after adding a new section.
 
-**Consequences:**
-- Tenant on paid plan blocked as if still on trial
-- Tenant downgraded locally while still on upgraded plan in Stripe
-- `billing_status` oscillating between states
-
-**Prevention:**
-1. Use `created` timestamps from Stripe event objects to version-protect writes: `UPDATE subscriptions SET status = $1, updated_at = $2 WHERE tenant_id = $3 AND stripe_updated_at < $2`. Only write if the incoming event's timestamp is newer than what's already stored.
-2. For subscription status, never apply `subscription.created` data if a `subscription.updated` with a later timestamp already exists. Check `stripe_updated_at` before writing.
-3. For missing-dependency scenarios (e.g., `invoice.paid` arrives before the subscription row exists locally): fetch the subscription from Stripe API directly (`stripe.subscriptions.retrieve(invoice.subscription)`) and create the local row, then process the invoice.
-4. Add a `stripe_event_id` and `stripe_created_at` column to the `subscriptions` table. This is the version vector — all updates must include these values and only apply if newer.
-
-**Detection:**
-- `subscriptions.billing_status` changing without a corresponding Stripe event log entry
-- Tenant reports being blocked while Stripe Dashboard shows active subscription
-- `stripe_event_id` log showing the same subscription receiving conflicting status events within milliseconds
-
-**Phase to address:** v3.0 Phase 1 (webhook processing infrastructure) — event ordering protection must be built in from the start, not added after state corruption is observed.
+**Phase to address:**
+Landing page architecture phase — before placing any new section in the DOM.
 
 ---
 
-## Moderate Pitfalls
+## Technical Debt Patterns
 
-Issues that create incorrect behavior or maintenance pain but don't require a rewrite.
-
----
-
-### Pitfall 10: Hard Paywall on `call_started` Webhook — Wrong Event for Enforcement
-
-**What goes wrong:**
-The enforcement gate fires at the moment Retell sends the `call_started` webhook to the application. This is before the AI has answered. If the enforcement check blocks the call, Retell has already connected the call — the caller hears silence or a hang-up, not a graceful "service unavailable" message.
-
-**Why it happens:**
-Developers wire enforcement to `call_started` because it fires first and seems like the right "entry gate." But Retell's `call_started` fires after the call is picked up. The only pre-answer hook is the inbound call webhook that Retell sends before connecting the call to the AI — this is the `POST /api/webhooks/retell` inbound handler.
-
-**Prevention:**
-The enforcement check (is this tenant `active` or `trialing`?) must happen in the inbound webhook handler, before Retell is told to connect the call to the LLM WebSocket server. If the tenant is suspended, respond with a Retell configuration that plays a pre-recorded "service unavailable" message instead of connecting to the AI. Never enforce in `call_started` — the call is already live.
-
-**Phase to address:** v3.0 Phase 4 (Enforcement Gate).
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Hardcode chart colors per theme using `resolvedTheme` checks in AnalyticsCharts | Simpler than abstracting to tokens | Every Recharts component needs individual theme logic | Acceptable for v5.0 — only one chart file |
+| Use `dark:` Tailwind variants inline rather than CSS variable migration | Faster, no refactor of globals.css | More classes per element, harder to maintain | Acceptable where semantic token equivalent does not exist |
+| Keep `design-tokens.js` JS constants, add dark-mode exports alongside them | Minimal migration risk | Two sources of truth for colors | Never — consolidate into CSS variables |
+| Add new landing sections as full top-level page sections | Simpler component structure | Breaks scroll flow, buries CTA | Never — embed into existing sections |
+| Skip `ThemeProvider` and manually toggle `.dark` via JS | Avoids restructuring layout.js | No `useTheme()` hook available, no system preference support | Never — `next-themes` is already installed |
 
 ---
 
-### Pitfall 11: Free Trial Counter Not Initialized at Onboarding
+## Integration Gotchas
 
-**What goes wrong:**
-Tenants start their 14-day free trial during onboarding. If the `subscriptions` row and `usage_counters` row are not created during onboarding (relying on a Stripe `customer.subscription.created` webhook to trigger creation), there is a window between account creation and webhook delivery where:
-- The enforcement gate finds no subscription row and either blocks all calls (overly restrictive) or allows all calls (too permissive)
-- Usage increments fail because there's no `usage_counters` row to update
-
-**Prevention:**
-1. During onboarding completion, synchronously create the Stripe customer (`stripe.customers.create()`), create the trial subscription (`stripe.subscriptions.create()` with `trial_period_days: 14`), and immediately write the local `subscriptions` and `usage_counters` rows — do not wait for the webhook.
-2. The webhook handler for `customer.subscription.created` should use `INSERT ... ON CONFLICT DO NOTHING` to handle the case where the row already exists (created synchronously at onboarding).
-3. The enforcement gate default for "no subscription row found" must be `trialing` (allow calls), not `suspended`. Stripe webhooks can take seconds to arrive; the absence of a local row immediately after onboarding is expected.
-
-**Phase to address:** v3.0 Phase 1 (Foundation) and Phase 3 (Trial Management).
-
----
-
-### Pitfall 12: Billing Dashboard Showing Stale Usage — Counter vs. Real-Time Accuracy
-
-**What goes wrong:**
-The billing dashboard shows `calls_used` from the `usage_counters` table. Calls are incremented by the Retell `call_analyzed` webhook. If `call_analyzed` takes 30–60 seconds to fire after a call ends (Retell's analysis pipeline), the dashboard shows a count that's 1-2 calls behind the real usage. Tenants think they have more budget left than they do. This is especially visible as they approach their plan limit.
-
-**Prevention:**
-1. Use Supabase Realtime to push live updates to the billing dashboard when `usage_counters` changes. The tenant sees the counter increment in real time without polling.
-2. Consider incrementing the counter optimistically at `call_ended` (faster, ~5 seconds after call) and reconciling at `call_analyzed`. Mark `call_analyzed` as the source of truth. This gives the dashboard near-real-time accuracy.
-3. Display the billing period boundary clearly: "X of Y calls used this period (resets [date])." Tenants need to know the reset date to understand their budget.
-
-**Phase to address:** v3.0 Phase 5 (Billing Dashboard).
-
----
-
-### Pitfall 13: Stripe Customer Portal Not Configured — Cancellation and Card Updates Broken
-
-**What goes wrong:**
-Stripe's Customer Portal handles cancellations, card updates, and subscription upgrades/downgrades. If the portal is not configured in the Stripe Dashboard (it requires explicit product/price registration, allowed features, and redirect URLs), the portal link throws a Stripe API error when clicked by tenants. Many developers discover this in production when a real customer tries to cancel.
-
-**Prevention:**
-1. Configure the Customer Portal in the Stripe Dashboard (not via API) before any billing goes live. Required settings: allowed products/prices, cancelation flow (immediate vs. end of period), allowed updates (upgrade/downgrade pricing).
-2. Set `return_url` to the billing dashboard page in the application — not to the homepage. After portal actions, the tenant should land back in the billing context.
-3. Test the portal in Stripe test mode before going live. The portal URL is generated via `stripe.billingPortal.sessions.create()` — test that the entire flow (cancel, update card, upgrade) works end-to-end.
-
-**Phase to address:** v3.0 Phase 5 (Billing Dashboard).
-
----
-
-## Minor Pitfalls
-
----
-
-### Pitfall 14: `invoice.payment_action_required` Not Handled — 3DS Payments Silently Fail
-
-**What goes wrong:**
-European tenants often have Stripe Radar rules or bank requirements that mandate 3D Secure authentication on subscription renewals. When a renewal requires 3DS and the tenant is not present to authenticate, Stripe sends `invoice.payment_action_required`. If the handler ignores this event, the invoice stays unpaid, the subscription moves to `past_due`, and the tenant gets no notification about why.
-
-**Prevention:**
-Listen for `invoice.payment_action_required` and send the tenant a link to authenticate: the `hosted_invoice_url` or `payment_intent.next_action.redirect_to_url` from the invoice. Without this, European tenants silently go delinquent.
-
-**Phase to address:** v3.0 Phase 3 (Dunning & Grace Periods).
-
----
-
-### Pitfall 15: Overage Billing Not Idempotent — Double-Charged at Cycle End
-
-**What goes wrong:**
-Per-call overage is billed by creating a Stripe invoice item for excess calls at the end of the billing period. If the overage calculation job runs twice (cron retried, duplicate `invoice.paid` event processed), two identical invoice items are created. The tenant is double-charged for overage.
-
-**Prevention:**
-Use Stripe's idempotency keys when creating invoice items for overage: `stripe.invoiceItems.create({ ... }, { idempotencyKey: \`overage-${tenantId}-${periodStart}\` })`. The `periodStart` makes the key unique per billing cycle and prevents duplicate creation.
-
-**Phase to address:** v3.0 Phase 4 (Overage Billing).
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Stripe schema setup | Adding billing tables without correct RLS write-protection | Pitfall 7: `WITH CHECK (false)` on all billing table mutations for authenticated users |
-| Webhook handler | First Stripe `invoice.paid` processed before `subscription.created` | Pitfall 9: fetch subscription from Stripe API when dependency is missing |
-| Usage tracking | Retell `call_ended` firing 3 times per call | Pitfall 1: use `call_analyzed` only; deduplicate on `call_id` |
-| Enforcement gate | Synchronous Stripe API call on call pickup path | Pitfall 2: local cache-first, webhook-updated, never Stripe API on hot path |
-| Trial management | Trial expires without card, no `subscription.deleted` listener | Pitfall 3: listen to all 7 subscription lifecycle events |
-| Plan changes | Mid-cycle downgrade with immediate limit enforcement | Pitfall 5: schedule downgrade at cycle end, keep current limits until then |
-| Dunning | `past_due` treated as `suspended` | Pitfall 6: 7-day grace period, limited mode not full suspension |
-| Usage reset | Cron-based reset drifting from Stripe billing cycle | Pitfall 8: reset only on `invoice.paid` with `billing_reason = 'subscription_cycle'` |
-| Overage billing | Duplicate overage invoice items | Pitfall 15: idempotency key = `overage-${tenantId}-${periodStart}` |
-| Billing dashboard | Stale usage counter | Pitfall 12: Supabase Realtime push on counter changes |
-
----
-
-## Integration-Specific Gotchas
-
-| Integration Point | Common Mistake | Correct Approach |
-|-------------------|----------------|------------------|
-| Stripe webhooks | Treating HTTP 200 response as "processed successfully" | Store event ID first, process async, mark complete after DB write succeeds |
-| Retell `call_analyzed` | Assuming it fires within 5 seconds of call end | It can take 30-60s; enforcement must tolerate this latency gap |
-| Retell inbound webhook | Adding enforcement after existing slot calculation | Enforcement reads a single indexed column; add before slot calculation, fail fast |
-| Supabase RLS | Using `auth.uid()` directly in billing table policies | tenant_id requires a join to profiles table; cache it in JWT custom claim |
-| Stripe Customer Portal | Assuming portal just works after `stripe.billingPortal.sessions.create()` | Portal must be configured in Stripe Dashboard UI first with allowed products |
-| Stripe Subscription Schedules | Not using schedules for end-of-cycle downgrades | Without schedules, downgrade takes effect immediately with proration charges |
-| Stripe Test Clocks | Testing trial expiry with real 14-day wait | Always use Test Clocks for billing cycle testing; this is not optional |
-| Stripe Meter Events | Using Stripe meter events without an `identifier` field | Without `identifier`, Stripe cannot deduplicate — use Retell `call_id` as identifier |
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| Recharts + dark mode | Passing static hex to `stroke`, `fill`, `contentStyle` | Read `resolvedTheme` from `useTheme()`, derive colors conditionally at render |
+| next-themes + Next.js App Router | Forgetting `suppressHydrationWarning` on `<html>` | Add `suppressHydrationWarning` to the `<html>` tag in `layout.js` before any other theme work |
+| next-themes + Supabase auth | Storing theme in localStorage only — user loses preference on new devices | Persist theme preference to `tenants` table, sync on auth, fall back to localStorage |
+| framer-motion + new landing sections | Using raw `motion.div` without `useReducedMotion` check | Use existing `AnimatedSection` wrapper which already handles reduced-motion |
+| shadcn Sheets/Dialogs + dark mode | Sheet overlay has `bg-background` but flyout content inside has hardcoded `bg-white` | Replace `bg-white` inside SheetContent with `bg-card` or `bg-background` |
+| Spline 3D scene + dark mode | Attempting to theme-adapt it | No action needed; HeroSection background is intentionally dark and is public-site-only |
 
 ---
 
@@ -430,39 +328,37 @@ Use Stripe's idempotency keys when creating invoice items for overage: `stripe.i
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Stripe API call on inbound webhook | Call pickup > 1 second; Retell timeouts | Cache billing_status locally; never call Stripe on hot path | Every call after billing enforcement added |
-| RLS policies joining profiles table on usage queries | Slow usage counter reads; dashboard lag | Cache tenant_id in JWT custom claim; keep RLS policies join-free | 50+ tenants with active calls simultaneously |
-| Counting all Retell event types for usage | 3x overcounting; premature plan limit hits | Filter to `call_analyzed` events only | From day one of usage counting |
-| Cron-based usage reset without idempotency | Counter reset twice; lost usage data | Webhook-triggered reset with `ON CONFLICT DO NOTHING` | First time Stripe retries the `invoice.paid` event |
+| Embedding all 6 objection sections as separate dynamically-imported chunks | 6 extra lazy-load waterfalls, visible progressive loading | Co-locate related objection content into a single component | Immediately visible on slow connections |
+| Adding `whileInView` to many elements without `viewport: { once: true }` | Animations re-trigger on scroll-up, expensive re-renders | Always pass `once: true` to viewport (AnimatedSection already does this) | Visible immediately on any scroll-heavy section |
+| Calling `useTheme()` in every dashboard component | Many re-renders when theme changes | Resolve theme once at layout level, pass via context or CSS variables | Not a problem at current component count but degrades over time |
+| Image-heavy "proof" sections (screenshots, phone mockups) without `next/image` | LCP regression, CLS from unsized images | Use `next/image` with explicit `width`/`height` or `fill` + `sizes` on all new images | Immediately measurable on Lighthouse |
 
 ---
 
-## Security Mistakes
+## UX Pitfalls
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| No Stripe signature verification | Forged webhooks can set any tenant to `active` | `stripe.webhooks.constructEvent()` on every incoming event, no exceptions |
-| Tenant can write to own subscriptions row via SDK | Trivial billing bypass | RLS: SELECT allowed, INSERT/UPDATE blocked for authenticated role on billing tables |
-| Exposing Stripe secret key to client | Full account takeover | Stripe key only in server-side env vars; never in `NEXT_PUBLIC_*` |
-| Using tenant ID from webhook body without verification | Tenant spoofing | Derive tenant_id from `stripe.customers.retrieve(event.data.object.customer).metadata.tenant_id` |
-| `service_role` key used in client-side code | RLS bypass from browser | service_role only in server API routes; anon key for client SDK |
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Theme toggle in Settings page only (not in persistent header) | Mobile users never find it; dark mode feels hidden | Place toggle in accessible location: dashboard top bar or user avatar menu |
+| Dark mode toggle that applies to the public landing page too | Landing page is a dark-hero + light-body composition; dark mode on it creates double-dark or broken contrast | Scope `.dark` class to dashboard layout only, not applied to public pages |
+| Adding objection content as plain text paragraphs | Home-service owners skim; text-heavy sections get zero reading time | Use proof data (numbers, timers, waveforms) as the primary visual; text as caption |
+| Empty states not updated for dark mode | Skeleton loaders using raw `bg-stone-200` may disappear against dark backgrounds | Verify all Skeleton components use `bg-muted` (shadcn default) which does respond to theme |
+| "5-minute setup" counter or animated proof elements without reduced-motion fallback | Disorienting for motion-sensitive users | Wrap any new animated proof elements with `useReducedMotion()` gate |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Webhook idempotency:** Check that `stripe_webhook_events` table has `UNIQUE(event_id)` — not just an app-level check
-- [ ] **Retell usage dedup:** Verify only `call_analyzed` triggers increment — grep for any increment on `call_started` or `call_ended`
-- [ ] **Enforcement latency:** Measure inbound webhook response time with enforcement gate active — must be < 400ms total
-- [ ] **Trial expiry no-card path:** Run a Stripe Test Clock through a trial that expires with no payment method — local DB must update
-- [ ] **Downgrade cycle end:** Verify downgrade is scheduled at cycle end, not applied immediately with proration
-- [ ] **Grace period active:** `past_due` status allows calls for grace period days — verify enforcement code has this branch
-- [ ] **Usage reset on invoice.paid:** Grep for cron-based usage reset — it must not exist; only `invoice.paid` webhook triggers reset
-- [ ] **RLS write protection:** Attempt `UPDATE subscriptions SET billing_status = 'active'` via authenticated Supabase client — must be rejected
-- [ ] **Out-of-order protection:** Webhook handler checks `stripe_updated_at` before overwriting — verify with out-of-order test delivery
-- [ ] **Overage idempotency key:** `stripe.invoiceItems.create()` call includes idempotency key `overage-${tenantId}-${periodStart}`
-- [ ] **Customer Portal configured:** Test the portal in Stripe test mode — portal session creation must succeed and portal must show correct products
-- [ ] **`call_started` not used for enforcement:** Enforcement fires in the inbound webhook handler before call connection, not in `call_started` handler
+- [ ] **Dark mode ThemeProvider:** `layout.js` has `<ThemeProvider>` wrapping children AND `<html suppressHydrationWarning>` — verify by checking if toggling theme class works without hydration warning in console.
+- [ ] **Chart dark mode:** Open analytics page in dark mode — verify tooltip backgrounds are dark, grid lines are visible, axis text is readable.
+- [ ] **Calendar dark mode:** Open calendar page in dark mode — verify urgency-colored event blocks (red-50, amber-50, #F0F4FF) are readable against dark card backgrounds.
+- [ ] **Landing page CTA preserved:** Scroll the public home page from top to bottom — FinalCTASection with AuthAwareCTA must be the last content before footer. Count top-level section components in `page.js` — should be no more than 6.
+- [ ] **Reduced motion on new sections:** Enable OS "reduce motion" — all new landing animations should be instant (no fade/slide). Verify by inspecting `AnimatedSection` usage in new components.
+- [ ] **No objection language in headings:** Grep new landing section files for: "worry", "concern", "robotic", "might be wondering", "but what", "don't think". These should appear zero times in heading copy.
+- [ ] **Design tokens updated:** `design-tokens.js` `card.base` no longer contains `bg-white` — grep confirms it.
+- [ ] **Focus states visible in dark mode:** Tab through dashboard in dark mode — every interactive element shows a visible focus ring (orange ring on dark gray is fine; invisible ring is not).
+- [ ] **ScrollLinePath unbroken:** View landing page — the copper sine wave connects continuously through all sections it wraps without gaps.
+- [ ] **Spline scene not affected:** Dark mode toggle does not change HeroSection appearance (it is already a dark section and is public-site-only, not inside dashboard scope).
 
 ---
 
@@ -470,32 +366,53 @@ Use Stripe's idempotency keys when creating invoice items for overage: `stripe.i
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Duplicate webhook processing (usage inflated) | HIGH | Audit `usage_events` for duplicate `call_id` entries. Recalculate correct count. Issue Stripe credit memos for tenants overcharged on overage. Manual tenant communication. |
-| Enforcement gate latency causing call failures | MEDIUM | Roll back enforcement to async-only mode. Move check to post-call audit. Redesign to local cache. No data loss but temporary service degradation. |
-| Trial expiry silent free access | MEDIUM | Stripe Dashboard audit: find all `canceled` subscriptions with active local accounts. Bulk-update local `billing_status`. Notify affected tenants. |
-| Billing table RLS bypass | CRITICAL | Audit all `subscriptions` rows for anomalous data. Lock table. Reset from Stripe API as source of truth. Fix RLS. Force re-auth for all sessions. |
-| Usage counter out of sync with billing period | MEDIUM | Re-derive `calls_used` from `call_events` table for the billing period. Cross-reference with Stripe invoice data. Manual correction per tenant. |
-| Double overage charges | MEDIUM | Stripe Dashboard: void duplicate invoice items. Issue refunds. Add idempotency keys retroactively. Tenants need individual communication. |
+| Hydration flash ships to production | MEDIUM | Add `suppressHydrationWarning` to `<html>` immediately + hotfix deploy; flash disappears without other changes |
+| Bulk find-replace of `bg-white` breaks logo or icon backgrounds | MEDIUM | Git diff shows all affected files; restore `bg-white` on explicit white-background contexts (logo containers, image backgrounds) |
+| New landing section breaks ScrollLinePath | LOW | Move section outside `<ScrollLinePath>` children — either before or after the wrapper |
+| Recharts charts invisible in dark mode | LOW | One file change (`AnalyticsCharts.jsx`) with conditional color logic resolves all charts |
+| Objection copy reads defensive and tanks conversion | HIGH | Rewrite from outcome-first perspective; requires a full copy pass, not a quick edit |
+| Polish pass expanded into API changes and shipped breakage | HIGH | Revert the non-UI changes; re-scope the milestone |
+
+---
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Defensiveness signals guilt | Landing copy phase | Read-aloud test: no mirrored fear language in headings |
+| Section proliferation buries CTA | Landing architecture phase | Count imports in `page.js`; FinalCTA is last |
+| Tone mismatch | Landing copy phase | Glossary of forbidden words grep on new files |
+| Dark mode hydration flash | Dark mode foundation (Phase 1 of dark mode) | No React hydration warnings in console |
+| 51 components with hardcoded colors | Dark mode color audit | `grep -r "bg-white" src/components/dashboard` returns only intentional white contexts |
+| Recharts chart colors | Dark mode analytics phase | Visual review of analytics page in dark mode |
+| Missing ThemeProvider | Dark mode foundation (Phase 1, task 1) | `useTheme()` returns a non-undefined theme value |
+| CSS variable drift (design-tokens.js) | Dark mode color audit | `grep "bg-white" src/lib/design-tokens.js` returns zero results |
+| Sidebar double-dark | Dark mode visual review | Side-by-side screenshot: sidebar and main content are visually distinct |
+| CalendarView urgency colors | Dark mode calendar phase | Visual review: all urgency event blocks readable in dark mode |
+| Raw motion.div without reduced-motion | Landing content phase | `grep -r "motion\.div" src/app/components/landing/` — only inside known files |
+| Polish pass scope creep | Polish planning phase | Any PR touching `src/app/api/` or `supabase/migrations/` is rejected |
+| Focus state regressions | Dark mode visual review | Keyboard-only navigation test in dark mode |
+| Image/logo contrast | Dark mode visual review | Visual scan of all image-containing dashboard pages in dark mode |
+| ScrollLinePath breaks | Landing architecture phase | Visual inspection of sine wave path continuity |
 
 ---
 
 ## Sources
 
-- [Stripe: Idempotent requests](https://docs.stripe.com/api/idempotent_requests) — HIGH confidence (official docs)
-- [Stripe: Use trial periods on subscriptions](https://docs.stripe.com/billing/subscriptions/trials) — HIGH confidence (official docs)
-- [Stripe: Prorations](https://docs.stripe.com/billing/subscriptions/prorations) — HIGH confidence (official docs)
-- [Stripe: Record usage for billing (Meters API)](https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage-api) — HIGH confidence (official docs)
-- [Stripe: Automate payment retries (Smart Retries)](https://docs.stripe.com/billing/revenue-recovery/smart-retries) — HIGH confidence (official docs)
-- [Stripe: Optimizing API performance with caching](https://stripe.dev/blog/optimizing-stripe-api-performance-lambda-caching-elasticache-dynamodb) — HIGH confidence (Stripe official blog)
-- [Stigg: Best practices for integrating Stripe webhooks](https://www.stigg.io/blog-posts/best-practices-i-wish-we-knew-when-integrating-stripe-webhooks) — MEDIUM confidence (practitioner post-mortem)
-- [Retell AI: Webhook documentation](https://docs.retellai.com/features/webhook) — HIGH confidence (official docs)
-- [Retell community: call_ended webhook not firing](https://community.retellai.com/t/call-ended-webhook-not-firing-for-ivr-forwarded-calls-to-retell-twilio-number/2074) — MEDIUM confidence (community report)
-- [n8n community: Retell triggering multiple executions per call](https://community.n8n.io/t/my-retell-ai-voice-agent-webhook-is-triggering-multiple-n8n-executions-per-call-and-i-only-want-one-execution-from-the-final-analyzed-event-to-run-my-automation/215323) — MEDIUM confidence (community, confirms 3-events-per-call pattern)
-- [Supabase: RLS Best Practices](https://makerkit.dev/blog/tutorials/supabase-rls-best-practices) — MEDIUM confidence (practitioner guide, verified against official RLS docs)
-- [MakerKit: Multi-tenant Supabase RLS patterns](https://makerkit.dev/blog/tutorials/supabase-rls-best-practices) — MEDIUM confidence (established Next.js + Supabase SaaS boilerplate author)
-- Direct codebase analysis: `src/app/api/webhooks/retell/route.js`, `src/lib/call-processor.js`, existing `subscriptions` table patterns — HIGH confidence
+- Code audit: `src/components/dashboard/` — 293 hardcoded color occurrences across 51 files, 454 hardcoded semantic-but-hex occurrences across 53 files (grep-verified)
+- Code audit: `src/app/dashboard/` — 41 `bg-white` occurrences across 15 files (grep-verified)
+- Code audit: `src/lib/design-tokens.js` — hardcoded hex constants confirmed
+- Code audit: `src/app/layout.js` — no ThemeProvider, no suppressHydrationWarning confirmed
+- Code audit: `src/app/globals.css` — dark mode CSS variables present for shadcn tokens; `.dark` custom variant defined via `@custom-variant dark (&:is(.dark *))` confirmed
+- Code audit: `package.json` — next-themes ^0.4.6 confirmed installed, ThemeProvider absent from app
+- Code audit: `src/components/dashboard/AnalyticsCharts.jsx` — all Recharts color values are inline hex, confirmed
+- Code audit: `src/components/dashboard/CalendarView.js` — urgency color classes hardcoded, confirmed
+- Code audit: `src/app/components/landing/AnimatedSection.jsx` — useReducedMotion pattern confirmed correct, all wrappers handle it
+- Code audit: `src/app/(public)/page.js` — ScrollLinePath wraps exactly 3 sections, confirmed
+- PROBLEMS.md objection research — used to calibrate tone pitfall warnings
+- next-themes documentation — suppressHydrationWarning requirement for App Router (MEDIUM confidence)
+- Recharts rendering model — SVG stroke/fill do not respond to CSS custom properties (HIGH confidence — SVG specification limitation)
 
 ---
-
-*Pitfalls research for: v3.0 Stripe Subscription Billing & Usage Enforcement*
-*Researched: 2026-03-26*
+*Pitfalls research for: v5.0 Trust & Polish — landing objection sections, dark mode retrofit, UI/UX polish pass*
+*Researched: 2026-04-13*

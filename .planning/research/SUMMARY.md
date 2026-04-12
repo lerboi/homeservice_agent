@@ -1,256 +1,179 @@
-# Research Summary: v3.0 Subscription Billing & Usage Enforcement
+# Project Research Summary
 
-**Project:** HomeService AI Agent
-**Milestone:** v3.0 — Stripe subscription billing, per-call usage metering, plan limit enforcement
-**Synthesized:** 2026-03-26
-**Research Files:** STACK.md · FEATURES.md · ARCHITECTURE.md · PITFALLS.md
-
----
+**Project:** Voco — v5.0 Trust & Polish
+**Domain:** SaaS landing page trust/conversion + dashboard dark mode retrofit + UI/UX polish (Next.js + Tailwind + shadcn)
+**Researched:** 2026-04-13
+**Confidence:** HIGH
 
 ## Executive Summary
 
-The v3.0 milestone converts the HomeService AI Agent from a free platform into a monetized SaaS product. The core mechanic is straightforward: tenants start a 14-day free trial (no credit card required) when they complete onboarding, receive a hard paywall when the trial expires or their call quota is exhausted, and self-serve their billing via Stripe Customer Portal. The entire integration is additive — it wires into four defined seams of the existing architecture without restructuring any existing component. No new infrastructure services are required; all billing logic runs in Next.js API routes and Supabase.
+Voco v5.0 is a polish-and-conversion milestone, not a feature milestone. The research establishes three independent work streams: (1) landing page objection-busting to address five identified conversion blockers from PROBLEMS.md, (2) dark mode retrofit across ~51 dashboard components, and (3) UI/UX polish for empty/loading/error states and micro-interactions. The key finding across all four research files is that the infrastructure for all three streams is already installed and partially wired — `next-themes` v0.4.6, the `.dark {}` CSS variable block, framer-motion's `AnimatedSection` wrapper, and shadcn Skeleton — but none are fully connected. The milestone is primarily configuration, token migration, and copy work, not new system design.
 
-The recommended approach is Stripe-first with Supabase as the enforcement cache. Stripe owns the subscription lifecycle and invoicing; the local `subscriptions` table mirrors Stripe state via webhooks and is the only data source consulted on the hot path (inbound call handling, dashboard page loads). This design keeps AI call pickup latency well under Retell's 1-second requirement while maintaining billing accuracy. Stripe Customer Portal handles all self-serve subscription management (plan changes, cancellation, invoices, payment method update), eliminating the need for any custom billing management UI.
+The single highest-risk item is the dark mode token migration: 293 hardcoded color occurrences across 51 dashboard component files, plus `design-tokens.js` which exports raw hex strings as JS constants used across the codebase. This cannot be done with a bulk find-replace — each instance requires context review. The `ThemeProvider` wiring is a 5-line change; the token audit that follows is a multi-session pass. Build order matters: ThemeProvider must be wired before any dark-mode color work, and the token audit must complete before the theme toggle is user-accessible. Partial dark mode (sidebar dark, content light) is visually worse than no dark mode.
 
-The highest-risk aspects of this integration are webhook idempotency (Stripe and Retell both deliver events more than once), enforcement gate latency (calling the Stripe API synchronously on the call path will break call pickup), and trial expiry leakage (failing to listen for `customer.subscription.deleted` after a no-CC trial allows indefinite free access). All three risks have clear, well-documented mitigations that must be built in Phase 1, before any enforcement logic is layered on top.
-
----
+The landing page risk is different in nature: copy quality. The five objection-busting sections must be written from an outcome-first, confident voice that matches the existing page tone — not as a list of defensive rebuttals. The existing page structure (ScrollLinePath, FinalCTA as last section) must be respected. The recommendation is a single `ObjectionSection` component addressing all objections plus a standalone `FAQSection`, both inserted between `FeaturesCarousel` and `SocialProofSection`, with `FinalCTASection` remaining the last content before footer.
 
 ## Key Findings
 
-### From STACK.md
+### Recommended Stack
 
-| Technology | Rationale |
-|------------|-----------|
-| `stripe` ^17.7.0 (server-side) | Latest stable non-preview SDK line. All Stripe API calls run server-side only via Server Actions and route handlers. Never expose the secret key to the client. |
-| `@stripe/stripe-js` ^5.x (client-side) | Required for Stripe Checkout redirect. Import via `@stripe/stripe-js/pure` to defer CDN load until the checkout page renders. No SSR conflict with React 19. |
-| Stripe Billing Meters API v2 | The only supported path for usage-based overage billing since the legacy usage records API was removed in Stripe API version `2025-03-31.basil`. Required only if overage billing is added in a future phase — not needed for flat-rate enforcement in v3.0. |
-| Supabase JS client (existing) | Billing tables use the same data access pattern as the rest of the project. No ORM to be added for billing. |
+No new npm packages are needed. `next-themes` v0.4.6 is already installed and is the correct tool for dark mode. The `.dark {}` CSS variable block already exists in `globals.css` with well-designed oklch tokens. `framer-motion` v12's `AnimatedSection` wrapper handles reduced-motion compliance for all new landing animations. The only work is wiring and migration.
 
-**Critical implementation detail:** The App Router webhook handler must use `request.text()` — not `request.json()` — to get the raw body for Stripe signature verification. Using the parsed body silently breaks signature verification and allows unsigned payloads through.
+Two configuration bugs block dark mode today: (1) `@custom-variant dark (&:is(.dark *))` in `globals.css` should be `(&:where(.dark, .dark *))` to match elements that have `.dark` applied to themselves, not just their children; (2) `dashboard/layout.js` has a hardcoded `bg-[#F5F5F4]` that will not respond to the theme token until replaced with `bg-background`.
 
-**Environment variables required:** `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, one Price ID per plan, and `STRIPE_METER_ID` (reserved for future overage billing).
+**Core technologies:**
+- `next-themes` v0.4.6: theme provider, `.dark` class injection, localStorage persistence — already installed, wire `ThemeProvider` into root `layout.js`
+- Tailwind CSS v4 `dark:` utilities + CSS variable overrides: the mechanism for all component dark mode — `.dark {}` block already complete in `globals.css`
+- `framer-motion` v12 `AnimatedSection`: scroll-triggered animations with reduced-motion compliance — reuse existing wrappers, do not create new raw `motion.div` usage
+- `recharts` v3 + `useTheme()` hook: chart dark mode — CSS variables cannot be used in SVG props; must resolve colors conditionally via `resolvedTheme` at render time
+- shadcn `Skeleton` + `Accordion`: already installed — `loading.js` files for streaming skeletons, Radix Accordion for FAQ section
 
-### From FEATURES.md
+### Expected Features
 
-**P0 — Blocking prerequisites (nothing else works without these):**
-- Stripe Products and Prices created for all three plans (Price IDs stored in env vars)
-- `subscriptions` database table as the billing source of truth per tenant
+**Must have (table stakes — P1):**
+- FAQ accordion section — addresses all 5 PROBLEMS.md objections, highest ROI / lowest cost
+- Hero + FinalCTA copy reframe — "complement not replacement" repositioning, copy-only changes
+- "Cost of inaction" stat callout block — reframes price objection with $260k/year anchoring
+- "Sounds robotic" counter block — #1 objection by volume, links back to live demo as proof
+- ThemeProvider + theme toggle in DashboardSidebar — gating prerequisite for all dark mode work
+- Dashboard layout dark mode — `layout.js`, `GridTexture`, sidebar, `BottomTabBar`
+- Full design token audit — all 51 dashboard components, `design-tokens.js` JS constants
+- Empty states for leads and calls pages — highest-value polish for new users pre-first-call
 
-**P1 — Must-ship for v3.0 launch:**
-- 14-day free trial via Stripe Checkout, no credit card required (`payment_method_collection: 'if_required'`)
-- Stripe webhook handler syncing all subscription lifecycle events to local DB
-- Per-call usage increment on `call_ended` webhook (with minimum 10-second duration filter; exclude test calls)
-- Hard limit enforcement: reject call if `calls_used >= calls_limit`
-- Subscription status middleware gate: block dashboard and AI service for `cancelled`/`paused` status
-- Trial countdown banner in dashboard ("X days left" with upgrade CTA)
-- Billing dashboard page at `/dashboard/more/billing` (plan, usage meter, renewal date, portal link)
-- Stripe Customer Portal integration (plan changes, cancellation, invoices, payment method)
-- Failed payment notification (SMS + email to owner on `invoice.payment_failed`)
-- Post-trial paywall page (`/billing/upgrade`) for expired and cancelled tenants
+**Should have (competitive — P2):**
+- Chart dark mode via `useTheme()` + conditional recharts color props — dependent on ThemeProvider
+- Flyout + modal dark mode — `LeadFlyout`, `AppointmentFlyout`, `QuickBookSheet`
+- Identity/change-aversion landing section — emotional "you are still in control" copy block
+- Revenue loss calculator widget — interactive, high conversion value, needs design iteration
+- Loading skeleton screens and button loading states — polish layer after dark mode stable
+- Hover micro-interactions on stat cards — zero-cost CSS addition
 
-**P2 — Add after v3.0 is stable:**
-- 80% usage alert (SMS + email when `calls_used >= 0.8 * calls_limit`; `usage_alert_sent` flag to prevent repeat)
-- Trial email series at day 7 and day 12 (Stripe only fires `trial_will_end` at day 11; custom cron needed)
-- Pause on trial end instead of cancel (reduces involuntary churn; adds `paused` state to enforcement)
+**Defer to v6+ (P3):**
+- Trade specificity proof block — FeaturesCarousel already covers this angle
+- Anchor-linked section navigation — low conversion value vs nav complexity
+- Supabase `tenants.ui_preferences` for cross-device theme persistence — localStorage is sufficient for v5.0
+- Deep mobile responsiveness audit — app is already responsive; this is ongoing maintenance
 
-**P3 — Defer (high complexity, high revenue upside):**
-- Overage billing per-call beyond plan limit (requires Stripe Billing Meters v2 + metered price configuration)
+### Architecture Approach
 
-**Explicitly deferred to v4+:** Admin MRR dashboard, annual billing, coupon/promo codes, Enterprise automated billing.
+The `ThemeProvider` must live in the root `src/app/layout.js` as a `'use client'` wrapper component (`src/components/providers/ThemeProvider.jsx`). This is the only placement where next-themes injects its SSR anti-flash script into `<head>` correctly. The public landing page is safe from dark mode side effects because its sections use hardcoded hex colors that do not respond to `.dark` on `<html>`. New landing sections live in `src/app/components/landing/` (not `src/components/landing/` — two different directories exist), are dynamically imported with loading skeletons, and should be placed between `FeaturesCarousel` and `SocialProofSection` inside the existing `ScrollLinePath` wrapper, or after it before `FinalCTASection`.
 
-**Anti-features to avoid:**
-- Custom card input form — use Stripe Checkout for PCI compliance and conversion
-- Soft limit with no enforcement — hard stop is required; soft warnings have no conversion pressure
-- Custom invoice PDF generator — Stripe Customer Portal handles this built-in
-- Immediate proration on downgrade — schedule at period end; upgrades prorate immediately
-- Billing for calls under 10 seconds or with failed call status
+**Major components (new/modified):**
+1. `src/components/providers/ThemeProvider.jsx` (NEW) — `'use client'` wrapper for next-themes ThemeProvider; keeps root layout a Server Component
+2. `src/components/dashboard/ThemeToggle.jsx` (NEW) — Sun/Moon toggle using `useTheme().setTheme()`; placed in DashboardSidebar bottom section
+3. `src/app/components/landing/ObjectionSection.jsx` (NEW) — single component addressing all 5 objections in cards/grid; dynamically imported
+4. `src/app/components/landing/FAQSection.jsx` (NEW) — Radix Accordion FAQ, placed just above `FinalCTASection`
+5. `src/app/layout.js` (MODIFY) — add `suppressHydrationWarning` to `<html>`, wrap with `ThemeProviderWrapper`
+6. `src/lib/design-tokens.js` (MODIFY) — replace all hardcoded hex strings with Tailwind semantic equivalents (`bg-card`, `text-foreground`, `bg-background`)
+7. All 51 dashboard component files (MODIFY) — replace hardcoded color classes with semantic tokens + `dark:` variants where needed
 
-### From ARCHITECTURE.md
+### Critical Pitfalls
 
-**Integration philosophy:** Additive wiring, not structural change. Four defined seams into the existing codebase:
+1. **ThemeProvider must be wired before any color work** — `useTheme()` silently returns `undefined` with no error when no provider exists. Building a toggle before the provider is in the tree produces a non-functional UI. Gate all dark mode work on: provider wired + no hydration warning in console + `.dark` class visible on `<html>` in DevTools.
 
-1. **`/api/stripe/webhook` (new route handler)** — Syncs all Stripe subscription lifecycle events into the `subscriptions` table. Uses `request.text()` for raw body, upserts on `stripe_subscription_id`, includes idempotency key table (`stripe_webhook_events`).
+2. **Hardcoded colors across 51 files cannot be bulk-replaced** — 293 occurrences in `src/components/dashboard/` alone. Context matters: `bg-white` on a logo container must stay white; `bg-white` on a card surface must become `bg-card`. `design-tokens.js` exports raw hex as JS string constants — it is a centralization trap that defeats the CSS variable system entirely.
 
-2. **`subscriptions` table (new Supabase table)** — One row per tenant. Key columns: `stripe_customer_id`, `stripe_subscription_id`, `status`, `plan_id`, `calls_limit`, `calls_used`, `trial_ends_at`, `current_period_start`, `current_period_end`, `cancel_at_period_end`. Indexed on `tenant_id` for the enforcement hot path. RLS: tenant can SELECT own row; INSERT/UPDATE only via service role (webhook handlers).
+3. **Dashboard sidebar must stay dark in dark mode** — `DashboardSidebar` uses `bg-[#0F172A]` intentionally. This must NOT be migrated to a semantic token. If the main content area also goes near-black, the sidebar loses its visual identity. Dark oklch values in `globals.css` must be tuned so `--card` is lighter than `--background`, creating visible hierarchy.
 
-3. **`handleInbound()` modification** — Adds subscription check to the parallel Supabase queries already running in the inbound Retell webhook handler. Single indexed query running in parallel with 4 existing queries — zero net latency increase. Gate logic: allow if `(active || trialing) && calls_used < calls_limit`; block with `booking_enabled: 'false'` and graceful caller message otherwise. `past_due` tenants get a 3-day grace window before blocking.
+4. **Recharts requires `useTheme()` in the component, not CSS variables** — SVG `fill`/`stroke`/`contentStyle` are inline styles; `.dark` on `<html>` has no effect on them. `AnalyticsCharts.jsx` must call `useTheme()` and conditionally resolve color values at render. Same applies to `CalendarView.js` urgency color blocks.
 
-4. **`processCallEnded()` modification** — Adds atomic increment via Postgres RPC (`increment_calls_used`) and `usage_events` insert after call completes. `call_id` is the idempotency key. Test calls are excluded.
+5. **Landing sections must not proliferate — FinalCTA must stay last** — Consolidate all objection content into one `ObjectionSection` + one `FAQSection`. Count top-level section imports in `page.js` as the enforcement gate (max 6).
 
-**Trial auto-start:** `/api/onboarding/complete` is modified to synchronously create a Stripe customer and 14-day trial subscription, and immediately write the local `subscriptions` row on onboarding completion. Does not wait for the `customer.subscription.created` webhook — the webhook handler upserts idempotently when it arrives.
+6. **Objection copy written defensively tanks conversion** — Any heading mirroring the fear plants doubts in visitors who had none. Write every heading as a positive assertion or proof claim. Run a forbidden-words grep before marking the landing phase complete.
 
-**Billing dashboard:** New page at `/dashboard/more/billing` under the existing More hub. Reads from `subscriptions` table; links to Stripe Customer Portal and Stripe Checkout via Server Actions (`createCheckoutSession`, `createPortalSession`).
-
-### From PITFALLS.md
-
-**Critical pitfalls (cause data loss, free-access leakage, or broken enforcement):**
-
-| # | Pitfall | Prevention Summary |
-|---|---------|-------------------|
-| 1 | Webhook idempotency not enforced — double-counting subscriptions and usage | `stripe_webhook_events` table with UNIQUE on `event_id`; `usage_events.call_id` UNIQUE with `ON CONFLICT DO NOTHING`; wire usage increment to `call_analyzed` (fires exactly once per call) |
-| 2 | Enforcement gate calls Stripe API synchronously — breaks Retell 1-second call pickup | Never call Stripe API on the inbound call path; read only from local `subscriptions` table (single indexed query, 5–20ms); accept up to 30-second staleness on enforcement status |
-| 3 | Trial expiry without payment method grants indefinite free access | Listen for ALL subscription events including `customer.subscription.deleted` and `customer.subscription.paused`; map Stripe status to local status on every event; test with Stripe Test Clocks |
-| 4 | Race condition between concurrent calls corrupts usage counter | Atomic `UPDATE ... SET calls_used = calls_used + 1` (Postgres RPC); advisory lock or `SELECT FOR UPDATE` only when `calls_used >= plan_limit - 2` (near-limit zone) |
-| 9 | Out-of-order Stripe event delivery corrupts local subscription state | Add `stripe_updated_at` version column; only apply event if its timestamp is newer than stored value; fetch from Stripe API directly if a dependency row is missing |
-
-**Moderate pitfalls (incorrect behavior, not data loss):**
-- Enforcement wired to `call_started` instead of the inbound webhook (Pitfall 10) — the call is already live by `call_started`; enforce at the inbound handler only
-- Usage counter not initialized at onboarding (Pitfall 11) — creates a window of undefined enforcement; fix by creating the subscription row synchronously during onboarding
-- Billing cycle reset via cron instead of `invoice.paid` webhook (Pitfall 8) — cron drifts from actual Stripe billing cycle; always reset in response to `invoice.paid` where `billing_reason = 'subscription_cycle'`
-- `past_due` treated as immediately suspended (Pitfall 6) — causes involuntary churn; implement 7-day grace period with escalating dunning notifications before full suspension
-
----
+7. **ScrollLinePath breaks if new sections are inserted carelessly** — The copper sine wave SVG is anchored to exactly three children. Place new sections after the `</ScrollLinePath>` closing tag (before `FinalCTASection`) unless the path coordinates are explicitly recalculated.
 
 ## Implications for Roadmap
 
-The research points clearly to a 4-phase build structure, ordered by dependency and risk.
+Based on research, the dependency graph mandates strict build order within dark mode. Landing page work is fully independent and can proceed in parallel with a separate developer if available.
 
-### Suggested Phase Structure
+### Phase 1: Dark Mode Foundation
+**Rationale:** ThemeProvider is a hard prerequisite. No dark mode work is meaningful without it. This phase unblocks the entire dark mode stream.
+**Delivers:** Working theme toggle in DashboardSidebar; `class="dark"` on `<html>` when toggled; zero hydration warnings; no flash on hard reload; sonner toasts auto-switch as a side effect.
+**Addresses:** ThemeProvider + theme toggle (P1 must-have).
+**Avoids:** Hydration flash (FOUC), missing provider blocking all subsequent dark mode work.
+**Key tasks:** Create `src/components/providers/ThemeProvider.jsx`; add `suppressHydrationWarning` to `<html>`; wire inside `NextIntlClientProvider`; fix `@custom-variant dark` selector in `globals.css`; create and wire `ThemeToggle.jsx` into `DashboardSidebar`.
 
----
+### Phase 2: Dashboard Dark Mode — Token Migration
+**Rationale:** The largest effort in the milestone. Must complete as a coherent single pass — partial dark mode is visually broken and worse than no dark mode.
+**Delivers:** All dashboard pages, layout shells, sidebars, flyouts, and settings panels render correctly in both modes. `design-tokens.js` no longer contains hardcoded hex strings.
+**Addresses:** Design token audit (P1); dashboard layout dark mode (P1); flyout/modal dark mode (P2).
+**Avoids:** 51-file hardcoded color pitfall, `design-tokens.js` CSS variable drift, sidebar double-dark problem, focus state regressions.
+**Key tasks:** Migrate `dashboard/layout.js`; update `design-tokens.js`; file-by-file audit of all 51 dashboard component files (sidebar excluded from semantic token migration); visual review pass in both modes before shipping.
 
-**Phase 1: Billing Foundation**
+### Phase 3: Dashboard Dark Mode — Charts and Calendar
+**Rationale:** Separate from token migration because Recharts and CalendarView require a different fix pattern than CSS class replacement. Keeps Phase 2 scope clean.
+**Delivers:** Analytics charts with dark-mode-aware axes, gridlines, tooltips, fills. Calendar urgency event blocks readable in dark mode.
+**Addresses:** Chart dark mode (P2).
+**Avoids:** Recharts chart colors breaking, CalendarView urgency colors disappearing on dark backgrounds.
+**Key tasks:** Update `AnalyticsCharts.jsx` with `useTheme()` + conditional recharts color resolution; update `CalendarView.js` `URGENCY_STYLES` with `dark:` Tailwind variants.
 
-*Rationale:* Everything downstream depends on correct event processing and a reliable local subscription table. Idempotency, RLS policies, and out-of-order event protection must be built here — they cannot be retrofitted after production data is written without risking corruption or free-access leakage.
+### Phase 4: Landing Page — Repositioning and Objection Sections
+**Rationale:** Fully independent of dark mode. Can run in parallel with Phases 1-3 if separate developer capacity exists.
+**Delivers:** Hero + FinalCTA copy reframed to complement-not-replacement. New `ObjectionSection` addressing all 5 objections. `FAQSection` just above FinalCTA. ScrollLinePath unbroken.
+**Addresses:** All P1 landing must-haves; identity/change-aversion section (P2).
+**Avoids:** Defensive copy pitfall, section proliferation burying the CTA, tone mismatch, raw `motion.div` bypassing reduced-motion, ScrollLinePath breaking.
+**Key tasks:** Update `HeroSection.jsx` and `FinalCTASection.jsx` copy; create `ObjectionSection.jsx` using `AnimatedSection` wrappers; create `FAQSection.jsx` using shadcn Accordion; insert both with `dynamic()` imports into `page.js`; run forbidden-words grep on all new copy before marking done.
 
-Deliverables:
-- Stripe account setup: products, prices, Customer Portal configuration
-- `subscriptions` and `usage_events` database tables with correct RLS (SELECT only for authenticated users; INSERT/UPDATE only via service role)
-- `stripe_webhook_events` idempotency table (UNIQUE on `event_id`)
-- `/api/stripe/webhook` route handler with signature verification, idempotency check, and `stripe_updated_at` version protection
-- All subscription lifecycle events mapped to local status (including `deleted` and `paused`)
-- `/api/onboarding/complete` modified to synchronously create Stripe customer + trial subscription + local row
+### Phase 5: UI/UX Polish Pass
+**Rationale:** Last because empty/loading states must account for stable dark mode token values, and the no-API-changes scope boundary must be enforced from the start.
+**Delivers:** Empty states for leads, calls, calendar, analytics. Loading skeleton screens. Button loading states. Hover micro-interactions on stat cards. Focus state audit in dark mode. Error states for data fetches.
+**Addresses:** Empty states (P1); loading skeletons, button loading states, hover states (P2).
+**Avoids:** Polish scope creep into API/business logic.
+**Key tasks:** Create `EmptyState` component; add `loading.js` files to route segments; verify Skeleton uses `bg-muted` not `bg-stone-200`; button loading states with `<Loader2 animate-spin />`; hover states on stat cards; keyboard focus ring audit in dark mode.
 
-Features from FEATURES.md: Stripe Products and Prices (P0), `subscriptions` table (P0), Stripe webhook handler (P1), Trial auto-start (P1)
-Pitfalls addressed: #1 (idempotency), #3 (trial expiry leakage), #7 (RLS), #9 (out-of-order events), #11 (onboarding gap)
-Research flag: Standard Stripe patterns with official documentation. No additional research phase needed.
+### Phase Ordering Rationale
 
----
+- Phase 1 is a hard gate for Phases 2 and 3 — confirmed by PITFALLS.md and ARCHITECTURE.md. No dark mode component work proceeds without it.
+- Phase 2 before Phase 3 — establish verified token migration baseline first, then layer chart-specific conditional logic.
+- Phase 4 is fully independent — parallelize with Phases 1-3 if two developers are available.
+- Phase 5 last — empty states and skeletons need verified dark mode tokens to avoid invisible elements on dark backgrounds.
 
-**Phase 2: Usage Tracking**
+### Research Flags
 
-*Rationale:* Usage data must be reliable before the enforcement gate can be layered on top. The atomic increment pattern and correct metering point (`call_analyzed` vs `call_ended`) must be established before Phase 3 builds enforcement on top of this counter.
-
-Deliverables:
-- `increment_calls_used` Postgres RPC function for atomic counter increment
-- `processCallEnded()` modified to call the RPC and insert a `usage_events` row
-- `call_id` idempotency key on `usage_events` (ON CONFLICT DO NOTHING)
-- Test call exclusion (existing `isTestCall` check gates the increment)
-- `calls_used` reset triggered by `invoice.paid` webhook (not a cron job)
-- `billing_period_start` and `billing_period_end` stored on each usage row
-
-Features from FEATURES.md: Per-call usage increment (P1)
-Pitfalls addressed: #1 (Retell webhook idempotency), #4 (race condition on concurrent calls), #8 (billing cycle reset)
-Research flag: Standard Postgres atomic increment patterns. No additional research phase needed.
-
----
-
-**Phase 3: Subscription Lifecycle Management**
-
-*Rationale:* Trial expiry handling and failed payment dunning are the highest-churn-risk areas. The grace period for `past_due` and correct downgrade scheduling must be designed here — patching them after launch requires careful production state migrations.
-
-Deliverables:
-- Trial countdown banner in dashboard (reads `trial_ends_at`, shows days remaining with upgrade CTA)
-- Post-trial paywall page (`/billing/upgrade`) for expired and cancelled tenants
-- Subscription status middleware gate (blocks dashboard and AI service for `cancelled`/`paused`; redirects to `/billing/upgrade`)
-- `past_due` grace period (7 days; `past_due_grace_end` computed from webhook delivery timestamp)
-- Failed payment notification (SMS + email on `invoice.payment_failed` with payment update link)
-- Stripe Customer Portal integration (link from billing dashboard; handles all self-serve plan management)
-- Upgrade proration policy (`proration_behavior: 'always_invoice'` for upgrades, `'none'` with end-of-period scheduling for downgrades)
-
-Features from FEATURES.md: Hard paywall (P1), Subscription status middleware (P1), Trial countdown banner (P1), Customer Portal (P1), Failed payment notification (P1), Post-trial paywall (P1)
-Pitfalls addressed: #5 (proration confusion), #6 (dunning grace period and involuntary churn)
-Research flag: Dunning email copy, subject lines, and escalation schedule are not defined in research. Flag for content review during Phase 3 planning. Consider `/gsd:research-phase` for email sequence design.
-
----
-
-**Phase 4: Enforcement Gate and Billing Dashboard**
-
-*Rationale:* The enforcement gate is the final monetization lock. It must be implemented after usage tracking (Phase 2) is reliable and subscription lifecycle (Phase 3) is stable. The billing dashboard surfaces all billing state to the tenant and closes the conversion loop.
-
-Deliverables:
-- `handleInbound()` modified with subscription check (added to parallel Supabase queries; zero net latency)
-- Block logic: expired subscription plays graceful caller message; quota exhausted plays graceful caller message
-- Billing dashboard page at `/dashboard/more/billing` (plan card, usage meter, renewal date, portal link)
-- Stripe Checkout flow (plan selection → Checkout Session → success redirect)
-- Usage meter UI component (optionally real-time via Supabase Realtime)
-- Trial-to-paid conversion path (Checkout reachable from trial countdown banner and billing page)
-
-Features from FEATURES.md: Hard limit enforcement (P1), Billing dashboard (P1), Stripe Checkout (P1), Usage meter (table stakes)
-Pitfalls addressed: #2 (enforcement latency — reads only from local DB), #10 (enforcement wired to correct webhook)
-Research flag: Standard patterns with clear architecture guidance. No additional research phase needed.
-
----
-
-**Phase 5 (v3.x): Post-Launch Enhancements**
-
-Ship only after v3.0 is live, converting, and stable:
-- 80% usage alert (SMS + email; `usage_alert_sent` flag prevents duplicate alerts)
-- Trial email series at day 7 and day 12 (cron jobs; Resend templates)
-- Pause on trial end instead of cancel (reduces involuntary churn; adds `paused` state to enforcement gate)
-
----
-
-### Dependency Order
-
-```
-Phase 1: Billing Foundation
-    — Phase 2: Usage Tracking
-        — Phase 3: Lifecycle Management
-            — Phase 4: Enforcement Gate + Dashboard
-                — Phase 5: Post-Launch Enhancements
-```
-
-Phases 3 and 4 can be partially parallelized: the billing dashboard read path (rendering plan info, linking to portal) does not depend on the enforcement gate. However, enforcement gate must be the last gate opened to avoid inadvertently blocking legitimate tenants during development testing.
-
----
+All phases have well-documented patterns — no additional research-phase calls are needed:
+- **Phase 1:** next-themes ThemeProvider wiring is thoroughly documented in official shadcn and next-themes docs. Zero ambiguity.
+- **Phase 2:** Token migration is effort-heavy but mechanically documented. The token mapping table in ARCHITECTURE.md is complete. Developer judgment required per instance (not automatable with a bulk replace).
+- **Phase 3:** Recharts `useTheme()` pattern is the established community approach. SVG props cannot use CSS variables — this is a specification fact, not an opinion.
+- **Phase 4:** Landing sections are static content with established framer-motion patterns. Copy quality requires a human read-aloud review — not a researchable problem.
+- **Phase 5:** All polish patterns (empty states, skeletons, loading buttons) are documented shadcn/standard patterns.
 
 ## Confidence Assessment
 
-| Area | Confidence | Basis |
+| Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All decisions backed by official Stripe docs and npm registry. Version recommendations are specific with documented rationale. The App Router `request.text()` pattern is verified against multiple community sources and confirmed against official docs. |
-| Features | HIGH | Stripe documentation is authoritative for all lifecycle event mechanics. UX conventions (trial countdown banner, usage meter design) are standard B2B SaaS patterns but lack a single citable source — treat as MEDIUM for specific UI decisions. |
-| Architecture | HIGH | Research includes actual codebase file paths and function names (`handleInbound`, `processCallEnded`, `call-processor.js`), meaning integration points are verified against real code, not assumed. The additive approach is low-risk. |
-| Pitfalls | HIGH | All critical pitfalls include specific Stripe API behavior, Retell webhook timing details, and Postgres concurrency implications. Mitigations are concrete and phase-mapped. |
+| Stack | HIGH | All findings from direct `package.json` + codebase inspection. No new packages needed. Zero speculation. |
+| Features | HIGH (P1) / MEDIUM (P2) | P1 features grounded in PROBLEMS.md and verified codebase gaps. Revenue calculator 40% conversion rate claim is from a single marketing source — treat as directional. |
+| Architecture | HIGH | ThemeProvider placement, provider chain, component inventory — all from direct file inspection. Grep counts verified in source files. |
+| Pitfalls | HIGH (dark mode, animations) / MEDIUM (copy quality) | Dark mode pitfalls are code-verified or SVG-specification facts. Copy quality pitfalls are conversion-pattern-based — directionally correct, execution depends on the writer. |
 
-**Overall: HIGH**
+**Overall confidence:** HIGH
 
-### Gaps to Address During Planning
+### Gaps to Address
 
-1. **Plan pricing and call limits conflict:** STACK.md references the existing marketing site pricing (Starter $99/40 calls, Growth $249/120 calls, Scale $599/400 calls) while ARCHITECTURE.md defines different limits (Starter 100, Growth 300, Pro 1000 at different price points). The actual Stripe Products, call limits, and Price IDs must be confirmed against the current live pricing page before Phase 1 begins.
+- **Dark oklch token values need Voco-specific tuning:** Current `.dark {}` block uses shadcn defaults. After Phase 1, compare rendered dark palette against Voco brand intent (orange `#C2410C`, navy `#0F172A`). Card/background separation may need adjustment before Phase 2 passes visual review.
+- **`design-tokens.js` import scope:** All import sites were not exhaustively enumerated in research. Run `grep -r "design-tokens" src/` at the start of Phase 2 to scope the migration correctly.
+- **ScrollLinePath height after new section insertion:** Research flags this but does not resolve it. Visual review required after inserting `ObjectionSection`. If the path breaks, move the section outside `</ScrollLinePath>` to between the closing tag and `FinalCTASection`.
+- **Revenue calculator widget design:** No wireframe or interaction spec exists. Requires a design decision before implementation begins in Phase 4 or 5.
 
-2. **`call_ended` vs `call_analyzed` for usage increment:** ARCHITECTURE.md recommends `call_ended` for faster dashboard updates; PITFALLS.md recommends `call_analyzed` because it fires exactly once. Recommended resolution: use `call_ended` with `call_id` idempotency (faster feedback, retries handled). Document this decision explicitly in Phase 2 plan.
+## Sources
 
-3. **Retell enforcement response format:** The exact dynamic variables payload that causes Retell to play a graceful "service unavailable" message (rather than silence) needs validation against the current Retell API contract. Confirm that `booking_enabled: 'false'` + `paywall_reason` fields are consumed by the LLM system prompt.
+### Primary (HIGH confidence)
+- Direct codebase inspection — `package.json`, `src/app/layout.js`, `src/app/globals.css`, `src/app/dashboard/layout.js`, `src/components/dashboard/AnalyticsCharts.jsx`, `src/app/(public)/page.js`, `src/app/components/landing/AnimatedSection.jsx`
+- PROBLEMS.md — 5 objections and counters from owner/market research (primary conversion research source)
+- next-themes GitHub (https://github.com/pacocoursey/next-themes) — `suppressHydrationWarning` requirement, `attribute="class"` config
+- shadcn/ui dark mode docs (https://ui.shadcn.com/docs/dark-mode/next) — ThemeProvider setup pattern
+- Tailwind CSS v4 dark mode docs (https://tailwindcss.com/docs/dark-mode) — `@custom-variant dark` CSS-first config
 
-4. **Dunning email copy and schedule:** PITFALLS.md specifies Day 1/3/5/7 escalation for failed payments; FEATURES.md specifies Day 7/12 trial reminders. Exact Resend template copy, subject lines, and escalation timing are not defined. Flag for content review during Phase 3 planning.
+### Secondary (MEDIUM confidence)
+- Tailwind v4 + next-themes integration guide (https://medium.com/@kevstrosky/theme-colors-with-tailwind-css-v4-0-and-next-themes-dark-light-custom-mode-36dca1e20419) — `&:where(.dark, .dark *)` vs `&:is(.dark *)` distinction (community, verified against Tailwind v4 docs)
+- WebSearch: SaaS landing page objection patterns 2025 — FAQ placement, cost-of-inaction framing
+- WebSearch: AI receptionist trust objections — 85-95% blind test stat for modern AI voice quality
+- WebSearch: next-themes 0.4 React 19 compatibility confirmation
 
----
-
-## Sources (Aggregated)
-
-**HIGH confidence — official documentation:**
-- Stripe Billing Meters Usage-Based Implementation Guide: https://docs.stripe.com/billing/subscriptions/usage-based/implementation-guide
-- Stripe Subscription Trials: https://docs.stripe.com/billing/subscriptions/trials
-- Stripe Checkout Free Trials: https://docs.stripe.com/payments/checkout/free-trials
-- Stripe Upgrade and Downgrade Subscriptions: https://docs.stripe.com/billing/subscriptions/upgrade-downgrade
-- Stripe Prorations: https://docs.stripe.com/billing/subscriptions/prorations
-- Stripe Webhooks with Subscriptions: https://docs.stripe.com/billing/subscriptions/webhooks
-- Stripe Customer Portal: https://docs.stripe.com/customer-management/integrate-customer-portal
-- Stripe Smart Retries: https://docs.stripe.com/billing/revenue-recovery/smart-retries
-- Stripe Node.js SDK Releases: https://github.com/stripe/stripe-node/releases
-- stripe npm package: https://www.npmjs.com/package/stripe
-
-**MEDIUM confidence — community guides verified against official docs:**
-- Stripe Checkout and Webhook in Next.js 15 (2025): https://medium.com/@gragson.john/stripe-checkout-and-webhook-in-a-next-js-15-2025-925d7529855e
-- Stripe + Next.js Complete Guide 2025: https://www.pedroalonso.net/blog/stripe-nextjs-complete-guide-2025/
-- Stripe Subscription Lifecycle in Next.js 2026: https://dev.to/thekarlesi/stripe-subscription-lifecycle-in-nextjs-the-complete-developer-guide-2026-4l9d
+### Tertiary (LOW confidence)
+- Outgrow marketing material — revenue calculator 40%+ conversion rate claim (single marketing source, not independently validated)
 
 ---
-
-*Research synthesized from: STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md*
-*Synthesis date: 2026-03-26*
+*Research completed: 2026-04-13*
 *Ready for roadmap: yes*
