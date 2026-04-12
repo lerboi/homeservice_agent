@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Trust & Polish
-status: Defining requirements
-stopped_at: Milestone v5.0 started
+status: Ready to plan
+stopped_at: Roadmap created — Phase 47 ready for /gsd:plan-phase
 last_updated: "2026-04-13T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,185 +16,57 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-02)
+See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 46 — vip-caller-direct-routing
+**Current focus:** Phase 47 — Landing Objection-Busting, Repositioning, and Landing Polish
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-13 — Milestone v5.0 (Trust & Polish) started
+Phase: 47 of 51 (Landing -- Objection-Busting, Repositioning, and Landing Polish)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-04-13 — Roadmap created for v5.0 (Trust & Polish), 5 phases (47-51), 42 requirements mapped
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0 (v5.0 milestone)
+- Average duration: -
+- Total execution time: -
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Trend: Not started
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Recent decisions affecting v5.0 work:
 
-- [v3.0 Roadmap]: CC required for 14-day trial (payment_method_collection: always) — confirmed in instructions
-- [v3.0 Roadmap]: Past_due grace period is 3 days, not 7 — confirmed in instructions
-- [v3.0 Roadmap]: Enforcement reads only from local subscriptions table — never Stripe API on the call path (latency constraint)
-- [v3.0 Roadmap]: Billing cycle reset on invoice.paid webhook only — never a cron job (accuracy constraint)
-- [v3.0 Roadmap]: Stripe Customer Portal handles all self-serve management — no custom plan change UI
-- [v3.0 Roadmap]: Per-call overage billing (BILLF-02) deferred to future milestone
-- [Phase 21-pricing-page-redesign]: Volume-based differentiation: all paid tiers share same feature set; differentiation is call volume and support level only
-- [Phase 22]: Minimal Stripe singleton — no client-side code in stripe.js
-- [Phase 22]: Subscription write-protection via RLS — authenticated SELECT-only, all writes through service_role webhook handlers
-- [Phase 22]: Return 500 on webhook handler errors so Stripe retries automatically
-- [Phase 22]: tenant_id set on both Checkout Session metadata and subscription_data metadata for webhook reliability
-- [Phase 22]: onboarding_complete no longer set by test-call flow — deferred to checkout.session.completed webhook
-- [Phase 22]: Light-surface plan cards with negative margin breakout from wizard card for wider grid
-- [Phase 27]: SECURITY DEFINER on assign_sg_number RPC for atomic race-safe SG number assignment via FOR UPDATE SKIP LOCKED
-- [Phase 27]: provisioning_failed flag on tenants enables admin follow-up when SG inventory exhausted at checkout time
-- [Phase 27]: Phone prefix shown as non-editable span inside the input row, user types local digits only
-- [Phase 27]: Server-side 409 gate in sms-confirm prevents direct API bypass of waitlist when SG inventory is 0
-- [Phase 27]: US/CA provisioning uses Twilio API direct purchase (not retell.phoneNumber.create) per D-12 — Twilio ownership enables future SMS access from tenant numbers
-- [Phase 27]: Provisioning failure (provisioning_failed flag) allows subscription creation to succeed even when phone assignment fails — user always gets their subscription after paying
-- [Phase 29]: Direct fetch() to ElevenLabs REST API over elevenlabs npm SDK for /api/demo-voice — simpler for single endpoint, no SDK overhead
-- [Phase 29]: RotatingText measures current word width (not longest) via measureRef + getBoundingClientRect on each currentIndex change
-- [Phase 29]: HeroSection stripped to minimum (h1/subtitle/placeholder) — eyebrow pill, CTA block, social proof removed to focus attention on demo input
-- [Phase 32]: Full-width language hero card placed at top of 2-col grid using md:col-span-2 for visual hierarchy
-- [Phase 32]: Used Option B revenue-forward RotatingText words ($3,000/$5,000/$10,000) over Option A competitor words for stronger loss aversion framing
-- [Phase 33-invoice-core]: @react-pdf/renderer added to serverExternalPackages to prevent Next.js bundler from breaking its custom reconciler
-- [Phase 33-invoice-core]: get_next_invoice_number uses INSERT ON CONFLICT DO UPDATE with composite PK (tenant_id, year) for atomic race-safe numbering; year rollover automatic
-- [Phase 33-invoice-core]: Analytics relocated to /dashboard/more/analytics (not removed) — redirect at old URL, link in More page updated to canonical path
-- [Phase 33-invoice-core]: Overdue detection runs on every GET /api/invoices (bulk UPDATE before SELECT) — no cron needed, list always current
-- [Phase 33-invoice-core]: Discount line total shown in red with '(-)' indicator; send flow creates invoice then fires delivery endpoint silently ignored until Plan 07
-- [Phase 33-invoice-core]: Summary metrics fetched once on mount only — filter changes do not re-fetch summary, only the invoice list
-- [Phase 33-invoice-core]: STATUS_CONFIG exported as named export from InvoiceStatusBadge for reuse by other components
-- [Phase 33-invoice-core]: HTML/CSS invoice preview (not PDF embed) in detail page — faster render, no CORS, matches PDF layout visually
-- [Phase 33-invoice-core]: Send Invoice button shows 'Send feature coming soon' toast in detail page — actual delivery wired in Plan 07
-- [Phase 33-invoice-core]: getResendClient and getTwilioClient exported from notifications.js for reuse by invoice send route
-- [Phase 33-invoice-core]: Lead PATCH to paid uses direct Supabase update for invoice sync (not internal fetch) to avoid HTTP round-trip
-- [Phase 33-invoice-core]: SMS failure in invoice send route is non-fatal — email already delivered before SMS attempt, Twilio errors caught and logged only
-- [Phase 36]: HowItWorksMinimal uses 4 individual top-level ref/useInView/useScroll calls per React Rules of Hooks (not inside .map)
-- [Phase 36]: matchMedia(max-width: 767px) disables parallax on mobile to prevent jank; useReducedMotion respected throughout HowItWorksMinimal
-- [Phase 36]: CSS scroll-snap carousel (no external library) — zero-library pattern for carousels; animationPlayState gating via isActive prop carries micro visuals from FeaturesGrid
-- [Phase 34]: Inline HTML email template for estimate delivery (not React Email) -- simpler for single send route
-- [Phase 34]: Convert-to-invoice returns existing invoice_id if already converted (idempotent, not error)
-- [Phase 35]: hasTranscript uses !!invoice.lead_id as proxy — ai-describe endpoint validates transcript availability internally
-- [Phase 37]: parseMessageContent extracted to src/lib/parse-message-content.js instead of inline in ChatMessage.jsx — Jest cannot parse JSX without Babel preset-react; pure JS lib is directly testable
-- [Phase 37-dashboard-ai-chatbot-assistant]: KEYWORD_DOC_MAP places billing before invoices so billing string matches billing.md not invoices.md bill keyword
-- [Phase 37-dashboard-ai-chatbot-assistant]: No edge runtime export in chat route — Node.js runtime required for readFileSync in getRelevantKnowledge
-- [Phase 37-dashboard-ai-chatbot-assistant]: GROQ_API_KEY 503 check placed before getTenantId 401 check — misconfiguration is server error not user error
-- [Phase 37-dashboard-ai-chatbot-assistant]: ChatbotSheet always-mounted at layout level (not conditionally rendered) to preserve React message history across open/close cycles
-- [Phase 37-dashboard-ai-chatbot-assistant]: Window event pattern (open-voco-chat) mirrors start-dashboard-tour pattern — zero prop drilling for cross-component communication
-- [Phase 38-programmatic-seo-content-engine]: Schema markup test uses pure JS serialization helper + source inspection instead of JSX (no Babel JSX transform in test env, per Phase 37 precedent)
-- [Phase 38-programmatic-seo-content-engine]: sitemap.js at app root (not inside route group) — Next.js 16 metadata file conventions resolve from app root regardless of route groups
-- [Phase 38]: Icon lookup object (ICON_MAP) maps string icon names from data arrays to Lucide React imports — avoids dynamic import complexity, all four icons tree-shakeable
-- [Phase 38-programmatic-seo-content-engine]: GlossaryFAQ extracted to client component to keep glossary detail page as server component while using Radix Accordion hooks
-- [Phase 38-programmatic-seo-content-engine]: Blog content rendered by splitting on ## headings — no markdown library dependency added
-- [Phase 38-programmatic-seo-content-engine]: Light-surface accordion uses border-stone-200 (separate GlossaryFAQ component) vs dark border-white/[0.08] for pricing FAQ
-- [Phase 38]: relatedSlugs cross-link all items within each data array for internal linking
-- [Phase 38]: ICON_MAP constraint respected — all integration useCases use Calendar/Clock/Bell/RefreshCw only
-- [Phase 38]: Blog posts use inline markdown heading split pattern (no markdown library) per Phase 38 precedent
-- [Phase 38]: Persona relatedSlugs use slug values matching the for/[persona] router
-- [Phase 39]: Wave 0 stubs use module-level pytestmark = skipif(True) — downstream plans flip True to False and fill in bodies
-- [Phase 39]: Test infrastructure at livekit-agent/tests/ with pythonpath=["."] so pytest imports src.webhook.* cleanly
-- [Phase 39]: Dev deps declared explicitly (pytest>=8.0, pytest-asyncio>=0.23, httpx>=0.27) via [project.optional-dependencies] dev; fastapi/uvicorn deferred to Plan 39-05
-- [Phase 39]: [Phase 39-03]: evaluate_schedule is a pure function with signature (schedule, tenant_timezone, now_utc) -> ScheduleDecision — zero DB, zero FastAPI coupling; ScheduleDecision is a frozen dataclass with Literal-typed mode + reason fields
-- [Phase 39]: [Phase 39-03]: DST handled entirely by now_utc.astimezone(ZoneInfo(tenant_timezone)) — no fold inspection, no gap detection; verified against NY spring-forward 2026-03-08 and fall-back 2026-11-01
-- [Phase 39]: [Phase 39-03]: Overnight ranges encoded as end < start; _in_range uses 'local >= start or local < end' two-branch check; same-day lookup only (no cross-day synthesis — Phase 41 UI must write range under both day keys if cross-day matching is required)
-- [Phase 39]: [Phase 39-03]: src/webhook/__init__.py is deliberately import-free so Plan 39-05 can add FastAPI app wiring without circular-import risk during unit tests of schedule.py
-- [Phase 39]: Migration 042: additive-only schema, routing_mode nullable (NULL = legacy AI per D-19), pickup_numbers item-shape validation deferred to API layer
-- [Phase 39]: [Phase 39-04]: _normalize_phone extracted to src/lib/phone.py as module function so webhook handler in 39-05 can reuse verbatim logic (resolves OQ-3)
-- [Phase 39]: [Phase 39-04]: check_outbound_cap is async + asyncio.to_thread around supabase-py chain; Python-side SUM over returned rows avoids RPC aggregate migration (resolves OQ-1 and OQ-2)
-- [Phase 39]: [Phase 39-04]: Unknown-country fallback in check_outbound_cap routes to US 300000s limit (fail-open safe default per D-17); cap breach emits logger.warning only in Phase 39 — dedicated event logging deferred to Phase 40 per D-11
-- [Phase 39]: [Phase 39-04]: get_supabase_admin lazy-imported inside check_outbound_cap so tests monkeypatch the real symbol path (src.supabase_client.get_supabase_admin) before first call; MagicMock chain mimics supabase-py fluent builder
-- [Phase 39]: [Phase 39-05]: FastAPI app.include_router with router-level Depends mounts all /twilio/* endpoints behind a single signature dependency — no per-route @Depends decoration
-- [Phase 39]: [Phase 39-05]: @app.on_event('startup') retained over lifespan context manager — trivial one-line log; deprecation warning acceptable, Phase 40 can migrate
-- [Phase 39]: [Phase 39-05]: Lazy uvicorn import inside start_webhook_server + lazy get_supabase_admin import inside /health/db and /incoming-call handlers so pytest can import src.webhook.app without spawning the server or requiring Supabase env vars
-- [Phase 39]: [Phase 39-05]: /twilio/incoming-call performs dead-weight tenant lookup per D-13 — exercises full wiring path (signature -> form parse -> _normalize_phone -> tenants select -> TwiML render) so Phase 40 diff is a single branch replacement
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: client_no_auth fixture override is an async function that calls await request.form() and stashes form data on request.state.form_data, instead of a plain lambda — this is the correct pattern for overriding any FastAPI dependency that produces request-scoped state for downstream handlers
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: python-multipart>=0.0.9 added to pyproject.toml — was missing from 39-05's deps; FastAPI cannot parse Twilio's application/x-www-form-urlencoded webhook bodies without it (would 500 every production webhook on first hit)
-- [Phase 39-call-routing-webhook-foundation]: [Phase 39-06]: Tests use twilio-python's RequestValidator.compute_signature(url, params) directly — confirmed available in installed twilio 9.x — no manual HMAC-SHA1 fallback needed
-- [Phase 44]: Voice resolution is 3-tier: tenant.ai_voice -> VOICE_MAP[tone_preset] -> Kore default (Phase 44)
-- [Phase 44]: Single audioRef pattern for audio mutual exclusion in VoicePickerSection — pause current before starting new, no per-card audio state needed
-- [Phase 44]: initialVoice synced to selectedVoice via useEffect (not useState initializer) so component updates when async page data loads after mount
-- [Phase 40]: SIP trunk preserved as rollback safety net on all Twilio numbers (D-21)
-- [Phase 40]: RAILWAY_WEBHOOK_URL env var drives webhook URL construction in provisioning and cutover
-- [Phase 42]: Migration renumbered 046 (044/045 were already taken by Phase 44 and SMS schema)
-- [Phase 42]: calendar_blocks merged into externalBlocks for slot calculator — no separate blocking logic needed
-- [Phase 42]: Two chained .neq() calls used in Python agent to exclude cancelled and completed appointments — more explicit than .not_(in) per RESEARCH.md
-- [Phase 42]: calendar_blocks merged into external_blocks via (events_result.data or []) + (blocks_result.data or []) — same shape as calendar_events, no separate blocking logic needed
-- [Phase 42]: TimeBlockEvent uses DEFAULT_START (7) for top calc matching spec D-04; Ban icon chosen for Add time block toolbar button
-- [Phase 42]: Textarea component created manually (shadcn pattern) — npx shadcn add requires interactive terminal
-- [Phase 42]: handleStatusChange calls fetchData() for full refetch after mark-complete/undo — ensures completed_at is fresh from DB
-- [Phase 41]: ESM test pattern (jest.unstable_mockModule) used for call-routing tests matching project --experimental-vm-modules infrastructure
-- [Phase 41]: Owner-pickup calls hide outcome/urgency badges via !isOwnerPickup guard since AI classification is absent
-- [Phase 41]: Radix Slider imported from radix-ui bundle (not @radix-ui/react-slider) to match existing project import pattern
-- [Phase 41]: Native HTML time inputs for schedule pickers -- zero dependency, good mobile affordance
-- [Phase 46]: No CHECK constraint on vip_numbers array length per D-09 (unlimited VIP entries); updatePayload pattern avoids overwriting vip_numbers if not provided; partial index WHERE is_vip=true for fast webhook lookup
-- [Phase 46]: VIP check uses two-source lookup (vip_numbers JSONB + leads is_vip) with tenant row first (no DB), then leads query at call time
-- [Phase 46]: _make_tenant_mock updated to dispatch leads table to empty response — prevents false VIP matches in Phase 40 test suite
-- [Phase 46]: VIP→Priority rename: DB columns (vip_numbers, is_vip) preserved; only UI copy changed to 'Priority Callers'/'Priority Caller' — priority-flag pattern established for future features where DB naming differs from user-facing copy
-- [Phase 46]: source-aware unified list merges vip_numbers + vip_leads client-side with source discriminator; lead removes are immediate PATCH (not deferred to save bar); UserCheck replaces Star on Priority badge per user request
-
-### Roadmap Evolution
-
-- Phase 33 added: Invoice Core — schema, CRUD API, line item editor, PDF generation, email/SMS delivery, Stripe payment links, customer payment page, status tracking, invoice settings
-- Phase 34 added: Estimates, Reminders, and Recurring Invoices — good/better/best estimates, automated reminders, late fees, deposits, digital signatures, recurring invoices for maintenance contracts
-- Phase 35 added: Invoice Integrations and AI — QuickBooks/Xero sync, AI work descriptions from transcripts, batch invoicing, customer financing (Wisetack/Hearth)
-- Phase 32 added: Landing Page Redesign — Conversion-Optimized Sections
-- Phase 36 added: Landing Page Section Redesign — How It Works scroll-step minimalism and Features horizontal carousel with icon nav
-- Phase 38 added: Programmatic SEO and Content Engine — sitemap, robots, OG images, data layer, blog/personas/comparisons/integrations/glossary templates, JSON-LD schema, internal linking hubs
-- [Phase 29-hero-section-interactive-demo]: HeroDemoInput uses dynamic import of supabase-browser inside useEffect to avoid SSR; AudioContext created post-user-gesture to avoid autoplay policy
-- [Phase 29]: HeroDemoBlock as intermediate wrapper keeps HeroSection a Server Component; single dynamic import for the entire demo experience
-- [Phase 28-admin-dashboard]: Admin gate returns early from middleware after successful check — admins may not have a tenants row
-- [Phase 28-admin-dashboard]: admin_users has no INSERT policies — all admin user management via service_role CLI/direct DB to prevent self-escalation
-- [Phase 28-admin-dashboard]: Admin layout uses top-tab navigation (not sidebar) to visually differentiate admin from tenant context
-- [Phase 28-admin-dashboard]: Duplicate number shows inline error text (not toast) per UI-SPEC copywriting contract
-- [Phase 28-admin-dashboard]: Admin re-provisioning (POST /api/admin/tenants/[id]) does NOT call Retell/Twilio — only assigns SG number from inventory; Retell agent association is a separate operational step
-- [Phase 28-admin-dashboard]: Tenant name passed via impersonate_name query param to dashboard layout to avoid an extra API call during impersonation
-- [Phase 23]: Migration renumbered 012→013 (012_admin_users.sql already exists from Phase 28)
-- [Phase 23]: No SECURITY DEFINER on increment_calls_used — service_role client bypasses RLS automatically
-- [Phase 24-01]: Migration renumbered 015→016: 015_notification_preferences.sql already existed from prior phase
-- [Phase 24-01]: getResendClient() lazy init in webhook route uses require() to match synchronous getTwilioClient() pattern
-- [Phase 24-01]: handleInvoicePaymentFailed and handleTrialWillEnd both try/catch wrapped — notification failures never rethrown to prevent Stripe retry conflicts
-- [Phase 24-subscription-lifecycle-and-notifications]: past_due excluded from blockedStatuses per D-03 — grace period grants full dashboard access with banner only
-- [Phase 24-subscription-lifecycle-and-notifications]: /billing/* exempt from subscription gate via middleware matcher config absence per D-10
-- [Phase 24-03]: jest.worktree.config.js needed to exclude worktrees path from testPathIgnorePatterns — allows test discovery within the worktree directory
-- [Phase 30]: Intake questions stored as jsonb on services, populated from TRADE_TEMPLATES during onboarding
-- [Phase 30]: check_caller_history is read-only (no DB writes) per D-02
-- [Phase 30]: intake_questions passed as newline-separated string per Retell dynamic var contract
-- [Phase 30]: check_caller_history tool has zero parameters -- uses caller phone from call context
-- [Phase 30]: SLOT PREFERENCE DETECTION is prompt-only -- Groq interprets time cues, no code-level reordering
-- [Phase 30]: Conciseness rule changed from rigid 1-2 sentences to nuanced never-truncate-confirmations
-- [Phase 25-02]: Pure SVG for UsageRingGauge with stroke-dasharray animation and 50% overage arc cap — no external library, consistent with codebase
-- [Phase 25-02]: Export calculateTrialDaysRemaining and getTrialBannerState as pure functions from TrialCountdownBanner for node-env unit testing
-- [Phase 25-01]: Enforcement gate moved to livekit-agent/src/agent.ts + src/lib/subscription-gate.js (retell/route.js deleted in migration)
-- [Phase 25-01]: Portal return_url defaults to /dashboard/more/billing (changed from /dashboard)
-
-### Roadmap Evolution
-
-- Phase 02.1 inserted after Phase 02: Public marketing landing page (INSERTED)
-- Phases 6-9 added for milestone v1.1: Site Completeness & Launch Readiness (2026-03-22)
-- Phase 10 added: Dashboard Guided Setup and First-Run Experience
-- Phase 11 added: Landing Page UI/UX Redesign
-- Phase 12 added: Dashboard-configurable triage and call escalation
-- Phase 13 added: Frontend Public Pages Redesign
-- Phases 14-18 added for milestone v2.0: Booking-First Digital Dispatcher (2026-03-24)
-- Phase 19 added: Codebase skill files for full architectural reference
-- Phase 20 added: Dashboard UX Overhaul
-- Phase 21 added: Pricing Page Redesign
-- Phases 22-26 added for milestone v3.0: Subscription Billing & Usage Enforcement (2026-03-26)
-- Phase 27 added: Country-Aware Onboarding and Number Provisioning (2026-03-26)
-- Phase 28 added: Admin Dashboard (2026-03-26)
-- Phase 29 added: Hero Section Interactive Demo (2026-03-26)
-- Phase 30 added: Voice Agent Prompt Optimization (2026-03-27)
-- Phase 31 added: Voice Call Feature Showcase PDF (2026-03-27)
-- Phase 39 added: Call Routing Webhook Foundation — backend infrastructure for conditional call routing (time-based AI vs owner pickup), FastAPI webhook service on Railway, schedule evaluator, soft caps, DB schema (2026-04-09)
-- Phase 40 added: Call Routing Provisioning Cutover — switch Twilio numbers to webhook routing, implement schedule evaluation + parallel ring + SMS forwarding logic, migrate existing tenants (2026-04-09)
-- Phase 41 added: Call Routing Dashboard and Launch — user-facing settings page, pickup number management, usage meter, routing mode badges on dashboard calls page (2026-04-09)
-- Phase 42 added: Calendar Essentials — Time Blocks and Mark Complete — personal time blocks (lunch/vacation) that the voice agent respects as unavailable, plus a mark-complete transition for appointments with a muted visual state. Cross-repo: both main repo and livekit-agent repo. Intentionally scoped small; drag/resize, recurring appointments, technicians deferred to later phases (2026-04-10)
-- Phase 43 added: Recurring Appointments — Maintenance Contracts — weekly/monthly/quarterly recurring appointments with fixed end date, materialized by a daily cron job. Covers HVAC tune-ups, pest control, lawn care recurring revenue segment. Scoped to three common frequencies only, no rrule exception dates. UI surface (flyout vs new Contracts surface) is a discuss-phase decision. Depends on Phase 42 for time-block awareness in the spawner (2026-04-10)
-- Phase 44 added: AI Voice Selection — voice picker UI with 6 curated Gemini voices (Aoede, Erinome, Sulafat, Zephyr, Achird, Charon), pre-recorded audio previews, tenant DB persistence, agent voice override. Independent of phases 40-43 (2026-04-11)
-- Phase 45 added: In-Browser Voice Test — direct Gemini Live API WebSocket voice test in AI & Voice Settings dashboard, sandbox mode (no real bookings/leads/notifications), same system prompt and personality as real calls. Depends on Phase 44 for voice selection (2026-04-11)
-- Phase 46 added: VIP Caller Direct Routing — owner selects specific phone numbers or leads whose calls bypass AI and route directly to owner's phone regardless of schedule. Depends on Phase 41 pickup_numbers infrastructure (2026-04-12)
+- [v5.0 Roadmap]: REPOS-01-04 (repositioning copy) merged into Phase 47 alongside OBJ-01-09 -- same landing pass, avoids 4-req micro-phase
+- [v5.0 Roadmap]: POLISH-08 (typography consolidation) absorbed into Phase 49 (dark mode token migration) -- same files, avoids double-touching components
+- [v5.0 Roadmap]: POLISH-11 and POLISH-12 (landing animation/responsive polish) assigned to Phase 47 -- new sections need AnimatedSection wrappers and 375px compliance on same landing PR
+- [v5.0 Roadmap]: Phase 47 (landing) is fully independent of Phases 48-51 (dashboard) -- can be prioritized first or parallelized with separate focus
+- [v5.0 Roadmap]: Phase 50 (charts + calendar) is a separate phase from Phase 49 (token migration) -- SVG inline styles require useTheme() hook, not CSS class migration; pattern difference warrants clean separation
+- [v5.0 Roadmap]: Phase 51 (polish pass) depends on Phase 50 -- empty states and skeletons must use verified dark-mode tokens so they do not become invisible on dark backgrounds
+- [v5.0 Research]: ThemeProvider placement must be root layout.js (SSR anti-flash script injection into head); public landing page is immune to dark mode side effects (hardcoded hex)
+- [v5.0 Research]: @custom-variant dark selector bug in globals.css: (&:is(.dark *)) must become (&:where(.dark, .dark *)) -- P0 infrastructure fix in Phase 49
+- [v5.0 Research]: dashboard/layout.js has hardcoded bg-[#F5F5F4] that must become bg-background in Phase 49
+- [v5.0 Research]: DashboardSidebar bg-[#0F172A] must NOT be migrated to semantic token -- intentional visual identity, not a dark mode gap
+- [v5.0 Research]: ScrollLinePath wraps 3 children exactly; new landing sections must be inserted after </ScrollLinePath> closing tag (between it and FinalCTASection) to avoid breaking the copper SVG path geometry
+- [v5.0 Research]: HOME-05 (AI chat history sharing) must coordinate with ChatbotSheet always-mounted pattern from Phase 37 -- shared state via React context or window event pattern, same approach as Phase 37
 
 ### Pending Todos
 
@@ -202,13 +74,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [v3.0 Research]: Plan pricing and call limits conflict between STACK.md and ARCHITECTURE.md — must confirm against live pricing page before Phase 22 begins
-- [v3.0 Research]: call_ended vs call_analyzed for usage increment — must be documented explicitly in Phase 23 plan (recommendation: call_ended with call_id idempotency)
-- [v3.0 Research]: Retell enforcement response format (booking_enabled: false + paywall_reason) needs validation against current Retell API contract before Phase 25 builds enforcement
-- [v3.0 Research]: Dunning email copy and escalation timing not defined — flag for content review during Phase 24 planning
+- [v5.0 Research]: Revenue calculator (OBJ-07) has no wireframe or interaction spec -- design decision needed before implementation begins in Phase 47
+- [v5.0 Research]: HOME-01 setup checklist redesign overlaps with existing SetupChecklist component -- Phase 48 planning must determine refactor vs replace strategy
+- [v5.0 Research]: Dark oklch token values in globals.css use shadcn defaults -- may need Voco-specific tuning (orange #C2410C, navy #0F172A) after Phase 49 ThemeProvider wiring; visual review required before Phase 49 ships
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:25:03.091Z
-Stopped at: Completed 46-04-PLAN.md
+Last session: 2026-04-13T00:00:00.000Z
+Stopped at: v5.0 roadmap created (Phases 47-51, 42 requirements mapped). ROADMAP.md updated, STATE.md initialized, REQUIREMENTS.md traceability updated.
 Resume file: None

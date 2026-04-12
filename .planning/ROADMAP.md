@@ -271,7 +271,8 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10
 - [x] **Phase 37: Dashboard AI Chatbot Assistant** - In-dashboard AI chatbot with RAG knowledge base that answers business owner questions about dashboard features and usage (completed 2026-04-03)
 - [x] **Phase 38: Programmatic SEO and Content Engine** - Sitemap, robots, OG image generation, data-driven page templates (blog, personas, comparisons, integrations, glossary), JSON-LD schema markup, and internal linking hub architecture (7 plans) (completed 2026-04-06)
 - [x] **Phase 39: Call Routing Webhook Foundation** - FastAPI webhook service on Railway, Twilio signature verification, schedule evaluator, outbound cap, 4 POST endpoints (completed 2026-04-10)
-- [x] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration (completed 2026-04-10)
+- [x] **Phase 40: Call Routing Provisioning Cutover** - Wire live schedule/cap composition, dial-status writeback, SMS forwarding, Twilio number reconfiguration
+ (completed 2026-04-10)
 - [x] **Phase 41: Call Routing Dashboard and Launch** - Dashboard UI for call forwarding schedule, pickup numbers, dial timeout (completed 2026-04-11)
 - [ ] **Phase 42: Calendar Essentials — Time Blocks and Mark Complete** - Manual time blocks, mark-complete workflow, appointment flyout
 - [ ] **Phase 43: Recurring Appointments — Maintenance Contracts** - Weekly/monthly/quarterly recurring appointments with daily materialization cron
@@ -565,6 +566,107 @@ Plans:
 - [x] 46-01-PLAN.md -- Database migration (vip_numbers + is_vip) and API extensions (call-routing, leads)
 - [x] 46-02-PLAN.md -- Webhook VIP check in livekit-agent (two-source lookup, routing bypass)
 - [x] 46-03-PLAN.md -- Dashboard UI (VIP Callers section, LeadCard badge, LeadFlyout toggle)
+
+
+---
+
+## Milestone v5.0 Phases
+
+**Milestone:** v5.0 — Trust & Polish
+**Goal:** Harden Voco's visual and conversion surface and elevate day-to-day usefulness — address the 5 most common home-service-owner objections via new landing page sections, reposition Voco as a complementary full-stack AI workflow, redesign the dashboard home page into a daily-use hub, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard.
+**Phase range:** 47-51
+**Requirements:** 42 v5.0 requirements (OBJ-01-09, REPOS-01-04, HOME-01-07, DARK-01-10, POLISH-01-12)
+
+### v5.0 Phase Checklist
+
+- [ ] **Phase 47: Landing -- Objection-Busting, Repositioning, and Landing Polish** - Objection-busting sections (FAQ accordion, voice quality proof, cost-of-inaction stat, 5-min setup strip, trust badges, identity block, revenue calculator, before/after strip, trade proof), repositioning copy (hero, FinalCTA, workflow strip, owner-control callout), landing animation/responsive polish
+- [ ] **Phase 48: Dashboard Home Redesign** - Daily-ops hub (appointments, calls, leads, usage), redesigned setup checklist with grouped progress and auto-detection, integrated AI chat panel sharing history with ChatbotSheet, Help & Discoverability section, 375px responsive layout
+- [ ] **Phase 49: Dark Mode Foundation and Token Migration** - ThemeProvider wiring, theme toggle in sidebar, design token audit across all dashboard components, typography consolidation, layout/sidebar/banners/flyouts/badges dark mode
+- [ ] **Phase 50: Dark Mode -- Charts and Calendar** - Recharts dark mode via useTheme() conditional color props, CalendarView urgency color dark variants
+- [ ] **Phase 51: UI/UX Polish Pass** - Empty states for all list views, loading skeleton screens, focus-visible rings, error states with retry, async button loading states, stat card hover micro-interactions, AnimatePresence lead status transitions, CommandPalette audit, 375px content layout
+
+### Phase 47: Landing -- Objection-Busting, Repositioning, and Landing Polish
+
+**Goal**: Visitors encounter a landing page that proactively addresses every reason they might not sign up -- a FAQ, voice proof, pricing context, setup simplicity, trust signals, identity framing, and interactive revenue math -- while the hero and FinalCTA copy are reframed to complement-not-replacement language and every new section renders correctly at mobile breakpoints with reduced-motion compliance
+**Depends on**: Phase 46 (last completed phase; no hard dependency for landing work)
+**Requirements**: OBJ-01, OBJ-02, OBJ-03, OBJ-04, OBJ-05, OBJ-06, OBJ-07, OBJ-08, OBJ-09, REPOS-01, REPOS-02, REPOS-03, REPOS-04, POLISH-11, POLISH-12
+**Success Criteria** (what must be TRUE):
+  1. Visitor scrolling the landing page encounters an FAQ accordion (7+ questions) that answers every objection from PROBLEMS.md -- without headings reading as defensive or fear-planting
+  2. Visitor sees a "cost of inaction" stat block ($260,400/year figure), a "5-minute setup" visual strip, voice-quality proof linking to the hero demo, a trust/hybrid-backup badge row, and an identity/change-aversion block -- all cohesive and above the FinalCTA
+  3. Visitor can type their call volume into a revenue calculator and see real-time annual revenue-at-risk results without a page reload
+  4. Visitor sees hero H1 and FinalCTA copy that uses complement-not-replacement language and a 5-icon full-stack workflow strip making the end-to-end workflow visible
+  5. All new sections render single-column at 375px, use AnimatedSection wrappers with useReducedMotion compliance, and do not break the ScrollLinePath copper line
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 48: Dashboard Home Redesign
+
+**Goal**: The dashboard home page is a daily-use command center that owners return to every morning -- a redesigned setup checklist with themed grouping and auto-detection of completed items, at-a-glance daily-ops cards (today's appointments, recent calls, hot leads, usage meter), an integrated AI chat panel where conversations persist across entry points via shared history with ChatbotSheet, a Help & Discoverability section for common task shortcuts, and a responsive layout that stacks cleanly at 375px
+**Depends on**: Phase 47 (landing ships first; no technical dependency -- could parallelize, but landing is higher conversion priority)
+**Requirements**: HOME-01, HOME-02, HOME-03, HOME-04, HOME-05, HOME-06, HOME-07
+**Success Criteria** (what must be TRUE):
+  1. A returning owner opens the dashboard home and sees today's appointments, calls from the last 24 hours, their newest/hottest leads, and their usage meter -- all without navigating away from the home page
+  2. A newly onboarded owner sees a setup checklist with items grouped by theme (profile, voice, calendar, billing), each with a jump-to-page action, and the checklist auto-marks items complete as the owner finishes configuration elsewhere
+  3. Owner can ask a question in the integrated AI chat panel on the home page and continue that conversation in the floating ChatbotSheet -- message history is shared, not reset on switch
+  4. Owner sees a Help & Discoverability section with quick-links to common tasks that route directly to the correct dashboard page
+  5. At 375px viewport the home page stacks all cards to a single column with no horizontal scrolling
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 49: Dark Mode Foundation and Token Migration
+
+**Goal**: The dashboard renders correctly in both light and dark mode -- ThemeProvider is wired with no hydration flash, a theme toggle in the sidebar persists the user's preference, all dashboard component files replace hardcoded hex colors with dark-mode-aware semantic tokens, design-tokens.js exports semantic values, typography is consolidated to token color values, and every layout shell, flyout, modal, badge, and system banner responds correctly to the active theme
+**Depends on**: Phase 48 (home redesign ships first, establishing a stable UI surface before the broad token migration pass)
+**Requirements**: DARK-01, DARK-02, DARK-03, DARK-04, DARK-06, DARK-07, DARK-08, DARK-09, POLISH-08
+**Success Criteria** (what must be TRUE):
+  1. Owner toggles theme in the dashboard sidebar and the entire dashboard switches between light and dark mode within 150ms with no visible jank, no flash of light mode on hard reload, and no hydration warning in the browser console
+  2. Every dashboard layout element -- sidebar, top bar, main content background, bottom tab bar, impersonation banner, trial countdown banner -- responds correctly to the theme toggle
+  3. All flyouts and modals (LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet) render readable content in dark mode with no hardcoded white backgrounds or invisible text remaining
+  4. Status badges, urgency pills, and LeadStatusPills maintain readable contrast and categorical meaning in dark mode
+  5. Theme preference persists across browser sessions via localStorage; returning the next day shows the last-selected theme applied immediately
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 50: Dark Mode -- Charts and Calendar
+
+**Goal**: Analytics charts and the calendar urgency color system render correctly in dark mode -- because SVG inline styles cannot be driven by CSS variables, these components require useTheme() hook-based conditional color resolution at render time rather than CSS class migration, and must ship together as a coherent visual unit
+**Depends on**: Phase 49 (ThemeProvider must be wired and verified before any useTheme() hook calls function correctly)
+**Requirements**: DARK-05, DARK-10
+**Success Criteria** (what must be TRUE):
+  1. Owner switches to dark mode and views the Analytics page -- all Recharts axes, gridlines, tooltip backgrounds, and data fills are readable and on-brand in dark mode, not invisible or incorrectly rendering with light-mode colors
+  2. Owner views the calendar in dark mode -- appointment urgency color blocks (emergency, routine, high-ticket) are visually distinct and readable on the dark calendar background
+  3. Switching back to light mode restores all chart and calendar colors correctly without a page reload
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 51: UI/UX Polish Pass
+
+**Goal**: Every dashboard surface is polished to the standard of a paid SaaS product -- empty states replace blank pages across all list views, loading skeletons prevent layout shift during data fetches, all interactive elements have consistent focus rings using design-token colors, data-fetch errors surface with retry actions instead of frozen UI, async buttons show spinner + disabled state during operations, stat cards have hover depth micro-interactions, lead status transitions animate with AnimatePresence, CommandPalette covers all major destinations, and the week calendar and analytics charts render without overflow at 375px
+**Depends on**: Phase 50 (dark mode must be fully stable before the polish pass so empty states and skeletons use correct token values in both modes)
+**Requirements**: POLISH-01, POLISH-02, POLISH-03, POLISH-04, POLISH-05, POLISH-06, POLISH-07, POLISH-09, POLISH-10
+**Success Criteria** (what must be TRUE):
+  1. A new owner with no data opens the leads, calls, calendar, and analytics pages -- each shows a dedicated empty state with an icon, headline, and primary CTA explaining what to do next, not a blank page or frozen spinner
+  2. Refreshing any dashboard data page shows layout-matching skeleton placeholders during the fetch with no visible layout shift (CLS = 0) when data arrives
+  3. Pressing Tab through the dashboard highlights every interactive element (buttons, inputs, nav items, pill filters) with a consistent focus ring using the design-token focus color -- no keyboard-reachable element is visually invisible
+  4. When a data fetch fails, the user sees an inline error state with a "Retry" button rather than a frozen spinner or empty content area
+  5. Async action buttons (save settings, sync calendar, send invoice) show a spinner and disable during the pending operation -- double-submit is not possible
+**Plans**: TBD
+**UI hint**: yes
+
+## v5.0 Progress
+
+**Execution Order:**
+Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
+(Note: Phase 47 landing work is fully independent of Phases 48-51 and can run in parallel with a separate focus. Phases 49-51 are a strict sequence: dark mode foundation must precede charts/calendar dark mode which must precede the polish pass to ensure correct token values in empty states and skeletons.)
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 0/TBD | Not started | - |
+| 48. Dashboard Home Redesign | 0/TBD | Not started | - |
+| 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
+| 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
+| 51. UI/UX Polish Pass | 0/TBD | Not started | - |
+
 
 ---
 

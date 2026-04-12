@@ -452,10 +452,81 @@ n| DEMO-01 | Phase 29 | Complete |
 | ROUTE-16 | Phase 41 | Complete |
 | ROUTE-17 | Phase 41 | Complete |
 | ROUTE-18 | Phase 41 | Complete |
+| VIP-01 | Phase 46 | Complete |
+| VIP-02 | Phase 46 | Complete |
+| VIP-03 | Phase 46 | Complete |
+| VIP-04 | Phase 46 | Complete |
+| VIP-05 | Phase 46 | Complete |
+| VIP-06 | Phase 46 | Complete |
+| VIP-07 | Phase 46 | Complete |
+| VIP-08 | Phase 46 | Complete |
+| VIP-09 | Phase 46 | Complete |
+| VIP-10 | Phase 46 | Complete |
+| VIP-11 | Phase 46 | Complete |
+| VIP-12 | Phase 46 | Complete |
+| VIP-13 | Phase 46 | Complete |
 
 **v3.0 Coverage:**
 - v3.0 requirements: 35 total (BILL-01-06, USAGE-01-03, ENFORCE-01-04, BILLUI-01-05, BILLNOTIF-01-03, BILLDOC-01-02, COUNTRY-01-07, DEMO-01-05)
 - Mapped to phases: 35
+- Unmapped: 0
+
+**v4.0+ Coverage (Phases 39-46):**
+- ROUTE-01-06 | Phase 39 | Complete
+- ROUTE-13-18 | Phase 41 | Complete
+- VIP-01-13 | Phase 46 | Complete
+- Mapped: 25
+- Unmapped: 0
+
+**v5.0 Coverage:**
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| OBJ-01 | Phase 47 | Pending |
+| OBJ-02 | Phase 47 | Pending |
+| OBJ-03 | Phase 47 | Pending |
+| OBJ-04 | Phase 47 | Pending |
+| OBJ-05 | Phase 47 | Pending |
+| OBJ-06 | Phase 47 | Pending |
+| OBJ-07 | Phase 47 | Pending |
+| OBJ-08 | Phase 47 | Pending |
+| OBJ-09 | Phase 47 | Pending |
+| REPOS-01 | Phase 47 | Pending |
+| REPOS-02 | Phase 47 | Pending |
+| REPOS-03 | Phase 47 | Pending |
+| REPOS-04 | Phase 47 | Pending |
+| POLISH-11 | Phase 47 | Pending |
+| POLISH-12 | Phase 47 | Pending |
+| HOME-01 | Phase 48 | Pending |
+| HOME-02 | Phase 48 | Pending |
+| HOME-03 | Phase 48 | Pending |
+| HOME-04 | Phase 48 | Pending |
+| HOME-05 | Phase 48 | Pending |
+| HOME-06 | Phase 48 | Pending |
+| HOME-07 | Phase 48 | Pending |
+| DARK-01 | Phase 49 | Pending |
+| DARK-02 | Phase 49 | Pending |
+| DARK-03 | Phase 49 | Pending |
+| DARK-04 | Phase 49 | Pending |
+| DARK-06 | Phase 49 | Pending |
+| DARK-07 | Phase 49 | Pending |
+| DARK-08 | Phase 49 | Pending |
+| DARK-09 | Phase 49 | Pending |
+| POLISH-08 | Phase 49 | Pending |
+| DARK-05 | Phase 50 | Pending |
+| DARK-10 | Phase 50 | Pending |
+| POLISH-01 | Phase 51 | Pending |
+| POLISH-02 | Phase 51 | Pending |
+| POLISH-03 | Phase 51 | Pending |
+| POLISH-04 | Phase 51 | Pending |
+| POLISH-05 | Phase 51 | Pending |
+| POLISH-06 | Phase 51 | Pending |
+| POLISH-07 | Phase 51 | Pending |
+| POLISH-09 | Phase 51 | Pending |
+| POLISH-10 | Phase 51 | Pending |
+
+- v5.0 requirements: 42 total (OBJ-01-09, REPOS-01-04, HOME-01-07, DARK-01-10, POLISH-01-12)
+- Mapped to phases: 42
 - Unmapped: 0
 
 ---
