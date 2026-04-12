@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Phone, PhoneForwarded, Copy, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Phone, PhoneForwarded, Copy, Pencil, Trash2, AlertTriangle, Star } from 'lucide-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -87,11 +87,23 @@ export default function CallRoutingPage() {
   const [editPhoneError, setEditPhoneError] = useState('');
   const [showZeroNumbersWarning, setShowZeroNumbersWarning] = useState(false);
 
+  // VIP number state
+  const [vipNumbers, setVipNumbers] = useState([]);
+  const [savedVipNumbers, setSavedVipNumbers] = useState([]);
+  const [newVipNumber, setNewVipNumber] = useState('');
+  const [newVipLabel, setNewVipLabel] = useState('');
+  const [vipPhoneError, setVipPhoneError] = useState('');
+  const [editingVipIdx, setEditingVipIdx] = useState(null);
+  const [editVipNumber, setEditVipNumber] = useState('');
+  const [editVipLabel, setEditVipLabel] = useState('');
+  const [editVipPhoneError, setEditVipPhoneError] = useState('');
+
   // Dirty state
   const isDirty =
     JSON.stringify(schedule) !== JSON.stringify(savedSchedule) ||
     JSON.stringify(pickupNumbers) !== JSON.stringify(savedPickupNumbers) ||
-    dialTimeout !== savedDialTimeout;
+    dialTimeout !== savedDialTimeout ||
+    JSON.stringify(vipNumbers) !== JSON.stringify(savedVipNumbers);
 
   // ── Data fetching ─────────────────────────────────────────────────────────
 
@@ -106,15 +118,19 @@ export default function CallRoutingPage() {
         const loadedNumbers = data.pickup_numbers || [];
         const loadedTimeout = typeof data.dial_timeout_seconds === 'number' ? data.dial_timeout_seconds : 15;
 
+        const loadedVipNumbers = data.vip_numbers || [];
+
         setSchedule(loadedSchedule);
         setPickupNumbers(loadedNumbers);
         setDialTimeout(loadedTimeout);
+        setVipNumbers(loadedVipNumbers);
         if (data.working_hours) setWorkingHours(data.working_hours);
 
         // Set saved snapshots
         setSavedSchedule(loadedSchedule);
         setSavedPickupNumbers(loadedNumbers);
         setSavedDialTimeout(loadedTimeout);
+        setSavedVipNumbers(loadedVipNumbers);
       } catch {
         toast.error('Failed to load call routing settings');
       } finally {
@@ -227,6 +243,73 @@ export default function CallRoutingPage() {
     setEditingIdx(null);
   }
 
+  // ── VIP number handlers ───────────────────────────────────────────────────
+
+  function handleAddVipNumber() {
+    const cleaned = cleanPhone(newVipNumber);
+    if (!E164_RE.test(cleaned)) {
+      setVipPhoneError('Enter a valid phone number including country code (e.g. +1 555 000 0000).');
+      return;
+    }
+    const isDuplicate = vipNumbers.some((v) => v.number === cleaned);
+    if (isDuplicate) {
+      setVipPhoneError('This number is already in your VIP list.');
+      return;
+    }
+    setVipPhoneError('');
+    setVipNumbers((prev) => [
+      ...prev,
+      { number: cleaned, label: newVipLabel.trim() || '' },
+    ]);
+    setNewVipNumber('');
+    setNewVipLabel('');
+  }
+
+  function handleDeleteVipNumber(idx) {
+    setVipNumbers((prev) => prev.filter((_, i) => i !== idx));
+    toast.success('VIP number removed');
+    if (editingVipIdx === idx) {
+      setEditingVipIdx(null);
+    } else if (editingVipIdx !== null && idx < editingVipIdx) {
+      setEditingVipIdx(editingVipIdx - 1);
+    }
+  }
+
+  function handleStartVipEdit(idx) {
+    const vn = vipNumbers[idx];
+    setEditingVipIdx(idx);
+    setEditVipNumber(vn.number);
+    setEditVipLabel(vn.label || '');
+    setEditVipPhoneError('');
+  }
+
+  function handleCancelVipEdit() {
+    setEditingVipIdx(null);
+    setEditVipPhoneError('');
+  }
+
+  function handleSaveVipEdit() {
+    const cleaned = cleanPhone(editVipNumber);
+    if (!E164_RE.test(cleaned)) {
+      setEditVipPhoneError('Enter a valid phone number including country code (e.g. +1 555 000 0000).');
+      return;
+    }
+    const isDuplicate = vipNumbers.some((v, i) => i !== editingVipIdx && v.number === cleaned);
+    if (isDuplicate) {
+      setEditVipPhoneError('This number is already in your VIP list.');
+      return;
+    }
+    setEditVipPhoneError('');
+    setVipNumbers((prev) =>
+      prev.map((vn, i) =>
+        i === editingVipIdx
+          ? { number: cleaned, label: editVipLabel.trim() || '' }
+          : vn
+      )
+    );
+    setEditingVipIdx(null);
+  }
+
   // ── Save / Discard handlers ───────────────────────────────────────────────
 
   async function handleSave() {
@@ -244,6 +327,7 @@ export default function CallRoutingPage() {
           call_forwarding_schedule: schedule,
           pickup_numbers: pickupNumbers,
           dial_timeout_seconds: dialTimeout,
+          vip_numbers: vipNumbers,
         }),
       });
       if (!res.ok) {
@@ -255,6 +339,7 @@ export default function CallRoutingPage() {
       setSavedSchedule(schedule);
       setSavedPickupNumbers(pickupNumbers);
       setSavedDialTimeout(dialTimeout);
+      setSavedVipNumbers(vipNumbers);
       toast.success('Call routing settings saved');
     } catch {
       toast.error('Failed to save — please try again');
@@ -267,6 +352,7 @@ export default function CallRoutingPage() {
     setSchedule(savedSchedule);
     setPickupNumbers(savedPickupNumbers);
     setDialTimeout(savedDialTimeout);
+    setVipNumbers(savedVipNumbers);
     setShowZeroNumbersWarning(false);
   }
 
@@ -601,6 +687,119 @@ export default function CallRoutingPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* -- VIP Callers (always visible, outside AnimatePresence per D-03) --- */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <div className={`${card.base} p-6`}>
+          <div className="flex items-center gap-2 mb-1">
+            <Star className="h-5 w-5 text-violet-500" />
+            <h2 className="text-lg font-semibold text-[#0F172A]">VIP Callers</h2>
+          </div>
+          <p className="text-sm text-[#475569] mb-4">
+            These callers always ring your phone — day or night, regardless of schedule.
+          </p>
+
+          {/* VIP numbers list */}
+          <div className="space-y-2 mb-4">
+            {vipNumbers.length === 0 && (
+              <p className="text-sm text-stone-400 py-2">
+                No VIP callers yet. Add a phone number below to give someone priority access.
+              </p>
+            )}
+            {vipNumbers.map((vn, idx) => (
+              <div key={idx}>
+                {editingVipIdx === idx ? (
+                  /* Editing row */
+                  <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 space-y-3">
+                    <div className="space-y-1">
+                      <Input
+                        placeholder="+1 555 000 0000"
+                        value={editVipNumber}
+                        onChange={(e) => { setEditVipNumber(e.target.value); setEditVipPhoneError(''); }}
+                        aria-label="Edit VIP phone number"
+                      />
+                      {editVipPhoneError && (
+                        <p className="text-xs text-destructive mt-1">{editVipPhoneError}</p>
+                      )}
+                    </div>
+                    <Input
+                      placeholder="e.g. Best customer, Landlord"
+                      value={editVipLabel}
+                      onChange={(e) => setEditVipLabel(e.target.value)}
+                      aria-label="Edit VIP label"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleSaveVipEdit}>Save</Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelVipEdit}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Display row */
+                  <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Star className="h-4 w-4 text-violet-500 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-[#0F172A] block truncate">
+                          {vn.number}
+                        </span>
+                        {vn.label && (
+                          <span className="text-xs text-[#475569]">{vn.label}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleStartVipEdit(idx)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors"
+                        aria-label="Edit VIP number"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteVipNumber(idx)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-destructive hover:bg-red-50 transition-colors"
+                        aria-label="Remove VIP number"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add VIP number form */}
+          <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50/30 p-4 space-y-3">
+            <div className="space-y-1">
+              <Input
+                placeholder="+1 555 000 0000"
+                value={newVipNumber}
+                onChange={(e) => { setNewVipNumber(e.target.value); setVipPhoneError(''); }}
+                aria-label="New VIP phone number"
+              />
+              {vipPhoneError && (
+                <p className="text-xs text-destructive mt-1">{vipPhoneError}</p>
+              )}
+            </div>
+            <Input
+              placeholder="e.g. Best customer, Landlord"
+              value={newVipLabel}
+              onChange={(e) => setNewVipLabel(e.target.value)}
+              aria-label="VIP label"
+            />
+            <Button variant="outline" onClick={handleAddVipNumber}>
+              Add VIP number
+            </Button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* ── Sticky save bar ───────────────────────────────────────── */}
       <div
