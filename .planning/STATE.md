@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: Ready to execute
-stopped_at: Completed 46-01-PLAN.md
-last_updated: "2026-04-12T03:27:12.563Z"
+stopped_at: Completed 46-02-PLAN.md
+last_updated: "2026-04-12T03:28:38.912Z"
 progress:
   total_phases: 12
   completed_phases: 12
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 46 (vip-caller-direct-routing) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Accumulated Context
 
@@ -127,6 +127,8 @@ Recent decisions affecting current work:
 - [Phase 41]: Radix Slider imported from radix-ui bundle (not @radix-ui/react-slider) to match existing project import pattern
 - [Phase 41]: Native HTML time inputs for schedule pickers -- zero dependency, good mobile affordance
 - [Phase 46]: No CHECK constraint on vip_numbers array length per D-09 (unlimited VIP entries); updatePayload pattern avoids overwriting vip_numbers if not provided; partial index WHERE is_vip=true for fast webhook lookup
+- [Phase 46]: VIP check uses two-source lookup (vip_numbers JSONB + leads is_vip) with tenant row first (no DB), then leads query at call time
+- [Phase 46]: _make_tenant_mock updated to dispatch leads table to empty response — prevents false VIP matches in Phase 40 test suite
 
 ### Roadmap Evolution
 
@@ -203,6 +205,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T03:27:12.556Z
-Stopped at: Completed 46-01-PLAN.md
+Last session: 2026-04-12T03:28:38.905Z
+Stopped at: Completed 46-02-PLAN.md
 Resume file: None

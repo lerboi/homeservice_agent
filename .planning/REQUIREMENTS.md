@@ -109,9 +109,9 @@
 - [x] **VIP-03**: PUT /api/call-routing validates vip_numbers (E.164 format, no duplicates, array type) and persists alongside existing fields; no array length cap
 - [x] **VIP-04**: PATCH /api/leads/[id] accepts is_vip boolean and persists it
 - [x] **VIP-05**: GET /api/leads list endpoint includes is_vip in explicit column select so LeadCard can render VIP badge
-- [ ] **VIP-06**: _is_vip_caller(tenant, from_number) function in twilio_routes.py checks both tenant vip_numbers JSONB array (in-memory) and leads table is_vip=true query (DB hit); returns True if either matches; fail-open on error
-- [ ] **VIP-07**: VIP check inserted in incoming_call routing AFTER subscription check and BEFORE evaluate_schedule; VIP match routes to _owner_pickup_twiml bypassing schedule and cap checks; VIP match with no pickup_numbers falls through to AI TwiML
-- [ ] **VIP-08**: Tenant lookup SELECT in twilio_routes.py includes vip_numbers field
+- [x] **VIP-06**: _is_vip_caller(tenant, from_number) function in twilio_routes.py checks both tenant vip_numbers JSONB array (in-memory) and leads table is_vip=true query (DB hit); returns True if either matches; fail-open on error
+- [x] **VIP-07**: VIP check inserted in incoming_call routing AFTER subscription check and BEFORE evaluate_schedule; VIP match routes to _owner_pickup_twiml bypassing schedule and cap checks; VIP match with no pickup_numbers falls through to AI TwiML
+- [x] **VIP-08**: Tenant lookup SELECT in twilio_routes.py includes vip_numbers field
 - [ ] **VIP-09**: VIP Callers section on /dashboard/more/call-routing rendered OUTSIDE AnimatePresence (always visible regardless of schedule toggle), with inline card list + add form pattern matching pickup numbers section
 - [ ] **VIP-10**: VIP numbers on call routing page support add, edit, delete with E.164 validation, duplicate detection, no length cap; saved via existing PUT alongside schedule/pickup/timeout
 - [ ] **VIP-11**: VIP badge (violet-100/violet-700, filled Star icon, VIP text) renders on LeadCard before urgency badge when lead.is_vip === true
