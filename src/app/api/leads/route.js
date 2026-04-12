@@ -24,6 +24,7 @@ export async function GET(request) {
       id, tenant_id, from_number, caller_name, email, job_type, service_address,
       postal_code, street_name,
       urgency, status, revenue_amount, primary_call_id, appointment_id,
+      is_vip,
       created_at, updated_at,
       lead_calls(
         calls(id, urgency_classification, urgency_confidence, recording_url, duration_seconds, start_timestamp)

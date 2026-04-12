@@ -14,7 +14,7 @@ export async function GET() {
 
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
-      .select('call_forwarding_schedule, pickup_numbers, dial_timeout_seconds, working_hours, phone_number, country')
+      .select('call_forwarding_schedule, pickup_numbers, dial_timeout_seconds, vip_numbers, working_hours, phone_number, country')
       .eq('id', tenantId)
       .single();
 
@@ -48,6 +48,7 @@ export async function GET() {
       call_forwarding_schedule: tenant.call_forwarding_schedule,
       pickup_numbers: tenant.pickup_numbers,
       dial_timeout_seconds: tenant.dial_timeout_seconds,
+      vip_numbers: tenant.vip_numbers,
       usage: {
         used_seconds: usedSeconds,
         used_minutes: Math.floor(usedSeconds / 60),
@@ -69,7 +70,7 @@ export async function PUT(request) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { call_forwarding_schedule, pickup_numbers, dial_timeout_seconds } =
+    const { call_forwarding_schedule, pickup_numbers, dial_timeout_seconds, vip_numbers } =
       await request.json();
 
     // Fetch tenant's phone_number for self-reference check
@@ -207,6 +208,26 @@ export async function PUT(request) {
       }
     }
 
+    // ── Validate vip_numbers (optional field) ─────────────────────────────
+    if (vip_numbers !== undefined) {
+      if (!Array.isArray(vip_numbers)) {
+        return Response.json({ error: 'vip_numbers must be an array' }, { status: 400 });
+      }
+      const seenVipNumbers = new Set();
+      for (const item of vip_numbers) {
+        if (!item.number || typeof item.number !== 'string') {
+          return Response.json({ error: 'Each VIP number must have a number field' }, { status: 400 });
+        }
+        if (!E164_RE.test(item.number)) {
+          return Response.json({ error: `Invalid VIP phone number format: ${item.number}` }, { status: 400 });
+        }
+        if (seenVipNumbers.has(item.number)) {
+          return Response.json({ error: `Duplicate VIP phone number: ${item.number}` }, { status: 400 });
+        }
+        seenVipNumbers.add(item.number);
+      }
+    }
+
     // ── Cross-field validation ─────────────────────────────────────────────
 
     if (call_forwarding_schedule.enabled && pickup_numbers.length === 0) {
@@ -218,11 +239,14 @@ export async function PUT(request) {
 
     // ── Persist ────────────────────────────────────────────────────────────
 
+    const updatePayload = { call_forwarding_schedule, pickup_numbers, dial_timeout_seconds };
+    if (vip_numbers !== undefined) updatePayload.vip_numbers = vip_numbers;
+
     const { data: updated, error: updateError } = await supabase
       .from('tenants')
-      .update({ call_forwarding_schedule, pickup_numbers, dial_timeout_seconds })
+      .update(updatePayload)
       .eq('id', tenantId)
-      .select('call_forwarding_schedule, pickup_numbers, dial_timeout_seconds')
+      .select('call_forwarding_schedule, pickup_numbers, dial_timeout_seconds, vip_numbers')
       .single();
 
     if (updateError) {
@@ -234,6 +258,7 @@ export async function PUT(request) {
       call_forwarding_schedule: updated.call_forwarding_schedule,
       pickup_numbers: updated.pickup_numbers,
       dial_timeout_seconds: updated.dial_timeout_seconds,
+      vip_numbers: updated.vip_numbers,
     });
   } catch (err) {
     console.log('500:', err.message);
