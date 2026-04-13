@@ -42,7 +42,7 @@ Declared values (multiples of 4 only):
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Icon gaps, stat chip internal padding, inline gaps |
+| xs | 4px | Icon gaps, inline gaps |
 | sm | 8px | Badge padding, inter-element gaps within cards |
 | md | 16px | Card internal padding (horizontal), label-to-content |
 | lg | 24px | Card padding (vertical), grid gap between cards |
@@ -55,24 +55,30 @@ Exceptions:
 - Touch targets (FAQ accordion triggers, chat send button, audio play button): minimum 44px height.
 - Audio player mini waveform: 48px height (OBJ-02 card).
 
+**Banned spacing utilities:** All Tailwind `.5`-step variants that produce non-multiples of 4 are forbidden in this phase. Specifically: `p-2.5` (10px), `px-2.5` (10px), `py-2.5` (10px), `py-1.5` (6px), `p-0.5` (2px). Use only values from {4, 8, 12, 16, 24, 32, 48, 64}px.
+
 ---
 
 ## Typography
 
-All sizes use Inter. Landing page uses `text-[Npx]` Tailwind arbitrary values to match existing section patterns.
+All sizes use Inter. Landing page uses `text-[Npx]` Tailwind arbitrary values to match existing section patterns. Max 4 sizes, max 2 weights.
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Body | 15px | 400 (regular) | 1.6 | Card quote text, FAQ answer body, chat bubble body |
-| Label | 14px | 500 (medium) | 1.4 | Stat chip labels, badge text, section eyebrow pill (sm + uppercase tracking-wide) |
-| Heading | 24px (text-2xl) / 30px (text-3xl) | 600 (semibold) | 1.2 | Card section H3 (24px), section H2 (30px mobile / 36px md) |
+| Label | 14px | 600 (semibold) | 1.4 | Stat chip labels, badge text, section eyebrow pill (uppercase tracking-wide), chat sender label (+ `opacity-50`), step sub-labels, trade one-liners, all `text-sm` contexts |
+| Body | 15px | 400 (regular) | 1.6 | Card quote text, FAQ answer body, chat bubble body, OBJ card counter copy, paragraph copy |
+| Heading | 24px (text-2xl) / 30px (text-3xl at md+) | 600 (semibold) | 1.2 | Card section H3 (24px), section H2 (30px mobile — 30px is a responsive variant of Heading, not a new tier) |
 | Display | 36px md:42px | 600 (semibold) | 1.15 | Hero H1 (existing, not changed structurally — only copy updated for REPOS-01) |
 
 Notes:
-- Eyebrow pills above section H2: `text-sm font-medium text-[#F97316] tracking-wide uppercase mb-3` — matches existing SocialProofSection pattern exactly.
-- FAQ accordion trigger: 16px / weight 500, left-aligned, full-width button with 44px min height.
-- Chat widget messages: 14px body text, sender label 11px uppercase tracking-wide.
-- Pull-quote (REPOS-04): 28–32px / weight 600 / italic or serif-styled via CSS, centered, max-width 640px.
+- Eyebrow pills above section H2: `text-[14px] font-semibold text-[#F97316] tracking-wide uppercase mb-3` — matches existing SocialProofSection pattern. `font-medium` replaced with `font-semibold` everywhere.
+- FAQ accordion trigger: 15px (Body tier) / weight 600, left-aligned, full-width button with 44px min height. Do NOT use 16px.
+- Chat widget messages: 15px body text (Body tier). Sender label: 14px Label tier + `opacity-50` to visually distinguish without a new size.
+- After-the-call strip icon sub-descriptors: 14px Label tier, weight 400, `text-[#475569]`.
+- OBJ-09 trade one-liners: 14px Label tier, weight 400, italic, `text-[#71717A]`.
+- Pull-quote (REPOS-04): folds into Heading tier — 24px mobile / 30px md+ / weight 600 / `text-white` / `leading-tight` / centered, max-width 640px. No separate pull-quote size tier.
+- OBJ-04 step sub-labels: 14px Label tier, weight 400, `text-[#71717A]`.
+- No font-medium (`weight 500`) anywhere in this phase. Use 400 (regular) or 600 (semibold) only.
 
 ---
 
@@ -124,6 +130,20 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 ---
 
+## Visuals
+
+**Primary focal point:** Hero H1 with RotatingText is the primary visual anchor on page load. All other sections anchor below this.
+
+**Accessibility — icon-only buttons (aria-label required):**
+
+| Element | aria-label |
+|---------|-----------|
+| Chat send button | `aria-label="Send message"` |
+| Audio play button (OBJ-02, stopped state) | `aria-label="Play audio sample"` |
+| Audio pause button (OBJ-02, playing state) | `aria-label="Pause audio sample"` |
+
+---
+
 ## Section Layout Contracts
 
 ### Route Order in page.js (post-phase)
@@ -151,7 +171,7 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 - Layout: horizontal scrolling strip OR 5-column icon row on md+, single-column stacked on mobile.
 - 5 items: "CRM lead created" / "SMS + email sent" / "Calendar synced" / "Recurring slot reserved" / "Analytics updated"
-- Each item: Lucide icon (24px, `text-[#F97316]`) + short label (14px, `text-[#0F172A]` semibold) + one-line descriptor (13px, `text-[#475569]`)
+- Each item: Lucide icon (24px, `text-[#F97316]`) + short label (14px, `text-[#0F172A]` semibold) + one-line descriptor (14px, `text-[#475569]` weight 400)
 - Thin horizontal separator lines between items on desktop. No separator on mobile — use vertical stack with `gap-6`.
 - Background: `bg-white` / full-width / `py-12 md:py-16 px-6`
 - Section heading (centered): eyebrow pill + H2 "What Voco keeps doing after the call ends"
@@ -161,8 +181,8 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 ### OBJ-06 Identity Section
 
 - Layout: centered single column, max-width 720px.
-- Emotional-first headline (24px / 30px md, semibold).
-- Copy: 2-3 short paragraphs, 15px, `text-[#475569]`, line-height 1.6.
+- Emotional-first headline (Heading tier: 24px mobile / 30px md+, semibold).
+- Copy: 2-3 short paragraphs, 15px (Body), `text-[#475569]`, line-height 1.6.
 - Optional supporting visual: a single graphic or icon cluster (planner discretion) at 64px or illustration.
 - Background: `bg-white` / `py-20 md:py-28 px-6`
 - AnimatedSection wrapper: fade-up.
@@ -173,28 +193,28 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 - Layout: 2-column grid on md+, 1-column on mobile. `gap-6`. Max-width 1024px centered.
 - Card base: `rounded-2xl bg-white border border-stone-200/60 shadow-sm p-6 flex flex-col gap-4`
-- Card hover: `hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-0.5 transition-all duration-200`
-- Each card: icon or illustration (top, 40px), headline (16px / 500), counter copy (15px / 400), optional stat chip.
-- Stat chip: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 text-[11px] font-medium text-[#166534]` — matches existing testimonial metric badge.
+- Card hover: `hover:border-[#F97316]/30 hover:shadow-[0_4px_20px_rgba(249,115,22,0.1)] hover:-translate-y-1 transition-all duration-200`
+- Each card: icon or illustration (top, 40px), headline (14px Label / semibold), counter copy (15px Body / 400), optional stat chip.
+- Stat chip: `inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#166534]/10 border border-[#166534]/20 text-[14px] font-semibold text-[#166534]` — matches existing testimonial metric badge pattern. All padding multiples of 4.
 - Background: `bg-[#FAFAF9]` / `py-20 md:py-28 px-6`
 - AnimatedStagger wrapper with AnimatedItem per card.
 
 **OBJ-02 card — inline audio player:**
-- Player: single play/pause button (44px touch target, `bg-[#F97316]` filled circle, white icon), waveform bars (static decorative bars, `bg-[#F97316]/40`, active state `bg-[#F97316]`), duration display (14px / `text-[#71717A]`).
+- Player: single play/pause button (44px touch target, `bg-[#F97316]` filled circle, white icon, `aria-label` per Visuals section), waveform bars (static decorative bars, `bg-[#F97316]/40`, active state `bg-[#F97316]`), duration display (14px Label / `text-[#71717A]`).
 - Player max-width: full card width.
-- CTA link below player: "Or try the full interactive demo ↑" — anchors to `#hero` section, 14px, `text-[#F97316]`.
+- CTA link below player: "Or try the full interactive demo ↑" — anchors to `#hero` section, 14px Label, `text-[#F97316]`.
 
 **OBJ-04 card — 3-step setup strip:**
 - 3 numbered steps horizontal on md+ (flex row with arrows between), vertical on mobile.
-- Step: circle number badge (32px, `bg-[#F97316]/10 text-[#F97316]` semibold) + step label (14px semibold) + sub-label (13px muted).
+- Step: circle number badge (32px, `bg-[#F97316]/10 text-[#F97316]` semibold) + step label (14px Label semibold) + sub-label (14px Label weight 400, `text-[#71717A]`).
 - Arrow between steps: `→` or Lucide `ArrowRight` 16px muted.
-- Sub-stat below steps: "Average setup: 4m 12s" in stat chip.
+- Sub-stat below steps: "Average setup: 4m 12s" in stat chip (spec above).
 
 **OBJ-15 trade specificity (OBJ-09) card:**
 - Trade icon grid: 5 icons (wrench/plumbing, thermometer/HVAC, zap/electrical, hammer/handyman, hard-hat/roofing) from Lucide.
-- Each trade: icon 24px + trade name 13px below.
+- Each trade: icon 24px + trade name 14px Label below.
 - Grid: 5-column on md+, 3+2 wrap on mobile.
-- One-liner capability below grid: 13px muted, italic.
+- One-liner capability below grid: 14px Label weight 400, italic, `text-[#71717A]`.
 
 ---
 
@@ -203,8 +223,8 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 - Layout: centered, max-width 640px.
 - Background: `bg-[#1C1412]` / `py-20 md:py-24 px-6` (dark, warm).
 - Orange radial glow overlay (same pattern as FinalCTASection: `bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.10),transparent_60%)]`).
-- Quote text: 28px md:32px / weight 600 / `text-white` / `leading-tight` / centered. Optional quotation marks as decoration.
-- Attribution line below: 14px / `text-white/50` / italic — planner drafts the source label.
+- Quote text: Heading tier (24px mobile / 30px md+) / weight 600 / `text-white` / `leading-tight` / centered. Optional quotation marks as decoration. No separate pull-quote size.
+- Attribution line below: 14px Label / `text-white/50` / italic — planner drafts the source label.
 - AnimatedSection fade-up wrapper.
 
 ---
@@ -218,8 +238,8 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 **FAQ Accordion (left column):**
 - Uses shadcn Accordion component (Radix). `type="single"` `collapsible`.
-- Trigger: full-width button, 16px / weight 500 / `text-[#0F172A]`, min-height 44px, `py-4`.
-- Answer: 15px / 400 / `text-[#475569]` / line-height 1.6 / `pb-4`.
+- Trigger: full-width button, 15px (Body) / weight 600 / `text-[#0F172A]`, min-height 44px, `py-4`.
+- Answer: 15px (Body) / 400 / `text-[#475569]` / line-height 1.6 / `pb-4`.
 - Chevron icon: Lucide ChevronDown 16px, `text-[#71717A]`, animated rotate-180 on open.
 - Item border: `border-b border-stone-200/60`. No top border on first item if visually clean.
 - Links inside answers: `text-[#F97316] underline` — only 2 max across all 7 questions.
@@ -235,16 +255,16 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 **Chat Widget (right column):**
 - Container: `rounded-2xl border border-stone-200/60 bg-[#FAFAF9] shadow-sm flex flex-col h-full min-h-[400px]`
-- Header: `px-5 py-4 border-b border-stone-200/60` / heading "Still wondering?" 15px semibold / subtext "Ask Voco directly." 13px muted.
-- Message thread: `flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3`
+- Header: `px-4 py-4 border-b border-stone-200/60` / heading "Still wondering?" 15px (Body) semibold / subtext "Ask Voco directly." 14px Label, `text-[#71717A]`.
+- Message thread: `flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3`
 - Empty state (before first message): 3 suggestion chips seeded from FAQ questions.
-  - Chip: `inline-flex px-3 py-1.5 rounded-full bg-white border border-stone-200/60 text-sm text-[#475569] cursor-pointer hover:border-[#F97316]/40 hover:text-[#0F172A] transition-colors`
+  - Chip: `inline-flex px-3 py-2 rounded-full bg-white border border-stone-200/60 text-[14px] text-[#475569] cursor-pointer hover:border-[#F97316]/40 hover:text-[#0F172A] transition-colors`
   - Chips: "Does it really sound natural?", "How long does setup take?", "What does it cost?"
-- User bubble: right-aligned, `bg-[#F97316] text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-sm max-w-[85%]`
-- Bot bubble: left-aligned, `bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-[#475569] max-w-[85%]`
-- Input area: `border-t border-stone-200/60 px-4 py-3 flex gap-2`
-  - Input: `flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm placeholder:text-[#71717A] focus:outline-none focus:border-[#F97316]/50`
-  - Send button: 36px × 36px, `rounded-xl bg-[#F97316] text-white flex items-center justify-center hover:bg-[#EA6B0F] transition-colors` / Lucide SendHorizonal icon 16px.
+- User bubble: right-aligned, `bg-[#F97316] text-white rounded-2xl rounded-br-sm px-4 py-2 text-[15px] max-w-[85%]`
+- Bot bubble: left-aligned, `bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-[#475569] max-w-[85%]`
+- Input area: `border-t border-stone-200/60 px-4 py-2 flex gap-2`
+  - Input: `flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2 text-[15px] placeholder:text-[#71717A] focus:outline-none focus:border-[#F97316]/50`
+  - Send button: 36px × 36px, `rounded-xl bg-[#F97316] text-white flex items-center justify-center hover:bg-[#EA6B0F] transition-colors` / Lucide SendHorizonal icon 16px / `aria-label="Send message"`.
 - Loading state: bot bubble with 3-dot animated pulse (Lucide Loader2 spinning or CSS dots).
 
 ---
@@ -297,10 +317,10 @@ Note: Two dark sections adjacent (REPOS-04 + FinalCTA) is intentional — the pu
 
 ### Inline Audio Player (OBJ-02 card)
 - Single play/pause toggle. No scrub. No volume control.
-- Playing state: waveform bars animate (CSS `@keyframes` bar-pulse), button shows Lucide `Pause` icon.
-- Paused state: bars static, button shows Lucide `Play` icon.
+- Playing state: waveform bars animate (CSS `@keyframes` bar-pulse), button shows Lucide `Pause` icon, `aria-label="Pause audio sample"`.
+- Paused state: bars static, button shows Lucide `Play` icon, `aria-label="Play audio sample"`.
 - Audio file: pre-recorded sample (planner provides path/URL).
-- Only one audio source per page plays at a time — pause hero demo if this plays, and vice versa (check if HeroDemoPlayer exposes a pause event).
+- Only one audio source per page plays at a time — pause hero demo if this plays, and vice versa (check if HeroDemoBlock exposes a pause event).
 
 ### AnimatedSection Wrapping (POLISH-11)
 - Every new section's outermost content container wraps in `<AnimatedSection>` from `src/app/components/landing/AnimatedSection.jsx`.
