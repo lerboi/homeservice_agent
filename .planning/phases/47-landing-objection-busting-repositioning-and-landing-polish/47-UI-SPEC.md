@@ -1,10 +1,11 @@
 ---
 phase: 47
 slug: landing-objection-busting-repositioning-and-landing-polish
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york / neutral / radix
 created: 2026-04-13
+reviewed_at: 2026-04-13T00:00:00Z
 ---
 
 # Phase 47 — UI Design Contract
