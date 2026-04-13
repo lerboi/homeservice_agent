@@ -596,7 +596,16 @@ Plans:
   3. Visitor can type their call volume into a revenue calculator and see real-time annual revenue-at-risk results without a page reload
   4. Visitor sees hero H1 and FinalCTA copy that uses complement-not-replacement language and a 5-icon full-stack workflow strip making the end-to-end workflow visible
   5. All new sections render single-column at 375px, use AnimatedSection wrappers with useReducedMotion compliance, and do not break the ScrollLinePath copper line
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 47-01-PLAN.md — Wave 0 foundation (install shadcn Accordion, scaffold smoke tests, document OBJ-02 audio source)
+- [ ] 47-02-PLAN.md — AfterTheCallStrip (REPOS-03) + IdentitySection (OBJ-06) + OwnerControlPullQuote (REPOS-04)
+- [ ] 47-03-PLAN.md — PracticalObjectionsGrid + AudioPlayerCard (OBJ-02/03/04/05/08/09)
+- [ ] 47-04-PLAN.md — FAQSection + FAQChatWidget (OBJ-01 + integrated AI chat panel)
+- [ ] 47-05-PLAN.md — page.js wiring, Hero/FinalCTA copy (REPOS-01/02), skill sync, human visual verification
+
+**Scope note**: OBJ-07 (revenue calculator) excluded from Phase 47 per CONTEXT.md D-01 — already shipped on `/pricing` page (ROICalculator.jsx). 14 of 15 v5.0 landing requirements covered here.
 **UI hint**: yes
 
 ### Phase 48: Dashboard Home Redesign
@@ -661,7 +670,7 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 0/TBD | Not started | - |
+| 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 0/5 | Not started | - |
 | 48. Dashboard Home Redesign | 0/TBD | Not started | - |
 | 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
 | 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
