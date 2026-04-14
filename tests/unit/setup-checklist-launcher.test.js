@@ -32,7 +32,10 @@ describe('SetupChecklistLauncher', () => {
     expect(src).toMatch(
       /import\s+SetupChecklist\s+from\s+['"]@\/components\/dashboard\/SetupChecklist['"]/
     );
-    expect(src).toMatch(/<SetupChecklist\s+onDataLoaded=/);
+    // Progress is fetched directly in the launcher (Radix Sheet does not mount
+    // children until open=true, so an onDataLoaded callback on the child can
+    // never fire before the Sheet opens — which defeats the FAB + auto-open).
+    expect(src).toMatch(/<SetupChecklist\s*\/>/);
   });
 
   it('uses shadcn Sheet with responsive side prop (right on lg+, bottom on mobile)', () => {
@@ -96,12 +99,13 @@ describe('SetupChecklistLauncher', () => {
     expect(src).toMatch(/finish setup/i);
   });
 
-  it('consumes SetupChecklist progress via onDataLoaded → progress state', () => {
+  it('fetches /api/setup-checklist directly to derive progress', () => {
     const src = read(SRC);
-    expect(src).toMatch(/handleDataLoaded/);
-    expect(src).toMatch(/setProgress/);
+    // Launcher owns the fetch — not the inner SetupChecklist — because Radix
+    // Sheet doesn't mount children until open=true. See file-level comment.
+    expect(src).toMatch(/useSWRFetch\s*\(\s*['"]\/api\/setup-checklist['"]/);
     // Tracks percent derived from items array
-    expect(src).toMatch(/data\.items/);
+    expect(src).toMatch(/checklistData\.items/);
   });
 
   it('respects prefers-reduced-motion via framer-motion useReducedMotion', () => {

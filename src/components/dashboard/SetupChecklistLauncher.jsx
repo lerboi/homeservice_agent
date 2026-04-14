@@ -26,7 +26,7 @@
  * the progress state.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import {
@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/sheet';
 import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { focus } from '@/lib/design-tokens';
 
 // Session-storage key — matches the project's `voco_*` naming convention
@@ -131,32 +132,27 @@ export default function SetupChecklistLauncher() {
   const prefersReduced = useReducedMotion();
 
   const [open, setOpen] = useState(false);
-  // Progress summary, seeded from the SetupChecklist onDataLoaded callback.
-  //   - total:   number of active items (post-dismissal filter)
-  //   - complete: number of complete items
-  //   - percent: 0..100
-  //   - ready:   true once the checklist has reported at least once — prevents
-  //              FAB flashing before we know whether to show it.
-  const [progress, setProgress] = useState({ total: 0, complete: 0, percent: 0, ready: false });
 
-  const handleDataLoaded = useCallback((data) => {
-    if (!data || typeof data !== 'object') {
-      setProgress({ total: 0, complete: 0, percent: 100, ready: true });
-      return;
-    }
-    if (data.dismissed) {
-      // Owner dismissed the whole celebration bar — treat as complete so FAB hides.
-      setProgress({ total: 0, complete: 0, percent: 100, ready: true });
-      return;
-    }
-    const items = Array.isArray(data.items) ? data.items : [];
+  // Progress is derived from /api/setup-checklist directly here in the launcher,
+  // NOT from <SetupChecklist>'s onDataLoaded callback. Reason: shadcn/Radix Sheet
+  // does not mount its children until open=true, so the inner SetupChecklist
+  // never fetches before the Sheet opens — and the FAB + auto-open both need
+  // progress to decide whether to render at all. By fetching here, the launcher
+  // can show the FAB immediately and auto-open on first session visit. SWR
+  // deduplicates the key, so the inner SetupChecklist shares this cached data.
+  const { data: checklistData } = useSWRFetch('/api/setup-checklist', {
+    revalidateOnFocus: true,
+  });
+
+  const progress = useMemo(() => {
+    if (!checklistData) return { total: 0, complete: 0, percent: 0, ready: false };
+    if (checklistData.dismissed) return { total: 0, complete: 0, percent: 100, ready: true };
+    const items = Array.isArray(checklistData.items) ? checklistData.items : [];
     const total = items.length;
     const complete = items.filter((i) => i.complete).length;
-    const percent = total > 0
-      ? Math.round((complete / total) * 100)
-      : 100; // zero items = nothing to do = hide FAB
-    setProgress({ total, complete, percent, ready: true });
-  }, []);
+    const percent = total > 0 ? Math.round((complete / total) * 100) : 100;
+    return { total, complete, percent, ready: true };
+  }, [checklistData]);
 
   // Auto-open gate — desktop only, first session visit, only if incomplete.
   useEffect(() => {
@@ -214,9 +210,11 @@ export default function SetupChecklistLauncher() {
             </SheetDescription>
           </SheetHeader>
 
-          {/* Scrollable body — the actual checklist is unchanged from Plan 48-03. */}
+          {/* Scrollable body — the actual checklist is unchanged from Plan 48-03.
+              Progress is derived at the launcher level (see useSWRFetch above);
+              no onDataLoaded prop needed — SWR shares the cached payload. */}
           <div className="flex-1 overflow-y-auto px-5 pb-8 pt-2">
-            <SetupChecklist onDataLoaded={handleDataLoaded} />
+            <SetupChecklist />
           </div>
         </SheetContent>
       </Sheet>
