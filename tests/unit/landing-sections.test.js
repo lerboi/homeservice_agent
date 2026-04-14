@@ -40,8 +40,17 @@ describe('Phase 47 — PracticalObjectionsGrid (OBJ-02/03/04/05/08/09)', () => {
 });
 
 describe('Phase 47 — OwnerControlPullQuote (REPOS-04)', () => {
-  it.todo('renders on dark #1C1412 background');
-  it.todo('contains an owner-control pull-quote');
+  it('renders on dark #1C1412 background', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/OwnerControlPullQuote.jsx', 'utf8');
+    expect(src).toMatch(/bg-\[#1C1412\]/);
+  });
+  it('contains an owner-control pull-quote', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/OwnerControlPullQuote.jsx', 'utf8');
+    // Must mention both "rules" and "follows" per the UI-SPEC locked copy,
+    // OR an equivalent owner-control/rules framing.
+    expect(src).toMatch(/rules/i);
+    expect(src).toMatch(/follows|follow/i);
+  });
 });
 
 describe('Phase 47 — FAQSection (OBJ-01 + D-10)', () => {
