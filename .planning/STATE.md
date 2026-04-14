@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-stopped_at: Completed 48-02-chat-provider-context-lift-PLAN.md
-last_updated: "2026-04-14T19:57:56.614Z"
+stopped_at: Completed 48-03-setup-checklist-refactor-PLAN.md
+last_updated: "2026-04-14T20:09:09.381Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 12
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 48 (dashboard-home-redesign) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-04-14
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 48 P01 | 35m | 4 tasks | 12 files |
 | Phase 48 P02 | ~3 minutes | 2 tasks | 3 files |
+| Phase 48 P03 | ~15m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting v5.0 work:
 - [Phase 48]: Phase 48-01: zod replaced with manual typeof/enum validation (zod not a project dep); added jest.setup.js fallback env vars so route modules load in unit tests without mocking supabase import
 - [Phase 48]: Kept repo's static-file-regex-parse unit-test pattern for ChatProvider tests (vs plan's @testing-library/react/renderHook suggestion) — that dep is not installed and adding it is a cross-cutting tooling decision, not in-scope for a state-lift plan
 - [Phase 48]: ChatProvider stores currentRoute in its own useState (seeded from prop, synced via useEffect) so route changes propagate without remount and sendMessage closes over the latest value
+- [Phase 48]: Plan 48-03: SetupChecklist refactored in-place (D-01 preserved) — default export + onDataLoaded prop unchanged so page.js callers work without edits
+- [Phase 48]: Plan 48-03: Window-focus auto-detection uses useSWRFetch revalidateOnFocus — no manual visibilitychange listener, no Realtime subscription (D-05)
 
 ### Roadmap Evolution
 
@@ -93,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T19:57:48.955Z
-Stopped at: Completed 48-02-chat-provider-context-lift-PLAN.md
+Last session: 2026-04-14T20:09:09.374Z
+Stopped at: Completed 48-03-setup-checklist-refactor-PLAN.md
 Resume file: None

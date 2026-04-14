@@ -497,7 +497,7 @@ n| DEMO-01 | Phase 29 | Complete |
 | REPOS-04 | Phase 47 | Pending |
 | POLISH-11 | Phase 47 | Pending |
 | POLISH-12 | Phase 47 | Pending |
-| HOME-01 | Phase 48 | Pending |
+| HOME-01 | Phase 48 | Complete |
 | HOME-02 | Phase 48 | Complete |
 | HOME-03 | Phase 48 | Complete |
 | HOME-04 | Phase 48 | Pending |
@@ -554,7 +554,7 @@ n| DEMO-01 | Phase 29 | Complete |
 
 ### Dashboard Home Redesign
 
-- [ ] **HOME-01**: Dashboard home shows a redesigned setup checklist with a progress indicator, items grouped by theme (profile, voice, calendar, billing), each with dismiss / mark-done / jump-to-page actions
+- [x] **HOME-01**: Dashboard home shows a redesigned setup checklist with a progress indicator, items grouped by theme (profile, voice, calendar, billing), each with dismiss / mark-done / jump-to-page actions
 - [x] **HOME-02**: Dashboard home shows a daily-ops hub with at-a-glance cards: today's appointments, recent calls (last 24h), hot/new leads, usage meter
 - [x] **HOME-03**: Setup checklist auto-detects completion of onboarding items (phone, services, hours, calendar, billing) and updates progress without user action
 - [ ] **HOME-04**: Dashboard home includes an integrated AI chat surface (card/panel, not just a floating button) where owners can ask questions and get dashboard navigation help from first paint

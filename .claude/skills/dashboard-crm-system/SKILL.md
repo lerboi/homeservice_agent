@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-04-04 (Estimates system, Invoice Settings page, Integrations page, batch invoice review, chatbot RAG detail, More menu updated to 9 settings + 2 quick-access + Ask Voco AI)
+**Last updated**: 2026-04-15 (Phase 48 setup checklist API covered: per-item `mark_done` + `dismiss` actions persisted to `tenants.checklist_overrides` JSONB (migration 050); clarified that recurring UI (`RecurringSetupDialog`, `RecurringBadge`) is invoice-only — no recurring support exists on appointments/calendar; Phase 52 (Leads → Jobs rename) is planned-only, directory empty, code still uses "Leads". Previous: 2026-04-04 — Estimates system, Invoice Settings, Integrations, batch invoice review, chatbot RAG, 9-setting More menu)
 
 ---
 
@@ -132,7 +132,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/LeadFilterBar.jsx` | Responsive filter bar above the lead list. Desktop (≥640px): inline flex-wrap (search, urgency Select, job type Input, date range, Clear all). Mobile (<640px): search + `Filters` button that opens a bottom Sheet containing urgency/job-type/date-range with labels. Filter-count badge on the Filters button (excludes search since it stays visible). Status filter is NOT here — it lives in `LeadStatusPills` above. Active-filter pills row below the bar shows/removes any non-status filter. |
 | `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
-| `src/components/dashboard/SetupChecklist.jsx` | Redesigned checklist: required/recommended split, conic-gradient progress ring, expandable items |
+| `src/components/dashboard/SetupChecklist.jsx` | Themed checklist: profile/voice/calendar/billing accordions, conic-gradient progress ring, per-item Dismiss/Mark done/Jump actions, window-focus refetch (Phase 48 refactor) |
 | `src/components/dashboard/ChecklistItem.jsx` | Expandable checklist item: type badge, description, action link |
 | `src/components/dashboard/WorkingHoursEditor.js` | Per-day hours editor: schedule preview bars, timezone selector, controlled preset dropdown, sticky save bar, responsive day cards |
 | `src/components/dashboard/CalendarView.js` | Week/day time grid with appointments, external events, travel buffers |
@@ -146,6 +146,16 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `supabase/migrations/004_leads_crm.sql` | leads, lead_calls, activity_log tables + Realtime publication |
 | `supabase/migrations/005_setup_checklist.sql` | setup_checklist_dismissed column on tenants |
 | `supabase/migrations/006_escalation_contacts.sql` | escalation_contacts table + services.sort_order column |
+
+---
+
+## 0. Scope Notes (read first)
+
+**Phase 52 (Leads → Jobs rename)** — planned but not executed. The `.planning/phases/52-*` directory exists but is empty. The codebase still uses "Leads" terminology: `/src/app/dashboard/leads`, `LeadStatusPills`, "Leads" label in `DashboardSidebar.jsx` and `BottomTabBar.jsx`. Do NOT rename without running the Phase 52 discuss + plan + execute cycle — the renames touch routing, API paths, Realtime channel names, and guided-tour copy.
+
+**Recurring** — the `RecurringSetupDialog.jsx` and `RecurringBadge.jsx` components in `src/components/dashboard/` are **invoice-only**. They're wired into `/src/app/dashboard/invoices/page.js` and `/src/app/dashboard/invoices/[id]/page.js` to configure recurring invoice templates (frequency, start/end dates, next_date). Recurring invoice generation is handled by the `recurring-invoices` cron (see the scheduling-calendar-system skill's cron inventory) and backed by `invoices.is_recurring_template`/`recurring_*` columns (migration 032). There is NO recurring support for appointments — `AppointmentFlyout.js` contains zero recurring logic, and the `appointments` table has no recurrence columns. If a user asks for "recurring" on the dashboard, disambiguate: invoices (exists) vs. appointments (would need a new phase).
+
+**Setup checklist backend** — The Phase 48 refactor landed the theme-accordion UI (covered in Section 5 below) AND introduced migration 050 (`tenants.checklist_overrides` JSONB). The API handler at `src/app/api/setup-checklist/route.js` already consumes the new column for per-item `mark_done` and `dismiss` actions (see Section 13). Full Phase 48 execution is still in flight, but the checklist portion is live.
 
 ---
 
@@ -445,45 +455,56 @@ Displays subscription status and usage for the current tenant. Four sections:
 
 ---
 
-## 5. Setup Checklist — Redesigned
+## 5. Setup Checklist — Theme Accordion (Phase 48 refactor)
 
 **File**: `src/components/dashboard/SetupChecklist.jsx`
 
-Redesigned in Phase 20 Plan 03. Key changes from original:
+Refactored in Phase 48 Plan 03 (D-01: refactor-in-place) to group items by **theme** instead of required/recommended. Each item still carries a Required/Recommended **badge** so both mental models coexist. The conic-gradient progress ring and `SetupCompleteBar` celebration are preserved verbatim.
 
-**ITEM_TYPE classification (frontend-only, no API change):**
+**Theme groups (Phase 48 D-02):** `profile → voice → calendar → billing`. Order is canonical — `THEME_ORDER` array drives both the GET response ordering (from `/api/setup-checklist/route.js`) and the accordion render order.
+
 ```js
-const ITEM_TYPE = {
-  create_account: 'required',
-  setup_profile: 'required',
-  configure_services: 'required',
-  make_test_call: 'required',
-  connect_calendar: 'recommended',
-  configure_hours: 'recommended',
-  configure_zones: 'recommended',
-  setup_escalation: 'recommended',
-  configure_notifications: 'recommended',
+// From src/app/api/setup-checklist/route.js
+export const THEME_GROUPS = {
+  profile:  ['setup_profile'],
+  voice:    ['configure_services','make_test_call','configure_hours','configure_notifications','configure_call_routing'],
+  calendar: ['connect_calendar','configure_zones','setup_escalation'],
+  billing:  ['setup_billing'],
 };
 ```
 
-**ITEM_DESCRIPTION map** — one-sentence explanations shown in expandable state.
+**Data fetching:** Uses `useSWRFetch('/api/setup-checklist', { revalidateOnFocus: true })` — returning from an external tab (e.g., Stripe Checkout, Google Calendar OAuth) automatically refetches checklist state. No manual `visibilitychange` listener, no Realtime subscription.
 
-**ProgressRing component** — conic-gradient two-segment donut:
-- Required complete = orange (#C2410C)
-- Recommended complete = stone (#78716C)
-- Incomplete = light gray (#E7E5E4)
-- Center shows "{completed}/{total}" count
+**ProgressRing component** — conic-gradient single-segment donut:
+- Copper (#C2410C) for completed percentage
+- Light gray (#E7E5E4) for incomplete remainder
+- Center shows `{completed}/{total}` with `tabular-nums`
 
-**Sections:** Required items rendered under orange "REQUIRED" header, recommended items under gray "RECOMMENDED" header.
+**shadcn Accordion** — `type="single" collapsible`. Each theme trigger shows:
+- Theme label (Profile / Voice / Calendar / Billing)
+- `CheckCircle2` glyph (text-stone-500, NOT copper) when all items in the theme are complete
+- Mini-progress caption: `{n} of {total} complete`
 
-**`onDataLoaded` callback prop:** Called when fetch resolves, passes full `{ items, dismissed, completedCount }` to parent. Avoids double-fetching `/api/setup-checklist` when page.js also needs the data.
+Default-open accordion: the first theme with an incomplete item (falls back to `voice` when everything is done).
 
-**`ChecklistItem.jsx`** — expandable with AnimatePresence:
-- Click row to expand/collapse
-- Shows type badge (orange "Required" or gray "Recommended") in expanded state
-- Shows `ITEM_DESCRIPTION` text in expanded state
-- Shows action `Link` button pointing to relevant More sub-page
-- `min-h-[44px]` touch target, `useReducedMotion` support
+**`onDataLoaded` callback prop:** Preserved for back-compat. Fired via SWR's `onSuccess` — `onDataLoaded?.(payload)` receives `{ items, dismissed, completedCount, progress }`. Parents (e.g., `src/app/dashboard/page.js`) continue to consume the same shape.
+
+**Per-item actions** — each row exposes three buttons:
+1. **Jump to page** — primary `btn.primary` CTA; label is context-sensitive per UI-SPEC copywriting contract:
+   - `Finish setup` — required row, not started
+   - `Continue` — `mark_done_override === true && complete === false`
+   - `Open settings` — recommended-only rows
+2. **Mark done / Unmark done** — ghost button. Optimistically flips `complete` + `mark_done_override` via SWR `mutate`, then fires PATCH `{ item_id, mark_done: <bool> }`. Revert + error toast on failure.
+3. **Dismiss** — icon-only `X` (`min-w-[44px]`). Hidden for required items. Optimistically removes the row, then PATCH `{ item_id, dismiss: true }`. Fires sonner toast `Dismissed.` with **Undo** action that reverse-PATCHes `{ item_id, dismiss: false }` and refetches.
+
+**Whole-checklist dismiss** (`SetupCompleteBar` path): when `progress.complete === progress.total`, the celebration bar renders; its dismiss PATCHes `{ dismissed: true }` (unchanged from prior behavior).
+
+**`ChecklistItem.jsx`** — single-row component:
+- Completion icon (`CheckCircle2` copper when complete, `Circle` stone when not)
+- Title + Required/Recommended `Badge` (copper-soft vs stone; `font-normal text-xs tracking-wide uppercase` — two-weight rule override of shadcn default)
+- Description paragraph
+- Action button row with ≥44px touch targets, all with `aria-label`
+- `framer-motion` `layout` + fade-in entrance animation
 
 Checklist items are **derived from tenants table columns** — not stored as separate rows:
 - `create_account` — always complete
@@ -878,17 +899,23 @@ Validation via `validateContactBody()`: name required, at least one of phone/ema
 
 **File**: `src/app/api/setup-checklist/route.js`
 
-`GET /api/setup-checklist` — derives checklist state at read time from tenant columns:
+`GET /api/setup-checklist` — derives checklist state at read time from tenant columns, then overlays per-item user actions from `tenants.checklist_overrides` (JSONB, migration 050):
 - Uses `createSupabaseServer()` for auth, `supabase` (service role) for data queries
 - Parallel fetch: service count + calendar_credentials existence
-- Returns `{ items, dismissed, completedCount }`
+- Merges `checklist_overrides[item_id]` into each derived item so the client sees `complete` / `dismissed` / `mark_done_override` flags alongside auto-detected state
+- Returns `{ items, dismissed, completedCount, progress }` — items are grouped by `THEME_ORDER` (profile → voice → calendar → billing)
 
 Item hrefs (updated in Phase 20 Plan 02 to point to More sub-pages):
 - `connect_calendar` — `/dashboard/more/calendar-connections`
 - `configure_hours` — `/dashboard/more/working-hours`
 - `make_test_call` — `/dashboard/more/ai-voice-settings`
 
-`PATCH /api/setup-checklist` — sets `setup_checklist_dismissed = true` on tenants row.
+`PATCH /api/setup-checklist` — two distinct payload shapes, both mutate `tenants.checklist_overrides`:
+
+1. **Per-item action (Phase 48, migration 050)** — body `{ item_id, mark_done: true/false }` or `{ item_id, dismiss: true/false }`. The handler reads current `checklist_overrides`, mutates the `{item_id: {status, ts}}` entry, and writes the whole JSONB back. Optimistic client updates via SWR `mutate` make this feel instant; error paths revert and toast.
+2. **Whole-checklist dismiss (legacy)** — body `{ dismissed: true }`. Sets `tenants.setup_checklist_dismissed = true` (the pre-Phase-48 column). The `SetupCompleteBar` celebration flow still uses this path.
+
+**What's NOT stored in `checklist_overrides`**: auto-detected completions (services count, `onboarding_complete`, calendar credential existence, etc.). Those derive from live tenant/relation state on every GET. The override column only records explicit user actions (I marked this done / I dismissed this row).
 
 ---
 
