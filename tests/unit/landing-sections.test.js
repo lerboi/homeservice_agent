@@ -129,12 +129,26 @@ describe('Phase 47 — FAQSection (OBJ-01 + D-10)', () => {
 });
 
 describe('Phase 47 — Hero copy (REPOS-01)', () => {
-  it.todo('HeroSection H1 does not contain replacement framing "Let Voco Handle Your"');
-  it.todo('HeroSection retains RotatingText element');
+  const src = () => require('fs').readFileSync('src/app/components/landing/HeroSection.jsx', 'utf8');
+  it('H1 does not contain replacement framing "Let Voco Handle Your"', () => {
+    expect(src()).not.toMatch(/Let Voco Handle Your/);
+  });
+  it('HeroSection retains RotatingText element', () => {
+    const s = src();
+    expect(s).toMatch(/RotatingText/);
+    expect(s).toMatch(/texts=\{\['Phone Calls', 'Bookings', 'Invoices', 'Paperwork'\]\}/);
+  });
+  it('subtitle uses complement framing language', () => {
+    const s = src();
+    expect(s).toMatch(/in charge|stay in control|stay in charge|when you can.?t|when you'?re/i);
+  });
 });
 
 describe('Phase 47 — FinalCTA copy (REPOS-02)', () => {
-  it.todo('FinalCTA subtitle contains owner-control language ("your rules" or "your schedule")');
+  it('FinalCTA subtitle contains owner-control language', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/FinalCTASection.jsx', 'utf8');
+    expect(src).toMatch(/your rules|your schedule/i);
+  });
 });
 
 describe('Phase 47 — AudioPlayerCard (OBJ-02 island)', () => {
