@@ -11,9 +11,9 @@ Generate a structured SESSION_REPORT.md document capturing session outcomes, wor
 </objective>
 
 <execution_context>
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/session-report.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/session-report.md
 </execution_context>
 
 <process>
-Execute the session-report workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/session-report.md end-to-end.
+Execute the session-report workflow from @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/session-report.md end-to-end.
 </process>

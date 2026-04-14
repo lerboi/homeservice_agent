@@ -18,8 +18,8 @@ Output: {phase_num}-UI-REVIEW.md
 </objective>
 
 <execution_context>
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/ui-review.md
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/ui-review.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -27,6 +27,6 @@ Phase: $ARGUMENTS — optional, defaults to last completed phase.
 </context>
 
 <process>
-Execute @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/ui-review.md end-to-end.
+Execute @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/ui-review.md end-to-end.
 Preserve all workflow gates.
 </process>

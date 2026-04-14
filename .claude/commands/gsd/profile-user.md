@@ -13,14 +13,14 @@ allowed-tools:
 ---
 
 <objective>
-Generate a developer behavioral profile from session analysis (or questionnaire) and produce artifacts (USER-PROFILE.md, /gsd:dev-preferences, CLAUDE.md section) that personalize Claude's responses.
+Generate a developer behavioral profile from session analysis (or questionnaire) and produce artifacts (USER-PROFILE.md, /gsd-dev-preferences, CLAUDE.md section) that personalize Claude's responses.
 
 Routes to the profile-user workflow which orchestrates the full flow: consent gate, session analysis or questionnaire fallback, profile generation, result display, and artifact selection.
 </objective>
 
 <execution_context>
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/profile-user.md
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/profile-user.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>

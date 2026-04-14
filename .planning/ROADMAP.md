@@ -599,10 +599,10 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 47-01-PLAN.md — Wave 0 foundation (install shadcn Accordion, scaffold smoke tests, document OBJ-02 audio source)
-- [ ] 47-02-PLAN.md — AfterTheCallStrip (REPOS-03) + IdentitySection (OBJ-06) + OwnerControlPullQuote (REPOS-04)
-- [ ] 47-03-PLAN.md — PracticalObjectionsGrid + AudioPlayerCard (OBJ-02/03/04/05/08/09)
-- [ ] 47-04-PLAN.md — FAQSection + FAQChatWidget (OBJ-01 + integrated AI chat panel)
+- [x] 47-01-PLAN.md — Wave 0 foundation (install shadcn Accordion, scaffold smoke tests, document OBJ-02 audio source)
+- [x] 47-02-PLAN.md — AfterTheCallStrip (REPOS-03) + IdentitySection (OBJ-06) + OwnerControlPullQuote (REPOS-04)
+- [x] 47-03-PLAN.md — PracticalObjectionsGrid + AudioPlayerCard (OBJ-02/03/04/05/08/09)
+- [x] 47-04-PLAN.md — FAQSection + FAQChatWidget (OBJ-01 + integrated AI chat panel)
 - [ ] 47-05-PLAN.md — page.js wiring, Hero/FinalCTA copy (REPOS-01/02), skill sync, human visual verification
 
 **Scope note**: OBJ-07 (revenue calculator) excluded from Phase 47 per CONTEXT.md D-01 — already shipped on `/pricing` page (ROICalculator.jsx). 14 of 15 v5.0 landing requirements covered here.
@@ -619,7 +619,14 @@ Plans:
   3. Owner can ask a question in the integrated AI chat panel on the home page and continue that conversation in the floating ChatbotSheet -- message history is shared, not reset on switch
   4. Owner sees a Help & Discoverability section with quick-links to common tasks that route directly to the correct dashboard page
   5. At 375px viewport the home page stacks all cards to a single column with no horizontal scrolling
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 48-01-schema-apis-test-scaffold-PLAN.md — Migration 050 (checklist_overrides JSONB) + blocking supabase db push + PATCH API extension (per-item mark_done/dismiss + themed items) + new GET /api/usage + 7 Wave-0 test scaffolds
+- [ ] 48-02-chat-provider-context-lift-PLAN.md — ChatProvider React Context + refactor ChatbotSheet to useChatContext + wrap dashboard layout with currentRoute threading (HOME-05 foundation)
+- [ ] 48-03-setup-checklist-refactor-PLAN.md — In-place refactor of SetupChecklist/ChecklistItem into 4 theme accordions (profile/voice/calendar/billing) with Dismiss / Mark done / Jump to page actions and window-focus refetch (HOME-01, HOME-03)
+- [ ] 48-04-daily-ops-hub-tiles-PLAN.md — DailyOpsHub bento grid + TodayAppointmentsTile (hero) + CallsTile (absorbs missed-calls alert) + HotLeadsTile + UsageTile with threshold color helper (HOME-02)
+- [ ] 48-05-page-wiring-chat-panel-help-PLAN.md — ChatPanel + HelpDiscoverabilityCard + page.js rewrite (deletes setupMode/invoices/inline missed-calls) + 375px mobile verify checkpoint (HOME-04, HOME-05, HOME-06, HOME-07)
 **UI hint**: yes
 
 ### Phase 49: Dark Mode Foundation and Token Migration
@@ -670,8 +677,8 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 0/5 | Not started | - |
-| 48. Dashboard Home Redesign | 0/TBD | Not started | - |
+| 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 4/5 | In Progress|  |
+| 48. Dashboard Home Redesign | 0/5 | Planning complete | - |
 | 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
 | 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
 | 51. UI/UX Polish Pass | 0/TBD | Not started | - |
@@ -683,7 +690,7 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 51 (UI/UX Polish Pass) — token system and empty states must be stable before renaming visible tab surfaces; may be reprioritized independently if landing and dashboard work parallelizes
-**Plans:** 0 plans
+**Plans:** 4/5 plans executed
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 52 to break down)

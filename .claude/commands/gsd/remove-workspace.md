@@ -17,10 +17,10 @@ Remove a workspace directory after confirmation. For worktree strategy, runs `gi
 </objective>
 
 <execution_context>
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/remove-workspace.md
-@C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/remove-workspace.md
+@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <process>
-Execute the remove-workspace workflow from @C:/Users/Leroy/Desktop/Voco/homeservice_agent/.claude/get-shit-done/workflows/remove-workspace.md end-to-end.
+Execute the remove-workspace workflow from @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/remove-workspace.md end-to-end.
 </process>
