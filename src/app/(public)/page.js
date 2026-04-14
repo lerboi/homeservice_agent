@@ -43,19 +43,24 @@ const FeaturesCarousel = dynamic(
   }
 );
 
-const AfterTheCallStrip = dynamic(
-  () => import('@/app/components/landing/AfterTheCallStrip').then((m) => m.AfterTheCallStrip),
+const BeyondReceptionistSection = dynamic(
+  () => import('@/app/components/landing/BeyondReceptionistSection').then((m) => m.BeyondReceptionistSection),
   {
     loading: () => (
-      <section className="bg-white py-12 md:py-16 px-6" aria-hidden="true">
+      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="h-4 w-28 bg-black/10 rounded mx-auto mb-3" />
-            <div className="h-8 w-96 bg-black/10 rounded mx-auto" />
+          <div className="text-center mb-12 max-w-2xl mx-auto">
+            <div className="h-4 w-40 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-96 bg-black/10 rounded mx-auto mb-5" />
+            <div className="h-5 w-80 bg-black/5 rounded mx-auto" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-24 rounded bg-black/5" />
+          <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-5 md:gap-6">
+            <div className="h-[260px] rounded-2xl bg-stone-50 border border-stone-200/60" />
+            <div className="h-[420px] rounded-2xl bg-white border border-stone-200/80 shadow-sm" />
+          </div>
+          <div className="mt-14 md:mt-16 border-t border-stone-100 pt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 rounded bg-black/5" />
             ))}
           </div>
         </div>
@@ -180,8 +185,8 @@ export default function HomePage() {
       <HeroSection />
       <ScrollLinePath>
         <HowItWorksSection />
+        <BeyondReceptionistSection />
         <FeaturesCarousel />
-        <AfterTheCallStrip />
         <SocialProofSection />
       </ScrollLinePath>
       <IdentitySection />

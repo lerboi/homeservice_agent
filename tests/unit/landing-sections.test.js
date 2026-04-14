@@ -8,29 +8,42 @@ import { readFileSync, existsSync } from 'fs';
 
 const read = (p) => readFileSync(p, 'utf8');
 
-describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
-  it('renders at least 4 after-the-call workflow items', () => {
-    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
-    const matches = src.match(/label:\s*'[^']+'/g) || [];
-    expect(matches.length).toBeGreaterThanOrEqual(4);
+describe('Landing — BeyondReceptionistSection (category-expansion + pain points)', () => {
+  const src = () => read('src/app/components/landing/BeyondReceptionistSection.jsx');
+
+  it('exports BeyondReceptionistSection', () => {
+    expect(existsSync('src/app/components/landing/BeyondReceptionistSection.jsx')).toBe(true);
+    expect(src()).toMatch(/export function BeyondReceptionistSection/);
   });
-  it('does not use id="features" or id="testimonials" on its section element', () => {
-    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
-    expect(src).not.toMatch(/id=["']features["']/);
-    expect(src).not.toMatch(/id=["']testimonials["']/);
+  it('does not claim the features anchor (that stays on FeaturesCarousel)', () => {
+    expect(src()).not.toMatch(/id=["']features["']/);
+    expect(src()).not.toMatch(/id=["']testimonials["']/);
+  });
+  it('carries the category-expansion headline', () => {
+    expect(src()).toMatch(/easy part|receptionist/i);
+  });
+  it('lists the 3 pain-kill pairs', () => {
+    const s = src();
+    expect(s).toMatch(/Lost jobs/i);
+    expect(s).toMatch(/Paperwork/i);
+    expect(s).toMatch(/Chasing leads/i);
+  });
+  it('retired AfterTheCallStrip.jsx is gone', () => {
+    expect(existsSync('src/app/components/landing/AfterTheCallStrip.jsx')).toBe(false);
   });
 });
 
-describe('Landing — FeaturesCarousel (full-stack workflow showcase)', () => {
+describe('Landing — FeaturesCarousel (9-feature workflow showcase)', () => {
   const src = () => read('src/app/components/landing/FeaturesCarousel.jsx');
 
   it('exists and owns the ScrollLinePath features anchor', () => {
     expect(existsSync('src/app/components/landing/FeaturesCarousel.jsx')).toBe(true);
     expect(src()).toMatch(/id=["']features["']/);
   });
-  it('ships the expanded 8-feature set including lead recovery + invoicing', () => {
+  it('ships the full 9-feature set including Custom Pickup Rules', () => {
     const s = src();
     expect(s).toMatch(/24\/7 AI Answering/);
+    expect(s).toMatch(/Custom Pickup Rules/);
     expect(s).toMatch(/70\+ Languages/);
     expect(s).toMatch(/Real-Time Calendar Booking/);
     expect(s).toMatch(/Lead Capture & CRM/);
@@ -39,9 +52,10 @@ describe('Landing — FeaturesCarousel (full-stack workflow showcase)', () => {
     expect(s).toMatch(/Invoicing & Estimates/);
     expect(s).toMatch(/Call Analytics & Dashboard/);
   });
-  it('wires all 8 feature visuals', () => {
+  it('wires all 9 feature visuals', () => {
     const s = src();
     expect(s).toMatch(/AnsweringVisual/);
+    expect(s).toMatch(/PickupRulesVisual/);
     expect(s).toMatch(/LanguageVisual/);
     expect(s).toMatch(/BookingVisual/);
     expect(s).toMatch(/LeadVisual/);
@@ -50,10 +64,21 @@ describe('Landing — FeaturesCarousel (full-stack workflow showcase)', () => {
     expect(s).toMatch(/InvoiceVisual/);
     expect(s).toMatch(/AnalyticsVisual/);
   });
-  it('page.js imports FeaturesCarousel as 2nd ScrollLinePath child', () => {
+  it('orders Custom Pickup Rules immediately after 24/7 AI Answering', () => {
+    const s = src();
+    const idxAnswering = s.indexOf("'24/7 AI Answering'");
+    const idxPickup = s.indexOf("'Custom Pickup Rules'");
+    const idxLanguages = s.indexOf("'70+ Languages'");
+    expect(idxAnswering).toBeGreaterThan(-1);
+    expect(idxPickup).toBeGreaterThan(-1);
+    expect(idxLanguages).toBeGreaterThan(-1);
+    expect(idxAnswering).toBeLessThan(idxPickup);
+    expect(idxPickup).toBeLessThan(idxLanguages);
+  });
+  it('page.js renders BeyondReceptionistSection before FeaturesCarousel inside ScrollLinePath', () => {
     const page = read('src/app/(public)/page.js');
-    expect(page).toMatch(/FeaturesCarousel/);
-    expect(page).toMatch(/<HowItWorksSection[^>]*\/>\s*<FeaturesCarousel[^>]*\/>\s*<AfterTheCallStrip[^>]*\/>/m);
+    expect(page).toMatch(/<HowItWorksSection[^>]*\/>\s*<BeyondReceptionistSection[^>]*\/>\s*<FeaturesCarousel[^>]*\/>/m);
+    expect(page).not.toMatch(/AfterTheCallStrip/);
   });
 });
 

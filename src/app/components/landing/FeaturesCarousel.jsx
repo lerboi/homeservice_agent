@@ -4,12 +4,14 @@ import { useReducedMotion } from 'framer-motion';
 import {
   Globe,
   PhoneIncoming,
+  PhoneForwarded,
   CalendarCheck,
   MessageSquare,
   BarChart3,
   UserCheck,
   PhoneMissed,
   Receipt,
+  Star,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -53,6 +55,59 @@ function AnsweringVisual({ isActive }) {
           }
         }
       `}</style>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Micro Visual: Custom Pickup Rules
+───────────────────────────────────────── */
+function PickupRulesVisual({ isActive }) {
+  return (
+    <div className="w-full max-w-[280px] mx-auto space-y-2.5" aria-hidden="true">
+      {/* Schedule card */}
+      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
+        <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-400 mb-1.5">Schedule</p>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-[#0F172A] font-medium">Mon&ndash;Fri 9am&ndash;6pm</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            Rings you
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-1.5">
+          <span className="text-[11px] text-[#0F172A] font-medium">After hours</span>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F97316]/10 text-[#F97316] border border-[#F97316]/30">
+            AI answers
+          </span>
+        </div>
+      </div>
+
+      {/* Ring delay card */}
+      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className="text-[10px] font-semibold tracking-wide uppercase text-stone-400">Ring delay</span>
+          <span className="text-[11px] text-[#0F172A] font-semibold tabular-nums">15s</span>
+        </div>
+        <div className="relative h-1.5 rounded-full bg-stone-200 overflow-hidden">
+          <div className="absolute inset-y-0 left-0 w-[60%] rounded-full bg-[#F97316]" />
+        </div>
+      </div>
+
+      {/* VIP card */}
+      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Star className="w-3.5 h-3.5 text-[#F97316] fill-[#F97316]" aria-hidden="true" />
+          <span className="text-[10px] font-semibold tracking-wide uppercase text-stone-400">VIP callers bypass AI</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium text-[#0F172A] px-2 py-0.5 rounded bg-white border border-stone-200">
+            (415) &bull;&bull;&bull;&bull;
+          </span>
+          <span className="text-[10px] font-medium text-[#0F172A] px-2 py-0.5 rounded bg-white border border-stone-200">
+            (650) &bull;&bull;&bull;&bull;
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -354,6 +409,14 @@ const FEATURES = [
     tagline: 'Picks up in under a second — 2 AM Sunday or mid-job-site.',
     description: 'No voicemail. No missed leads. Zero gaps between your last job and your next call.',
     Visual: AnsweringVisual,
+  },
+  {
+    icon: PhoneForwarded,
+    title: 'Custom Pickup Rules',
+    navLabel: 'Rules',
+    tagline: 'Your phone rings first. AI steps in only when you can\u2019t.',
+    description: 'Set schedule windows, a ring delay before AI answers, or VIP numbers that always bypass the AI. Voco follows your rules.',
+    Visual: PickupRulesVisual,
   },
   {
     icon: Globe,
