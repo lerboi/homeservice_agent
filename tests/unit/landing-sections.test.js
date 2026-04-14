@@ -8,38 +8,52 @@ import { readFileSync, existsSync } from 'fs';
 
 const read = (p) => readFileSync(p, 'utf8');
 
-describe('Phase 47 — AfterTheCallStrip (REPOS-03 + workflow rebuild)', () => {
-  const src = () => read('src/app/components/landing/AfterTheCallStrip.jsx');
-
-  it('renders at least 4 workflow steps', () => {
-    const matches = src().match(/label:\s*['"][^'"]+['"]/g) || [];
+describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
+  it('renders at least 4 after-the-call workflow items', () => {
+    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
+    const matches = src.match(/label:\s*'[^']+'/g) || [];
     expect(matches.length).toBeGreaterThanOrEqual(4);
   });
-  it('owns the ScrollLinePath `features` anchor (carousel replaced)', () => {
-    expect(src()).toMatch(/id=["']features["']/);
-  });
-  it('does not collide with the testimonials anchor', () => {
-    expect(src()).not.toMatch(/id=["']testimonials["']/);
-  });
-  it('embeds harvested proof visuals from the retired FeaturesCarousel', () => {
-    const s = src();
-    expect(s).toMatch(/BookingVisual/);
-    expect(s).toMatch(/LeadVisual/);
-    expect(s).toMatch(/SMSVisual/);
-    expect(s).toMatch(/AnalyticsVisual/);
-  });
-  it('leads with a pain-point headline, not a feature list', () => {
-    const s = src();
-    expect(s).toMatch(/under the sink|on the roof|hands were full|full-stack workflow/i);
+  it('does not use id="features" or id="testimonials" on its section element', () => {
+    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
+    expect(src).not.toMatch(/id=["']features["']/);
+    expect(src).not.toMatch(/id=["']testimonials["']/);
   });
 });
 
-describe('Phase 47 — FeaturesCarousel retirement', () => {
-  it('FeaturesCarousel.jsx no longer exists (replaced by AfterTheCallStrip workflow section)', () => {
-    expect(existsSync('src/app/components/landing/FeaturesCarousel.jsx')).toBe(false);
+describe('Landing — FeaturesCarousel (full-stack workflow showcase)', () => {
+  const src = () => read('src/app/components/landing/FeaturesCarousel.jsx');
+
+  it('exists and owns the ScrollLinePath features anchor', () => {
+    expect(existsSync('src/app/components/landing/FeaturesCarousel.jsx')).toBe(true);
+    expect(src()).toMatch(/id=["']features["']/);
   });
-  it('page.js no longer imports FeaturesCarousel', () => {
-    expect(read('src/app/(public)/page.js')).not.toMatch(/FeaturesCarousel/);
+  it('ships the expanded 8-feature set including lead recovery + invoicing', () => {
+    const s = src();
+    expect(s).toMatch(/24\/7 AI Answering/);
+    expect(s).toMatch(/70\+ Languages/);
+    expect(s).toMatch(/Real-Time Calendar Booking/);
+    expect(s).toMatch(/Lead Capture & CRM/);
+    expect(s).toMatch(/Automated Lead Recovery/);
+    expect(s).toMatch(/Post-Call SMS & Notifications/);
+    expect(s).toMatch(/Invoicing & Estimates/);
+    expect(s).toMatch(/Call Analytics & Dashboard/);
+  });
+  it('wires all 8 feature visuals', () => {
+    const s = src();
+    expect(s).toMatch(/AnsweringVisual/);
+    expect(s).toMatch(/LanguageVisual/);
+    expect(s).toMatch(/BookingVisual/);
+    expect(s).toMatch(/LeadVisual/);
+    expect(s).toMatch(/LeadRecoveryVisual/);
+    expect(s).toMatch(/SMSVisual/);
+    expect(s).toMatch(/InvoiceVisual/);
+    expect(s).toMatch(/AnalyticsVisual/);
+  });
+  it('page.js imports FeaturesCarousel as 2nd ScrollLinePath child', () => {
+    const page = read('src/app/(public)/page.js');
+    expect(page).toMatch(/FeaturesCarousel/);
+    expect(page).toMatch(/<HowItWorksSection[^>]*\/>\s*<FeaturesCarousel[^>]*\/>\s*<AfterTheCallStrip[^>]*\/>/m);
   });
 });
 

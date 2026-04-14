@@ -105,20 +105,21 @@ Public Chatbot Flow:
 | `public/audio/demo-intro.mp3` | Pre-rendered caller opening line: "Hey, I'd like to get my AC serviced..." |
 | `public/audio/demo-mid.mp3` | Pre-rendered mid-conversation: address, slot offer, caller acceptance |
 | `public/audio/demo-outro.mp3` | Pre-rendered AI closing: "You're all set — Thursday at 2 PM..." |
-| `src/app/components/landing/FeaturesGrid.jsx` | (Legacy) Bento grid layout — still exists but no longer imported by homepage. Superseded by AfterTheCallStrip workflow section. |
+| `src/app/components/landing/FeaturesCarousel.jsx` | **Full-stack workflow showcase** — horizontal auto-advance carousel, 8 premium feature cards (24/7 Answering, 70+ Languages, Real-Time Booking, CRM, Automated Lead Recovery, SMS/Notifications, Invoicing, Analytics). Each card has eyebrow + title + tagline + description + embedded proof visual. Progress bar + icon nav below. Owns `id="features"` (ScrollLinePath anchor). Auto-advance 6s, stops on user interaction. |
+| `src/app/components/landing/FeaturesGrid.jsx` | (Legacy) Bento grid layout — still exists but no longer imported by homepage |
 | `src/app/components/landing/SocialProofSection.jsx` | Testimonial / social proof cards |
 | `src/app/components/landing/HowItWorksSection.jsx` | Server Component — HowItWorksSticky via dynamic import |
 | `src/app/components/landing/HowItWorksTabs.jsx` | Roving tabindex WAI-ARIA Tabs, AnimatePresence mode=wait |
 | `src/app/components/landing/HowItWorksSticky.jsx` | Sticky scroll variant of HowItWorks steps |
 | `src/app/components/landing/FinalCTASection.jsx` | Dark CTA section — CSS-only reduced-motion guard, Server Component. Subtitle ships Phase 47 REPOS-02 owner-control copy ("Your rules. Your schedule. Your customers.") |
-| `src/app/components/landing/AfterTheCallStrip.jsx` | Phase 47 — Full-stack workflow section. 4-step pain-first narrative (book the job, capture the lead, notify/confirm, update analytics) with alternating layout and 4 embedded proof visuals (BookingVisual, LeadVisual, SMSVisual, AnalyticsVisual) harvested from the retired FeaturesCarousel. Owns `id="features"` (ScrollLinePath copper-wave anchor). 2nd child of ScrollLinePath. Server Component. |
+| `src/app/components/landing/AfterTheCallStrip.jsx` | Phase 47 — Post-call workflow summary strip (5 icons: CRM lead, SMS/email, calendar sync, recurring slot, analytics). Simple `id="after-call"` section acting as a visual breath between FeaturesCarousel and SocialProof. 3rd child of ScrollLinePath. Server Component. |
 | `src/app/components/landing/IdentitySection.jsx` | Phase 47 — OBJ-06 identity/change-aversion emotional section. Server Component. |
 | `src/app/components/landing/PracticalObjectionsGrid.jsx` | Phase 47 — OBJ-02/03/04/05/08/09 consolidated 6-card grid. Server Component outer; embeds AudioPlayerCard client island for OBJ-02. |
 | `src/app/components/landing/AudioPlayerCard.jsx` | Phase 47 — OBJ-02 inline mini-player. `'use client'`. Coordinates via `window.__vocoPlayingAudio` singleton (pause-other rule). |
 | `src/app/components/landing/OwnerControlPullQuote.jsx` | Phase 47 — REPOS-04 dark-section owner-control pull-quote ("You set the rules. Voco follows them."). Server Component. |
 | `src/app/components/landing/FAQSection.jsx` | Phase 47 — OBJ-01 + D-10 FAQ accordion (7 Q&A) + chat panel grid. `'use client'` (Radix Accordion requirement); embeds FAQChatWidget. |
 | `src/app/components/landing/FAQChatWidget.jsx` | Phase 47 — `'use client'` chat island posting to `/api/public-chat`. History capped at 10 entries client-side. |
-| `src/app/components/landing/ScrollLinePath.jsx` | Decorative copper sine-wave SVG drawn between Features and Testimonials anchors. Children: exactly 3 (HowItWorks, AfterTheCallStrip, SocialProof) after the FeaturesCarousel retirement. AfterTheCallStrip owns `id="features"` so the wave start-dot still anchors correctly. |
+| `src/app/components/landing/ScrollLinePath.jsx` | Decorative copper sine-wave SVG drawn between Features and Testimonials anchors. Children: exactly 4 — HowItWorks, FeaturesCarousel (owns `id="features"`), AfterTheCallStrip, SocialProof (owns `id="testimonials"`). |
 | `src/app/components/landing/AnimatedSection.jsx` | Framer Motion scroll-triggered animation (AnimatedSection, AnimatedStagger, AnimatedItem) |
 | `src/components/landing/AuthAwareCTA.js` | CTA button — routes authenticated users to /dashboard, new users to /onboarding |
 | `src/components/landing/PublicChatButton.jsx` | Floating 64px FAB (Headset icon) + "Ask Voco AI" speech bubble — toggles chat panel open/closed |
