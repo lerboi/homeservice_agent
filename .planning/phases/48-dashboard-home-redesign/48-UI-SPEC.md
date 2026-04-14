@@ -53,23 +53,25 @@ Declared values (8-point scale, multiples of 4 only — matches Tailwind default
 **Mobile stack (D-16):** Vertical gap between stacked cards is `gap-4` (16px) at 375px, scaling to `gap-6` (24px) at `md+`.
 
 **Exceptions:**
-- `gap-3` (12px) is allowed for dense list-row spacing inside the setup checklist accordion (matches current SetupChecklist row rhythm — preserving in-place refactor per D-01).
+- `gap-3` (12px) is allowed for dense list-row spacing inside the setup checklist accordion. **Justification (D-01):** the existing `SetupChecklist` is being refactored in-place to preserve owner muscle memory and progress data; its current row rhythm uses 12px between items, and changing it to 16px would visually re-flow a surface owners already know. The 12px exception is scoped to checklist item rows ONLY — all other Phase 48 surfaces obey the 4/8/16/24/32/48 scale.
 - Mobile touch targets: interactive elements (jump-to-page, dismiss, mark-done buttons) must be ≥ 44px tall (`min-h-[44px]`) even when visual padding would be smaller. Not a scale violation — accessibility floor.
 
 ---
 
 ## Typography
 
-Four sizes, two weights. Inter only.
+Four sizes, **two weights**. Inter only.
 
-| Role | Size | Tailwind | Weight | Line Height | Usage |
-|------|------|----------|--------|-------------|-------|
-| Label | 12px | `text-xs` | 500 (`font-medium`) | 1.4 (`leading-[1.4]`) | Required/Recommended badges, meta rows ("3 missed • not attempted"), cycle-days-left caption, quick-link tile eyebrow |
-| Body | 14px | `text-sm` | 400 (`font-normal`) | 1.5 (`leading-normal`) | Card body copy, checklist item descriptions, chat message text, empty-state body |
-| Heading | 16px | `text-base` | 600 (`font-semibold`) | 1.4 (`leading-[1.4]`) | Card titles ("Today's Appointments", "Calls", "Hot/New Leads", "Usage", "Help & Discoverability"), checklist theme-group labels |
-| Display | 24px | `text-2xl` | 600 (`font-semibold`) | 1.2 (`leading-tight`) | Page greeting ("Good morning, {name}"), usage-meter fraction `{callsUsed} / {callsIncluded}`, hero-tile next-appointment time |
+| Role | Size | Tailwind | Weight | Line Height | Other | Usage |
+|------|------|----------|--------|-------------|-------|-------|
+| Label | 12px | `text-xs` | 400 (`font-normal`) | 1.4 (`leading-[1.4]`) | `tracking-wide uppercase` | Required/Recommended badges, meta rows ("3 missed • not attempted"), cycle-days-left caption, quick-link tile eyebrow |
+| Body | 14px | `text-sm` | 400 (`font-normal`) | 1.5 (`leading-normal`) | — | Card body copy, checklist item descriptions, chat message text, empty-state body |
+| Heading | 16px | `text-base` | 600 (`font-semibold`) | 1.4 (`leading-[1.4]`) | — | Card titles ("Today's Appointments", "Calls", "Hot/New Leads", "Usage", "Help & Discoverability"), checklist theme-group labels |
+| Display | 24px | `text-2xl` | 600 (`font-semibold`) | 1.2 (`leading-tight`) | — | Page greeting ("Good morning, {name}"), usage-meter fraction `{callsUsed} / {callsIncluded}`, hero-tile next-appointment time |
 
-**Weights allowed: 400 (normal) and 600 (semibold) only.** No 500 (medium) except for `text-xs` labels/badges where medium is the Inter sweet spot for legibility at small sizes. No 700 (bold). No italics.
+**Weights allowed: 400 (normal) and 600 (semibold) ONLY.** No 500 (medium). No 700 (bold). No italics.
+
+**Label differentiation without weight:** Labels at 12px earn legibility and visual distinction from `tracking-wide` (letter-spacing) + `uppercase` (case treatment), not from font weight. This keeps the scale at exactly two weights while preserving the small-caps "label" affordance owners expect on badges and meta rows. For mixed-case labels where uppercase reads as shouty (e.g., name fragments inside a meta row), the `tracking-wide` letter-spacing alone is sufficient — uppercase is reserved for badges (`Required`, `Recommended`, `Missed`) and eyebrow captions on quick-link tiles.
 
 **Heading color:** `text-[#0F172A]` (via `heading` token). **Body color:** `text-[#475569]` (via `body` token). **Muted/meta color:** `text-stone-500`.
 
@@ -204,6 +206,13 @@ New and refactored components delivered in Phase 48, with their shadcn/existing-
 | `RecentActivityFeed.jsx` (kept) | existing | Unchanged visually; repositioned per D-07 |
 | `ChatbotSheet.jsx` (refactor) | existing | Internal `useState` replaced with `useChatContext()`; visual unchanged |
 
+**Component Tokens — Typography application:**
+- Card titles: `font-semibold text-base text-[#0F172A] leading-[1.4]` (Heading role).
+- Body copy inside cards: `font-normal text-sm text-[#475569] leading-normal` (Body role).
+- Badges (`Required`, `Recommended`, `Missed`): `font-normal text-xs tracking-wide uppercase leading-[1.4]` (Label role). The shadcn `Badge` component default `font-medium` MUST be overridden to `font-normal` in this phase to honor the two-weight rule.
+- Meta rows ("3 missed • not attempted", "23 min ago"): `font-normal text-xs text-stone-500 leading-[1.4]` — no uppercase (mixed-case meta), no extra tracking when prose-style; `tracking-wide` only on eyebrow-style captions atop quick-link tiles.
+- Greeting + usage fraction + appointment times: `font-semibold text-2xl text-[#0F172A] leading-tight tabular-nums` (Display role).
+
 ---
 
 ## Layout Contract
@@ -294,6 +303,7 @@ Every interactive surface declares all five states:
 - Color contrast: all text meets WCAG AA (4.5:1 for body, 3:1 for large text). Amber-600 on white clears 4.5:1; copper `#C2410C` on white clears 4.5:1. Red-700 on white clears 4.5:1. Stone-500 on white clears 4.5:1 for 14px+.
 - Touch targets ≥ 44×44px on mobile (already declared in Spacing exceptions).
 - Icons inside buttons must pair with visible text OR carry `aria-label`. Icon-only buttons (e.g., dismiss `×`) get `aria-label="Dismiss {item name}"`.
+- **Uppercase labels and screen readers:** Labels rendered via `uppercase` (CSS text-transform) preserve their underlying mixed-case text in the accessibility tree — screen readers announce normally. Do NOT pre-uppercase the source text. For badges where the literal label IS uppercase semantics (e.g., `Required`), use sentence-case source ("Required") + CSS `uppercase` for visual treatment.
 
 ---
 
