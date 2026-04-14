@@ -7,7 +7,7 @@ description: "Complete architectural reference for the onboarding wizard — 5-s
 
 This document is the single source of truth for the onboarding wizard system. Read this before making any changes to onboarding pages, wizard session management, or provisioning routes.
 
-**Last updated**: 2026-03-29 (Post Retell→LiveKit migration — Twilio purchase + SIP trunk association replaces Retell import, LiveKit SIP test calls)
+**Last updated**: 2026-04-15 (Clarified that AI voice selection (Phase 44) lives in Dashboard Settings, NOT the onboarding wizard — new tenants receive the curated Gemini default per `tone_preset` until they override it post-onboarding)
 
 ---
 
@@ -22,6 +22,8 @@ This document is the single source of truth for the onboarding wizard system. Re
 | **Step 5: Checkout** | `/onboarding/checkout` | Embedded Stripe Checkout (3 phases: checkout form → verifying webhook → success celebration). Auto-redirects to `/dashboard` after 5s |
 
 Auth (`/auth/signin`) is a prerequisite before the wizard but is not counted as a wizard step. Plan selection happens on the external `/pricing` page BEFORE entering the wizard — the services step captures `selected_plan` + `selected_interval` from URL params.
+
+**What is NOT in the wizard**: AI voice selection (Phase 44) lives in Dashboard Settings (`/dashboard/settings` → AI Voice), not here. New tenants use the curated Gemini default derived from their `tone_preset` (see the `VOICE_MAP` in the voice-call-architecture skill) until they explicitly override it post-onboarding. The onboarding test call (Step 4) always plays the default voice for the tenant's current `tone_preset`.
 
 ```
 User selects plan on /pricing page (external)

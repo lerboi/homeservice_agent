@@ -7,7 +7,7 @@ description: "Complete architectural reference for the scheduling and calendar s
 
 This document is the single source of truth for the entire scheduling and calendar system. Read this before making any changes to slot calculation, booking, calendar sync, OAuth flows, working hours, zones, or appointment management.
 
-**Last updated**: 2026-03-25 (Phase 8 — Outlook Calendar Sync; dual-provider support)
+**Last updated**: 2026-04-15 (Added full cron inventory (6 endpoints, not just renew-calendar-channels); documented that recurring appointments and maintenance contracts are NOT implemented for appointments — recurring exists only for invoices under the payment-architecture skill; clarified calendar_blocks POST/PATCH/DELETE sync nuances incl. all-day date format and group cascade. Previous: 2026-03-25 — Phase 8 Outlook Calendar Sync, dual-provider support)
 
 ---
 
@@ -351,7 +351,20 @@ For each notification:
 
 ## 6. Cron Jobs
 
-### `renew-calendar-channels`
+The app declares **6 Vercel Cron endpoints** in `vercel.json`. Only `renew-calendar-channels` is strictly "scheduling/calendar" — the others touch adjacent systems (recovery SMS, trial/invoice reminders, orphan cleanup, recurring invoice generation) and are listed here for completeness so readers know the full cron surface:
+
+| # | Route | Schedule | Purpose |
+|---|-------|----------|---------|
+| 1 | `POST /api/cron/send-recovery-sms` | `* * * * *` (every minute) | Sends SMS recovery messages to callers whose calls were analyzed but didn't book. Two branches: first-send for `not_attempted` calls, and retries (up to 3 total) with exponential backoff (30s → 120s). |
+| 2 | `GET /api/cron/trial-reminders` | `0 9 * * *` (daily 9:00 UTC) | Sends day-7 and day-12 trial reminder emails to trialing subscription tenants. Idempotency via the `billing_notifications` table (composite uniqueness on tenant + notification type). |
+| 3 | `GET /api/cron/renew-calendar-channels` | `0 2 * * *` (daily 2:00 UTC) | **Primary responsibility of this skill.** Renews expiring Google Calendar watch channels and Outlook subscriptions before their 7-day TTLs expire. See detailed spec below. |
+| 4 | `GET /api/cron/invoice-reminders` | `0 9 * * *` (daily 9:00 UTC) | Sends invoice payment reminders at −3, 0, +3, +7 days relative to due date. Applies late fees to overdue invoices when `invoice_settings.late_fee_enabled = true`. Covered in depth by the payment-architecture skill. |
+| 5 | `GET /api/cron/recurring-invoices` | `0 8 * * *` (daily 8:00 UTC) | Generates draft invoices from active recurring invoice templates where `recurring_next_date <= today`. Advances `recurring_next_date` by the configured frequency without drift. Covered by payment-architecture. |
+| 6 | `GET /api/cron/cleanup-orphaned-calls` | `0 */4 * * *` (every 4 hours) | Finds calls stuck in `status='started'` for more than 2 hours, marks them `failed` with reason `'orphaned'`. Covered by voice-call-architecture. |
+
+All cron endpoints require `Authorization: Bearer {CRON_SECRET}` and return 401 without it (Vercel Cron provides this header automatically from the deployment secret).
+
+### `renew-calendar-channels` (scheduling/calendar specific)
 
 **File**: `src/app/api/cron/renew-calendar-channels/route.js`
 
@@ -367,6 +380,16 @@ For each notification:
 3. Returns `{ ok: true, renewed: N, failed: M, results: [...] }`
 
 **Why run daily**: Both Google watch channels and Outlook subscriptions have 7-day TTLs. Running daily with a 24h lookahead ensures channels are renewed before they expire even if a cron execution is missed.
+
+### Recurring appointments + maintenance contracts — NOT implemented
+
+Phase 43 on the roadmap lists "recurring appointments and maintenance contracts" but **neither is implemented in the appointments subsystem** as of 2026-04-15:
+
+- The `appointments` table has no `recurring_*` / `rrule` / `recurrence_group_id` columns (verified through migrations 001-050).
+- There is no `src/app/api/appointments/recurring` route, no `RecurringSetupDialog` or `RecurringBadge` wired to appointments, and no recurrence-aware logic in the slot calculator or atomic booking RPC.
+- "Maintenance contracts" appears only in marketing copy and the pricing page ("no lock-in contracts"). There is no `contracts` table, no contract API routes, and no contract-flavored CRM components.
+
+**Where recurring DOES exist**: Invoice generation. Migration 032 (`reminders_recurring.sql`) adds `is_recurring_template`, `recurring_frequency`, `recurring_start_date`, `recurring_end_date`, `recurring_next_date`, `recurring_active`, and `generated_from_id` to the `invoices` table. The `recurring-invoices` cron (row 5 above) consumes that. If you're asked about "recurring" for this codebase, confirm whether the user means invoices (implemented, covered by payment-architecture) or appointments (not yet implemented — would need a phase).
 
 ---
 

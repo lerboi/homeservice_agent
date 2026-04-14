@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-04-04 (Public AI chatbot: floating FAB + chat panel + Groq Llama 4 Scout + RAG knowledge base + IP rate limiting; FeaturesGrid → FeaturesCarousel on homepage; Pricing page conversion optimization: 3-column additive feature cards, separate Enterprise section, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs, landing CTAs → /pricing; Phase 29 — hero section interactive demo; Phase 21 — volume-based tiers; Phase 13 — premium dark SaaS redesign)
+**Last updated**: 2026-04-15 (Phase 47 component subsections: BeyondReceptionistSection, IdentitySection, PracticalObjectionsGrid + AudioPlayerCard, OwnerControlPullQuote, FAQSection + FAQChatWidget — added narrative docs for all 7 sections; HeroSection copy updated to REPOS-01 complement framing ("Voco Answers So You Can Keep"); FinalCTA subtitle updated to REPOS-02 owner-control ("Your rules. Your schedule."). Previous entry: 2026-04-04 — Public AI chatbot + FeaturesGrid → FeaturesCarousel + pricing page conversion optimization + Phase 29 hero demo + Phase 21 tiers + Phase 13 premium dark redesign)
 
 ---
 
@@ -243,13 +243,41 @@ Server Component — no `'use client'`. Imports `HowItWorksSticky` via `dynamic(
 
 **`HowItWorksTabs`** (`src/app/components/landing/HowItWorksTabs.jsx`): Roving tabindex per WAI-ARIA Tabs pattern. `AnimatePresence mode=wait` with `key=active` for sequential step transitions (current tab exits before next enters).
 
+### BeyondReceptionistSection (`src/app/components/landing/BeyondReceptionistSection.jsx`)
+
+Phase 47 (post-47 replacement for the original AfterTheCallStrip) — Server Component sitting as the **2nd child** of `ScrollLinePath` (between HowItWorksSection and FeaturesCarousel). Headline "Answering the phone is the easy part." Renders a 2-card comparison grid (muted "Other AI receptionists / Answer the call. That's it." vs. orange-accented "Voco / 6-row workflow stack: answers, books, captures, confirms, invoices, reports") plus a row of 3 pain-kill pairs (Lost jobs → Every call booked, Paperwork → Invoices sent, Chasing leads → Auto-recovery). `id="beyond-receptionist"`, `bg-white`. No `'use client'` — pure presentation, lazy-imported from `page.js` via `next/dynamic` with a bg-matched skeleton.
+
+### IdentitySection (`src/app/components/landing/IdentitySection.jsx`)
+
+Phase 47 OBJ-06 — Server Component placed **after** `</ScrollLinePath>` (between SocialProofSection and PracticalObjectionsGrid in the page flow). Identity/change-aversion emotional section. Single centered column (`max-w-[720px]`) with three essay-style paragraphs in gray `#475569` body text: "Voco doesn't show up on your truck..." / "It answers the way you told it to..." / "Every job you earned is still yours." Typography-only — no images, no interactive elements. Wrapped in `AnimatedSection` for scroll-triggered fade-up.
+
+### PracticalObjectionsGrid (`src/app/components/landing/PracticalObjectionsGrid.jsx`)
+
+Phase 47 OBJ-02/03/04/05/08/09 — Server Component **outer shell** that renders 6 counter-objection cards in a 2-column grid (`md:grid-cols-2 gap-6`) on a `#FAFAF9` stone background. Each card has its own lucide icon, title, 2-3 sentence body, and trade-specific artifact (stat chip, numbered steps, checklist bullets, trade-icon grid, or embedded audio). The OBJ-02 card embeds `AudioPlayerCard` as a client island for sonic proof — everything else is server-rendered. Wrapped in `AnimatedStagger` + `AnimatedItem` so cards reveal sequentially on scroll.
+
+### AudioPlayerCard (`src/app/components/landing/AudioPlayerCard.jsx`)
+
+Phase 47 supporting component — `'use client'` island embedded inside PracticalObjectionsGrid's OBJ-02 card. Plays `/audio/demo-intro.mp3` via a custom ref-based `HTMLAudioElement` controller (no external player library). Orange `#F97316` play/pause toggle, 24-bar waveform visualization (bars filled as playback progresses), `m:ss` time display. Coordinates across multiple instances via a global `window.__vocoPlayingAudio` singleton so starting one audio element pauses any other that may be playing. Preloads metadata only (`preload="metadata"`) to avoid bandwidth cost when the card scrolls into view without a click.
+
+### OwnerControlPullQuote (`src/app/components/landing/OwnerControlPullQuote.jsx`)
+
+Phase 47 REPOS-04 — Server Component placed between PracticalObjectionsGrid and FAQSection. Dark atmospheric pull-quote on `bg-[#1C1412]` with a radial orange-gradient overlay (`rgba(249,115,22,0.12)`). Centered `max-w-[640px]` quote text (~24-30px, white, semi-bold) and italic attribution "— The Voco product principle." Pure presentational container — no interactivity. Mirrors FinalCTA's dark mood but muted and lower-intensity.
+
+### FAQSection (`src/app/components/landing/FAQSection.jsx`)
+
+Phase 47 OBJ-01 + D-10 — `'use client'` (required by shadcn Radix Accordion, which registers event handlers internally and cannot render as a Server Component). Two-column grid (`lg:grid-cols-[3fr_2fr]`) on `bg-white`. Left: Radix `Accordion type="single" collapsible` mapping over a 7-entry `FAQS` data array — each `{value, q, a}` where `a` is either a plain string or a JSX fragment supporting inline links (Q1 links to `#hero`, Q3 links to `/pricing`). Right: embedded `FAQChatWidget` (see below). Mobile stacks chat below the accordion. Imported from `@/components/ui/accordion` (shadcn install from plan 47-01).
+
+### FAQChatWidget (`src/app/components/landing/FAQChatWidget.jsx`)
+
+Phase 47 supporting component — `'use client'` chat island embedded in FAQSection's right column. POSTs to the existing `/api/public-chat` route with body `{ message, currentRoute: '/', history }` where `history` is capped at 10 messages via `messages.slice(-10)` (Pitfall 3). Initial state shows 3 locked suggestion chips ("Does it really sound natural?", "How long does setup take?", "What does it cost?"). Send button is 36×36 (`w-9 h-9 rounded-xl bg-[#F97316]`) with `aria-label="Send message"`. All API failures (rate limit, 503, network error) surface as the same friendly one-liner — `ERROR_COPY = "Couldn't connect right now — try refreshing the page."` — single source of truth. Input and submit button are both disabled while `isLoading` is true (Pitfall 7). Auto-scrolls to the latest message via a ref-guarded `useEffect` on `threadRef.current.scrollHeight`. User messages right-aligned orange; bot messages left-aligned stone.
+
 ### FinalCTASection (`src/app/components/landing/FinalCTASection.jsx`)
 
 Server Component — stays server-side, no `useReducedMotion` hook. CSS-only prefers-reduced-motion guard:
 ```css
 @media (prefers-reduced-motion: reduce) { .animate-* { animation: none; } }
 ```
-Background: `#1C1412` (very dark warm brown). CTA button: inverted style (bg-white/dark text) on copper background for high contrast per design spec.
+Background: `#1C1412` (very dark warm brown). Headline "Your next emergency call is tonight." Subtitle (REPOS-02, Phase 47-05): "Your rules. Your schedule. Your customers. Voco just makes sure you don't miss the next one. Live in 5 minutes — no credit card." CTA button: inverted style (bg-white/dark text) on copper background for high contrast per design spec. Wraps `AuthAwareCTA variant="cta"`.
 
 ---
 

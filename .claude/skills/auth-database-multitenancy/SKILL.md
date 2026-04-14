@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 49 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 50 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-04-13 (Migration 049 — VIP/Priority caller routing: `tenants.vip_numbers` JSONB + `leads.is_vip` boolean)
+**Last updated**: 2026-04-15 (Migration 050 — Setup checklist overrides: `tenants.checklist_overrides` JSONB column for per-item dismissal and custom-completion persistence)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 49 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 50 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -117,6 +117,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/047_calendar_blocks_external_event.sql` | Phase 42 — calendar_blocks gains external_event_id TEXT for Google/Outlook sync |
 | `supabase/migrations/048_calendar_blocks_group_id.sql` | Phase 42 — calendar_blocks gains group_id UUID to link multi-day blocks for bulk delete; partial index on group_id WHERE NOT NULL |
 | `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
+| `supabase/migrations/050_checklist_overrides.sql` | Phase 48 — Setup checklist per-item override persistence: tenants gains `checklist_overrides` JSONB NOT NULL DEFAULT '{}'. Consumed by `src/app/api/setup-checklist/route.js` to persist user dismissals and custom mark-done actions without adding row-per-item state. |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -970,6 +971,28 @@ Two-source priority lookup consumed by `webhook/twilio_routes.py::_is_vip_caller
 
 If either source matches, the webhook bypasses the schedule/cap evaluator and goes straight to owner-pickup parallel-ring. User-facing branding is "Priority" (the "VIP" name is DB-only, preserved for column continuity).
 
+### 050_checklist_overrides.sql — Setup Checklist Per-Item Overrides (Phase 48)
+
+```sql
+SET search_path TO public;
+
+ALTER TABLE public.tenants
+  ADD COLUMN checklist_overrides JSONB NOT NULL DEFAULT '{}'::jsonb;
+```
+
+Stores per-item user actions (dismiss, mark-done) on the dashboard setup checklist as a single JSONB map keyed by item id — avoids a row-per-item `checklist_item_state` table. Consumed by `src/app/api/setup-checklist/route.js` PATCH handler: incoming `{ item_id, action }` pairs are merged into the existing map, then written back whole. No new RLS policies needed — tenant-level isolation already enforced by the existing `tenants` direct-owner policy.
+
+Shape of the JSONB value (example):
+
+```json
+{
+  "setup_profile": { "status": "done", "done_at": "2026-04-14T12:34:56Z", "method": "manual" },
+  "configure_call_routing": { "status": "dismissed", "dismissed_at": "2026-04-14T12:35:12Z" }
+}
+```
+
+Auto-detected completions (test-call succeeded, calendar connected, etc.) are NOT stored here — those derive from the live tenant/appointments/calendar state on every GET. This column only holds actions the user took explicitly.
+
 ---
 
 ## 6. Complete Table Reference
@@ -1020,6 +1043,7 @@ If either source matches, the webhook bypasses the schedule/cap evaluator and go
 - 039: `call_forwarding_schedule` (JSONB), `pickup_numbers` (JSONB), `dial_timeout_seconds` (INTEGER)
 - 044: `ai_voice` (TEXT, nullable) — curated Gemini voice override; NULL = VOICE_MAP[tone_preset] fallback; CHECK (IN 'Aoede','Erinome','Sulafat','Zephyr','Achird','Charon')
 - 049: `vip_numbers` (JSONB NOT NULL DEFAULT '[]') — standalone Priority-caller phone numbers (unlimited, no CHECK). Webhook reads this for direct-routing check before evaluating schedule/caps.
+- 050: `checklist_overrides` (JSONB NOT NULL DEFAULT '{}') — per-item user actions (dismiss, mark-done) on the dashboard setup checklist. Keyed by checklist item id; values carry `status` + timestamp. Consumed by `/api/setup-checklist` GET/PATCH. Auto-detected completions are NOT stored here (they're derived live).
 
 **Appointments columns added across migrations** (all on `appointments` table):
 - 007: `external_event_id` (renamed from google_event_id), `external_event_provider`

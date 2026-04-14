@@ -629,6 +629,27 @@ Plans:
 - [x] 48-05-page-wiring-chat-panel-help-PLAN.md — ChatPanel + HelpDiscoverabilityCard + page.js rewrite (deletes setupMode/invoices/inline missed-calls) + 375px mobile verify checkpoint (HOME-04, HOME-05, HOME-06, HOME-07)
 **UI hint**: yes
 
+### Phase 48.1: Landing Page Revenue-Recovery Repositioning (INSERTED)
+
+**Goal:** Pivot the public landing page from a feature-platform framing to a revenue-recovery framing — a first-time visitor understands within 8 seconds that Voco captures revenue they're losing to missed calls, hears a real call within one scroll, quantifies their own loss in under 30 seconds via a Cost-of-Silence calculator, trusts that Voco plays nice with existing CRMs via a visible Integrations strip (Google/Outlook live + Jobber/Housecall Pro/ServiceTitan/Zapier coming soon), and clicks the primary CTA with the mental model of "hiring an AI dispatcher" rather than "adopting a SaaS platform." Driven by independent market feedback from 4 AI research reports converging on the same diagnosis: current page is overbuilt and feature-led, needs to be shorter, trust-led, and revenue-led.
+**Depends on:** Phase 48 (dashboard home redesign ships first — this phase is pure public-facing landing work, no dashboard or backend changes)
+**Requirements:** TBD (to be derived during plan phase)
+**Success Criteria** (what must be TRUE):
+  1. Landing page total section count drops from 10+ to 7 or fewer — dense trust/repetition sections consolidated, FeaturesCarousel trimmed from 8 features to 4 core pillars, repeated feature-card sections removed
+  2. Hero subtitle names a dollar-value pain ("Stop losing $1,000+ every time you miss a call") and primary CTA is a low-friction "Hear Voco in Action" audio-demo anchor rather than "Start My 5-Minute Setup"
+  3. A working Cost-of-Silence calculator (2 sliders: avg job value + missed calls per week) renders a live monthly-loss dollar output before any pricing section appears
+  4. Audio demo section is visible within one scroll from hero and presents real call samples (not only the existing input-driven HeroDemoBlock)
+  5. Integrations strip appears above the fold or within first scroll, showing Google Calendar + Outlook Calendar as live integrations and Jobber + Housecall Pro + ServiceTitan + Zapier as "Coming Soon" — addresses the "I'll have to replace my CRM" objection pre-emptively
+  6. Four trust-theme sections (IdentitySection, OwnerControlPullQuote, full PracticalObjectionsGrid, BeyondReceptionistSection) are consolidated into one "You Stay in Control" section; three strongest objection cards kept, others moved to an expandable disclosure
+  7. All public-facing product mentions (page title, og:title, nav, footer, hero copy) use "Voco AI" consistently to disambiguate from Voco TV / Voco Studio / Voco Voice search results — codebase internal naming unchanged
+  8. Landing page Lighthouse LCP remains under 2.5s; CLS under 0.1 (Phase 13 performance contract preserved)
+  9. Zero dashboard changes, zero backend changes, zero new API routes — scope strictly limited to public landing surface + one client-side calculator widget
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 48.1 to break down — recommend /gsd-discuss-phase 48.1 first to lock copy decisions, then /gsd-ui-phase 48.1 for the UI-SPEC)
+**UI hint**: yes
+
 ### Phase 49: Dark Mode Foundation and Token Migration
 
 **Goal**: The dashboard renders correctly in both light and dark mode -- ThemeProvider is wired with no hydration flash, a theme toggle in the sidebar persists the user's preference, all dashboard component files replace hardcoded hex colors with dark-mode-aware semantic tokens, design-tokens.js exports semantic values, typography is consolidated to token color values, and every layout shell, flyout, modal, badge, and system banner responds correctly to the active theme

@@ -1,34 +1,43 @@
 ---
 name: scroll-line-path
 description: >
-  Architectural reference for the decorative SVG scroll-draw line on the landing page — a copper-colored sine wave that progressively draws itself as the user scrolls from How It Works through to the Get Started CTA. Use this skill whenever modifying the scroll line path, adjusting wave amplitude or speed, changing section order on the landing page, debugging the scroll animation, or tuning the line's opacity/color/width. Also use when the user mentions "the line", "scroll path", "SVG animation on the homepage", or asks why the line doesn't align with a section.
+  Architectural reference for the decorative SVG scroll-draw line on the landing page — a copper-colored sine wave that progressively draws itself as the user scrolls through the middle sections. Use this skill whenever modifying the scroll line path, adjusting wave amplitude or speed, changing section order on the landing page, debugging the scroll animation, or tuning the line's opacity/color/width. Also use when the user mentions "the line", "scroll path", "SVG animation on the homepage", or asks why the line doesn't align with a section.
 ---
 
 # Scroll Line Path System
 
-A decorative copper sine wave that draws itself as the user scrolls through the home page, connecting How It Works → Features → Social Proof, then pointing at the Get Started CTA below.
+A decorative copper sine wave that draws itself as the user scrolls through the middle of the home page. The wave is **single-segment**: it starts at the Features boundary dot (below How It Works and BeyondReceptionistSection) and continues through FeaturesCarousel + SocialProofSection to the bottom of the wrapper. There is no wave in the HowItWorks region — that's above the dot.
 
 ## File Locations
 
 | File | Role |
 |------|------|
 | `src/app/components/landing/ScrollLinePath.jsx` | The component — SVG, measurement, animation, wave builder |
-| `src/app/(public)/page.js` | Integration — wraps 3 sections as children |
+| `src/app/(public)/page.js` | Integration — wraps 4 sections as children |
 
 ## Architecture
 
 ### Page Integration
 
-`ScrollLinePath` wraps the 3 middle sections. FinalCTASection sits **outside** the wrapper so the line ends pointing at it:
+`ScrollLinePath` wraps exactly **4 children** in this JSX order (source of truth: `src/app/(public)/page.js`):
 
 ```jsx
 <ScrollLinePath>
   <HowItWorksSection />
-  <FeaturesGrid />
+  <BeyondReceptionistSection />
+  <FeaturesCarousel />
   <SocialProofSection />
 </ScrollLinePath>
+<IdentitySection />
+<PracticalObjectionsGrid />
+<OwnerControlPullQuote />
+<FAQSection />
 <FinalCTASection />
 ```
+
+Historical note: in the original Phase 47 design the 3rd child was `AfterTheCallStrip`; it was replaced with `BeyondReceptionistSection` in commit `dcf2ab3`. `FeaturesCarousel` was rebuilt as the premium 8-feature workflow showcase in commit `71121b9`. The wave geometry does not change when child identity changes — only the children count and their measured Y positions matter.
+
+**Sections after `</ScrollLinePath>`** (IdentitySection, PracticalObjectionsGrid, OwnerControlPullQuote, FAQSection, FinalCTASection) are NOT threaded by the line. The wave ends at the bottom of the wrapper, not at FinalCTA.
 
 ### CSS Stacking (critical — do not change without understanding this)
 
@@ -48,43 +57,55 @@ The line renders **between** section backgrounds and section content:
 
 The component uses **real pixel coordinates** (not a stretched viewBox). On mount and resize, it:
 
-1. Measures the container's `offsetWidth` and `offsetHeight`
-2. Finds `#features` and `#testimonials` elements to get their exact Y positions
+1. Measures the container's `offsetWidth` (`w`) and `offsetHeight` (`h`)
+2. Finds `#features` and `#testimonials` elements to get their exact Y positions (`featuresY`, `testimonialsY`)
 3. Builds the SVG path using `buildSineWave()` with real pixel values
 4. Sets the SVG `width`, `height`, and `viewBox` to match the container exactly
 
 This avoids all squishing/stretching issues from `preserveAspectRatio`.
 
-### The Wave Path
+### The Wave Path (single-segment, starts at Features dot)
 
-`buildSineWave(cx, amp, totalH, crossings)` generates a smooth sine wave:
+```
+startY = featuresY + 60          // dot position
+endY   = h                       // bottom of wrapper
+amp    = Math.min(512 + 120, (w - 48) / 2)   // amplitude
+cx     = w / 2                   // horizontal centerline
+```
 
-- **cx**: center X (viewport width / 2)
-- **amp**: amplitude — 632px (512px content half-width + 120px overshoot)
-- **totalH**: container height in pixels
-- **crossings**: array of Y positions where the wave must pass through center `[featuresY+60, testimonialsY]`
+`buildSineWave(cx, amp, startY, endY, crossings)` generates a cubic-Bézier-approximated sine wave from `startY` to `endY`. Segments divide dynamically:
 
-The wave crosses center (x=cx) at:
-- y=0 (start, below hero)
-- featuresY + 60 (dot position, How It Works → Features boundary)
-- testimonialsY (Features → Social Proof boundary)
-- totalH (end, pointing at CTA)
+```
+count = Math.max(Math.round(span / 400), 1)
+```
 
-Between crossings, the function calculates ~1 half-wave per 400px. Each half-wave is a cubic bezier from center → peak → center, alternating left/right.
+Each segment is half a wave: alternates left/right peaks at `cx ± amp`, with control points at 33% and 67% of the segment height for smooth curvature. `dir` flips each segment so peaks alternate.
+
+**Crossings** (intermediate Y positions where the wave must pass through the centerline) are filtered to only those between `startY` and `endY`. In practice this is `testimonialsY` if it falls mid-wave.
 
 ### The Dot
 
-One copper dot at the How It Works → Features boundary (60px below the `#features` element top). Two circles: solid fill (r=5, 60% opacity) and glow ring (r=13, 15% opacity). Fades in as the scroll-draw line reaches it.
+One copper dot at `featuresY + 60` (the How It Works → BeyondReceptionistSection → Features boundary region). Two concentric circles:
+
+- Filled: `r="5"`, `fill="#F97316"`, `fillOpacity="0.6"`
+- Ring: `r="13"`, `stroke="#F97316"`, `strokeWidth="1.5"`, `strokeOpacity="0.15"`
+
+Fades in via `featuresDotOpacity` = `useTransform(scrollYProgress, [Math.max(featuresDotFrac - 0.06, 0), featuresDotFrac], [0, 1])` — appears 6% before reaching the dot's scroll position, fully opaque at the dot.
 
 ### Three Rendered Layers
 
 | Layer | strokeWidth | Opacity | Purpose |
 |-------|-------------|---------|---------|
-| Ghost trail | 1.5 | 4% | Static full path — faint route preview |
-| Glow | 14 | 3.5% | Animated draw — soft bloom behind the line |
-| Main line | 2 | Gradient 12–40% | Animated draw — the visible copper line |
+| Ghost trail | 1.5 | 0.04 | Static full path — faint route preview |
+| Glow | 14 | 0.035 | Animated draw — soft bloom behind the line |
+| Main line | 2 | Gradient 0.12–0.4 | Animated draw — the visible copper line |
 
-The main line uses `<linearGradient id="slpGrad">` varying opacity along the Y axis.
+The main line uses `<linearGradient id="slpGrad">` (vertical `y1="0" y2="1"`) with 4 stops:
+
+- 0%: `#F97316` @ 0.12
+- 30%: `#F97316` @ 0.30
+- 70%: `#F97316` @ 0.25
+- 100%: `#F97316` @ 0.40
 
 ### Scroll Animation
 
@@ -92,10 +113,11 @@ The main line uses `<linearGradient id="slpGrad">` varying opacity along the Y a
 useScroll({ target: containerRef, offset: ['start 0.85', 'end 0.5'] })
 ```
 
-- **Start**: drawing begins when container top reaches 85% of viewport (user scrolls into How It Works)
-- **End**: drawing completes when container bottom reaches 50% of viewport (halfway through scrolling past)
-- `pathLength` maps `scrollYProgress [0, 1]` → `[0, 1]`
-- Line opacity fades in at 5-10% progress, fades slightly at 85-95%
+- **Start**: drawing begins when container top reaches 85% of viewport
+- **End**: drawing completes when container bottom reaches 50% of viewport
+- `featuresDotFrac = (featuresY + 60) / h` — the normalized progress at which the dot sits (default 0.4 if measurement fails)
+- `pathLength = useTransform(scrollYProgress, [featuresDotFrac, 1], [0, 1])` — draw only begins once scroll reaches the dot
+- `pathOpacity = useTransform(scrollYProgress, [featuresDotFrac, min(featuresDotFrac + 0.03, 1), 0.85, 0.95], [0, 1, 1, 0.5])` — fades in across a 3% scroll window after the dot, holds, then softens in the last 10%
 
 ## Updating
 
@@ -107,35 +129,34 @@ Edit the `offset` array in `useScroll`:
 
 ### Wave amplitude (how wide it swings)
 
-Edit line 88: `const waveAmp = Math.min(512 + 120, (w - 48) / 2)`
+Edit `const waveAmp = Math.min(512 + 120, (w - 48) / 2)`:
 - `512` = half of max-w-5xl content width
 - `120` = overshoot beyond content edges
 - Increase 120 for wider swings, decrease for tighter
 
 ### Wave frequency (how many curves)
 
-Edit `buildSineWave` line 175: `const count = Math.max(Math.round(span / 400), 1)`
+Edit `buildSineWave`: `const count = Math.max(Math.round(span / 400), 1)`
 - `400` = pixels per half-wave. Lower = more waves. Higher = fewer, wider waves.
 
 ### Dot position
 
-Edit line 84: `dotCy = featuresY + 60`
+Edit `dotCy = featuresY + 60`
 - Increase to move dot further below the Features section top
 
 ### Line color
 
 All three layers use `#F97316` (copper). The gradient `#slpGrad` controls the main line's varying opacity.
 
-### Section added or removed
+### Section added or removed (inside ScrollLinePath)
 
 1. Add/remove the section from the `<ScrollLinePath>` wrapper in `page.js`
-2. In `ScrollLinePath.jsx`, add a `document.getElementById('new-section-id')` measurement
-3. Add the new Y position to the `crossings` array passed to `buildSineWave`
-4. The wave builder automatically distributes half-waves between crossings
+2. Child identity doesn't change wave geometry — only **measured Y positions** (`featuresY`, `testimonialsY`) matter. If the new section shifts either anchor up or down, the wave repositions automatically on measure.
+3. If you add a new id-bearing anchor that the wave must cross, add a `document.getElementById('new-id')` measurement in `ScrollLinePath.jsx` and include its Y in the `crossings` array passed to `buildSineWave`. The crossings must be in ascending Y order.
 
-### Sections reordered
+### Sections reordered (inside ScrollLinePath)
 
-Reorder both the children in `page.js` and the crossings array. The crossings must be in ascending Y order.
+Reorder the children in `page.js`. As long as `#features` and `#testimonials` anchor ids remain on the correct sections, the wave repositions via the measurement pass. If a reordering changes which section carries `#features`, rebind the id accordingly — the dot anchors on `#features`.
 
 ## Performance
 
@@ -147,7 +168,7 @@ Reorder both the children in `page.js` and the crossings array. The crossings mu
 
 ## Debugging
 
-**Line doesn't appear**: Check (1) `ScrollLinePath` wraps sections in `page.js`, (2) `md:block` — desktop only, (3) sections don't have `relative` on their `<section>` tag, (4) sections have `relative z-[1]` on inner content div.
+**Line doesn't appear**: Check (1) `ScrollLinePath` wraps sections in `page.js`, (2) `md:block` — desktop only, (3) sections don't have `relative` on their `<section>` tag, (4) sections have `relative z-[1]` on inner content div, (5) `#features` element exists (dot+wave start depend on it).
 
 **Line overlaps cards**: A section's `<section>` element has `relative` — remove it. Only the inner `<div class="max-w-5xl">` should be positioned.
 
@@ -155,4 +176,6 @@ Reorder both the children in `page.js` and the crossings array. The crossings mu
 
 **Dot in wrong position**: Check that `#features` element exists and is the correct `<section>` tag. The dot is placed at `featuresY + 60` pixels.
 
-**Wave looks wrong after layout change**: The measurements happen on mount + 100ms + 1000ms delays. If sections load later (heavy dynamic imports), add another `setTimeout(measure, ...)` or trigger a re-measure.
+**Wave looks wrong after layout change**: The measurements happen on mount + 100ms + 1000ms delays. If sections load later (heavy dynamic imports — several ScrollLinePath children use `next/dynamic`), add another `setTimeout(measure, ...)` or trigger a re-measure.
+
+**Wave appears above HowItWorks**: Should not happen — the wave starts at `featuresY + 60`. If it does, `#features` is probably missing and `featuresY` is defaulting to 0. Verify FeaturesCarousel (or whatever currently carries `id="features"`) renders.

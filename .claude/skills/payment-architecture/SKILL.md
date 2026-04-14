@@ -1,5 +1,3 @@
-Base directory for this skill: C:\Users\Leroy\Desktop\Voco\homeservice_agent\.claude\skills\payment-architecture
-
 ---
 name: payment-architecture
 description: Complete architectural reference for the payment, billing, and subscription system — Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table pattern, idempotency), Billing Meters overage system, subscription lifecycle (trialing/active/past_due/canceled/paused), usage tracking (increment_calls_used RPC), subscription enforcement gate, billing notifications (trial_will_end, payment_failed), billing dashboard (plan card, UsageRingGauge, invoices, Stripe Customer Portal), pricing page (3 plans with monthly/annual/overage), and all 4 billing DB tables with RLS policies. Use this skill whenever making changes to Stripe integration, checkout sessions, subscription handling, usage tracking, overage billing, billing notifications, billing dashboard, pricing page, or any payment-related API route. Also use when the user asks about how billing works, wants to modify subscription logic, or needs to debug payment/webhook issues.
@@ -9,7 +7,7 @@ description: Complete architectural reference for the payment, billing, and subs
 
 This document is the single source of truth for the entire payment, billing, and subscription system. Read this before making any changes to Stripe integration, checkout flows, subscription handling, usage tracking, overage billing, or the billing dashboard.
 
-**Last updated**: 2026-04-05
+**Last updated**: 2026-04-15 (path header corrected; country-aware checkout clarified — country is captured on the onboarding contact step and read from the `tenants` row by the webhook handler post-checkout, not selected during `checkout-session` creation)
 
 ---
 

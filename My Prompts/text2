@@ -1,0 +1,9 @@
+Voco is a Next.js SaaS platform that gives home-service contractors — plumbers, HVAC techs, electricians, and handymen — an AI phone receptionist that answers their calls 24/7 so they never lose a job to voicemail while they're on the roof, in a crawlspace,   or asleep; it solves the classic "missed-call = missed-revenue" problem by having a Twilio SIP + LiveKit + Gemini 3.1 Flash Live   voice agent pick up every inbound call, triage urgency (emergency vs. routine vs. high-ticket) against owner-configured rules, book the job into a real calendar slot while the caller is still on the line, push that appointment to the contractor's Google or Outlook Calendar with travel-time buffers between zones, send SMS + email alerts the moment a lead or booking lands, and surface everything in a CRM dashboard with a setup checklist, lead pipeline, status pills, analytics, a configurable triage + escalation chain, per-day call-forwarding schedules ("AI after 6pm, my cell before"), priority-caller direct routing for VIPs, an in-dashboard AI chatbot assistant, and Stripe-backed billing with 14-day trial, monthly/annual tiers ($99 Starter, $249 Growth, $599 Scale), and usage-based overage via Billing Meters — all aimed at small-to-mid home-service business owners who run lean field operations, can't afford a human receptionist, lose meaningful revenue to unanswered calls, and want to stay in charge of their schedule and customers without adopting yet another piece of enterprise CRM software.
+
+
+The smartest path is: answer every call, qualify fast, book correctly, notify instantly, and give the owner control. That is the product home-service owners are most likely to pay for, keep, and recommend.
+
+
+
+Facebook contractor groups
+local trade communities

@@ -27,7 +27,7 @@ Each skill below is a complete architectural reference for one part of the codeb
 
 | Skill | Covers | Read this when you need to... |
 |-------|--------|-------------------------------|
-| `auth-database-multitenancy` | Supabase Auth, 3 client types, middleware guards, RLS policies, **all 23 DB migrations with every table definition**, getTenantId pattern, tenant isolation | ...understand the DB schema, add a migration, debug RLS, modify auth middleware, add a new table, or find any Supabase table definition |
+| `auth-database-multitenancy` | Supabase Auth, 3 client types, middleware guards, RLS policies, **all 50 DB migrations with every table definition**, getTenantId pattern, tenant isolation | ...understand the DB schema, add a migration, debug RLS, modify auth middleware, add a new table, or find any Supabase table definition |
 | `onboarding-flow` | 5-step signup wizard, all `/api/onboarding/*` routes, Twilio phone provisioning + SIP trunk association, trade templates, LiveKit SIP test call, Stripe Checkout Session, wizard session persistence | ...modify the signup/onboarding flow, debug OTP or provisioning, change wizard steps, or touch billing checkout |
 | `dashboard-crm-system` | All dashboard pages, lead lifecycle + merging, Kanban board, analytics charts, escalation chain, settings panels, setup checklist, design tokens, guided tour, Supabase Realtime | ...change anything on the dashboard, modify lead management, update analytics, edit settings panels, or debug Realtime subscriptions |
 | `voice-call-architecture` | Twilio SIP + LiveKit + Gemini 3.1 Flash Live Python agent (Railway), SIP trunking, in-process tools, post-call pipeline, triage, scheduling, booking, notifications, lead creation | ...modify call handling, change AI agent behavior, update triage logic, debug the LiveKit agent, or touch the Twilio/LiveKit/Gemini integration |
@@ -38,7 +38,7 @@ Each skill below is a complete architectural reference for one part of the codeb
 
 ### Where to Find Database Tables
 
-All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The 48 migrations are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `leads`, `lead_calls`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `calendar_blocks`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
+All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The 50 migrations are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `leads`, `lead_calls`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `calendar_blocks`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
 
 ## Rules
 

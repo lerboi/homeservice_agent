@@ -89,6 +89,7 @@ Recent decisions affecting v5.0 work:
 ### Roadmap Evolution
 
 - Phase 52 added (2026-04-14): Rename Leads tab to Jobs and restructure status pills for home-service mental model — pure frontend reframe of `/dashboard/leads` to match how home-service owners think (jobs vs leads); scoped to page.js, LeadStatusPills, LeadCard, LeadFilterBar, nav labels; no DB/API/agent changes
+- Phase 48.1 inserted after Phase 48 (2026-04-15, URGENT): Landing Page Revenue-Recovery Repositioning — pivot public landing page from feature-platform framing to revenue-recovery framing (dollar-pain hero subtitle, Cost-of-Silence ROI calculator, elevated audio demo, consolidated trust sections, Integrations strip with coming-soon Jobber/Housecall Pro/ServiceTitan, FeaturesCarousel trimmed to 4 pillars, "Voco AI" rebrand for SEO). Driven by convergent feedback from 4 independent AI research reports (see `My Prompts/AI Advice/Claudes Plan`) diagnosing the current page as overbuilt and feature-led when the market wants trust-led and revenue-led. Pure frontend scope — no backend, no dashboard. Manually inserted because gsd-tools phase-insert CLI hit a milestone-scoping mismatch (STATE.md `milestone: v1.1` vs Phase 48 living under `## Milestone v5.0 Phases` in ROADMAP.md).
 
 ### Pending Todos
 
