@@ -550,19 +550,19 @@ export default function DailyOpsHub({ appointments, calls, leads, usage }) {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`checklist_overrides` migration scope**
+1. **`checklist_overrides` migration scope** — RESOLVED: JSONB column on `tenants` (`checklist_overrides JSONB DEFAULT '{}'::jsonb`) per existing `notification_preferences` JSONB pattern.
    - What we know: No per-item dismiss/mark_done column exists on `tenants`; `setup_checklist_dismissed` is whole-checklist only
    - What's unclear: Whether to use a JSONB column on `tenants` or a separate `checklist_overrides` table
    - Recommendation: JSONB on `tenants` (`checklist_overrides JSONB DEFAULT '{}'::jsonb`) is simplest; follows existing `notification_preferences` JSONB pattern on `tenants`
 
-2. **`setup_profile` and `setup_billing` new items — are they real checklist IDs or UI-only?**
+2. **`setup_profile` and `setup_billing` new items — are they real checklist IDs or UI-only?** — RESOLVED: Real checklist item IDs with server-side completion signals (`tenants.business_name` for profile, `subscriptions.status` for billing); they can be dismissed/marked like others.
    - What we know: D-02 says four themes (profile, voice, calendar, billing); current items don't include a profile or billing item
    - What's unclear: Whether new items need DB IDs (for dismiss/mark_done storage) or are theme headers only
    - Recommendation: Add as real checklist item IDs (`setup_profile`, `setup_billing`) with completion detection — they can be dismissed/marked like others; headers without items would look empty on new installs
 
-3. **Chat panel height on desktop sidebar**
+3. **Chat panel height on desktop sidebar** — RESOLVED: `sticky top-6` to match the existing `py-6` content wrapper in the dashboard layout.
    - What we know: UI-SPEC says `sticky top-{layout-header-height}`; layout has no explicit sticky top bar (no top bar in current dashboard)
    - What's unclear: What the sticky offset should be — `top-0` or `top-6` (padding offset)
    - Recommendation: `sticky top-6` (matches `py-6` in layout content wrapper); planner adjusts based on visual verification
