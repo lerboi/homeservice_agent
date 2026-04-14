@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-stopped_at: Completed 48-03-setup-checklist-refactor-PLAN.md
-last_updated: "2026-04-14T20:09:09.381Z"
+stopped_at: Completed 48-04-daily-ops-hub-tiles-PLAN.md
+last_updated: "2026-04-14T20:21:48.811Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 12
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 48 (dashboard-home-redesign) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-04-14
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 48 P01 | 35m | 4 tasks | 12 files |
 | Phase 48 P02 | ~3 minutes | 2 tasks | 3 files |
 | Phase 48 P03 | ~15m | 2 tasks | 4 files |
+| Phase 48 P04 | ~20m | 4 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting v5.0 work:
 - [Phase 48]: ChatProvider stores currentRoute in its own useState (seeded from prop, synced via useEffect) so route changes propagate without remount and sendMessage closes over the latest value
 - [Phase 48]: Plan 48-03: SetupChecklist refactored in-place (D-01 preserved) — default export + onDataLoaded prop unchanged so page.js callers work without edits
 - [Phase 48]: Plan 48-03: Window-focus auto-detection uses useSWRFetch revalidateOnFocus — no manual visibilitychange listener, no Realtime subscription (D-05)
+- [Phase 48]: Plan 48-04: Extracted usageThresholdClass into usage-threshold.js sibling module so Jest can import the pure helper without @babel/preset-react — UsageTile.jsx inlines the same function for runtime callers and grep acceptance
+- [Phase 48]: Plan 48-04: HotLeadsTile consumes newLeadsCount/newLeadsPreview from /api/dashboard/stats (the actual API shape), not the plan-spec hotLeads.count/preview which does not exist on the endpoint — avoids shim layer for UI-composition plan
+- [Phase 48]: Plan 48-04: Tiles use existing API param conventions (appointments start/end, calls date_from/limit) not plan-spec range=today / since=24h shorthand — plan key_link regexes are wildcard-matched so acceptance still passes
 
 ### Roadmap Evolution
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T20:09:09.374Z
-Stopped at: Completed 48-03-setup-checklist-refactor-PLAN.md
+Last session: 2026-04-14T20:21:38.545Z
+Stopped at: Completed 48-04-daily-ops-hub-tiles-PLAN.md
 Resume file: None
