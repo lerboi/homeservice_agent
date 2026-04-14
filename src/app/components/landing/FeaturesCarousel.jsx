@@ -565,25 +565,38 @@ export function FeaturesCarousel() {
     const track = trackRef.current;
     if (!track) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
+    let rafId = null;
+    const syncActiveFromScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
         if (isProgrammaticScrollRef.current || isAutoScrollingRef.current) return;
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const cards = Array.from(track.children);
-            const idx = cards.indexOf(entry.target);
-            if (idx !== -1) {
-              setActiveDisplayIndex(idx);
-            }
+        const trackRect = track.getBoundingClientRect();
+        const trackCenter = trackRect.left + trackRect.width / 2;
+        const cards = Array.from(track.children);
+        let closestIdx = -1;
+        let closestDist = Infinity;
+        cards.forEach((card, idx) => {
+          const cardRect = card.getBoundingClientRect();
+          const cardCenter = cardRect.left + cardRect.width / 2;
+          const dist = Math.abs(cardCenter - trackCenter);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestIdx = idx;
           }
         });
-      },
-      { root: track, threshold: 0.5 }
-    );
+        if (closestIdx !== -1) {
+          setActiveDisplayIndex((prev) => (prev === closestIdx ? prev : closestIdx));
+        }
+      });
+    };
 
-    Array.from(track.children).forEach((card) => observer.observe(card));
+    track.addEventListener('scroll', syncActiveFromScroll, { passive: true });
 
-    return () => observer.disconnect();
+    return () => {
+      track.removeEventListener('scroll', syncActiveFromScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   useEffect(() => {
