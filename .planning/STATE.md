@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: executing
-stopped_at: Completed 48-01-PLAN.md
-last_updated: "2026-04-14T19:50:22.066Z"
+stopped_at: Completed 48-02-chat-provider-context-lift-PLAN.md
+last_updated: "2026-04-14T19:57:56.614Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 12
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 ## Current Position
 
 Phase: 48 (dashboard-home-redesign) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-04-14
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 48 P01 | 35m | 4 tasks | 12 files |
+| Phase 48 P02 | ~3 minutes | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting v5.0 work:
 - [v5.0 Research]: ScrollLinePath wraps 3 children exactly; new landing sections must be inserted after </ScrollLinePath> closing tag (between it and FinalCTASection) to avoid breaking the copper SVG path geometry
 - [v5.0 Research]: HOME-05 (AI chat history sharing) must coordinate with ChatbotSheet always-mounted pattern from Phase 37 -- shared state via React context or window event pattern, same approach as Phase 37
 - [Phase 48]: Phase 48-01: zod replaced with manual typeof/enum validation (zod not a project dep); added jest.setup.js fallback env vars so route modules load in unit tests without mocking supabase import
+- [Phase 48]: Kept repo's static-file-regex-parse unit-test pattern for ChatProvider tests (vs plan's @testing-library/react/renderHook suggestion) — that dep is not installed and adding it is a cross-cutting tooling decision, not in-scope for a state-lift plan
+- [Phase 48]: ChatProvider stores currentRoute in its own useState (seeded from prop, synced via useEffect) so route changes propagate without remount and sendMessage closes over the latest value
 
 ### Roadmap Evolution
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T19:50:16.978Z
-Stopped at: Completed 48-01-PLAN.md
+Last session: 2026-04-14T19:57:48.955Z
+Stopped at: Completed 48-02-chat-provider-context-lift-PLAN.md
 Resume file: None

@@ -501,7 +501,7 @@ n| DEMO-01 | Phase 29 | Complete |
 | HOME-02 | Phase 48 | Complete |
 | HOME-03 | Phase 48 | Complete |
 | HOME-04 | Phase 48 | Pending |
-| HOME-05 | Phase 48 | Pending |
+| HOME-05 | Phase 48 | Complete |
 | HOME-06 | Phase 48 | Pending |
 | HOME-07 | Phase 48 | Pending |
 | DARK-01 | Phase 49 | Pending |
@@ -558,7 +558,7 @@ n| DEMO-01 | Phase 29 | Complete |
 - [x] **HOME-02**: Dashboard home shows a daily-ops hub with at-a-glance cards: today's appointments, recent calls (last 24h), hot/new leads, usage meter
 - [x] **HOME-03**: Setup checklist auto-detects completion of onboarding items (phone, services, hours, calendar, billing) and updates progress without user action
 - [ ] **HOME-04**: Dashboard home includes an integrated AI chat surface (card/panel, not just a floating button) where owners can ask questions and get dashboard navigation help from first paint
-- [ ] **HOME-05**: AI chat surface on home shares message history with the existing ChatbotSheet so conversations continue across entry points
+- [x] **HOME-05**: AI chat surface on home shares message history with the existing ChatbotSheet so conversations continue across entry points
 - [ ] **HOME-06**: Dashboard home includes a Help & Discoverability section with quick-links to common tasks ("how do I add a service", "where do I find invoices") that deep-link into the correct page
 - [ ] **HOME-07**: Dashboard home is fully responsive at 375px — card stacks reflow to single column without horizontal scroll
 
