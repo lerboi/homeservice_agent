@@ -120,3 +120,29 @@ describe('Phase 47 — AudioPlayerCard (OBJ-02 island)', () => {
     expect(src).toMatch(/Pause audio sample/);
   });
 });
+
+describe('Phase 47 — FAQChatWidget (OBJ-01 + D-10 chat)', () => {
+  const src = () => require('fs').readFileSync('src/app/components/landing/FAQChatWidget.jsx', 'utf8');
+
+  it("declares 'use client'", () => {
+    expect(src()).toMatch(/^['"]use client['"]/m);
+  });
+  it('posts to /api/public-chat', () => {
+    expect(src()).toMatch(/\/api\/public-chat/);
+  });
+  it('slices history to last 10 before POST (Pitfall 3)', () => {
+    expect(src()).toMatch(/slice\(-10\)/);
+  });
+  it('has friendly error copy when the API fails', () => {
+    expect(src()).toMatch(/Couldn't connect right now/);
+  });
+  it('renders 3 locked suggestion chips', () => {
+    const s = src();
+    expect(s).toMatch(/Does it really sound natural\?/);
+    expect(s).toMatch(/How long does setup take\?/);
+    expect(s).toMatch(/What does it cost\?/);
+  });
+  it('send button has aria-label "Send message"', () => {
+    expect(src()).toMatch(/aria-label="Send message"/);
+  });
+});
