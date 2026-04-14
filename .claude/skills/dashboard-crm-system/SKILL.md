@@ -133,6 +133,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
 | `src/components/dashboard/SetupChecklist.jsx` | Themed checklist: profile/voice/calendar/billing accordions, conic-gradient progress ring, per-item Dismiss/Mark done/Jump actions, window-focus refetch (Phase 48 refactor) |
+| `src/components/dashboard/SetupChecklistLauncher.jsx` | Overlay launcher wrapping SetupChecklist — FAB + responsive Sheet (right on lg+, bottom on mobile), sessionStorage auto-open gate, hides when 100% complete (Phase 48-05 revision) |
 | `src/components/dashboard/ChecklistItem.jsx` | Expandable checklist item: type badge, description, action link |
 | `src/components/dashboard/WorkingHoursEditor.js` | Per-day hours editor: schedule preview bars, timezone selector, controlled preset dropdown, sticky save bar, responsive day cards |
 | `src/components/dashboard/CalendarView.js` | Week/day time grid with appointments, external events, travel buffers |
@@ -298,54 +299,51 @@ Tour button only shows if `gsd_has_seen_tour` is NOT set in localStorage. Never 
 
 **File**: `src/app/dashboard/page.js`
 
-The home page has two distinct render modes based on setup completion:
+The home page post-Phase-48 is a single-column daily-ops hub. No more setup-mode vs active-mode branching — setup lives in an overlay launcher, chat lives in the layout-level ChatbotSheet.
 
-### Setup Mode
+### Home Page Structure (Phase 48-05 final)
 
-Shown when any of the 4 required items (`create_account`, `setup_profile`, `configure_services`, `make_test_call`) are incomplete.
-
-**Setup mode renders:**
-- `AIStatusIndicator` — green pulse dot + "AI Receptionist: Active"
-- `SetupChecklist` as hero (full width, prominent)
-- "Take a quick tour" button (shown only if `gsd_has_seen_tour` not in localStorage)
-
-**`isSetupComplete` derivation:**
-```js
-const REQUIRED_IDS = ['create_account', 'setup_profile', 'configure_services', 'make_test_call'];
-
-const setupComplete = data.items
-  .filter((i) => REQUIRED_IDS.includes(i.id))
-  .every((i) => i.complete);
+```
+Greeting (time-of-day + AI status pulse + optional tour button)
+DailyOpsHub (bento: TodayAppointmentsTile, CallsTile, HotLeadsTile, UsageTile)
+HelpDiscoverabilityCard (4 quick-link tiles: Add a service / Change AI voice / Set escalation contacts / View invoices)
+RecentActivityFeed (wrapped in card.base)
 ```
 
-**Checklist data lifting (avoids double-fetch):**
-```js
-const handleChecklistDataLoaded = useCallback((data) => {
-  setChecklistData(data);
-  // derive isSetupComplete from data.items
-}, []);
+Single column, `space-y-6 lg:space-y-8`. No sidebar, no grid. Responsive for free because every child stacks vertically.
 
-<SetupChecklist onDataLoaded={handleChecklistDataLoaded} />
+### Setup Checklist — Overlay Launcher (Phase 48-05 revision)
+
+The setup checklist is NOT rendered on the home page directly. It's mounted at the layout level as an overlay via `SetupChecklistLauncher`:
+
+```js
+// src/app/dashboard/layout.js
+import SetupChecklistLauncher from '@/components/dashboard/SetupChecklistLauncher';
+// ...
+{!impersonateTenantId && <SetupChecklistLauncher />}
 ```
 
-### Active Mode
+**Launcher behavior:**
+- **Auto-open:** desktop only (≥ 1024 px), first dashboard visit per session, and only if incomplete. Gated by `sessionStorage['voco_setup_opened']`. On close, the gate is set — Sheet does NOT reopen for the rest of the session.
+- **FAB:** when the Sheet is closed, a circular copper button anchors bottom-right. Conic-gradient progress ring around the edge reads as completion %. Centered tabular-nums label shows pending count ("3"). `aria-label="N steps left to finish setup"`. `data-tour="setup-checklist-fab"` reserved for a future tour step.
+- **Responsive:** `useIsMobile(1024)` hook picks Sheet `side="right"` on desktop (content stays visible behind) and `side="bottom"` on mobile (drawer pattern). Mobile FAB is 48 px, offset `bottom-[72px]` to clear the 64 px `BottomTabBar`. Desktop FAB is 56 px at `bottom-6`.
+- **Complete state:** when `percent >= 100` or all items dismissed, the FAB hides entirely and auto-open is suppressed. Zero visual noise once the owner is set up.
+- **Progress source:** `SetupChecklist`'s unchanged `onDataLoaded` prop captures `{ items, dismissed, progress }` — launcher derives `{ total, complete, percent }` from that. No duplicate API call.
+- **Hidden during impersonation:** layout skips the mount when `?impersonate=...` query param is present — admin sessions don't see owner-facing nudges.
 
-Shown when all 4 required items are complete.
+**Why an overlay (Plan 48-05 revision, Rule-2 pivot):** The original Plan 48-05 rendered SetupChecklist inline at the top of the home page (D-04). User validated the pattern during the human-verify checkpoint, then requested the pivot because the always-visible accordion (~200 px collapsed) occupied too much above-the-fold real estate for owners who had already finished setup. Overlay + FAB makes it claim-no-space-when-done while staying one click away.
 
-**Active mode renders:**
-- `AIStatusIndicator`
-- Hero metric card: calls answered today (`data-tour="hero-metric"`)
-- 2-col grid: Action Required card (new leads today) + Next Appointment card (fetches from `/api/appointments`)
-- This Week summary card: leads, booked, conversion rate (last 7 days)
-- `SetupChecklist` — shown when any recommended items are incomplete (controlled by `hasIncompleteRecommended` state). Dismissed via the checklist's own dismiss mechanism. Disappears once all 5 recommended items are complete.
-- Recent Activity feed (capped at 5 items via `.slice(0, 5)`)
+### Chat on the Dashboard Home (HOME-04 / HOME-05 post-revision)
 
-**Next Appointment card** fetches from `GET /api/appointments?start={now}&end={weekLater}`, finds the first `confirmed` appointment, and displays `caller_name` and `service_address`.
+The home page does NOT render its own chat surface. `ChatbotSheet` — mounted at `src/app/dashboard/layout.js` inside `ChatProvider` — is the single chat entry point. Opened via the `open-voco-chat` window event (fired from `DashboardSidebar` "Ask Voco AI" button and `dashboard/more/page.js` mobile shortcut). Messages persist across routes because `ChatProvider` wraps the entire dashboard layout.
+
+The abandoned `ChatPanel.jsx` (originally planned as a sticky right-column panel in D-07) was deleted in the Plan 48-05 revision — two chat surfaces on the same page felt redundant.
 
 ### data-tour attributes on home page
 
-- Outer div: `data-tour="home-page"` (present in all render states)
-- Hero metric: `data-tour="hero-metric"` (active mode only)
+- Outer div: `data-tour="home-page"`
+- DailyOpsHub: `data-tour="daily-ops-hub"`
+- Setup launcher FAB: `data-tour="setup-checklist-fab"` (reserved, no tour step yet)
 
 ---
 
