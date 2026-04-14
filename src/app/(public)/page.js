@@ -24,37 +24,27 @@ const HowItWorksSection = dynamic(
   }
 );
 
-const FeaturesCarousel = dynamic(
-  () => import('@/app/components/landing/FeaturesCarousel').then((m) => m.FeaturesCarousel),
+const AfterTheCallStrip = dynamic(
+  () => import('@/app/components/landing/AfterTheCallStrip').then((m) => m.AfterTheCallStrip),
   {
     loading: () => (
       <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
-            <div className="h-10 w-96 bg-black/10 rounded mx-auto" />
+            <div className="h-4 w-40 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-96 bg-black/10 rounded mx-auto mb-5" />
+            <div className="h-5 w-80 bg-black/5 rounded mx-auto" />
           </div>
-          <div className="h-[480px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
-          <div className="mt-6 h-16 rounded-xl bg-white/60" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const AfterTheCallStrip = dynamic(
-  () => import('@/app/components/landing/AfterTheCallStrip').then((m) => m.AfterTheCallStrip),
-  {
-    loading: () => (
-      <section className="bg-white py-12 md:py-16 px-6" aria-hidden="true">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="h-4 w-28 bg-black/10 rounded mx-auto mb-3" />
-            <div className="h-8 w-96 bg-black/10 rounded mx-auto" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-24 rounded bg-black/5" />
+          <div className="space-y-20 md:space-y-28">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+                <div>
+                  <div className="h-9 w-9 rounded-full bg-black/5 mb-5" />
+                  <div className="h-7 w-72 bg-black/10 rounded mb-3" />
+                  <div className="h-4 w-full bg-black/5 rounded" />
+                </div>
+                <div className="h-[220px] rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+              </div>
             ))}
           </div>
         </div>
@@ -179,7 +169,6 @@ export default function HomePage() {
       <HeroSection />
       <ScrollLinePath>
         <HowItWorksSection />
-        <FeaturesCarousel />
         <AfterTheCallStrip />
         <SocialProofSection />
       </ScrollLinePath>

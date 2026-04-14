@@ -4,20 +4,42 @@
  * Wave 0 provides the scaffold so `npm test` does not fail on missing file.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 
 const read = (p) => readFileSync(p, 'utf8');
 
-describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
-  it('renders at least 4 after-the-call workflow items', () => {
-    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
-    const matches = src.match(/label:\s*'[^']+'/g) || [];
+describe('Phase 47 — AfterTheCallStrip (REPOS-03 + workflow rebuild)', () => {
+  const src = () => read('src/app/components/landing/AfterTheCallStrip.jsx');
+
+  it('renders at least 4 workflow steps', () => {
+    const matches = src().match(/label:\s*['"][^'"]+['"]/g) || [];
     expect(matches.length).toBeGreaterThanOrEqual(4);
   });
-  it('does not use id="features" or id="testimonials" on its section element', () => {
-    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
-    expect(src).not.toMatch(/id=["']features["']/);
-    expect(src).not.toMatch(/id=["']testimonials["']/);
+  it('owns the ScrollLinePath `features` anchor (carousel replaced)', () => {
+    expect(src()).toMatch(/id=["']features["']/);
+  });
+  it('does not collide with the testimonials anchor', () => {
+    expect(src()).not.toMatch(/id=["']testimonials["']/);
+  });
+  it('embeds harvested proof visuals from the retired FeaturesCarousel', () => {
+    const s = src();
+    expect(s).toMatch(/BookingVisual/);
+    expect(s).toMatch(/LeadVisual/);
+    expect(s).toMatch(/SMSVisual/);
+    expect(s).toMatch(/AnalyticsVisual/);
+  });
+  it('leads with a pain-point headline, not a feature list', () => {
+    const s = src();
+    expect(s).toMatch(/under the sink|on the roof|hands were full|full-stack workflow/i);
+  });
+});
+
+describe('Phase 47 — FeaturesCarousel retirement', () => {
+  it('FeaturesCarousel.jsx no longer exists (replaced by AfterTheCallStrip workflow section)', () => {
+    expect(existsSync('src/app/components/landing/FeaturesCarousel.jsx')).toBe(false);
+  });
+  it('page.js no longer imports FeaturesCarousel', () => {
+    expect(read('src/app/(public)/page.js')).not.toMatch(/FeaturesCarousel/);
   });
 });
 
