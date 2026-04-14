@@ -56,12 +56,22 @@ export async function PATCH(request, { params }) {
 
   const { id } = await params;
   const body = await request.json();
-  const { status, revenue_amount, previous_status, sync_source, email, caller_name, is_vip } = body;
+  const {
+    status, revenue_amount, previous_status, sync_source,
+    email, caller_name, is_vip,
+    job_type, urgency, service_address, street_name, postal_code, from_number,
+  } = body;
 
   // Validate: status must be one of the allowed values
   const VALID_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
   if (status && !VALID_STATUSES.includes(status)) {
     return Response.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` }, { status: 400 });
+  }
+
+  // Validate: urgency must be one of the allowed values (migration 036)
+  const VALID_URGENCIES = ['emergency', 'routine', 'urgent'];
+  if (urgency !== undefined && urgency !== null && !VALID_URGENCIES.includes(urgency)) {
+    return Response.json({ error: `Invalid urgency. Must be one of: ${VALID_URGENCIES.join(', ')}` }, { status: 400 });
   }
 
   // Validate: Paid status requires revenue_amount
@@ -76,6 +86,12 @@ export async function PATCH(request, { params }) {
   if (email !== undefined) updateData.email = email;
   if (caller_name !== undefined) updateData.caller_name = caller_name;
   if (is_vip !== undefined) updateData.is_vip = is_vip;
+  if (job_type !== undefined) updateData.job_type = job_type;
+  if (urgency !== undefined) updateData.urgency = urgency;
+  if (service_address !== undefined) updateData.service_address = service_address;
+  if (street_name !== undefined) updateData.street_name = street_name;
+  if (postal_code !== undefined) updateData.postal_code = postal_code;
+  if (from_number !== undefined) updateData.from_number = from_number;
 
   const { data, error } = await supabase
     .from('leads')

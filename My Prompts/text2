@@ -1,108 +1,129 @@
-Got it. Here's the full roadmap:
+SELECT id, caller_name, from_number, status, appointment_id, primary_call_id, created_at, updated_at
+FROM leads
+WHERE from_number = '+6587528516'
+ORDER BY created_at DESC
+LIMIT 10;
 
-───
 
-Part 1 — Skills to Install
+SELECT lc.lead_id, lc.call_id, l.status, l.caller_name, l.appointment_id
+FROM lead_calls lc
+JOIN leads l ON l.id = lc.lead_id
+JOIN calls c ON c.id = lc.call_id
+WHERE c.call_id = 'call-_+6587528516_4SrYmifpX3C6';
 
-Run these via clawhub CLI (some may need retry if rate limited):
 
-clawhub install abm-schema-markup
-clawhub install abm-competitor-alternatives
+SELECT id, call_id, start_time, status, street_name, postal_code
+FROM appointments
+WHERE call_id = (SELECT id FROM calls WHERE call_id = 'call-_+6587528516_4SrYmifpX3C6');
 
-Skills you'll have:
 
-• abm-programmatic-seo ✅ (already installed)
-• abm-seo-audit ✅ (already installed)
-• abm-schema-markup ⏳ (install it)
-• abm-competitor-alternatives ⏳ (install it)
 
-───
 
-Part 2 — Infrastructure
 
-src/app/sitemap.js — Next.js 15+ native sitemap (no package needed). Returns all static + dynamic routes. Should include: landing, pricing, blog, personas, comparisons, integrations, glossary.
+SQL1:
+[
+  {
+    "id": "e1fa47b1-b49b-43a9-be14-9743ae68a60e",
+    "caller_name": "Leroy",
+    "from_number": "+6587528516",
+    "status": "new",
+    "appointment_id": null,
+    "primary_call_id": "bc45e4c8-45fe-4a9f-a12a-f31c11ee6fe4",
+    "created_at": "2026-04-12 14:09:06.399617+00",
+    "updated_at": "2026-04-13 08:17:43.731829+00"
+  },
+  {
+    "id": "10adf009-232d-4da5-8806-88bc0e4828d0",
+    "caller_name": null,
+    "from_number": "+6587528516",
+    "status": "booked",
+    "appointment_id": null,
+    "primary_call_id": "65ed2584-9357-4b5b-9af0-f471a5ccc94c",
+    "created_at": "2026-04-06 22:00:31.295089+00",
+    "updated_at": "2026-04-12 13:19:10.976203+00"
+  },
+  {
+    "id": "854c80db-63af-4c0f-b515-cc3d21304380",
+    "caller_name": null,
+    "from_number": "+6587528516",
+    "status": "completed",
+    "appointment_id": null,
+    "primary_call_id": "6d91c9a9-df1b-45db-82ec-d41069a0bfa0",
+    "created_at": "2026-04-03 16:34:47.854662+00",
+    "updated_at": "2026-04-05 22:45:54.471439+00"
+  },
+  {
+    "id": "a5b054e2-e426-4d24-af50-63ac821a4540",
+    "caller_name": "Leaking Water",
+    "from_number": "+6587528516",
+    "status": "completed",
+    "appointment_id": "dd6d201c-ba64-4f84-8cab-efe3aed6ac78",
+    "primary_call_id": "c63aa4e7-2f4d-400c-b529-14a3d24defe7",
+    "created_at": "2026-03-30 13:57:23.357568+00",
+    "updated_at": "2026-04-01 12:03:57.136752+00"
+  },
+  {
+    "id": "8a6ab8b7-d977-49fc-a95a-0f9656faebab",
+    "caller_name": "Leaking Water",
+    "from_number": "+6587528516",
+    "status": "completed",
+    "appointment_id": "67c753f0-41db-4b9c-9438-3009b5dd67f2",
+    "primary_call_id": "91dc460b-c183-4ae9-a3f3-1c25fb965ecb",
+    "created_at": "2026-03-30 10:25:41.090011+00",
+    "updated_at": "2026-04-01 11:57:45.402412+00"
+  }
+]
 
-src/app/robots.txt — Allow all, point to sitemap.
+SQL2:
+No rows returned
 
-src/app/(public)/og/route.jsx — Dynamic OG image generation via next/og. One route, query params for title/service/type.
+SQL3:
+[
+  {
+    "id": "ba597888-7e96-4fb6-aecb-1b6f79ea1271",
+    "call_id": "257eee56-86e9-4c3d-9f9a-d898d3c89508",
+    "start_time": "2026-04-15 05:00:00+00",
+    "status": "confirmed",
+    "street_name": "Canberra Drive",
+    "postal_code": "768433"
+  }
+]
 
-───
 
-Part 3 — Data Layer
-
-Create src/data/ with:
-
-• services.js — trades you serve (plumber, HVAC, handyman, electrician, etc.)
-• personas.js — each persona: slug, title, meta description, pain points, objections, testimonials, CTAs
-• comparisons.js — each comparison: slug, who you're vs, pros/cons, verdict
-• integrations.js — each integration: slug, tool name, description, use cases
-• blog-posts.js — post metadata: slug, title, description, date, author, category, tags
-
-Each file exports an array. This is your programmatic generation engine.
-
-───
-
-Part 4 — Page Templates to Build
-
-Blog — /blog listing + /blog/[slug] detail. Use generateStaticParams + generateMetadata.
-
-Personas — /for/[persona] with template that renders persona-specific copy, pain points, features, social proof. Target: plumbers, HVAC contractors, handymen, electricians.
-
-Comparisons — /compare/[comparison] with template. Start with: voicemail vs AI receptionist, ringcentral vs voco, jobber vs manual scheduling.
-
-Integrations — /integrations/[tool] with template. Start with: jobber, housecall-pro, stripe, google-calendar.
-
-Glossary — /glossary/[term] with template. FAQ schema markup here is a must.
-
-───
-
-Part 5 — Schema Markup Component
-
-Build src/components/SchemaMarkup.jsx that accepts type + data, renders <script type="application/ld+json">. Types to implement:
-
-• LocalBusiness — for landing page
-• FAQPage — for glossary + blog posts
-• WebPage — base for all pages
-• SoftwareApplication — for integrations pages
-
-───
-
-Part 6 — Metadata Per Page Type
-
-Every dynamic page needs generateMetadata() returning:
-
-• title — template: {PageName} | Voco
-• description — from data layer
-• openGraph — image from /og/route?title=...
-• alternates — canonical URL
-• robots — index, follow for public pages
-
-───
-
-Part 7 — Internal Linking
-
-Every page should link to:
-
-• Related pages of same type (blog → blog, integration → integration)
-• Hub page (persona pages → /for, glossary → /glossary)
-• Relevant CTAs to signup/trial
-
-No orphan pages. Every programmatic page reachable from a hub.
-
-───
-
-Execution Order
-
-1. Install remaining skills
-2. sitemap.js + robots.txt (foundation)
-3. OG image route (used everywhere)
-4. Data layer files (your content config)
-5. Schema markup component
-6. Blog scaffold → write 2-3 posts
-7. Personas pages (your top-of-funnel B2B play)
-8. Comparisons pages (high commercial intent)
-9. Integrations pages (warm leads from existing tool users)
-10. Glossary pages (bottom funnel + authority)
-11. Audit with abm-seo-audit
-
-───
+Below is the entire Call log in livekit_agent:
+[2026-04-13T20:24:50.341945985Z] [info] registered worker
+[2026-04-13T20:45:21.424516670Z] [info] received job request
+[2026-04-13T20:45:21.424522051Z] [info] initializing process
+[2026-04-13T20:45:21.424527778Z] [info] [agent] Connected to room: call-_+6587528516_4SrYmifpX3C6
+[2026-04-13T20:45:21.424533162Z] [info] [agent] SIP attrs: {"sip.phoneNumber": "+6587528516", "sip.callIDFull": "5fcc21ed5925153d5415cbf71a159126@0.0.0.0", "sip.ruleID": "SDR_TBTiMukwsh7d", "sip.twilio.callSid": "CAe7ef2a6ea8e9791c87eaa8c3d5589ef3", "sip.callID": "SCL_9odLDWz5vXE8", "sip.callTag": "62778488_c3356d0b_5027b816-fdcc-439d-9fe6-fb8b82f2ef76", "sip.trunkID": "ST_Pd7fRUZXpNSV", "sip.twilio.accountSid": "REDACTED_TWILIO_ACCOUNT_SID", "sip.callStatus": "ringing", "sip.trunkPhoneNumber": "+14783755631", "sip.hostname": "voco-livekit.pstn.twilio.com"}
+[2026-04-13T20:45:21.424538704Z] [info] [agent] Call started: room=call-_+6587528516_4SrYmifpX3C6 from=+6587528516 to=+14783755631 test=False
+[2026-04-13T20:45:21.424544820Z] [info] [agent] Tenant: 24141cd0-5735-4c7a-82d5-994c6b821861 (make it ai)
+[2026-04-13T20:45:21.426072037Z] [warn] libwebrtc::imp::audio_stream:233:libwebrtc::imp::audio_stream - native audio stream queue overflow; dropped 1 queued frames
+[2026-04-13T20:45:21.426083283Z] [info] process initialized
+[2026-04-13T20:45:21.426091063Z] [info] [agent] Session started: room=call-_+6587528516_4SrYmifpX3C6
+[2026-04-13T20:45:21.426098546Z] [warn] no active generation to report metrics for
+[2026-04-13T20:45:22.441284961Z] [info] [agent] Egress started: EG_6URqn2oD2ifs
+[2026-04-13T20:48:02.793693512Z] [info] X-Twilio-Client : python-9.10.4
+[2026-04-13T20:48:02.793707227Z] [info] -- BEGIN Twilio API Request --
+[2026-04-13T20:48:02.793707409Z] [info] Accept-Charset : utf-8
+[2026-04-13T20:48:02.793715494Z] [info] POST Request: https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json
+[2026-04-13T20:48:02.793722607Z] [info] Headers:
+[2026-04-13T20:48:02.793730144Z] [info] Content-Type : application/x-www-form-urlencoded
+[2026-04-13T20:48:02.793736787Z] [info] Accept : application/json
+[2026-04-13T20:48:02.793742889Z] [info] User-Agent : twilio-python/9.10.4 (Linux x86_64) Python/3.12.13
+[2026-04-13T20:48:02.795470762Z] [info] -- END Twilio API Request --
+[2026-04-13T20:48:02.795479014Z] [info] Response Status Code: 201
+[2026-04-13T20:48:02.795486280Z] [info] Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '885', 'Connection': 'keep-alive', 'Date': 'Mon, 13 Apr 2026 20:47:53 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQe26231ac69ffcbb67e10f3a07ab75f74', 'Twilio-Request-Duration': '0.137', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 13676fca7076b460ad3ad018e40a51da.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'AMS58-P4', 'X-Amz-Cf-Id': 'fK-RKkEs7qCL0guVVQf1QOQiK5QrXzdRIBl_EqJLLeNd70jWHe8aqQ==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+[2026-04-13T20:48:02.795492885Z] [info] [notifications] Caller SMS sent: SMe26231ac69ffcbb67e10f3a07ab75f74
+[2026-04-13T20:48:02.795499477Z] [info] file_cache is only supported with oauth2client<4.0.0
+[2026-04-13T20:48:02.795506849Z] [info] Refreshing credentials due to a 401 response. Attempt 1/2.
+[2026-04-13T20:48:02.796710214Z] [info] [agent] Persisted refreshed Google credentials for tenant=24141cd0-5735-4c7a-82d5-994c6b821861
+[2026-04-13T20:48:02.796720160Z] [info] [agent] Calendar event created: vvhu4oa3klbivjuej649vprrg4
+[2026-04-13T20:48:42.604793459Z] [info] closing agent session due to participant disconnect (disable via `RoomInputOptions.close_on_disconnect=False`)
+[2026-04-13T20:48:42.604801475Z] [warn] _SegmentSynchronizerImpl.playback_finished called before text/audio input is done
+[2026-04-13T20:48:42.604807994Z] [info] [agent] Session closed: room=call-_+6587528516_4SrYmifpX3C6 duration=200s
+[2026-04-13T20:48:47.829549738Z] [info] [agent] SIP participant already disconnected (caller hung up first)
+[2026-04-13T20:48:47.829558986Z] [info] process exiting
+[2026-04-13T20:48:48.116289885Z] [error] [agent] Post-call pipeline error: Executor shutdown has been called
+[2026-04-13T20:48:48.116297130Z] [info] [post-call] Booking reconciliation error: Executor shutdown has been called
+[2026-04-13T20:48:48.116303832Z] [info] [post-call] Usage tracking error (non-fatal): Executor shutdown has been called

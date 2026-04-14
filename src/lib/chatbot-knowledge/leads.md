@@ -5,7 +5,7 @@ The Leads section is your CRM for every inbound call. Each call that comes in cr
 
 ## Key features
 - **Lead pipeline** — New → Contacted → Booked → Completed → Paid
-- **Kanban board** — Visual card view grouped by status, toggle between list and Kanban
+- **Status pills** — Quick-filter the list by pipeline status with one click; each pill shows its live count
 - **Lead flyout** — Click any lead to open a detail panel with call recording, full transcript, notes, and actions
 - **Filters** — Filter by status, date range, job type, or search by name/phone
 - **Create invoice** — Turn any lead into an invoice directly from the lead detail flyout
@@ -16,10 +16,13 @@ Go to [Leads](/dashboard/leads)
 ## Common tasks
 
 ### How do I change a lead's status?
-Open the lead flyout by clicking the lead. Use the status dropdown at the top of the flyout to move the lead to the next stage (New, Contacted, Booked, Completed, Paid). You can also drag the card to a different column in Kanban view.
+Open the lead flyout by clicking the lead. Use the status dropdown at the top of the flyout to move the lead to the next stage (New, Contacted, Booked, Completed, Paid).
 
 ### How do I find a specific lead?
-Use the search bar at the top of the Leads page to search by caller name or phone number. Use the filter button to narrow by status, date range, or job type.
+Use the search bar at the top of the Leads page to search by caller name or phone number. Click a status pill (New, Booked, Completed, Paid, Lost) to filter by pipeline status — each pill shows its live count. For other filters like urgency, job type, or date range, use the Filters button on mobile or the inline dropdowns on desktop.
+
+### How do I mark a caller as Priority (so they always ring my phone)?
+Open the lead flyout and toggle the Priority switch. Priority callers always ring your pickup numbers directly and bypass the AI and your forwarding schedule. Manage the full list under [Call Routing](/dashboard/more/call-routing).
 
 ### How do I create an invoice from a lead?
 Open the lead flyout and click "Create Invoice." This pre-fills the invoice with the caller's name and job details. You can then add line items and send it.

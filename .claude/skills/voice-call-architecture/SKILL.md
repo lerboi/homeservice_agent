@@ -7,7 +7,7 @@ description: "Complete architectural reference for the voice call system — Twi
 
 This document is the single source of truth for the entire voice call system. Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-11 (Phase 40: Live webhook routing composition wired in `/twilio/incoming-call` (tenant lookup -> sub check -> evaluate_schedule -> check_outbound_cap -> TwiML), dial-status writeback, dial-fallback AI TwiML, SMS forwarding to pickup_numbers with sms_forward=true, migration 045 (sms_messages table + call_sid on calls), provisioning update sets voice_url/voice_fallback_url/sms_url from RAILWAY_WEBHOOK_URL on new Twilio numbers, cutover script updates existing tenant numbers. Phase 39: FastAPI webhook service replaces `src/health.py`. New `src/webhook/` subpackage with `app.py` (FastAPI instance + `/health` + `/health/db`), `twilio_routes.py` (4 signature-gated POST endpoints under `/twilio`), `security.py` (`verify_twilio_signature` dependency), `schedule.py` (pure-function `evaluate_schedule` + frozen `ScheduleDecision` dataclass), `caps.py` (`check_outbound_cap` async function with US/CA 5000-min and SG 2500-min monthly limits). `_normalize_phone` extracted from `agent.py` inline closure to `src/lib/phone.py` for reuse between webhook + agent. Migration 042 adds `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds` to `tenants`; `routing_mode`, `outbound_dial_duration_sec` to `calls`; `idx_calls_tenant_month` compound index. Phase 39 is purely additive — zero production Twilio numbers reconfigured; `/twilio/incoming-call` always returns hardcoded AI TwiML per D-13 dead-weight pattern so Phase 40's diff is a one-line branch swap. Webhook test suite: 35 tests (17 schedule + 8 caps + 6 routes + 4 security) green in ~1.3s. New deps: `fastapi>=0.115,<1`, `uvicorn[standard]>=0.30,<1`, `python-multipart>=0.0.9,<1`. Previous: Pin fix — livekit-agents, livekit-plugins-silero, livekit-plugins-turn-detector locked to ==1.5.1 in pyproject.toml. PyPI livekit-agents 1.5.2 shipped Apr 8 2026 with PR #5211, which added a required 7th field `per_response_tool_choice` to `llm.RealtimeCapabilities`. The git-pinned google plugin at commit 43d3734 still constructs RealtimeCapabilities with 6 fields, so any Railway rebuild after Apr 8 produced a TypeError at RealtimeModel.__init__ on every inbound call. The plugin pin must stay because commit 43d3734 is the only google plugin version supporting `generate_reply()` with `gemini-3.1-flash-live-preview` (via the `A2A_ONLY_MODELS` branch). See "Why livekit-agents and sibling plugins are pinned to 1.5.1" in section 1 for details. Previous: book_appointment tool now truly fire-and-forget for calendar push and caller SMS — was previously blocking for 1-4s while awaited, causing the AI to go silent and triggering duplicate invocations that fired spurious recovery SMS. Added idempotency cache keyed on slot_start|slot_end stored in deps, and a late-duplicate guard in the slot_taken branch. check_availability general-summary return no longer leaks earliest/latest slot time anchors — AI was mining them to fabricate specific times. Added anti-shortcut rules to booking section (different-time re-check, vague-window handling) with a concrete 2pm/3pm example. Updated check_availability tool description to forbid picking times for vague windows like "afternoon.")
+**Last updated**: 2026-04-13 (**Phase 46: Priority (VIP) caller direct routing** — webhook `_is_vip_caller(tenant, from_number)` check added between subscription and schedule evaluation in `/twilio/incoming-call`. Two sources: `tenants.vip_numbers` JSONB (standalone priority numbers, no DB hit) and lead-based lookup via `leads.is_vip=true` (sparse partial index `idx_leads_vip_lookup`). On match → direct owner-pickup parallel ring, bypasses schedule + cap. User-facing brand is "Priority"; DB columns keep "vip" naming. Migration 049. **Post-call booking reconciliation** — `tools/book_appointment.py` stamps `deps["_booking_succeeded"]`, `deps["_booked_appointment_id"]`, `deps["_booked_caller_name"]` synchronously on success. `agent.py:_on_close_async` forwards these as `booking_succeeded`/`booked_appointment_id`/`booked_caller_name` params to `run_post_call_pipeline`. Post-call uses these as authoritative truth to fix `calls.booking_outcome='booked'` and backfill `appointments.call_id` (guard: `.is_("call_id","null")`), closing the race where the mid-call `.update().eq("call_id", …).execute()` matched zero rows because the background `_run_db_queries` task had not yet inserted the calls row. Also hardens `_extract_field_from_transcript` name regex — explicit `[Mm]y name is` alternation + post-match `name[0].isupper()` check + expanded blocklist. **Owner SMS `from_number`** — `send_owner_sms` now accepts a `from_number` parameter (matches `send_caller_sms`/`send_caller_recovery_sms`). Post-call passes `to_number` (the tenant's own Twilio number). Removes reliance on global `TWILIO_FROM_NUMBER` env var, which was unset in multi-tenant deployments. Previous: Phase 40: Live webhook routing composition wired in `/twilio/incoming-call` (tenant lookup -> sub check -> evaluate_schedule -> check_outbound_cap -> TwiML), dial-status writeback, dial-fallback AI TwiML, SMS forwarding to pickup_numbers with sms_forward=true, migration 045 (sms_messages table + call_sid on calls), provisioning update sets voice_url/voice_fallback_url/sms_url from RAILWAY_WEBHOOK_URL on new Twilio numbers, cutover script updates existing tenant numbers. Phase 39: FastAPI webhook service replaces `src/health.py`. New `src/webhook/` subpackage with `app.py` (FastAPI instance + `/health` + `/health/db`), `twilio_routes.py` (4 signature-gated POST endpoints under `/twilio`), `security.py` (`verify_twilio_signature` dependency), `schedule.py` (pure-function `evaluate_schedule` + frozen `ScheduleDecision` dataclass), `caps.py` (`check_outbound_cap` async function with US/CA 5000-min and SG 2500-min monthly limits). `_normalize_phone` extracted from `agent.py` inline closure to `src/lib/phone.py` for reuse between webhook + agent. Migration 042 adds `call_forwarding_schedule`, `pickup_numbers`, `dial_timeout_seconds` to `tenants`; `routing_mode`, `outbound_dial_duration_sec` to `calls`; `idx_calls_tenant_month` compound index. Phase 39 is purely additive — zero production Twilio numbers reconfigured; `/twilio/incoming-call` always returns hardcoded AI TwiML per D-13 dead-weight pattern so Phase 40's diff is a one-line branch swap. Webhook test suite: 35 tests (17 schedule + 8 caps + 6 routes + 4 security) green in ~1.3s. New deps: `fastapi>=0.115,<1`, `uvicorn[standard]>=0.30,<1`, `python-multipart>=0.0.9,<1`. Previous: Pin fix — livekit-agents, livekit-plugins-silero, livekit-plugins-turn-detector locked to ==1.5.1 in pyproject.toml. PyPI livekit-agents 1.5.2 shipped Apr 8 2026 with PR #5211, which added a required 7th field `per_response_tool_choice` to `llm.RealtimeCapabilities`. The git-pinned google plugin at commit 43d3734 still constructs RealtimeCapabilities with 6 fields, so any Railway rebuild after Apr 8 produced a TypeError at RealtimeModel.__init__ on every inbound call. The plugin pin must stay because commit 43d3734 is the only google plugin version supporting `generate_reply()` with `gemini-3.1-flash-live-preview` (via the `A2A_ONLY_MODELS` branch). See "Why livekit-agents and sibling plugins are pinned to 1.5.1" in section 1 for details. Previous: book_appointment tool now truly fire-and-forget for calendar push and caller SMS — was previously blocking for 1-4s while awaited, causing the AI to go silent and triggering duplicate invocations that fired spurious recovery SMS. Added idempotency cache keyed on slot_start|slot_end stored in deps, and a late-duplicate guard in the slot_taken branch. check_availability general-summary return no longer leaks earliest/latest slot time anchors — AI was mining them to fabricate specific times. Added anti-shortcut rules to booking section (different-time re-check, vague-window handling) with a concrete 2pm/3pm example. Updated check_availability tool description to forbid picking times for vague windows like "afternoon.")
 
 ---
 
@@ -33,10 +33,13 @@ Caller dials Twilio number
   Webhook routing composition:
        |  1. Tenant lookup by To number (_normalize_phone -> tenants.phone_number)
        |  2. Subscription check (fail-open: blocked/unknown -> AI)
-       |  3. evaluate_schedule(call_forwarding_schedule, tenant_timezone, now_utc)
-       |  4. If owner_pickup: check_outbound_cap(tenant_id, country)
+       |  3. Priority (VIP) caller check — _is_vip_caller(tenant, from_number)
+       |     - Match via tenants.vip_numbers JSONB OR leads.is_vip=true
+       |     - Match -> direct owner-pickup parallel ring (bypasses steps 4-5)
+       |  4. evaluate_schedule(call_forwarding_schedule, tenant_timezone, now_utc)
+       |  5. If owner_pickup: check_outbound_cap(tenant_id, country)
        |     - Cap breach -> downgrade to AI
-       |  5. Return TwiML:
+       |  6. Return TwiML:
        |     - AI mode: <Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>
        |     - Owner pickup: <Dial timeout callerId action="/twilio/dial-status">
        |                       <Number>pickup1</Number>...<Number>pickup5</Number>
@@ -446,16 +449,39 @@ Runs immediately when the AgentSession closes (in-process, no webhook delay).
 
 ### `run_post_call_pipeline(params)`
 
+Params include the usual call/tenant fields plus three **booking-reconciliation flags** stamped by `book_appointment` on the shared `deps` dict:
+
+- `booking_succeeded: bool` — `True` iff `atomic_book_slot` returned success during the call.
+- `booked_appointment_id: str | None` — the appointment PK the RPC returned.
+- `booked_caller_name: str | None` — the verified name the AI passed to `book_appointment` (which is a required tool parameter).
+
+`agent.py:_on_close_async` forwards these through to `run_post_call_pipeline` via the params dict. They exist to close a race where the mid-call `.update({"booking_outcome":"booked"}).eq("call_id", …)` in `book_appointment` can match zero rows — the background `_run_db_queries` task may not have inserted the calls row yet when the AI books.
+
 1. **Build transcript** — `transcript_text` (string) + `transcript_structured` (JSON list)
 2. **Update call record** — status='analyzed', transcript, recording path, disconnection_reason
-3. **Test call auto-cancel** — cancel appointment + reset lead if `is_test_call`
+2b. **Booking reconciliation** (section 2b in the file) — if `booking_succeeded`, force `calls.booking_outcome='booked'` (unconditional update at this point — the calls row is guaranteed to exist because `_on_close_async` awaits `db_task` before calling the pipeline), and backfill `appointments.call_id = call_uuid` for the returned `booked_appointment_id` with `.is_("call_id", "null")` guard (safe to re-run, no-op if already set). `booking_outcome` local variable is then derived as `"booked" if booking_succeeded else updated_call.get("booking_outcome")` so the suggested-slots gate (step 7) and appointment lookup (step 9) see the corrected value.
+3. **Test call auto-cancel** — cancel appointment + reset lead if `is_test_call` (now also benefits from the backfill — the `.eq("call_id", call_uuid)` lookup at line 79–87 now finds race-affected appointments).
 4. **Usage tracking** — `increment_calls_used` RPC; Stripe overage if limit_exceeded
 5. **Language detection** — multi-language regex detection: CJK→'zh', Tamil Unicode→'ta', Vietnamese diacriticals (>=3)→'vi', Spanish keywords (>=2)→'es', Malay keywords (>=2)→'ms', default→'en'
 6. **Triage classification** — `classify_call()` three-layer pipeline
 7. **Suggested slots** — for unbooked calls, up to 3 slots spread across the next 3 days (tomorrow through day+3)
-8. **Update call with triage** — urgency, confidence, layer, language, notification_priority
-9. **Create/merge lead** — if duration >= 15s, via `create_or_merge_lead()`
-10. **Owner notifications** — SMS/email per outcome preferences, emergency always sends both
+8. **Update call with triage** — urgency, confidence, layer, language, notification_priority. Then the NULL-fallback sets `booking_outcome='not_attempted'` only where still NULL (genuine no-booking calls).
+9. **Create/merge lead** — if duration >= 15s, via `create_or_merge_lead()`. Caller name resolution: `booked_caller_name or _extract_field_from_transcript(turns, "name")` — the booking tool's verified name wins over regex extraction. Appointment lookup: `booked_appointment_id` preferred over FK query (avoids the `appointments.call_id` FK being NULL on race-affected calls).
+10. **Owner notifications** — SMS/email per outcome preferences, emergency always sends both. **`send_owner_sms` accepts `from_number`** and is called with `from_number=to_number` (the tenant's own Twilio number — same pattern as `send_caller_sms`/`send_caller_recovery_sms`). Environment var `TWILIO_FROM_NUMBER` is retained as a fallback but multi-tenant deployments should never rely on it — each tenant has their own provisioned number.
+
+### Transcript Field Extraction Fallback
+
+`post_call.py::_extract_field_from_transcript(turns, field)` is a best-effort regex used ONLY when the relevant tool wasn't invoked (e.g. `booked_caller_name` is None). The name branch uses explicit case-insensitive trigger alternation and post-match capitalization enforcement (because `re.IGNORECASE` nullifies `[A-Z]` inside the capture group):
+
+```python
+patterns = [r"(?:my name is|this is|i'm|i am|it's|name'?s)\s+(\w+(?:\s+\w+)?)"]
+# ... match with re.IGNORECASE ...
+if not name or not name[0].isupper(): continue  # proper-noun heuristic
+# plus blocklist: {"here","there","calling","sorry","raining","cold","hot",
+#                  "just","trying","looking","about","a","the","an","ok",...}
+```
+
+This regex previously captured garbage like "Raining" from "it's raining outside" because the blocklist was tiny and `re.IGNORECASE` defeated the capitalization guard. Do not reintroduce `[A-Z]` inside the capture group — keep the post-match `isupper()` check.
 
 ---
 
@@ -607,7 +633,7 @@ See the File Map table above. The subpackage is `src/webhook/` with `app.py`, `t
 |--------|------|---------|----------|
 | GET | `/health` | Liveness probe | Returns `{"status":"ok","uptime":<int>,"version":"1.0.0"}` (Dockerfile HEALTHCHECK) |
 | GET | `/health/db` | DB connectivity probe | 200 if `SELECT id FROM tenants LIMIT 1` succeeds, 503 otherwise |
-| POST | `/twilio/incoming-call` | Twilio voice webhook | Routing composition: tenant lookup -> subscription check (fail-open) -> `evaluate_schedule` -> `check_outbound_cap` (owner_pickup only) -> returns AI `<Dial><Sip>` or owner-pickup `<Dial><Number>` TwiML. Inserts `calls` row for owner-pickup before returning TwiML. |
+| POST | `/twilio/incoming-call` | Twilio voice webhook | Routing composition: tenant lookup -> subscription check (fail-open) -> **`_is_vip_caller` check (direct owner-pickup if priority, bypasses schedule + cap)** -> `evaluate_schedule` -> `check_outbound_cap` (owner_pickup only) -> returns AI `<Dial><Sip>` or owner-pickup `<Dial><Number>` TwiML. Inserts `calls` row for owner-pickup before returning TwiML. |
 | POST | `/twilio/dial-status` | Dial-status callback | Writes `outbound_dial_duration_sec` and `routing_mode` (`owner_pickup` or `fallback_to_ai`) to the calls row via `call_sid`. Returns `<Response/>`. |
 | POST | `/twilio/dial-fallback` | Dial-fallback (owner no-answer) | Returns AI SIP TwiML `<Dial><Sip>{LIVEKIT_SIP_URI}</Sip></Dial>` — same as direct AI path. No fallback-aware greeting. |
 | POST | `/twilio/incoming-sms` | SMS forwarding webhook | Forwards message text to `pickup_numbers` entries with `sms_forward=true`. Format: `[Voco] From {sender}: {body}`. MMS gets `[Media attached]` note. Logs inbound + forwarded rows to `sms_messages` table. Non-fatal per-recipient. |
@@ -664,6 +690,38 @@ async def check_outbound_cap(tenant_id: str, country: str) -> bool: ...
 ```
 
 Returns `True` if the tenant is under the monthly outbound cap, `False` at/over. Limits: US/CA 300000 seconds (5000 min), SG 150000 seconds (2500 min); unknown country falls back to the US limit as a fail-open safe default. Query sums `outbound_dial_duration_sec` from `calls` where `created_at >= date_trunc('month', now())` via the `idx_calls_tenant_month` compound index (added in migration 042). SUM is computed in Python from returned rows — no PostgREST aggregate RPC needed at current scale per D-17. `get_supabase_admin` is lazy-imported inside the function so tests can monkeypatch before first call. Cap breaches emit `logger.warning` only in Phase 39; dedicated event logging is deferred to Phase 40 per D-11.
+
+### Priority (VIP) Caller Check (Phase 46)
+
+`webhook/twilio_routes.py::_is_vip_caller(tenant, from_number) -> bool` runs between the subscription check and `evaluate_schedule`. Two-source lookup (D-01/D-02):
+
+```python
+async def _is_vip_caller(tenant: dict, from_number: str) -> bool:
+    # Source 1: Standalone VIP numbers in tenants.vip_numbers (no DB hit)
+    for entry in (tenant.get("vip_numbers") or []):
+        if entry.get("number") == from_number:
+            return True
+    # Source 2: Lead-based VIP via leads.is_vip=true (sparse partial index)
+    response = await asyncio.to_thread(
+        lambda: get_supabase_admin()
+        .table("leads").select("id")
+        .eq("tenant_id", tenant["id"]).eq("from_number", from_number)
+        .eq("is_vip", True).limit(1).execute()
+    )
+    return bool(response.data)
+```
+
+On match:
+- Calls `_insert_owner_pickup_call(tenant_id, call_sid, from_number, to_number)` — writes calls row with `routing_mode=owner_pickup` (stamped later by `/twilio/dial-status`).
+- Returns parallel-ring `<Dial>` TwiML targeting `tenant.pickup_numbers[*].number`.
+- **Skips** `evaluate_schedule` AND `check_outbound_cap` — priority callers always ring the owner regardless of off-hours or monthly cap breach.
+- If the tenant has no `pickup_numbers` configured, falls through to AI (safety net — per D-03 we never leave a priority caller without an answer).
+
+**Fail-open**: a Supabase error in the lead-based lookup returns `False` (logs a warning). No false-positive risk (worst case the caller is routed to AI, same as a non-priority caller).
+
+**DB shape** (migration 049): `tenants.vip_numbers JSONB NOT NULL DEFAULT '[]'::jsonb` (no CHECK on length — D-09); `leads.is_vip BOOLEAN NOT NULL DEFAULT false`; sparse partial index `idx_leads_vip_lookup ON leads (tenant_id, from_number) WHERE is_vip = true` keeps the lookup cheap as leads grow.
+
+**Branding**: user-facing UI says "Priority Callers" throughout (dashboard `/more/call-routing`, LeadFlyout badge). DB columns keep the `vip_*` names (commit `72f6572` renamed UI strings; schema migration 049 was pre-rename and kept). When editing, preserve this split — never rename columns without a coordinated migration.
 
 ### Database Schema (Phase 39 Migration 042)
 

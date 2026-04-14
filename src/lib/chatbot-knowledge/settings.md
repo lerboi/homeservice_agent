@@ -8,7 +8,8 @@ The Settings area covers all configuration for your AI receptionist and business
 - **Working Hours** — Set your available days and time slots for bookings
 - **Service Zones & Travel** — Define geographic coverage areas and travel buffer times between jobs
 - **Notifications & Escalation** — Configure SMS/email alerts and add emergency contacts for urgent calls
-- **AI & Voice Settings** — Set your business phone number, choose AI tone, and make a test call
+- **AI & Voice Settings** — Set your business phone number, choose an AI voice, adjust the tone preset, and make a test call
+- **Call Routing** — Forward calls to your phone on a schedule, add pickup numbers, and mark Priority Callers
 
 ## How to navigate here
 - [Services & Pricing](/dashboard/more/services-pricing)
@@ -16,6 +17,7 @@ The Settings area covers all configuration for your AI receptionist and business
 - [Service Zones](/dashboard/more/service-zones)
 - [Notifications](/dashboard/more/notifications)
 - [AI Voice Settings](/dashboard/more/ai-voice-settings)
+- [Call Routing](/dashboard/more/call-routing)
 
 ## Common tasks
 
@@ -31,9 +33,16 @@ Go to [Notifications](/dashboard/more/notifications). In the Escalation Contacts
 ### How do I make a test call to my AI receptionist?
 Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Click "Make Test Call" — your business number will call you so you can hear how the AI sounds to your callers.
 
-### How do I change the AI's tone or greeting?
-Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Adjust the tone setting (Professional, Friendly, Formal) and customize the greeting script. Click Save to apply changes.
+### How do I change the AI's voice?
+Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Pick from six voices: **Aoede**, **Erinome**, **Sulafat** (warmer / female-sounding), or **Zephyr**, **Achird**, **Charon** (deeper / male-sounding). Click any to preview. Save to apply — new calls use the new voice immediately.
+
+### How do I change the AI's tone?
+Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Pick a tone preset (Professional, Friendly, Local Expert). The tone also affects which default voice is used if you haven't explicitly picked one.
+
+### How do I forward calls to my own phone?
+Go to [Call Routing](/dashboard/more/call-routing). Turn on the forwarding schedule, add your phone number(s) under Pickup Numbers, and set the time ranges when your phone should ring first. Outside those hours, the AI answers.
 
 ## Related sections
+- [Call Routing](/dashboard/more/call-routing)
 - [Integrations](/dashboard/more/integrations)
 - [Billing](/dashboard/more/billing)

@@ -1,6 +1,89 @@
 import { supabase } from '@/lib/supabase';
 
 /**
+ * createOrAttachLeadForManualAppointment — links a manual calendar booking to a lead.
+ *
+ * Unlike createOrMergeLead (voice-pipeline path), this helper:
+ *  - never touches lead_calls (there is no call)
+ *  - always treats the lead as 'booked' status (an appointment exists)
+ *  - updates the existing lead's appointment_id to the newest booking for repeat callers
+ *
+ * Dedup rule matches the voice pipeline: same tenant + same from_number with
+ * open status (new|booked) => attach; otherwise create.
+ */
+export async function createOrAttachLeadForManualAppointment({
+  tenantId,
+  appointmentId,
+  fromNumber,
+  callerName,
+  jobType,
+  serviceAddress,
+  postalCode,
+  streetName,
+  email,
+}) {
+  const { data: existingLead } = await supabase
+    .from('leads')
+    .select('id, caller_name, status')
+    .eq('tenant_id', tenantId)
+    .eq('from_number', fromNumber)
+    .in('status', ['new', 'booked'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingLead) {
+    const updates = { appointment_id: appointmentId };
+    if (existingLead.status === 'new') updates.status = 'booked';
+    const { data: updated } = await supabase
+      .from('leads')
+      .update(updates)
+      .eq('id', existingLead.id)
+      .eq('tenant_id', tenantId)
+      .select('id, caller_name, status')
+      .single();
+    return updated || existingLead;
+  }
+
+  const { data: newLead, error } = await supabase
+    .from('leads')
+    .insert({
+      tenant_id: tenantId,
+      from_number: fromNumber,
+      caller_name: callerName || null,
+      job_type: jobType || null,
+      service_address: serviceAddress || null,
+      postal_code: postalCode || null,
+      street_name: streetName || null,
+      email: email || null,
+      urgency: 'routine',
+      status: 'booked',
+      appointment_id: appointmentId,
+      primary_call_id: null,
+    })
+    .select('id, caller_name, status')
+    .single();
+
+  if (error) {
+    console.error('[appointments] createOrAttachLead insert error:', error);
+    throw error;
+  }
+
+  await supabase.from('activity_log').insert({
+    tenant_id: tenantId,
+    event_type: 'lead_created',
+    lead_id: newLead.id,
+    metadata: {
+      caller_name: callerName || null,
+      job_type: jobType || null,
+      source: 'manual_calendar',
+    },
+  });
+
+  return newLead;
+}
+
+/**
  * createOrMergeLead — creates a new lead or attaches a repeat caller to an existing open lead.
  *
  * Pipeline rules:

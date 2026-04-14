@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 36 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 49 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-04-04 (Migration 036 — rename urgency tier 'high_ticket' to 'urgent' across calls, leads, appointments, services)
+**Last updated**: 2026-04-13 (Migration 049 — VIP/Priority caller routing: `tenants.vip_numbers` JSONB + `leads.is_vip` boolean)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 36 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 49 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -107,12 +107,16 @@ Realtime subscriptions (browser):
 | `supabase/migrations/034_add_skipped_sms_status.sql` | Expand calls.recovery_sms_status CHECK to add 'skipped' (for short calls and booked callers) |
 | `supabase/migrations/035_lead_email_and_invoice_title.sql` | email column on leads + title column on invoices |
 | `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
+| `supabase/migrations/040_call_recordings_storage_policy.sql` | Phase 38 — Storage bucket `call-recordings` (private) + RLS policy `tenant_read_recordings`: owners can SELECT objects under their `{tenant_id}/` folder. Agent writes via S3 service-role (bypasses RLS). |
+| `supabase/migrations/041_calls_realtime.sql` | Phase 38 — `ALTER PUBLICATION supabase_realtime ADD TABLE calls` + `REPLICA IDENTITY FULL`. Enables the dashboard's Realtime subscription on `calls` (dashboard/calls/page.js). |
 | `supabase/migrations/042_call_routing_schema.sql` | Phase 39 — call routing schema: tenants gains call_forwarding_schedule JSONB (schedule evaluator input), pickup_numbers JSONB (CHECK len ≤ 5), dial_timeout_seconds INTEGER; calls gains routing_mode TEXT (nullable, CHECK IN ('ai','owner_pickup','fallback_to_ai')) + outbound_dial_duration_sec INTEGER; idx_calls_tenant_month index supports monthly outbound cap SUM query |
+| `supabase/migrations/043_appointments_realtime.sql` | Phase 41 — `ALTER PUBLICATION supabase_realtime ADD TABLE appointments` + `REPLICA IDENTITY FULL`. Enables the calendar page to reflect AI-created bookings in real time (DELETE events require FULL for row filtering). |
 | `supabase/migrations/044_ai_voice_column.sql` | Phase 44 — Add ai_voice TEXT column to tenants with CHECK constraint (Phase 44: AI Voice Selection). NULL = fallback to tone-based VOICE_MAP. |
 | `supabase/migrations/045_sms_messages_and_call_sid.sql` | Phase 40 — sms_messages table + call_sid on calls |
 | `supabase/migrations/046_calendar_blocks_and_completed_at.sql` | Phase 42 — calendar_blocks table (id, tenant_id, title, start_time, end_time, is_all_day, note, created_at) with 4 RLS tenant policies + index; appointments gains completed_at timestamptz |
 | `supabase/migrations/047_calendar_blocks_external_event.sql` | Phase 42 — calendar_blocks gains external_event_id TEXT for Google/Outlook sync |
 | `supabase/migrations/048_calendar_blocks_group_id.sql` | Phase 42 — calendar_blocks gains group_id UUID to link multi-day blocks for bulk delete; partial index on group_id WHERE NOT NULL |
+| `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---
@@ -862,6 +866,112 @@ No new tables. No RLS changes (existing tenants RLS covers new column).
 
 ---
 
+### 042_call_routing_schema.sql — Call Routing Foundation (Phase 39)
+
+**Extends tenants** with three JSONB/INTEGER columns that drive the Twilio webhook routing decision:
+
+```sql
+ALTER TABLE tenants
+  ADD COLUMN call_forwarding_schedule JSONB NOT NULL DEFAULT '{"enabled":false,"days":{}}'::jsonb,
+  ADD COLUMN pickup_numbers JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_array_length(pickup_numbers) <= 5),
+  ADD COLUMN dial_timeout_seconds INTEGER NOT NULL DEFAULT 15;
+
+ALTER TABLE calls
+  ADD COLUMN routing_mode TEXT CHECK (routing_mode IN ('ai','owner_pickup','fallback_to_ai')),
+  ADD COLUMN outbound_dial_duration_sec INTEGER;
+
+CREATE INDEX IF NOT EXISTS idx_calls_tenant_month ON calls (tenant_id, created_at);
+```
+
+- `call_forwarding_schedule` — shape `{enabled: bool, days: {mon..sun: [{start, end}]}}`, consumed by `webhook/schedule.py::evaluate_schedule` (pure function, no DB access).
+- `pickup_numbers` — JSONB array of `{number, label, sms_forward}` objects, capped at 5 (CHECK). These are the parallel-ring targets for `owner_pickup` routing.
+- `dial_timeout_seconds` — how long Twilio should ring the pickup numbers before falling through to AI.
+- `routing_mode` on calls — populated by the `/twilio/dial-status` callback: `'owner_pickup'` if any pickup answered, `'fallback_to_ai'` if all missed.
+- `outbound_dial_duration_sec` — populated same callback; feeds `webhook/caps.py::check_outbound_cap` for monthly minute caps (US/CA: 5000, SG: 2500).
+- `idx_calls_tenant_month` powers the monthly SUM query inside `check_outbound_cap`.
+
+No RLS changes (existing tenant/calls policies cover the new columns).
+
+---
+
+### 045_sms_messages_and_call_sid.sql — SMS Audit Log + Call SID (Phase 40)
+
+**New table** `sms_messages` (audit trail for inbound SMS forwarded to pickup numbers via `/twilio/incoming-sms`):
+
+```sql
+CREATE TABLE sms_messages (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  from_number TEXT NOT NULL,
+  to_number   TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  direction   TEXT NOT NULL CHECK (direction IN ('inbound', 'forwarded')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_sms_messages_tenant_created ON sms_messages (tenant_id, created_at);
+ALTER TABLE sms_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "tenant_select_sms" ON sms_messages
+  FOR SELECT USING (tenant_id = (SELECT id FROM tenants WHERE owner_id = auth.uid()));
+```
+
+Only a SELECT policy is defined — writes happen exclusively from the service-role Twilio webhook handler (`webhook/twilio_routes.py::incoming_sms`). One row per inbound SMS (`direction='inbound'`) plus one row per forward target (`direction='forwarded'`).
+
+**Also**: `ALTER TABLE calls ADD COLUMN call_sid TEXT` + sparse index `idx_calls_call_sid WHERE call_sid IS NOT NULL`. The webhook stamps `call_sid` on owner-pickup call rows so the `/twilio/dial-status` callback can match back to the correct call record (AI-SIP calls use `call_id` instead; both columns coexist).
+
+---
+
+### 046_calendar_blocks_and_completed_at.sql — Time Blocks + Mark-Complete (Phase 42)
+
+**New table** `calendar_blocks` — personal/unavailable time blocks (lunch, vacation, errands) distinct from appointments:
+
+```sql
+CREATE TABLE calendar_blocks (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  title       text NOT NULL,
+  start_time  timestamptz NOT NULL,
+  end_time    timestamptz NOT NULL,
+  is_all_day  boolean NOT NULL DEFAULT false,
+  note        text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE calendar_blocks ENABLE ROW LEVEL SECURITY;
+-- 4 tenant policies (SELECT/INSERT/UPDATE/DELETE) — same shape as other tenant-child tables
+CREATE INDEX idx_calendar_blocks_tenant_time ON calendar_blocks (tenant_id, start_time, end_time);
+
+ALTER TABLE appointments ADD COLUMN completed_at timestamptz;
+```
+
+Blocks are respected by the slot calculator (`livekit-agent/src/lib/slot_calculator.py`) — the AI won't offer slots that overlap a block. Migration 047 adds `external_event_id` for syncing blocks to Google/Outlook; migration 048 adds `group_id` for bulk-delete of multi-day blocks.
+
+`appointments.completed_at` is set when the owner clicks "Mark complete" on an appointment — used by the invoicing/Kanban flows to know the job is done.
+
+---
+
+### 049_vip_caller_routing.sql — Priority (VIP) Caller Direct Routing (Phase 46)
+
+```sql
+SET search_path TO public;
+
+ALTER TABLE public.tenants
+  ADD COLUMN vip_numbers JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+ALTER TABLE public.leads
+  ADD COLUMN is_vip BOOLEAN NOT NULL DEFAULT false;
+
+CREATE INDEX idx_leads_vip_lookup
+  ON public.leads (tenant_id, from_number)
+  WHERE is_vip = true;
+```
+
+Two-source priority lookup consumed by `webhook/twilio_routes.py::_is_vip_caller`:
+1. **Standalone numbers** — `tenants.vip_numbers` JSONB array of `{number, label}` (unlimited, no CHECK per D-09). No DB hit — already loaded with the tenant row.
+2. **Lead-based** — `leads.is_vip=true` for the caller's `from_number`. Sparse partial index so the lookup is fast even as the leads table grows (only VIP rows are indexed).
+
+If either source matches, the webhook bypasses the schedule/cap evaluator and goes straight to owner-pickup parallel-ring. User-facing branding is "Priority" (the "VIP" name is DB-only, preserved for column continuity).
+
+---
+
 ## 6. Complete Table Reference
 
 | Table | Migration | Purpose | RLS Pattern |
@@ -898,6 +1008,7 @@ No new tables. No RLS changes (existing tenants RLS covers new column).
 | `estimate_line_items` | 030 | Line items per estimate tier | Tenant child |
 | `invoice_payments` | 031 | Payment log entries per invoice (partial payment support) | Tenant child |
 | `invoice_reminders` | 032 | Idempotent reminder tracking per invoice (UNIQUE invoice_id + reminder_type) | Tenant child |
+| `sms_messages` | 045 | Audit log of inbound SMS + forwarded copies to tenant's `pickup_numbers` with `sms_forward=true`. Columns: id, tenant_id, from_number, to_number, body, direction (CHECK IN 'inbound','forwarded'), created_at. Index on (tenant_id, created_at). RLS: SELECT-own only via tenants.owner_id. | Tenant child (SELECT-own only) |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
@@ -908,10 +1019,12 @@ No new tables. No RLS changes (existing tenants RLS covers new column).
 - 023: `phone_number` (renamed from `retell_phone_number`)
 - 039: `call_forwarding_schedule` (JSONB), `pickup_numbers` (JSONB), `dial_timeout_seconds` (INTEGER)
 - 044: `ai_voice` (TEXT, nullable) — curated Gemini voice override; NULL = VOICE_MAP[tone_preset] fallback; CHECK (IN 'Aoede','Erinome','Sulafat','Zephyr','Achird','Charon')
+- 049: `vip_numbers` (JSONB NOT NULL DEFAULT '[]') — standalone Priority-caller phone numbers (unlimited, no CHECK). Webhook reads this for direct-routing check before evaluating schedule/caps.
 
 **Appointments columns added across migrations** (all on `appointments` table):
 - 007: `external_event_id` (renamed from google_event_id), `external_event_provider`
 - 026: `postal_code`, `street_name`
+- 046: `completed_at` (timestamptz, nullable) — set when owner marks the job done from the dashboard.
 
 **Calls columns added across migrations** (all on `calls` table):
 - 008: `booking_outcome`, `exception_reason`, `notification_priority`
@@ -919,11 +1032,14 @@ No new tables. No RLS changes (existing tenants RLS covers new column).
 - 023: `call_provider` ('retell'|'livekit'), `egress_id`; renames: `retell_call_id`→`call_id`, `retell_metadata`→`call_metadata`
 - 034: `recovery_sms_status` CHECK expanded to add 'skipped'
 - 036: `urgency_classification` CHECK updated: 'high_ticket'→'urgent'
+- 042: `routing_mode` (TEXT, nullable, CHECK IN 'ai'|'owner_pickup'|'fallback_to_ai'), `outbound_dial_duration_sec` (INTEGER) — set by the Twilio dial-status webhook
+- 045: `call_sid` (TEXT, nullable) — Twilio CallSid. Populated by webhook routing to link owner-pickup call records to dial-status callbacks. Sparse index `idx_calls_call_sid WHERE call_sid IS NOT NULL`.
 
 **Leads columns added across migrations** (all on `leads` table):
 - 026: `postal_code`, `street_name`
 - 035: `email`
 - 036: `urgency` CHECK updated: 'high_ticket'→'urgent'
+- 049: `is_vip` (BOOLEAN NOT NULL DEFAULT false) — marks existing customers as Priority/VIP callers. Sparse partial index on (tenant_id, from_number) WHERE is_vip=true supports fast lookup at webhook routing time.
 
 **Services columns added**:
 - 018: `intake_questions` (jsonb)

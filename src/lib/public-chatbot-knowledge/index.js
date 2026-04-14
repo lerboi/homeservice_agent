@@ -31,7 +31,7 @@ const ROUTE_DOC_MAP = {
  */
 const KEYWORD_DOC_MAP = [
   { keywords: ['price', 'pricing', 'cost', 'plan', 'tier', 'starter', 'growth', 'scale', 'enterprise', 'trial', 'cancel', 'discount', 'annual', 'monthly', 'overage', 'upgrade'], doc: 'pricing.md' },
-  { keywords: ['feature', 'booking', 'triage', 'sms', 'alert', 'crm', 'lead', 'invoice', 'estimate', 'calendar', 'sync', 'analytics', 'language', 'recording', 'notification'], doc: 'features.md' },
+  { keywords: ['feature', 'booking', 'triage', 'sms', 'alert', 'crm', 'lead', 'invoice', 'estimate', 'calendar', 'sync', 'analytics', 'language', 'recording', 'notification', 'priority', 'vip', 'forward', 'forwarding', 'route', 'routing', 'pickup', 'voice', 'time block', 'vacation', 'block off'], doc: 'features.md' },
   { keywords: ['setup', 'start', 'how', 'work', 'install', 'configure', 'sign up', 'onboard', 'get started', 'demo'], doc: 'how-it-works.md' },
   { keywords: ['faq', 'question', 'confused', 'data', 'security', 'privacy', 'support', 'trade', 'plumb', 'hvac', 'electric', 'roofer', 'handyman'], doc: 'faq.md' },
   { keywords: ['contact', 'talk', 'reach', 'email', 'sales', 'enterprise'], doc: 'contact.md' },

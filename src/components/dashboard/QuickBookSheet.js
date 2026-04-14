@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Loader2, CalendarSync } from 'lucide-react';
+import { Plus, Loader2, CalendarSync, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -25,18 +25,26 @@ import { Switch } from '@/components/ui/switch';
  *   isMobile      — boolean
  */
 export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, isMobile }) {
-  const [form, setForm] = useState({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
+  const [form, setForm] = useState({
+    caller_name: '', caller_phone: '', job_type: '', notes: '',
+    service_address: '', postal_code: '', email: '',
+  });
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [syncToCalendar, setSyncToCalendar] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   // Reset form when sheet opens
   useEffect(() => {
     if (open) {
-      setForm({ caller_name: '', caller_phone: '', job_type: '', notes: '' });
+      setForm({
+        caller_name: '', caller_phone: '', job_type: '', notes: '',
+        service_address: '', postal_code: '', email: '',
+      });
       setSyncToCalendar(true);
       setSaving(false);
+      setShowMore(false);
 
       if (!slotDate) {
         // Toolbar mode — default to today, next whole hour
@@ -51,8 +59,10 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
     }
   }, [open, slotDate]);
 
+  const canSubmit = form.caller_name.trim() && form.caller_phone.trim();
+
   async function handleSubmit() {
-    if (!form.caller_name.trim()) return;
+    if (!canSubmit) return;
 
     let startTime, endTime;
     if (slotDate) {
@@ -68,9 +78,13 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
     try {
       await onSave({
         caller_name: form.caller_name.trim(),
-        caller_phone: form.caller_phone.trim() || null,
+        caller_phone: form.caller_phone.trim(),
         job_type: form.job_type.trim() || null,
         notes: form.notes.trim() || null,
+        service_address: form.service_address.trim() || null,
+        postal_code: form.postal_code.trim() || null,
+        street_name: null,
+        email: form.email.trim() || null,
         start_time: startTime,
         end_time: endTime,
         sync_to_calendar: syncToCalendar,
@@ -135,7 +149,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="qb-phone">Phone</Label>
+            <Label htmlFor="qb-phone">Phone *</Label>
             <Input
               id="qb-phone"
               type="tel"
@@ -166,6 +180,56 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
             />
           </div>
 
+          {/* More details — optional fields for invoice-ready lead */}
+          <div className="border-t border-stone-200/60 pt-3">
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              className="flex items-center justify-between w-full text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+            >
+              <span>More details (optional)</span>
+              {showMore ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {showMore && (
+              <div className="space-y-3 pt-3">
+                <div className="space-y-2">
+                  <Label htmlFor="qb-address">Street address</Label>
+                  <Input
+                    id="qb-address"
+                    value={form.service_address}
+                    onChange={(e) => setForm((f) => ({ ...f, service_address: e.target.value }))}
+                    placeholder="e.g. 123 Main St, Apt 4B"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="qb-postal">Postal / ZIP code</Label>
+                  <Input
+                    id="qb-postal"
+                    value={form.postal_code}
+                    onChange={(e) => setForm((f) => ({ ...f, postal_code: e.target.value }))}
+                    placeholder="e.g. 12345"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="qb-email">Email</Label>
+                  <Input
+                    id="qb-email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="e.g. customer@example.com"
+                    className="h-11"
+                  />
+                </div>
+                <p className="text-xs text-stone-500">
+                  These fields aren&apos;t required to book, but they make the lead invoice-ready.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Sync to calendar toggle */}
           <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F5F5F4] border border-stone-200/60">
             <div className="flex items-center gap-2">
@@ -184,7 +248,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
         <SheetFooter className="px-6 pb-6">
           <Button
             onClick={handleSubmit}
-            disabled={saving || !form.caller_name.trim()}
+            disabled={saving || !canSubmit}
             className="w-full h-11 bg-[#C2410C] hover:bg-[#9A3412] text-white"
           >
             {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}

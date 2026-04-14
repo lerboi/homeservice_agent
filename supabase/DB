@@ -70,6 +70,7 @@ CREATE TABLE public.appointments (
   external_event_provider text CHECK (external_event_provider = ANY (ARRAY['google'::text, 'outlook'::text])),
   postal_code text,
   street_name text,
+  completed_at timestamp with time zone,
   CONSTRAINT appointments_pkey PRIMARY KEY (id),
   CONSTRAINT appointments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT appointments_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id),
@@ -84,6 +85,20 @@ CREATE TABLE public.billing_notifications (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT billing_notifications_pkey PRIMARY KEY (id),
   CONSTRAINT billing_notifications_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.calendar_blocks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  title text NOT NULL,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  is_all_day boolean NOT NULL DEFAULT false,
+  note text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  external_event_id text,
+  group_id uuid,
+  CONSTRAINT calendar_blocks_pkey PRIMARY KEY (id),
+  CONSTRAINT calendar_blocks_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 CREATE TABLE public.calendar_credentials (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -161,6 +176,7 @@ END,
   egress_id text,
   routing_mode text CHECK (routing_mode = ANY (ARRAY['ai'::text, 'owner_pickup'::text, 'fallback_to_ai'::text])),
   outbound_dial_duration_sec integer,
+  call_sid text,
   CONSTRAINT calls_pkey PRIMARY KEY (id),
   CONSTRAINT calls_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
@@ -377,6 +393,7 @@ CREATE TABLE public.leads (
   postal_code text,
   street_name text,
   email text,
+  is_vip boolean NOT NULL DEFAULT false,
   CONSTRAINT leads_pkey PRIMARY KEY (id),
   CONSTRAINT leads_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT leads_primary_call_id_fkey FOREIGN KEY (primary_call_id) REFERENCES public.calls(id),
@@ -419,6 +436,17 @@ CREATE TABLE public.services (
   intake_questions jsonb,
   CONSTRAINT services_pkey PRIMARY KEY (id),
   CONSTRAINT services_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.sms_messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  from_number text NOT NULL,
+  to_number text NOT NULL,
+  body text NOT NULL,
+  direction text NOT NULL CHECK (direction = ANY (ARRAY['inbound'::text, 'forwarded'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT sms_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT sms_messages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 CREATE TABLE public.stripe_webhook_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -474,6 +502,7 @@ CREATE TABLE public.tenants (
   pickup_numbers jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_array_length(pickup_numbers) <= 5),
   dial_timeout_seconds integer NOT NULL DEFAULT 15,
   ai_voice text CHECK (ai_voice IS NULL OR (ai_voice = ANY (ARRAY['Aoede'::text, 'Erinome'::text, 'Sulafat'::text, 'Zephyr'::text, 'Achird'::text, 'Charon'::text]))),
+  vip_numbers jsonb NOT NULL DEFAULT '[]'::jsonb,
   CONSTRAINT tenants_pkey PRIMARY KEY (id),
   CONSTRAINT tenants_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
 );

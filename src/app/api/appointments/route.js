@@ -1,6 +1,7 @@
 import { after } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
+import { createOrAttachLeadForManualAppointment } from '@/lib/leads';
 
 /**
  * Compute travel buffer blocks between consecutive same-day appointments.
@@ -117,7 +118,8 @@ export async function GET(request) {
       caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
       external_event_id, notes, created_at,
-      service_zones (id, name)
+      service_zones (id, name),
+      leads!appointment_id (id, caller_name, status)
     `)
     .eq('tenant_id', tenantId)
     .neq('status', 'cancelled')
@@ -199,21 +201,33 @@ export async function POST(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { caller_name, caller_phone, start_time, end_time, notes, status, job_type, sync_to_calendar } = await request.json();
+  const {
+    caller_name, caller_phone, start_time, end_time, notes, status, job_type,
+    sync_to_calendar,
+    service_address, postal_code, street_name, email,
+  } = await request.json();
 
   if (!caller_name || !start_time) {
     return Response.json({ error: 'caller_name and start_time are required' }, { status: 400 });
   }
+  if (!caller_phone) {
+    return Response.json({ error: 'caller_phone is required for manual bookings' }, { status: 400 });
+  }
+
+  const composedAddress =
+    service_address || [street_name, postal_code].filter(Boolean).join(', ') || 'TBD';
 
   const { data: result, error: rpcError } = await supabase.rpc('book_appointment_atomic', {
     p_tenant_id: tenantId,
     p_call_id: null,
     p_start_time: start_time,
     p_end_time: end_time,
-    p_service_address: 'TBD',
+    p_service_address: composedAddress,
     p_caller_name: caller_name,
-    p_caller_phone: caller_phone || '',
+    p_caller_phone: caller_phone,
     p_urgency: 'routine',
+    p_postal_code: postal_code || null,
+    p_street_name: street_name || null,
   });
 
   if (rpcError) {
@@ -229,9 +243,28 @@ export async function POST(request) {
     ...(notes ? { notes } : {}),
   }).eq('id', result.appointment_id);
 
+  try {
+    await createOrAttachLeadForManualAppointment({
+      tenantId,
+      appointmentId: result.appointment_id,
+      fromNumber: caller_phone,
+      callerName: caller_name,
+      jobType: job_type || null,
+      serviceAddress: composedAddress === 'TBD' ? null : composedAddress,
+      postalCode: postal_code || null,
+      streetName: street_name || null,
+      email: email || null,
+    });
+  } catch (err) {
+    console.error('[appointments] Lead create/attach failed, appointment still saved:', err.message);
+  }
+
   const { data } = await supabase
     .from('appointments')
-    .select('*')
+    .select(`
+      *,
+      leads!appointment_id (id, caller_name, status)
+    `)
     .eq('id', result.appointment_id)
     .single();
 

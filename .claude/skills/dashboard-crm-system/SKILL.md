@@ -1,6 +1,6 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the dashboard and CRM system — all dashboard pages, lead lifecycle and merging, Kanban board, analytics charts, escalation chain, settings panels, setup checklist, design tokens, guided tour, and Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, lead management, CRM components, analytics, escalation contacts, service management, settings, or design tokens. Also use when the user asks about how leads work, wants to modify dashboard UI, or needs to debug Realtime subscription issues."
+description: "Complete architectural reference for the dashboard and CRM system — all dashboard pages, lead lifecycle and merging, status pill strip, analytics charts, escalation chain, settings panels, setup checklist, design tokens, guided tour, and Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, lead management, CRM components, analytics, escalation contacts, service management, settings, or design tokens. Also use when the user asks about how leads work, wants to modify dashboard UI, or needs to debug Realtime subscription issues."
 ---
 
 # Dashboard & CRM System — Complete Reference
@@ -16,7 +16,7 @@ This document is the single source of truth for the entire dashboard and CRM sys
 | Layer | Files | Purpose |
 |-------|-------|---------|
 | **Dashboard Pages** | `src/app/dashboard/` | All page routes nested under layout |
-| **CRM Components** | `src/components/dashboard/` | Kanban, flyouts, charts, stats, editors, tour |
+| **CRM Components** | `src/components/dashboard/` | Lead cards, status pills, flyouts, charts, stats, editors, tour |
 | **API Routes** | `src/app/api/leads/`, `src/app/api/calls/`, `src/app/api/escalation-contacts/`, `src/app/api/setup-checklist/`, `src/app/api/invoices/`, `src/app/api/estimates/`, `src/app/api/invoice-settings/`, `src/app/api/chat/` | Lead CRUD, call logs, escalation CRUD, checklist state, invoice CRUD, estimate CRUD + send/convert, invoice settings, AI chatbot |
 | **Business Logic** | `src/lib/leads.js` | Lead creation and repeat-caller merge |
 | **Design System** | `src/lib/design-tokens.js` | Shared color palette and component tokens |
@@ -39,7 +39,7 @@ Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
 ```
 layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour + ChatbotSheet
   ├── page.js (/)                ← Adaptive home: setup mode (checklist hero) OR active mode (command center)
-  ├── leads/page.js              ← Filter bar + list/kanban toggle + LeadFlyout
+  ├── leads/page.js              ← Status pill strip + filter bar + lead list + LeadFlyout
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
   ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
   ├── invoices/page.js           ← Invoice list with status tabs, summary metrics, search
@@ -77,7 +77,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/BillingWarningBanner.js` | Persistent amber warning for past_due subscriptions with 3-day grace countdown |
 | `src/app/dashboard/TrialCountdownBanner.js` | Trial countdown banner (blue >3d, amber <=3d) with upgrade CTA |
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
-| `src/app/dashboard/leads/page.js` | Leads page: filter bar, list/kanban toggle, Realtime subscription |
+| `src/app/dashboard/leads/page.js` | Leads page: status pill strip, filter bar, lead list, Realtime subscription |
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
 | `src/app/dashboard/analytics/page.js` | Analytics page: fetches all leads, renders AnalyticsCharts |
 | `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner |
@@ -95,6 +95,8 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/more/notifications/page.js` | Notification preferences page — per-outcome SMS/email toggles |
 | `src/components/dashboard/NotificationPreferences.jsx` | Per-outcome Switch grid (booked/declined/not_attempted/attempted x SMS/email) |
 | `src/app/dashboard/more/ai-voice-settings/page.js` | Wraps SettingsAISection (phone number + test call only) |
+| `src/app/dashboard/more/call-routing/page.js` | Call routing settings: on/off schedule (per-day ranges, overnight support), pickup numbers list (E.164, sms_forward toggle, max 5), dial_timeout slider, plus **Priority Callers** unified list (merges standalone `tenants.vip_numbers` + lead-based `leads.is_vip=true` sources) with add/edit/delete and "remove priority status" action that PATCHes the lead |
+| `src/app/api/call-routing/route.js` | GET/PATCH tenants.call_forwarding_schedule + pickup_numbers + dial_timeout_seconds + vip_numbers. Validates E.164, caps pickup_numbers at 5 (DB CHECK), and returns both vip_numbers and a sibling `vip_leads` array (leads with is_vip=true) for the unified Priority list |
 | `src/app/api/notification-settings/route.js` | GET/PATCH notification_preferences JSONB on tenants |
 | `src/app/dashboard/more/billing/page.js` | Billing page: plan card, usage ring gauge, billing details, recent invoices |
 | `src/components/dashboard/UsageRingGauge.js` | SVG donut ring gauge for call usage visualization |
@@ -125,8 +127,9 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/MoreBackButton.jsx` | "← Back to More" link shown on More sub-pages via more/layout.js |
 | `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 6 steps, brand-themed, layout-mounted |
 | `src/app/api/calls/route.js` | GET calls (filtered by date, urgency, booking_outcome, phone search) |
-| `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript, Create/View Invoice button for completed/paid leads |
-| `src/components/dashboard/KanbanBoard.jsx` | 5-column pipeline board (new/booked/completed/paid/lost) |
+| `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript, Create/View Invoice button for completed/paid leads, **Priority-caller toggle** (PATCH `is_vip` — reflected in the Call Routing unified Priority list) |
+| `src/components/dashboard/LeadStatusPills.jsx` | Clickable pill strip (new/booked/completed/paid/lost) with live counts; toggles status filter |
+| `src/components/dashboard/LeadFilterBar.jsx` | Responsive filter bar above the lead list. Desktop (≥640px): inline flex-wrap (search, urgency Select, job type Input, date range, Clear all). Mobile (<640px): search + `Filters` button that opens a bottom Sheet containing urgency/job-type/date-range with labels. Filter-count badge on the Filters button (excludes search since it stays visible). Status filter is NOT here — it lives in `LeadStatusPills` above. Active-filter pills row below the bar shows/removes any non-status filter. |
 | `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
 | `src/components/dashboard/SetupChecklist.jsx` | Redesigned checklist: required/recommended split, conic-gradient progress ring, expandable items |
@@ -559,9 +562,10 @@ Body: `{ status, revenue_amount, previous_status }`. Validation: `status === 'pa
 ### Leads (`src/app/dashboard/leads/page.js`)
 
 Client component. Features:
-- **Filter bar**: status, urgency, date range, search, jobType
-- **View toggle**: list (LeadCard rows) or kanban (KanbanBoard)
-- **Realtime**: subscribes to `postgres_changes` on `leads` table filtered by `tenant_id=eq.${tenantId}` for INSERT and UPDATE events
+- **Status pill strip** (`LeadStatusPills`): one clickable pill per pipeline status with live count; toggles the status filter client-side (no refetch)
+- **Filter bar**: urgency, date range, search, jobType (server-side); status filter is applied client-side via pill strip
+- **Single list view** (LeadCard rows) — no view toggle; visual pipeline overview lives in the pill strip
+- **Realtime**: subscribes to `postgres_changes` on `leads` table filtered by `tenant_id=eq.${tenantId}` for INSERT and UPDATE events. INSERT matching skips status (handled client-side)
 - **Flyout**: `LeadFlyout` rendered **outside the card stack** to avoid Sheet overlay stacking context issues
 - **Animation**: new Realtime inserts get `_isNew: true` flag — `animate-slide-in-from-top` class (injected via `ensureSlideInKeyframe()`)
 - **Card wrapper**: `card.base` wrapper on return, `data-tour="leads-page"`
@@ -689,11 +693,11 @@ Key constants: `URGENCY_STYLES`, `STATUS_LABELS`, `STATUS_OPTIONS`.
 `formatRelativeTime(iso)` — relative display (just now, Xm ago, Xh ago, Xd ago).
 Invoice state: `linkedInvoice` — fetched on open, reset on close.
 
-### `KanbanBoard({ leads, onViewLead })`
+### `LeadStatusPills({ counts, activeStatus, onStatusChange })`
 
-**File**: `src/components/dashboard/KanbanBoard.jsx`
+**File**: `src/components/dashboard/LeadStatusPills.jsx`
 
-5-column board: `['new', 'booked', 'completed', 'paid', 'lost']`. Groups leads by status. lg+: side-by-side columns. Below lg: horizontal scroll with `snap-x snap-mandatory`. No drag-and-drop (status changes via LeadFlyout). Delegates to `KanbanColumn` per status.
+Horizontal pill strip rendered between the page header and filter bar on the Leads page. One pill per pipeline status (`new`, `booked`, `completed`, `paid`, `lost`) with a live count badge. Clicking a pill sets `filters.status`; clicking the active pill clears it. Each status has a distinct active color matching the pipeline semantics (orange/blue/stone/green/red). Mobile-friendly: horizontal overflow with hidden scrollbar. No data fetching — counts are derived client-side from the parent's `leads` array.
 
 ### `AnalyticsCharts({ leads, loading })`
 
@@ -991,7 +995,7 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 - **Soft-delete via `is_active = false`**: Escalation contact DELETE sets `is_active = false` rather than removing the row. Preserves audit trail and call history references.
 
-- **`LeadFlyout` rendered outside card stack**: The Sheet component (Radix UI) creates a portal, but positioning context conflicts with Kanban column overflow. LeadFlyout is rendered as a sibling to the lead list wrapper, not inside any column — prevents Sheet overlay stacking context issues.
+- **`LeadFlyout` rendered outside card stack**: The Sheet component (Radix UI) creates a portal, but positioning context can conflict with scroll/overflow containers in the lead list. LeadFlyout is rendered as a sibling to the list wrapper — prevents Sheet overlay stacking context issues.
 
 - **Design tokens shared between onboarding + dashboard**: `src/lib/design-tokens.js` exports brand colors, button classes, card classes, glass effect, and grid texture. Both onboarding wizard and dashboard import from here — single source of truth for visual identity.
 
@@ -1064,7 +1068,7 @@ const ROUTE_DOC_MAP = {
 
 ```js
 const KEYWORD_DOC_MAP = [
-  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'kanban'], doc: 'leads.md' },
+  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'leads.md' },
   { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot'], doc: 'calendar.md' },
   { keywords: ['call', 'calls', 'transcript', 'recording', 'voicemail'], doc: 'calls.md' },
   { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },

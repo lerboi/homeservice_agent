@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Phone, ExternalLink, FileText, AlertTriangle, Clock, Check, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MapPin, Phone, ExternalLink, FileText, AlertTriangle, Clock, Check, Loader2, User, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +67,7 @@ function formatRelativeTime(iso) {
 }
 
 export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled, onStatusChange }) {
+  const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [dismissingConflict, setDismissingConflict] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
@@ -102,6 +104,9 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   if (!appointment) return null;
 
   const urgency = URGENCY_STYLES[appointment.urgency] || URGENCY_STYLES.routine;
+  // leads is a reverse-join array (leads.appointment_id -> appointments.id).
+  // In practice at most one lead references any given appointment at a time.
+  const linkedLead = Array.isArray(appointment.leads) ? appointment.leads[0] : appointment.leads;
 
   async function handleCancel() {
     setCancelling(true);
@@ -220,6 +225,22 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 Booked via {appointment.booked_via}{call?.created_at ? ` · Called ${formatRelativeTime(call.created_at)}` : ''}
               </div>
             )}
+            {linkedLead && (
+              <button
+                type="button"
+                onClick={() => router.push(`/dashboard/leads?open=${linkedLead.id}`)}
+                className="flex items-center justify-between w-full text-sm text-[#0F172A]/80 pt-2 mt-1 border-t border-stone-200/60 hover:bg-stone-50 transition-colors -mx-1 px-1 rounded"
+              >
+                <span className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-stone-400 shrink-0" />
+                  <span>
+                    Lead: <span className="font-medium text-[#0F172A]">{linkedLead.caller_name || 'Unnamed'}</span>
+                    <span className="text-stone-400 ml-1.5">· {linkedLead.status}</span>
+                  </span>
+                </span>
+                <ChevronRight className="h-4 w-4 text-stone-400" />
+              </button>
+            )}
             {appointment.status === 'completed' && appointment.completed_at && (
               <div className="flex items-center gap-2 text-sm text-emerald-700 pt-1 border-t border-stone-200/60">
                 <Check className="h-4 w-4 shrink-0" />
@@ -294,6 +315,18 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
         </div>
 
         <SheetFooter className="flex-col gap-2">
+          {/* Create Invoice — shortcut for the linked lead (gated on invoice-ready statuses) */}
+          {linkedLead && ['booked', 'completed', 'paid'].includes(linkedLead.status) && !showCompletionNotes && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/invoices/new?lead_id=${linkedLead.id}`)}
+              className="w-full h-11 border-[#C2410C]/30 text-[#C2410C] hover:bg-orange-50"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Create Invoice
+            </Button>
+          )}
+
           {/* Completion notes input — shown when Mark Complete is clicked */}
           {showCompletionNotes && (
             <div className="w-full space-y-3 animate-in slide-in-from-top-2 duration-200">

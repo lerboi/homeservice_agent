@@ -39,7 +39,21 @@ voice-call-architecture
 Deeply read and understand the voice-call system code — all frontend pages and components (dashboard + backend + the livekit_agent repo), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I want to fix some issues that showed up in the livekit_agent deployed on railway during a call, and some of the AI agents behaviour during a call by changing the prompts in the livekit_agent. But you have to first fully understand the full context. Let me know once you have a full understanding. Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
 
 
-When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
+Prompt crafting prompt
+--------------
+When constructing or editing prompts in the livekit_agent (Python receptionist on Gemini 3.1 Flash Live, pinned to livekit-agents   ==1.5.1 + livekit-plugins-google git commit 43d3734), follow best practices for that exact model and SDK pin — not text-completion   conventions, and not features (like per_response_tool_choice) that don't exist in the pinned plugin. The prompt is your only enforcement surface; the SDK cannot force tool calls per turn, and the model is free to fabricate fluent outcomes if you don't constrain it.
+
+For conversational behavior — info gathering, persona, language switching, decline handling, address verification, transfers — write outcome-oriented guidance. Tell the AI what it should achieve and what information it needs to extract, not exactly what to say. The receptionist must adapt to whatever the caller does (interruptions, out-of-order info, fragments, code-switching, romanized names, vague time windows). Over-scripting flattens both adaptability and persona. Detail constraints and success criteria, never utterances.
+
+For truth claims and tool prerequisites, be directive. This is not "if X say Y" scripting — it is constraining a class of claims the model cannot verify on its own. Gemini 3.1 Flash Live hallucinates outcomes fluently in real-time audio: it will say "confirmed", "available", or read out a specific time without ever invoking the tool that produced those facts. Words tied to verifiable state must be prohibited unless a tool result returned them. Anti-hallucination rules belong near the top of the promptwith the same CRITICAL RULE framing as the corrections section, not buried inside the booking section where long-context audio attention drops them.
+
+Tool descriptions are part of the prompt — Gemini reads them during generation. Encode hard preconditions in them, not just usage hints.
+
+Tool returns must be data + directive, not speakable English. A return like "Your appointment is confirmed for 3 PM" invites the model to produce that sentence without ever calling the tool. Shape returns as state + relay instruction (e.g. "BOOKED: relay confirmation for 3 PM tomorrow at [address], then ask if anything else is needed"), forcing the model to translate. This breaks the parrot loop that lets it skip the tool entirely.
+
+Trim dead weight. Server VAD handles turn-taking — anything about "let the caller finish" or "don't talk over" is wasted attention budget. The pinned plugin uses send_realtime_input, not send_client_content; do not import patterns that depend on the latter.   
+
+Preserve persona throughout. The constraints above are guardrails on what the AI can claim, not scripts that flatten the voice. The receptionist should still respond naturally within the configured tone (professional / friendly / local_expert) — outcomes and prohibitions, not utterances.
 
 
 Payment Architecture
@@ -65,4 +79,7 @@ When constructing/editing the prompt in livekit_agent, ensure that the prompts f
 
 
 
-This is a cross-repo phase. Changes happen in both C:\Users\leheh\.Projects\homeservice_agent (main) and C:\Users\leheh\.Projects\livekit-agent (Python agent, deploys to Railway separately). Read the voice-call-architecture and scheduling-calendar-system skill files and relevant code base for authoritative context on how the agent and calendar currently work.
+Which option/design provides the best UI/UX that is usable in the real world and that provides the best possible user experience for the home service business owner using this feature?
+
+
+When i look at the 'Call Routing' section in this page, im not immediately sure 

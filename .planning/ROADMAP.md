@@ -675,7 +675,18 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 | 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
 | 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
 | 51. UI/UX Polish Pass | 0/TBD | Not started | - |
+| 52. Rename Leads Tab to Jobs and Restructure Status Pills | 0/TBD | Not started | - |
 
+
+### Phase 52: Rename Leads tab to Jobs and restructure status pills for home-service mental model
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 51 (UI/UX Polish Pass) — token system and empty states must be stable before renaming visible tab surfaces; may be reprioritized independently if landing and dashboard work parallelizes
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 52 to break down)
 
 ---
 

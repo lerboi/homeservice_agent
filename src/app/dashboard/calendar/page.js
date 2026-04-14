@@ -566,7 +566,11 @@ export default function CalendarPage() {
     }
   }
 
-  async function handleQuickBook({ caller_name, caller_phone, job_type, notes, start_time, end_time, sync_to_calendar }) {
+  async function handleQuickBook({
+    caller_name, caller_phone, job_type, notes,
+    service_address, postal_code, street_name, email,
+    start_time, end_time, sync_to_calendar,
+  }) {
     const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -575,6 +579,10 @@ export default function CalendarPage() {
         caller_phone,
         job_type,
         notes,
+        service_address,
+        postal_code,
+        street_name,
+        email,
         start_time,
         end_time,
         status: 'confirmed',

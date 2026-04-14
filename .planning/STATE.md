@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: planning
-stopped_at: Phase 47 context gathered
-last_updated: "2026-04-12T21:55:00.800Z"
+stopped_at: Phase 47 plans verified — 5 plans in 3 waves, ready for execution
+last_updated: "2026-04-13T08:51:53.351Z"
 last_activity: 2026-04-13 — Roadmap created for v5.0 (Trust & Polish), 5 phases (47-51), 42 requirements mapped
 progress:
-  total_phases: 34
-  completed_phases: 25
-  total_plans: 117
-  completed_plans: 116
+  total_phases: 12
+  completed_phases: 12
+  total_plans: 51
+  completed_plans: 51
   percent: 0
 ---
 
@@ -72,6 +72,10 @@ Recent decisions affecting v5.0 work:
 - [v5.0 Research]: ScrollLinePath wraps 3 children exactly; new landing sections must be inserted after </ScrollLinePath> closing tag (between it and FinalCTASection) to avoid breaking the copper SVG path geometry
 - [v5.0 Research]: HOME-05 (AI chat history sharing) must coordinate with ChatbotSheet always-mounted pattern from Phase 37 -- shared state via React context or window event pattern, same approach as Phase 37
 
+### Roadmap Evolution
+
+- Phase 52 added (2026-04-14): Rename Leads tab to Jobs and restructure status pills for home-service mental model — pure frontend reframe of `/dashboard/leads` to match how home-service owners think (jobs vs leads); scoped to page.js, LeadStatusPills, LeadCard, LeadFilterBar, nav labels; no DB/API/agent changes
+
 ### Pending Todos
 
 None yet.
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:55:00.790Z
-Stopped at: Phase 47 context gathered
-Resume file: .planning/phases/47-landing-objection-busting-repositioning-and-landing-polish/47-CONTEXT.md
+Last session: 2026-04-13T08:51:53.338Z
+Stopped at: Phase 47 plans verified — 5 plans in 3 waves, ready for execution
+Resume file: .planning/phases/47-landing-objection-busting-repositioning-and-landing-polish/47-01-PLAN.md

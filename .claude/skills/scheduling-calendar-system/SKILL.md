@@ -440,13 +440,13 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 
 ## 8. Database Tables
 
-### `appointments` (from 003_scheduling.sql + 007_outlook_calendar.sql)
+### `appointments` (from 003_scheduling.sql + 007_outlook_calendar.sql + 026_address_fields.sql + 046_calendar_blocks_and_completed_at.sql)
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
-| `call_id` | uuid | FK → calls(id) ON DELETE SET NULL (nullable) |
+| `call_id` | uuid | FK → calls(id) ON DELETE SET NULL (nullable). Backfilled in post-call reconciliation when race-affected. |
 | `start_time` | timestamptz | |
 | `end_time` | timestamptz | |
 | `service_address` | text | |
@@ -454,10 +454,13 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 | `caller_phone` | text | |
 | `urgency` | text | CHECK IN ('emergency', 'routine', 'urgent') |
 | `zone_id` | uuid | FK → service_zones(id) ON DELETE SET NULL |
+| `postal_code` | text | Added in 026. Separate from `service_address`. |
+| `street_name` | text | Added in 026. |
 | `status` | text | CHECK IN ('confirmed', 'cancelled', 'completed'), DEFAULT 'confirmed' |
 | `booked_via` | text | CHECK IN ('ai_call', 'manual'), DEFAULT 'ai_call' |
 | `external_event_id` | text | Calendar event ID (Google or Outlook). Renamed from `google_event_id` in 007 |
 | `external_event_provider` | text | CHECK IN ('google', 'outlook'). Added in 007 |
+| `completed_at` | timestamptz | Added in 046. Set when owner marks the appointment complete from the dashboard. Nullable. |
 | `notes` | text | |
 | `created_at` | timestamptz | |
 
@@ -524,6 +527,29 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 | `synced_at` | timestamptz | |
 
 **Constraint**: `UNIQUE (tenant_id, provider, external_id)` — prevents duplicate mirror rows.
+
+### `calendar_blocks` (from 046_calendar_blocks_and_completed_at.sql + 047_calendar_blocks_external_event.sql + 048_calendar_blocks_group_id.sql)
+
+Personal/unavailable time blocks (lunch, vacation, errands). Respected by the slot calculator in the same way as `appointments` — the AI will not offer an overlapping slot.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
+| `title` | text NOT NULL | User-entered label (e.g. "Lunch", "Doctor appointment") |
+| `start_time` | timestamptz NOT NULL | |
+| `end_time` | timestamptz NOT NULL | |
+| `is_all_day` | boolean NOT NULL | DEFAULT false. Affects external sync format (date-only payload in Google/Outlook). |
+| `note` | text | Optional free-text note |
+| `external_event_id` | text | Added in 047. Google/Outlook event ID when the block is synced. Cleared by orphan-cleanup when the external event is deleted. |
+| `group_id` | uuid | Added in 048. Links multi-day blocks for bulk delete. Partial index `idx_calendar_blocks_group ON calendar_blocks(group_id) WHERE group_id IS NOT NULL`. |
+| `created_at` | timestamptz | DEFAULT now() |
+
+**Index**: `idx_calendar_blocks_tenant_time ON calendar_blocks(tenant_id, start_time, end_time)` — hot path for slot calculation and calendar-view date-range queries.
+
+**RLS**: 4 tenant policies (SELECT/INSERT/UPDATE/DELETE), same shape as other tenant-child tables.
+
+**Sync behavior**: `POST /api/calendar-blocks` synchronously pushes to the primary connected calendar (Google or Outlook). `PATCH` and `DELETE` use `after()` for async external updates. `DELETE?group=true` bulk-deletes every block sharing the `group_id`.
 
 **Tenant columns** (relevant to scheduling, stored on `tenants` table):
 - `tenant_timezone` — IANA timezone string, DEFAULT 'America/Chicago'

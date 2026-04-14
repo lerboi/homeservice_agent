@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { LayoutList, Columns3, Users, Check } from 'lucide-react';
+import { Users, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -19,7 +19,7 @@ import {
 import LeadCard from '@/components/dashboard/LeadCard';
 import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
 import LeadFlyout from '@/components/dashboard/LeadFlyout';
-import KanbanBoard from '@/components/dashboard/KanbanBoard';
+import LeadStatusPills from '@/components/dashboard/LeadStatusPills';
 import { EmptyStateLeads } from '@/components/dashboard/EmptyStateLeads';
 import { supabase } from '@/lib/supabase-browser';
 import { card } from '@/lib/design-tokens';
@@ -56,9 +56,10 @@ const DEFAULT_FILTERS = {
   jobType: '',
 };
 
+// Status is applied client-side so we can show accurate per-status counts
+// on the pill strip without double-fetching.
 function buildQueryString(filters) {
   const params = new URLSearchParams();
-  if (filters.status) params.set('status', filters.status);
   if (filters.urgency) params.set('urgency', filters.urgency);
   if (filters.dateFrom) params.set('date_from', filters.dateFrom);
   if (filters.dateTo) params.set('date_to', filters.dateTo);
@@ -66,6 +67,8 @@ function buildQueryString(filters) {
   if (filters.jobType) params.set('job_type', filters.jobType);
   return params.toString();
 }
+
+const PIPELINE_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
 
 function hasActiveFilters(filters) {
   return Object.values(filters).some(Boolean);
@@ -77,7 +80,6 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('list');
 
   // Flyout state
   const [selectedLeadId, setSelectedLeadId] = useState(null);
@@ -186,9 +188,17 @@ export default function LeadsPage() {
     }
   }, []);
 
+  // Only refetch when server-side filters change. Status is applied client-side,
+  // so toggling status pills doesn't trigger a network round-trip / loading flash.
+  const serverQueryKey = useMemo(
+    () => buildQueryString(filters),
+    [filters.urgency, filters.dateFrom, filters.dateTo, filters.search, filters.jobType] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   useEffect(() => {
     fetchLeads(filters);
-  }, [filters, fetchLeads]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverQueryKey, fetchLeads]);
 
   // ── Batch-fetch invoice statuses for lead cards ────────────────────────
   // Use a stable string key derived from lead IDs so the effect only re-runs
@@ -234,14 +244,13 @@ export default function LeadsPage() {
         (payload) => {
           const newLead = { ...payload.new, _isNew: true };
           const f = filtersRef.current;
-          // Only add if it matches current filters or no filters are active
-          const matchesFilters = !hasActiveFilters(f) || (
-            (!f.status || f.status === newLead.status) &&
+          // Status is applied client-side (via pill strip), so don't filter INSERTs by status here.
+          const matchesServerFilters = (
             (!f.urgency || f.urgency === newLead.urgency_tag) &&
             (!f.jobType || f.jobType === newLead.job_type) &&
             (!f.search || (newLead.caller_name || '').toLowerCase().includes(f.search.toLowerCase()))
           );
-          if (matchesFilters) {
+          if (matchesServerFilters) {
             setLeads((prev) => [newLead, ...prev]);
           }
         }
@@ -269,6 +278,23 @@ export default function LeadsPage() {
     };
   }, [tenantId]);
 
+  // ── Client-side status filtering + pipeline counts ─────────────────────
+  // `leads` holds everything matching the server-side filters (urgency, date, etc.)
+  // except status, which is applied here so the pill strip can show true counts.
+
+  const pipelineCounts = useMemo(() => {
+    const counts = PIPELINE_STATUSES.reduce((acc, s) => ({ ...acc, [s]: 0 }), {});
+    for (const lead of leads) {
+      if (counts[lead.status] !== undefined) counts[lead.status] += 1;
+    }
+    return counts;
+  }, [leads]);
+
+  const displayedLeads = useMemo(
+    () => (filters.status ? leads.filter((l) => l.status === filters.status) : leads),
+    [leads, filters.status]
+  );
+
   // ── Batch eligibility ──────────────────────────────────────────────────
 
   /** A lead is eligible for batch invoicing if completed AND has no existing invoice */
@@ -277,9 +303,9 @@ export default function LeadsPage() {
   }
 
   const eligibleLeads = useMemo(
-    () => leads.filter(isEligibleForBatch),
+    () => displayedLeads.filter(isEligibleForBatch),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [leads, invoiceStatusMap]
+    [displayedLeads, invoiceStatusMap]
   );
 
   function toggleLeadSelection(leadId) {
@@ -396,8 +422,8 @@ export default function LeadsPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Select mode toggle — only in list view with eligible leads */}
-        {viewMode === 'list' && eligibleLeads.length > 0 && (
+        {/* Select mode toggle — only when there are eligible leads to batch-invoice */}
+        {eligibleLeads.length > 0 && (
           <button
             type="button"
             onClick={() => { setSelectMode((prev) => { if (prev) setSelectedLeads(new Set()); return !prev; }); }}
@@ -411,57 +437,20 @@ export default function LeadsPage() {
             {selectMode ? <><Check className="h-3.5 w-3.5" /> Done</> : 'Select'}
           </button>
         )}
-
-        {/* View toggle */}
-        <div className="flex items-center rounded-lg overflow-hidden border border-stone-200">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={`flex items-center justify-center h-8 w-9 transition-colors ${
-              viewMode === 'list'
-                ? 'bg-[#0F172A] text-white'
-                : 'bg-white text-stone-500 hover:bg-stone-50'
-            }`}
-            aria-label="List view"
-            aria-pressed={viewMode === 'list'}
-          >
-            <LayoutList className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('kanban')}
-            className={`flex items-center justify-center h-8 w-9 transition-colors border-l border-stone-200 ${
-              viewMode === 'kanban'
-                ? 'bg-[#0F172A] text-white'
-                : 'bg-white text-stone-500 hover:bg-stone-50'
-            }`}
-            aria-label="Kanban view"
-            aria-pressed={viewMode === 'kanban'}
-          >
-            <Columns3 className="h-4 w-4" />
-          </button>
-        </div>
       </div>
     </div>
   );
 
-  // ── Lead list / kanban content ──────────────────────────────────────────
+  // ── Lead list content ──────────────────────────────────────────────────
 
   const isFiltered = hasActiveFilters(filters);
 
   let mainContent;
   if (loading) {
     mainContent = skeletonCards;
-  } else if (viewMode === 'kanban') {
-    mainContent = (
-      <KanbanBoard
-        leads={leads}
-        onViewLead={handleView}
-      />
-    );
-  } else if (leads.length === 0 && !isFiltered) {
+  } else if (displayedLeads.length === 0 && !isFiltered) {
     mainContent = <EmptyStateLeads />;
-  } else if (leads.length === 0 && isFiltered) {
+  } else if (displayedLeads.length === 0 && isFiltered) {
     mainContent = (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-sm text-[#475569] mb-2">No leads match your filters.</p>
@@ -477,7 +466,7 @@ export default function LeadsPage() {
   } else {
     mainContent = (
       <div className="space-y-3">
-        {leads.map((lead) => (
+        {displayedLeads.map((lead) => (
           <div
             key={lead.id}
             className={lead._isNew ? 'animate-slide-in-from-top' : ''}
@@ -498,7 +487,8 @@ export default function LeadsPage() {
 
   // ── Batch select bar ───────────────────────────────────────────────────
 
-  // Compute estimated revenue for selected leads
+  // Compute estimated revenue for selected leads (use `leads` so selection
+  // survives status-pill changes — a user can select then switch views).
   const selectedRevenue = useMemo(() => {
     return leads
       .filter((l) => selectedLeads.has(l.id))
@@ -575,6 +565,12 @@ export default function LeadsPage() {
     <>
       <div className={`${card.base} p-0`} data-tour="leads-page">
         {pageHeader}
+
+        <LeadStatusPills
+          counts={pipelineCounts}
+          activeStatus={filters.status}
+          onStatusChange={(status) => handleFilterChange({ status })}
+        />
 
         <LeadFilterBar
           filters={filters}

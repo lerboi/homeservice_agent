@@ -51,6 +51,7 @@ function SyncStatusDot({ status }) {
       dotClass: 'bg-emerald-500',
       textClass: 'text-emerald-600',
       label: 'Up to date',
+      hideLabel: true,
     },
     syncing: {
       dotClass: 'bg-[#C2410C] animate-pulse',
@@ -74,12 +75,13 @@ function SyncStatusDot({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 text-sm ${config.textClass}`}
+      className={`inline-flex items-center gap-1.5 text-sm shrink-0 ${config.textClass}`}
       role="status"
       aria-label={config.label}
+      title={config.label}
     >
       <span className={`w-2 h-2 rounded-full ${config.dotClass} inline-block`} />
-      {config.label}
+      {!config.hideLabel && config.label}
     </span>
   );
 }
@@ -92,9 +94,10 @@ function CalendarProviderRow({
   data,
   onConnect,
   onDisconnect,
-  onMakePrimary,
   isConnecting,
   isDisconnecting,
+  otherConnected,
+  otherLabel,
 }) {
   const config = PROVIDER_CONFIG[provider];
 
@@ -108,6 +111,7 @@ function CalendarProviderRow({
 
   // Not connected row
   if (!data) {
+    const blockedByOther = Boolean(otherConnected);
     return (
       <div className="flex items-center justify-between gap-3 py-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -116,14 +120,18 @@ function CalendarProviderRow({
           </div>
           <div className="min-w-0">
             <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
-            <p className="text-xs text-stone-400">Not connected</p>
+            <p className="text-xs text-stone-400">
+              {blockedByOther
+                ? `Disconnect ${otherLabel} first to switch`
+                : 'Not connected'}
+            </p>
           </div>
         </div>
         <Button
           variant="outline"
           size="xs"
           onClick={() => onConnect(provider)}
-          disabled={isConnecting}
+          disabled={isConnecting || blockedByOther}
           aria-label={`Connect ${config.label}`}
           className="shrink-0"
         >
@@ -146,14 +154,7 @@ function CalendarProviderRow({
             <CalendarDays className={`h-4 w-4 ${config.iconColor}`} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
-              {data.is_primary && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#C2410C]/10 text-[#C2410C] leading-none">
-                  PRIMARY
-                </span>
-              )}
-            </div>
+            <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
             {data.calendar_name && (
               <p className="text-xs text-[#475569] truncate">{data.calendar_name}</p>
             )}
@@ -167,14 +168,6 @@ function CalendarProviderRow({
           <span className="text-[11px] text-stone-400 mr-auto">
             Synced {formatDistanceToNow(new Date(data.last_synced_at), { addSuffix: true })}
           </span>
-        )}
-        {!data.is_primary && (
-          <button
-            className="text-[11px] text-[#C2410C] hover:underline"
-            onClick={() => onMakePrimary(provider)}
-          >
-            Make Primary
-          </button>
         )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -311,36 +304,6 @@ export default function CalendarSyncCard() {
     }
   }
 
-  async function handleMakePrimary(provider) {
-    const config = PROVIDER_CONFIG[provider];
-
-    // Optimistic UI: immediately swap is_primary
-    const prevProviders = { ...providers };
-    setProviders((prev) => {
-      const updated = { google: null, outlook: null };
-      for (const key of ['google', 'outlook']) {
-        if (prev[key]) {
-          updated[key] = { ...prev[key], is_primary: key === provider };
-        }
-      }
-      return updated;
-    });
-
-    try {
-      const res = await fetch('/api/calendar-sync/set-primary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider }),
-      });
-      if (!res.ok) throw new Error('Set primary failed');
-      toast.success(`${config.label} set as primary calendar.`);
-    } catch {
-      // Revert on error
-      setProviders(prevProviders);
-      toast.error('Could not change primary calendar. Try again.');
-    }
-  }
-
   // Loading state
   if (loading) {
     return (
@@ -421,18 +384,20 @@ export default function CalendarSyncCard() {
           data={providers.google}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
-          onMakePrimary={handleMakePrimary}
           isConnecting={connectingProvider === 'google'}
           isDisconnecting={disconnectingProvider === 'google'}
+          otherConnected={Boolean(providers.outlook)}
+          otherLabel={PROVIDER_CONFIG.outlook.label}
         />
         <CalendarProviderRow
           provider="outlook"
           data={providers.outlook}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
-          onMakePrimary={handleMakePrimary}
           isConnecting={connectingProvider === 'outlook'}
           isDisconnecting={disconnectingProvider === 'outlook'}
+          otherConnected={Boolean(providers.google)}
+          otherLabel={PROVIDER_CONFIG.google.label}
         />
       </div>
     </section>

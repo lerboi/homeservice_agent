@@ -5,5 +5,184 @@ Voice Call
 
 Dashboard
 -----------------------
-- In dashboard, say Good morning, {name}
+- In dashboard, say Good morning, {name} 
 
+- Remove swipe to change day feature in mobile calendar, its very easy to accidentally switch days when trying to scroll.
+
+- When i go through a call and finish a booking with the AI, and when i look in the call tab, the call appears and it says it was booked. However, it still does not appear in the leads tab. Below are the logs for all relevant sources.
+
+Call Transcript:
+[
+  {
+    "call_id": "call-_+6587528516_2HWewGLcAzAc",
+    "booking_outcome": "booked",
+    "transcript_structured": [
+      {
+        "role": "agent",
+        "content": "Hello, this is make it ai. This call may be recorded for quality purposes. How can I help you today?"
+      },
+      {
+        "role": "user",
+        "content": "はい。デュアルのライトリペアーズ、ビコーズ、マイリビングルームライトジャストブロークアンドイッツフリッカリング、イッツフリッカリングアンド、イェア。"
+      },
+      {
+        "role": "agent",
+        "content": "Yes, we do handle light repairs. It sounds like you're having an issue with your living room light flickering. Could you please tell me your name?"
+      },
+      {
+        "role": "user",
+        "content": "I'm Jack."
+      },
+      {
+        "role": "agent",
+        "content": "Thank you, Jack. And what is the address where the light is flickering? I'll need the street name, unit number, and postal code, just to make sure"
+      },
+      {
+        "role": "agent",
+        "content": "Thank"
+      },
+      {
+        "role": "user",
+        "content": "Ah, so ist es."
+      },
+      {
+        "role": "agent",
+        "content": "Got it,"
+      },
+      {
+        "role": "user",
+        "content": "A Ford Econovan drive"
+      },
+      {
+        "role": "user",
+        "content": "It's a 0704."
+      },
+      {
+        "role": "agent",
+        "content": "Thank you. And what is the postal code for that address?"
+      },
+      {
+        "role": "user",
+        "content": "7268433"
+      },
+      {
+        "role": "agent",
+        "content": "Thank you. Let me just read that address back to you to make sure it's correct: 40 Canberra Drive, unit 07 04 Singapore 768433. Is that correct?"
+      },
+      {
+        "role": "user",
+        "content": "Yep."
+      },
+      {
+        "role": "agent",
+        "content": "Great. Now that we have those details, when would be a good time for us to come and take a look at the light? Do you have a preference for a particular day or time?"
+      },
+      {
+        "role": "user",
+        "content": "Yes, sure tomorrow at around 4:00 p.m."
+      },
+      {
+        "role": "agent",
+        "content": "Let me check that"
+      },
+      {
+        "role": "agent",
+        "content": "\n\n moment."
+      },
+      {
+        "role": "user",
+        "content": "Hello."
+      },
+      {
+        "role": "agent",
+        "content": "Yes, I'm here. It looks like Wednesday, April 15th at 4 PM is available. Would you like me to book that in for you?"
+      },
+      {
+        "role": "user",
+        "content": "Yeah."
+      },
+      {
+        "role": "agent",
+        "content": "Let me"
+      },
+      {
+        "role": "agent",
+        "content": "\n\n you."
+      },
+      {
+        "role": "user",
+        "content": "Okay."
+      },
+      {
+        "role": "user",
+        "content": "All right. Yeah, I see the I see the SMS."
+      },
+      {
+        "role": "agent",
+        "content": "Great. Your appointment is confirmed for Wednesday, April 15th at 4 PM at Canberra Drive, unit 07 04 Singapore 768433. Is there anything else I can help you with today?"
+      },
+      {
+        "role": "user",
+        "content": "What do you suggest that I do now?"
+      },
+      {
+        "role": "agent",
+        "content": "For now, you're all set. Our team will be there tomorrow at 4 PM. If you have any other questions or if anything changes,"
+      },
+      {
+        "role": "user",
+        "content": "I seen I seen for the light. I want to know what to do for the light."
+      },
+      {
+        "role": "agent",
+        "content": "I understand. For now, it's best to avoid using that light fixture until our team can inspect it. This will prevent any further issues. Is there anything else I can help you with regarding that?"
+      },
+      {
+        "role": "user",
+        "content": "No."
+      },
+      {
+        "role": "agent",
+        "content": "Thank you"
+      }
+    ]
+  }
+]
+
+Livekit_agent railway logs:
+[2026-04-13T21:41:29.171916728Z] [info] [agent] Connected to room: call-_+6587528516_2HWewGLcAzAc
+[2026-04-13T21:41:29.171922581Z] [info] [agent] SIP attrs: {"sip.callTag": "84092196_c3356d0b_57f13d13-b05c-4b13-a928-3aaacf2b0a71", "sip.ruleID": "SDR_TBTiMukwsh7d", "sip.callID": "SCL_qpbrH72mRuAD", "sip.trunkID": "ST_Pd7fRUZXpNSV", "sip.twilio.accountSid": "REDACTED_TWILIO_ACCOUNT_SID", "sip.phoneNumber": "+6587528516", "sip.trunkPhoneNumber": "+14783755631", "sip.callStatus": "ringing", "sip.callIDFull": "c9a88aa5df0b8bbb7cd713f7bac85dff@0.0.0.0", "sip.twilio.callSid": "CAec8fb19103f6a5e276d692fbca24aacd", "sip.hostname": "voco-livekit.pstn.twilio.com"}
+[2026-04-13T21:41:29.171928091Z] [info] [agent] Call started: room=call-_+6587528516_2HWewGLcAzAc from=+6587528516 to=+14783755631 test=False
+[2026-04-13T21:41:29.171933729Z] [info] process initialized
+[2026-04-13T21:41:29.173397424Z] [info] [agent] Tenant: 24141cd0-5735-4c7a-82d5-994c6b821861 (make it ai)
+[2026-04-13T21:41:29.173406243Z] [warn] libwebrtc::imp::audio_stream:233:libwebrtc::imp::audio_stream - native audio stream queue overflow; dropped 1 queued frames
+[2026-04-13T21:41:29.173412781Z] [info] [agent] Session started: room=call-_+6587528516_2HWewGLcAzAc
+[2026-04-13T21:41:29.173421149Z] [warn] no active generation to report metrics for
+[2026-04-13T21:41:29.173427602Z] [info] [agent] Egress started: EG_SJV42p5ENTy5
+[2026-04-13T21:43:19.792814179Z] [warn] server cancelled tool calls
+[2026-04-13T21:43:39.589213312Z] [info] -- BEGIN Twilio API Request --
+[2026-04-13T21:43:39.589219551Z] [info] POST Request: https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json
+[2026-04-13T21:43:39.589224597Z] [info] Headers:
+[2026-04-13T21:43:39.589229341Z] [info] Content-Type : application/x-www-form-urlencoded
+[2026-04-13T21:43:39.589233891Z] [info] Accept : application/json
+[2026-04-13T21:43:39.589239862Z] [info] User-Agent : twilio-python/9.10.4 (Linux x86_64) Python/3.12.13
+[2026-04-13T21:43:39.589244917Z] [info] X-Twilio-Client : python-9.10.4
+[2026-04-13T21:43:39.589249536Z] [info] Accept-Charset : utf-8
+[2026-04-13T21:43:39.591276482Z] [info] -- END Twilio API Request --
+[2026-04-13T21:43:39.591284599Z] [info] Response Status Code: 201
+[2026-04-13T21:43:39.591290094Z] [info] Response Headers: {'Content-Type': 'application/json;charset=utf-8', 'Content-Length': '885', 'Connection': 'keep-alive', 'Date': 'Mon, 13 Apr 2026 21:43:30 GMT', 'Twilio-Concurrent-Requests': '1', 'Twilio-Request-Id': 'RQec05a30f1a17639ece539bc4f6f2c9f6', 'Twilio-Request-Duration': '0.142', 'X-Home-Region': 'us1', 'X-API-Domain': 'api.twilio.com', 'Strict-Transport-Security': 'max-age=31536000', 'X-Cache': 'Miss from cloudfront', 'Via': '1.1 9f9de4292c90d3b00804c3fd5a50677e.cloudfront.net (CloudFront)', 'X-Amz-Cf-Pop': 'AMS58-P4', 'X-Amz-Cf-Id': 'vTolUFwWS-zRFJPkdBsOBDnlWUpkHR1qqvC60PO69BbAjpBvKpOmgg==', 'X-Powered-By': 'AT-5000', 'X-Shenanigans': 'none', 'Vary': 'Origin'}
+[2026-04-13T21:43:39.591295286Z] [info] [notifications] Caller SMS sent: SMec05a30f1a17639ece539bc4f6f2c9f6
+[2026-04-13T21:43:39.591301079Z] [info] file_cache is only supported with oauth2client<4.0.0
+[2026-04-13T21:43:39.591306525Z] [info] [agent] Calendar event created: u5tbv1sssnl1392c8fabulsr7o
+[2026-04-13T21:43:39.592836499Z] [warn] server cancelled tool calls
+[2026-04-13T21:43:39.592843641Z] [info] [agent] book_appointment: idempotent re-invocation for call=call-_+6587528516_2HWewGLcAzAc slot=2026-04-15T08:00:00+00:00|2026-04-15T09:00:00+00:00
+[2026-04-13T21:44:39.817683581Z] [info] closing agent session due to participant disconnect (disable via `RoomInputOptions.close_on_disconnect=False`)
+[2026-04-13T21:44:39.817692012Z] [warn] _SegmentSynchronizerImpl.playback_finished called before text/audio input is done
+[2026-04-13T21:44:40.396278759Z] [info] [agent] SIP participant already disconnected (caller hung up first)
+[2026-04-13T21:44:40.403639318Z] [info] process exiting
+[2026-04-13T21:44:40.417328477Z] [info] [agent] Session closed: room=call-_+6587528516_2HWewGLcAzAc duration=194s reason=unspecified
+[2026-04-13T21:44:47.842623869Z] [info] Accept-Charset : utf-8
+[2026-04-13T21:44:47.842734818Z] [info] -- BEGIN Twilio API Request --
+
+
+Figure out what is causing the issue and let me know. 

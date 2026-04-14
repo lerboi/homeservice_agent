@@ -32,6 +32,7 @@ const ROUTE_DOC_MAP = {
   '/dashboard/more/service-zones': 'settings.md',
   '/dashboard/more/notifications': 'settings.md',
   '/dashboard/more/ai-voice-settings': 'settings.md',
+  '/dashboard/more/call-routing': 'call-routing.md',
   '/dashboard/more/integrations': 'integrations.md',
   '/dashboard/more/invoice-settings': 'settings.md',
   '/dashboard': 'getting-started.md',
@@ -43,8 +44,9 @@ const ROUTE_DOC_MAP = {
  * Checked in order — first match wins (breaks after 1 additional doc).
  */
 const KEYWORD_DOC_MAP = [
-  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'kanban'], doc: 'leads.md' },
-  { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot'], doc: 'calendar.md' },
+  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'leads.md' },
+  { keywords: ['routing', 'route', 'forward', 'pickup', 'priority', 'vip', 'sms forward', 'forwarding'], doc: 'call-routing.md' },
+  { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot', 'time block', 'vacation', 'lunch'], doc: 'calendar.md' },
   { keywords: ['call', 'calls', 'transcript', 'recording', 'voicemail'], doc: 'calls.md' },
   // billing before invoices so 'billing' matches here, not the 'bill' keyword in invoices
   { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList, Mail, Pencil, Check, X, Star } from 'lucide-react';
+import { Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink, ClipboardList, Mail, Pencil, Check, X, UserCheck, AlertCircle } from 'lucide-react';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
 import CustomerTimeline from '@/components/dashboard/CustomerTimeline';
 import { toast } from 'sonner';
@@ -137,6 +137,12 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
   const [emailDraft, setEmailDraft] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [editingJobType, setEditingJobType] = useState(false);
+  const [jobTypeDraft, setJobTypeDraft] = useState('');
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressDraft, setAddressDraft] = useState('');
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState('');
 
   // Status change state
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -190,6 +196,16 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       setRevenueAmount('');
       setRevenueError('');
       setLinkedInvoice(null);
+      setEditingEmail(false);
+      setEditingName(false);
+      setEditingJobType(false);
+      setEditingAddress(false);
+      setEditingPhone(false);
+      setEmailDraft('');
+      setNameDraft('');
+      setJobTypeDraft('');
+      setAddressDraft('');
+      setPhoneDraft('');
     }
   }, [open, leadId, fetchLead]);
 
@@ -221,6 +237,54 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       saveLeadField('caller_name', trimmed);
     }
     setEditingName(false);
+  }
+
+  function handleJobTypeSave() {
+    const trimmed = jobTypeDraft.trim();
+    saveLeadField('job_type', trimmed || null);
+    setEditingJobType(false);
+  }
+
+  function handlePhoneSave() {
+    const trimmed = phoneDraft.trim();
+    if (!trimmed) {
+      // Phone is NOT NULL in the DB — reject empty submits client-side.
+      toast.error('Phone number cannot be empty');
+      return;
+    }
+    saveLeadField('from_number', trimmed);
+    setEditingPhone(false);
+  }
+
+  // Address save — clears street_name/postal_code so the display-priority logic
+  // (street+postal wins when both present) falls through to service_address.
+  async function handleAddressSave() {
+    const trimmed = addressDraft.trim();
+    const body = {
+      service_address: trimmed || null,
+      street_name: null,
+      postal_code: null,
+    };
+    try {
+      const res = await fetch(`/api/leads/${lead.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error();
+      setLead((prev) => ({ ...prev, ...body }));
+      toast.success('Address saved');
+    } catch {
+      toast.error('Could not save address');
+    } finally {
+      setEditingAddress(false);
+    }
+  }
+
+  function currentAddressText(l) {
+    if (!l) return '';
+    if (l.street_name && l.postal_code) return `${l.street_name}, ${l.postal_code}`;
+    return l.service_address || '';
   }
 
   // First call associated with this lead (for recording/transcript)
@@ -395,17 +459,53 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Caller section ── */}
               <div className="space-y-2">
-                {lead.from_number && (
-                  <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
-                    <Phone className="h-4 w-4 text-stone-400 flex-shrink-0" />
-                    <a
-                      href={`tel:${lead.from_number}`}
-                      className="text-[#C2410C] hover:text-[#9A3412] transition-colors"
+                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                  <Phone className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  {editingPhone ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        type="tel"
+                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        placeholder="+1 555 123 4567"
+                        value={phoneDraft}
+                        onChange={(e) => setPhoneDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handlePhoneSave(); if (e.key === 'Escape') setEditingPhone(false); }}
+                        autoFocus
+                      />
+                      <button type="button" onClick={handlePhoneSave} className="p-0.5 text-green-600 hover:text-green-700">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => setEditingPhone(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : lead.from_number ? (
+                    <div className="flex items-center gap-2 flex-1 group">
+                      <a
+                        href={`tel:${lead.from_number}`}
+                        className="text-[#C2410C] hover:text-[#9A3412] transition-colors"
+                      >
+                        {lead.from_number}
+                      </a>
+                      <button
+                        type="button"
+                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity"
+                        onClick={() => { setPhoneDraft(lead.from_number || ''); setEditingPhone(true); }}
+                        aria-label="Edit phone number"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      onClick={() => { setPhoneDraft(''); setEditingPhone(true); }}
                     >
-                      {lead.from_number}
-                    </a>
-                  </div>
-                )}
+                      + Add phone
+                    </button>
+                  )}
+                </div>
                 {/* Email — inline editable */}
                 <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
                   <Mail className="h-4 w-4 text-stone-400 flex-shrink-0" />
@@ -460,27 +560,127 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
                   Job Details
                 </h3>
-                {lead.job_type && (
-                  <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
-                    <Briefcase className="h-4 w-4 text-stone-400 flex-shrink-0" />
-                    <span className="capitalize">{lead.job_type}</span>
-                  </div>
-                )}
-                {(lead.street_name || lead.postal_code || lead.service_address) && (
-                  <div className="flex items-start gap-2 text-sm text-[#0F172A]/80">
-                    <MapPin className="h-4 w-4 text-stone-400 flex-shrink-0 mt-0.5" />
-                    <span>{lead.street_name && lead.postal_code
-                      ? `${lead.street_name}, ${lead.postal_code}`
-                      : lead.service_address}</span>
-                  </div>
-                )}
-                {firstCall?.urgency_classification && (
-                  <div className="flex items-center gap-2 text-xs text-stone-400">
-                    <span>
-                      {{ emergency: 'Emergency', routine: 'Routine', urgent: 'Urgent' }[firstCall.urgency_classification] || firstCall.urgency_classification}
-                    </span>
-                  </div>
-                )}
+
+                {/* Job type — inline editable */}
+                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                  <Briefcase className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  {editingJobType ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        type="text"
+                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        placeholder="e.g. Plumbing repair"
+                        value={jobTypeDraft}
+                        onChange={(e) => setJobTypeDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleJobTypeSave(); if (e.key === 'Escape') setEditingJobType(false); }}
+                        autoFocus
+                      />
+                      <button type="button" onClick={handleJobTypeSave} className="p-0.5 text-green-600 hover:text-green-700">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => setEditingJobType(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : lead.job_type ? (
+                    <div className="flex items-center gap-2 flex-1 group">
+                      <span className="capitalize">{lead.job_type}</span>
+                      <button
+                        type="button"
+                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity"
+                        onClick={() => { setJobTypeDraft(lead.job_type || ''); setEditingJobType(true); }}
+                        aria-label="Edit job type"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      onClick={() => { setJobTypeDraft(''); setEditingJobType(true); }}
+                    >
+                      + Add job type
+                    </button>
+                  )}
+                </div>
+
+                {/* Address — inline editable single-line */}
+                <div className="flex items-start gap-2 text-sm text-[#0F172A]/80">
+                  <MapPin className="h-4 w-4 text-stone-400 flex-shrink-0 mt-0.5" />
+                  {editingAddress ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        type="text"
+                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        placeholder="Street, postal/ZIP"
+                        value={addressDraft}
+                        onChange={(e) => setAddressDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddressSave(); if (e.key === 'Escape') setEditingAddress(false); }}
+                        autoFocus
+                      />
+                      <button type="button" onClick={handleAddressSave} className="p-0.5 text-green-600 hover:text-green-700">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" onClick={() => setEditingAddress(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : currentAddressText(lead) ? (
+                    <div className="flex items-start gap-2 flex-1 group">
+                      <span className="flex-1">{currentAddressText(lead)}</span>
+                      <button
+                        type="button"
+                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity shrink-0"
+                        onClick={() => { setAddressDraft(currentAddressText(lead)); setEditingAddress(true); }}
+                        aria-label="Edit address"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      onClick={() => { setAddressDraft(''); setEditingAddress(true); }}
+                    >
+                      + Add address
+                    </button>
+                  )}
+                </div>
+
+                {/* Urgency — Select (direct commit on change) */}
+                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                  <AlertCircle className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <Select
+                    value={lead.urgency || 'routine'}
+                    onValueChange={async (v) => {
+                      const prev = lead.urgency;
+                      setLead((p) => ({ ...p, urgency: v }));
+                      try {
+                        const res = await fetch(`/api/leads/${lead.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ urgency: v }),
+                        });
+                        if (!res.ok) throw new Error();
+                        toast.success('Urgency updated');
+                      } catch {
+                        setLead((p) => ({ ...p, urgency: prev }));
+                        toast.error('Could not update urgency');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-7 w-auto text-sm border-none shadow-none px-2 -mx-2 hover:bg-stone-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="routine">Routine</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator className="bg-stone-100" />
@@ -562,7 +762,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   <Separator className="bg-stone-100" />
                   <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
-                      <Star className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500 fill-violet-500' : 'text-stone-400'}`} />
+                      <UserCheck className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500' : 'text-stone-400'}`} />
                       <div>
                         <span className="text-sm font-medium text-[#0F172A]">Priority Caller</span>
                         <p className="text-xs text-[#475569]">Always ring your phone when this caller dials in.</p>
