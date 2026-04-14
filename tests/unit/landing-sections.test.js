@@ -4,14 +4,18 @@
  * Wave 0 provides the scaffold so `npm test` does not fail on missing file.
  */
 
+import { readFileSync } from 'fs';
+
+const read = (p) => readFileSync(p, 'utf8');
+
 describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
   it('renders at least 4 after-the-call workflow items', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/AfterTheCallStrip.jsx', 'utf8');
+    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
     const matches = src.match(/label:\s*'[^']+'/g) || [];
     expect(matches.length).toBeGreaterThanOrEqual(4);
   });
   it('does not use id="features" or id="testimonials" on its section element', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/AfterTheCallStrip.jsx', 'utf8');
+    const src = read('src/app/components/landing/AfterTheCallStrip.jsx');
     expect(src).not.toMatch(/id=["']features["']/);
     expect(src).not.toMatch(/id=["']testimonials["']/);
   });
@@ -19,7 +23,7 @@ describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
 
 describe('Phase 47 — IdentitySection (OBJ-06)', () => {
   it('renders complement-framing copy (no replacement language)', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/IdentitySection.jsx', 'utf8');
+    const src = read('src/app/components/landing/IdentitySection.jsx');
     // Anti-patterns (defensive / replacement language)
     expect(src).not.toMatch(/worried/i);
     expect(src).not.toMatch(/don'?t worry/i);
@@ -31,7 +35,7 @@ describe('Phase 47 — IdentitySection (OBJ-06)', () => {
 });
 
 describe('Phase 47 — PracticalObjectionsGrid (OBJ-02/03/04/05/08/09)', () => {
-  const src = () => require('fs').readFileSync('src/app/components/landing/PracticalObjectionsGrid.jsx', 'utf8');
+  const src = () => read('src/app/components/landing/PracticalObjectionsGrid.jsx');
 
   it('renders the $260,400 cost-of-inaction stat (OBJ-03)', () => {
     expect(src()).toMatch(/\$260,400/);
@@ -76,11 +80,11 @@ describe('Phase 47 — PracticalObjectionsGrid (OBJ-02/03/04/05/08/09)', () => {
 
 describe('Phase 47 — OwnerControlPullQuote (REPOS-04)', () => {
   it('renders on dark #1C1412 background', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/OwnerControlPullQuote.jsx', 'utf8');
+    const src = read('src/app/components/landing/OwnerControlPullQuote.jsx');
     expect(src).toMatch(/bg-\[#1C1412\]/);
   });
   it('contains an owner-control pull-quote', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/OwnerControlPullQuote.jsx', 'utf8');
+    const src = read('src/app/components/landing/OwnerControlPullQuote.jsx');
     // Must mention both "rules" and "follows" per the UI-SPEC locked copy,
     // OR an equivalent owner-control/rules framing.
     expect(src).toMatch(/rules/i);
@@ -89,7 +93,7 @@ describe('Phase 47 — OwnerControlPullQuote (REPOS-04)', () => {
 });
 
 describe('Phase 47 — FAQSection (OBJ-01 + D-10)', () => {
-  const src = () => require('fs').readFileSync('src/app/components/landing/FAQSection.jsx', 'utf8');
+  const src = () => read('src/app/components/landing/FAQSection.jsx');
 
   it('exports FAQSection function', () => {
     expect(src()).toMatch(/export function FAQSection/);
@@ -129,7 +133,7 @@ describe('Phase 47 — FAQSection (OBJ-01 + D-10)', () => {
 });
 
 describe('Phase 47 — Hero copy (REPOS-01)', () => {
-  const src = () => require('fs').readFileSync('src/app/components/landing/HeroSection.jsx', 'utf8');
+  const src = () => read('src/app/components/landing/HeroSection.jsx');
   it('H1 does not contain replacement framing "Let Voco Handle Your"', () => {
     expect(src()).not.toMatch(/Let Voco Handle Your/);
   });
@@ -146,30 +150,30 @@ describe('Phase 47 — Hero copy (REPOS-01)', () => {
 
 describe('Phase 47 — FinalCTA copy (REPOS-02)', () => {
   it('FinalCTA subtitle contains owner-control language', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/FinalCTASection.jsx', 'utf8');
+    const src = read('src/app/components/landing/FinalCTASection.jsx');
     expect(src).toMatch(/your rules|your schedule/i);
   });
 });
 
 describe('Phase 47 — AudioPlayerCard (OBJ-02 island)', () => {
   it('declares use client and uses /audio/demo-intro.mp3', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    const src = read('src/app/components/landing/AudioPlayerCard.jsx');
     expect(src).toMatch(/^['"]use client['"]/m);
     expect(src).toMatch(/\/audio\/demo-intro\.mp3/);
   });
   it('implements pause coordination via __vocoPlayingAudio singleton', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    const src = read('src/app/components/landing/AudioPlayerCard.jsx');
     expect(src).toMatch(/__vocoPlayingAudio/);
   });
   it('exposes aria-labels for both play and pause states', () => {
-    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    const src = read('src/app/components/landing/AudioPlayerCard.jsx');
     expect(src).toMatch(/Play audio sample/);
     expect(src).toMatch(/Pause audio sample/);
   });
 });
 
 describe('Phase 47 — FAQChatWidget (OBJ-01 + D-10 chat)', () => {
-  const src = () => require('fs').readFileSync('src/app/components/landing/FAQChatWidget.jsx', 'utf8');
+  const src = () => read('src/app/components/landing/FAQChatWidget.jsx');
 
   it("declares 'use client'", () => {
     expect(src()).toMatch(/^['"]use client['"]/m);
