@@ -68,3 +68,20 @@ describe('Phase 47 — Hero copy (REPOS-01)', () => {
 describe('Phase 47 — FinalCTA copy (REPOS-02)', () => {
   it.todo('FinalCTA subtitle contains owner-control language ("your rules" or "your schedule")');
 });
+
+describe('Phase 47 — AudioPlayerCard (OBJ-02 island)', () => {
+  it('declares use client and uses /audio/demo-intro.mp3', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    expect(src).toMatch(/^['"]use client['"]/m);
+    expect(src).toMatch(/\/audio\/demo-intro\.mp3/);
+  });
+  it('implements pause coordination via __vocoPlayingAudio singleton', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    expect(src).toMatch(/__vocoPlayingAudio/);
+  });
+  it('exposes aria-labels for both play and pause states', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/AudioPlayerCard.jsx', 'utf8');
+    expect(src).toMatch(/Play audio sample/);
+    expect(src).toMatch(/Pause audio sample/);
+  });
+});
