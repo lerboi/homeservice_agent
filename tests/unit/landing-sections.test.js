@@ -5,8 +5,16 @@
  */
 
 describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
-  it.todo('renders at least 4 after-the-call workflow items');
-  it.todo('does not use id="features" or id="testimonials" on its section element');
+  it('renders at least 4 after-the-call workflow items', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/AfterTheCallStrip.jsx', 'utf8');
+    const matches = src.match(/label:\s*'[^']+'/g) || [];
+    expect(matches.length).toBeGreaterThanOrEqual(4);
+  });
+  it('does not use id="features" or id="testimonials" on its section element', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/AfterTheCallStrip.jsx', 'utf8');
+    expect(src).not.toMatch(/id=["']features["']/);
+    expect(src).not.toMatch(/id=["']testimonials["']/);
+  });
 });
 
 describe('Phase 47 — IdentitySection (OBJ-06)', () => {
