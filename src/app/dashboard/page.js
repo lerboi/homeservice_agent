@@ -3,14 +3,22 @@
 /**
  * Dashboard Home — daily command center (Phase 48 HOME-01..HOME-07).
  *
- * Structure (UI-SPEC Layout Contract):
- *   Greeting (status indicator + "Good {morning|afternoon|evening}")
- *   SetupChecklist (full width, themed accordions — Plan 48-03)
- *   12-col responsive grid
- *     lg: main col-span-8 (DailyOpsHub then Help+Activity) + sticky col-span-4 ChatPanel
- *     < lg: single column in D-16 mobile stack order
+ * Post-revision structure (Plan 48-05 pivot): single-column layout. The
+ * setup checklist moved out to the overlay launcher mounted at the layout
+ * level (SetupChecklistLauncher — FAB + responsive Sheet). The inline
+ * chat panel was removed in favor of the existing ChatbotSheet launched
+ * from the sidebar "Ask Voco AI" trigger (window event `open-voco-chat`).
+ * Both decisions override D-04 (inline checklist top-of-page) and D-07
+ * (right sidebar ChatPanel) from the original plan — see 48-05-SUMMARY
+ * Revision section for rationale.
  *
- * Legacy surfaces intentionally removed per D-07:
+ * Structure:
+ *   Greeting (status indicator + "Good {morning|afternoon|evening}")
+ *   DailyOpsHub (bento — today's appts, calls, hot leads, usage)
+ *   HelpDiscoverabilityCard (quick links to ongoing-ops tasks)
+ *   RecentActivityFeed (tertiary context)
+ *
+ * Legacy surfaces intentionally removed (carried over from Plan 48-05 Task 2):
  *   - setup-mode conditional (completion is server-derived in /api/setup-checklist)
  *   - required / recommended ID arrays (completion logic lives server-side now)
  *   - Inline missed-calls alert block (absorbed into CallsTile)
@@ -21,9 +29,7 @@
 import { useEffect, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
-import SetupChecklist from '@/components/dashboard/SetupChecklist';
 import DailyOpsHub from '@/components/dashboard/DailyOpsHub';
-import ChatPanel from '@/components/dashboard/ChatPanel';
 import HelpDiscoverabilityCard from '@/components/dashboard/HelpDiscoverabilityCard';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
 import { card } from '@/lib/design-tokens';
@@ -62,7 +68,7 @@ export default function DashboardHomePage() {
   }, []);
 
   return (
-    <div className="space-y-8" data-tour="home-page">
+    <div className="space-y-6 lg:space-y-8" data-tour="home-page">
       {/* Greeting + AI status indicator */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -95,36 +101,21 @@ export default function DashboardHomePage() {
         </button>
       </div>
 
-      {/* Setup checklist — full width */}
-      <SetupChecklist />
+      {/* Daily ops bento */}
+      <DailyOpsHub />
 
-      {/* Main hub + sticky chat sidebar (lg+) — single-column mobile stack otherwise */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-        {/* Left column, top row — Daily ops bento */}
-        <div className="order-1 lg:col-span-8 lg:order-1 space-y-4 lg:space-y-8">
-          <DailyOpsHub />
-        </div>
+      {/* Help & Discoverability quick links */}
+      <HelpDiscoverabilityCard />
 
-        {/* Right sidebar — sticky on lg+, stacks to bottom on mobile per D-16 */}
-        <aside className="order-3 lg:col-span-4 lg:order-2 lg:row-span-2">
-          <div className="lg:sticky lg:top-6">
-            <ChatPanel />
-          </div>
-        </aside>
-
-        {/* Left column, bottom row — Help + Activity */}
-        <div className="order-2 lg:col-span-8 lg:order-3 space-y-4 lg:space-y-8">
-          <HelpDiscoverabilityCard />
-          <div className={`${card.base} p-5`}>
-            <h2 className="font-semibold text-base text-[#0F172A] leading-[1.4] mb-4">
-              Recent activity
-            </h2>
-            <RecentActivityFeed
-              activities={activities}
-              loading={activitiesLoading}
-            />
-          </div>
-        </div>
+      {/* Recent activity — tertiary context */}
+      <div className={`${card.base} p-5`}>
+        <h2 className="font-semibold text-base text-[#0F172A] leading-[1.4] mb-4">
+          Recent activity
+        </h2>
+        <RecentActivityFeed
+          activities={activities}
+          loading={activitiesLoading}
+        />
       </div>
     </div>
   );
