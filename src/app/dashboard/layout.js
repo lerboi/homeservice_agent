@@ -12,6 +12,7 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import CommandPalette from '@/components/dashboard/CommandPalette';
 import ChatbotSheet from '@/components/dashboard/ChatbotSheet';
+import { ChatProvider } from '@/components/dashboard/ChatProvider';
 import OfflineBanner from '@/components/dashboard/OfflineBanner';
 import ImpersonationBanner from './ImpersonationBanner';
 import BillingWarningBanner from './BillingWarningBanner';
@@ -41,6 +42,7 @@ function DashboardLayoutInner({ children }) {
   }, []);
 
   return (
+    <ChatProvider currentRoute={pathname}>
     <TooltipProvider delayDuration={300}>
       {/* Impersonation banner — outside pointer-events-none wrapper so it stays interactive */}
       {impersonateTenantId && (
@@ -86,9 +88,10 @@ function DashboardLayoutInner({ children }) {
         </div>
       </div>
       <CommandPalette />
-      <ChatbotSheet open={chatOpen} onOpenChange={setChatOpen} currentRoute={pathname} />
+      <ChatbotSheet open={chatOpen} onOpenChange={setChatOpen} />
       <Toaster richColors position="top-right" />
     </TooltipProvider>
+    </ChatProvider>
   );
 }
 

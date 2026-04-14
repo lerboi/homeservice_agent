@@ -8,18 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
+import { useChatContext } from './ChatProvider';
 
-const GREETING = {
-  id: 'greeting',
-  role: 'ai',
-  content:
-    "Hi, I'm Voco AI. I can help you navigate the dashboard, understand your data, or answer questions about how features work. What would you like to know?",
-};
-
-export default function ChatbotSheet({ open, onOpenChange, currentRoute }) {
-  const [messages, setMessages] = useState([GREETING]);
+export default function ChatbotSheet({ open, onOpenChange }) {
+  // Chat history + send lives in ChatProvider (CONTEXT.md D-10 — Plan 48-02 lift).
+  // Only the ephemeral input field + viewport flag remain local to the sheet.
+  const { messages, isLoading, sendMessage } = useChatContext();
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   const messagesEndRef = useRef(null);
@@ -49,44 +44,8 @@ export default function ChatbotSheet({ open, onOpenChange, currentRoute }) {
   async function handleSend() {
     const trimmed = input.trim();
     if (!trimmed) return;
-
-    const userMessage = { id: Date.now(), role: 'user', content: trimmed };
-    setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
-
-    const history = messages.slice(-10).map((m) => ({
-      role: m.role === 'ai' ? 'assistant' : 'user',
-      content: m.content,
-    }));
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, currentRoute, history }),
-      });
-
-      let aiContent;
-      if (res.ok) {
-        const data = await res.json();
-        aiContent = data.reply;
-      } else {
-        aiContent = 'Something went wrong on my end. Please try again in a moment.';
-      }
-
-      const aiMessage = { id: Date.now() + 1, role: 'ai', content: aiContent };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch {
-      const aiMessage = {
-        id: Date.now() + 1,
-        role: 'ai',
-        content: 'Something went wrong on my end. Please try again in a moment.',
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(trimmed);
   }
 
   function handleKeyDown(e) {
