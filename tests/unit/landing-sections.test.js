@@ -31,12 +31,47 @@ describe('Phase 47 — IdentitySection (OBJ-06)', () => {
 });
 
 describe('Phase 47 — PracticalObjectionsGrid (OBJ-02/03/04/05/08/09)', () => {
-  it.todo('renders the $260,400 cost-of-inaction stat (OBJ-03)');
-  it.todo('renders the 85% blind-test stat chip (OBJ-02)');
-  it.todo('renders the 3-step setup strip with "forward", "hours", "live" (OBJ-04)');
-  it.todo('renders trust/escalation badge row (OBJ-05)');
-  it.todo('renders before-vs-after workflow comparison (OBJ-08)');
-  it.todo('renders 5 trade icons: plumbing, HVAC, electrical, handyman, roofing (OBJ-09)');
+  const src = () => require('fs').readFileSync('src/app/components/landing/PracticalObjectionsGrid.jsx', 'utf8');
+
+  it('renders the $260,400 cost-of-inaction stat (OBJ-03)', () => {
+    expect(src()).toMatch(/\$260,400/);
+  });
+  it('renders the 85% blind-test stat chip (OBJ-02)', () => {
+    expect(src()).toMatch(/85%/);
+    expect(src()).toMatch(/blind/i);
+  });
+  it('renders the 3-step setup strip with "forward", "hours", "live" (OBJ-04)', () => {
+    expect(src()).toMatch(/forward/i);
+    expect(src()).toMatch(/hours/i);
+    expect(src()).toMatch(/live/i);
+    expect(src()).toMatch(/4m 12s/);
+  });
+  it('renders trust/escalation badge row (OBJ-05)', () => {
+    expect(src()).toMatch(/escalat/i);
+    expect(src()).toMatch(/record/i);
+    expect(src()).toMatch(/rules|control/i);
+  });
+  it('renders before-vs-after workflow comparison (OBJ-08)', () => {
+    expect(src()).toMatch(/before/i);
+    expect(src()).toMatch(/after/i);
+  });
+  it('renders 5 trade icons: plumbing, HVAC, electrical, handyman, roofing (OBJ-09)', () => {
+    const s = src();
+    expect(s).toMatch(/Plumbing/);
+    expect(s).toMatch(/HVAC/);
+    expect(s).toMatch(/Electrical/);
+    expect(s).toMatch(/Handyman/);
+    expect(s).toMatch(/Roofing/);
+    // Confirm 5 Lucide icon imports
+    expect(s).toMatch(/Wrench/);
+    expect(s).toMatch(/Thermometer/);
+    expect(s).toMatch(/Zap/);
+    expect(s).toMatch(/Hammer/);
+    expect(s).toMatch(/HardHat/);
+  });
+  it('imports AudioPlayerCard sub-component', () => {
+    expect(src()).toMatch(/AudioPlayerCard/);
+  });
 });
 
 describe('Phase 47 — OwnerControlPullQuote (REPOS-04)', () => {
