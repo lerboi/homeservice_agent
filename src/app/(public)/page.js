@@ -42,6 +42,27 @@ const FeaturesCarousel = dynamic(
   }
 );
 
+const AfterTheCallStrip = dynamic(
+  () => import('@/app/components/landing/AfterTheCallStrip').then((m) => m.AfterTheCallStrip),
+  {
+    loading: () => (
+      <section className="bg-white py-12 md:py-16 px-6" aria-hidden="true">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-4 w-28 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-8 w-96 bg-black/10 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-24 rounded bg-black/5" />
+            ))}
+          </div>
+        </div>
+      </section>
+    ),
+  }
+);
+
 const SocialProofSection = dynamic(
   () => import('@/app/components/landing/SocialProofSection').then((m) => m.SocialProofSection),
   {
@@ -56,6 +77,80 @@ const SocialProofSection = dynamic(
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-64 rounded-2xl bg-white border border-stone-200/60" />
             ))}
+          </div>
+        </div>
+      </section>
+    ),
+  }
+);
+
+const IdentitySection = dynamic(
+  () => import('@/app/components/landing/IdentitySection').then((m) => m.IdentitySection),
+  {
+    loading: () => (
+      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
+        <div className="max-w-[720px] mx-auto text-center">
+          <div className="h-4 w-32 bg-black/10 rounded mx-auto mb-3" />
+          <div className="h-8 w-80 bg-black/10 rounded mx-auto mb-8" />
+          <div className="h-20 w-full bg-black/5 rounded" />
+        </div>
+      </section>
+    ),
+  }
+);
+
+const PracticalObjectionsGrid = dynamic(
+  () => import('@/app/components/landing/PracticalObjectionsGrid').then((m) => m.PracticalObjectionsGrid),
+  {
+    loading: () => (
+      <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-4 w-28 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-80 rounded-2xl bg-white border border-stone-200/60 shadow-sm" />
+            ))}
+          </div>
+        </div>
+      </section>
+    ),
+  }
+);
+
+const OwnerControlPullQuote = dynamic(
+  () => import('@/app/components/landing/OwnerControlPullQuote').then((m) => m.OwnerControlPullQuote),
+  {
+    loading: () => (
+      <section className="bg-[#1C1412] py-20 md:py-24 px-6" aria-hidden="true">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="h-8 w-96 bg-white/[0.06] rounded mx-auto mb-4" />
+          <div className="h-4 w-32 bg-white/[0.04] rounded mx-auto" />
+        </div>
+      </section>
+    ),
+  }
+);
+
+const FAQSection = dynamic(
+  () => import('@/app/components/landing/FAQSection').then((m) => m.FAQSection),
+  {
+    loading: () => (
+      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="h-4 w-24 bg-black/10 rounded mx-auto mb-3" />
+            <div className="h-10 w-80 bg-black/10 rounded mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12">
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <div key={i} className="h-14 bg-black/5 rounded-lg" />
+              ))}
+            </div>
+            <div className="h-[400px] rounded-2xl bg-black/5" />
           </div>
         </div>
       </section>
@@ -85,8 +180,13 @@ export default function HomePage() {
       <ScrollLinePath>
         <HowItWorksSection />
         <FeaturesCarousel />
+        <AfterTheCallStrip />
         <SocialProofSection />
       </ScrollLinePath>
+      <IdentitySection />
+      <PracticalObjectionsGrid />
+      <OwnerControlPullQuote />
+      <FAQSection />
       <FinalCTASection />
     </>
   );
