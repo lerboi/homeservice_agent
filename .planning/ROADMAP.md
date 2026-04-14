@@ -580,7 +580,7 @@ Plans:
 ### v5.0 Phase Checklist
 
 - [ ] **Phase 47: Landing -- Objection-Busting, Repositioning, and Landing Polish** - Objection-busting sections (FAQ accordion, voice quality proof, cost-of-inaction stat, 5-min setup strip, trust badges, identity block, revenue calculator, before/after strip, trade proof), repositioning copy (hero, FinalCTA, workflow strip, owner-control callout), landing animation/responsive polish
-- [ ] **Phase 48: Dashboard Home Redesign** - Daily-ops hub (appointments, calls, leads, usage), redesigned setup checklist with grouped progress and auto-detection, integrated AI chat panel sharing history with ChatbotSheet, Help & Discoverability section, 375px responsive layout
+- [x] **Phase 48: Dashboard Home Redesign** - Daily-ops hub (appointments, calls, leads, usage), redesigned setup checklist with grouped progress and auto-detection, integrated AI chat panel sharing history with ChatbotSheet, Help & Discoverability section, 375px responsive layout (completed 2026-04-14)
 - [ ] **Phase 49: Dark Mode Foundation and Token Migration** - ThemeProvider wiring, theme toggle in sidebar, design token audit across all dashboard components, typography consolidation, layout/sidebar/banners/flyouts/badges dark mode
 - [ ] **Phase 50: Dark Mode -- Charts and Calendar** - Recharts dark mode via useTheme() conditional color props, CalendarView urgency color dark variants
 - [ ] **Phase 51: UI/UX Polish Pass** - Empty states for all list views, loading skeleton screens, focus-visible rings, error states with retry, async button loading states, stat card hover micro-interactions, AnimatePresence lead status transitions, CommandPalette audit, 375px content layout
@@ -619,14 +619,14 @@ Plans:
   3. Owner can ask a question in the integrated AI chat panel on the home page and continue that conversation in the floating ChatbotSheet -- message history is shared, not reset on switch
   4. Owner sees a Help & Discoverability section with quick-links to common tasks that route directly to the correct dashboard page
   5. At 375px viewport the home page stacks all cards to a single column with no horizontal scrolling
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 48-01-schema-apis-test-scaffold-PLAN.md — Migration 050 (checklist_overrides JSONB) + blocking supabase db push + PATCH API extension (per-item mark_done/dismiss + themed items) + new GET /api/usage + 7 Wave-0 test scaffolds
 - [x] 48-02-chat-provider-context-lift-PLAN.md — ChatProvider React Context + refactor ChatbotSheet to useChatContext + wrap dashboard layout with currentRoute threading (HOME-05 foundation)
 - [x] 48-03-setup-checklist-refactor-PLAN.md — In-place refactor of SetupChecklist/ChecklistItem into 4 theme accordions (profile/voice/calendar/billing) with Dismiss / Mark done / Jump to page actions and window-focus refetch (HOME-01, HOME-03)
 - [x] 48-04-daily-ops-hub-tiles-PLAN.md — DailyOpsHub bento grid + TodayAppointmentsTile (hero) + CallsTile (absorbs missed-calls alert) + HotLeadsTile + UsageTile with threshold color helper (HOME-02)
-- [ ] 48-05-page-wiring-chat-panel-help-PLAN.md — ChatPanel + HelpDiscoverabilityCard + page.js rewrite (deletes setupMode/invoices/inline missed-calls) + 375px mobile verify checkpoint (HOME-04, HOME-05, HOME-06, HOME-07)
+- [x] 48-05-page-wiring-chat-panel-help-PLAN.md — ChatPanel + HelpDiscoverabilityCard + page.js rewrite (deletes setupMode/invoices/inline missed-calls) + 375px mobile verify checkpoint (HOME-04, HOME-05, HOME-06, HOME-07)
 **UI hint**: yes
 
 ### Phase 49: Dark Mode Foundation and Token Migration
@@ -678,7 +678,7 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 4/5 | In Progress|  |
-| 48. Dashboard Home Redesign | 4/5 | In Progress|  |
+| 48. Dashboard Home Redesign | 5/5 | Complete   | 2026-04-14 |
 | 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
 | 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
 | 51. UI/UX Polish Pass | 0/TBD | Not started | - |

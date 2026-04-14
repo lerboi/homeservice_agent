@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
-status: executing
-stopped_at: Completed 48-04-daily-ops-hub-tiles-PLAN.md
-last_updated: "2026-04-14T20:21:48.811Z"
+status: verifying
+stopped_at: Completed 48-05-page-wiring-chat-panel-help-PLAN.md (revised)
+last_updated: "2026-04-14T21:11:31.244Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 12
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 
 Phase: 48 (dashboard-home-redesign) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-14
 
 Progress: [░░░░░░░░░░] 0%
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 48 P02 | ~3 minutes | 2 tasks | 3 files |
 | Phase 48 P03 | ~15m | 2 tasks | 4 files |
 | Phase 48 P04 | ~20m | 4 tasks | 7 files |
+| Phase 48 P05 | ~45m | 6+1 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Recent decisions affecting v5.0 work:
 - [Phase 48]: Plan 48-04: Extracted usageThresholdClass into usage-threshold.js sibling module so Jest can import the pure helper without @babel/preset-react — UsageTile.jsx inlines the same function for runtime callers and grep acceptance
 - [Phase 48]: Plan 48-04: HotLeadsTile consumes newLeadsCount/newLeadsPreview from /api/dashboard/stats (the actual API shape), not the plan-spec hotLeads.count/preview which does not exist on the endpoint — avoids shim layer for UI-composition plan
 - [Phase 48]: Plan 48-04: Tiles use existing API param conventions (appointments start/end, calls date_from/limit) not plan-spec range=today / since=24h shorthand — plan key_link regexes are wildcard-matched so acceptance still passes
+- [Phase 48]: Plan 48-05 revision: SetupChecklist moved to overlay launcher (FAB + responsive Sheet + sessionStorage auto-open gate); ChatPanel deleted — existing ChatbotSheet covers HOME-04. Rule-2 user-directed pivot overriding D-04 and D-07.
 
 ### Roadmap Evolution
 
@@ -100,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T20:21:38.545Z
-Stopped at: Completed 48-04-daily-ops-hub-tiles-PLAN.md
+Last session: 2026-04-14T21:11:31.238Z
+Stopped at: Completed 48-05-page-wiring-chat-panel-help-PLAN.md (revised)
 Resume file: None
