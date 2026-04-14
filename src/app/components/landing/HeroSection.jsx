@@ -52,7 +52,7 @@ export function HeroSection() {
         <div className="w-full max-w-full min-w-0 md:max-w-[50%]">
           <AnimatedSection>
             <h1 className="text-[2.25rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white leading-[1.2] tracking-tight break-words">
-              Let Voco Handle Your
+              Voco Answers So You Can Keep
               <br />
               <span className="text-[2.75rem] md:text-[3rem] lg:text-[3.75rem]">
                 <RotatingText
@@ -66,7 +66,7 @@ export function HeroSection() {
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-white/60 mt-5 mb-4 max-w-xl leading-relaxed">
-              Your AI receptionist answers every call, books jobs, and captures leads — 24/7, in 70+ languages.
+              Voco picks up when you're on the roof, in a crawlspace, or running on four hours of sleep. You stay in charge of every job — it just makes sure the next call doesn't hang up.
             </p>
             <p className="text-xs sm:text-sm text-white/35 mb-8">
               Enter your business name and hear it in action.
