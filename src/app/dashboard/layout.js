@@ -12,6 +12,7 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import CommandPalette from '@/components/dashboard/CommandPalette';
 import ChatbotSheet from '@/components/dashboard/ChatbotSheet';
+import SetupChecklistLauncher from '@/components/dashboard/SetupChecklistLauncher';
 import { ChatProvider } from '@/components/dashboard/ChatProvider';
 import OfflineBanner from '@/components/dashboard/OfflineBanner';
 import ImpersonationBanner from './ImpersonationBanner';
@@ -89,6 +90,10 @@ function DashboardLayoutInner({ children }) {
       </div>
       <CommandPalette />
       <ChatbotSheet open={chatOpen} onOpenChange={setChatOpen} />
+      {/* Setup checklist overlay (Plan 48-05 revision) — FAB + responsive Sheet.
+          Hidden when the impersonation banner is active so admin sessions
+          don't see an owner-facing nudge. */}
+      {!impersonateTenantId && <SetupChecklistLauncher />}
       <Toaster richColors position="top-right" />
     </TooltipProvider>
     </ChatProvider>
