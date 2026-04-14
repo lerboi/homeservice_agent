@@ -89,10 +89,43 @@ describe('Phase 47 — OwnerControlPullQuote (REPOS-04)', () => {
 });
 
 describe('Phase 47 — FAQSection (OBJ-01 + D-10)', () => {
-  it.todo('renders exactly 7 FAQ questions from the locked D-06 list');
-  it.todo('uses shadcn Accordion with type="single" collapsible');
-  it.todo('renders chat widget with "Still wondering?" header');
-  it.todo('chat widget posts to /api/public-chat');
+  const src = () => require('fs').readFileSync('src/app/components/landing/FAQSection.jsx', 'utf8');
+
+  it('exports FAQSection function', () => {
+    expect(src()).toMatch(/export function FAQSection/);
+  });
+  it('uses shadcn Accordion with type="single" collapsible', () => {
+    const s = src();
+    expect(s).toMatch(/from ['"]@\/components\/ui\/accordion['"]/);
+    expect(s).toMatch(/type="single"/);
+    expect(s).toMatch(/collapsible/);
+  });
+  it('renders exactly 7 FAQ questions from the locked D-06 list', () => {
+    const s = src();
+    // Count FAQ entries via value: 'qN' keys in the FAQS data array (q1..q7 expected)
+    const valueKeys = (s.match(/value:\s*['"]q\d+['"]/g) || []).length;
+    expect(valueKeys).toBe(7);
+    // Each of the 7 D-06 question strings appears (substring match to dodge apostrophe variations)
+    expect(s).toMatch(/Does Voco sound robotic/);
+    expect(s).toMatch(/gets a job detail wrong/);
+    expect(s).toMatch(/How much does Voco cost/);
+    expect(s).toMatch(/understand my trade/);
+    expect(s).toMatch(/How long does setup really take/);
+    expect(s).toMatch(/doesn.?t know an answer/);
+    expect(s).toMatch(/listen to what Voco says/);
+  });
+  it('imports FAQChatWidget', () => {
+    expect(src()).toMatch(/FAQChatWidget/);
+  });
+  it('uses bg-white (background rhythm — sits before dark FinalCTA)', () => {
+    expect(src()).toMatch(/bg-white/);
+  });
+  it('answers are non-defensive (Pitfall 4)', () => {
+    const s = src();
+    expect(s).not.toMatch(/we understand your concern/i);
+    expect(s).not.toMatch(/we know you might be worried/i);
+    expect(s).not.toMatch(/don't worry/i);
+  });
 });
 
 describe('Phase 47 — Hero copy (REPOS-01)', () => {
