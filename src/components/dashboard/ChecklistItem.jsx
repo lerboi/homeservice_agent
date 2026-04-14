@@ -1,68 +1,140 @@
 'use client';
 
-import { CheckCircle2, Circle, ChevronDown, ArrowRight } from 'lucide-react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { CheckCircle2, Circle, X, ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { btn } from '@/lib/design-tokens';
 
-export default function ChecklistItem({ item, type, description, expanded, onToggle }) {
+/**
+ * ChecklistItem — single row in the themed setup checklist accordion.
+ *
+ * @param {{
+ *   item: {
+ *     id: string,
+ *     theme: string,
+ *     required: boolean,
+ *     complete: boolean,
+ *     dismissed?: boolean,
+ *     mark_done_override?: boolean,
+ *     title: string,
+ *     description?: string,
+ *     href?: string,
+ *   },
+ *   onMarkDone: (itemId: string, nextValue: boolean) => void,
+ *   onDismiss: (itemId: string) => void,
+ * }} props
+ */
+export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
   const prefersReduced = useReducedMotion();
 
-  const canExpand = !item.complete;
+  const isComplete = item.complete === true;
+  const isOverridden = item.mark_done_override === true;
+
+  // CTA copy per UI-SPEC Copywriting Contract (Primary CTAs table)
+  //  - `Finish setup` — required row, not started
+  //  - `Continue` — partially done (mark_done_override flag is used here as signal)
+  //  - `Open settings` — recommended-only row
+  let primaryLabel = 'Finish setup';
+  if (!item.required) {
+    primaryLabel = 'Open settings';
+  } else if (isOverridden && !isComplete) {
+    primaryLabel = 'Continue';
+  }
+
+  // Required items cannot be dismissed (product sensibility per plan spec).
+  const canDismiss = !item.required;
 
   return (
-    <div className="border-b border-stone-100 last:border-b-0">
-      <button
-        onClick={() => canExpand && onToggle?.(item.id)}
-        className="flex items-center gap-3 py-3 px-1 min-h-[44px] w-full text-left"
-        disabled={!canExpand}
-        aria-expanded={canExpand ? expanded : undefined}
-      >
-        {/* Checkmark or circle icon */}
-        {item.complete ? (
-          <CheckCircle2 className="h-5 w-5 text-[#C2410C] shrink-0" aria-hidden="true" />
-        ) : (
-          <Circle className="h-5 w-5 text-stone-300 shrink-0" aria-hidden="true" />
-        )}
+    <motion.div
+      layout
+      initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.15, ease: 'easeOut' }}
+      className="flex items-start gap-3 py-3 px-1 border-b border-stone-100 last:border-b-0"
+    >
+      {/* Completion icon */}
+      {isComplete ? (
+        <CheckCircle2
+          className="h-5 w-5 text-[#C2410C] shrink-0 mt-0.5"
+          aria-hidden="true"
+        />
+      ) : (
+        <Circle
+          className="h-5 w-5 text-stone-300 shrink-0 mt-0.5"
+          aria-hidden="true"
+        />
+      )}
 
-        {/* Label */}
-        <span className={`flex-1 text-sm ${item.complete ? 'text-[#475569] line-through' : 'text-[#0F172A]'}`}>
-          {item.label}
-        </span>
-
-        {/* Expand indicator */}
-        {canExpand && (
-          <ChevronDown
-            className={`h-4 w-4 text-stone-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
-        )}
-      </button>
-
-      {/* Expandable content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            animate={prefersReduced ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
-            exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            style={{ overflow: 'hidden' }}
+      {/* Content: title + badge + description + actions */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={`text-sm leading-normal ${
+              isComplete ? 'text-[#475569] line-through' : 'text-[#0F172A]'
+            }`}
           >
-            <div className="pl-8 pb-3">
-              <p className="text-sm text-[#475569] mb-3">{description}</p>
-              {item.href && (
-                <Link
-                  href={item.href}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#C2410C] hover:underline"
-                >
-                  Set up
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
-              )}
-            </div>
-          </motion.div>
+            {item.title}
+          </span>
+          {item.required ? (
+            <Badge className="bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20 font-normal text-xs tracking-wide uppercase leading-[1.4]">
+              Required
+            </Badge>
+          ) : (
+            <Badge className="bg-stone-100 text-stone-600 border border-stone-200 font-normal text-xs tracking-wide uppercase leading-[1.4]">
+              Recommended
+            </Badge>
+          )}
+        </div>
+
+        {item.description && (
+          <p className="text-sm text-[#475569] leading-normal mt-1">
+            {item.description}
+          </p>
         )}
-      </AnimatePresence>
-    </div>
+
+        {/* Action buttons row */}
+        <div className="flex items-center gap-2 flex-wrap mt-2">
+          {/* Jump to page / primary CTA — hidden when complete */}
+          {!isComplete && item.href && (
+            <Link
+              href={item.href}
+              className={`${btn.primary} inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1`}
+              aria-label={`${primaryLabel}: ${item.title}`}
+            >
+              {primaryLabel}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          )}
+
+          {/* Mark done / Unmark done */}
+          <button
+            type="button"
+            onClick={() => onMarkDone?.(item.id, !(isComplete && isOverridden))}
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-md text-sm text-[#475569] hover:text-[#0F172A] hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+            aria-label={
+              isComplete && isOverridden
+                ? `Unmark ${item.title} as done`
+                : `Mark ${item.title} as done`
+            }
+          >
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            {isComplete && isOverridden ? 'Unmark done' : 'Mark done'}
+          </button>
+
+          {/* Dismiss — icon-only, hidden for required items */}
+          {canDismiss && (
+            <button
+              type="button"
+              onClick={() => onDismiss?.(item.id)}
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-stone-400 hover:text-[#475569] hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              aria-label={`Dismiss ${item.title}`}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }
