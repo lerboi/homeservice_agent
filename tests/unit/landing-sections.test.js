@@ -18,7 +18,16 @@ describe('Phase 47 — AfterTheCallStrip (REPOS-03)', () => {
 });
 
 describe('Phase 47 — IdentitySection (OBJ-06)', () => {
-  it.todo('renders complement-framing copy (no replacement language)');
+  it('renders complement-framing copy (no replacement language)', () => {
+    const src = require('fs').readFileSync('src/app/components/landing/IdentitySection.jsx', 'utf8');
+    // Anti-patterns (defensive / replacement language)
+    expect(src).not.toMatch(/worried/i);
+    expect(src).not.toMatch(/don'?t worry/i);
+    expect(src).not.toMatch(/replace(s|d|r|ment)?\s+you/i);
+    expect(src).not.toMatch(/replacing you/i);
+    // Positive framing required
+    expect(src).toMatch(/your|you'?re|still/i);
+  });
 });
 
 describe('Phase 47 — PracticalObjectionsGrid (OBJ-02/03/04/05/08/09)', () => {
