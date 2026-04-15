@@ -121,7 +121,7 @@ export default function RecurringSetupDialog({ open, onOpenChange, invoiceId, on
               <button
                 type="button"
                 onClick={() => setEndDate('')}
-                className="text-xs text-stone-500 hover:text-stone-700 underline"
+                className="text-xs text-muted-foreground hover:text-foreground underline"
               >
                 Clear end date
               </button>
@@ -134,7 +134,7 @@ export default function RecurringSetupDialog({ open, onOpenChange, invoiceId, on
             Dismiss
           </Button>
           <Button
-            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
             onClick={handleSubmit}
             disabled={saving}
           >

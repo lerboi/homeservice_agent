@@ -114,7 +114,7 @@ export default function RecordPaymentDialog({ open, onOpenChange, invoiceId, onP
             <Button
               type="submit"
               disabled={submitting}
-              className="bg-[#C2410C] hover:bg-[#9a3409] text-white"
+              className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Record Payment

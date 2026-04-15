@@ -64,7 +64,10 @@ export default function ExternalEventSheet({ event, open, onOpenChange, isMobile
   if (!event) return null;
 
   const providerLabel = event.provider === 'outlook' ? 'Outlook Calendar' : 'Google Calendar';
-  const providerColor = event.provider === 'outlook' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700';
+  const providerColor =
+    event.provider === 'outlook'
+      ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border dark:border-blue-800/60'
+      : 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 dark:border dark:border-violet-800/60';
   const editUrl = getCalendarEditUrl(event);
 
   return (
@@ -80,25 +83,25 @@ export default function ExternalEventSheet({ event, open, onOpenChange, isMobile
 
         <div className="px-6 space-y-4">
           {/* Details card */}
-          <div className="rounded-lg border border-stone-200/60 bg-[#FAFAF9] p-3 space-y-2.5">
-            <div className="flex items-center gap-2 text-sm text-[#0F172A]">
-              <Clock className="h-4 w-4 text-stone-400 shrink-0" />
+          <div className="rounded-lg border border-border bg-muted p-3 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
               {event.is_all_day ? (
                 <span className="font-medium">All day</span>
               ) : (
                 <>
                   <span className="font-medium">{formatDateTime(event.start_time)}</span>
-                  <span className="text-stone-400 text-xs">({formatDuration(event.start_time, event.end_time)})</span>
+                  <span className="text-muted-foreground text-xs">({formatDuration(event.start_time, event.end_time)})</span>
                 </>
               )}
             </div>
             {!event.is_all_day && (
-              <div className="flex items-center gap-2 text-sm text-stone-500">
-                <Calendar className="h-4 w-4 text-stone-400 shrink-0" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span>Ends {formatDateTime(event.end_time)}</span>
               </div>
             )}
-            <div className="text-xs text-stone-400 ml-6">
+            <div className="text-xs text-muted-foreground ml-6">
               Synced from {providerLabel}
             </div>
           </div>
@@ -108,7 +111,7 @@ export default function ExternalEventSheet({ event, open, onOpenChange, isMobile
           {editUrl && (
             <Button
               asChild
-              className="w-full h-11 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+              className="w-full h-11 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
             >
               <a href={editUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />

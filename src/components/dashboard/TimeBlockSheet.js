@@ -243,8 +243,8 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
                       onClick={() => handlePreset(preset)}
                       className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all text-center min-h-[60px] ${
                         isActive
-                          ? 'border-[#C2410C] bg-[#C2410C]/[0.04] text-[#C2410C]'
-                          : 'border-stone-200 bg-[#F5F5F4] text-stone-600 hover:bg-stone-100 active:scale-95'
+                          ? 'border-[var(--brand-accent)] bg-[var(--selected-fill)] text-[var(--brand-accent)]'
+                          : 'border-border bg-muted text-muted-foreground hover:bg-accent active:scale-95'
                       }`}
                     >
                       <preset.Icon className="w-4 h-4" />
@@ -365,10 +365,10 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
           )}
 
           {/* Sync to calendar toggle */}
-          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F5F5F4] border border-stone-200/60">
+          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted border border-border">
             <div className="flex items-center gap-2">
-              <CalendarSync className="w-4 h-4 text-stone-500" />
-              <span className="text-sm text-stone-700">Sync to calendar</span>
+              <CalendarSync className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">Sync to calendar</span>
             </div>
             <Switch
               id="tb-sync"
@@ -395,7 +395,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
             <button
               type="button"
               onClick={() => setShowNote(true)}
-              className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium py-1"
+              className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium py-1"
             >
               + Add a note
             </button>
@@ -408,7 +408,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full h-11 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+                className="w-full h-11 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
               >
                 {saving && <Loader2 className="size-4 animate-spin mr-2" />}
                 Save changes
@@ -502,7 +502,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
               <Button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full h-11 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+                className="w-full h-11 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
               >
                 {saving && <Loader2 className="size-4 animate-spin mr-2" />}
                 Save Block
