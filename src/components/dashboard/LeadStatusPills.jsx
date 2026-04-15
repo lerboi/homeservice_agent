@@ -3,7 +3,7 @@
 const PIPELINE_STATUSES = [
   { value: 'new',       label: 'New',       activeClass: 'bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] border-[var(--brand-accent)]' },
   { value: 'booked',    label: 'Booked',    activeClass: 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500' },
-  { value: 'completed', label: 'Completed', activeClass: 'bg-stone-700 dark:bg-stone-600 text-white border-stone-700 dark:border-stone-600' },
+  { value: 'completed', label: 'Completed', activeClass: 'bg-stone-700 dark:bg-stone-600 text-white border-stone-700 dark:border-border' },
   { value: 'paid',      label: 'Paid',      activeClass: 'bg-[#166534] dark:bg-emerald-600 text-white border-[#166534] dark:border-emerald-600' },
   { value: 'lost',      label: 'Lost',      activeClass: 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500' },
 ];
@@ -40,7 +40,7 @@ export default function LeadStatusPills({ counts, activeStatus, onStatusChange }
             <span>{label}</span>
             <span
               className={`inline-flex items-center justify-center min-w-[20px] h-5 rounded-full px-1.5 text-[11px] font-semibold tabular-nums
-                         ${isActive ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'}`}
+                         ${isActive ? 'bg-white/20 dark:bg-white/15 text-white' : 'bg-muted text-muted-foreground'}`}
             >
               {count}
             </span>

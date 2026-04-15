@@ -94,7 +94,7 @@ export default function DashboardHomePage() {
             }
           }}
           aria-label="Take a guided tour"
-          className="font-normal text-xs text-stone-400 hover:text-stone-600 transition-colors flex items-center gap-1"
+          className="font-normal text-xs text-muted-foreground hover:text-muted-foreground transition-colors flex items-center gap-1"
         >
           <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
           {showTour ? 'Take the tour' : 'Tour'}

@@ -12,7 +12,7 @@ function formatTime(seconds) {
 
 /**
  * AudioPlayer — custom HTML5 audio player for call recordings.
- * Design spec: bg-stone-50, 36px circular play/pause, orange scrub bar.
+ * Design spec: bg-muted, 36px circular play/pause, orange scrub bar.
  *
  * @param {{ src: string | null }} props
  */
@@ -78,7 +78,7 @@ export default function AudioPlayer({ src }) {
   if (!src) {
     return (
       <div className="bg-muted rounded-xl border border-border p-4">
-        <p className="text-sm text-stone-400 text-center">
+        <p className="text-sm text-muted-foreground text-center">
           Recording unavailable. The audio file may still be processing.
         </p>
       </div>
@@ -99,7 +99,7 @@ export default function AudioPlayer({ src }) {
       />
 
       {loadError ? (
-        <p className="text-sm text-stone-400 text-center">
+        <p className="text-sm text-muted-foreground text-center">
           Recording unavailable. The audio file may still be processing.
         </p>
       ) : (
@@ -148,7 +148,7 @@ export default function AudioPlayer({ src }) {
 
             {/* Duration display — tabular nums */}
             <span
-              className="flex-shrink-0 text-[12px] text-stone-500 tabular-nums"
+              className="flex-shrink-0 text-[12px] text-muted-foreground tabular-nums"
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {formatTime(currentTime)} / {formatTime(duration)}

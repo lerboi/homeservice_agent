@@ -38,8 +38,8 @@ export default function AnalyticsPage() {
     <div className={`${card.base} p-0`} data-tour="analytics-page">
       <div className="p-6">
         <div className="flex items-center gap-2.5 mb-6">
-          <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
-            <BarChart3 className="size-4 text-stone-500" />
+          <div className="flex items-center justify-center size-8 rounded-lg bg-muted">
+            <BarChart3 className="size-4 text-muted-foreground" />
           </div>
           <h1 className="text-xl font-semibold text-foreground">Analytics</h1>
         </div>

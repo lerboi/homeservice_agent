@@ -165,9 +165,9 @@ export default function NewInvoicePage() {
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-stone-200 rounded w-1/4" />
-          <div className="h-40 bg-stone-100 rounded" />
-          <div className="h-40 bg-stone-100 rounded" />
+          <div className="h-6 bg-muted rounded w-1/4" />
+          <div className="h-40 bg-muted rounded" />
+          <div className="h-40 bg-muted rounded" />
         </div>
       </div>
     );
@@ -179,12 +179,12 @@ export default function NewInvoicePage() {
       <div className="flex items-center gap-3 mb-6">
         <Link
           href={editInvoiceId ? `/dashboard/invoices/${editInvoiceId}` : '/dashboard/invoices'}
-          className="text-stone-500 hover:text-stone-900 transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Back to invoices"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-xl font-semibold text-stone-900">
+        <h1 className="text-xl font-semibold text-foreground">
           {editInvoiceId ? 'Edit Invoice' : 'New Invoice'}
         </h1>
       </div>

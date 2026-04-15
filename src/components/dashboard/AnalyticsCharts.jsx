@@ -152,7 +152,7 @@ function buildBookingOutcomeData(calls) {
 function RevenueTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-stone-200 rounded-lg shadow-sm px-3 py-2">
+    <div className="bg-card border border-border rounded-lg shadow-sm px-3 py-2">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
       <p className="text-sm font-semibold text-foreground">
         ${payload[0]?.value?.toLocaleString()}
@@ -164,7 +164,7 @@ function RevenueTooltip({ active, payload, label }) {
 function CountTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-stone-200 rounded-lg shadow-sm px-3 py-2">
+    <div className="bg-card border border-border rounded-lg shadow-sm px-3 py-2">
       <p className="text-xs text-muted-foreground mb-1">{label}</p>
       <p className="text-sm font-semibold text-foreground">
         {payload[0]?.value} leads
@@ -177,7 +177,7 @@ function CountTooltip({ active, payload, label }) {
 
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-white rounded-xl border border-stone-200/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] p-5">
+    <div className="bg-card rounded-xl border border-border/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] p-5">
       <h3 className="text-xl font-semibold text-foreground mb-5">{title}</h3>
       {children}
     </div>

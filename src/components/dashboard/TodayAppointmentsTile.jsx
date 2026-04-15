@@ -86,7 +86,7 @@ export default function TodayAppointmentsTile() {
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-stone-600" />
+            <CalendarDays className="h-6 w-6 text-muted-foreground" />
             <h2 className={titleClass}>Today&apos;s appointments</h2>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function TodayAppointmentsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-stone-600" />
+          <CalendarDays className="h-6 w-6 text-muted-foreground" />
           <h2 className={titleClass}>Today&apos;s appointments</h2>
         </div>
         <div
@@ -132,7 +132,7 @@ export default function TodayAppointmentsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-stone-600" />
+            <CalendarDays className="h-6 w-6 text-muted-foreground" />
             <h2 className={titleClass}>Today&apos;s appointments</h2>
           </div>
           <Link href="/dashboard/appointments" className={ctaClass}>
@@ -160,7 +160,7 @@ export default function TodayAppointmentsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-stone-600" />
+          <CalendarDays className="h-6 w-6 text-muted-foreground" />
           <h2 className={titleClass}>Today&apos;s appointments</h2>
         </div>
         <Link href="/dashboard/appointments" className={ctaClass}>
@@ -170,7 +170,7 @@ export default function TodayAppointmentsTile() {
 
       {/* Summary line — next appointment in Display typography */}
       <div className="flex flex-col gap-1">
-        <p className="font-normal text-xs text-stone-500 leading-[1.4]">
+        <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
           Next appointment
         </p>
         <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
@@ -201,7 +201,7 @@ export default function TodayAppointmentsTile() {
                 <p className="font-semibold text-sm text-foreground leading-[1.4] truncate">
                   {appt.caller_name || 'Customer'}
                 </p>
-                <div className="flex items-center gap-2 font-normal text-xs text-stone-500 leading-[1.4]">
+                <div className="flex items-center gap-2 font-normal text-xs text-muted-foreground leading-[1.4]">
                   {appt.job_type && <span>{appt.job_type}</span>}
                   {locationText && (
                     <span className="flex items-center gap-1 truncate">

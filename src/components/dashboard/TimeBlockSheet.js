@@ -232,7 +232,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
           {/* Quick presets — create mode only */}
           {!isEditMode && (
             <div className="space-y-2">
-              <Label className="text-xs text-stone-500 uppercase tracking-wider">Quick add</Label>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Quick add</Label>
               <div className="grid grid-cols-4 gap-2">
                 {PRESETS.map((preset) => {
                   const isActive = activePreset === preset.key;
@@ -288,7 +288,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
             </div>
             {!isEditMode && (
               <div className="space-y-2">
-                <Label htmlFor="tb-end-date">End date <span className="text-stone-400 font-normal text-xs">(optional)</span></Label>
+                <Label htmlFor="tb-end-date">End date <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
                 <Input
                   id="tb-end-date"
                   type="date"
@@ -415,9 +415,9 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
               </Button>
 
               {/* Delete section */}
-              <div className="border-t border-stone-100 pt-3">
+              <div className="border-t border-border pt-3">
                 {isPartOfGroup && (
-                  <p className="text-xs text-stone-400 text-center mb-2">
+                  <p className="text-xs text-muted-foreground text-center mb-2">
                     Part of a {groupCount}-day block
                   </p>
                 )}
@@ -428,7 +428,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
                         <Button
                           variant="ghost"
                           disabled={saving}
-                          className="h-10 text-sm text-stone-500 hover:text-red-600 hover:bg-red-50"
+                          className="h-10 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50"
                         >
                           Remove this day
                         </Button>

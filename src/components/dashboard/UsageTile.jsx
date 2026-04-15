@@ -33,7 +33,7 @@ import { AlertTriangle } from 'lucide-react';
 export function usageThresholdClass(percent) {
   if (percent >= 100) return { fill: 'bg-red-700', tone: 'text-red-700' };
   if (percent >= 75) return { fill: 'bg-amber-600', tone: 'text-amber-700' };
-  return { fill: 'bg-[var(--brand-accent)]', tone: 'text-stone-600' };
+  return { fill: 'bg-[var(--brand-accent)]', tone: 'text-muted-foreground' };
 }
 
 function formatCycleStartHint(daysLeft) {

@@ -182,11 +182,11 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
           </div>
 
           {/* More details — optional fields for invoice-ready lead */}
-          <div className="border-t border-stone-200/60 pt-3">
+          <div className="border-t border-border/60 pt-3">
             <button
               type="button"
               onClick={() => setShowMore((v) => !v)}
-              className="flex items-center justify-between w-full text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors"
+              className="flex items-center justify-between w-full text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <span>More details (optional)</span>
               {showMore ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -224,7 +224,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
                     className="h-11"
                   />
                 </div>
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-muted-foreground">
                   These fields aren&apos;t required to book, but they make the lead invoice-ready.
                 </p>
               </div>
@@ -234,8 +234,8 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
           {/* Sync to calendar toggle */}
           <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted border border-border">
             <div className="flex items-center gap-2">
-              <CalendarSync className="w-4 h-4 text-stone-500" />
-              <span className="text-sm text-stone-700">Sync to calendar</span>
+              <CalendarSync className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-foreground">Sync to calendar</span>
             </div>
             <Switch
               id="qb-sync"

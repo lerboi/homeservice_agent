@@ -16,7 +16,7 @@ export default function TranscriptViewer({ transcriptStructured, transcriptText 
 
   if (!hasContent) {
     return (
-      <div className="text-sm text-stone-400 italic">
+      <div className="text-sm text-muted-foreground italic">
         No transcript available for this call.
       </div>
     );

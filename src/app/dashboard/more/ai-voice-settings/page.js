@@ -39,14 +39,14 @@ export default function AIVoiceSettingsPage() {
       <h1 className="text-xl font-semibold text-foreground mb-1">AI & Voice Settings</h1>
       <p className="text-sm text-muted-foreground mb-6">Your AI phone number and test call.</p>
       <SettingsAISection phoneNumber={phoneNumber} initialVoice={currentVoice} loading={loading} />
-      <div className="mt-6 pt-6 border-t border-stone-200">
+      <div className="mt-6 pt-6 border-t border-border">
         <Link
           href="/dashboard/more/call-routing"
           className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <PhoneForwarded className="h-4 w-4" />
           <span>Call routing</span>
-          <span className="text-xs text-stone-400 ml-auto">Forward calls on a schedule or set priority callers</span>
+          <span className="text-xs text-muted-foreground ml-auto">Forward calls on a schedule or set priority callers</span>
         </Link>
       </div>
     </div>
