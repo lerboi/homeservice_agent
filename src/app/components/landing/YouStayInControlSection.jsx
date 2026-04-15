@@ -21,21 +21,21 @@ export function YouStayInControlSection() {
               <AnimatedItem>
                 <ControlColumn
                   label="Regulars ring you"
-                  caption="Repeat customers always get you on the line. Everyone else gets Voco."
+                  caption="Pick the contacts who always ring straight through to your phone."
                   mock={<VipListMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
                   label="Off-hours are covered"
-                  caption="Nights, weekends, lunch — you pick when Voco picks up."
+                  caption="Set the hours Voco answers and the hours calls come direct to you."
                   mock={<HoursMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
                   label="Every call lands on your phone"
-                  caption="Urgency, transcript, and callback in one text — before the caller hangs up."
+                  caption="Choose what Voco sends you after a call — urgency, transcript, one-tap callback."
                   mock={<NotificationMock />}
                 />
               </AnimatedItem>
