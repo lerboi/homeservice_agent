@@ -143,11 +143,11 @@ describe('YouStayInControlSection 48.1', () => {
     expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(/bg-\[#1C1412\]/);
   });
 
-  it('lists all 3 owner-control labels (post-redesign — card containers removed per design iteration)', () => {
+  it('renders three concrete control concepts via visual mocks (post-redesign — first-time visitors need to see it, not read WHO/WHEN/WHAT)', () => {
     const src = read('src/app/components/landing/YouStayInControlSection.jsx');
-    expect(src).toMatch(/'WHO'/);
-    expect(src).toMatch(/'WHEN'/);
-    expect(src).toMatch(/'WHAT'/);
+    expect(src).toMatch(/VipListMock/);
+    expect(src).toMatch(/HoursMock/);
+    expect(src).toMatch(/NotificationMock/);
   });
 });
 
