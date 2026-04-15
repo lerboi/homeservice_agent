@@ -77,7 +77,7 @@ completed: 2026-04-15
 - **Duration:** ~45 min
 - **Started:** 2026-04-15
 - **Completed:** 2026-04-15
-- **Tasks:** 3 of 4 complete (Task 4 is human-verify checkpoint — paused)
+- **Tasks:** 4 of 4 complete
 - **Files modified:** 10
 
 ## Accomplishments
@@ -94,7 +94,7 @@ completed: 2026-04-15
 1. **Task 1: Wave 0 test scaffolds + manual checklist** — `e8bd4cc` (test)
 2. **Task 2: globals.css + layout.js + theme-provider + design-tokens** — `636aa3a` (feat)
 3. **Task 3: Sidebar theme toggle button** — `ac54e77` (feat)
-4. **Task 4: Manual verification checkpoint** — PENDING (human-verify)
+4. **Task 4: Manual verification checkpoint** — `f2c74ca` (chore) — User approved 2026-04-15
 
 ## Files Created/Modified
 
@@ -185,9 +185,21 @@ None. Per plan threat model: pure UI phase, no new authenticated endpoints, no P
 
 - Token layer is established — Plans 02-05 can now migrate dashboard consumers onto `var(--brand-accent)`, `var(--warm-surface)`, `text-foreground`, `text-muted-foreground`
 - Wave 0 hex-audit test (`dark-mode-hex-audit.test.js`) acts as a live gate: RED until all 5 plans complete their migrations
-- Task 4 (manual verification checkpoint) must be approved by user before Plans 02-05 ship
+- Task 4 human-verify approved 2026-04-15 — Plans 02-05 are cleared to ship
 
-## Self-Check
+## Self-Check: PASSED
+
+Verified 2026-04-15 after user approval of Task 4:
+
+| Check | Result |
+|-------|--------|
+| Commit e8bd4cc present | FOUND |
+| Commit 636aa3a present | FOUND |
+| Commit ac54e77 present | FOUND |
+| Commit f2c74ca (Task 4 checklist) present | FOUND |
+| dark-mode-toggle-logic.test.js GREEN | PASS (10/10) |
+| dark-mode-infra.test.js GREEN | PASS (6/6) |
+| 49-MANUAL-CHECKLIST.md signed off | PASS |
 
 ---
 *Phase: 49-dark-mode-foundation-and-token-migration*
