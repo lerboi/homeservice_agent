@@ -13,22 +13,22 @@ const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frida
 
 const URGENCY_STYLES = {
   emergency: {
-    block: 'bg-red-50 border-l-[3px] border-red-400 hover:bg-red-100/70',
-    badge: 'bg-red-100 text-red-700',
-    time: 'text-red-500',
-    name: 'text-red-900',
+    block: 'bg-red-50 dark:bg-red-950/30 border-l-[3px] border-red-400 dark:border-red-500 hover:bg-red-100/70 dark:hover:bg-red-900/40',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300',
+    time: 'text-red-500 dark:text-red-300',
+    name: 'text-red-900 dark:text-red-200',
   },
   routine: {
-    block: 'bg-[#F0F4FF] border-l-[3px] border-[#4F6BED] hover:bg-[#E8EFFE]',
-    badge: 'bg-[#4F6BED]/10 text-[#4F6BED]',
-    time: 'text-[#4F6BED]',
+    block: 'bg-[#F0F4FF] dark:bg-[#1E2A4A] border-l-[3px] border-[#4F6BED] hover:bg-[#E8EFFE] dark:hover:bg-[#243663]',
+    badge: 'bg-[#4F6BED]/10 dark:bg-[#4F6BED]/20 text-[#4F6BED] dark:text-[#8FA5F2]',
+    time: 'text-[#4F6BED] dark:text-[#8FA5F2]',
     name: 'text-foreground',
   },
   urgent: {
-    block: 'bg-amber-50 border-l-[3px] border-amber-400 hover:bg-amber-100/70',
-    badge: 'bg-amber-100 text-amber-700',
-    time: 'text-amber-600',
-    name: 'text-amber-900',
+    block: 'bg-amber-50 dark:bg-amber-950/30 border-l-[3px] border-amber-400 dark:border-amber-500 hover:bg-amber-100/70 dark:hover:bg-amber-900/40',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    time: 'text-amber-600 dark:text-amber-300',
+    name: 'text-amber-900 dark:text-amber-200',
   },
 };
 
@@ -317,7 +317,7 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
             <div className="text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">{addressLine}</div>
           )}
           {effectiveHeight >= 96 && (appointment.notes) && (
-            <div className="text-[11px] text-[#64748B] truncate leading-tight">{appointment.notes}</div>
+            <div className="text-[11px] text-muted-foreground truncate leading-tight">{appointment.notes}</div>
           )}
         </div>
       )}
@@ -865,7 +865,7 @@ export default function CalendarView({
           return (
             <div
               key={colIndex}
-              className={`relative border-l border-border cursor-pointer ${isToday ? 'bg-[#FFFCFA]' : 'bg-card'}`}
+              className={`relative border-l border-border cursor-pointer ${isToday ? 'bg-[var(--selected-fill)]' : 'bg-card'}`}
               style={{ height: `${hours.length * hourHeight}px` }}
               onClick={(e) => {
                 if (!onEmptySlotClick) return;
@@ -888,7 +888,7 @@ export default function CalendarView({
                 return (
                   <div
                     key={`off-${hour}`}
-                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50' : 'bg-muted/60'}`}
+                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50 dark:bg-orange-950/20' : 'bg-muted/60'}`}
                     style={{ top: `${(hour - gridStartHour) * hourHeight}px`, height: `${hourHeight}px` }}
                   />
                 );

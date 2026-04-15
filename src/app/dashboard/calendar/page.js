@@ -702,14 +702,14 @@ export default function CalendarPage() {
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               onClick={() => setViewMode('month')}
             >
               Month
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-border ${effectiveViewMode === 'day' ? 'bg-foreground text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-border ${effectiveViewMode === 'day' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               onClick={() => setViewMode('day')}
             >
               Day
