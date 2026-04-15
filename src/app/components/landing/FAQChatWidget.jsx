@@ -64,7 +64,7 @@ export function FAQChatWidget() {
   };
 
   return (
-    <div className="rounded-2xl border border-stone-200/60 bg-[#FAFAF9] shadow-sm flex flex-col min-h-[400px]">
+    <div className="rounded-2xl border border-stone-200/60 bg-[#FAFAF9] shadow-sm flex flex-col h-[520px] max-h-[80vh]">
       {/* Header */}
       <div className="px-4 py-4 border-b border-stone-200/60">
         <p className="text-[15px] font-semibold text-[#0F172A]">Still wondering?</p>

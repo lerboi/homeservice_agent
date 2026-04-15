@@ -44,20 +44,6 @@ export function YouStayInControlSection() {
         </AnimatedSection>
       </section>
 
-      <section className="relative bg-[#1C1412] py-20 md:py-28 px-6 overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(circle at 50% 50%, rgba(249,115,22,0.10), transparent 70%)' }}
-          aria-hidden="true"
-        />
-        <AnimatedSection>
-          <div className="relative max-w-3xl mx-auto text-center">
-            <blockquote className="text-[28px] md:text-[36px] font-semibold text-[#F5F5F5] leading-tight tracking-tight">
-              &ldquo;You set the rules. Voco follows them.&rdquo;
-            </blockquote>
-          </div>
-        </AnimatedSection>
-      </section>
     </>
   );
 }

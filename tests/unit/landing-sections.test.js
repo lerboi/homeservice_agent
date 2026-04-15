@@ -133,16 +133,6 @@ describe('YouStayInControlSection 48.1', () => {
     expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(/You Stay in Control/);
   });
 
-  it('contains the locked pull quote (D-12)', () => {
-    expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(
-      /You set the rules\. Voco follows them\./
-    );
-  });
-
-  it('uses dark pull-quote background #1C1412', () => {
-    expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(/bg-\[#1C1412\]/);
-  });
-
   it('renders three concrete control concepts via visual mocks (post-redesign — first-time visitors need to see it, not read WHO/WHEN/WHAT)', () => {
     const src = read('src/app/components/landing/YouStayInControlSection.jsx');
     expect(src).toMatch(/VipListMock/);
