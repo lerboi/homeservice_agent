@@ -3,24 +3,10 @@
 import { AnimatedSection } from './AnimatedSection';
 import dynamic from 'next/dynamic';
 
-// 21st.dev animated-hero RotatingText — lazy loaded, SSR shows static fallback
-const RotatingText = dynamic(
-  () => import('./RotatingText').then((m) => m.RotatingText),
-  {
-    loading: () => <span className="text-[#F97316]">Phone Calls</span>,
-  }
-);
-
 // Spline 3D scene — lazy loaded via CDN web component (zero bundle impact).
 // Poster placeholder is built into SplineScene, so no loading spinner needed.
 const SplineScene = dynamic(
   () => import('./SplineScene').then((m) => m.SplineScene),
-);
-
-// HeroDemoBlock — client component managing input-to-player transition (no SSR)
-const HeroDemoBlock = dynamic(
-  () => import('./HeroDemoBlock').then((m) => m.HeroDemoBlock),
-  { ssr: false }
 );
 
 const SPLINE_SCENE_URL = 'https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode';
@@ -52,30 +38,30 @@ export function HeroSection() {
         <div className="w-full max-w-full min-w-0 md:max-w-[50%]">
           <AnimatedSection>
             <h1 className="text-[2.25rem] md:text-[2.5rem] lg:text-[3rem] font-semibold text-white leading-[1.2] tracking-tight break-words">
-              Voco Answers So You Can Keep
-              <br />
-              <span className="text-[2.75rem] md:text-[3rem] lg:text-[3.75rem]">
-                <RotatingText
-                  texts={['Phone Calls', 'Bookings', 'Invoices', 'Paperwork']}
-                  rotationInterval={3000}
-                  staggerDuration={0.03}
-                  staggerFrom="first"
-                  className="text-[#F97316]"
-                />
-              </span>
+              Stop losing $1,000+ every time you miss a call.
             </h1>
 
             <p className="text-base sm:text-lg md:text-xl text-white/60 mt-5 mb-4 max-w-xl leading-relaxed">
-              Voco picks up when you're on the roof, in a crawlspace, or running on four hours of sleep. You stay in charge of every job — it just makes sure the next call doesn't hang up.
-            </p>
-            <p className="text-xs sm:text-sm text-white/35 mb-8">
-              Enter your business name and hear it in action.
+              Voco AI answers, triages, and books every call — in under 1 ring.
             </p>
 
-            {/* Demo input/player — HeroDemoBlock manages input-to-player transition */}
-            <div className="mt-8 pointer-events-auto">
-              <HeroDemoBlock />
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 pointer-events-auto">
+              <a
+                href="#audio-demo"
+                className="inline-flex items-center justify-center px-6 h-11 rounded-lg bg-[#F97316] text-white text-[15px] font-semibold hover:bg-[#EA580C] transition-colors"
+              >
+                Hear Voco in action
+              </a>
+              <a
+                href="/auth/signin"
+                className="inline-flex items-center justify-center px-4 h-11 text-[14px] font-semibold text-white/80 hover:text-white transition-colors"
+              >
+                Start 5-minute setup →
+              </a>
             </div>
+            <p className="text-xs sm:text-sm text-white/35 text-center mt-6">
+              Answers in English, Spanish, Mandarin, Malay, and 70+ more. 5-minute setup. No installs.
+            </p>
 
             {/* Mobile: scrolling integration logo marquee */}
             <div className="md:hidden mt-10 pointer-events-auto">
