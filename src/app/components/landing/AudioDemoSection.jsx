@@ -1,12 +1,11 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, PhoneCall } from 'lucide-react';
+import { Play, Pause } from 'lucide-react';
 import { AnimatedSection } from './AnimatedSection';
 
 const DEMO_TRACKS = {
   emergency: {
     label: 'Emergency',
-    badge: 'After hours · 11:42 PM',
     src: '/audio/demo-emergency.mp3',
     transcript: [
       { speaker: 'caller', startSec: 0, endSec: 5.5, text: 'My water heater is leaking everywhere — I need someone now.' },
@@ -17,7 +16,6 @@ const DEMO_TRACKS = {
   },
   routine: {
     label: 'Routine',
-    badge: 'Tuesday · 2:14 PM',
     src: '/audio/demo-routine.mp3',
     transcript: [
       { speaker: 'caller', startSec: 0, endSec: 6.0, text: 'Hi — I need to schedule a routine drain cleaning next week.' },
@@ -35,10 +33,12 @@ function formatTime(seconds) {
   return `${m}:${s}`;
 }
 
-const BAR_COUNT = 48;
+const BAR_COUNT = 64;
 const BAR_HEIGHTS = [
-  20, 35, 55, 40, 70, 85, 60, 75, 45, 65, 80, 50, 30, 55, 70, 90, 60, 45, 75, 55, 35, 60, 80, 50,
-  40, 65, 85, 55, 70, 45, 60, 80, 50, 35, 55, 75, 45, 65, 40, 55, 70, 50, 35, 60, 80, 55, 40, 65,
+  18, 32, 58, 42, 74, 88, 60, 76, 48, 66, 82, 54, 30, 58, 72, 92, 62, 46, 78, 58,
+  36, 62, 84, 52, 42, 68, 88, 58, 72, 46, 62, 82, 50, 34, 56, 76, 46, 66, 40, 58,
+  72, 52, 36, 62, 82, 56, 42, 68, 28, 54, 70, 44, 60, 80, 48, 64, 38, 56, 74, 50,
+  42, 66, 86, 54,
 ];
 
 export function AudioDemoSection() {
@@ -133,132 +133,111 @@ export function AudioDemoSection() {
   const track = DEMO_TRACKS[activeTab];
 
   return (
-    <section id="audio-demo" className="bg-white py-20 md:py-28 px-6">
+    <section id="audio-demo" className="bg-white py-24 md:py-32 px-6">
       <AnimatedSection>
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#F97316] tracking-wide uppercase mb-3">
-              <PhoneCall className="w-4 h-4" aria-hidden="true" />
-              <span>Real call</span>
+        <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl">
+            <div className="text-[13px] font-semibold text-[#F97316] tracking-[0.18em] uppercase mb-4">Real call</div>
+            <h2 className="text-4xl md:text-5xl font-semibold text-[#0F172A] leading-[1.1] tracking-tight">
+              Hear Voco handle<br />a real call.
+            </h2>
+          </div>
+
+          <div className="mt-14 flex items-center gap-6">
+            <div className="flex items-center gap-1 border-b border-stone-200">
+              {Object.entries(DEMO_TRACKS).map(([key, { label }]) => {
+                const active = key === activeTab;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleTabSwitch(key)}
+                    className={
+                      active
+                        ? 'px-1 pb-3 text-[15px] font-semibold text-[#0F172A] border-b-2 border-[#F97316] -mb-px'
+                        : 'px-1 pb-3 text-[15px] font-semibold text-[#94A3B8] border-b-2 border-transparent hover:text-[#475569]'
+                    }
+                    aria-pressed={active}
+                  >
+                    {label}
+                    {active ? <span className="mx-3 text-stone-300">·</span> : <span className="ml-6" />}
+                  </button>
+                );
+              })}
             </div>
-            <h2 className="text-3xl md:text-[2.25rem] font-semibold text-[#0F172A]">Hear Voco handle a real call</h2>
+            <div className="ml-auto text-[13px] font-mono text-[#94A3B8] tabular-nums">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
           </div>
 
-          <div className="flex gap-2 justify-center mb-6">
-            {Object.entries(DEMO_TRACKS).map(([key, { label }]) => {
-              const active = key === activeTab;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleTabSwitch(key)}
-                  className={
-                    active
-                      ? 'px-4 py-2 rounded-full bg-[#F97316]/10 border border-[#F97316]/30 text-[#F97316] text-[14px] font-semibold'
-                      : 'px-4 py-2 rounded-full border border-stone-200 text-[#475569] text-[14px] font-semibold hover:border-stone-300'
-                  }
-                  aria-pressed={active}
-                >
-                  {label}
-                </button>
-              );
-            })}
+          <audio ref={audioRef} src={track.src} preload="metadata" />
+
+          <div className="mt-10 flex items-center gap-6">
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="shrink-0 flex items-center justify-center w-16 h-16 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] shadow-xl shadow-[#F97316]/25 transition-all hover:scale-105"
+              aria-label={isPlaying ? 'Pause call' : 'Play call'}
+            >
+              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+            </button>
+            <div className="flex-1 flex items-center gap-[3px] h-16" aria-hidden="true">
+              {Array.from({ length: BAR_COUNT }).map((_, i) => {
+                const barActive = i / BAR_COUNT <= progress;
+                return (
+                  <div
+                    key={i}
+                    style={{ height: `${BAR_HEIGHTS[i] || 50}%` }}
+                    className={
+                      barActive
+                        ? 'flex-1 bg-[#F97316] rounded-full transition-colors'
+                        : 'flex-1 bg-stone-200 rounded-full transition-colors'
+                    }
+                  />
+                );
+              })}
+            </div>
           </div>
 
-          <div className="rounded-3xl bg-gradient-to-br from-[#FAFAF9] to-white border border-stone-200/70 shadow-lg overflow-hidden">
-            <div className="p-6 md:p-8 bg-[#0F172A] text-white">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                    <PhoneCall className="w-5 h-5 text-[#F97316]" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <div className="text-[13px] text-white/70">Incoming call</div>
-                    <div className="text-[14px] font-semibold text-white">{track.badge}</div>
-                  </div>
-                </div>
-                <div className="text-[13px] font-mono text-white/60">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
-              </div>
+          {hasError && (
+            <p className="mt-6 text-[14px] text-[#475569]">Audio unavailable — read the transcript below.</p>
+          )}
 
-              <audio ref={audioRef} src={track.src} preload="metadata" />
-
-              <div className="flex items-end gap-[3px] h-24 md:h-28" aria-hidden="true">
-                {Array.from({ length: BAR_COUNT }).map((_, i) => {
-                  const barActive = i / BAR_COUNT <= progress;
-                  return (
-                    <div
-                      key={i}
-                      style={{ height: `${BAR_HEIGHTS[i] || 50}%` }}
+          <div className="mt-14" aria-live="polite">
+            <ul className="flex flex-col gap-6">
+              {track.transcript.map((line, i) => {
+                const active = i === activeLineIndex;
+                const isVoco = line.speaker === 'voco';
+                return (
+                  <li
+                    key={i}
+                    ref={active ? activeLineRef : null}
+                    className="grid grid-cols-[72px_1fr] gap-6 items-baseline"
+                  >
+                    <span
                       className={
-                        barActive
-                          ? 'flex-1 bg-[#F97316] rounded-full transition-colors'
-                          : 'flex-1 bg-white/15 rounded-full transition-colors'
+                        active
+                          ? isVoco
+                            ? 'text-[11px] font-semibold tracking-[0.18em] uppercase text-[#F97316]'
+                            : 'text-[11px] font-semibold tracking-[0.18em] uppercase text-[#0F172A]'
+                          : 'text-[11px] font-semibold tracking-[0.18em] uppercase text-[#94A3B8]'
                       }
-                    />
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 flex items-center justify-center">
-                <button
-                  type="button"
-                  onClick={togglePlay}
-                  className="group flex items-center justify-center w-16 h-16 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] shadow-lg shadow-[#F97316]/40 transition-all ring-4 ring-[#F97316]/20 hover:ring-[#F97316]/40"
-                  aria-label={isPlaying ? 'Pause call' : 'Play call'}
-                >
-                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
-                </button>
-              </div>
-
-              {hasError && (
-                <p className="mt-4 text-center text-[13px] text-white/70">Audio unavailable — read the transcript below.</p>
-              )}
-            </div>
-
-            <div className="p-6 md:p-8 bg-white" aria-live="polite">
-              <ul className="flex flex-col gap-3">
-                {track.transcript.map((line, i) => {
-                  const active = i === activeLineIndex;
-                  const isVoco = line.speaker === 'voco';
-                  return (
-                    <li
-                      key={i}
-                      ref={active ? activeLineRef : null}
-                      className={isVoco ? 'flex justify-start' : 'flex justify-end'}
                     >
-                      <div
-                        className={
-                          isVoco
-                            ? active
-                              ? 'max-w-[85%] rounded-2xl rounded-bl-sm bg-[#F97316] text-white px-4 py-3 text-[15px] shadow-sm'
-                              : 'max-w-[85%] rounded-2xl rounded-bl-sm bg-[#F97316]/10 text-[#0F172A] px-4 py-3 text-[15px]'
-                            : active
-                              ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-[#0F172A] text-white px-4 py-3 text-[15px] shadow-sm'
-                              : 'max-w-[85%] rounded-2xl rounded-br-sm bg-stone-100 text-[#0F172A] px-4 py-3 text-[15px]'
-                        }
-                      >
-                        <div
-                          className={
-                            isVoco
-                              ? active
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-0.5'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-[#F97316] mb-0.5'
-                              : active
-                                ? 'text-[11px] font-semibold uppercase tracking-wide text-white/70 mb-0.5'
-                                : 'text-[11px] font-semibold uppercase tracking-wide text-[#475569] mb-0.5'
-                          }
-                        >
-                          {isVoco ? 'Voco' : 'Caller'}
-                        </div>
-                        {line.text}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                      {isVoco ? 'Voco' : 'Caller'}
+                    </span>
+                    <span
+                      className={
+                        active
+                          ? 'text-[19px] md:text-[21px] leading-relaxed text-[#0F172A] font-medium transition-colors'
+                          : 'text-[19px] md:text-[21px] leading-relaxed text-[#94A3B8] transition-colors'
+                      }
+                    >
+                      {line.text}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </AnimatedSection>
