@@ -11,7 +11,7 @@ const FAQS = [
     a: (
       <>
         In 2025 blind tests, 85% of callers couldn&apos;t tell Voco apart from a human receptionist. It speaks with natural pauses, handles interruptions, and matches the tone you configure.{' '}
-        <a href="#hero" className="text-[#F97316] underline">Hear it yourself →</a>
+        <a href="#audio-demo" className="text-[#F97316] underline">Hear it yourself →</a>
       </>
     ),
   },
@@ -49,6 +49,16 @@ const FAQS = [
     value: 'q7',
     q: 'Can I listen to what Voco says on my calls?',
     a: 'Yes — every call has a full recording and transcript in your dashboard. You can search, filter, and flag calls for review. Nothing Voco does happens off-the-books.',
+  },
+  {
+    value: 'q8',
+    q: 'What languages does Voco support?',
+    a: 'Voco answers calls in English, Spanish, Mandarin, Malay, Tagalog, Vietnamese, and 70+ more. It handles Singlish fluently and can code-switch mid-call — so a caller who starts in English and switches to Hokkien stays understood. No setup required; language is auto-detected per call.',
+  },
+  {
+    value: 'q9',
+    q: 'What about complex or high-ticket jobs — like a full system install quote?',
+    a: "Voco captures the caller's needs, gathers key details (property size, existing system, timeline, budget range), and books a site-visit estimate with your best-qualified technician. You get a complete lead card before the callback. High-ticket call samples are on the roadmap for a follow-up update.",
   },
 ];
 
