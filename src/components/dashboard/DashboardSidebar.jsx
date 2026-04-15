@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, BarChart3, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, BarChart3, MessageSquare, Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/lib/supabase-browser';
+import { getNextTheme, getToggleLabel, getToggleAriaLabel } from '@/lib/theme-toggle-logic';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
@@ -40,6 +43,45 @@ function NavLink({ item, pathname }) {
       <Icon className="h-4 w-4 shrink-0" />
       {item.label}
     </Link>
+  );
+}
+
+function ThemeToggleButton() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <button
+        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 border-l-2 border-transparent ml-0 pl-[10px] w-full opacity-0"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
+        <Moon className="h-4 w-4 shrink-0" />
+        Dark mode
+      </button>
+    );
+  }
+
+  const current = resolvedTheme === 'dark' ? 'dark' : 'light';
+  const Icon = current === 'dark' ? Sun : Moon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => setTheme(getNextTheme(current))}
+          aria-label={getToggleAriaLabel(current)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A]"
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          {getToggleLabel(current)}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{getToggleAriaLabel(current)}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -91,6 +133,11 @@ export default function DashboardSidebar() {
             <MessageSquare className="h-4 w-4 shrink-0" />
             Ask Voco AI
           </button>
+        </div>
+
+        {/* Theme Toggle */}
+        <div className="space-y-1 mb-1">
+          <ThemeToggleButton />
         </div>
 
         {/* Logout */}
