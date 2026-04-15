@@ -67,7 +67,7 @@ export default function EstimatesPage() {
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-semibold text-stone-900">Estimates</h1>
+          <h1 className="text-xl font-semibold text-foreground">Estimates</h1>
           <Link
             href="/dashboard/estimates/new"
             className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white text-sm font-medium transition-colors"
@@ -98,7 +98,7 @@ export default function EstimatesPage() {
         {/* Empty state - no estimates at all */}
         {!loading && !error && estimates.length === 0 && activeStatus === 'all' && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <ClipboardList className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+            <ClipboardList className="h-10 w-10 text-muted-foreground/50 mb-4" aria-hidden="true" />
             <h2 className="text-base font-semibold text-foreground mb-2">No estimates yet</h2>
             <p className="text-sm text-muted-foreground max-w-sm mb-6">
               Send professional estimates to your customers and convert more leads into paying jobs.
@@ -121,17 +121,17 @@ export default function EstimatesPage() {
         {/* Estimate table - desktop */}
         {!loading && !error && estimates.length > 0 && (
           <>
-            <div className="hidden sm:block border border-stone-200 rounded-lg overflow-hidden">
+            <div className="hidden sm:block border border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-stone-50">
-                    <TableHead className="text-xs font-medium text-stone-500">Estimate #</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Customer</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Job Type</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Amount</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Created</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Valid Until</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Status</TableHead>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs font-medium text-muted-foreground">Estimate #</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Customer</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Job Type</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Amount</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Created</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Valid Until</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -141,14 +141,14 @@ export default function EstimatesPage() {
                       onClick={() => handleRowClick(estimate.id)}
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(estimate.id); }}}
-                      className="cursor-pointer hover:bg-stone-50 transition-colors"
+                      className="cursor-pointer hover:bg-muted transition-colors"
                     >
-                      <TableCell className="text-sm font-medium text-stone-900">{estimate.estimate_number}</TableCell>
-                      <TableCell className="text-sm text-stone-700">{estimate.customer_name}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{estimate.job_type || '\u2014'}</TableCell>
-                      <TableCell className="text-sm font-medium text-stone-900">{formatAmountRange(estimate)}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{formatDate(estimate.created_at)}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{formatDate(estimate.valid_until)}</TableCell>
+                      <TableCell className="text-sm font-medium text-foreground">{estimate.estimate_number}</TableCell>
+                      <TableCell className="text-sm text-foreground">{estimate.customer_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{estimate.job_type || '\u2014'}</TableCell>
+                      <TableCell className="text-sm font-medium text-foreground">{formatAmountRange(estimate)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(estimate.created_at)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(estimate.valid_until)}</TableCell>
                       <TableCell><EstimateStatusBadge status={estimate.status} /></TableCell>
                     </TableRow>
                   ))}
@@ -165,18 +165,18 @@ export default function EstimatesPage() {
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(estimate.id); }}}
                   role="button"
-                  className="bg-white border border-stone-200 rounded-lg p-4 cursor-pointer hover:bg-stone-50 transition-colors"
+                  className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-muted transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-900 truncate">{estimate.estimate_number}</p>
-                      <p className="text-sm text-stone-700 truncate">{estimate.customer_name}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{estimate.estimate_number}</p>
+                      <p className="text-sm text-foreground truncate">{estimate.customer_name}</p>
                     </div>
-                    <p className="text-sm font-medium text-stone-900 flex-shrink-0">{formatAmountRange(estimate)}</p>
+                    <p className="text-sm font-medium text-foreground flex-shrink-0">{formatAmountRange(estimate)}</p>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <EstimateStatusBadge status={estimate.status} />
-                    <p className="text-xs text-stone-400">Valid {formatDate(estimate.valid_until)}</p>
+                    <p className="text-xs text-muted-foreground">Valid {formatDate(estimate.valid_until)}</p>
                   </div>
                 </div>
               ))}

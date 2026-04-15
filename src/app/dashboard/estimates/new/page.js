@@ -305,14 +305,14 @@ export default function EstimateEditorPage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-24 md:pb-6">
       {/* Page title */}
       <div>
-        <h1 className="text-xl font-semibold text-stone-900">
+        <h1 className="text-xl font-semibold text-foreground">
           {estimateId ? 'Edit Estimate' : 'New Estimate'}
         </h1>
         {estimateNumber && (
-          <p className="text-sm text-stone-500 mt-1">Estimate #{estimateNumber}</p>
+          <p className="text-sm text-muted-foreground mt-1">Estimate #{estimateNumber}</p>
         )}
         {!estimateNumber && !estimateId && (
-          <p className="text-sm text-stone-500 mt-1">Estimate # (Auto)</p>
+          <p className="text-sm text-muted-foreground mt-1">Estimate # (Auto)</p>
         )}
       </div>
 
@@ -338,7 +338,7 @@ export default function EstimateEditorPage() {
       {/* Customer Info */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Customer Information</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Customer Information</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Lead search / link */}
@@ -346,13 +346,13 @@ export default function EstimateEditorPage() {
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
-                <span className="text-stone-700">
-                  Linked to: <span className="font-medium text-stone-900">{selectedLead.caller_name}</span>
+                <span className="text-foreground">
+                  Linked to: <span className="font-medium text-foreground">{selectedLead.caller_name}</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleUnlinkLead}
-                  className="ml-auto p-0.5 text-stone-400 hover:text-stone-600 rounded"
+                  className="ml-auto p-0.5 text-muted-foreground hover:text-muted-foreground rounded"
                   aria-label="Unlink lead"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -360,11 +360,11 @@ export default function EstimateEditorPage() {
               </div>
             ) : (
               <div className="relative">
-                <Label className="text-sm font-medium text-stone-700 mb-1 block">
-                  Link to Lead <span className="text-stone-400 font-normal">(optional)</span>
+                <Label className="text-sm font-medium text-foreground mb-1 block">
+                  Link to Lead <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search leads by name or phone..."
                     value={leadSearchQuery}
@@ -374,32 +374,32 @@ export default function EstimateEditorPage() {
                     className="pl-9"
                   />
                   {searchLoading && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-stone-400" />
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                 </div>
                 {searchOpen && leadResults.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {leadResults.map((lead) => (
                       <button
                         key={lead.id}
                         type="button"
-                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-50 text-left"
+                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-muted text-left"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectLead(lead)}
                       >
                         <div>
-                          <span className="font-medium text-stone-900">{lead.caller_name || 'Unknown'}</span>
-                          <span className="text-stone-500 ml-2">{lead.from_number}</span>
+                          <span className="font-medium text-foreground">{lead.caller_name || 'Unknown'}</span>
+                          <span className="text-muted-foreground ml-2">{lead.from_number}</span>
                         </div>
                         {lead.job_type && (
-                          <span className="text-xs text-stone-400">{lead.job_type}</span>
+                          <span className="text-xs text-muted-foreground">{lead.job_type}</span>
                         )}
                       </button>
                     ))}
                   </div>
                 )}
                 {searchOpen && leadResults.length === 0 && leadSearchQuery.length >= 2 && !searchLoading && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg p-3 text-sm text-stone-500">
+                  <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground">
                     No leads found
                   </div>
                 )}
@@ -411,7 +411,7 @@ export default function EstimateEditorPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="customer-name" className="text-sm font-medium text-stone-700">
+              <Label htmlFor="customer-name" className="text-sm font-medium text-foreground">
                 Customer Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -423,7 +423,7 @@ export default function EstimateEditorPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="customer-email" className="text-sm font-medium text-stone-700">Email</Label>
+              <Label htmlFor="customer-email" className="text-sm font-medium text-foreground">Email</Label>
               <Input
                 id="customer-email"
                 type="email"
@@ -433,7 +433,7 @@ export default function EstimateEditorPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="customer-phone" className="text-sm font-medium text-stone-700">Phone</Label>
+              <Label htmlFor="customer-phone" className="text-sm font-medium text-foreground">Phone</Label>
               <Input
                 id="customer-phone"
                 type="tel"
@@ -443,7 +443,7 @@ export default function EstimateEditorPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="job-type" className="text-sm font-medium text-stone-700">Job Type</Label>
+              <Label htmlFor="job-type" className="text-sm font-medium text-foreground">Job Type</Label>
               <Input
                 id="job-type"
                 placeholder="e.g. HVAC Repair, Plumbing"
@@ -452,7 +452,7 @@ export default function EstimateEditorPage() {
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="customer-address" className="text-sm font-medium text-stone-700">
+              <Label htmlFor="customer-address" className="text-sm font-medium text-foreground">
                 Service Address
               </Label>
               <Input
@@ -469,12 +469,12 @@ export default function EstimateEditorPage() {
       {/* Dates */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Estimate Dates</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Estimate Dates</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="created-date" className="text-sm font-medium text-stone-700">Created Date</Label>
+              <Label htmlFor="created-date" className="text-sm font-medium text-foreground">Created Date</Label>
               <Input
                 id="created-date"
                 type="date"
@@ -483,8 +483,8 @@ export default function EstimateEditorPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="valid-until" className="text-sm font-medium text-stone-700">
-                Valid Until <span className="text-stone-400 font-normal">(optional)</span>
+              <Label htmlFor="valid-until" className="text-sm font-medium text-foreground">
+                Valid Until <span className="text-muted-foreground font-normal">(optional)</span>
               </Label>
               <Input
                 id="valid-until"
@@ -502,15 +502,15 @@ export default function EstimateEditorPage() {
         /* Single-price mode */
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold text-stone-900">Line Items</CardTitle>
-            <span className="text-xs text-stone-400">
+            <CardTitle className="text-base font-semibold text-foreground">Line Items</CardTitle>
+            <span className="text-xs text-muted-foreground">
               {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
             </span>
           </CardHeader>
           <CardContent className="pt-0">
             {lineItems.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-stone-200 rounded-lg">
-                <p className="text-sm text-stone-400 mb-3">No line items yet</p>
+              <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
+                <p className="text-sm text-muted-foreground mb-3">No line items yet</p>
                 <Button type="button" variant="outline" size="sm" onClick={handleAddLineItem}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add First Item
@@ -535,7 +535,7 @@ export default function EstimateEditorPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="mt-3 w-full border-dashed text-stone-500 hover:text-stone-700 hover:border-stone-400"
+                className="mt-3 w-full border-dashed text-muted-foreground hover:text-foreground hover:border-border"
                 onClick={handleAddLineItem}
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -546,21 +546,21 @@ export default function EstimateEditorPage() {
             {/* Totals */}
             {lineItems.length > 0 && (
               <div className="mt-5 ml-auto max-w-xs">
-                <div className="bg-stone-50 rounded-lg p-4 space-y-2">
+                <div className="bg-muted rounded-lg p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">Subtotal</span>
-                    <span className="font-medium text-stone-700 tabular-nums">${subtotal.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-medium text-foreground tabular-nums">${subtotal.toFixed(2)}</span>
                   </div>
                   {tax_amount > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-stone-500">Tax ({taxRatePct}%)</span>
-                      <span className="font-medium text-stone-700 tabular-nums">${tax_amount.toFixed(2)}</span>
+                      <span className="text-muted-foreground">Tax ({taxRatePct}%)</span>
+                      <span className="font-medium text-foreground tabular-nums">${tax_amount.toFixed(2)}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between pt-1">
-                    <span className="font-semibold text-stone-900">Estimated Total</span>
-                    <span className="font-bold text-lg text-stone-900 tabular-nums">${total.toFixed(2)}</span>
+                    <span className="font-semibold text-foreground">Estimated Total</span>
+                    <span className="font-bold text-lg text-foreground tabular-nums">${total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -572,7 +572,7 @@ export default function EstimateEditorPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-stone-600 hover:text-stone-800"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={handleAddTier}
               >
                 <Layers className="h-4 w-4 mr-1" />
@@ -585,13 +585,13 @@ export default function EstimateEditorPage() {
         /* Tiered mode */
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-stone-900">Estimate Tiers</h2>
+            <h2 className="text-base font-semibold text-foreground">Estimate Tiers</h2>
             {tiers.length < 3 && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="text-stone-600 hover:text-stone-800"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={handleAddTier}
               >
                 <Layers className="h-4 w-4 mr-1" />
@@ -618,17 +618,17 @@ export default function EstimateEditorPage() {
       {/* Notes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Notes & Terms</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Notes & Terms</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-1">
-            <Label htmlFor="estimate-notes" className="text-sm font-medium text-stone-700">
+            <Label htmlFor="estimate-notes" className="text-sm font-medium text-foreground">
               Notes (visible to customer)
             </Label>
             <textarea
               id="estimate-notes"
               rows={4}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-stone-900 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
               placeholder="e.g. This estimate is valid for 30 days."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -660,7 +660,7 @@ export default function EstimateEditorPage() {
       </div>
 
       {/* Mobile sticky bottom action bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 p-4 flex gap-3">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 flex gap-3">
         <Button
           type="button"
           variant="outline"

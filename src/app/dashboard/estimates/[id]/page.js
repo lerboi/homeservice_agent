@@ -71,8 +71,8 @@ function getItemDescription(item) {
 
 function EstimateDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="bg-white border-b border-stone-200 px-6 py-4">
+    <div className="min-h-screen bg-muted">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <Skeleton className="h-8 w-8 rounded" />
           <Skeleton className="h-6 w-40" />
@@ -133,17 +133,17 @@ function LineItemsTable({ lineItems }) {
   return (
     <table className="w-full mb-6 border-collapse">
       <thead>
-        <tr className="border-b border-stone-300">
-          <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-1/2">Description</th>
-          <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-[15%]">Qty</th>
-          <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-[15%]">Rate</th>
-          <th className="text-right text-xs font-bold text-stone-400 uppercase pb-2 w-[20%]">Amount</th>
+        <tr className="border-b border-border">
+          <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-1/2">Description</th>
+          <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-[15%]">Qty</th>
+          <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-[15%]">Rate</th>
+          <th className="text-right text-xs font-bold text-muted-foreground uppercase pb-2 w-[20%]">Amount</th>
         </tr>
       </thead>
       <tbody>
         {lineItems.length === 0 ? (
           <tr>
-            <td colSpan={4} className="py-4 text-stone-400 text-center text-xs">
+            <td colSpan={4} className="py-4 text-muted-foreground text-center text-xs">
               No line items
             </td>
           </tr>
@@ -156,14 +156,14 @@ function LineItemsTable({ lineItems }) {
             return (
               <tr
                 key={item.id || index}
-                className={`border-b border-stone-100 ${index % 2 === 1 ? 'bg-stone-50/50' : ''}`}
+                className={`border-b border-border ${index % 2 === 1 ? 'bg-muted/50' : ''}`}
               >
-                <td className="py-2 pr-4 text-slate-800">{getItemDescription(item)}</td>
-                <td className="py-2 text-stone-600">{hideQtyRate ? '\u2014' : item.quantity || 1}</td>
-                <td className="py-2 text-stone-600">
+                <td className="py-2 pr-4 text-foreground">{getItemDescription(item)}</td>
+                <td className="py-2 text-muted-foreground">{hideQtyRate ? '\u2014' : item.quantity || 1}</td>
+                <td className="py-2 text-muted-foreground">
                   {isDiscount ? '\u2014' : `$${formatMoney(item.unit_price)}`}
                 </td>
-                <td className={`py-2 text-right font-medium ${isDiscount ? 'text-red-600' : 'text-slate-800'}`}>
+                <td className={`py-2 text-right font-medium ${isDiscount ? 'text-red-600' : 'text-foreground'}`}>
                   {isDiscount
                     ? `-$${formatMoney(Math.abs(lineTotal))}`
                     : `$${formatMoney(lineTotal)}`}
@@ -187,23 +187,23 @@ function TierCard({ tier, lineItems }) {
 
   return (
     <div className={`${card.base} p-5 flex-1`}>
-      <h3 className="text-lg font-semibold text-slate-900 mb-4">{tier.tier_label || 'Tier'}</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">{tier.tier_label || 'Tier'}</h3>
       <LineItemsTable lineItems={tierItems} />
       <div className="flex justify-end">
         <div className="w-48">
           <div className="flex justify-between py-1 text-sm">
-            <span className="text-stone-500">Subtotal</span>
-            <span className="text-slate-800">${formatMoney(subtotal)}</span>
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-foreground">${formatMoney(subtotal)}</span>
           </div>
           {taxAmount > 0 && (
             <div className="flex justify-between py-1 text-sm">
-              <span className="text-stone-500">Tax</span>
-              <span className="text-slate-800">${formatMoney(taxAmount)}</span>
+              <span className="text-muted-foreground">Tax</span>
+              <span className="text-foreground">${formatMoney(taxAmount)}</span>
             </div>
           )}
-          <div className="flex justify-between py-2 border-t border-stone-300 mt-1">
-            <span className="font-bold text-slate-900">Total</span>
-            <span className="font-bold text-slate-900">${formatMoney(total)}</span>
+          <div className="flex justify-between py-2 border-t border-border mt-1">
+            <span className="font-bold text-foreground">Total</span>
+            <span className="font-bold text-foreground">${formatMoney(total)}</span>
           </div>
         </div>
       </div>
@@ -232,48 +232,48 @@ function EstimatePreview({ estimate, settings, lineItems, tiers }) {
               className="max-h-12 max-w-[120px] object-contain mb-2"
             />
           )}
-          <p className="font-bold text-base text-slate-900">{settings.business_name || ''}</p>
+          <p className="font-bold text-base text-foreground">{settings.business_name || ''}</p>
           {settings.address && (
-            <p className="text-stone-500 text-xs leading-relaxed">{settings.address}</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">{settings.address}</p>
           )}
           {(settings.phone || settings.email) && (
-            <p className="text-stone-500 text-xs leading-relaxed">
+            <p className="text-muted-foreground text-xs leading-relaxed">
               {settings.phone}{settings.phone && settings.email ? ' | ' : ''}{settings.email}
             </p>
           )}
           {settings.license_number && (
-            <p className="text-stone-500 text-xs">License: {settings.license_number}</p>
+            <p className="text-muted-foreground text-xs">License: {settings.license_number}</p>
           )}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-slate-900">ESTIMATE</p>
-          <p className="text-stone-500 text-xs">#{estimate.estimate_number}</p>
-          <p className="text-stone-500 text-xs">Created: {estimate.created_date || '\u2014'}</p>
+          <p className="text-2xl font-bold text-foreground">ESTIMATE</p>
+          <p className="text-muted-foreground text-xs">#{estimate.estimate_number}</p>
+          <p className="text-muted-foreground text-xs">Created: {estimate.created_date || '\u2014'}</p>
           {estimate.valid_until && (
-            <p className="text-stone-500 text-xs">Valid Until: {estimate.valid_until}</p>
+            <p className="text-muted-foreground text-xs">Valid Until: {estimate.valid_until}</p>
           )}
         </div>
       </div>
 
       {/* Estimate For */}
       <div className="mb-6">
-        <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1">Estimate For</p>
-        <p className="font-bold text-slate-900">{estimate.customer_name || '\u2014'}</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Estimate For</p>
+        <p className="font-bold text-foreground">{estimate.customer_name || '\u2014'}</p>
         {estimate.customer_address && (
-          <p className="text-stone-500 text-xs">{estimate.customer_address}</p>
+          <p className="text-muted-foreground text-xs">{estimate.customer_address}</p>
         )}
         {estimate.customer_phone && (
-          <p className="text-stone-500 text-xs">{estimate.customer_phone}</p>
+          <p className="text-muted-foreground text-xs">{estimate.customer_phone}</p>
         )}
         {estimate.customer_email && (
-          <p className="text-stone-500 text-xs">{estimate.customer_email}</p>
+          <p className="text-muted-foreground text-xs">{estimate.customer_email}</p>
         )}
       </div>
 
       {isTiered ? (
         /* Tiered Layout */
         <div>
-          <p className="text-xs text-stone-500 mb-4">Options for your consideration</p>
+          <p className="text-xs text-muted-foreground mb-4">Options for your consideration</p>
           <div className="flex flex-col md:flex-row gap-4">
             {tiers.map((tier) => (
               <TierCard key={tier.id} tier={tier} lineItems={lineItems} />
@@ -287,18 +287,18 @@ function EstimatePreview({ estimate, settings, lineItems, tiers }) {
           <div className="flex justify-end mb-6">
             <div className="w-52">
               <div className="flex justify-between py-1">
-                <span className="text-stone-500">Subtotal</span>
-                <span className="text-slate-800">${formatMoney(subtotal)}</span>
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-foreground">${formatMoney(subtotal)}</span>
               </div>
               {taxAmount > 0 && (
                 <div className="flex justify-between py-1">
-                  <span className="text-stone-500">Tax</span>
-                  <span className="text-slate-800">${formatMoney(taxAmount)}</span>
+                  <span className="text-muted-foreground">Tax</span>
+                  <span className="text-foreground">${formatMoney(taxAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between py-2 border-t border-stone-300 mt-1">
-                <span className="font-bold text-slate-900 text-sm">Estimated Total</span>
-                <span className="font-bold text-slate-900 text-sm">${formatMoney(total)}</span>
+              <div className="flex justify-between py-2 border-t border-border mt-1">
+                <span className="font-bold text-foreground text-sm">Estimated Total</span>
+                <span className="font-bold text-foreground text-sm">${formatMoney(total)}</span>
               </div>
             </div>
           </div>
@@ -307,14 +307,14 @@ function EstimatePreview({ estimate, settings, lineItems, tiers }) {
 
       {/* Footer */}
       {(estimate.valid_until || estimate.notes) && (
-        <div className="border-t border-stone-200 pt-4 space-y-1">
+        <div className="border-t border-border pt-4 space-y-1">
           {estimate.valid_until && (
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-muted-foreground">
               This estimate is valid until {estimate.valid_until}.
             </p>
           )}
           {estimate.notes && (
-            <p className="text-xs text-stone-500">{estimate.notes}</p>
+            <p className="text-xs text-muted-foreground">{estimate.notes}</p>
           )}
         </div>
       )}
@@ -355,7 +355,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
         <DialogHeader>
           <DialogTitle>Convert to Invoice</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-stone-600 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Select which tier to use for the invoice:
         </p>
         <div className="space-y-3">
@@ -365,7 +365,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
               className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                 selectedTierId === tier.id
                   ? 'border-[var(--brand-accent)] bg-orange-50/50'
-                  : 'border-stone-200 hover:bg-stone-50'
+                  : 'border-border hover:bg-muted'
               }`}
             >
               <input
@@ -377,8 +377,8 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
                 className="accent-[var(--brand-accent)]"
               />
               <div className="flex-1">
-                <p className="font-medium text-slate-900">{tier.tier_label}</p>
-                <p className="text-sm text-stone-500">${formatMoney(tier.total)}</p>
+                <p className="font-medium text-foreground">{tier.tier_label}</p>
+                <p className="text-sm text-muted-foreground">${formatMoney(tier.total)}</p>
               </div>
             </label>
           ))}
@@ -537,10 +537,10 @@ export default function EstimateDetailPage() {
   // ── Error ──
   if (error || !estimate) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className={`${card.base} p-8 max-w-md text-center`}>
-          <p className="text-slate-900 font-medium mb-2">Couldn&apos;t load estimate</p>
-          <p className="text-stone-500 text-sm mb-4">Check your connection and try again.</p>
+          <p className="text-foreground font-medium mb-2">Couldn&apos;t load estimate</p>
+          <p className="text-muted-foreground text-sm mb-4">Check your connection and try again.</p>
           <div className="flex gap-3 justify-center">
             <Button variant="outline" onClick={fetchData}>Retry</Button>
             <Button variant="outline" asChild>
@@ -559,18 +559,18 @@ export default function EstimateDetailPage() {
   const canConvert = isApproved && !estimate.converted_to_invoice_id;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted">
       {/* ── Page Header ── */}
-      <div className="bg-white border-b border-stone-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <Link
             href="/dashboard/estimates"
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-colors"
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Back to Estimates"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <h1 className="text-base font-semibold text-slate-900">
+          <h1 className="text-base font-semibold text-foreground">
             Estimate {estimate.estimate_number}
           </h1>
           <EstimateStatusBadge status={estimate.status} />
@@ -596,37 +596,37 @@ export default function EstimateDetailPage() {
 
             {/* Metadata card */}
             <div className={`${card.base} p-5`}>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Details</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Details</p>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Status</dt>
+                  <dt className="text-muted-foreground">Status</dt>
                   <dd><EstimateStatusBadge status={estimate.status} /></dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Created</dt>
-                  <dd className="text-slate-700">{formatDate(estimate.created_date) || formatDate(estimate.created_at) || '\u2014'}</dd>
+                  <dt className="text-muted-foreground">Created</dt>
+                  <dd className="text-foreground">{formatDate(estimate.created_date) || formatDate(estimate.created_at) || '\u2014'}</dd>
                 </div>
                 {estimate.valid_until && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Valid Until</dt>
-                    <dd className="text-slate-700">{formatDate(estimate.valid_until)}</dd>
+                    <dt className="text-muted-foreground">Valid Until</dt>
+                    <dd className="text-foreground">{formatDate(estimate.valid_until)}</dd>
                   </div>
                 )}
                 {estimate.sent_at && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Sent</dt>
-                    <dd className="text-slate-700">{formatDate(estimate.sent_at)}</dd>
+                    <dt className="text-muted-foreground">Sent</dt>
+                    <dd className="text-foreground">{formatDate(estimate.sent_at)}</dd>
                   </div>
                 )}
                 {estimate.approved_at && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Approved</dt>
-                    <dd className="text-slate-700">{formatDate(estimate.approved_at)}</dd>
+                    <dt className="text-muted-foreground">Approved</dt>
+                    <dd className="text-foreground">{formatDate(estimate.approved_at)}</dd>
                   </div>
                 )}
                 {estimate.converted_to_invoice_id && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Invoice</dt>
+                    <dt className="text-muted-foreground">Invoice</dt>
                     <dd>
                       <Link
                         href={`/dashboard/invoices/${estimate.converted_to_invoice_id}`}
@@ -639,7 +639,7 @@ export default function EstimateDetailPage() {
                 )}
                 {estimate.lead_id && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Linked Lead</dt>
+                    <dt className="text-muted-foreground">Linked Lead</dt>
                     <dd>
                       <Link
                         href={`/dashboard/leads?open=${estimate.lead_id}`}
@@ -655,7 +655,7 @@ export default function EstimateDetailPage() {
 
             {/* Actions card */}
             <div className={`${card.base} p-5 space-y-3`}>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Actions</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Actions</p>
 
               {/* Download PDF -- always visible */}
               <Button
@@ -798,7 +798,7 @@ export default function EstimateDetailPage() {
       </div>
 
       {/* ── Mobile sticky action bar ── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 p-4 flex gap-2 safe-bottom">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-card border-t border-border p-4 flex gap-2 safe-bottom">
         <Button
           variant="outline"
           size="sm"
