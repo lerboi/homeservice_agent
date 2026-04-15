@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -167,6 +167,14 @@
   --color-landing-charcoal: #111111;
   --color-landing-light-text: #F5F5F5;
   --color-landing-muted-text: #71717A;
+  --brand-accent: #C2410C;
+  --brand-accent-hover: #B53B0A;
+  --brand-accent-fg: #FFFFFF;
+  --selected-fill: rgba(194, 65, 12, 0.04);
+  --warm-surface: #F5F5F4;
+  --warm-surface-elevated: #FAFAF9;
+  --body-text: var(--muted-foreground);
+  --heading-text: var(--foreground);
 }
 
 .dark {
@@ -201,6 +209,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0.268 264.531);
+  --brand-accent: #FB923C;
+  --brand-accent-hover: #F97316;
+  --brand-accent-fg: #0F172A;
+  --selected-fill: rgba(255, 255, 255, 0.04);
+  --warm-surface: oklch(0.145 0 0);
+  --warm-surface-elevated: oklch(0.205 0 0);
+  --body-text: var(--muted-foreground);
+  --heading-text: var(--foreground);
 }
 
 @layer base {
@@ -214,5 +230,12 @@
   html {
     scroll-padding-top: 4rem;
     scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    body {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
+    }
   }
 }
