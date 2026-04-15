@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const sections = [
-  { id: 'how-it-works', label: 'How it works' },
+  { id: 'audio-demo', label: 'Hear Voco' },
   { id: 'features', label: 'Features' },
-  { id: 'testimonials', label: 'Testimonials' },
+  { id: 'faq', label: 'FAQ' },
   { id: 'cta', label: 'Get Started' },
 ];
 

@@ -64,7 +64,7 @@ const FAQS = [
 
 export function FAQSection() {
   return (
-    <section className="bg-white py-20 md:py-28 px-6">
+    <section id="faq" className="bg-white py-20 md:py-28 px-6">
       <div className="max-w-5xl mx-auto">
         <AnimatedSection>
           <div className="text-center mb-12">
