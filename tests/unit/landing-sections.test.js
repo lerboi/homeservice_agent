@@ -143,8 +143,11 @@ describe('YouStayInControlSection 48.1', () => {
     expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(/bg-\[#1C1412\]/);
   });
 
-  it('uses CARD_CLS shared constant (D-16)', () => {
-    expect(read('src/app/components/landing/YouStayInControlSection.jsx')).toMatch(/CARD_CLS/);
+  it('lists all 3 owner-control labels (post-redesign — card containers removed per design iteration)', () => {
+    const src = read('src/app/components/landing/YouStayInControlSection.jsx');
+    expect(src).toMatch(/'WHO'/);
+    expect(src).toMatch(/'WHEN'/);
+    expect(src).toMatch(/'WHAT'/);
   });
 });
 
