@@ -11,7 +11,7 @@ const INTEGRATIONS = [
 
 export function IntegrationsStrip() {
   return (
-    <section className="bg-[#FAFAF9] py-24 md:py-32 px-6">
+    <section id="integrations" className="bg-[#FAFAF9] py-24 md:py-32 px-6">
       <AnimatedSection>
         <div className="relative z-[1] max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
