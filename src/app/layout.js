@@ -7,8 +7,19 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata = {
-  title: 'Voco',
-  description: 'AI voice receptionist for home service businesses',
+  title: 'Voco AI — AI Receptionist for Home Service Businesses',
+  description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring — for plumbers, HVAC, electricians, and handymen.',
+  openGraph: {
+    title: 'Voco AI — AI Receptionist for Home Service Businesses',
+    description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
+    type: 'website',
+    siteName: 'Voco AI',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Voco AI — AI Receptionist for Home Service Businesses',
+    description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
+  },
 };
 
 export default async function RootLayout({ children }) {
