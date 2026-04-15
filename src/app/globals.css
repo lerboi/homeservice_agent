@@ -167,6 +167,7 @@
   --color-landing-charcoal: #111111;
   --color-landing-light-text: #F5F5F5;
   --color-landing-muted-text: #71717A;
+  --sidebar-bg: #0F172A;
   --brand-accent: #C2410C;
   --brand-accent-hover: #B53B0A;
   --brand-accent-fg: #FFFFFF;
@@ -209,6 +210,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0.268 264.531);
+  --sidebar-bg: #0F172A;
   --brand-accent: #FB923C;
   --brand-accent-hover: #F97316;
   --brand-accent-fg: #0F172A;

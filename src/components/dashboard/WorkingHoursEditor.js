@@ -179,8 +179,8 @@ function ScheduleBar({ dayData }) {
 
     return (
       <div className="relative h-1.5 rounded-full bg-stone-100">
-        <div className="absolute h-full rounded-full bg-[#C2410C]/60" style={{ left: `${bar1Left}%`, width: `${bar1Width}%` }} />
-        <div className="absolute h-full rounded-full bg-[#C2410C]/60" style={{ left: `${bar2Left}%`, width: `${bar2Width}%` }} />
+        <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar1Left}%`, width: `${bar1Width}%` }} />
+        <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar2Left}%`, width: `${bar2Width}%` }} />
       </div>
     );
   }
@@ -190,7 +190,7 @@ function ScheduleBar({ dayData }) {
 
   return (
     <div className="relative h-1.5 rounded-full bg-stone-100">
-      <div className="absolute h-full rounded-full bg-[#C2410C]/60" style={{ left: `${leftPct}%`, width: `${widthPct}%` }} />
+      <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${leftPct}%`, width: `${widthPct}%` }} />
     </div>
   );
 }
@@ -357,7 +357,7 @@ export default function WorkingHoursEditor() {
   return (
     <section aria-labelledby="working-hours-heading" className="pb-20">
       {/* Subtitle + controls */}
-      <p className="text-sm text-[#475569] mb-5">
+      <p className="text-sm text-muted-foreground mb-5">
         Set the days and hours your team is available. Your AI receptionist uses this to offer booking slots.
       </p>
 
@@ -395,14 +395,14 @@ export default function WorkingHoursEditor() {
       </div>
 
       {/* Weekly overview */}
-      <div className="rounded-xl border border-stone-200/60 bg-stone-50/50 p-4 mb-6">
+      <div className="rounded-xl border border-border bg-muted/50 p-4 mb-6">
         <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Weekly Overview</p>
         <div className="space-y-2">
           {DAYS.map((day) => {
             const d = hours[day] || DEFAULT_DAY;
             return (
               <div key={day} className="flex items-center gap-3">
-                <span className={`text-xs w-8 shrink-0 font-medium ${d.enabled ? 'text-[#0F172A]' : 'text-stone-400'}`}>
+                <span className={`text-xs w-8 shrink-0 font-medium ${d.enabled ? 'text-foreground' : 'text-stone-400'}`}>
                   {DAY_LABELS[day]}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -440,8 +440,8 @@ export default function WorkingHoursEditor() {
               key={day}
               className={`rounded-xl border px-4 py-3 transition-colors duration-150 ${
                 isEnabled
-                  ? 'bg-white border-stone-200 border-l-[3px] border-l-[#C2410C]'
-                  : 'bg-stone-50/80 border-stone-100'
+                  ? 'bg-card border-border border-l-[3px] border-l-[var(--brand-accent)]'
+                  : 'bg-muted/80 border-border/50'
               }`}
             >
               {/* Day header row — always visible */}
@@ -451,7 +451,7 @@ export default function WorkingHoursEditor() {
                   onCheckedChange={(checked) => updateDay(day, 'enabled', checked)}
                   aria-label={`Toggle ${DAY_LABELS_FULL[day]}`}
                 />
-                <span className={`text-sm font-medium min-w-[84px] ${isEnabled ? 'text-[#0F172A]' : 'text-stone-400'}`}>
+                <span className={`text-sm font-medium min-w-[84px] ${isEnabled ? 'text-foreground' : 'text-stone-400'}`}>
                   {DAY_LABELS_FULL[day]}
                 </span>
 
@@ -463,7 +463,7 @@ export default function WorkingHoursEditor() {
                         type="time"
                         value={dayData.open || '08:00'}
                         onChange={(e) => updateDay(day, 'open', e.target.value)}
-                        className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C] transition-shadow"
+                        className="h-8 text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                         aria-label={`${DAY_LABELS_FULL[day]} open time`}
                       />
                       <span className="text-stone-300 text-sm">—</span>
@@ -471,7 +471,7 @@ export default function WorkingHoursEditor() {
                         type="time"
                         value={dayData.close || '17:00'}
                         onChange={(e) => updateDay(day, 'close', e.target.value)}
-                        className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C] transition-shadow"
+                        className="h-8 text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                         aria-label={`${DAY_LABELS_FULL[day]} close time`}
                       />
                     </div>
@@ -489,14 +489,14 @@ export default function WorkingHoursEditor() {
                     <button
                       type="button"
                       onClick={() => openCopyPopover(day)}
-                      className="h-8 w-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors shrink-0"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-muted transition-colors shrink-0"
                       aria-label={`Copy ${DAY_LABELS_FULL[day]} to other days`}
                     >
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-52 p-3" side="left" align="start">
-                    <p className="text-xs font-medium text-[#0F172A] mb-2">
+                    <p className="text-xs font-medium text-foreground mb-2">
                       Copy {DAY_LABELS_FULL[day]} to:
                     </p>
                     {/* Quick actions */}
@@ -504,7 +504,7 @@ export default function WorkingHoursEditor() {
                       <button
                         type="button"
                         onClick={() => applyToWeekdays(day)}
-                        className="text-xs px-2.5 py-1 rounded-md bg-stone-100 hover:bg-stone-200 text-[#0F172A] transition-colors"
+                        className="text-xs px-2.5 py-1 rounded-md bg-muted hover:bg-accent text-foreground transition-colors"
                       >
                         All weekdays
                       </button>
@@ -516,7 +516,7 @@ export default function WorkingHoursEditor() {
                             return acc;
                           }, {}));
                         }}
-                        className="text-xs px-2.5 py-1 rounded-md bg-stone-100 hover:bg-stone-200 text-[#0F172A] transition-colors"
+                        className="text-xs px-2.5 py-1 rounded-md bg-muted hover:bg-accent text-foreground transition-colors"
                       >
                         Select all
                       </button>
@@ -530,15 +530,15 @@ export default function WorkingHoursEditor() {
                             onChange={(e) =>
                               setCopySelections((prev) => ({ ...prev, [d]: e.target.checked }))
                             }
-                            className="rounded border-stone-300 text-[#C2410C] focus:ring-[#C2410C]"
+                            className="rounded border-border text-[var(--brand-accent)] focus:ring-[var(--brand-accent)]"
                           />
-                          <span className="text-sm text-[#0F172A]/80">{DAY_LABELS_FULL[d]}</span>
+                          <span className="text-sm text-foreground/80">{DAY_LABELS_FULL[d]}</span>
                         </label>
                       ))}
                     </div>
                     <Button
                       size="sm"
-                      className="w-full mt-3 bg-[#C2410C] hover:bg-[#C2410C]/90"
+                      className="w-full mt-3 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)]"
                       onClick={() => applyCopy(day)}
                       disabled={!Object.values(copySelections).some(Boolean)}
                     >
@@ -557,7 +557,7 @@ export default function WorkingHoursEditor() {
                       type="time"
                       value={dayData.open || '08:00'}
                       onChange={(e) => updateDay(day, 'open', e.target.value)}
-                      className="h-9 w-full text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]"
+                      className="h-9 w-full text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)]"
                       aria-label={`${DAY_LABELS_FULL[day]} open time`}
                     />
                   </div>
@@ -568,7 +568,7 @@ export default function WorkingHoursEditor() {
                       type="time"
                       value={dayData.close || '17:00'}
                       onChange={(e) => updateDay(day, 'close', e.target.value)}
-                      className="h-9 w-full text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]"
+                      className="h-9 w-full text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)]"
                       aria-label={`${DAY_LABELS_FULL[day]} close time`}
                     />
                   </div>
@@ -579,14 +579,14 @@ export default function WorkingHoursEditor() {
               {isEnabled && (
                 <div className="mt-2.5 ml-11 sm:ml-[calc(36px+84px+12px+12px)]">
                   {hasLunch ? (
-                    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-stone-50 border border-stone-100">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted border border-border">
                       <Clock className="h-3 w-3 text-stone-400" />
                       <span className="text-xs text-stone-500">Break:</span>
                       <input
                         type="time"
                         value={dayData.lunchStart || '12:00'}
                         onChange={(e) => updateDay(day, 'lunchStart', e.target.value)}
-                        className="h-6 text-xs rounded border border-stone-200 px-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]"
+                        className="h-6 text-xs rounded border border-border px-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)]"
                         aria-label={`${DAY_LABELS_FULL[day]} break start`}
                       />
                       <span className="text-stone-300 text-xs">–</span>
@@ -594,7 +594,7 @@ export default function WorkingHoursEditor() {
                         type="time"
                         value={dayData.lunchEnd || '13:00'}
                         onChange={(e) => updateDay(day, 'lunchEnd', e.target.value)}
-                        className="h-6 text-xs rounded border border-stone-200 px-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C]"
+                        className="h-6 text-xs rounded border border-border px-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)]"
                         aria-label={`${DAY_LABELS_FULL[day]} break end`}
                       />
                       <button
@@ -610,7 +610,7 @@ export default function WorkingHoursEditor() {
                     <button
                       type="button"
                       onClick={() => toggleLunchBreak(day)}
-                      className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-[#C2410C] transition-colors py-1"
+                      className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-[var(--brand-accent)] transition-colors py-1"
                     >
                       <Plus className="h-3 w-3" />
                       Add break
@@ -633,11 +633,11 @@ export default function WorkingHoursEditor() {
       )}
 
       {/* Appointment duration */}
-      <div className="mt-6 pt-5 border-t border-stone-100">
+      <div className="mt-6 pt-5 border-t border-border">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-stone-400" />
-            <span className="text-sm font-medium text-[#0F172A]">Default appointment duration</span>
+            <span className="text-sm font-medium text-foreground">Default appointment duration</span>
           </div>
           <Select value={slotDuration} onValueChange={setSlotDuration}>
             <SelectTrigger className="w-32 h-9 text-sm">
@@ -663,7 +663,7 @@ export default function WorkingHoursEditor() {
             : 'translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        <div className="bg-white/95 backdrop-blur-md border-t border-stone-200 shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)] px-6 py-3">
+        <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)] px-6 py-3">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
@@ -685,7 +685,7 @@ export default function WorkingHoursEditor() {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white min-w-[100px]"
+                className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white min-w-[100px]"
               >
                 {saving ? (
                   <>

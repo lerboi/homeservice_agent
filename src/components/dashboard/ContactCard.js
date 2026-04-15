@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { btn } from '@/lib/design-tokens';
 
 export function ContactCard({
   contact,
@@ -50,7 +51,6 @@ export function ContactCard({
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
-    // Clear field error on change
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
@@ -91,7 +91,6 @@ export function ContactCard({
   }
 
   function handleCancel() {
-    // Reset form to contact values
     setForm({
       name: contact.name || '',
       role: contact.role || '',
@@ -108,7 +107,7 @@ export function ContactCard({
     <div
       ref={dragRef}
       style={{ ...dragStyle, opacity: isDragging ? 0.5 : 1 }}
-      className="border border-stone-200 rounded-lg bg-white"
+      className="border border-border rounded-lg bg-card"
       role="listitem"
     >
       {/* Display row */}
@@ -116,7 +115,7 @@ export function ContactCard({
         {/* Drag handle */}
         <button
           {...dragHandleProps}
-          className="cursor-grab active:cursor-grabbing p-2 text-stone-400 hover:text-stone-600 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="cursor-grab active:cursor-grabbing p-2 text-muted-foreground hover:text-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={t('escalation.drag_hint')}
           type="button"
         >
@@ -128,9 +127,9 @@ export function ContactCard({
           className="flex-1 flex items-center gap-3 cursor-pointer py-3 pr-2"
           onClick={() => !isEditing && onEditToggle(contact.id)}
         >
-          <span className="font-medium text-[#0F172A]">{contact.name}</span>
+          <span className="font-medium text-foreground">{contact.name}</span>
           {contact.role && (
-            <span className="text-sm text-[#475569]">{contact.role}</span>
+            <span className="text-sm text-muted-foreground">{contact.role}</span>
           )}
           <Badge variant="outline">{contact.timeout_seconds}s</Badge>
           <Badge variant="secondary" className="capitalize">
@@ -143,7 +142,7 @@ export function ContactCard({
           <AlertDialogTrigger asChild>
             <button
               type="button"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
               aria-label={`Remove ${contact.name}`}
             >
               <Trash2 className="h-4 w-4" />
@@ -173,7 +172,7 @@ export function ContactCard({
 
       {/* Edit form — shown when isEditing */}
       {isEditing && (
-        <div className="border-t border-stone-100 p-4 space-y-4">
+        <div className="border-t border-border p-4 space-y-4">
           {/* Row 1: Name + Role */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -258,7 +257,7 @@ export function ContactCard({
                   <SelectItem value="60">{t('escalation.timeout_60')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-[#475569]">{t('escalation.contact_timeout_help')}</p>
+              <p className="text-xs text-muted-foreground">{t('escalation.contact_timeout_help')}</p>
             </div>
             <div className="space-y-1">
               <Label>{t('escalation.contact_channel_label')}</Label>
@@ -291,10 +290,7 @@ export function ContactCard({
 
           {/* Row 4: Save + Cancel */}
           <div className="flex items-center gap-2 pt-1">
-            <Button
-              onClick={handleSave}
-              className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
-            >
+            <Button onClick={handleSave} className={btn.primary}>
               Save
             </Button>
             <Button variant="ghost" onClick={handleCancel}>

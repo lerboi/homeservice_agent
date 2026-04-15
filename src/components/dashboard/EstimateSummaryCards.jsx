@@ -15,7 +15,7 @@ const CARDS = [
     key: 'pending_count',
     label: 'Pending Estimates',
     icon: ClipboardList,
-    color: 'text-[#C2410C]',
+    color: 'text-[var(--brand-accent)]',
     format: (v) => String(v || 0),
   },
   {
@@ -50,13 +50,13 @@ export default function EstimateSummaryCards({ summary }) {
       {CARDS.map(({ key, label, icon: Icon, color, format }) => (
         <div
           key={key}
-          className="bg-white rounded-lg border border-stone-200 p-6"
+          className="bg-card rounded-lg border border-border p-6"
         >
           <Icon className={`w-5 h-5 ${color} mb-2`} />
-          <p className={`text-[28px] font-semibold leading-tight text-stone-900`}>
+          <p className="text-[28px] font-semibold leading-tight text-foreground">
             {format(summary[key])}
           </p>
-          <p className="text-sm text-stone-500 mt-1">{label}</p>
+          <p className="text-sm text-muted-foreground mt-1">{label}</p>
         </div>
       ))}
     </div>

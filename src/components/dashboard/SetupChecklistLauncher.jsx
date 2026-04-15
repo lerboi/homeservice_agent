@@ -81,7 +81,7 @@ function SetupChecklistFab({ isMobile, percent, pending, onOpen }) {
   const label = pending === 1 ? '1 step left to finish setup' : `${pending} steps left to finish setup`;
 
   const ringStyle = {
-    background: `conic-gradient(#C2410C 0% ${percent}%, rgba(255,255,255,0.35) ${percent}% 100%)`,
+    background: `conic-gradient(var(--brand-accent) 0% ${percent}%, rgba(255,255,255,0.35) ${percent}% 100%)`,
   };
 
   return (
@@ -93,9 +93,9 @@ function SetupChecklistFab({ isMobile, percent, pending, onOpen }) {
       data-tour="setup-checklist-fab"
       className={`
         fixed right-6 ${bottomOffset} z-40
-        rounded-full bg-[#C2410C] text-white
+        rounded-full bg-[var(--brand-accent)] text-white
         shadow-[0_6px_18px_-4px_rgba(194,65,12,0.5),0_2px_6px_-2px_rgba(15,23,42,0.2)]
-        hover:bg-[#B53B0A] active:scale-95 transition-transform duration-150
+        hover:bg-[var(--brand-accent-hover)] active:scale-95 transition-transform duration-150
         ${focus.ring}
       `}
       style={{ width: size, height: size, minWidth: 44, minHeight: 44 }}
@@ -109,7 +109,7 @@ function SetupChecklistFab({ isMobile, percent, pending, onOpen }) {
       />
       <span
         aria-hidden="true"
-        className="absolute inset-[3px] rounded-full bg-[#C2410C]"
+        className="absolute inset-[3px] rounded-full bg-[var(--brand-accent)]"
       />
       {/* Content — centered fraction + sr-only semantic count */}
       <span className="relative z-10 flex items-center justify-center h-full w-full font-semibold tabular-nums leading-none"
@@ -184,8 +184,8 @@ export default function SetupChecklistLauncher() {
           side={isMobile ? 'bottom' : 'right'}
           className={
             isMobile
-              ? 'max-h-[85vh] rounded-t-2xl p-0 flex flex-col bg-[#F5F5F4]'
-              : 'w-[420px] sm:max-w-[420px] p-0 flex flex-col bg-[#F5F5F4]'
+              ? 'max-h-[85vh] rounded-t-2xl p-0 flex flex-col bg-muted'
+              : 'w-[420px] sm:max-w-[420px] p-0 flex flex-col bg-muted'
           }
           aria-label="Setup checklist"
         >
@@ -199,13 +199,13 @@ export default function SetupChecklistLauncher() {
           <SheetHeader className="px-5 pt-5 pb-2 shrink-0">
             <div className="flex items-center gap-2">
               {allDone ? (
-                <CheckCircle2 className="h-5 w-5 text-[#C2410C]" aria-hidden="true" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--brand-accent)]" aria-hidden="true" />
               ) : null}
-              <SheetTitle className="font-semibold text-base text-[#0F172A] leading-[1.4]">
+              <SheetTitle className="font-semibold text-base text-foreground leading-[1.4]">
                 Finish setting up Voco
               </SheetTitle>
             </div>
-            <SheetDescription className="font-normal text-sm text-[#475569] leading-normal">
+            <SheetDescription className="font-normal text-sm text-muted-foreground leading-normal">
               A few quick steps to get Voco answering every call the way you want.
             </SheetDescription>
           </SheetHeader>

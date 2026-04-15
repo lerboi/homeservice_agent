@@ -2,9 +2,6 @@
 
 /**
  * RevenueInput — inline dollar amount input shown when changing status to Completed or Paid.
- * Compact 40px height. Shows validation error when required and empty.
- *
- * @param {{ value: string, onChange: Function, required: boolean, error: string | null }} props
  */
 export default function RevenueInput({ value, onChange, required, error }) {
   const hasError = required && (value === '' || value === null || value === undefined);
@@ -14,12 +11,12 @@ export default function RevenueInput({ value, onChange, required, error }) {
     <div className="space-y-1">
       <div
         className={`
-          flex items-center h-10 rounded-md border bg-white overflow-hidden transition-colors
-          ${showError ? 'border-red-500 ring-1 ring-red-200' : 'border-stone-200 focus-within:border-[#C2410C] focus-within:ring-1 focus-within:ring-[#C2410C]/30'}
+          flex items-center h-10 rounded-md border bg-card overflow-hidden transition-colors
+          ${showError ? 'border-red-500 ring-1 ring-red-200' : 'border-border focus-within:border-[var(--brand-accent)] focus-within:ring-1 focus-within:ring-[var(--brand-accent)]/30'}
         `}
       >
         {/* Dollar prefix */}
-        <span className="flex-shrink-0 flex items-center justify-center h-full px-2.5 text-sm font-medium text-stone-500 bg-stone-50 border-r border-stone-200 select-none">
+        <span className="flex-shrink-0 flex items-center justify-center h-full px-2.5 text-sm font-medium text-muted-foreground bg-muted border-r border-border select-none">
           $
         </span>
         {/* Number input */}
@@ -34,8 +31,8 @@ export default function RevenueInput({ value, onChange, required, error }) {
           aria-required={required}
           aria-invalid={!!showError}
           className="
-            flex-1 h-full px-2.5 text-sm text-[#0F172A] bg-transparent outline-none
-            placeholder:text-stone-400
+            flex-1 h-full px-2.5 text-sm text-foreground bg-transparent outline-none
+            placeholder:text-muted-foreground
             [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
           "
         />

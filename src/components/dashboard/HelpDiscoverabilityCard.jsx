@@ -8,8 +8,8 @@
  * ongoing ops). Labels follow verb+noun sentence case per UI-SPEC Copywriting
  * Contract (D-14, D-15).
  *
- * Per UI-SPEC Color rules: tile backgrounds stay white; only the optional
- * trailing arrow icon tints to copper on hover (group-hover). Tile count is
+ * Per UI-SPEC Color rules: tile backgrounds stay card; only the optional
+ * trailing arrow icon tints to brand-accent on hover (group-hover). Tile count is
  * a static 4 — no data fetching.
  *
  * Typography: only `font-normal` and `font-semibold` are used anywhere on
@@ -29,7 +29,7 @@ export default function HelpDiscoverabilityCard() {
       className={`${card.base} p-4 md:p-6`}
     >
       {/* Eyebrow caption per UI-SPEC Copywriting Contract ("Where do I…") */}
-      <p className="font-normal text-xs tracking-wide uppercase text-stone-500 leading-[1.4]">
+      <p className="font-normal text-xs tracking-wide uppercase text-muted-foreground leading-[1.4]">
         Where do I…
       </p>
 
@@ -40,10 +40,10 @@ export default function HelpDiscoverabilityCard() {
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">
-            <Wrench className="h-5 w-5 text-stone-600" aria-hidden="true" />
-            <ArrowUpRight className="h-4 w-4 text-stone-400 group-hover:text-[#C2410C] transition-colors" aria-hidden="true" />
+            <Wrench className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-[var(--brand-accent)] transition-colors" aria-hidden="true" />
           </div>
-          <span className="font-normal text-sm text-[#0F172A] leading-normal">
+          <span className="font-normal text-sm text-foreground leading-normal">
             Add a service
           </span>
         </Link>
@@ -53,10 +53,10 @@ export default function HelpDiscoverabilityCard() {
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">
-            <Mic className="h-5 w-5 text-stone-600" aria-hidden="true" />
-            <ArrowUpRight className="h-4 w-4 text-stone-400 group-hover:text-[#C2410C] transition-colors" aria-hidden="true" />
+            <Mic className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-[var(--brand-accent)] transition-colors" aria-hidden="true" />
           </div>
-          <span className="font-normal text-sm text-[#0F172A] leading-normal">
+          <span className="font-normal text-sm text-foreground leading-normal">
             Change AI voice
           </span>
         </Link>
@@ -66,10 +66,10 @@ export default function HelpDiscoverabilityCard() {
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">
-            <Phone className="h-5 w-5 text-stone-600" aria-hidden="true" />
-            <ArrowUpRight className="h-4 w-4 text-stone-400 group-hover:text-[#C2410C] transition-colors" aria-hidden="true" />
+            <Phone className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-[var(--brand-accent)] transition-colors" aria-hidden="true" />
           </div>
-          <span className="font-normal text-sm text-[#0F172A] leading-normal">
+          <span className="font-normal text-sm text-foreground leading-normal">
             Set escalation contacts
           </span>
         </Link>
@@ -79,10 +79,10 @@ export default function HelpDiscoverabilityCard() {
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">
-            <Receipt className="h-5 w-5 text-stone-600" aria-hidden="true" />
-            <ArrowUpRight className="h-4 w-4 text-stone-400 group-hover:text-[#C2410C] transition-colors" aria-hidden="true" />
+            <Receipt className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-[var(--brand-accent)] transition-colors" aria-hidden="true" />
           </div>
-          <span className="font-normal text-sm text-[#0F172A] leading-normal">
+          <span className="font-normal text-sm text-foreground leading-normal">
             View invoices
           </span>
         </Link>

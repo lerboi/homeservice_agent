@@ -22,7 +22,7 @@ const URGENCY_STYLES = {
     block: 'bg-[#F0F4FF] border-l-[3px] border-[#4F6BED] hover:bg-[#E8EFFE]',
     badge: 'bg-[#4F6BED]/10 text-[#4F6BED]',
     time: 'text-[#4F6BED]',
-    name: 'text-[#0F172A]',
+    name: 'text-foreground',
   },
   urgent: {
     block: 'bg-amber-50 border-l-[3px] border-amber-400 hover:bg-amber-100/70',
@@ -228,8 +228,8 @@ function CurrentTimeIndicator({ gridStartHour, gridEndHour, hourHeight = HOUR_HE
       className="absolute left-0 right-0 z-20 pointer-events-none"
       style={{ top: `${top}px` }}
     >
-      <div className="relative w-full border-t-2 border-[#C2410C]">
-        <div className="absolute -left-1.5 -top-[5px] w-2.5 h-2.5 rounded-full bg-[#C2410C]" />
+      <div className="relative w-full border-t-2 border-[var(--brand-accent)]">
+        <div className="absolute -left-1.5 -top-[5px] w-2.5 h-2.5 rounded-full bg-[var(--brand-accent)]" />
       </div>
     </div>
   );
@@ -314,7 +314,7 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
             </span>
           </div>
           {effectiveHeight >= 80 && addressLine && (
-            <div className="text-[11px] text-[#475569] truncate mt-0.5 leading-tight">{addressLine}</div>
+            <div className="text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">{addressLine}</div>
           )}
           {effectiveHeight >= 96 && (appointment.notes) && (
             <div className="text-[11px] text-[#64748B] truncate leading-tight">{appointment.notes}</div>
@@ -465,8 +465,8 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <CalendarIcon className="h-10 w-10 text-stone-300 mb-3" />
-      <h3 className="text-base font-semibold text-[#0F172A] mb-1">No appointments this week</h3>
-      <p className="text-sm text-[#475569]">Appointments booked by your AI will appear here.</p>
+      <h3 className="text-base font-semibold text-foreground mb-1">No appointments this week</h3>
+      <p className="text-sm text-muted-foreground">Appointments booked by your AI will appear here.</p>
     </div>
   );
 }
@@ -667,12 +667,12 @@ export default function CalendarView({
                 className={`
                   relative min-h-[72px] p-1.5 text-left border-b border-r border-stone-100 transition-colors
                   ${hasBlocks && isCurrentMonth ? 'bg-stone-50' : isCurrentMonth ? 'bg-white hover:bg-stone-50' : 'bg-stone-50/50 hover:bg-stone-100/50'}
-                  ${isTodayCell ? 'ring-1 ring-inset ring-[#C2410C]/30' : ''}
+                  ${isTodayCell ? 'ring-1 ring-inset ring-[var(--brand-accent)]/30' : ''}
                 `}
               >
                 <span className={`
                   inline-flex items-center justify-center text-xs font-medium rounded-full size-6
-                  ${isTodayCell ? 'bg-[#C2410C] text-white' : isCurrentMonth ? 'text-[#0F172A]' : 'text-stone-400'}
+                  ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-stone-400'}
                 `}>
                   {cell.date.getDate()}
                 </span>
@@ -709,7 +709,7 @@ export default function CalendarView({
                               ? 'bg-violet-100 text-violet-700'
                               : isCompleted
                                 ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
-                                : 'bg-[#C2410C]/10 text-[#C2410C]'
+                                : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]'
                           }`}
                         >
                           {isCompleted && <Check className="w-2.5 h-2.5 shrink-0" />}
@@ -766,22 +766,22 @@ export default function CalendarView({
             >
               <div className={isSingleDay ? 'flex items-center gap-2.5' : ''}>
                 {isSingleDay ? (
-                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[#C2410C] text-white' : isClosed ? 'text-stone-400 bg-stone-100' : 'text-[#0F172A] bg-stone-100'}`}>
+                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-stone-400 bg-stone-100' : 'text-foreground bg-stone-100'}`}>
                     {day.getDate()}
                   </div>
                 ) : (
                   <>
-                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[#C2410C]' : isClosed ? 'text-stone-300' : 'text-[#94A3B8]'}`}>
+                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-stone-300' : 'text-[#94A3B8]'}`}>
                       {DAY_ABBREVS[day.getDay()]}
                       {isClosed && <span className="ml-1 text-[9px] normal-case tracking-normal font-medium text-stone-300">(Closed)</span>}
                     </div>
-                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[#C2410C] text-white' : isClosed ? 'text-stone-400' : 'text-[#0F172A]'}`}>
+                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-stone-400' : 'text-foreground'}`}>
                       {day.getDate()}
                     </div>
                   </>
                 )}
                 {isSingleDay && (
-                  <div className={`text-sm font-semibold ${isToday ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                  <div className={`text-sm font-semibold ${isToday ? 'text-[var(--brand-accent)]' : 'text-foreground'}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'long' })}
                     {isClosed
                       ? <span className="ml-1.5 text-xs font-medium text-stone-400">(Closed)</span>
@@ -791,7 +791,7 @@ export default function CalendarView({
                 )}
               </div>
               {isSingleDay && dayApptCount > 0 && (
-                <div className="text-xs font-medium text-[#475569] bg-stone-100 px-2 py-0.5 rounded-full">
+                <div className="text-xs font-medium text-muted-foreground bg-stone-100 px-2 py-0.5 rounded-full">
                   {dayApptCount} job{dayApptCount !== 1 ? 's' : ''}
                 </div>
               )}

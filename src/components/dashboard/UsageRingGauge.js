@@ -77,14 +77,14 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
           strokeWidth="10"
         />
 
-        {/* Main fill arc — brand orange, clockwise from 12 o'clock */}
+        {/* Main fill arc — brand accent, clockwise from 12 o'clock */}
         {(callsUsed > 0 || fillPercentage > 0) && (
           <circle
             cx="60"
             cy="60"
             r={radius}
             fill="none"
-            stroke="#C2410C"
+            stroke="var(--brand-accent)"
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -120,7 +120,8 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
           textAnchor="middle"
           fontSize="26"
           fontWeight="600"
-          fill="#0F172A"
+          fill="currentColor"
+          className="text-foreground"
         >
           {callsUsed}
         </text>
@@ -131,7 +132,8 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
           y="72"
           textAnchor="middle"
           fontSize="11"
-          fill="#475569"
+          fill="currentColor"
+          className="text-muted-foreground"
         >
           of {callsLimit}
         </text>
@@ -139,7 +141,7 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
 
       {/* Below ring text */}
       <div className="text-center space-y-1">
-        <p className="text-sm text-[#475569]">
+        <p className="text-sm text-muted-foreground">
           {callsUsed} of {callsLimit} included calls used
         </p>
         {isOverage && (

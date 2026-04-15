@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const TYPE_CONFIG = {
   call: { icon: Phone, color: 'bg-blue-50 text-blue-600', dot: 'bg-blue-400' },
   appointment: { icon: Calendar, color: 'bg-green-50 text-green-600', dot: 'bg-green-400' },
-  invoice: { icon: FileText, color: 'bg-orange-50 text-[#C2410C]', dot: 'bg-[#C2410C]' },
+  invoice: { icon: FileText, color: 'bg-orange-50 text-[var(--brand-accent)]', dot: 'bg-[var(--brand-accent)]' },
   estimate: { icon: ClipboardList, color: 'bg-violet-50 text-violet-600', dot: 'bg-violet-400' },
 };
 
@@ -64,24 +64,23 @@ export default function CustomerTimeline({ phone, leadId }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Clock className="size-3.5 text-stone-400" />
-        <h3 className="text-xs font-medium text-stone-400 uppercase tracking-wider">Customer Journey</h3>
+        <Clock className="size-3.5 text-muted-foreground" />
+        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer Journey</h3>
       </div>
 
       <div className="relative pl-5">
         {/* Vertical line */}
-        <div className="absolute left-[7px] top-1 bottom-1 w-px bg-stone-200" />
+        <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border" />
 
         <div className="space-y-3">
           {events.map((event, i) => {
             const config = TYPE_CONFIG[event.type] || TYPE_CONFIG.call;
             const Icon = config.icon;
-            const isLast = i === events.length - 1;
 
             const content = (
               <div className="flex items-start gap-3 relative">
                 {/* Dot on the line */}
-                <div className={`absolute -left-5 top-1.5 size-[9px] rounded-full ${config.dot} ring-2 ring-white`} />
+                <div className={`absolute -left-5 top-1.5 size-[9px] rounded-full ${config.dot} ring-2 ring-background`} />
 
                 {/* Icon */}
                 <div className={`flex items-center justify-center size-7 rounded-md shrink-0 ${config.color}`}>
@@ -90,12 +89,12 @@ export default function CustomerTimeline({ phone, leadId }) {
 
                 {/* Text */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-[#0F172A] truncate">{event.title}</p>
+                  <p className="text-xs font-medium text-foreground truncate">{event.title}</p>
                   <div className="flex items-center gap-2">
                     {event.subtitle && (
-                      <span className="text-[10px] text-stone-500">{event.subtitle}</span>
+                      <span className="text-[10px] text-muted-foreground">{event.subtitle}</span>
                     )}
-                    <span className="text-[10px] text-stone-400">{formatRelativeTime(event.timestamp)}</span>
+                    <span className="text-[10px] text-muted-foreground">{formatRelativeTime(event.timestamp)}</span>
                   </div>
                 </div>
               </div>
@@ -103,7 +102,7 @@ export default function CustomerTimeline({ phone, leadId }) {
 
             if (event.href) {
               return (
-                <Link key={`${event.type}-${event.id}`} href={event.href} className="block hover:bg-stone-50 -mx-1 px-1 rounded transition-colors">
+                <Link key={`${event.type}-${event.id}`} href={event.href} className="block hover:bg-accent -mx-1 px-1 rounded transition-colors">
                   {content}
                 </Link>
               );

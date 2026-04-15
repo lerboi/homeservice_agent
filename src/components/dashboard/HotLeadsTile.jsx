@@ -2,16 +2,6 @@
 
 /**
  * HotLeadsTile — medium tile in the DailyOpsHub bento grid.
- *
- * Consumes GET /api/dashboard/stats and reads `newLeadsCount` +
- * `newLeadsPreview` (the actual API shape; the plan spec references
- * `hotLeads.count/preview` but the current endpoint exposes the new-lead
- * fields — see RESEARCH Pitfall 7 on the Leads → Jobs rename coming in
- * Phase 52). The `useSWRFetch.*dashboard/stats` key_link regex matches.
- *
- * Token composition: card.base + card.hover, light-mode only, single
- * copper CTA to /dashboard/leads (fallback label per RESEARCH Pitfall 7 —
- * "Open Jobs" will replace it once Phase 52 ships).
  */
 
 import Link from 'next/link';
@@ -34,8 +24,7 @@ export default function HotLeadsTile() {
   const { data, error, isLoading } = useSWRFetch('/api/dashboard/stats');
 
   const cardClass = `${card.base} ${card.hover} p-6 w-full flex flex-col gap-4`;
-  const titleClass =
-    'font-semibold text-base text-[#0F172A] leading-[1.4]';
+  const titleClass = 'font-semibold text-base text-foreground leading-[1.4]';
   const ctaClass = `${btn.primary} ${focus.ring} inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold min-h-[44px] md:min-h-0`;
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -43,7 +32,7 @@ export default function HotLeadsTile() {
     return (
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-stone-600" />
+          <Flame className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Hot / new leads</h2>
         </div>
         <Skeleton className="h-9 w-20" />
@@ -60,19 +49,19 @@ export default function HotLeadsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-stone-600" />
+          <Flame className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Hot / new leads</h2>
         </div>
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4"
+          className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4"
         >
-          <AlertTriangle className="h-5 w-5 text-stone-500 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
-            <p className="font-semibold text-sm text-[#0F172A] leading-[1.4]">
+            <p className="font-semibold text-sm text-foreground leading-[1.4]">
               Couldn&apos;t load leads.
             </p>
-            <p className="font-normal text-sm text-[#475569] leading-normal">
+            <p className="font-normal text-sm text-muted-foreground leading-normal">
               Check your connection and try again.
             </p>
           </div>
@@ -90,7 +79,7 @@ export default function HotLeadsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-stone-600" />
+            <Flame className="h-5 w-5 text-muted-foreground" />
             <h2 className={titleClass}>Hot / new leads</h2>
           </div>
           <Link href="/dashboard/leads" className={ctaClass}>
@@ -98,10 +87,10 @@ export default function HotLeadsTile() {
           </Link>
         </div>
         <div className="flex flex-col gap-2 py-2">
-          <p className="font-semibold text-base text-[#0F172A] leading-[1.4]">
+          <p className="font-semibold text-base text-foreground leading-[1.4]">
             No new leads right now.
           </p>
-          <p className="font-normal text-sm text-[#475569] leading-normal">
+          <p className="font-normal text-sm text-muted-foreground leading-normal">
             New inquiries from calls and forms land here first. Check back
             after your next call.
           </p>
@@ -115,7 +104,7 @@ export default function HotLeadsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-stone-600" />
+          <Flame className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Hot / new leads</h2>
         </div>
         <Link href="/dashboard/leads" className={ctaClass}>
@@ -123,24 +112,24 @@ export default function HotLeadsTile() {
         </Link>
       </div>
 
-      <p className="font-semibold text-2xl text-[#0F172A] leading-tight tabular-nums">
+      <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
         {count.toLocaleString('en-US')}
-        <span className="font-normal text-sm text-[#475569] ml-2">
+        <span className="font-normal text-sm text-muted-foreground ml-2">
           {count === 1 ? 'new lead' : 'new leads'}
         </span>
       </p>
 
-      <ul className="flex flex-col divide-y divide-stone-100">
+      <ul className="flex flex-col divide-y divide-border">
         {preview.slice(0, 3).map((lead) => (
           <li
             key={lead.id}
             className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
           >
             <div className="min-w-0 flex flex-col">
-              <p className="font-normal text-sm text-[#0F172A] leading-normal truncate">
+              <p className="font-normal text-sm text-foreground leading-normal truncate">
                 {lead.caller_name || lead.from_number || 'Unknown caller'}
               </p>
-              <p className="font-normal text-xs text-stone-500 leading-[1.4]">
+              <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
                 {lead.job_type || 'No job type'} &bull;{' '}
                 {relativeTime(lead.created_at)}
               </p>

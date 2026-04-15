@@ -9,7 +9,7 @@ export default function SettingsAISection({ phoneNumber, initialVoice, loading }
     <div id="ai">
       <VoicePickerSection initialVoice={initialVoice} loading={loading} />
 
-      <hr className="my-6 border-stone-200" />
+      <hr className="my-6 border-border" />
 
       {/* Phone number display */}
       {loading ? (
@@ -17,15 +17,15 @@ export default function SettingsAISection({ phoneNumber, initialVoice, loading }
       ) : phoneNumber ? (
         <>
           <div
-            className="bg-stone-50 rounded-lg px-4 py-2 mb-4"
+            className="bg-muted rounded-lg px-4 py-2 mb-4"
             aria-label="Your AI phone number"
           >
-            <span className="text-sm font-mono text-[#0F172A]">{phoneNumber}</span>
+            <span className="text-sm font-mono text-foreground">{phoneNumber}</span>
           </div>
           <TestCallPanel phoneNumber={phoneNumber} context="settings" onComplete={() => {}} />
         </>
       ) : (
-        <p className="text-sm text-[#475569]">Phone number not yet assigned</p>
+        <p className="text-sm text-muted-foreground">Phone number not yet assigned</p>
       )}
     </div>
   );

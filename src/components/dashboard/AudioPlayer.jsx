@@ -77,7 +77,7 @@ export default function AudioPlayer({ src }) {
   // No src or empty src
   if (!src) {
     return (
-      <div className="bg-stone-50 rounded-xl border border-stone-200/60 p-4">
+      <div className="bg-muted rounded-xl border border-border p-4">
         <p className="text-sm text-stone-400 text-center">
           Recording unavailable. The audio file may still be processing.
         </p>
@@ -86,7 +86,7 @@ export default function AudioPlayer({ src }) {
   }
 
   return (
-    <div className="bg-stone-50 rounded-xl border border-stone-200/60 p-4">
+    <div className="bg-muted rounded-xl border border-border p-4">
       {/* Hidden native audio element — handles codec and buffering */}
       <audio
         ref={audioRef}
@@ -109,7 +109,7 @@ export default function AudioPlayer({ src }) {
             type="button"
             onClick={handlePlayPause}
             aria-label={isPlaying ? 'Pause recording' : 'Play recording'}
-            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-[#0F172A] text-white hover:bg-[#0F172A]/90 active:scale-95 transition-all duration-150"
+            className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-foreground text-background hover:bg-foreground/90 active:scale-95 transition-all duration-150"
           >
             {isPlaying ? (
               <Pause className="w-4 h-4" aria-hidden="true" />
@@ -138,10 +138,10 @@ export default function AudioPlayer({ src }) {
                 "
               />
               {/* Track background */}
-              <div className="absolute inset-0 rounded-full bg-stone-200" />
+              <div className="absolute inset-0 rounded-full bg-border" />
               {/* Progress fill */}
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-[#C2410C] transition-all"
+                className="absolute inset-y-0 left-0 rounded-full bg-[var(--brand-accent)] transition-all"
                 style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
               />
             </div>

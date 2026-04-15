@@ -6,7 +6,7 @@
  * Consumes GET /api/usage → { callsUsed, callsIncluded, cycleDaysLeft, overageDollars }.
  *
  * Visual contract (D-13 / UI-SPEC):
- *   - percent < 75   → copper   (bg-[#C2410C])
+ *   - percent < 75   → brand accent (var(--brand-accent))
  *   - 75 <= percent < 100 → amber-600
  *   - percent >= 100 → red-700
  *
@@ -33,7 +33,7 @@ import { AlertTriangle } from 'lucide-react';
 export function usageThresholdClass(percent) {
   if (percent >= 100) return { fill: 'bg-red-700', tone: 'text-red-700' };
   if (percent >= 75) return { fill: 'bg-amber-600', tone: 'text-amber-700' };
-  return { fill: 'bg-[#C2410C]', tone: 'text-stone-600' };
+  return { fill: 'bg-[var(--brand-accent)]', tone: 'text-stone-600' };
 }
 
 function formatCycleStartHint(daysLeft) {
@@ -49,7 +49,7 @@ export default function UsageTile() {
 
   const cardClass = `${card.base} ${card.hover} p-6 w-full flex flex-col gap-4`;
   const titleClass =
-    'font-semibold text-base text-[#0F172A] leading-[1.4]';
+    'font-semibold text-base text-foreground leading-[1.4]';
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
@@ -74,14 +74,14 @@ export default function UsageTile() {
         </div>
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4"
+          className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4"
         >
-          <AlertTriangle className="h-5 w-5 text-stone-500 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
-            <p className="font-semibold text-sm text-[#0F172A] leading-[1.4]">
+            <p className="font-semibold text-sm text-foreground leading-[1.4]">
               Usage data is temporarily unavailable.
             </p>
-            <p className="font-normal text-sm text-[#475569] leading-normal">
+            <p className="font-normal text-sm text-muted-foreground leading-normal">
               Your plan is still active. Refresh to retry.
             </p>
           </div>
@@ -115,10 +115,10 @@ export default function UsageTile() {
             Manage plan
           </Link>
         </div>
-        <p className="font-semibold text-2xl text-[#0F172A] leading-tight tabular-nums">
+        <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
           0 of 0 calls used
         </p>
-        <p className="font-normal text-sm text-[#475569] leading-normal">
+        <p className="font-normal text-sm text-muted-foreground leading-normal">
           Your cycle is starting. {formatCycleStartHint(cycleDaysLeft)}
         </p>
       </div>
@@ -145,7 +145,7 @@ export default function UsageTile() {
       </div>
 
       <p
-        className="font-semibold text-2xl text-[#0F172A] leading-tight tabular-nums"
+        className="font-semibold text-2xl text-foreground leading-tight tabular-nums"
         aria-hidden="false"
       >
         {callsUsed.toLocaleString('en-US')} /{' '}
@@ -159,7 +159,7 @@ export default function UsageTile() {
         aria-valuemin={0}
         aria-valuemax={callsIncluded}
         aria-label="Calls used this cycle"
-        className="relative h-2 w-full overflow-hidden rounded-full bg-stone-200"
+        className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
       >
         <div
           className={`h-full ${fill} transition-[width] duration-[400ms] ease-out`}

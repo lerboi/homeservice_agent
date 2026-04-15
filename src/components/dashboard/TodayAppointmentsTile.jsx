@@ -68,7 +68,7 @@ export default function TodayAppointmentsTile() {
 
   const cardClass = `${card.base} ${card.hover} p-6 w-full flex flex-col gap-4`;
   const titleClass =
-    'font-semibold text-base text-[#0F172A] leading-[1.4]';
+    'font-semibold text-base text-foreground leading-[1.4]';
 
   const ctaClass = `${btn.primary} ${focus.ring} inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold min-h-[44px] md:min-h-0`;
 
@@ -110,14 +110,14 @@ export default function TodayAppointmentsTile() {
         </div>
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4"
+          className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4"
         >
-          <AlertTriangle className="h-5 w-5 text-stone-500 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
-            <p className="font-semibold text-sm text-[#0F172A] leading-[1.4]">
+            <p className="font-semibold text-sm text-foreground leading-[1.4]">
               Couldn&apos;t load today&apos;s appointments.
             </p>
-            <p className="font-normal text-sm text-[#475569] leading-normal">
+            <p className="font-normal text-sm text-muted-foreground leading-normal">
               Check your connection and try again.
             </p>
           </div>
@@ -140,10 +140,10 @@ export default function TodayAppointmentsTile() {
           </Link>
         </div>
         <div className="flex flex-col gap-2 py-2">
-          <p className="font-semibold text-base text-[#0F172A] leading-[1.4]">
+          <p className="font-semibold text-base text-foreground leading-[1.4]">
             Nothing booked today.
           </p>
-          <p className="font-normal text-sm text-[#475569] leading-normal">
+          <p className="font-normal text-sm text-muted-foreground leading-normal">
             When Voco books an appointment, it will show up here. You&apos;ll
             also get a notification.
           </p>
@@ -173,16 +173,16 @@ export default function TodayAppointmentsTile() {
         <p className="font-normal text-xs text-stone-500 leading-[1.4]">
           Next appointment
         </p>
-        <p className="font-semibold text-2xl text-[#0F172A] leading-tight tabular-nums">
+        <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
           {formatTime(next.start_time)}
-          <span className="font-normal text-sm text-[#475569] ml-2">
+          <span className="font-normal text-sm text-muted-foreground ml-2">
             · {next.caller_name || 'Customer'}
           </span>
         </p>
       </div>
 
       {/* List of today's remaining slots */}
-      <ul className="flex flex-col divide-y divide-stone-100">
+      <ul className="flex flex-col divide-y divide-border">
         {visible.map((appt) => {
           const locationText =
             appt.street_name && appt.postal_code
@@ -194,11 +194,11 @@ export default function TodayAppointmentsTile() {
               key={appt.id}
               className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
             >
-              <div className="w-20 shrink-0 text-right font-normal text-sm text-[#475569] leading-normal tabular-nums">
+              <div className="w-20 shrink-0 text-right font-normal text-sm text-muted-foreground leading-normal tabular-nums">
                 {formatTime(appt.start_time)}
               </div>
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="font-semibold text-sm text-[#0F172A] leading-[1.4] truncate">
+                <p className="font-semibold text-sm text-foreground leading-[1.4] truncate">
                   {appt.caller_name || 'Customer'}
                 </p>
                 <div className="flex items-center gap-2 font-normal text-xs text-stone-500 leading-[1.4]">

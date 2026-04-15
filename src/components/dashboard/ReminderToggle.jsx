@@ -15,8 +15,6 @@ const REMINDER_TYPE_LABELS = {
 
 /**
  * Per-invoice reminder toggle with optional reminder history display.
- *
- * @param {{ invoiceId: string, initialEnabled: boolean, onToggle?: (enabled: boolean) => void, reminders?: Array<{ reminder_type: string, sent_at: string }> }} props
  */
 export function ReminderToggle({ invoiceId, initialEnabled, onToggle, reminders }) {
   const [enabled, setEnabled] = useState(initialEnabled);
@@ -53,13 +51,13 @@ export function ReminderToggle({ invoiceId, initialEnabled, onToggle, reminders 
         />
         <label
           htmlFor={`reminder-toggle-${invoiceId}`}
-          className="text-sm font-medium text-[#0F172A] cursor-pointer"
+          className="text-sm font-medium text-foreground cursor-pointer"
         >
           Send payment reminders
         </label>
       </div>
 
-      <p className="text-xs text-stone-500 ml-[44px]">
+      <p className="text-xs text-muted-foreground ml-[44px]">
         Reminders sent 3 days before due, on due date, and 3 and 7 days after
       </p>
 
@@ -69,11 +67,11 @@ export function ReminderToggle({ invoiceId, initialEnabled, onToggle, reminders 
           {reminders.map((reminder) => (
             <div
               key={`${reminder.reminder_type}-${reminder.sent_at}`}
-              className="flex items-center gap-2 text-xs text-stone-500"
+              className="flex items-center gap-2 text-xs text-muted-foreground"
             >
               <span>{REMINDER_TYPE_LABELS[reminder.reminder_type] || reminder.reminder_type}</span>
               <span>{format(new Date(reminder.sent_at), 'MMM d, yyyy')}</span>
-              <Badge variant="outline" className="bg-stone-100 text-stone-600 border-stone-300 text-[10px] px-1.5 py-0">
+              <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-[10px] px-1.5 py-0">
                 Sent
               </Badge>
             </div>

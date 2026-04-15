@@ -89,36 +89,36 @@ export default function VoicePickerSection({ initialVoice, loading }) {
   if (loading) {
     return (
       <div className="mb-6">
-        <label className="text-sm font-medium text-[#0F172A]">Voice</label>
-        <div className="mt-1.5 h-10 w-full max-w-xs rounded-lg bg-stone-100 animate-pulse" />
+        <label className="text-sm font-medium text-foreground">Voice</label>
+        <div className="mt-1.5 h-10 w-full max-w-xs rounded-lg bg-muted animate-pulse" />
       </div>
     );
   }
 
   return (
     <div className="mb-6">
-      <label className="text-sm font-medium text-[#0F172A]">Voice</label>
+      <label className="text-sm font-medium text-foreground">Voice</label>
       <div ref={dropdownRef} className="relative mt-1.5 w-full max-w-xs">
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="flex items-center justify-between w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-[#0F172A] hover:border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#C2410C]/20 focus:border-[#C2410C]"
+          className="flex items-center justify-between w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:border-border/80 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/20 focus:border-[var(--brand-accent)]"
         >
           <span>
             {current ? (
               <>
                 {current.name}
-                <span className="text-[#475569] ml-1.5">— {current.description}</span>
+                <span className="text-muted-foreground ml-1.5">— {current.description}</span>
               </>
             ) : (
-              <span className="text-[#94A3B8]">Select a voice</span>
+              <span className="text-muted-foreground">Select a voice</span>
             )}
           </span>
-          <ChevronDown size={16} className={`text-[#94A3B8] transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={16} className={`text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
-          <div className="absolute z-10 mt-1 w-full rounded-lg border border-stone-200 bg-white shadow-lg py-1">
+          <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-lg py-1">
             {VOICES.map((voice) => {
               const isSelected = selectedVoice === voice.name;
               const isPlaying = playingVoice === voice.name;
@@ -126,23 +126,23 @@ export default function VoicePickerSection({ initialVoice, loading }) {
                 <div
                   key={voice.name}
                   onClick={() => handleSelect(voice.name)}
-                  className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-stone-50 ${isSelected ? 'bg-stone-50' : ''}`}
+                  className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent ${isSelected ? 'bg-accent' : ''}`}
                 >
                   <div>
-                    <span className={`text-sm ${isSelected ? 'font-semibold text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                    <span className={`text-sm ${isSelected ? 'font-semibold text-[var(--brand-accent)]' : 'text-foreground'}`}>
                       {voice.name}
                     </span>
-                    <span className="text-xs text-[#475569] ml-1.5">— {voice.description}</span>
+                    <span className="text-xs text-muted-foreground ml-1.5">— {voice.description}</span>
                   </div>
                   <button
                     onClick={(e) => handlePlay(e, voice.name)}
                     aria-label={isPlaying ? `Pause ${voice.name}` : `Play ${voice.name}`}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-stone-100"
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted"
                   >
                     {isPlaying ? (
-                      <Pause size={14} className="text-[#C2410C]" />
+                      <Pause size={14} className="text-[var(--brand-accent)]" />
                     ) : (
-                      <Play size={14} className="text-stone-400" />
+                      <Play size={14} className="text-muted-foreground" />
                     )}
                   </button>
                 </div>
@@ -151,8 +151,8 @@ export default function VoicePickerSection({ initialVoice, loading }) {
           </div>
         )}
       </div>
-      {saving && <p className="text-xs text-[#94A3B8] mt-1.5">Saving...</p>}
-      <p className="text-xs text-[#94A3B8] mt-1.5">Takes effect on the next inbound call.</p>
+      {saving && <p className="text-xs text-muted-foreground mt-1.5">Saving...</p>}
+      <p className="text-xs text-muted-foreground mt-1.5">Takes effect on the next inbound call.</p>
     </div>
   );
 }

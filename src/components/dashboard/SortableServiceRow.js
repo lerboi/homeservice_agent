@@ -65,7 +65,7 @@ export function SortableServiceRow({
       </button>
 
       {/* Service name */}
-      <span className="text-base text-[#0F172A]">{service.name}</span>
+      <span className="text-base text-foreground">{service.name}</span>
 
       {/* Urgency tag badge + Select dropdown */}
       <div className="w-36 flex items-center gap-2">
@@ -94,7 +94,7 @@ export function SortableServiceRow({
               <span className="text-red-700">{t('tag_emergency')}</span>
             </SelectItem>
             <SelectItem value="routine">
-              <span className="text-[#475569]">{t('tag_routine')}</span>
+              <span className="text-muted-foreground">{t('tag_routine')}</span>
             </SelectItem>
             <SelectItem value="urgent">
               <span className="text-amber-700">{t('tag_urgent')}</span>

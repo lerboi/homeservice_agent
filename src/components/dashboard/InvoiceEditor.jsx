@@ -280,7 +280,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
           </div>
           <Link
             href="/dashboard/more/invoice-settings"
-            className="text-sm font-medium text-[#C2410C] hover:underline shrink-0"
+            className="text-sm font-medium text-[var(--brand-accent)] hover:underline shrink-0"
           >
             Go to Settings
           </Link>
@@ -314,7 +314,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
           <div className="mb-4">
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
-                <Search className="h-4 w-4 text-[#C2410C]" />
+                <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-stone-700">
                   Linked to: <span className="font-medium text-stone-900">{selectedLead.caller_name}</span>
                 </span>
@@ -500,7 +500,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-[#C2410C] text-[#C2410C] hover:bg-[#C2410C]/5"
+                        className="border-[var(--brand-accent)] text-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/5"
                         disabled={!leadId || !hasTranscript || aiGenerating}
                         onClick={handleAiDescribe}
                       >
@@ -550,7 +550,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                    className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
                     onClick={handleAcceptAll}
                   >
                     <Check className="h-4 w-4 mr-1" />
@@ -578,13 +578,13 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                   />
                   {/* AI description preview card */}
                   {aiDescriptions?.[index] && !aiAccepted[index] && (
-                    <div className="ml-2 mt-1 mb-2 p-3 bg-stone-50 border-l-2 border-[#C2410C] rounded-r-lg">
+                    <div className="ml-2 mt-1 mb-2 p-3 bg-muted border-l-2 border-[var(--brand-accent)] rounded-r-lg">
                       <p className="text-sm text-stone-700 mb-2">{aiDescriptions[index]}</p>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
                           size="sm"
-                          className="h-7 text-xs bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                          className="h-7 text-xs bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
                           onClick={() => handleAcceptDescription(index)}
                         >
                           <Check className="h-3 w-3 mr-1" />
@@ -682,7 +682,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
         <Button
           type="button"
           disabled={saving}
-          className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+          className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
           onClick={() => onContinue(assembleInvoiceData())}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -691,7 +691,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       </div>
 
       {/* Mobile sticky bottom action bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 p-4 flex gap-3">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 flex gap-3">
         <Button
           type="button"
           variant="outline"
@@ -705,7 +705,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
         <Button
           type="button"
           disabled={saving}
-          className="flex-1 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+          className="flex-1 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
           onClick={() => onContinue(assembleInvoiceData())}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

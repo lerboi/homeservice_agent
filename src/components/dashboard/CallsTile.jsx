@@ -59,7 +59,7 @@ export default function CallsTile() {
 
   const cardClass = `${card.base} ${card.hover} p-6 w-full flex flex-col gap-4`;
   const titleClass =
-    'font-semibold text-base text-[#0F172A] leading-[1.4]';
+    'font-semibold text-base text-foreground leading-[1.4]';
   const ctaClass = `${btn.primary} ${focus.ring} inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold min-h-[44px] md:min-h-0`;
 
   const { missed, recent } = useMemo(() => {
@@ -79,7 +79,7 @@ export default function CallsTile() {
     return (
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-stone-600" />
+          <Phone className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Calls (last 24h)</h2>
         </div>
         <div className="flex flex-col gap-3">
@@ -96,19 +96,19 @@ export default function CallsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-stone-600" />
+          <Phone className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Calls (last 24h)</h2>
         </div>
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4"
+          className="flex items-start gap-3 rounded-lg border border-border bg-muted p-4"
         >
-          <AlertTriangle className="h-5 w-5 text-stone-500 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
-            <p className="font-semibold text-sm text-[#0F172A] leading-[1.4]">
+            <p className="font-semibold text-sm text-foreground leading-[1.4]">
               Couldn&apos;t load calls.
             </p>
-            <p className="font-normal text-sm text-[#475569] leading-normal">
+            <p className="font-normal text-sm text-muted-foreground leading-normal">
               Check your connection and try again.
             </p>
           </div>
@@ -123,7 +123,7 @@ export default function CallsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-stone-600" />
+            <Phone className="h-5 w-5 text-muted-foreground" />
             <h2 className={titleClass}>Calls (last 24h)</h2>
           </div>
           <Link href="/dashboard/calls" className={ctaClass}>
@@ -131,10 +131,10 @@ export default function CallsTile() {
           </Link>
         </div>
         <div className="flex flex-col gap-2 py-2">
-          <p className="font-semibold text-base text-[#0F172A] leading-[1.4]">
+          <p className="font-semibold text-base text-foreground leading-[1.4]">
             No calls in the last 24 hours.
           </p>
-          <p className="font-normal text-sm text-[#475569] leading-normal">
+          <p className="font-normal text-sm text-muted-foreground leading-normal">
             Voco is listening. The moment someone calls, you&apos;ll see it
             here.
           </p>
@@ -148,7 +148,7 @@ export default function CallsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-stone-600" />
+          <Phone className="h-5 w-5 text-muted-foreground" />
           <h2 className={titleClass}>Calls (last 24h)</h2>
         </div>
         <Link href="/dashboard/calls" className={ctaClass}>
@@ -163,21 +163,21 @@ export default function CallsTile() {
             <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 font-normal text-xs tracking-wide uppercase text-red-700 leading-[1.4]">
               Missed
             </span>
-            <span className="font-normal text-xs text-stone-500 leading-[1.4]">
+            <span className="font-normal text-xs text-muted-foreground leading-[1.4]">
               {missed.length} &bull; not_attempted
             </span>
           </div>
-          <ul className="flex flex-col divide-y divide-stone-100">
+          <ul className="flex flex-col divide-y divide-border">
             {missed.slice(0, 3).map((mc) => (
               <li
                 key={mc.id}
                 className="flex items-center justify-between gap-3 py-2"
               >
                 <div className="min-w-0 flex flex-col">
-                  <p className="font-normal text-sm text-[#0F172A] leading-normal truncate">
+                  <p className="font-normal text-sm text-foreground leading-normal truncate">
                     {formatPhone(mc.from_number)}
                   </p>
-                  <p className="font-normal text-xs text-stone-500 leading-[1.4]">
+                  <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
                     {relativeTime(mc.created_at)}
                   </p>
                 </div>
@@ -188,7 +188,7 @@ export default function CallsTile() {
       )}
 
       {/* Recent calls (up to 4) */}
-      <ul className="flex flex-col divide-y divide-stone-100">
+      <ul className="flex flex-col divide-y divide-border">
         {recent.map((call) => {
           const outcome = call.booking_outcome;
           const outcomeLabel =
@@ -206,17 +206,17 @@ export default function CallsTile() {
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
               : outcome === 'not_attempted' || outcome === 'failed'
                 ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-stone-200 bg-stone-50 text-stone-600';
+                : 'border-border bg-muted text-muted-foreground';
           return (
             <li
               key={call.id}
               className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
             >
               <div className="min-w-0 flex flex-col">
-                <p className="font-normal text-sm text-[#0F172A] leading-normal truncate">
+                <p className="font-normal text-sm text-foreground leading-normal truncate">
                   {formatPhone(call.from_number)}
                 </p>
-                <p className="font-normal text-xs text-stone-500 leading-[1.4]">
+                <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
                   {relativeTime(call.created_at)}
                 </p>
               </div>

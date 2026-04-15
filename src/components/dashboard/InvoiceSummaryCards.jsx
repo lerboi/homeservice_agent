@@ -15,7 +15,7 @@ const CARDS = [
     key: 'total_outstanding',
     label: 'Total Outstanding',
     icon: DollarSign,
-    color: 'text-[#C2410C]',
+    color: 'text-[var(--brand-accent)]',
   },
   {
     key: 'overdue_amount',
@@ -47,11 +47,11 @@ export default function InvoiceSummaryCards({ summary = {}, loading = false }) {
       {CARDS.map(({ key, label, icon: Icon, color }) => (
         <div
           key={key}
-          className="bg-white rounded-lg border border-stone-200 p-4"
+          className="bg-card rounded-lg border border-border p-4"
         >
           <div className="flex items-center gap-2 mb-1">
             <Icon className={`w-4 h-4 ${color}`} />
-            <p className="text-sm font-medium text-stone-500">{label}</p>
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
           </div>
           <p className={`text-[28px] font-semibold leading-tight ${color}`}>
             {formatCurrency(summary[key])}

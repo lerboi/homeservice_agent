@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Pipeline status colors per UI-SPEC
 const STATUS_COLORS = {
-  new: '#C2410C',
+  new: 'var(--brand-accent)',
   booked: '#1d4ed8',
   completed: '#57534e',
   paid: '#166534',
@@ -94,7 +94,7 @@ function buildPipelineData(leads) {
 const URGENCY_COLORS = {
   routine: '#57534e',
   emergency: '#DC2626',
-  urgent: '#C2410C',
+  urgent: 'var(--brand-accent)',
   unknown: '#94a3b8',
 };
 
@@ -153,8 +153,8 @@ function RevenueTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-stone-200 rounded-lg shadow-sm px-3 py-2">
-      <p className="text-xs text-[#475569] mb-1">{label}</p>
-      <p className="text-sm font-semibold text-[#0F172A]">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-semibold text-foreground">
         ${payload[0]?.value?.toLocaleString()}
       </p>
     </div>
@@ -165,8 +165,8 @@ function CountTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-stone-200 rounded-lg shadow-sm px-3 py-2">
-      <p className="text-xs text-[#475569] mb-1">{label}</p>
-      <p className="text-sm font-semibold text-[#0F172A]">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-semibold text-foreground">
         {payload[0]?.value} leads
       </p>
     </div>
@@ -178,7 +178,7 @@ function CountTooltip({ active, payload, label }) {
 function ChartCard({ title, children }) {
   return (
     <div className="bg-white rounded-xl border border-stone-200/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] p-5">
-      <h3 className="text-xl font-semibold text-[#0F172A] mb-5">{title}</h3>
+      <h3 className="text-xl font-semibold text-foreground mb-5">{title}</h3>
       {children}
     </div>
   );
@@ -221,8 +221,8 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
   if (allLeads.length === 0 && allCalls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-2">No data yet</h2>
-        <p className="text-sm text-[#475569] max-w-xs">
+        <h2 className="text-xl font-semibold text-foreground mb-2">No data yet</h2>
+        <p className="text-sm text-muted-foreground max-w-xs">
           Charts will appear once calls start coming in.
         </p>
       </div>
@@ -238,13 +238,13 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={callVolumeData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} width={40} allowDecimals={false} />
               <Tooltip
                 contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                 formatter={(value) => [`${value} calls`, 'Calls']}
               />
-              <Bar dataKey="calls" fill="#C2410C" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="calls" fill="var(--brand-accent)" radius={[4, 4, 0, 0]} maxBarSize={32} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -260,7 +260,7 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
                   <Pie data={urgencyData} cx="50%" cy="45%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                     {urgencyData.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
                   </Pie>
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{value}</span>} />
                   <Tooltip formatter={(value, name) => [`${value} calls`, name]} contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -273,7 +273,7 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
                   <Pie data={bookingOutcomeData} cx="50%" cy="45%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                     {bookingOutcomeData.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
                   </Pie>
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{value}</span>} />
                   <Tooltip formatter={(value, name) => [`${value} calls`, name]} contentStyle={{ fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8 }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -290,13 +290,13 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 12, fill: '#475569' }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
-                tick={{ fontSize: 12, fill: '#475569' }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
                 width={56}
@@ -305,10 +305,10 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
               <Line
                 type="monotone"
                 dataKey="revenue"
-                stroke="#C2410C"
+                stroke="var(--brand-accent)"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, fill: '#C2410C' }}
+                activeDot={{ r: 4, fill: 'var(--brand-accent)' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -327,14 +327,14 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
               <XAxis
                 type="number"
-                tick={{ fontSize: 12, fill: '#475569' }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 type="category"
                 dataKey="status"
-                tick={{ fontSize: 12, fill: '#475569' }}
+                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
                 axisLine={false}
                 tickLine={false}
                 width={72}
@@ -374,7 +374,7 @@ export default function AnalyticsCharts({ leads, calls, loading }) {
                 iconType="circle"
                 iconSize={8}
                 formatter={(value) => (
-                  <span style={{ fontSize: 12, color: '#475569' }}>{value}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{value}</span>
                 )}
               />
               <Tooltip

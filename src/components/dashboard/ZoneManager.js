@@ -148,7 +148,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 p-4">
+    <div className="rounded-lg border border-border p-4">
       {/* Zone name header */}
       <div className="flex items-center justify-between mb-3">
         {editingName ? (
@@ -165,7 +165,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
                   setEditingName(false);
                 }
               }}
-              className="flex-1 h-8 text-sm font-semibold border border-stone-300 rounded-md px-2 focus:outline-none focus:ring-2 focus:ring-[#C2410C]"
+              className="flex-1 h-8 text-sm font-semibold border border-border rounded-md px-2 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
             />
             <button
               type="button"
@@ -182,7 +182,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
                 setNameValue(zone.name);
                 setEditingName(false);
               }}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 transition-colors"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-stone-400 hover:bg-muted transition-colors"
               aria-label="Cancel edit"
             >
               <X className="h-4 w-4" />
@@ -190,11 +190,11 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[#0F172A]">{zone.name}</span>
+            <span className="text-sm font-semibold text-foreground">{zone.name}</span>
             <button
               type="button"
               onClick={() => setEditingName(true)}
-              className="h-6 w-6 flex items-center justify-center rounded-md text-stone-400 hover:text-[#0F172A]/80 hover:bg-[#F5F5F4] transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded-md text-stone-400 hover:text-foreground/80 hover:bg-muted transition-colors"
               aria-label="Edit zone name"
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -233,17 +233,17 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
       </div>
 
       {/* Postal code tags */}
-      <div className="flex flex-wrap gap-1.5 p-2 rounded-md border border-stone-200 bg-[#F5F5F4] min-h-10">
+      <div className="flex flex-wrap gap-1.5 p-2 rounded-md border border-border bg-muted min-h-10">
         {postalCodes.map((code) => (
           <span
             key={code}
-            className="inline-flex items-center gap-1 bg-[#0F172A]/[0.06] text-[#0F172A]/70 text-xs rounded-full px-2 h-7"
+            className="inline-flex items-center gap-1 bg-foreground/[0.06] text-foreground/70 text-xs rounded-full px-2 h-7"
           >
             {code}
             <button
               type="button"
               onClick={() => removePostalCode(code)}
-              className="text-stone-400 hover:text-[#0F172A]/80 transition-colors ml-0.5"
+              className="text-stone-400 hover:text-foreground/80 transition-colors ml-0.5"
               aria-label={`Remove ${code}`}
             >
               <X className="h-3 w-3" />
@@ -455,12 +455,12 @@ export default function ZoneManager() {
 
         {/* Empty state */}
         {zones.length === 0 && !adding && (
-          <div className="mt-4 rounded-lg border border-dashed border-stone-300 bg-[#F5F5F4] p-8 flex flex-col items-center text-center">
-            <div className="p-3 rounded-full bg-white border border-stone-200 mb-3">
+          <div className="mt-4 rounded-lg border border-dashed border-border bg-muted p-8 flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-card border border-border mb-3">
               <MapPin className="h-6 w-6 text-stone-400" />
             </div>
-            <h3 className="text-sm font-semibold text-[#0F172A] mb-1">No zones configured</h3>
-            <p className="text-sm text-[#475569] mb-4 max-w-xs">
+            <h3 className="text-sm font-semibold text-foreground mb-1">No zones configured</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-xs">
               Add service zones to let your AI understand which areas you cover and how long it takes
               to travel between them.
             </p>
@@ -487,9 +487,9 @@ export default function ZoneManager() {
 
         {/* Travel buffers — shown only when 2+ zones */}
         {zonePairs.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-stone-100">
-            <h3 className="text-sm font-semibold text-[#0F172A] mb-1">Travel Buffers</h3>
-            <p className="text-xs text-[#475569] mb-3">
+          <div className="mt-6 pt-4 border-t border-border">
+            <h3 className="text-sm font-semibold text-foreground mb-1">Travel Buffers</h3>
+            <p className="text-xs text-muted-foreground mb-3">
               Set the travel time between zones. This prevents back-to-back bookings without enough
               travel time.
             </p>
@@ -499,7 +499,7 @@ export default function ZoneManager() {
                   key={`${zA.id}-${zB.id}`}
                   className="flex items-center gap-3 flex-wrap"
                 >
-                  <span className="text-sm text-[#0F172A]/80 w-48 truncate">
+                  <span className="text-sm text-foreground/80 w-48 truncate">
                     {zA.name} ↔ {zB.name}
                   </span>
                   <Select

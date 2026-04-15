@@ -9,8 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 const EVENT_CONFIG = {
   lead_created: {
     Icon: UserPlus,
-    color: 'text-[#C2410C]',
-    bg: 'bg-[#C2410C]/[0.08]',
+    color: 'text-[var(--brand-accent)]',
+    bg: 'bg-[var(--brand-accent)]/[0.08]',
     describe: (meta) => `New lead from ${meta?.caller_name || 'unknown caller'}`,
   },
   status_changed: {
@@ -50,8 +50,8 @@ function capitalize(str) {
 function getConfig(eventType) {
   return EVENT_CONFIG[eventType] ?? {
     Icon: Bell,
-    color: 'text-stone-400',
-    bg: 'bg-stone-100',
+    color: 'text-muted-foreground',
+    bg: 'bg-muted',
     describe: () => capitalize(eventType?.replace(/_/g, ' ') ?? 'Activity'),
   };
 }
@@ -99,8 +99,8 @@ function ActivityItem({ activity }) {
 
       {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-[#0F172A] leading-snug">{description}</p>
-        <p className="text-xs text-[#475569] mt-0.5">{formatRelative(activity.created_at)}</p>
+        <p className="text-sm text-foreground leading-snug">{description}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{formatRelative(activity.created_at)}</p>
       </div>
     </div>
   );
@@ -121,9 +121,9 @@ export default function RecentActivityFeed({ activities, loading }) {
   if (!activities || activities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Activity className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-[#0F172A] mb-2">No recent activity</h3>
-        <p className="text-sm text-[#475569] max-w-sm">
+        <Activity className="h-10 w-10 text-muted-foreground/30 mb-4" aria-hidden="true" />
+        <h3 className="text-base font-semibold text-foreground mb-2">No recent activity</h3>
+        <p className="text-sm text-muted-foreground max-w-sm">
           Your AI&apos;s actions — new leads, bookings, and notifications — appear here as calls come in.
         </p>
       </div>

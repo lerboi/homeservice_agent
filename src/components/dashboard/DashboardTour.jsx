@@ -62,16 +62,16 @@ export default function DashboardTour({ run, onFinish }) {
       }}
       styles={{
         options: {
-          primaryColor: '#C2410C',
-          backgroundColor: '#FFFFFF',
-          textColor: '#0F172A',
+          primaryColor: 'var(--brand-accent)',
+          backgroundColor: 'hsl(var(--popover))',
+          textColor: 'hsl(var(--popover-foreground))',
           zIndex: 9999,
         },
         buttonNext: {
-          backgroundColor: '#C2410C',
+          backgroundColor: 'var(--brand-accent)',
         },
         buttonBack: {
-          color: '#475569',
+          color: 'hsl(var(--muted-foreground))',
         },
       }}
       callback={handleCallback}

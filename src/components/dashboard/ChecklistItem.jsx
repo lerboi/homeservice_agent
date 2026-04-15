@@ -51,17 +51,17 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
       initial={prefersReduced ? { opacity: 0 } : { opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15, ease: 'easeOut' }}
-      className="flex items-start gap-3 py-3 px-1 border-b border-stone-100 last:border-b-0"
+      className="flex items-start gap-3 py-3 px-1 border-b border-border last:border-b-0"
     >
       {/* Completion icon */}
       {isComplete ? (
         <CheckCircle2
-          className="h-5 w-5 text-[#C2410C] shrink-0 mt-0.5"
+          className="h-5 w-5 text-[var(--brand-accent)] shrink-0 mt-0.5"
           aria-hidden="true"
         />
       ) : (
         <Circle
-          className="h-5 w-5 text-stone-300 shrink-0 mt-0.5"
+          className="h-5 w-5 text-muted-foreground/40 shrink-0 mt-0.5"
           aria-hidden="true"
         />
       )}
@@ -71,24 +71,24 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={`text-sm leading-normal ${
-              isComplete ? 'text-[#475569] line-through' : 'text-[#0F172A]'
+              isComplete ? 'text-muted-foreground line-through' : 'text-foreground'
             }`}
           >
             {item.title}
           </span>
           {item.required ? (
-            <Badge className="bg-[#C2410C]/10 text-[#C2410C] border border-[#C2410C]/20 font-normal text-xs tracking-wide uppercase leading-[1.4]">
+            <Badge className="bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] border border-[var(--brand-accent)]/20 font-normal text-xs tracking-wide uppercase leading-[1.4]">
               Required
             </Badge>
           ) : (
-            <Badge className="bg-stone-100 text-stone-600 border border-stone-200 font-normal text-xs tracking-wide uppercase leading-[1.4]">
+            <Badge className="bg-muted text-muted-foreground border border-border font-normal text-xs tracking-wide uppercase leading-[1.4]">
               Recommended
             </Badge>
           )}
         </div>
 
         {item.description && (
-          <p className="text-sm text-[#475569] leading-normal mt-1">
+          <p className="text-sm text-muted-foreground leading-normal mt-1">
             {item.description}
           </p>
         )}
@@ -99,7 +99,7 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
           {!isComplete && item.href && (
             <Link
               href={item.href}
-              className={`${btn.primary} inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1`}
+              className={`${btn.primary} inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1`}
               aria-label={`${primaryLabel}: ${item.title}`}
             >
               {primaryLabel}
@@ -111,7 +111,7 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
           <button
             type="button"
             onClick={() => onMarkDone?.(item.id, !(isComplete && isOverridden))}
-            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-md text-sm text-[#475569] hover:text-[#0F172A] hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             aria-label={
               isComplete && isOverridden
                 ? `Unmark ${item.title} as done`
@@ -127,7 +127,7 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
             <button
               type="button"
               onClick={() => onDismiss?.(item.id)}
-              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-stone-400 hover:text-[#475569] hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
               aria-label={`Dismiss ${item.title}`}
             >
               <X className="h-4 w-4" aria-hidden="true" />

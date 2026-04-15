@@ -25,9 +25,9 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { ContactCard } from '@/components/dashboard/ContactCard';
+import { btn } from '@/lib/design-tokens';
 
 // Per-urgency escalation mapping — static config per RESEARCH.md
-// Urgency toggles are display-only indicators (not persisted to DB)
 function getUrgencyEscalation(t) {
   return [
     {
@@ -50,14 +50,13 @@ function getUrgencyEscalation(t) {
       urgency: 'routine',
       label: t('escalation.routine_label'),
       description: t('escalation.routine_desc'),
-      borderClass: 'border-l-4 border-stone-300',
+      borderClass: 'border-l-4 border-border',
       defaultEnabled: false,
       locked: false,
     },
   ];
 }
 
-// A blank contact object used when adding a new contact
 let _newContactIdCounter = -1;
 function makeNewContact() {
   return {
@@ -73,7 +72,6 @@ function makeNewContact() {
   };
 }
 
-// SortableContactWrapper — applies useSortable and passes drag props to ContactCard
 function SortableContactWrapper({ contact, ...rest }) {
   const {
     attributes,
@@ -161,7 +159,6 @@ export function EscalationChainSection() {
   }
 
   async function handleUpdateContact(id, formData) {
-    // New contact being saved via POST
     if (isAddingNew && newContact && id === newContact.id) {
       try {
         const res = await fetch('/api/escalation-contacts', {
@@ -184,7 +181,6 @@ export function EscalationChainSection() {
       return;
     }
 
-    // Existing contact update via PUT
     try {
       const res = await fetch('/api/escalation-contacts', {
         method: 'PUT',
@@ -242,8 +238,6 @@ export function EscalationChainSection() {
     setEditingId(null);
   }
 
-  // ─── Loading state ──────────────────────────────────────────────────────────
-
   function SkeletonRows() {
     return (
       <div className="space-y-2">
@@ -254,20 +248,18 @@ export function EscalationChainSection() {
     );
   }
 
-  // ─── Empty state ────────────────────────────────────────────────────────────
-
   function EmptyState() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Phone className="h-12 w-12 text-stone-300 mb-4" />
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-2">
+        <Phone className="h-12 w-12 text-muted-foreground/30 mb-4" />
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           {t('escalation.empty_heading')}
         </h2>
-        <p className="text-base text-[#475569] mb-6 max-w-sm">
+        <p className="text-base text-muted-foreground mb-6 max-w-sm">
           {t('escalation.empty_body')}
         </p>
         <Button
-          className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+          className={btn.primary}
           onClick={() => handleAddClick()}
         >
           {t('escalation.empty_cta')}
@@ -276,12 +268,10 @@ export function EscalationChainSection() {
     );
   }
 
-  // Combine persisted contacts + new contact being added
   const allContacts = isAddingNew && newContact
     ? [...contacts, newContact]
     : contacts;
 
-  // IDs used for SortableContext — only persisted contacts are sortable
   const sortableIds = contacts.map((c) => c.id);
 
   const showContactList = !loading && (contacts.length > 0 || isAddingNew);
@@ -291,18 +281,18 @@ export function EscalationChainSection() {
     <div>
       {/* Per-urgency mapping rows */}
       <div className="space-y-3 mb-6">
-        <h3 className="text-sm font-semibold text-[#475569]">
+        <h3 className="text-sm font-semibold text-muted-foreground">
           {t('escalation.urgency_heading')}
         </h3>
         {URGENCY_ESCALATION.map((row) => (
           <div
             key={row.urgency}
-            className={`flex items-center justify-between p-3 rounded-lg bg-white border border-stone-200 ${row.borderClass}`}
+            className={`flex items-center justify-between p-3 rounded-lg bg-card border border-border ${row.borderClass}`}
           >
             <div>
-              <span className="font-medium text-[#0F172A]">{row.label}</span>
+              <span className="font-medium text-foreground">{row.label}</span>
               <p
-                className="text-sm text-[#475569]"
+                className="text-sm text-muted-foreground"
                 id={`${row.urgency}-desc`}
               >
                 {row.description}
@@ -319,7 +309,6 @@ export function EscalationChainSection() {
 
       <Separator className="my-4" />
 
-      {/* Contact chain or empty state */}
       {loading && <SkeletonRows />}
       {showEmptyState && <EmptyState />}
 
@@ -335,7 +324,6 @@ export function EscalationChainSection() {
           >
             <div className="space-y-2" role="list" aria-label="Escalation contacts">
               {allContacts.map((contact) => {
-                // New (unsaved) contact: not sortable, render ContactCard directly
                 if (isAddingNew && newContact && contact.id === newContact.id) {
                   return (
                     <ContactCard
@@ -385,7 +373,7 @@ export function EscalationChainSection() {
             {t('escalation.add_contact')}
           </Button>
           <Button
-            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className={btn.primary}
             disabled={!hasChanges || isSaving}
             onClick={handleSaveChain}
           >

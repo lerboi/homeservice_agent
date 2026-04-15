@@ -35,7 +35,7 @@ function NavLink({ item, pathname }) {
       className={`
         flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
         ${active
-          ? 'bg-white/[0.06] text-white border-l-2 border-[#C2410C] ml-0 pl-[10px]'
+          ? 'bg-white/[0.06] text-white border-l-2 border-[var(--brand-accent)] ml-0 pl-[10px]'
           : 'text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px]'
         }
       `}
@@ -74,7 +74,7 @@ function ThemeToggleButton() {
           type="button"
           onClick={() => setTheme(getNextTheme(current))}
           aria-label={getToggleAriaLabel(current)}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A]"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-white/60 hover:bg-white/[0.04] hover:text-white/80 border-l-2 border-transparent ml-0 pl-[10px] w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sidebar-bg)]"
         >
           <Icon className="h-4 w-4 shrink-0" />
           {getToggleLabel(current)}
@@ -159,7 +159,7 @@ export default function DashboardSidebar() {
     <>
       {/* Desktop sidebar */}
       <aside
-        className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex-col bg-[#0F172A] z-30 overflow-hidden"
+        className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-60 lg:flex-col bg-[var(--sidebar-bg)] z-30 overflow-hidden"
         data-tour="sidebar-nav"
       >
         <GridTexture variant="dark" />
@@ -179,7 +179,7 @@ export default function DashboardSidebar() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-[#C2410C] hover:bg-[#B53B0A]">
+            <AlertDialogAction onClick={handleLogout} className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)]">
               Log Out
             </AlertDialogAction>
           </AlertDialogFooter>

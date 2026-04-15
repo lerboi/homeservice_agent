@@ -108,53 +108,53 @@ export default function NotificationPreferences() {
       <div className="hidden sm:grid sm:grid-cols-[1fr_72px_72px] items-center gap-2 px-3 pb-1">
         <div />
         <div className="flex flex-col items-center gap-0.5">
-          <MessageSquare className="size-4 text-[#475569]" />
-          <span className="text-[11px] font-medium text-[#475569] uppercase tracking-wide">SMS</span>
+          <MessageSquare className="size-4 text-muted-foreground" />
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">SMS</span>
         </div>
         <div className="flex flex-col items-center gap-0.5">
-          <Mail className="size-4 text-[#475569]" />
-          <span className="text-[11px] font-medium text-[#475569] uppercase tracking-wide">Email</span>
+          <Mail className="size-4 text-muted-foreground" />
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Email</span>
         </div>
       </div>
 
       {/* Outcome rows */}
-      <div className="rounded-xl border border-stone-200/60 divide-y divide-stone-100 overflow-hidden">
+      <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
         {OUTCOME_ROWS.map((row) => {
           const outcomePrefs = prefs[row.key] || { sms: true, email: true };
           return (
             <div
               key={row.key}
-              className="flex flex-col sm:grid sm:grid-cols-[1fr_72px_72px] items-start sm:items-center gap-3 sm:gap-2 px-4 py-4 bg-white"
+              className="flex flex-col sm:grid sm:grid-cols-[1fr_72px_72px] items-start sm:items-center gap-3 sm:gap-2 px-4 py-4 bg-card"
             >
               {/* Label */}
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-stone-50 shrink-0">
-                  <row.Icon className="size-[18px] text-[#475569]" />
+                <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-muted shrink-0">
+                  <row.Icon className="size-[18px] text-muted-foreground" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#0F172A]">{row.label}</p>
-                  <p className="text-xs text-[#475569] truncate">{row.description}</p>
+                  <p className="text-sm font-medium text-foreground">{row.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{row.description}</p>
                 </div>
               </div>
 
               {/* Toggles — mobile: horizontal row with labels, desktop: aligned to columns */}
               <div className="flex items-center gap-5 sm:contents pl-12 sm:pl-0">
                 <label className="flex items-center gap-2 sm:justify-center cursor-pointer">
-                  <span className="text-xs text-[#475569] sm:hidden">SMS</span>
+                  <span className="text-xs text-muted-foreground sm:hidden">SMS</span>
                   <Switch
                     checked={outcomePrefs.sms}
                     onCheckedChange={() => handleToggle(row.key, 'sms')}
                     disabled={saving}
-                    className="data-[state=checked]:bg-[#C2410C]"
+                    className="data-[state=checked]:bg-[var(--brand-accent)]"
                   />
                 </label>
                 <label className="flex items-center gap-2 sm:justify-center cursor-pointer">
-                  <span className="text-xs text-[#475569] sm:hidden">Email</span>
+                  <span className="text-xs text-muted-foreground sm:hidden">Email</span>
                   <Switch
                     checked={outcomePrefs.email}
                     onCheckedChange={() => handleToggle(row.key, 'email')}
                     disabled={saving}
-                    className="data-[state=checked]:bg-[#C2410C]"
+                    className="data-[state=checked]:bg-[var(--brand-accent)]"
                   />
                 </label>
               </div>
@@ -165,7 +165,7 @@ export default function NotificationPreferences() {
 
       {/* Saving indicator */}
       {saving && (
-        <div className="flex items-center gap-2 text-xs text-[#475569]">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
           Saving...
         </div>

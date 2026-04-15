@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import RecordPaymentDialog from './RecordPaymentDialog';
+import { btn } from '@/lib/design-tokens';
 
 function formatCurrency(value) {
   return Number(value).toLocaleString('en-US', {
@@ -96,20 +97,20 @@ export default function PaymentLog({ invoiceId, invoiceTotal, initialPayments, o
     <div className="space-y-4">
       {/* Balance display */}
       <div className="space-y-1">
-        <div className="flex justify-between text-sm text-stone-600">
+        <div className="flex justify-between text-sm text-muted-foreground">
           <span>Total</span>
           <span>${formatCurrency(total)}</span>
         </div>
-        <div className="flex justify-between text-sm text-stone-600">
+        <div className="flex justify-between text-sm text-muted-foreground">
           <span>Payments</span>
           <span>-${formatCurrency(paymentsSum)}</span>
         </div>
-        <div className="border-t border-stone-200 pt-2 mt-1">
+        <div className="border-t border-border pt-2 mt-1">
           <div className="flex justify-between items-baseline">
-            <span className="text-sm font-medium text-stone-700">Balance Due</span>
+            <span className="text-sm font-medium text-foreground">Balance Due</span>
             <span
               className={`text-[28px] font-semibold ${
-                balance > 0 ? 'text-[#C2410C]' : 'text-emerald-600'
+                balance > 0 ? 'text-[var(--brand-accent)]' : 'text-emerald-600'
               }`}
             >
               ${formatCurrency(balance)}
@@ -121,7 +122,7 @@ export default function PaymentLog({ invoiceId, invoiceTotal, initialPayments, o
       {/* Record Payment button */}
       <Button
         onClick={() => setDialogOpen(true)}
-        className="w-full bg-[#C2410C] hover:bg-[#9a3409] text-white"
+        className={`w-full ${btn.primary}`}
       >
         Record Payment
       </Button>
@@ -141,21 +142,21 @@ export default function PaymentLog({ invoiceId, invoiceTotal, initialPayments, o
             <Skeleton className="h-10 w-full" />
           </>
         ) : !payments || payments.length === 0 ? (
-          <p className="text-stone-400 italic text-sm text-center py-4">No payments recorded</p>
+          <p className="text-muted-foreground italic text-sm text-center py-4">No payments recorded</p>
         ) : (
           <TooltipProvider>
             {payments.map((payment) => (
               <div
                 key={payment.id}
-                className="flex items-center justify-between py-2 px-3 rounded-md bg-stone-50 border border-stone-100"
+                className="flex items-center justify-between py-2 px-3 rounded-md bg-muted border border-border"
               >
-                <span className="text-sm text-stone-700 min-w-[100px]">
+                <span className="text-sm text-foreground min-w-[100px]">
                   {formatDate(payment.payment_date)}
                 </span>
-                <span className="text-sm font-medium text-stone-900">
+                <span className="text-sm font-medium text-foreground">
                   ${formatCurrency(payment.amount)}
                 </span>
-                <span className="text-sm text-stone-500 flex-1 text-right mx-3 truncate">
+                <span className="text-sm text-muted-foreground flex-1 text-right mx-3 truncate">
                   {payment.note || ''}
                 </span>
                 <AlertDialog>
@@ -163,7 +164,7 @@ export default function PaymentLog({ invoiceId, invoiceTotal, initialPayments, o
                     <TooltipTrigger asChild>
                       <AlertDialogTrigger asChild>
                         <button
-                          className="text-stone-400 hover:text-red-500 transition-colors p-1"
+                          className="text-muted-foreground hover:text-red-500 transition-colors p-1"
                           aria-label="Remove payment"
                         >
                           <Trash2 className="h-4 w-4" />

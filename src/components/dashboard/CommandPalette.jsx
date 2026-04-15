@@ -117,10 +117,10 @@ export default function CommandPalette() {
 
       {/* Dialog */}
       <div className="relative flex justify-center pt-[15vh] px-4">
-        <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl border border-stone-200 overflow-hidden">
+        <div className="w-full max-w-lg bg-popover rounded-xl shadow-2xl border border-border overflow-hidden">
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 border-b border-stone-100">
-            <Search className="size-4 text-stone-400 shrink-0" />
+          <div className="flex items-center gap-3 px-4 border-b border-border">
+            <Search className="size-4 text-muted-foreground shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -128,10 +128,10 @@ export default function CommandPalette() {
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Search leads, calls, invoices, estimates..."
-              className="flex-1 h-12 text-sm text-[#0F172A] placeholder:text-stone-400 bg-transparent outline-none"
+              className="flex-1 h-12 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
             />
-            {loading && <Loader2 className="size-4 text-stone-400 animate-spin shrink-0" />}
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-stone-200 bg-stone-50 text-[10px] text-stone-400 font-mono">
+            {loading && <Loader2 className="size-4 text-muted-foreground animate-spin shrink-0" />}
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] text-muted-foreground font-mono">
               ESC
             </kbd>
           </div>
@@ -145,7 +145,7 @@ export default function CommandPalette() {
                   const Icon = TYPE_ICONS[group.type] || Search;
                   return (
                     <div key={group.type}>
-                      <p className="px-4 pt-2 pb-1 text-[10px] font-medium text-stone-400 uppercase tracking-wider">
+                      <p className="px-4 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                         {group.label}
                       </p>
                       {group.items.map((item) => {
@@ -158,14 +158,14 @@ export default function CommandPalette() {
                             onClick={() => navigate(item.href)}
                             onMouseEnter={() => setSelectedIndex(currentIndex)}
                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                              isSelected ? 'bg-stone-100' : 'hover:bg-stone-50'
+                              isSelected ? 'bg-accent' : 'hover:bg-accent/50'
                             }`}
                           >
-                            <Icon className="size-4 text-stone-400 shrink-0" />
+                            <Icon className="size-4 text-muted-foreground shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-[#0F172A] truncate">{item.title}</p>
+                              <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                               {item.subtitle && (
-                                <p className="text-xs text-stone-500 truncate">{item.subtitle}</p>
+                                <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                               )}
                             </div>
                           </button>
@@ -181,20 +181,20 @@ export default function CommandPalette() {
           {/* Empty state */}
           {!loading && query.length >= 2 && results.length === 0 && (
             <div className="py-8 text-center">
-              <p className="text-sm text-stone-400">No results for &ldquo;{query}&rdquo;</p>
+              <p className="text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</p>
             </div>
           )}
 
           {/* Footer hint */}
-          <div className="flex items-center justify-between px-4 py-2 border-t border-stone-100 bg-stone-50/50">
-            <span className="text-[10px] text-stone-400">
-              <kbd className="px-1 py-0.5 rounded border border-stone-200 bg-white text-[10px] font-mono mr-1">&uarr;&darr;</kbd>
+          <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/50">
+            <span className="text-[10px] text-muted-foreground">
+              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&uarr;&darr;</kbd>
               navigate
-              <kbd className="px-1 py-0.5 rounded border border-stone-200 bg-white text-[10px] font-mono ml-2 mr-1">&crarr;</kbd>
+              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono ml-2 mr-1">&crarr;</kbd>
               open
             </span>
-            <span className="text-[10px] text-stone-400">
-              <kbd className="px-1 py-0.5 rounded border border-stone-200 bg-white text-[10px] font-mono mr-1">&#8984;K</kbd>
+            <span className="text-[10px] text-muted-foreground">
+              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&#8984;K</kbd>
               toggle
             </span>
           </div>

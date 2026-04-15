@@ -14,13 +14,13 @@ import {
 
 const URGENCY_BORDER = {
   emergency: 'border-l-red-500',
-  routine: 'border-l-stone-300',
+  routine: 'border-l-border',
   urgent: 'border-l-amber-500',
 };
 
 const URGENCY_BADGE = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
-  routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
+  routine: 'bg-muted text-muted-foreground hover:bg-muted',
   urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
 };
 
@@ -53,11 +53,11 @@ const TRIAGE_LABEL = {
 };
 
 const INVOICE_BADGE_STYLE = {
-  draft: 'bg-stone-100 text-stone-600 border-stone-200',
+  draft: 'bg-muted text-muted-foreground border-border',
   sent: 'bg-blue-50 text-blue-700 border-blue-200',
   paid: 'bg-green-50 text-green-700 border-green-200',
   overdue: 'bg-red-50 text-red-700 border-red-200',
-  void: 'bg-stone-50 text-stone-400 border-stone-200',
+  void: 'bg-muted text-muted-foreground/60 border-border',
   partially_paid: 'bg-violet-50 text-violet-700 border-violet-200',
 };
 
@@ -112,7 +112,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
         transition-all duration-200
         border-l-4 ${borderClass}
         min-h-[72px]
-        ${selected ? 'border-[#C2410C] bg-[#C2410C]/[0.04] ring-2 ring-[#C2410C]/20' : 'bg-white border-stone-200/60'}
+        ${selected ? 'border-[var(--brand-accent)] bg-[var(--selected-fill)] ring-2 ring-[var(--brand-accent)]/20' : 'bg-card border-border'}
         ${selectable ? 'cursor-pointer' : ''}
       `}
       onClick={handleCardClick}
@@ -136,14 +136,14 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
         <div className="min-w-0 w-44 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className="text-sm font-semibold text-[#0F172A] truncate">{displayName}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
             </TooltipTrigger>
             <TooltipContent side="top"><p>{displayName}</p></TooltipContent>
           </Tooltip>
           <div className="flex items-center gap-1.5 mt-0.5">
             <a
               href={`tel:${lead.from_number}`}
-              className="text-xs text-[#C2410C] hover:text-[#9A3412] transition-colors truncate"
+              className="text-xs text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] transition-colors truncate"
               onClick={(e) => e.stopPropagation()}
             >
               {lead.from_number || '—'}
@@ -151,7 +151,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             {lead.email && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Mail className="h-3 w-3 text-stone-400 flex-shrink-0" />
+                  <Mail className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 </TooltipTrigger>
                 <TooltipContent side="top"><p>{lead.email}</p></TooltipContent>
               </Tooltip>
@@ -165,7 +165,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             {lead.job_type && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-700 px-2 py-0.5 text-xs font-medium shrink-0 max-w-[140px] truncate">
+                  <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-xs font-medium shrink-0 max-w-[140px] truncate">
                     {lead.job_type}
                   </span>
                 </TooltipTrigger>
@@ -187,13 +187,13 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
           {address && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <p className="text-xs text-[#475569] truncate mt-1 max-w-[260px]">{address}</p>
+                <p className="text-xs text-muted-foreground truncate mt-1 max-w-[260px]">{address}</p>
               </TooltipTrigger>
               <TooltipContent side="top"><p>{address}</p></TooltipContent>
             </Tooltip>
           )}
           {firstCall?.urgency_classification && (
-            <p className="text-xs text-[#475569]/70 mt-0.5">
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
               {TRIAGE_LABEL[firstCall.urgency_classification] || firstCall.urgency_classification}
             </p>
           )}
@@ -206,17 +206,17 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
               {STATUS_LABEL[status] || status}
             </Badge>
             {invoiceStatus && (
-              <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${INVOICE_BADGE_STYLE[invoiceStatus] || 'bg-stone-100 text-stone-500 border-stone-200'}`}>
+              <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${INVOICE_BADGE_STYLE[invoiceStatus] || 'bg-muted text-muted-foreground border-border'}`}>
                 <FileText className="h-2.5 w-2.5" />
                 {INVOICE_LABEL[invoiceStatus] || invoiceStatus}
               </span>
             )}
           </div>
-          <span className="text-xs text-[#475569]">{getRelativeTime(lead.created_at)}</span>
+          <span className="text-xs text-muted-foreground">{getRelativeTime(lead.created_at)}</span>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs text-[#475569] hover:text-[#0F172A] hover:bg-stone-100"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
             onClick={() => onView?.(lead.id)}
             aria-label={`View lead from ${lead.caller_name || 'unknown caller'}`}
           >
@@ -240,13 +240,13 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
                 className="shrink-0"
               />
             )}
-            <p className="text-sm font-semibold text-[#0F172A] truncate">{displayName}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <Badge className={`${statusBadgeClass} text-xs`}>
               {STATUS_LABEL[status] || status}
             </Badge>
-            <span className="text-[10px] text-[#475569]">{getRelativeTime(lead.created_at)}</span>
+            <span className="text-[10px] text-muted-foreground">{getRelativeTime(lead.created_at)}</span>
           </div>
         </div>
         {/* Row 2: phone + job type + urgency + view */}
@@ -254,13 +254,13 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
           <div className="flex items-center gap-2 min-w-0">
             <a
               href={`tel:${lead.from_number}`}
-              className="text-xs text-[#C2410C] hover:text-[#9A3412] transition-colors truncate shrink-0"
+              className="text-xs text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] transition-colors truncate shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
               {lead.from_number || '—'}
             </a>
             {lead.job_type && (
-              <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-700 px-2 py-0.5 text-[10px] font-medium truncate max-w-[100px]">
+              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium truncate max-w-[100px]">
                 {lead.job_type}
               </span>
             )}
@@ -279,7 +279,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs text-[#475569] hover:text-[#0F172A] hover:bg-stone-100 shrink-0"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent shrink-0"
             onClick={() => onView?.(lead.id)}
             aria-label={`View lead from ${lead.caller_name || 'unknown caller'}`}
           >

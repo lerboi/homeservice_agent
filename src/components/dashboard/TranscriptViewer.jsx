@@ -28,7 +28,7 @@ export default function TranscriptViewer({ transcriptStructured, transcriptText 
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex items-center gap-1.5 text-sm font-semibold text-[#0F172A] hover:text-[#0F172A]/80 transition-colors duration-150"
+        className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-foreground/80 transition-colors duration-150"
         aria-expanded={expanded}
         aria-controls="transcript-content"
       >
@@ -46,11 +46,11 @@ export default function TranscriptViewer({ transcriptStructured, transcriptText 
           id="transcript-content"
           role="log"
           aria-label="Call transcript"
-          className="mt-3 max-h-[300px] overflow-y-auto rounded-lg border border-stone-200/60 bg-white"
+          className="mt-3 max-h-[300px] overflow-y-auto rounded-lg border border-border bg-card"
         >
           {transcriptStructured && transcriptStructured.length > 0 ? (
             // Speaker-labeled structured turns
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-border">
               {transcriptStructured.map((turn, index) => {
                 const isCaller = turn.role === 'user';
                 const label = isCaller ? 'Caller' : 'AI';
@@ -58,15 +58,15 @@ export default function TranscriptViewer({ transcriptStructured, transcriptText 
                 return (
                   <div
                     key={index}
-                    className={`px-3 py-2.5 ${index % 2 === 0 ? 'bg-stone-50' : 'bg-white'}`}
+                    className={`px-3 py-2.5 ${index % 2 === 0 ? 'bg-muted' : 'bg-card'}`}
                   >
                     <span
-                      className="text-[12px] font-semibold text-[#475569] uppercase tracking-wide block mb-0.5"
+                      className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide block mb-0.5"
                       aria-label={ariaLabel}
                     >
                       {label}
                     </span>
-                    <p className="text-sm text-[#0F172A]/80 leading-relaxed">
+                    <p className="text-sm text-foreground/80 leading-relaxed">
                       {turn.content}
                     </p>
                   </div>
@@ -75,7 +75,7 @@ export default function TranscriptViewer({ transcriptStructured, transcriptText 
             </div>
           ) : (
             // Plain text fallback
-            <pre className="p-3 text-sm text-[#0F172A]/80 whitespace-pre-wrap font-sans leading-relaxed">
+            <pre className="p-3 text-sm text-foreground/80 whitespace-pre-wrap font-sans leading-relaxed">
               {transcriptText}
             </pre>
           )}

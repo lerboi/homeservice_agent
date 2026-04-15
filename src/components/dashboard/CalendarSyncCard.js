@@ -54,8 +54,8 @@ function SyncStatusDot({ status }) {
       hideLabel: true,
     },
     syncing: {
-      dotClass: 'bg-[#C2410C] animate-pulse',
-      textClass: 'text-[#C2410C]',
+      dotClass: 'bg-[var(--brand-accent)] animate-pulse',
+      textClass: 'text-[var(--brand-accent)]',
       label: 'Syncing...',
     },
     error: {
@@ -119,8 +119,8 @@ function CalendarProviderRow({
             <CalendarDays className={`h-4 w-4 ${config.iconColor}`} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
-            <p className="text-xs text-stone-400">
+            <span className="text-sm font-medium text-foreground">{config.label}</span>
+            <p className="text-xs text-muted-foreground">
               {blockedByOther
                 ? `Disconnect ${otherLabel} first to switch`
                 : 'Not connected'}
@@ -154,9 +154,9 @@ function CalendarProviderRow({
             <CalendarDays className={`h-4 w-4 ${config.iconColor}`} aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <span className="text-sm font-medium text-[#0F172A]">{config.label}</span>
+            <span className="text-sm font-medium text-foreground">{config.label}</span>
             {data.calendar_name && (
-              <p className="text-xs text-[#475569] truncate">{data.calendar_name}</p>
+              <p className="text-xs text-muted-foreground truncate">{data.calendar_name}</p>
             )}
           </div>
         </div>
@@ -165,14 +165,14 @@ function CalendarProviderRow({
 
       <div className="flex items-center gap-2 mt-2 pl-9">
         {data.last_synced_at && (
-          <span className="text-[11px] text-stone-400 mr-auto">
+          <span className="text-[11px] text-muted-foreground mr-auto">
             Synced {formatDistanceToNow(new Date(data.last_synced_at), { addSuffix: true })}
           </span>
         )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <button
-              className="text-[11px] text-stone-400 hover:text-red-600 transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-red-600 transition-colors"
               disabled={isDisconnecting}
             >
               {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
@@ -308,8 +308,8 @@ export default function CalendarSyncCard() {
   if (loading) {
     return (
       <section className="space-y-3">
-        <div className="h-10 rounded-lg animate-pulse bg-[#F5F5F4]" />
-        <div className="h-10 rounded-lg animate-pulse bg-[#F5F5F4]" />
+        <div className="h-10 rounded-lg animate-pulse bg-muted" />
+        <div className="h-10 rounded-lg animate-pulse bg-muted" />
       </section>
     );
   }
@@ -378,7 +378,7 @@ export default function CalendarSyncCard() {
         </Alert>
       )}
 
-      <div className="divide-y divide-stone-100">
+      <div className="divide-y divide-border">
         <CalendarProviderRow
           provider="google"
           data={providers.google}
