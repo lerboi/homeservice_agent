@@ -58,7 +58,7 @@ function IntegrationLogo({ slug }) {
   switch (slug) {
     case 'google-calendar':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <rect x="8" y="8" width="32" height="32" rx="4" fill="#FFFFFF" stroke="#DADCE0" />
           <path d="M8 8h32v6H8z" fill="#4285F4" />
           <text x="24" y="31" textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize="14" fontWeight="700" fill="#4285F4">31</text>
@@ -68,7 +68,7 @@ function IntegrationLogo({ slug }) {
       );
     case 'outlook':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <rect x="4" y="12" width="24" height="26" rx="2" fill="#0078D4" />
           <text x="16" y="32" textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize="18" fontWeight="700" fill="#FFFFFF">O</text>
           <rect x="28" y="14" width="16" height="10" fill="#28A8EA" />
@@ -78,28 +78,28 @@ function IntegrationLogo({ slug }) {
       );
     case 'jobber':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <circle cx="24" cy="24" r="20" fill="#0A8C5F" />
           <text x="24" y="32" textAnchor="middle" fontFamily="Georgia, serif" fontSize="24" fontWeight="700" fill="#FFFFFF" fontStyle="italic">J</text>
         </svg>
       );
     case 'housecall-pro':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <circle cx="24" cy="24" r="20" fill="#1B5FA3" />
           <path d="M24 12l10 9v13h-6v-7h-8v7h-6V21z" fill="#FFFFFF" />
         </svg>
       );
     case 'servicetitan':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <rect x="4" y="4" width="40" height="40" rx="8" fill="#0F172A" />
           <path d="M16 18h16v3h-6.5v12h-3V21H16z" fill="#D13B2E" />
         </svg>
       );
     case 'zapier':
       return (
-        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-12 md:h-12" aria-hidden="true">
+        <svg viewBox="0 0 48 48" className="w-11 h-11 md:w-16 md:h-16" aria-hidden="true">
           <circle cx="24" cy="24" r="20" fill="#FF4A00" />
           <path d="M24 11l1.5 9 9 1.5-9 1.5L24 32l-1.5-9L13.5 21.5l9-1.5z" fill="#FFFFFF" />
         </svg>
