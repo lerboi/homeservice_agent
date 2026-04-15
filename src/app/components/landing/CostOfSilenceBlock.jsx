@@ -4,7 +4,7 @@ import { AnimatedSection } from './AnimatedSection';
 
 export function CostOfSilenceBlock() {
   return (
-    <section id="cost-of-silence" className="bg-white py-20 md:py-28 px-6">
+    <section className="bg-white py-20 md:py-28 px-6">
       <AnimatedSection>
         <div className="relative z-[1] max-w-3xl mx-auto text-center">
           <div className="text-[14px] font-semibold text-[#F97316] tracking-wide uppercase mb-3">The cost of silence</div>

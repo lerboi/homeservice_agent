@@ -8,10 +8,8 @@ import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion
  * CSS STACKING:
  *   section bg (non-positioned) → SVG (absolute z-0) → content (relative z-1+)
  *
- * Phase 48.1 — wraps IntegrationsStrip + CostOfSilenceBlock + FeaturesCarousel.
- * Single sine wave spans the full wrapper top-to-bottom, with gentle crossings
- * at each child section boundary so the copper line reads as a connected
- * journey through the three sections rather than floating arbitrarily.
+ * Single sine wave starting from the Features section dot,
+ * drawing through SocialProof to the end. No wave in HowItWorks.
  */
 
 export function ScrollLinePath({ children }) {
@@ -27,17 +25,17 @@ export function ScrollLinePath({ children }) {
     const rect = el.getBoundingClientRect();
     const containerTop = rect.top + window.scrollY;
 
-    const topOf = (id, fallbackFrac) => {
-      const node = document.getElementById(id);
-      if (node) return node.getBoundingClientRect().top + window.scrollY - containerTop;
-      return h * fallbackFrac;
-    };
+    const featuresEl = document.getElementById('features');
+    const testimonialsEl = document.getElementById('testimonials');
 
-    const integrationsY = topOf('integrations', 0);
-    const costY = topOf('cost-of-silence', 0.33);
-    const featuresY = topOf('features', 0.66);
+    const featuresY = featuresEl
+      ? featuresEl.getBoundingClientRect().top + window.scrollY - containerTop
+      : h * 0.35;
+    const testimonialsY = testimonialsEl
+      ? testimonialsEl.getBoundingClientRect().top + window.scrollY - containerTop
+      : h * 0.65;
 
-    setDims({ w, h, integrationsY, costY, featuresY });
+    setDims({ w, h, featuresY, testimonialsY });
   }, []);
 
   useEffect(() => {
@@ -56,16 +54,14 @@ export function ScrollLinePath({ children }) {
     offset: ['start 0.85', 'end 0.5'],
   });
 
-  // Line begins at the top of the wrapper (IntegrationsStrip).
-  const startFrac = dims ? Math.max(dims.integrationsY / dims.h, 0) : 0;
-  // Features dot marks where the FeaturesCarousel begins — a highlight beat.
-  const featuresDotFrac = dims ? (dims.featuresY + 60) / dims.h : 0.66;
+  // Features dot marks where the line begins
+  const featuresDotFrac = dims ? (dims.featuresY + 60) / dims.h : 0.4;
 
-  // Single path: spans the full wrapper, driven by scroll progress.
-  const pathLength = useTransform(scrollYProgress, [startFrac, 1], [0, 1]);
+  // Single path: starts at Features dot, draws to scroll end
+  const pathLength = useTransform(scrollYProgress, [featuresDotFrac, 1], [0, 1]);
   const pathOpacity = useTransform(
     scrollYProgress,
-    [startFrac, Math.min(startFrac + 0.03, 1), 0.85, 0.95],
+    [featuresDotFrac, Math.min(featuresDotFrac + 0.03, 1), 0.85, 0.95],
     [0, 1, 1, 0.5]
   );
 
@@ -84,14 +80,14 @@ export function ScrollLinePath({ children }) {
   let featuresDotCy = 0;
 
   if (dims) {
-    const { w, h, integrationsY, costY, featuresY } = dims;
+    const { w, h, featuresY, testimonialsY } = dims;
     cx = w / 2;
     featuresDotCy = featuresY + 60;
     const waveAmp = Math.min(512 + 120, (w - 48) / 2);
 
-    // Wave spans wrapper top → bottom, crossing at each child section boundary
-    const startY = Math.max(integrationsY, 0);
-    const crossings = [costY, featuresY].filter((y) => y > startY && y < h);
+    // Single wave: starts at Features dot, ends at bottom
+    const startY = featuresY + 60;
+    const crossings = [testimonialsY].filter((y) => y > startY);
     wavePath = buildSineWave(cx, waveAmp, startY, h, crossings);
   }
 
