@@ -217,7 +217,7 @@ export default function BillingPage() {
       {/* Section 3: Billing Details */}
       <div className={`${card.base} p-6`}>
         <h2 className="text-xl font-semibold text-foreground mb-4">Billing Details</h2>
-        <div className="divide-y divide-stone-100">
+        <div className="divide-y divide-border">
           <div className="flex justify-between py-3">
             <span className="text-sm text-muted-foreground">{renewalLabel}</span>
             <span className="text-sm text-foreground font-medium">{renewalDate}</span>

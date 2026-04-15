@@ -9,7 +9,7 @@ export default function DashboardError({ error, reset }) {
       </p>
       <button
         onClick={reset}
-        className="px-4 py-2 text-sm font-medium text-white bg-[var(--brand-accent)] rounded-lg hover:bg-[#B53B0A] transition-colors"
+        className="px-4 py-2 text-sm font-medium text-[var(--brand-accent-fg)] bg-[var(--brand-accent)] rounded-lg hover:bg-[var(--brand-accent-hover)] transition-colors"
       >
         Try again
       </button>

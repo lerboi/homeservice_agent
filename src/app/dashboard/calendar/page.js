@@ -688,7 +688,7 @@ export default function CalendarPage() {
       {/* ── Calendar Card (full width) ───────────────────────────── */}
       <div className={`${card.base} p-0 overflow-hidden`}>
         {/* Calendar toolbar — row 1: navigation + view toggle */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-[#FAFAF9]">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-muted">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous">
               <ChevronLeft className="h-4 w-4" />

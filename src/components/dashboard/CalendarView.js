@@ -751,7 +751,7 @@ export default function CalendarView({
       <div className={gridClass}>
 
         {/* Column headers */}
-        <div className="border-b border-border bg-[#FAFAF9] sticky top-0 z-30" />
+        <div className="border-b border-border bg-muted sticky top-0 z-30" />
         {columns.map((day, i) => {
           const isToday = isSameDay(day, today);
           const config = getDayConfig(day, workingHours);
@@ -762,7 +762,7 @@ export default function CalendarView({
           return (
             <div
               key={i}
-              className={`border-b border-l border-border py-2 sticky top-0 z-30 ${isSingleDay ? 'px-3 flex items-center justify-between' : 'text-center py-2.5'} ${isToday ? 'bg-[#FFF7ED]' : 'bg-[#FAFAF9]'}`}
+              className={`border-b border-l border-border py-2 sticky top-0 z-30 ${isSingleDay ? 'px-3 flex items-center justify-between' : 'text-center py-2.5'} ${isToday ? 'bg-[var(--selected-fill)]' : 'bg-muted'}`}
             >
               <div className={isSingleDay ? 'flex items-center gap-2.5' : ''}>
                 {isSingleDay ? (
@@ -771,7 +771,7 @@ export default function CalendarView({
                   </div>
                 ) : (
                   <>
-                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-muted-foreground/50' : 'text-[#94A3B8]'}`}>
+                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
                       {DAY_ABBREVS[day.getDay()]}
                       {isClosed && <span className="ml-1 text-[9px] normal-case tracking-normal font-medium text-muted-foreground/50">(Closed)</span>}
                     </div>
@@ -802,12 +802,12 @@ export default function CalendarView({
         {/* All-day events + all-day time blocks row */}
         {(allDayEvents.length > 0 || allDayBlocks.length > 0) && (
           <>
-            <div className="border-b border-border bg-[#FAFAF9] text-xs text-muted-foreground text-right pr-2 pt-2.5 font-medium">all&#x2011;day</div>
+            <div className="border-b border-border bg-muted text-xs text-muted-foreground text-right pr-2 pt-2.5 font-medium">all&#x2011;day</div>
             {columns.map((day, i) => {
               const dayAllDayEvents = getItemsForDay(day, allDayEvents);
               const dayAllDayBlocks = allDayBlocks.filter((b) => isSameDay(new Date(b.start_time), day));
               return (
-                <div key={i} className="border-b border-l border-border bg-[#FAFAF9]">
+                <div key={i} className="border-b border-l border-border bg-muted">
                   <div className="flex flex-wrap gap-1.5 px-2 py-2 min-h-[40px] items-center">
                     {dayAllDayBlocks.map((block) => (
                       <button

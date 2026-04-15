@@ -251,7 +251,7 @@ export default function AccountPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-[var(--brand-accent)] hover:bg-[#B53B0A]">
+            <AlertDialogAction onClick={handleLogout} className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)]">
               Sign out
             </AlertDialogAction>
           </AlertDialogFooter>

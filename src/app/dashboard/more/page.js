@@ -66,7 +66,7 @@ export default function MorePage() {
       </div>
 
       {/* Quick access — Invoices & Estimates (visible on mobile where they're not in bottom bar) */}
-      <div className={`${card.base} divide-y divide-stone-100 overflow-hidden mb-4 lg:hidden`}>
+      <div className={`${card.base} divide-y divide-border overflow-hidden mb-4 lg:hidden`}>
         {QUICK_ACCESS.map((item, i) => {
           const Icon = item.icon;
           return (
@@ -96,7 +96,7 @@ export default function MorePage() {
 
       {/* Settings */}
       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1 lg:hidden">Settings</h2>
-      <div className={`${card.base} divide-y divide-stone-100 overflow-hidden`}>
+      <div className={`${card.base} divide-y divide-border overflow-hidden`}>
         {MORE_ITEMS.map((item, i) => {
           const Icon = item.icon;
           return (
