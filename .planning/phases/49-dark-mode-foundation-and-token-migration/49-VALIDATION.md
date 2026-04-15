@@ -54,9 +54,9 @@ Because jsdom/RTL is not installed, visual behaviors rely on:
 
 ## Wave 0 Requirements
 
-- [ ] `tests/dark-mode/no-hex-drift.test.js` — grep asserts that migrated files contain no `#[0-9a-fA-F]{3,8}` outside allowed token definitions
-- [ ] `tests/dark-mode/design-tokens.test.js` — pure function tests for any token resolver helpers
-- [ ] `tests/dark-mode/custom-variant.test.js` — grep asserts `globals.css` uses the fixed `@custom-variant dark (&:where(.dark, .dark *))` selector
+- [ ] `tests/unit/dark-mode-hex-audit.test.js` — grep asserts migrated dashboard files contain no disallowed hardcoded hex (AnalyticsCharts.jsx + CalendarView.js excluded — Phase 50 scope)
+- [ ] `tests/unit/dark-mode-infra.test.js` — asserts `globals.css` uses fixed `@custom-variant dark (&:where(.dark, .dark *))` selector, ThemeProvider wired without `disableTransitionOnChange`, 150ms body transition present, `suppressHydrationWarning` on `<html>` only
+- [ ] `tests/unit/dark-mode-toggle-logic.test.js` — pure function tests for any theme resolver helpers
 - [ ] Manual screenshot checklist file: `.planning/phases/49-dark-mode-foundation-and-token-migration/49-DARK-MODE-CHECKLIST.md` — rows for each surface (sidebar, top bar, content bg, bottom tab bar, impersonation banner, trial banner, LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet, status badges, urgency pills, LeadStatusPills)
 
 ---
