@@ -24,9 +24,9 @@ export default function OfflineBanner() {
   if (!isOffline) return null;
 
   return (
-    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-center gap-2">
-      <WifiOff className="size-4 text-amber-600" />
-      <p className="text-sm font-medium text-amber-800">
+    <div className="bg-muted border-b border-border px-4 py-2 flex items-center justify-center gap-2">
+      <WifiOff className="size-4 text-muted-foreground" />
+      <p className="text-sm font-medium text-muted-foreground">
         You&apos;re offline — some features may be unavailable
       </p>
     </div>
