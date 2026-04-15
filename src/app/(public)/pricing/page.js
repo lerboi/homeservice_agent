@@ -69,7 +69,7 @@ export default function PricingPage() {
       </section>
 
       {/* ROI Calculator (warm light) */}
-      <section className="relative bg-[#EDEAE7] py-16">
+      <section id="calculator" className="relative bg-[#EDEAE7] py-16">
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-[#EDEAE7] to-[#F5F5F4] pointer-events-none" />
         <div className="relative max-w-6xl mx-auto px-6">
           <ROICalculator />
