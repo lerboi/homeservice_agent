@@ -580,7 +580,8 @@ Plans:
 ### v5.0 Phase Checklist
 
 - [ ] **Phase 47: Landing -- Objection-Busting, Repositioning, and Landing Polish** - Objection-busting sections (FAQ accordion, voice quality proof, cost-of-inaction stat, 5-min setup strip, trust badges, identity block, revenue calculator, before/after strip, trade proof), repositioning copy (hero, FinalCTA, workflow strip, owner-control callout), landing animation/responsive polish
-- [x] **Phase 48: Dashboard Home Redesign** - Daily-ops hub (appointments, calls, leads, usage), redesigned setup checklist with grouped progress and auto-detection, integrated AI chat panel sharing history with ChatbotSheet, Help & Discoverability section, 375px responsive layout (completed 2026-04-14)
+- [x] **Phase 48: Dashboard Home Redesign** - Daily-ops hub (appointments, calls, leads, usage), redesigned setup checklist with grouped progress and auto-detection, integrated AI chat panel sharing history with ChatbotSheet, Help & Discoverability section, 375px responsive layout
+ (completed 2026-04-14)
 - [ ] **Phase 49: Dark Mode Foundation and Token Migration** - ThemeProvider wiring, theme toggle in sidebar, design token audit across all dashboard components, typography consolidation, layout/sidebar/banners/flyouts/badges dark mode
 - [ ] **Phase 50: Dark Mode -- Charts and Calendar** - Recharts dark mode via useTheme() conditional color props, CalendarView urgency color dark variants
 - [ ] **Phase 51: UI/UX Polish Pass** - Empty states for all list views, loading skeleton screens, focus-visible rings, error states with retry, async button loading states, stat card hover micro-interactions, AnimatePresence lead status transitions, CommandPalette audit, 375px content layout
@@ -637,17 +638,20 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Landing page total section count drops from 10+ to 7 or fewer — dense trust/repetition sections consolidated, FeaturesCarousel trimmed from 8 features to 4 core pillars, repeated feature-card sections removed
   2. Hero subtitle names a dollar-value pain ("Stop losing $1,000+ every time you miss a call") and primary CTA is a low-friction "Hear Voco in Action" audio-demo anchor rather than "Start My 5-Minute Setup"
-  3. A working Cost-of-Silence calculator (2 sliders: avg job value + missed calls per week) renders a live monthly-loss dollar output before any pricing section appears
+  3. A Cost-of-Silence stat block showing $260,400/year lost to missed calls renders above the first pricing section, with a 'Calculate yours →' link deep-linking to `/pricing#calculator` (scope override per phase 48.1 CONTEXT D-07 — the interactive calculator lives on the pricing page; the landing surface gets the static proof stat)
   4. Audio demo section is visible within one scroll from hero and presents real call samples (not only the existing input-driven HeroDemoBlock)
   5. Integrations strip appears above the fold or within first scroll, showing Google Calendar + Outlook Calendar as live integrations and Jobber + Housecall Pro + ServiceTitan + Zapier as "Coming Soon" — addresses the "I'll have to replace my CRM" objection pre-emptively
   6. Four trust-theme sections (IdentitySection, OwnerControlPullQuote, full PracticalObjectionsGrid, BeyondReceptionistSection) are consolidated into one "You Stay in Control" section; three strongest objection cards kept, others moved to an expandable disclosure
   7. All public-facing product mentions (page title, og:title, nav, footer, hero copy) use "Voco AI" consistently to disambiguate from Voco TV / Voco Studio / Voco Voice search results — codebase internal naming unchanged
   8. Landing page Lighthouse LCP remains under 2.5s; CLS under 0.1 (Phase 13 performance contract preserved)
   9. Zero dashboard changes, zero backend changes, zero new API routes — scope strictly limited to public landing surface + one client-side calculator widget
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 48.1 to break down — recommend /gsd-discuss-phase 48.1 first to lock copy decisions, then /gsd-ui-phase 48.1 for the UI-SPEC)
+- [ ] 48.1-01-PLAN.md — Wave 0 prerequisites: update landing-sections test file for Phase 48.1 inventory, add id="calculator" anchor to pricing page, place stub audio files
+- [ ] 48.1-02-PLAN.md — Create 4 new landing components (AudioDemoSection, IntegrationsStrip, CostOfSilenceBlock, YouStayInControlSection)
+- [ ] 48.1-03-PLAN.md — Modify HeroSection copy+CTAs, trim FeaturesCarousel to 4 pillars, update FAQSection, rebrand root metadata to Voco AI
+- [ ] 48.1-04-PLAN.md — Wave 2 integration: rewrite page.js composition, delete 12 legacy components, update skill docs, 375px + a11y + Lighthouse checkpoint
 **UI hint**: yes
 
 ### Phase 49: Dark Mode Foundation and Token Migration
@@ -661,7 +665,14 @@ Plans:
   3. All flyouts and modals (LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet) render readable content in dark mode with no hardcoded white backgrounds or invisible text remaining
   4. Status badges, urgency pills, and LeadStatusPills maintain readable contrast and categorical meaning in dark mode
   5. Theme preference persists across browser sessions via localStorage; returning the next day shows the last-selected theme applied immediately
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 49-01-PLAN.md — Theme infrastructure: globals.css tokens + @custom-variant fix + 150ms body transition + ThemeProvider wiring + design-tokens.js CSS-var rewrite (POLISH-08) + sidebar binary toggle button + Wave 0 test scaffolds
+- [ ] 49-02-PLAN.md — Layout shell migration: dashboard/layout.js bg-background + BottomTabBar + 3 system banners (Impersonation/TrialCountdown/BillingWarning) + 2 secondary banners (Offline/ConflictAlert)
+- [ ] 49-03-PLAN.md — Flyouts and modals (DARK-06): LeadFlyout/AppointmentFlyout/QuickBookSheet/ChatbotSheet + ExternalEventSheet/TimeBlockSheet/RecordPaymentDialog/RecurringSetupDialog
+- [ ] 49-04-PLAN.md — Status pills and badges (DARK-07): LeadStatusPills/BookingStatusBadge/EstimateStatusBadge/InvoiceStatusBadge/RecurringBadge/LeadFilterBar with verbatim UI-SPEC category mapping
+- [ ] 49-05-PLAN.md — Bulk dashboard sweep (DARK-03 + POLISH-08): remaining ~50 components and ~28 pages, gated by Wave 0 hex-audit test
 **UI hint**: yes
 
 ### Phase 50: Dark Mode -- Charts and Calendar
@@ -700,7 +711,7 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 |-------|----------------|--------|-----------|
 | 47. Landing -- Objection-Busting, Repositioning, and Landing Polish | 4/5 | In Progress|  |
 | 48. Dashboard Home Redesign | 5/5 | Complete   | 2026-04-14 |
-| 49. Dark Mode Foundation and Token Migration | 0/TBD | Not started | - |
+| 49. Dark Mode Foundation and Token Migration | 0/5 | Not started | - |
 | 50. Dark Mode -- Charts and Calendar | 0/TBD | Not started | - |
 | 51. UI/UX Polish Pass | 0/TBD | Not started | - |
 | 52. Rename Leads Tab to Jobs and Restructure Status Pills | 0/TBD | Not started | - |
