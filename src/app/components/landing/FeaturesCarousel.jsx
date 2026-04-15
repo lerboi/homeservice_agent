@@ -2,16 +2,13 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import {
-  Globe,
   PhoneIncoming,
-  PhoneForwarded,
   CalendarCheck,
   MessageSquare,
-  BarChart3,
-  UserCheck,
   PhoneMissed,
-  Receipt,
-  Star,
+  Wrench,
+  Zap,
+  Thermometer,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -52,106 +49,6 @@ function AnsweringVisual({ isActive }) {
           @keyframes clockSpin {
             from { stroke-dashoffset: 339; }
             to   { stroke-dashoffset: 0; }
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   Micro Visual: Custom Pickup Rules
-───────────────────────────────────────── */
-function PickupRulesVisual({ isActive }) {
-  return (
-    <div className="w-full max-w-[280px] mx-auto space-y-2.5" aria-hidden="true">
-      {/* Schedule card */}
-      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
-        <p className="text-[10px] font-semibold tracking-wide uppercase text-stone-400 mb-1.5">Schedule</p>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-[#0F172A] font-medium">Mon&ndash;Fri 9am&ndash;6pm</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            Rings you
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-2 mt-1.5">
-          <span className="text-[11px] text-[#0F172A] font-medium">After hours</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F97316]/10 text-[#F97316] border border-[#F97316]/30">
-            AI answers
-          </span>
-        </div>
-      </div>
-
-      {/* Ring delay card */}
-      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <span className="text-[10px] font-semibold tracking-wide uppercase text-stone-400">Ring delay</span>
-          <span className="text-[11px] text-[#0F172A] font-semibold tabular-nums">15s</span>
-        </div>
-        <div className="relative h-1.5 rounded-full bg-stone-200 overflow-hidden">
-          <div className="absolute inset-y-0 left-0 w-[60%] rounded-full bg-[#F97316]" />
-        </div>
-      </div>
-
-      {/* VIP card */}
-      <div className="rounded-xl bg-stone-50 border border-stone-200/60 px-3 py-2.5">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Star className="w-3.5 h-3.5 text-[#F97316] fill-[#F97316]" aria-hidden="true" />
-          <span className="text-[10px] font-semibold tracking-wide uppercase text-stone-400">VIP callers bypass AI</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-medium text-[#0F172A] px-2 py-0.5 rounded bg-white border border-stone-200">
-            (415) &bull;&bull;&bull;&bull;
-          </span>
-          <span className="text-[10px] font-medium text-[#0F172A] px-2 py-0.5 rounded bg-white border border-stone-200">
-            (650) &bull;&bull;&bull;&bull;
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   Micro Visual: 70+ Languages
-───────────────────────────────────────── */
-function LanguageVisual({ isActive }) {
-  const bubbles = [
-    { label: 'EN',  x: '5%',  y: '12%', delay: '0s',   size: 44, accent: false },
-    { label: 'ES',  x: '60%', y: '6%',  delay: '0.5s', size: 44, accent: false },
-    { label: 'ZH',  x: '78%', y: '48%', delay: '1s',   size: 40, accent: false },
-    { label: 'MS',  x: '18%', y: '64%', delay: '1.5s', size: 40, accent: false },
-    { label: 'TL',  x: '68%', y: '78%', delay: '2.5s', size: 36, accent: false },
-    { label: '70+', x: '42%', y: '48%', delay: '2s',   size: 52, accent: true  },
-  ];
-
-  return (
-    <div className="relative w-56 h-44 md:w-64 md:h-48 mx-auto shrink-0" aria-hidden="true">
-      {bubbles.map((b) => (
-        <div
-          key={b.label}
-          className={`absolute rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-            b.accent
-              ? 'bg-[#F97316] text-white border-[#F97316] shadow-[0_0_16px_rgba(249,115,22,0.35)]'
-              : 'bg-white text-[#475569] border-stone-200 shadow-sm'
-          }`}
-          style={{
-            left: b.x,
-            top: b.y,
-            width: b.size,
-            height: b.size,
-            animation: `langFloat 3s ease-in-out ${b.delay} infinite`,
-            animationPlayState: isActive ? 'running' : 'paused',
-          }}
-        >
-          {b.label}
-        </div>
-      ))}
-      <style jsx>{`
-        @media (prefers-reduced-motion: no-preference) {
-          @keyframes langFloat {
-            0%, 100% { transform: translateY(0px); }
-            50%       { transform: translateY(-8px); }
           }
         }
       `}</style>
@@ -211,30 +108,14 @@ function BookingVisual({ isActive }) {
 }
 
 /* ─────────────────────────────────────────
-   Micro Visual: Lead Capture & CRM
+   Micro Visual: Speaks Your Trade
 ───────────────────────────────────────── */
-function LeadVisual({ isActive }) {
+function TradeVisual() {
   return (
-    <div
-      className="w-full max-w-[260px] mx-auto rounded-xl bg-stone-50 border border-stone-200/60 px-4 py-4 space-y-2.5"
-      aria-hidden="true"
-    >
-      {[
-        { label: 'Caller',   value: 'James Rivera' },
-        { label: 'Address',  value: '42 Oak St, Austin TX' },
-        { label: 'Job Type', value: 'Water heater replacement' },
-      ].map((field) => (
-        <div key={field.label} className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-stone-400 font-medium shrink-0">{field.label}</span>
-          <span className="text-[12px] text-[#0F172A] font-medium truncate text-right">{field.value}</span>
-        </div>
-      ))}
-      <div className="pt-1.5 flex items-center justify-between border-t border-stone-200">
-        <span className="text-[11px] text-stone-400 font-medium">Urgency</span>
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-          EMERGENCY
-        </span>
-      </div>
+    <div className="flex items-center justify-center gap-3">
+      <Wrench className="w-8 h-8 text-[#F97316]" />
+      <Zap className="w-8 h-8 text-[#F97316]" />
+      <Thermometer className="w-8 h-8 text-[#F97316]" />
     </div>
   );
 }
@@ -280,199 +161,44 @@ function LeadRecoveryVisual({ isActive }) {
 }
 
 /* ─────────────────────────────────────────
-   Micro Visual: Post-Call SMS & Notifications
-───────────────────────────────────────── */
-function SMSVisual({ isActive }) {
-  const messages = [
-    { text: 'Booking confirmed: Thu 14th @ 9am', sub: 'Smith Plumbing — AC repair', accent: true },
-    { text: 'New lead captured', sub: 'Maria Gomez · Burst pipe · URGENT', accent: false },
-    { text: 'SMS sent to caller', sub: '2 min ago · Appointment details', accent: false },
-  ];
-
-  return (
-    <div className="w-full max-w-[280px] mx-auto space-y-2" aria-hidden="true">
-      {messages.map((m, i) => (
-        <div
-          key={i}
-          className={`flex items-start gap-3 rounded-xl px-3 py-2.5 ${
-            m.accent ? 'bg-[#F97316]/[0.08] border border-[#F97316]/20' : 'bg-stone-50 border border-stone-100'
-          }`}
-        >
-          <div className={`size-1.5 rounded-full mt-1.5 shrink-0 ${m.accent ? 'bg-[#F97316]' : 'bg-stone-400'}`} />
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-[#0F172A] truncate">{m.text}</p>
-            <p className="text-[10px] text-[#64748B] truncate">{m.sub}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   Micro Visual: Invoicing & Estimates
-───────────────────────────────────────── */
-function InvoiceVisual({ isActive }) {
-  const lines = [
-    { label: 'Labour · 2 hrs',       value: '$180.00' },
-    { label: 'Parts · Thermostat',   value: '$95.00'  },
-    { label: 'Service call',         value: '$75.00'  },
-  ];
-  return (
-    <div className="w-full max-w-[260px] mx-auto rounded-xl bg-white border border-stone-200/70 shadow-sm px-4 py-4" aria-hidden="true">
-      <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-        <div className="flex items-center gap-2">
-          <div className="size-7 rounded-md bg-[#F97316]/[0.08] border border-[#F97316]/20 flex items-center justify-center">
-            <Receipt className="w-3.5 h-3.5 text-[#F97316]" strokeWidth={2} />
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-[#0F172A] leading-tight">INV-2026-0142</p>
-            <p className="text-[9px] text-stone-400 leading-tight">Apr 14, 2026</p>
-          </div>
-        </div>
-        <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-          SENT
-        </span>
-      </div>
-      <div className="py-2.5 space-y-1.5">
-        {lines.map((l) => (
-          <div key={l.label} className="flex items-center justify-between gap-2">
-            <span className="text-[11px] text-[#475569] truncate">{l.label}</span>
-            <span className="text-[11px] text-[#0F172A] font-medium tabular-nums">{l.value}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-between pt-2.5 border-t border-stone-100">
-        <span className="text-[11px] font-semibold text-[#0F172A]">Total</span>
-        <span className="text-[13px] font-semibold text-[#F97316] tabular-nums">$350.00</span>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   Micro Visual: Call Analytics & Dashboard
-───────────────────────────────────────── */
-function AnalyticsVisual({ isActive }) {
-  const bars = [
-    { height: 55, accent: false },
-    { height: 75, accent: false },
-    { height: 45, accent: false },
-    { height: 100, accent: true },
-    { height: 80, accent: false },
-  ];
-
-  return (
-    <div className="w-full max-w-[200px] mx-auto" aria-hidden="true">
-      <div className="flex items-end gap-2 h-32">
-        {bars.map((bar, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div
-              className={`w-full rounded-t-md ${bar.accent ? 'bg-[#F97316]' : 'bg-stone-200'}`}
-              style={{
-                height: `${bar.height}%`,
-                animation: `barGrow 1s ease-out ${i * 0.1}s both`,
-                animationPlayState: isActive ? 'running' : 'paused',
-              }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-center gap-3 mt-3 text-[10px] text-stone-500">
-        <span className="flex items-center gap-1">
-          <span className="size-2 rounded-sm bg-[#F97316] inline-block" /> This week
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="size-2 rounded-sm bg-stone-200 inline-block" /> Prior week
-        </span>
-      </div>
-      <style jsx>{`
-        @media (prefers-reduced-motion: no-preference) {
-          @keyframes barGrow {
-            from { transform: scaleY(0); transform-origin: bottom; }
-            to   { transform: scaleY(1); transform-origin: bottom; }
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────
-   Feature data array
+   Feature data array — 4 pillars (SC-01)
 ───────────────────────────────────────── */
 const FEATURES = [
   {
+    id: '24-7-answering',
     icon: PhoneIncoming,
     title: '24/7 AI Answering',
     navLabel: 'Always On',
     tagline: 'Picks up in under a second — 2 AM Sunday or mid-job-site.',
-    description: 'No voicemail. No missed leads. Zero gaps between your last job and your next call.',
+    description: 'Every inbound call answered in under 1 ring — day, night, weekends, holidays. No voicemail, no lost leads.',
     Visual: AnsweringVisual,
   },
   {
-    icon: PhoneForwarded,
-    title: 'Custom Pickup Rules',
-    navLabel: 'Rules',
-    tagline: 'Your phone rings first. AI steps in only when you can\u2019t.',
-    description: 'Set schedule windows, a ring delay before AI answers, or VIP numbers that always bypass the AI. Voco follows your rules.',
-    Visual: PickupRulesVisual,
-  },
-  {
-    icon: Globe,
-    title: '70+ Languages',
-    navLabel: 'Languages',
-    tagline: 'Detects the caller\'s language instantly.',
-    description: 'English, Spanish, Chinese, Malay, Tagalog — 70+ in total. No frustrated hang-ups. No lost leads to language barriers.',
-    Visual: LanguageVisual,
-  },
-  {
+    id: 'real-time-booking',
     icon: CalendarCheck,
     title: 'Real-Time Calendar Booking',
     navLabel: 'Booking',
     tagline: 'Books the job while they\'re still on the line.',
-    description: 'Reads your live availability in Google or Outlook, offers a real slot, and locks it in before the caller hangs up.',
+    description: 'Voco reads your Google or Outlook calendar live and books the caller into a confirmed slot before they hang up. Travel buffers included.',
     Visual: BookingVisual,
   },
   {
-    icon: UserCheck,
-    title: 'Lead Capture & CRM',
-    navLabel: 'CRM',
-    tagline: 'Every caller becomes a structured lead.',
-    description: 'Name, address, job type, urgency — automatically logged. Searchable pipeline. No manual data entry ever again.',
-    Visual: LeadVisual,
+    id: 'speaks-your-trade',
+    icon: Wrench,
+    title: 'Speaks Your Trade',
+    navLabel: 'Trade',
+    tagline: 'Knows the vocabulary — and speaks the language.',
+    description: 'Plumbing, HVAC, electrical, handyman — Voco knows the vocabulary. Also fluent in English, Spanish, Mandarin, Malay, and 70+ more, including Singlish and mid-call code-switching.',
+    Visual: TradeVisual,
   },
   {
+    id: 'lead-recovery',
     icon: PhoneMissed,
     title: 'Automated Lead Recovery',
     navLabel: 'Recovery',
     tagline: 'Missed calls become SMS conversations that convert.',
-    description: 'If a call slips past, Voco texts the caller back within seconds — and walks them into a booking without you lifting a finger.',
+    description: 'If a caller hangs up before booking, Voco sends an SMS with available slots. You wake up to booked jobs, not missed opportunities.',
     Visual: LeadRecoveryVisual,
-  },
-  {
-    icon: MessageSquare,
-    title: 'Post-Call SMS & Notifications',
-    navLabel: 'Notifications',
-    tagline: 'You get the heads-up. They get a confirmation.',
-    description: 'Instant SMS to you with caller + job details. Confirmation text to the customer. Nobody refreshes voicemail.',
-    Visual: SMSVisual,
-  },
-  {
-    icon: Receipt,
-    title: 'Invoicing & Estimates',
-    navLabel: 'Invoicing',
-    tagline: 'Send invoices the moment the job is done.',
-    description: 'Pre-filled line items, branded template, email or SMS delivery. Get paid before you leave the driveway.',
-    Visual: InvoiceVisual,
-  },
-  {
-    icon: BarChart3,
-    title: 'Call Analytics & Dashboard',
-    navLabel: 'Analytics',
-    tagline: 'Know exactly what your phone earned this week.',
-    description: 'Every call, lead, and booking in one place. Revenue, conversion, recovered-call metrics — refreshed the second the call ends.',
-    Visual: AnalyticsVisual,
   },
 ];
 
@@ -639,13 +365,13 @@ export function FeaturesCarousel() {
       {/* Section heading */}
       <AnimatedSection className="max-w-2xl mx-auto text-center mb-16">
         <p className="text-xs md:text-sm font-semibold tracking-[0.15em] uppercase text-[#F97316] mb-3">
-          The full-stack workflow
+          How it works for you
         </p>
         <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-semibold tracking-tight leading-[1.15] text-[#0F172A]">
-          Everything your phone does &mdash; answered, booked, billed.
+          Four ways Voco earns its keep.
         </h2>
         <p className="text-base md:text-lg text-[#475569] mt-5 leading-relaxed">
-          Eight features that run the inbound side of your business while you&rsquo;re on the job.
+          Every inbound call handled — from the first ring to the confirmed booking.
         </p>
       </AnimatedSection>
 
@@ -690,7 +416,7 @@ export function FeaturesCarousel() {
               const isActive = displayIndex === activeDisplayIndex;
               return (
                 <div
-                  key={`${feat.title}-${displayIndex}`}
+                  key={`${feat.id}-${displayIndex}`}
                   className="flex-shrink-0 w-[320px] md:w-[440px] lg:w-[520px]"
                   style={{ scrollSnapAlign: 'center' }}
                 >
