@@ -232,17 +232,19 @@ describe('page.js 48.1 structure', () => {
 
   it('section ordering: AudioDemoSection before ScrollLinePath before YouStayInControlSection before FAQSection', () => {
     const s = src();
-    const idxAudio = s.indexOf('AudioDemoSection');
-    const idxScrollLine = s.indexOf('<ScrollLinePath>');
-    const idxYouStay = s.indexOf('YouStayInControlSection');
-    const idxFAQ = s.indexOf('FAQSection');
+    const idxAudio = s.indexOf('<AudioDemoSection');
+    // Use </ScrollLinePath> as boundary: dynamic import declarations appear before <ScrollLinePath>
+    // but YouStayInControlSection render tag must appear after </ScrollLinePath>
+    const idxScrollLineClose = s.indexOf('</ScrollLinePath>');
+    const idxYouStayRender = s.indexOf('<YouStayInControlSection');
+    const idxFAQ = s.indexOf('<FAQSection');
     expect(idxAudio).toBeGreaterThan(-1);
-    expect(idxScrollLine).toBeGreaterThan(-1);
-    expect(idxYouStay).toBeGreaterThan(-1);
+    expect(idxScrollLineClose).toBeGreaterThan(-1);
+    expect(idxYouStayRender).toBeGreaterThan(-1);
     expect(idxFAQ).toBeGreaterThan(-1);
-    expect(idxAudio).toBeLessThan(idxScrollLine);
-    expect(idxScrollLine).toBeLessThan(idxYouStay);
-    expect(idxYouStay).toBeLessThan(idxFAQ);
+    expect(idxAudio).toBeLessThan(idxScrollLineClose);
+    expect(idxScrollLineClose).toBeLessThan(idxYouStayRender);
+    expect(idxYouStayRender).toBeLessThan(idxFAQ);
   });
 });
 
