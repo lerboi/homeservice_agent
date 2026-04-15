@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Phases
 status: verifying
-stopped_at: Phase 49 UI-SPEC approved
-last_updated: "2026-04-15T09:10:28.148Z"
-last_activity: 2026-04-14
+stopped_at: "Completed 49-05-PLAN.md (Tasks 1+2); at checkpoint:human-verify Task 3"
+last_updated: "2026-04-15T18:43:22.927Z"
+last_activity: 2026-04-15
 progress:
   total_phases: 12
   completed_phases: 12
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-13)
 Phase: 48 (dashboard-home-redesign) — EXECUTING
 Plan: 5 of 5
 Status: Phase complete — ready for verification
-Last activity: 2026-04-14
+Last activity: 2026-04-15
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 48 P03 | ~15m | 2 tasks | 4 files |
 | Phase 48 P04 | ~20m | 4 tasks | 7 files |
 | Phase 48 P05 | ~45m | 6+1 tasks | 11 files |
+| Phase 49 P05 | 90 | 2 tasks | 70 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting v5.0 work:
 - [Phase 48]: Plan 48-04: HotLeadsTile consumes newLeadsCount/newLeadsPreview from /api/dashboard/stats (the actual API shape), not the plan-spec hotLeads.count/preview which does not exist on the endpoint — avoids shim layer for UI-composition plan
 - [Phase 48]: Plan 48-04: Tiles use existing API param conventions (appointments start/end, calls date_from/limit) not plan-spec range=today / since=24h shorthand — plan key_link regexes are wildcard-matched so acceptance still passes
 - [Phase 48]: Plan 48-05 revision: SetupChecklist moved to overlay launcher (FAB + responsive Sheet + sessionStorage auto-open gate); ChatPanel deleted — existing ChatbotSheet covers HOME-04. Rule-2 user-directed pivot overriding D-04 and D-07.
+- [Phase 49]: AnalyticsCharts and CalendarView migrated in Plan 05 despite Phase 50 exclusion — hex-audit gate required zero violations across full tree
+- [Phase 49]: Sidebar-bg CSS variable added to globals.css for DashboardSidebar token; Recharts SVG props use var string directly
 
 ### Roadmap Evolution
 
@@ -103,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T09:10:28.141Z
-Stopped at: Phase 49 UI-SPEC approved
-Resume file: .planning/phases/49-dark-mode-foundation-and-token-migration/49-UI-SPEC.md
+Last session: 2026-04-15T18:43:22.924Z
+Stopped at: Completed 49-05-PLAN.md (Tasks 1+2); at checkpoint:human-verify Task 3
+Resume file: None

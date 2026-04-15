@@ -1,0 +1,183 @@
+---
+phase: 49
+plan: 05
+subsystem: dashboard-dark-mode
+tags: [dark-mode, token-migration, hex-audit, typography, DARK-03, POLISH-08]
+dependency_graph:
+  requires: [49-01, 49-02, 49-03, 49-04]
+  provides: [dark-mode-hex-audit-green, dashboard-full-token-coverage]
+  affects: [src/app/dashboard, src/components/dashboard, src/app/globals.css]
+tech_stack:
+  added: []
+  patterns:
+    - var(--brand-accent) for all orange CTA colors including Recharts SVG props
+    - var(--muted-foreground) for Recharts JS object inline styles (tick fill, Legend color)
+    - --sidebar-bg CSS variable added to globals.css for sidebar background token
+    - text-foreground / text-muted-foreground for typography POLISH-08 consolidation
+    - bg-[var(--brand-accent)] for button backgrounds with /10 opacity variants
+key_files:
+  created: []
+  modified:
+    - src/components/dashboard/AnalyticsCharts.jsx
+    - src/components/dashboard/CalendarView.js
+    - src/components/dashboard/DashboardSidebar.jsx
+    - src/components/dashboard/AudioPlayer.jsx
+    - src/components/dashboard/CalendarSyncCard.js
+    - src/components/dashboard/CallsTile.jsx
+    - src/components/dashboard/ChatMessage.jsx
+    - src/components/dashboard/ChecklistItem.jsx
+    - src/components/dashboard/CommandPalette.jsx
+    - src/components/dashboard/ContactCard.js
+    - src/components/dashboard/CustomerTimeline.jsx
+    - src/components/dashboard/DashboardTour.jsx
+    - src/components/dashboard/DocumentListShell.jsx
+    - src/components/dashboard/EmptyStateAnalytics.jsx
+    - src/components/dashboard/EmptyStateCalendar.jsx
+    - src/components/dashboard/EmptyStateLeads.jsx
+    - src/components/dashboard/EscalationChainSection.js
+    - src/components/dashboard/EstimateSummaryCards.jsx
+    - src/components/dashboard/HelpDiscoverabilityCard.jsx
+    - src/components/dashboard/HotLeadsTile.jsx
+    - src/components/dashboard/InvoiceEditor.jsx
+    - src/components/dashboard/InvoiceSummaryCards.jsx
+    - src/components/dashboard/LeadCard.jsx
+    - src/components/dashboard/MoreBackButton.jsx
+    - src/components/dashboard/NotificationPreferences.jsx
+    - src/components/dashboard/PaymentLog.jsx
+    - src/components/dashboard/RecentActivityFeed.jsx
+    - src/components/dashboard/ReminderToggle.jsx
+    - src/components/dashboard/RevenueInput.jsx
+    - src/components/dashboard/SettingsAISection.jsx
+    - src/components/dashboard/SettingsCalendarSection.jsx
+    - src/components/dashboard/SettingsHoursSection.jsx
+    - src/components/dashboard/SetupChecklist.jsx
+    - src/components/dashboard/SetupChecklistLauncher.jsx
+    - src/components/dashboard/SetupCompleteBar.jsx
+    - src/components/dashboard/SortableServiceRow.js
+    - src/components/dashboard/TodayAppointmentsTile.jsx
+    - src/components/dashboard/TranscriptViewer.jsx
+    - src/components/dashboard/TypingIndicator.jsx
+    - src/components/dashboard/UsageRingGauge.js
+    - src/components/dashboard/UsageTile.jsx
+    - src/components/dashboard/VoicePickerSection.jsx
+    - src/components/dashboard/WorkingHoursEditor.js
+    - src/components/dashboard/ZoneManager.js
+    - src/components/dashboard/usage-threshold.js
+    - src/components/dashboard/ChatNavLink.jsx
+    - src/app/globals.css
+    - src/app/dashboard/page.js
+    - src/app/dashboard/analytics/page.js
+    - src/app/dashboard/calendar/page.js
+    - src/app/dashboard/calls/page.js
+    - src/app/dashboard/error.js
+    - src/app/dashboard/estimates/page.js
+    - src/app/dashboard/estimates/new/page.js
+    - "src/app/dashboard/estimates/[id]/page.js"
+    - src/app/dashboard/invoices/page.js
+    - "src/app/dashboard/invoices/[id]/page.js"
+    - src/app/dashboard/invoices/batch-review/page.js
+    - src/app/dashboard/leads/page.js
+    - src/app/dashboard/more/account/page.js
+    - src/app/dashboard/more/ai-voice-settings/page.js
+    - src/app/dashboard/more/billing/page.js
+    - src/app/dashboard/more/call-routing/page.js
+    - src/app/dashboard/more/integrations/page.js
+    - src/app/dashboard/more/invoice-settings/page.js
+    - src/app/dashboard/more/notifications/page.js
+    - src/app/dashboard/more/page.js
+    - src/app/dashboard/more/service-zones/page.js
+    - src/app/dashboard/more/services-pricing/page.js
+    - src/app/dashboard/more/working-hours/page.js
+decisions:
+  - AnalyticsCharts and CalendarView migrated in Plan 05 despite Phase 50 exclusion — they had 5-hex violations caught by the gate test, so they were fixed here rather than deferred
+  - --sidebar-bg CSS variable added to globals.css for both light and dark modes; DashboardSidebar no longer uses #0F172A fallback
+  - Recharts JS object colors use var(--brand-accent) string directly; CSS variables resolve correctly in SVG fill/stroke props
+  - Python script used for bulk page sweep after partial previous-session edits left residual violations
+metrics:
+  duration_minutes: 90
+  completed_date: "2026-04-15"
+  tasks_completed: 2
+  tasks_total: 3
+  files_modified: 70
+---
+
+# Phase 49 Plan 05: Dashboard Bulk Token Migration Summary
+
+Bulk sweep of all remaining dashboard component files (~47 files) and dashboard page files (~23 files) to replace 5 disallowed hardcoded hex values with dark-mode-aware CSS tokens. After this plan, the Wave 0 hex-audit test (`tests/unit/dark-mode-hex-audit.test.js`) flips from RED to GREEN.
+
+## What Was Built
+
+**Task 1 — Component sweep (commit 538cd24):** 47 component files in `src/components/dashboard/` migrated. This includes all files not owned by Plans 02-04, plus AnalyticsCharts.jsx and CalendarView.js (deviation — see below).
+
+**Task 2 — Page sweep (commit eb76b0f):** 23 dashboard page files including all `more/*` sub-pages, `error.js`, and dashboard home migrated.
+
+**globals.css addition:** `--sidebar-bg: #0F172A` added to both `:root` and `.dark` blocks to support the DashboardSidebar `bg-[var(--sidebar-bg)]` usage without any hardcoded fallback.
+
+## Token Mapping Applied
+
+| Old | New | Context |
+|-----|-----|---------|
+| `#C2410C` | `var(--brand-accent)` | Buttons, icons, borders, Recharts SVG props |
+| `#9A3412` | `var(--brand-accent-hover)` | Button hover states |
+| `#F5F5F4` | `var(--warm-surface)` | Warm surface backgrounds |
+| `#0F172A` | `text-foreground` | Headings, body text |
+| `#0F172A` | `bg-foreground` | Toggle button active backgrounds |
+| `#475569` | `text-muted-foreground` | Secondary text, labels |
+| `#475569` (JS) | `var(--muted-foreground)` | Recharts tick fill, Legend style color |
+
+## Test Results
+
+All 3 dark-mode Wave 0 tests GREEN after plan completion:
+- `dark-mode-toggle-logic.test.js` — PASS
+- `dark-mode-infra.test.js` — PASS
+- `dark-mode-hex-audit.test.js` — PASS (0 disallowed hex in dashboard tree)
+
+Total: 18/18 tests passing.
+
+## Deviations from Plan
+
+### Auto-fixed Issues
+
+**1. [Rule 2 - Missing critical functionality] AnalyticsCharts.jsx and CalendarView.js migrated in Plan 05**
+- **Found during:** Task 1
+- **Issue:** Plan 05 designated these as Phase 50 exclusions, but the hex-audit test gates ALL dashboard files including these. Both had disallowed hex (AnalyticsCharts: STATUS_COLORS.new, URGENCY_COLORS.urgent, Bar fill, Line stroke, activeDot fill, tick fill, Legend color; CalendarView: current time indicator, today cell, month view badges, day/week view headers).
+- **Fix:** Migrated both files using `var(--brand-accent)` for Recharts SVG string props and JS object color values, and Tailwind tokens for className strings. Phase 50 work (useTheme() hook for dynamic chart color switching) is still needed for full dark adaptation of chart visuals, but the hex literals are gone.
+- **Files modified:** `src/components/dashboard/AnalyticsCharts.jsx`, `src/components/dashboard/CalendarView.js`
+- **Commits:** 538cd24
+
+**2. [Rule 3 - Blocking issue] Residual hex violations in page files after previous session**
+- **Found during:** Task 2 verification (jest run)
+- **Issue:** The previous conversation session's `replace_all` edits applied only to specific string patterns; many files still had 235 total violations across 22 files including calendar/page.js (37 violations), calls/page.js (21), more/billing/page.js (22), more/call-routing/page.js (29).
+- **Fix:** Python script applied comprehensive regex-based replacement across all 22 remaining files in one pass, then verified zero violations remain.
+- **Files modified:** All 22 page files listed above
+- **Commit:** eb76b0f
+
+**3. [Rule 2 - Missing CSS variable] --sidebar-bg not defined**
+- **Found during:** Task 1 (DashboardSidebar used `bg-[var(--sidebar-bg)]` but variable was undefined)
+- **Fix:** Added `--sidebar-bg: #0F172A` to both `:root` and `.dark` sections in `src/app/globals.css`. Removed `#0F172A` fallback from the focus-visible ring-offset in DashboardSidebar.
+- **Files modified:** `src/app/globals.css`, `src/components/dashboard/DashboardSidebar.jsx`
+- **Commit:** 538cd24
+
+## Commits
+
+| Task | Commit | Description |
+|------|--------|-------------|
+| Task 1 | 538cd24 | feat(49-05): migrate remaining dashboard components to dark-mode tokens |
+| Task 2 | eb76b0f | feat(49-05): migrate all dashboard pages to dark-mode tokens |
+
+## Known Stubs
+
+None — all token migrations are complete replacements. No placeholder values remain.
+
+## Threat Flags
+
+None — this plan is a pure CSS class migration with no data flow, auth, or endpoint changes.
+
+## Self-Check: PASSED
+
+- [x] `tests/unit/dark-mode-hex-audit.test.js` GREEN (0 violations)
+- [x] `tests/unit/dark-mode-toggle-logic.test.js` GREEN
+- [x] `tests/unit/dark-mode-infra.test.js` GREEN
+- [x] Commits 538cd24 and eb76b0f exist in git log
+- [x] `src/app/globals.css` contains `--sidebar-bg: #0F172A`
+- [x] No forbidden hex in `src/components/dashboard/` or `src/app/dashboard/`

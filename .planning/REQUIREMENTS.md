@@ -506,13 +506,13 @@ n| DEMO-01 | Phase 29 | Complete |
 | HOME-07 | Phase 48 | Complete |
 | DARK-01 | Phase 49 | Pending |
 | DARK-02 | Phase 49 | Pending |
-| DARK-03 | Phase 49 | Pending |
+| DARK-03 | Phase 49 | Complete |
 | DARK-04 | Phase 49 | Pending |
 | DARK-06 | Phase 49 | Pending |
 | DARK-07 | Phase 49 | Pending |
 | DARK-08 | Phase 49 | Pending |
 | DARK-09 | Phase 49 | Pending |
-| POLISH-08 | Phase 49 | Pending |
+| POLISH-08 | Phase 49 | Complete |
 | DARK-05 | Phase 50 | Pending |
 | DARK-10 | Phase 50 | Pending |
 | POLISH-01 | Phase 51 | Pending |
@@ -566,7 +566,7 @@ n| DEMO-01 | Phase 29 | Complete |
 
 - [ ] **DARK-01**: Theme provider (next-themes) is wired into root layout with `suppressHydrationWarning` on `<html>`, `defaultTheme=system`, `enableSystem=true`, and no hydration flash
 - [ ] **DARK-02**: Owner can toggle between light/dark/system via a theme toggle button in the dashboard sidebar; preference persists across sessions via localStorage
-- [ ] **DARK-03**: All dashboard component files replace hardcoded hex color classes with dark-mode-aware equivalents (`dark:` prefix or CSS-variable-backed tokens)
+- [x] **DARK-03**: All dashboard component files replace hardcoded hex color classes with dark-mode-aware equivalents (`dark:` prefix or CSS-variable-backed tokens)
 - [ ] **DARK-04**: `design-tokens.js` exports dark variants for all tokens (card.base, glass.topBar, heading, body, focus, selected) so shared consumers theme consistently
 - [ ] **DARK-05**: `AnalyticsCharts.jsx` reads the current theme via `useTheme()` and swaps Recharts stroke/fill/tooltip colors so charts remain readable and on-brand in dark mode
 - [ ] **DARK-06**: All flyouts and modals (LeadFlyout, AppointmentFlyout, QuickBookSheet, ChatbotSheet, settings modals) render correctly in dark mode with readable content
@@ -584,7 +584,7 @@ n| DEMO-01 | Phase 29 | Complete |
 - [ ] **POLISH-05**: Async action buttons show spinner + disabled state during pending operations (save settings, send invoice, sync calendar)
 - [ ] **POLISH-06**: DashboardHomeStats cards have a hover state (translate-y + shadow) with 200ms transition
 - [ ] **POLISH-07**: Lead status changes in LeadFlyout animate in the list via AnimatePresence + layout prop for clear user feedback
-- [ ] **POLISH-08**: Dashboard typography consolidated to design-token color values (no lingering hardcoded hex text classes)
+- [x] **POLISH-08**: Dashboard typography consolidated to design-token color values (no lingering hardcoded hex text classes)
 - [ ] **POLISH-09**: CommandPalette registers all major dashboard destinations; audit confirms no major page is missing
 - [ ] **POLISH-10**: Dashboard page content renders correctly at 375px viewport (week calendar, analytics charts, invoice tables, settings forms)
 - [ ] **POLISH-11**: All new objection and repositioning landing sections use the existing AnimatedSection wrapper with useReducedMotion compliance and match the established warm-neutral background rhythm
