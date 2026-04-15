@@ -2,19 +2,19 @@ import { Badge } from '@/components/ui/badge';
 
 const VARIANTS = {
   confirmed: {
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    className: 'border-green-200 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/60',
     label: 'Booked',
   },
   lead_with_slots: {
-    className: 'border-[#0F172A]/10 bg-[#0F172A]/[0.04] text-[#0F172A]/70',
+    className: 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60',
     label: 'Lead - slots suggested',
   },
   no_booking: {
-    className: 'border-stone-200 bg-[#F5F5F4] text-[#475569]',
+    className: 'border-stone-200 bg-stone-100 text-stone-700 dark:bg-muted dark:text-muted-foreground dark:border-border',
     label: 'No booking',
   },
   failed: {
-    className: 'border-red-200 bg-red-50 text-red-600',
+    className: 'border-red-200 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/60',
     label: 'Booking failed',
   },
 };
