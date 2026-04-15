@@ -69,8 +69,8 @@ export default function CallsTile() {
         c.booking_outcome === 'not_attempted' &&
         (c.duration_seconds ?? 0) >= MIN_MISSED_DURATION_SEC
     );
-    // Recent = up to 4 calls (any outcome) for below-fold context.
-    const r = all.slice(0, 4);
+    // Recent = up to 5 calls (any outcome) for below-fold context.
+    const r = all.slice(0, 5);
     return { missed: m, recent: r };
   }, [data]);
 

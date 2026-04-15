@@ -120,7 +120,7 @@ export default function HotLeadsTile() {
       </p>
 
       <ul className="flex flex-col divide-y divide-border">
-        {preview.slice(0, 3).map((lead) => (
+        {preview.slice(0, 5).map((lead) => (
           <li
             key={lead.id}
             className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"

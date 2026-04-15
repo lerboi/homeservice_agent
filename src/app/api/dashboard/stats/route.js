@@ -27,14 +27,14 @@ export async function GET() {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'new'),
-    // Preview: up to 3 newest new leads with name + job type
+    // Preview: up to 5 newest new leads with name + job type
     supabase
       .from('leads')
       .select('id, caller_name, job_type, from_number, created_at')
       .eq('tenant_id', tenantId)
       .eq('status', 'new')
       .order('created_at', { ascending: false })
-      .limit(3),
+      .limit(5),
     // Invoice outstanding: sent + overdue
     supabase
       .from('invoices')
