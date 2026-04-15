@@ -1,30 +1,29 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, PhoneCall } from 'lucide-react';
 import { AnimatedSection } from './AnimatedSection';
 
 const DEMO_TRACKS = {
   emergency: {
     label: 'Emergency',
+    badge: 'After hours · 11:42 PM',
     src: '/audio/demo-emergency.mp3',
     transcript: [
-      { startSec: 0, endSec: 3.5, text: 'Voco: Thank you for calling — this is Voco. How can I help you today?' },
-      { startSec: 3.5, endSec: 8.0, text: 'Caller: My water heater is leaking everywhere, I need someone now.' },
-      { startSec: 8.0, endSec: 13.0, text: 'Voco: I understand — this is urgent. Let me get you the next available emergency slot.' },
-      { startSec: 13.0, endSec: 18.0, text: 'Voco: I have a technician who can be there in 45 minutes. Can I confirm your address?' },
-      { startSec: 18.0, endSec: 24.0, text: 'Caller: Yes, 1247 Oak Street. Please hurry.' },
-      { startSec: 24.0, endSec: 30.0, text: "Voco: Confirmed. Technician dispatched. You'll receive a text with their ETA in under 2 minutes." },
+      { speaker: 'caller', startSec: 0, endSec: 5.5, text: 'My water heater is leaking everywhere — I need someone now.' },
+      { speaker: 'voco', startSec: 5.5, endSec: 13.0, text: 'I hear you — this is urgent. I can dispatch a technician in 45 minutes. What’s the address?' },
+      { speaker: 'caller', startSec: 13.0, endSec: 18.0, text: '1247 Oak Street. Please hurry.' },
+      { speaker: 'voco', startSec: 18.0, endSec: 30.0, text: 'Confirmed. Tech en route. You’ll get an ETA text in under two minutes.' },
     ],
   },
   routine: {
     label: 'Routine',
+    badge: 'Tuesday · 2:14 PM',
     src: '/audio/demo-routine.mp3',
     transcript: [
-      { startSec: 0, endSec: 3.5, text: 'Voco: Thanks for calling Acme Plumbing — this is Voco.' },
-      { startSec: 3.5, endSec: 9.0, text: 'Caller: Hi, I need to schedule a routine drain cleaning sometime next week.' },
-      { startSec: 9.0, endSec: 14.0, text: 'Voco: Happy to help. I have Tuesday 10 AM, Wednesday 2 PM, or Friday 9 AM open.' },
-      { startSec: 14.0, endSec: 18.0, text: 'Caller: Wednesday at 2 works.' },
-      { startSec: 18.0, endSec: 24.0, text: "Voco: Booked. You'll get a confirmation text and a reminder the day before." },
+      { speaker: 'caller', startSec: 0, endSec: 6.0, text: 'Hi — I need to schedule a routine drain cleaning next week.' },
+      { speaker: 'voco', startSec: 6.0, endSec: 14.0, text: 'Happy to. Tuesday 10 AM, Wednesday 2 PM, or Friday 9 AM — what works?' },
+      { speaker: 'caller', startSec: 14.0, endSec: 18.0, text: 'Wednesday at 2 works.' },
+      { speaker: 'voco', startSec: 18.0, endSec: 24.0, text: 'Booked. Confirmation text on its way, with a reminder the day before.' },
     ],
   },
 };
@@ -36,7 +35,11 @@ function formatTime(seconds) {
   return `${m}:${s}`;
 }
 
-const BAR_HEIGHTS = [20, 40, 60, 35, 50, 70, 45, 55, 30, 65, 50, 40, 55, 70, 45, 35, 60, 40, 50, 65, 35, 45, 55, 30];
+const BAR_COUNT = 48;
+const BAR_HEIGHTS = [
+  20, 35, 55, 40, 70, 85, 60, 75, 45, 65, 80, 50, 30, 55, 70, 90, 60, 45, 75, 55, 35, 60, 80, 50,
+  40, 65, 85, 55, 70, 45, 60, 80, 50, 35, 55, 75, 45, 65, 40, 55, 70, 50, 35, 60, 80, 55, 40, 65,
+];
 
 export function AudioDemoSection() {
   const [activeTab, setActiveTab] = useState('emergency');
@@ -127,19 +130,21 @@ export function AudioDemoSection() {
   }
 
   const progress = duration > 0 ? currentTime / duration : 0;
+  const track = DEMO_TRACKS[activeTab];
 
   return (
     <section id="audio-demo" className="bg-white py-20 md:py-28 px-6">
       <AnimatedSection>
-        <div className="max-w-5xl mx-auto">
-          {/* Eyebrow + H2 */}
-          <div className="text-center mb-12">
-            <div className="text-[14px] font-semibold text-[#F97316] tracking-wide uppercase mb-3">Real calls</div>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#F97316] tracking-wide uppercase mb-3">
+              <PhoneCall className="w-4 h-4" aria-hidden="true" />
+              <span>Real call</span>
+            </div>
             <h2 className="text-3xl md:text-[2.25rem] font-semibold text-[#0F172A]">Hear Voco handle a real call</h2>
           </div>
 
-          {/* Tab pills */}
-          <div className="flex gap-2 justify-center mb-8">
+          <div className="flex gap-2 justify-center mb-6">
             {Object.entries(DEMO_TRACKS).map(([key, { label }]) => {
               const active = key === activeTab;
               return (
@@ -160,73 +165,99 @@ export function AudioDemoSection() {
             })}
           </div>
 
-          {/* Player + transcript 2-col layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Player card */}
-            <div className="rounded-2xl bg-white border border-stone-200/70 shadow-sm p-6 flex flex-col gap-4">
-              {/* Hidden audio element */}
-              <audio
-                ref={audioRef}
-                src={DEMO_TRACKS[activeTab].src}
-                preload="metadata"
-              />
+          <div className="rounded-3xl bg-gradient-to-br from-[#FAFAF9] to-white border border-stone-200/70 shadow-lg overflow-hidden">
+            <div className="p-6 md:p-8 bg-[#0F172A] text-white">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                    <PhoneCall className="w-5 h-5 text-[#F97316]" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] text-white/70">Incoming call</div>
+                    <div className="text-[14px] font-semibold text-white">{track.badge}</div>
+                  </div>
+                </div>
+                <div className="text-[13px] font-mono text-white/60">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </div>
+              </div>
 
-              {/* Error state */}
-              {hasError && (
-                <p className="text-[14px] text-[#475569] mt-2">Audio unavailable — read the full transcript below.</p>
-              )}
+              <audio ref={audioRef} src={track.src} preload="metadata" />
 
-              {/* 24-bar waveform visualizer */}
-              <div className="flex items-end gap-1 h-16" aria-hidden="true">
-                {Array.from({ length: 24 }).map((_, i) => {
-                  const barActive = i / 24 <= progress;
+              <div className="flex items-end gap-[3px] h-24 md:h-28" aria-hidden="true">
+                {Array.from({ length: BAR_COUNT }).map((_, i) => {
+                  const barActive = i / BAR_COUNT <= progress;
                   return (
                     <div
                       key={i}
                       style={{ height: `${BAR_HEIGHTS[i] || 50}%` }}
-                      className={barActive ? 'w-[3px] bg-[#F97316] rounded-full' : 'w-[3px] bg-stone-300 rounded-full'}
+                      className={
+                        barActive
+                          ? 'flex-1 bg-[#F97316] rounded-full transition-colors'
+                          : 'flex-1 bg-white/15 rounded-full transition-colors'
+                      }
                     />
                   );
                 })}
               </div>
 
-              {/* Play + timestamp row */}
-              <div className="flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-center">
                 <button
                   type="button"
                   onClick={togglePlay}
-                  className="flex items-center justify-center w-11 h-11 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] transition-colors"
-                  aria-label={isPlaying ? 'Pause' : 'Play'}
+                  className="group flex items-center justify-center w-16 h-16 rounded-full bg-[#F97316] text-white hover:bg-[#EA580C] shadow-lg shadow-[#F97316]/40 transition-all ring-4 ring-[#F97316]/20 hover:ring-[#F97316]/40"
+                  aria-label={isPlaying ? 'Pause call' : 'Play call'}
                 >
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                 </button>
-                <div className="text-[14px] font-mono text-[#475569]">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
               </div>
+
+              {hasError && (
+                <p className="mt-4 text-center text-[13px] text-white/70">Audio unavailable — read the transcript below.</p>
+              )}
             </div>
 
-            {/* Transcript panel */}
-            <div
-              className="rounded-2xl bg-[#FAFAF9] border border-stone-200/70 p-6 max-h-[300px] overflow-y-auto"
-              aria-live="polite"
-            >
-              {DEMO_TRACKS[activeTab].transcript.map((line, i) => {
-                const active = i === activeLineIndex;
-                return (
-                  <div
-                    key={i}
-                    ref={active ? activeLineRef : null}
-                    className={
-                      active
-                        ? 'text-[15px] font-semibold text-[#F97316] border-l-2 border-[#F97316] pl-2 my-2'
-                        : 'text-[15px] text-[#475569] pl-2 my-2'
-                    }
-                  >
-                    {line.text}
-                  </div>
-                );
-              })}
+            <div className="p-6 md:p-8 bg-white" aria-live="polite">
+              <ul className="flex flex-col gap-3">
+                {track.transcript.map((line, i) => {
+                  const active = i === activeLineIndex;
+                  const isVoco = line.speaker === 'voco';
+                  return (
+                    <li
+                      key={i}
+                      ref={active ? activeLineRef : null}
+                      className={isVoco ? 'flex justify-start' : 'flex justify-end'}
+                    >
+                      <div
+                        className={
+                          isVoco
+                            ? active
+                              ? 'max-w-[85%] rounded-2xl rounded-bl-sm bg-[#F97316] text-white px-4 py-3 text-[15px] shadow-sm'
+                              : 'max-w-[85%] rounded-2xl rounded-bl-sm bg-[#F97316]/10 text-[#0F172A] px-4 py-3 text-[15px]'
+                            : active
+                              ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-[#0F172A] text-white px-4 py-3 text-[15px] shadow-sm'
+                              : 'max-w-[85%] rounded-2xl rounded-br-sm bg-stone-100 text-[#0F172A] px-4 py-3 text-[15px]'
+                        }
+                      >
+                        <div
+                          className={
+                            isVoco
+                              ? active
+                                ? 'text-[11px] font-semibold uppercase tracking-wide text-white/80 mb-0.5'
+                                : 'text-[11px] font-semibold uppercase tracking-wide text-[#F97316] mb-0.5'
+                              : active
+                                ? 'text-[11px] font-semibold uppercase tracking-wide text-white/70 mb-0.5'
+                                : 'text-[11px] font-semibold uppercase tracking-wide text-[#475569] mb-0.5'
+                          }
+                        >
+                          {isVoco ? 'Voco' : 'Caller'}
+                        </div>
+                        {line.text}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </div>
         </div>
