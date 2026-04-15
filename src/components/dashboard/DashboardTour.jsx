@@ -26,11 +26,6 @@ const STEPS = [
     placement: 'bottom',
   },
   {
-    target: '[href="/dashboard/analytics"]',
-    content: 'Track your conversion rates, revenue, and call volume over time.',
-    placement: 'bottom',
-  },
-  {
     target: '[href="/dashboard/more"]',
     content: 'Configure your services, working hours, calendar connections, and AI settings here.',
     placement: 'top',

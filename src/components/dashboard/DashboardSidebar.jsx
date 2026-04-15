@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, BarChart3, MessageSquare, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, MessageSquare, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
@@ -19,7 +19,6 @@ const NAV_ITEMS = [
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 

@@ -25,7 +25,6 @@ const ROUTE_DOC_MAP = {
   '/dashboard/calls': 'calls.md',
   '/dashboard/invoices': 'invoices.md',
   '/dashboard/estimates': 'estimates.md',
-  '/dashboard/more/analytics': 'analytics.md',
   '/dashboard/more/billing': 'billing.md',
   '/dashboard/more/services-pricing': 'settings.md',
   '/dashboard/more/working-hours': 'settings.md',
@@ -52,7 +51,6 @@ const KEYWORD_DOC_MAP = [
   { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },
   { keywords: ['invoice', 'invoices', 'payment', 'bill', 'pdf', 'send invoice'], doc: 'invoices.md' },
   { keywords: ['estimate', 'estimates', 'quote'], doc: 'estimates.md' },
-  { keywords: ['analytics', 'revenue', 'chart', 'stats', 'report'], doc: 'analytics.md' },
   { keywords: ['setting', 'settings', 'service', 'working hours', 'zone', 'notification', 'ai voice'], doc: 'settings.md' },
   { keywords: ['integration', 'quickbooks', 'xero', 'connect', 'sync'], doc: 'integrations.md' },
 ];
