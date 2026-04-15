@@ -291,8 +291,8 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       <Card>
         <CardContent className="pt-6">
           <div className="space-y-1">
-            <Label htmlFor="invoice-title" className="text-sm font-medium text-stone-700">
-              Invoice Title <span className="text-stone-400 font-normal">(optional)</span>
+            <Label htmlFor="invoice-title" className="text-sm font-medium text-foreground">
+              Invoice Title <span className="text-muted-foreground font-normal">(optional)</span>
             </Label>
             <Input
               id="invoice-title"
@@ -307,7 +307,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       {/* Customer Info */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Customer Information</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Customer Information</CardTitle>
         </CardHeader>
         <CardContent>
           {/* Lead search / link */}
@@ -315,13 +315,13 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
-                <span className="text-stone-700">
-                  Linked to: <span className="font-medium text-stone-900">{selectedLead.caller_name}</span>
+                <span className="text-foreground">
+                  Linked to: <span className="font-medium text-foreground">{selectedLead.caller_name}</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleUnlinkLead}
-                  className="ml-auto p-0.5 text-stone-400 hover:text-stone-600 rounded"
+                  className="ml-auto p-0.5 text-muted-foreground hover:text-muted-foreground rounded"
                   aria-label="Unlink lead"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -329,11 +329,11 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               </div>
             ) : (
               <div className="relative">
-                <Label className="text-sm font-medium text-stone-700 mb-1 block">
-                  Link to Lead <span className="text-stone-400 font-normal">(optional)</span>
+                <Label className="text-sm font-medium text-foreground mb-1 block">
+                  Link to Lead <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search leads by name or phone..."
                     value={leadSearchQuery}
@@ -343,32 +343,32 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                     className="pl-9"
                   />
                   {searchLoading && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-stone-400" />
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                   )}
                 </div>
                 {searchOpen && leadResults.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {leadResults.map((lead) => (
                       <button
                         key={lead.id}
                         type="button"
-                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-stone-50 text-left"
+                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-muted text-left"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectLead(lead)}
                       >
                         <div>
-                          <span className="font-medium text-stone-900">{lead.caller_name || 'Unknown'}</span>
-                          <span className="text-stone-500 ml-2">{lead.from_number}</span>
+                          <span className="font-medium text-foreground">{lead.caller_name || 'Unknown'}</span>
+                          <span className="text-muted-foreground ml-2">{lead.from_number}</span>
                         </div>
                         {lead.job_type && (
-                          <span className="text-xs text-stone-400">{lead.job_type}</span>
+                          <span className="text-xs text-muted-foreground">{lead.job_type}</span>
                         )}
                       </button>
                     ))}
                   </div>
                 )}
                 {searchOpen && leadResults.length === 0 && leadSearchQuery.length >= 2 && !searchLoading && (
-                  <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg p-3 text-sm text-stone-500">
+                  <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground">
                     No leads found
                   </div>
                 )}
@@ -380,7 +380,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="customer-name" className="text-sm font-medium text-stone-700">
+              <Label htmlFor="customer-name" className="text-sm font-medium text-foreground">
                 Customer Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -392,7 +392,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="customer-email" className="text-sm font-medium text-stone-700">Email</Label>
+              <Label htmlFor="customer-email" className="text-sm font-medium text-foreground">Email</Label>
               <Input
                 id="customer-email"
                 type="email"
@@ -407,7 +407,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="customer-phone" className="text-sm font-medium text-stone-700">Phone</Label>
+              <Label htmlFor="customer-phone" className="text-sm font-medium text-foreground">Phone</Label>
               <Input
                 id="customer-phone"
                 type="tel"
@@ -417,7 +417,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="job-type" className="text-sm font-medium text-stone-700">Job Type</Label>
+              <Label htmlFor="job-type" className="text-sm font-medium text-foreground">Job Type</Label>
               <Input
                 id="job-type"
                 placeholder="e.g. HVAC Repair, Plumbing"
@@ -426,7 +426,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="customer-address" className="text-sm font-medium text-stone-700">
+              <Label htmlFor="customer-address" className="text-sm font-medium text-foreground">
                 Service Address
               </Label>
               <Input
@@ -443,12 +443,12 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       {/* Dates & Payment Terms */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Invoice Dates</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Invoice Dates</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="issued-date" className="text-sm font-medium text-stone-700">Issue Date</Label>
+              <Label htmlFor="issued-date" className="text-sm font-medium text-foreground">Issue Date</Label>
               <Input
                 id="issued-date"
                 type="date"
@@ -457,7 +457,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="payment-terms" className="text-sm font-medium text-stone-700">
+              <Label htmlFor="payment-terms" className="text-sm font-medium text-foreground">
                 Payment Terms
               </Label>
               <Select value={paymentTerms} onValueChange={handleTermsChange}>
@@ -474,7 +474,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               </Select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="due-date" className="text-sm font-medium text-stone-700">Due Date</Label>
+              <Label htmlFor="due-date" className="text-sm font-medium text-foreground">Due Date</Label>
               <Input
                 id="due-date"
                 type="date"
@@ -489,7 +489,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       {/* Line Items */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-semibold text-stone-900">Line Items</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Line Items</CardTitle>
           <div className="flex items-center gap-2">
             {invoiceId && (
               <TooltipProvider>
@@ -521,15 +521,15 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                 </Tooltip>
               </TooltipProvider>
             )}
-            <span className="text-xs text-stone-400">
+            <span className="text-xs text-muted-foreground">
               {lineItems.length} item{lineItems.length !== 1 ? 's' : ''}
             </span>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           {lineItems.length === 0 ? (
-            <div className="text-center py-8 border-2 border-dashed border-stone-200 rounded-lg">
-              <p className="text-sm text-stone-400 mb-3">
+            <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">
                 No line items yet
               </p>
               <Button
@@ -579,7 +579,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                   {/* AI description preview card */}
                   {aiDescriptions?.[index] && !aiAccepted[index] && (
                     <div className="ml-2 mt-1 mb-2 p-3 bg-muted border-l-2 border-[var(--brand-accent)] rounded-r-lg">
-                      <p className="text-sm text-stone-700 mb-2">{aiDescriptions[index]}</p>
+                      <p className="text-sm text-foreground mb-2">{aiDescriptions[index]}</p>
                       <div className="flex items-center gap-2">
                         <Button
                           type="button"
@@ -613,7 +613,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               type="button"
               variant="outline"
               size="sm"
-              className="mt-3 w-full border-dashed text-stone-500 hover:text-stone-700 hover:border-stone-400"
+              className="mt-3 w-full border-dashed text-muted-foreground hover:text-foreground hover:border-border"
               onClick={handleAddLineItem}
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -624,21 +624,21 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
           {/* Totals */}
           {lineItems.length > 0 && (
             <div className="mt-5 ml-auto max-w-xs">
-              <div className="bg-stone-50 rounded-lg p-4 space-y-2">
+              <div className="bg-muted rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500">Subtotal</span>
-                  <span className="font-medium text-stone-700 tabular-nums">${subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium text-foreground tabular-nums">${subtotal.toFixed(2)}</span>
                 </div>
                 {tax_amount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">Tax ({taxRatePct}%)</span>
-                    <span className="font-medium text-stone-700 tabular-nums">${tax_amount.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Tax ({taxRatePct}%)</span>
+                    <span className="font-medium text-foreground tabular-nums">${tax_amount.toFixed(2)}</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between pt-1">
-                  <span className="font-semibold text-stone-900">Total Due</span>
-                  <span className="font-bold text-lg text-stone-900 tabular-nums">${total.toFixed(2)}</span>
+                  <span className="font-semibold text-foreground">Total Due</span>
+                  <span className="font-bold text-lg text-foreground tabular-nums">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -649,17 +649,17 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
       {/* Notes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold text-stone-900">Notes</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-1">
-            <Label htmlFor="invoice-notes" className="text-sm font-medium text-stone-700">
+            <Label htmlFor="invoice-notes" className="text-sm font-medium text-foreground">
               Notes (visible to customer)
             </Label>
             <textarea
               id="invoice-notes"
               rows={4}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-stone-900 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 resize-none"
               placeholder="e.g. Thank you for your business!"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

@@ -67,9 +67,9 @@ function getItemDescription(item) {
 
 function InvoiceDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
-      <div className="bg-white border-b border-stone-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <Skeleton className="h-8 w-8 rounded" />
           <Skeleton className="h-6 w-40" />
@@ -151,59 +151,59 @@ function InvoicePreview({ invoice, settings, lineItems }) {
               className="max-h-12 max-w-[120px] object-contain mb-2"
             />
           )}
-          <p className="font-bold text-base text-slate-900">{settings.business_name || ''}</p>
+          <p className="font-bold text-base text-foreground">{settings.business_name || ''}</p>
           {settings.address && (
-            <p className="text-stone-500 text-xs leading-relaxed">{settings.address}</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">{settings.address}</p>
           )}
           {(settings.phone || settings.email) && (
-            <p className="text-stone-500 text-xs leading-relaxed">
+            <p className="text-muted-foreground text-xs leading-relaxed">
               {settings.phone}{settings.phone && settings.email ? ' | ' : ''}{settings.email}
             </p>
           )}
           {settings.license_number && (
-            <p className="text-stone-500 text-xs">License: {settings.license_number}</p>
+            <p className="text-muted-foreground text-xs">License: {settings.license_number}</p>
           )}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-slate-900">INVOICE</p>
+          <p className="text-2xl font-bold text-foreground">INVOICE</p>
           {invoice.title && (
-            <p className="text-sm font-medium text-stone-700">{invoice.title}</p>
+            <p className="text-sm font-medium text-foreground">{invoice.title}</p>
           )}
-          <p className="text-stone-500 text-xs">#{invoice.invoice_number}</p>
-          <p className="text-stone-500 text-xs">Issued: {invoice.issued_date || '—'}</p>
-          <p className="text-stone-500 text-xs">Due: {invoice.due_date || '—'}</p>
+          <p className="text-muted-foreground text-xs">#{invoice.invoice_number}</p>
+          <p className="text-muted-foreground text-xs">Issued: {invoice.issued_date || '—'}</p>
+          <p className="text-muted-foreground text-xs">Due: {invoice.due_date || '—'}</p>
         </div>
       </div>
 
       {/* Bill To */}
       <div className="mb-6">
-        <p className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1">Bill To</p>
-        <p className="font-bold text-slate-900">{invoice.customer_name || '—'}</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">Bill To</p>
+        <p className="font-bold text-foreground">{invoice.customer_name || '—'}</p>
         {invoice.customer_address && (
-          <p className="text-stone-500 text-xs">{invoice.customer_address}</p>
+          <p className="text-muted-foreground text-xs">{invoice.customer_address}</p>
         )}
         {invoice.customer_phone && (
-          <p className="text-stone-500 text-xs">{invoice.customer_phone}</p>
+          <p className="text-muted-foreground text-xs">{invoice.customer_phone}</p>
         )}
         {invoice.customer_email && (
-          <p className="text-stone-500 text-xs">{invoice.customer_email}</p>
+          <p className="text-muted-foreground text-xs">{invoice.customer_email}</p>
         )}
       </div>
 
       {/* Line Items Table */}
       <table className="w-full mb-6 border-collapse">
         <thead>
-          <tr className="border-b border-stone-300">
-            <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-1/2">Description</th>
-            <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-[15%]">Qty</th>
-            <th className="text-left text-xs font-bold text-stone-400 uppercase pb-2 w-[15%]">Rate</th>
-            <th className="text-right text-xs font-bold text-stone-400 uppercase pb-2 w-[20%]">Amount</th>
+          <tr className="border-b border-border">
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-1/2">Description</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-[15%]">Qty</th>
+            <th className="text-left text-xs font-bold text-muted-foreground uppercase pb-2 w-[15%]">Rate</th>
+            <th className="text-right text-xs font-bold text-muted-foreground uppercase pb-2 w-[20%]">Amount</th>
           </tr>
         </thead>
         <tbody>
           {lineItems.length === 0 ? (
             <tr>
-              <td colSpan={4} className="py-4 text-stone-400 text-center text-xs">
+              <td colSpan={4} className="py-4 text-muted-foreground text-center text-xs">
                 No line items
               </td>
             </tr>
@@ -216,14 +216,14 @@ function InvoicePreview({ invoice, settings, lineItems }) {
               return (
                 <tr
                   key={item.id || index}
-                  className={`border-b border-stone-100 ${index % 2 === 1 ? 'bg-stone-50/50' : ''}`}
+                  className={`border-b border-border ${index % 2 === 1 ? 'bg-muted/50' : ''}`}
                 >
-                  <td className="py-2 pr-4 text-slate-800">{getItemDescription(item)}</td>
-                  <td className="py-2 text-stone-600">{hideQtyRate ? '—' : item.quantity || 1}</td>
-                  <td className="py-2 text-stone-600">
+                  <td className="py-2 pr-4 text-foreground">{getItemDescription(item)}</td>
+                  <td className="py-2 text-muted-foreground">{hideQtyRate ? '—' : item.quantity || 1}</td>
+                  <td className="py-2 text-muted-foreground">
                     {isDiscount ? '—' : `$${formatMoney(item.unit_price)}`}
                   </td>
-                  <td className={`py-2 text-right font-medium ${isDiscount ? 'text-red-600' : 'text-slate-800'}`}>
+                  <td className={`py-2 text-right font-medium ${isDiscount ? 'text-red-600' : 'text-foreground'}`}>
                     {isDiscount
                       ? `-$${formatMoney(Math.abs(lineTotal))}`
                       : `$${formatMoney(lineTotal)}`}
@@ -239,32 +239,32 @@ function InvoicePreview({ invoice, settings, lineItems }) {
       <div className="flex justify-end mb-6">
         <div className="w-52">
           <div className="flex justify-between py-1">
-            <span className="text-stone-500">Subtotal</span>
-            <span className="text-slate-800">${formatMoney(subtotal)}</span>
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-foreground">${formatMoney(subtotal)}</span>
           </div>
           {taxAmount > 0 && (
             <div className="flex justify-between py-1">
-              <span className="text-stone-500">Tax</span>
-              <span className="text-slate-800">${formatMoney(taxAmount)}</span>
+              <span className="text-muted-foreground">Tax</span>
+              <span className="text-foreground">${formatMoney(taxAmount)}</span>
             </div>
           )}
-          <div className="flex justify-between py-2 border-t border-stone-300 mt-1">
-            <span className="font-bold text-slate-900 text-sm">Total Due</span>
-            <span className="font-bold text-slate-900 text-sm">${formatMoney(total)}</span>
+          <div className="flex justify-between py-2 border-t border-border mt-1">
+            <span className="font-bold text-foreground text-sm">Total Due</span>
+            <span className="font-bold text-foreground text-sm">${formatMoney(total)}</span>
           </div>
         </div>
       </div>
 
       {/* Footer: payment terms + notes */}
       {(invoice.payment_terms || invoice.notes) && (
-        <div className="border-t border-stone-200 pt-4 space-y-1">
+        <div className="border-t border-border pt-4 space-y-1">
           {invoice.payment_terms && (
-            <p className="text-xs text-stone-500">
-              <span className="font-medium text-stone-600">Payment Terms:</span> {invoice.payment_terms}
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-muted-foreground">Payment Terms:</span> {invoice.payment_terms}
             </p>
           )}
           {invoice.notes && (
-            <p className="text-xs text-stone-500">{invoice.notes}</p>
+            <p className="text-xs text-muted-foreground">{invoice.notes}</p>
           )}
         </div>
       )}
@@ -397,10 +397,10 @@ export default function InvoiceDetailPage() {
   // ── Error ──
   if (error || !invoice) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className={`${card.base} p-8 max-w-md text-center`}>
-          <p className="text-slate-900 font-medium mb-2">Couldn&apos;t load invoice</p>
-          <p className="text-stone-500 text-sm mb-4">Check your connection and try again.</p>
+          <p className="text-foreground font-medium mb-2">Couldn&apos;t load invoice</p>
+          <p className="text-muted-foreground text-sm mb-4">Check your connection and try again.</p>
           <div className="flex gap-3 justify-center">
             <Button variant="outline" onClick={fetchData}>Retry</Button>
             <Button variant="outline" asChild>
@@ -417,22 +417,22 @@ export default function InvoiceDetailPage() {
   const isPaidOrVoid = invoice.status === 'paid' || invoice.status === 'void';
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted">
       {/* ── Page Header ── */}
-      <div className="bg-white border-b border-stone-200 px-6 py-4">
+      <div className="bg-card border-b border-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
           <Link
             href="/dashboard/invoices"
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-colors"
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Back to Invoices"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="min-w-0">
             {invoice.title && (
-              <h1 className="text-base font-semibold text-slate-900 truncate">{invoice.title}</h1>
+              <h1 className="text-base font-semibold text-foreground truncate">{invoice.title}</h1>
             )}
-            <p className={`${invoice.title ? 'text-xs text-stone-500' : 'text-base font-semibold text-slate-900'}`}>
+            <p className={`${invoice.title ? 'text-xs text-muted-foreground' : 'text-base font-semibold text-foreground'}`}>
               {invoice.title ? `#${invoice.invoice_number}` : `Invoice ${invoice.invoice_number}`}
             </p>
           </div>
@@ -455,37 +455,37 @@ export default function InvoiceDetailPage() {
 
             {/* Metadata card */}
             <div className={`${card.base} p-5`}>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Details</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Details</p>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Status</dt>
+                  <dt className="text-muted-foreground">Status</dt>
                   <dd><InvoiceStatusBadge status={invoice.status} /></dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Created</dt>
-                  <dd className="text-slate-700">{formatDate(invoice.created_at)}</dd>
+                  <dt className="text-muted-foreground">Created</dt>
+                  <dd className="text-foreground">{formatDate(invoice.created_at)}</dd>
                 </div>
                 {invoice.sent_at && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Sent</dt>
-                    <dd className="text-slate-700">{formatDate(invoice.sent_at)}</dd>
+                    <dt className="text-muted-foreground">Sent</dt>
+                    <dd className="text-foreground">{formatDate(invoice.sent_at)}</dd>
                   </div>
                 )}
                 {invoice.paid_at && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Paid</dt>
-                    <dd className="text-slate-700">{formatDate(invoice.paid_at)}</dd>
+                    <dt className="text-muted-foreground">Paid</dt>
+                    <dd className="text-foreground">{formatDate(invoice.paid_at)}</dd>
                   </div>
                 )}
                 {invoice.voided_at && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Voided</dt>
-                    <dd className="text-slate-700">{formatDate(invoice.voided_at)}</dd>
+                    <dt className="text-muted-foreground">Voided</dt>
+                    <dd className="text-foreground">{formatDate(invoice.voided_at)}</dd>
                   </div>
                 )}
                 {invoice.lead_id && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Linked Lead</dt>
+                    <dt className="text-muted-foreground">Linked Lead</dt>
                     <dd>
                       <Link
                         href={`/dashboard/leads?open=${invoice.lead_id}`}
@@ -502,18 +502,18 @@ export default function InvoiceDetailPage() {
             {/* Recurring info */}
             {invoice.is_recurring_template && (
               <div className={`${card.base} p-5`}>
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Recurring Schedule</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Recurring Schedule</p>
                 {invoice.recurring_active ? (
-                  <p className="text-sm text-stone-500">
+                  <p className="text-sm text-muted-foreground">
                     Next invoice: {invoice.recurring_next_date} ({invoice.recurring_frequency})
                   </p>
                 ) : (
-                  <p className="text-sm text-stone-400">Recurring paused</p>
+                  <p className="text-sm text-muted-foreground">Recurring paused</p>
                 )}
                 {invoice.recurring_active && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="text-sm text-stone-500 hover:text-stone-700 underline mt-2">
+                      <button className="text-sm text-muted-foreground hover:text-foreground underline mt-2">
                         Stop Recurring
                       </button>
                     </AlertDialogTrigger>
@@ -541,7 +541,7 @@ export default function InvoiceDetailPage() {
 
             {invoice.generated_from_id && (
               <div className={`${card.base} p-5`}>
-                <p className="text-sm text-stone-400">Generated from recurring template</p>
+                <p className="text-sm text-muted-foreground">Generated from recurring template</p>
               </div>
             )}
 
@@ -562,7 +562,7 @@ export default function InvoiceDetailPage() {
 
             {/* Actions card */}
             <div className={`${card.base} p-5 space-y-3`}>
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-1">Actions</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Actions</p>
 
               {/* Download PDF — always visible */}
               <Button
@@ -674,7 +674,7 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* ── Mobile sticky action bar ── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 p-4 flex gap-2 safe-bottom">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-card border-t border-border p-4 flex gap-2 safe-bottom">
         <Button
           variant="outline"
           size="sm"

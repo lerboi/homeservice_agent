@@ -191,7 +191,7 @@ export default function BatchReviewPage() {
           })}
         </div>
 
-        <div className="px-6 py-4 border-t border-stone-200">
+        <div className="px-6 py-4 border-t border-border">
           <button
             type="button"
             onClick={() => router.push('/dashboard/invoices')}
@@ -213,7 +213,7 @@ export default function BatchReviewPage() {
             <button
               type="button"
               onClick={() => router.push('/dashboard/invoices')}
-              className="text-stone-500 hover:text-stone-700 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Back to invoices"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -289,7 +289,7 @@ export default function BatchReviewPage() {
           invoices.map((inv) => (
             <div
               key={inv.id}
-              className="bg-white rounded-xl border border-stone-200/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 px-4 py-3"
+              className="bg-card rounded-xl border border-border/60 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 px-4 py-3"
             >
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
@@ -297,7 +297,7 @@ export default function BatchReviewPage() {
                     <span className="text-sm font-semibold text-foreground">
                       {inv.invoice_number}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2 py-0.5 text-xs font-medium">
+                    <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-xs font-medium">
                       Draft
                     </span>
                   </div>
@@ -313,7 +313,7 @@ export default function BatchReviewPage() {
                   <button
                     type="button"
                     onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}
-                    className="text-stone-500 hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={`Edit invoice ${inv.invoice_number}`}
                   >
                     <Pencil className="h-4 w-4" />
@@ -321,7 +321,7 @@ export default function BatchReviewPage() {
                   <button
                     type="button"
                     onClick={() => handleRemove(inv.id)}
-                    className="text-stone-400 hover:text-red-600 transition-colors"
+                    className="text-muted-foreground hover:text-red-600 transition-colors"
                     aria-label={`Remove invoice ${inv.invoice_number}`}
                   >
                     <Trash2 className="h-4 w-4" />

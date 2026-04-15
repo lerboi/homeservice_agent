@@ -156,14 +156,14 @@ export default function InvoicesPage() {
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-semibold text-stone-900">Invoices</h1>
+          <h1 className="text-xl font-semibold text-foreground">Invoices</h1>
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/more/invoice-settings"
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-stone-200 bg-white hover:bg-stone-50 transition-colors"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-border bg-card hover:bg-muted transition-colors"
               aria-label="Invoice settings"
             >
-              <Settings className="w-4 h-4 text-stone-500" />
+              <Settings className="w-4 h-4 text-muted-foreground" />
             </Link>
             <button
               onClick={handleCreateInvoice}
@@ -180,7 +180,7 @@ export default function InvoicesPage() {
 
         {/* Search bar */}
         <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by customer or invoice #..."
             value={searchInput}
@@ -191,7 +191,7 @@ export default function InvoicesPage() {
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-muted-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -216,7 +216,7 @@ export default function InvoicesPage() {
         {/* Empty state — no invoices at all */}
         {!loading && !error && invoices.length === 0 && activeStatus === 'all' && !debouncedSearch && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <FileText className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+            <FileText className="h-10 w-10 text-muted-foreground/50 mb-4" aria-hidden="true" />
             <h2 className="text-base font-semibold text-foreground mb-2">No invoices yet</h2>
             <p className="text-sm text-muted-foreground max-w-sm mb-6">
               Send professional, white-labeled invoices to your customers in three simple steps.
@@ -225,24 +225,24 @@ export default function InvoicesPage() {
             {/* Workflow visual */}
             <div className="flex items-center gap-3 mb-8">
               <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-10 rounded-full bg-stone-100">
-                  <CheckCircle className="size-5 text-stone-500" />
+                <div className="flex items-center justify-center size-10 rounded-full bg-muted">
+                  <CheckCircle className="size-5 text-muted-foreground" />
                 </div>
-                <span className="text-xs text-stone-500">Complete job</span>
+                <span className="text-xs text-muted-foreground">Complete job</span>
               </div>
-              <ArrowRight className="size-4 text-stone-300 mt-[-18px]" />
+              <ArrowRight className="size-4 text-muted-foreground/50 mt-[-18px]" />
               <div className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center justify-center size-10 rounded-full bg-orange-50">
                   <FileText className="size-5 text-[var(--brand-accent)]" />
                 </div>
-                <span className="text-xs text-stone-500">Create invoice</span>
+                <span className="text-xs text-muted-foreground">Create invoice</span>
               </div>
-              <ArrowRight className="size-4 text-stone-300 mt-[-18px]" />
+              <ArrowRight className="size-4 text-muted-foreground/50 mt-[-18px]" />
               <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-10 rounded-full bg-stone-100">
-                  <Send className="size-5 text-stone-500" />
+                <div className="flex items-center justify-center size-10 rounded-full bg-muted">
+                  <Send className="size-5 text-muted-foreground" />
                 </div>
-                <span className="text-xs text-stone-500">Send to customer</span>
+                <span className="text-xs text-muted-foreground">Send to customer</span>
               </div>
             </div>
 
@@ -262,7 +262,7 @@ export default function InvoicesPage() {
             {completedLeadsCount > 0 && (
               <Link
                 href="/dashboard/leads?status=completed"
-                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
+                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
               >
                 <Users className="size-4" />
                 {completedLeadsCount} completed lead{completedLeadsCount !== 1 ? 's' : ''} ready for invoicing
@@ -288,17 +288,17 @@ export default function InvoicesPage() {
         {/* Invoice table — desktop */}
         {!loading && !error && invoices.length > 0 && (
           <>
-            <div className="hidden sm:block border border-stone-200 rounded-lg overflow-hidden">
+            <div className="hidden sm:block border border-border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-stone-50">
-                    <TableHead className="text-xs font-medium text-stone-500">Invoice #</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Customer</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Job Type</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Amount</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Issued</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Due</TableHead>
-                    <TableHead className="text-xs font-medium text-stone-500">Status</TableHead>
+                  <TableRow className="bg-muted">
+                    <TableHead className="text-xs font-medium text-muted-foreground">Invoice #</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Customer</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Job Type</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Amount</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Issued</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Due</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -308,28 +308,28 @@ export default function InvoicesPage() {
                       onClick={() => handleRowClick(invoice.id)}
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(invoice.id); }}}
-                      className="cursor-pointer hover:bg-stone-50 transition-colors"
+                      className="cursor-pointer hover:bg-muted transition-colors"
                     >
-                      <TableCell className="text-sm font-medium text-stone-900">
+                      <TableCell className="text-sm font-medium text-foreground">
                         <span className="inline-flex items-center gap-1.5">
                           {invoice.invoice_number}
                           <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
                           {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
                           {invoice.generated_from_id && !invoice.is_recurring_template && (
-                            <span className="text-[10px] text-stone-400">Recurring</span>
+                            <span className="text-[10px] text-muted-foreground">Recurring</span>
                           )}
                         </span>
                         {invoice.title && (
-                          <span className="block text-xs text-stone-500 font-normal truncate max-w-[200px]">
+                          <span className="block text-xs text-muted-foreground font-normal truncate max-w-[200px]">
                             {invoice.title}
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-stone-700">{invoice.customer_name}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{invoice.job_type || '\u2014'}</TableCell>
-                      <TableCell className="text-sm font-medium text-stone-900">{formatAmount(invoice.total)}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{formatDate(invoice.issued_date)}</TableCell>
-                      <TableCell className="text-sm text-stone-500">{formatDate(invoice.due_date)}</TableCell>
+                      <TableCell className="text-sm text-foreground">{invoice.customer_name}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{invoice.job_type || '\u2014'}</TableCell>
+                      <TableCell className="text-sm font-medium text-foreground">{formatAmount(invoice.total)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(invoice.issued_date)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(invoice.due_date)}</TableCell>
                       <TableCell><InvoiceStatusBadge status={invoice.status} /></TableCell>
                     </TableRow>
                   ))}
@@ -346,28 +346,28 @@ export default function InvoicesPage() {
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(invoice.id); }}}
                   role="button"
-                  className="bg-white border border-stone-200 rounded-lg p-4 cursor-pointer hover:bg-stone-50 transition-colors"
+                  className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-muted transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-900 truncate inline-flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-foreground truncate inline-flex items-center gap-1.5">
                         {invoice.invoice_number}
                         <InvoiceSyncIndicator syncStatus={syncStatusMap[invoice.id]} />
                         {invoice.is_recurring_template && <RecurringBadge className="text-[10px] py-0 px-1.5" />}
                         {invoice.generated_from_id && !invoice.is_recurring_template && (
-                          <span className="text-[10px] text-stone-400">Recurring</span>
+                          <span className="text-[10px] text-muted-foreground">Recurring</span>
                         )}
                       </p>
                       {invoice.title && (
-                        <p className="text-xs text-stone-500 truncate">{invoice.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{invoice.title}</p>
                       )}
-                      <p className="text-sm text-stone-700 truncate">{invoice.customer_name}</p>
+                      <p className="text-sm text-foreground truncate">{invoice.customer_name}</p>
                     </div>
-                    <p className="text-sm font-medium text-stone-900 flex-shrink-0">{formatAmount(invoice.total)}</p>
+                    <p className="text-sm font-medium text-foreground flex-shrink-0">{formatAmount(invoice.total)}</p>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <InvoiceStatusBadge status={invoice.status} />
-                    <p className="text-xs text-stone-400">Due {formatDate(invoice.due_date)}</p>
+                    <p className="text-xs text-muted-foreground">Due {formatDate(invoice.due_date)}</p>
                   </div>
                 </div>
               ))}
