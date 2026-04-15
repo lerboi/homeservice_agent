@@ -673,7 +673,7 @@ export default function CalendarPage() {
                 <button
                   key={appt.id}
                   type="button"
-                  className={`shrink-0 w-[140px] text-left rounded-lg border border-stone-200 border-l-[3px] ${border} p-2 hover:bg-stone-50 transition-colors`}
+                  className={`shrink-0 w-[140px] text-left rounded-lg border border-border border-l-[3px] ${border} p-2 hover:bg-muted transition-colors`}
                   onClick={() => handleAppointmentClick(appt)}
                 >
                   <p className={`text-[10px] font-semibold ${timeColor} leading-none mb-1`}>{startTime}</p>
@@ -688,7 +688,7 @@ export default function CalendarPage() {
       {/* ── Calendar Card (full width) ───────────────────────────── */}
       <div className={`${card.base} p-0 overflow-hidden`}>
         {/* Calendar toolbar — row 1: navigation + view toggle */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-200/60 bg-[#FAFAF9]">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-[#FAFAF9]">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous">
               <ChevronLeft className="h-4 w-4" />
@@ -699,17 +699,17 @@ export default function CalendarPage() {
             <span className="text-base font-semibold text-foreground ml-1 tabular-nums">{dateLabel}</span>
           </div>
 
-          <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+          <div className="flex rounded-lg border border-border overflow-hidden">
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-white' : 'bg-white text-muted-foreground hover:bg-stone-50'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               onClick={() => setViewMode('month')}
             >
               Month
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-foreground text-white' : 'bg-white text-muted-foreground hover:bg-stone-50'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-border ${effectiveViewMode === 'day' ? 'bg-foreground text-white' : 'bg-card text-muted-foreground hover:bg-muted'}`}
               onClick={() => setViewMode('day')}
             >
               Day
@@ -718,7 +718,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Calendar toolbar — row 2: actions */}
-        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-stone-100 bg-white">
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card">
           <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
@@ -749,7 +749,7 @@ export default function CalendarPage() {
                 onCheckedChange={setShowCompleted}
                 aria-label="Show completed jobs on calendar"
               />
-              <Label htmlFor="show-completed" className="text-xs md:text-sm text-slate-500 whitespace-nowrap cursor-pointer hidden sm:inline">
+              <Label htmlFor="show-completed" className="text-xs md:text-sm text-muted-foreground whitespace-nowrap cursor-pointer hidden sm:inline">
                 Show completed
               </Label>
             </div>
@@ -767,7 +767,7 @@ export default function CalendarPage() {
               <PopoverContent align="end" sideOffset={8} className="w-60 p-1.5">
                 <button
                   type="button"
-                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-stone-50 active:bg-stone-100 text-left transition-colors"
+                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-muted active:bg-muted text-left transition-colors"
                   onClick={() => {
                     setCreatePopoverOpen(false);
                     setQuickBookSlot(null);
@@ -784,7 +784,7 @@ export default function CalendarPage() {
                 </button>
                 <button
                   type="button"
-                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-stone-50 active:bg-stone-100 text-left transition-colors"
+                  className="w-full flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-muted active:bg-muted text-left transition-colors"
                   onClick={() => {
                     setCreatePopoverOpen(false);
                     setSelectedTimeBlock(null);
@@ -873,7 +873,7 @@ export default function CalendarPage() {
               <EmptyStateCalendar padding="py-6" onConnect={() => {}} />
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
+                <CalendarOff className="h-8 w-8 text-muted-foreground/50 mb-2" />
                 <p className="text-sm font-medium text-foreground">No appointments today</p>
                 <p className="text-xs text-[#94A3B8] mt-0.5">Enjoy the day off.</p>
               </div>
@@ -893,7 +893,7 @@ export default function CalendarPage() {
                   <button
                     key={appt.id}
                     type="button"
-                    className={`w-full text-left rounded-lg border border-stone-200 border-l-[3px] ${border} p-3 hover:bg-stone-50 transition-colors group`}
+                    className={`w-full text-left rounded-lg border border-border border-l-[3px] ${border} p-3 hover:bg-muted transition-colors group`}
                     onClick={() => handleAppointmentClick(appt)}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -942,7 +942,7 @@ export default function CalendarPage() {
               {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
                 <div key={row.label} className="flex items-center justify-between text-xs">
                   <span className="font-medium text-foreground">{row.label}</span>
-                  <span className={row.closed ? 'text-stone-400' : 'text-muted-foreground'}>{row.hours}</span>
+                  <span className={row.closed ? 'text-muted-foreground' : 'text-muted-foreground'}>{row.hours}</span>
                 </div>
               ))}
             </div>
@@ -951,7 +951,7 @@ export default function CalendarPage() {
               onClick={() => setWhSheetOpen(true)}
               className="w-full py-6 text-center"
             >
-              <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+              <Clock className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm font-medium text-foreground">Not configured</p>
               <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
             </button>
@@ -986,7 +986,7 @@ export default function CalendarPage() {
                 {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
                   <div key={row.label} className="flex items-center justify-between text-xs">
                     <span className="font-medium text-foreground">{row.label}</span>
-                    <span className={row.closed ? 'text-stone-400' : 'text-muted-foreground'}>{row.hours}</span>
+                    <span className={row.closed ? 'text-muted-foreground' : 'text-muted-foreground'}>{row.hours}</span>
                   </div>
                 ))}
               </div>
@@ -995,7 +995,7 @@ export default function CalendarPage() {
                 onClick={() => setWhSheetOpen(true)}
                 className="w-full py-6 text-center"
               >
-                <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
+                <Clock className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">Not configured</p>
                 <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
               </button>

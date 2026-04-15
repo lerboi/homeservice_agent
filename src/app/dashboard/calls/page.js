@@ -26,19 +26,19 @@ import { supabase } from '@/lib/supabase-browser';
 
 const URGENCY_STYLE = {
   emergency: { badge: 'bg-red-100 text-red-700', border: 'border-l-red-500', label: 'Emergency' },
-  routine:   { badge: 'bg-stone-100 text-stone-600', border: 'border-l-stone-300', label: 'Routine' },
+  routine:   { badge: 'bg-muted text-muted-foreground', border: 'border-l-stone-300', label: 'Routine' },
   urgent: { badge: 'bg-amber-100 text-amber-700', border: 'border-l-amber-500', label: 'Urgent' },
 };
 
 const OUTCOME_STYLE = {
   booked:        { badge: 'bg-green-100 text-green-700', icon: CalendarCheck, label: 'Booked' },
   attempted:     { badge: 'bg-amber-100 text-amber-700', icon: Phone, label: 'Attempted' },
-  declined:      { badge: 'bg-stone-100 text-stone-600', icon: PhoneOff, label: 'Declined' },
-  not_attempted: { badge: 'bg-stone-50 text-stone-400', icon: PhoneMissed, label: 'No Booking' },
+  declined:      { badge: 'bg-muted text-muted-foreground', icon: PhoneOff, label: 'Declined' },
+  not_attempted: { badge: 'bg-muted text-muted-foreground', icon: PhoneMissed, label: 'No Booking' },
 };
 
 const ROUTING_STYLE = {
-  ai:             { badge: 'bg-stone-100 text-stone-600',  border: 'border-l-stone-300',  label: 'AI' },
+  ai:             { badge: 'bg-muted text-muted-foreground',  border: 'border-l-stone-300',  label: 'AI' },
   owner_pickup:   { badge: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-500',   label: 'You answered' },
   fallback_to_ai: { badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-500',  label: 'Missed \u2192 AI' },
 };
@@ -137,23 +137,23 @@ function CallCard({ call }) {
 
   return (
     <div
-      className={`border-l-[3px] ${us.border} bg-white rounded-r-xl transition-shadow ${expanded ? 'shadow-sm' : ''}`}
+      className={`border-l-[3px] ${us.border} bg-card rounded-r-xl transition-shadow ${expanded ? 'shadow-sm' : ''}`}
     >
       {/* Main row — always visible, clickable */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left min-h-[56px] hover:bg-stone-50/50 transition-colors rounded-r-xl"
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left min-h-[56px] hover:bg-muted/50 transition-colors rounded-r-xl"
       >
         {/* Call status icon */}
         <div className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${
           call.status === 'analyzed' ? 'bg-green-50' :
-          call.status === 'ended' ? 'bg-stone-50' :
+          call.status === 'ended' ? 'bg-muted' :
           'bg-amber-50'
         }`}>
           {call.status === 'analyzed' ? (
-            <PhoneIncoming className={`h-4.5 w-4.5 ${isShort ? 'text-stone-400' : 'text-green-600'}`} />
+            <PhoneIncoming className={`h-4.5 w-4.5 ${isShort ? 'text-muted-foreground' : 'text-green-600'}`} />
           ) : call.status === 'ended' ? (
-            <PhoneOff className="h-4.5 w-4.5 text-stone-400" />
+            <PhoneOff className="h-4.5 w-4.5 text-muted-foreground" />
           ) : (
             <Clock className="h-4.5 w-4.5 text-amber-500" />
           )}
@@ -162,12 +162,12 @@ function CallCard({ call }) {
         {/* Caller + time */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className={`text-sm font-medium truncate ${isShort ? 'text-stone-400' : 'text-foreground'}`}>
+            <p className={`text-sm font-medium truncate ${isShort ? 'text-muted-foreground' : 'text-foreground'}`}>
               {formatPhone(call.from_number)}
             </p>
             {isShort && (
               <span
-                className="text-[10px] text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded"
+                className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded"
                 title="This call was too brief to count as a lead (under 15 seconds)."
               >
                 too short
@@ -176,7 +176,7 @@ function CallCard({ call }) {
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {formatTime(call.created_at)}
-            {call.duration_seconds > 0 && <span className="mx-1.5 text-stone-300">·</span>}
+            {call.duration_seconds > 0 && <span className="mx-1.5 text-muted-foreground/50">·</span>}
             {call.duration_seconds > 0 && <span>{formatDuration(call.duration_seconds)}</span>}
           </p>
         </div>
@@ -195,7 +195,7 @@ function CallCard({ call }) {
         </div>
 
         {/* Expand chevron */}
-        <ChevronDown className={`h-4 w-4 text-stone-400 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Expanded detail panel */}
@@ -208,7 +208,7 @@ function CallCard({ call }) {
             transition={{ duration: 0.15, ease: 'easeOut' }}
             style={{ overflow: 'hidden' }}
           >
-            <div className="px-4 pb-4 pt-1 border-t border-stone-100">
+            <div className="px-4 pb-4 pt-1 border-t border-border">
               {isOwnerPickup ? (
                 <>
                   <p className="text-sm text-muted-foreground mt-2">You handled this call directly.</p>
@@ -220,7 +220,7 @@ function CallCard({ call }) {
                     )}
                   </div>
                   {call.from_number && (
-                    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
+                    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
                       <a
                         href={`tel:${call.from_number}`}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90 active:scale-95 transition-all"
@@ -289,7 +289,7 @@ function CallCard({ call }) {
                   </div>
 
                   {/* Quick actions */}
-                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
+                  <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
                     {call.from_number && (
                       <a
                         href={`tel:${call.from_number}`}
@@ -302,7 +302,7 @@ function CallCard({ call }) {
                     {call.from_number && !isShort && (
                       <a
                         href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-foreground hover:bg-stone-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-foreground hover:bg-muted transition-colors"
                       >
                         <Users className="h-3 w-3" />
                         View Lead
@@ -329,9 +329,9 @@ function CallCard({ call }) {
 function DetailItem({ icon: Icon, label, value }) {
   return (
     <div className="flex items-start gap-2">
-      <Icon className="h-3.5 w-3.5 text-stone-400 mt-0.5 shrink-0" />
+      <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
       <div>
-        <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
         <p className="text-xs font-medium text-foreground">{value}</p>
       </div>
     </div>
@@ -343,7 +343,7 @@ function DetailItem({ icon: Icon, label, value }) {
 function EmptyState({ hasFilters, onClear }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-      <Phone className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
+      <Phone className="h-10 w-10 text-muted-foreground/50 mb-4" aria-hidden="true" />
       {hasFilters ? (
         <>
           <h2 className="text-base font-semibold text-foreground mb-2">No calls match your filters</h2>
@@ -499,10 +499,10 @@ export default function CallLogsPage() {
       {/* Summary bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Calls', value: total, accent: false, icon: Phone, iconBg: 'bg-stone-100', iconColor: 'text-stone-500' },
+          { label: 'Total Calls', value: total, accent: false, icon: Phone, iconBg: 'bg-muted', iconColor: 'text-muted-foreground' },
           { label: 'Booked', value: booked, accent: booked > 0, icon: CalendarCheck, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
           { label: 'Avg Duration', value: formatDuration(avgDur), accent: false, icon: Clock, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-          { label: 'Emergencies', value: emergencies, accent: emergencies > 0, icon: AlertTriangle, iconBg: emergencies > 0 ? 'bg-red-50' : 'bg-stone-100', iconColor: emergencies > 0 ? 'text-red-500' : 'text-stone-400' },
+          { label: 'Emergencies', value: emergencies, accent: emergencies > 0, icon: AlertTriangle, iconBg: emergencies > 0 ? 'bg-red-50' : 'bg-muted', iconColor: emergencies > 0 ? 'text-red-500' : 'text-muted-foreground' },
         ].map((stat) => (
           <motion.div
             key={stat.label}
@@ -534,7 +534,7 @@ export default function CallLogsPage() {
       <div className={`${card.base} px-4 pt-4 pb-3 mb-3`}>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by phone number..."
               value={searchInput}
@@ -544,7 +544,7 @@ export default function CallLogsPage() {
             {searchInput && (
               <button
                 onClick={() => { setSearchInput(''); updateFilter('search', ''); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-stone-400 hover:text-stone-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-muted-foreground"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -624,7 +624,7 @@ export default function CallLogsPage() {
       {error ? (
         <div className={`${card.base} p-8`}>
           <div className="flex flex-col items-center justify-center text-center">
-            <Phone className="h-10 w-10 text-stone-300 mb-3" />
+            <Phone className="h-10 w-10 text-muted-foreground/50 mb-3" />
             <p className="text-sm font-medium text-foreground mb-1">Failed to load calls</p>
             <p className="text-xs text-muted-foreground mb-4 max-w-xs">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchCalls}>Try again</Button>

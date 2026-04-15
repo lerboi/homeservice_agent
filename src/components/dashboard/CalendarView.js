@@ -267,8 +267,8 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
     >
       {/* Off-hours indicator */}
       {isOffHours && (
-        <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-stone-200/80 flex items-center justify-center z-10" title="Outside working hours">
-          <Clock className="w-2.5 h-2.5 text-stone-500" />
+        <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-muted/80 flex items-center justify-center z-10" title="Outside working hours">
+          <Clock className="w-2.5 h-2.5 text-muted-foreground" />
         </div>
       )}
 
@@ -362,10 +362,10 @@ function TravelBufferBlock({ buffer, getPositionStyle }) {
 
   return (
     <div
-      className="absolute left-1 right-1 bg-stone-100 border border-dashed border-stone-300 rounded pointer-events-none flex items-center justify-center"
+      className="absolute left-1 right-1 bg-muted border border-dashed border-border rounded pointer-events-none flex items-center justify-center"
       style={style}
     >
-      <span className="text-[10px] text-stone-400 font-medium">Travel buffer</span>
+      <span className="text-[10px] text-muted-foreground font-medium">Travel buffer</span>
     </div>
   );
 }
@@ -403,13 +403,13 @@ function LunchBreakOverlay({ dayDate, workingHours, gridStartHour, hourHeight = 
 
   return (
     <div
-      className="absolute left-0 right-0 bg-stone-100/60 border-y border-dashed border-stone-200/80 pointer-events-none z-[1] flex items-center justify-center"
+      className="absolute left-0 right-0 bg-muted/60 border-y border-dashed border-border/80 pointer-events-none z-[1] flex items-center justify-center"
       style={{
         top: `${(topMins / 60) * hourHeight}px`,
         height: `${(heightMins / 60) * hourHeight}px`,
       }}
     >
-      <span className="text-[10px] text-stone-400 font-medium tracking-wide">Lunch</span>
+      <span className="text-[10px] text-muted-foreground font-medium tracking-wide">Lunch</span>
     </div>
   );
 }
@@ -427,7 +427,7 @@ function AllDayEvents({ events }) {
         </div>
       ))}
       {remaining > 0 && (
-        <span className="text-[10px] text-stone-400 self-center">+{remaining}</span>
+        <span className="text-[10px] text-muted-foreground self-center">+{remaining}</span>
       )}
     </div>
   );
@@ -438,20 +438,20 @@ function LoadingSkeleton({ viewMode }) {
   const hours = Array.from({ length: DEFAULT_END - DEFAULT_START }, (_, i) => DEFAULT_START + i);
   return (
     <div className={`grid grid-cols-[56px_repeat(${cols},1fr)] min-w-[640px]`}>
-      <div className="border-b border-stone-200" />
+      <div className="border-b border-border" />
       {Array.from({ length: cols }).map((_, i) => (
-        <div key={i} className="border-b border-l border-stone-200 py-3 px-2">
+        <div key={i} className="border-b border-l border-border py-3 px-2">
           <Skeleton className="h-3 w-6 mx-auto mb-1" />
           <Skeleton className="h-6 w-6 mx-auto rounded-full" />
         </div>
       ))}
       <div className="relative col-span-1" style={{ height: `${hours.length * HOUR_HEIGHT_WEEK}px` }}>
         {hours.map((h) => (
-          <div key={h} className="absolute left-0 right-0 border-b border-stone-100" style={{ top: `${(h - DEFAULT_START) * HOUR_HEIGHT_WEEK}px`, height: `${HOUR_HEIGHT_WEEK}px` }} />
+          <div key={h} className="absolute left-0 right-0 border-b border-border" style={{ top: `${(h - DEFAULT_START) * HOUR_HEIGHT_WEEK}px`, height: `${HOUR_HEIGHT_WEEK}px` }} />
         ))}
       </div>
       {Array.from({ length: cols }).map((_, i) => (
-        <div key={i} className="relative border-l border-stone-200" style={{ height: `${hours.length * HOUR_HEIGHT_WEEK}px` }}>
+        <div key={i} className="relative border-l border-border" style={{ height: `${hours.length * HOUR_HEIGHT_WEEK}px` }}>
           {i === 0 && <Skeleton className="absolute left-2 right-2 rounded-md" style={{ top: 64, height: 96 }} />}
           {i === 2 && <Skeleton className="absolute left-2 right-2 rounded-md" style={{ top: 192, height: 64 }} />}
           {i === 4 && <Skeleton className="absolute left-2 right-2 rounded-md" style={{ top: 320, height: 128 }} />}
@@ -464,7 +464,7 @@ function LoadingSkeleton({ viewMode }) {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <CalendarIcon className="h-10 w-10 text-stone-300 mb-3" />
+      <CalendarIcon className="h-10 w-10 text-muted-foreground/50 mb-3" />
       <h3 className="text-base font-semibold text-foreground mb-1">No appointments this week</h3>
       <p className="text-sm text-muted-foreground">Appointments booked by your AI will appear here.</p>
     </div>
@@ -639,14 +639,14 @@ export default function CalendarView({
         {/* Day headers */}
         <div className="grid grid-cols-7 mb-1">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="text-center text-[10px] font-medium text-stone-400 uppercase tracking-wider py-1">
+            <div key={d} className="text-center text-[10px] font-medium text-muted-foreground uppercase tracking-wider py-1">
               {d}
             </div>
           ))}
         </div>
 
         {/* Date grid */}
-        <div className="grid grid-cols-7 border border-stone-200 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-7 border border-border rounded-lg overflow-hidden">
           {cells.map((cell, i) => {
             const isCurrentMonth = cell.date.getMonth() === month;
             const isTodayCell = isSameDay(cell.date, today);
@@ -665,14 +665,14 @@ export default function CalendarView({
                 type="button"
                 onClick={() => onDayClick?.(new Date(cell.date))}
                 className={`
-                  relative min-h-[72px] p-1.5 text-left border-b border-r border-stone-100 transition-colors
-                  ${hasBlocks && isCurrentMonth ? 'bg-stone-50' : isCurrentMonth ? 'bg-white hover:bg-stone-50' : 'bg-stone-50/50 hover:bg-stone-100/50'}
+                  relative min-h-[72px] p-1.5 text-left border-b border-r border-border transition-colors
+                  ${hasBlocks && isCurrentMonth ? 'bg-muted' : isCurrentMonth ? 'bg-card hover:bg-muted' : 'bg-muted/50 hover:bg-muted/50'}
                   ${isTodayCell ? 'ring-1 ring-inset ring-[var(--brand-accent)]/30' : ''}
                 `}
               >
                 <span className={`
                   inline-flex items-center justify-center text-xs font-medium rounded-full size-6
-                  ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-stone-400'}
+                  ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}
                 `}>
                   {cell.date.getDate()}
                 </span>
@@ -683,7 +683,7 @@ export default function CalendarView({
                     {cell.timeBlocks.slice(0, 1).map((block) => (
                       <div
                         key={`tb-${block.id}`}
-                        className="text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium bg-stone-200 text-stone-600"
+                        className="text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium bg-muted text-muted-foreground"
                       >
                         {block.title}
                       </div>
@@ -718,7 +718,7 @@ export default function CalendarView({
                       );
                     })}
                     {totalCount > (hasBlocks ? 1 : 2) && (
-                      <span className="text-[9px] text-stone-400 px-1">+{totalCount - (hasBlocks ? 1 : 2)} more</span>
+                      <span className="text-[9px] text-muted-foreground px-1">+{totalCount - (hasBlocks ? 1 : 2)} more</span>
                     )}
                   </div>
                 )}
@@ -751,7 +751,7 @@ export default function CalendarView({
       <div className={gridClass}>
 
         {/* Column headers */}
-        <div className="border-b border-stone-200 bg-[#FAFAF9] sticky top-0 z-30" />
+        <div className="border-b border-border bg-[#FAFAF9] sticky top-0 z-30" />
         {columns.map((day, i) => {
           const isToday = isSameDay(day, today);
           const config = getDayConfig(day, workingHours);
@@ -762,20 +762,20 @@ export default function CalendarView({
           return (
             <div
               key={i}
-              className={`border-b border-l border-stone-200 py-2 sticky top-0 z-30 ${isSingleDay ? 'px-3 flex items-center justify-between' : 'text-center py-2.5'} ${isToday ? 'bg-[#FFF7ED]' : 'bg-[#FAFAF9]'}`}
+              className={`border-b border-l border-border py-2 sticky top-0 z-30 ${isSingleDay ? 'px-3 flex items-center justify-between' : 'text-center py-2.5'} ${isToday ? 'bg-[#FFF7ED]' : 'bg-[#FAFAF9]'}`}
             >
               <div className={isSingleDay ? 'flex items-center gap-2.5' : ''}>
                 {isSingleDay ? (
-                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-stone-400 bg-stone-100' : 'text-foreground bg-stone-100'}`}>
+                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-muted-foreground bg-muted' : 'text-foreground bg-muted'}`}>
                     {day.getDate()}
                   </div>
                 ) : (
                   <>
-                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-stone-300' : 'text-[#94A3B8]'}`}>
+                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-muted-foreground/50' : 'text-[#94A3B8]'}`}>
                       {DAY_ABBREVS[day.getDay()]}
-                      {isClosed && <span className="ml-1 text-[9px] normal-case tracking-normal font-medium text-stone-300">(Closed)</span>}
+                      {isClosed && <span className="ml-1 text-[9px] normal-case tracking-normal font-medium text-muted-foreground/50">(Closed)</span>}
                     </div>
-                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-stone-400' : 'text-foreground'}`}>
+                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {day.getDate()}
                     </div>
                   </>
@@ -784,14 +784,14 @@ export default function CalendarView({
                   <div className={`text-sm font-semibold ${isToday ? 'text-[var(--brand-accent)]' : 'text-foreground'}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'long' })}
                     {isClosed
-                      ? <span className="ml-1.5 text-xs font-medium text-stone-400">(Closed)</span>
-                      : config?.enabled && <span className="ml-1.5 text-xs font-normal text-stone-400">{formatHour(parseHourMin(config.open).h, false)} – {formatHour(parseHourMin(config.close).h, false)}</span>
+                      ? <span className="ml-1.5 text-xs font-medium text-muted-foreground">(Closed)</span>
+                      : config?.enabled && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{formatHour(parseHourMin(config.open).h, false)} – {formatHour(parseHourMin(config.close).h, false)}</span>
                     }
                   </div>
                 )}
               </div>
               {isSingleDay && dayApptCount > 0 && (
-                <div className="text-xs font-medium text-muted-foreground bg-stone-100 px-2 py-0.5 rounded-full">
+                <div className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                   {dayApptCount} job{dayApptCount !== 1 ? 's' : ''}
                 </div>
               )}
@@ -802,12 +802,12 @@ export default function CalendarView({
         {/* All-day events + all-day time blocks row */}
         {(allDayEvents.length > 0 || allDayBlocks.length > 0) && (
           <>
-            <div className="border-b border-stone-200 bg-[#FAFAF9] text-xs text-stone-400 text-right pr-2 pt-2.5 font-medium">all&#x2011;day</div>
+            <div className="border-b border-border bg-[#FAFAF9] text-xs text-muted-foreground text-right pr-2 pt-2.5 font-medium">all&#x2011;day</div>
             {columns.map((day, i) => {
               const dayAllDayEvents = getItemsForDay(day, allDayEvents);
               const dayAllDayBlocks = allDayBlocks.filter((b) => isSameDay(new Date(b.start_time), day));
               return (
-                <div key={i} className="border-b border-l border-stone-200 bg-[#FAFAF9]">
+                <div key={i} className="border-b border-l border-border bg-[#FAFAF9]">
                   <div className="flex flex-wrap gap-1.5 px-2 py-2 min-h-[40px] items-center">
                     {dayAllDayBlocks.map((block) => (
                       <button
@@ -844,7 +844,7 @@ export default function CalendarView({
             return (
               <div
                 key={hour}
-                className={`text-right pr-2 text-[11px] font-medium select-none ${anyWorking ? 'text-stone-500' : 'text-stone-300'}`}
+                className={`text-right pr-2 text-[11px] font-medium select-none ${anyWorking ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}
                 style={{ height: `${hourHeight}px`, lineHeight: `${hourHeight}px` }}
               >
                 {formatHour(hour, isMobile)}
@@ -865,7 +865,7 @@ export default function CalendarView({
           return (
             <div
               key={colIndex}
-              className={`relative border-l border-stone-200 cursor-pointer ${isToday ? 'bg-[#FFFCFA]' : 'bg-white'}`}
+              className={`relative border-l border-border cursor-pointer ${isToday ? 'bg-[#FFFCFA]' : 'bg-card'}`}
               style={{ height: `${hours.length * hourHeight}px` }}
               onClick={(e) => {
                 if (!onEmptySlotClick) return;
@@ -888,7 +888,7 @@ export default function CalendarView({
                 return (
                   <div
                     key={`off-${hour}`}
-                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50' : 'bg-stone-100/60'}`}
+                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50' : 'bg-muted/60'}`}
                     style={{ top: `${(hour - gridStartHour) * hourHeight}px`, height: `${hourHeight}px` }}
                   />
                 );
@@ -898,7 +898,7 @@ export default function CalendarView({
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="absolute left-0 right-0 border-b border-stone-200"
+                  className="absolute left-0 right-0 border-b border-border"
                   style={{ top: `${(hour - gridStartHour) * hourHeight}px`, height: `${hourHeight}px` }}
                 />
               ))}
@@ -907,7 +907,7 @@ export default function CalendarView({
               {hours.map((hour) => (
                 <div
                   key={`half-${hour}`}
-                  className="absolute left-0 right-0 border-b border-dashed border-stone-100"
+                  className="absolute left-0 right-0 border-b border-dashed border-border"
                   style={{ top: `${(hour - gridStartHour) * hourHeight + hourHeight / 2}px` }}
                 />
               ))}
