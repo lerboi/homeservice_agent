@@ -91,12 +91,10 @@ describe('IntegrationsStrip 48.1', () => {
     expect(src).toMatch(/Zapier/);
   });
 
-  it('has Coming Soon label for planned integrations', () => {
-    expect(read('src/app/components/landing/IntegrationsStrip.jsx')).toMatch(/Coming soon/i);
-  });
-
-  it('has Live label for active integrations', () => {
-    expect(read('src/app/components/landing/IntegrationsStrip.jsx')).toMatch(/Live/);
+  it('renders all 6 integrations in a single unified list (post-redesign — Live/Coming-Soon split removed per design iteration)', () => {
+    const src = read('src/app/components/landing/IntegrationsStrip.jsx');
+    // Six integrations must all appear in the single INTEGRATIONS array
+    expect(src).toMatch(/INTEGRATIONS\s*=\s*\[[\s\S]*google-calendar[\s\S]*outlook[\s\S]*jobber[\s\S]*housecall-pro[\s\S]*servicetitan[\s\S]*zapier[\s\S]*\]/);
   });
 });
 
