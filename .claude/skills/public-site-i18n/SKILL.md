@@ -7,7 +7,7 @@ description: "Complete architectural reference for the public marketing site and
 
 This document is the single source of truth for the public marketing site, landing sections, pricing, contact, and internationalization. Read this before making any changes to public pages, landing components, i18n config, or email templates.
 
-**Last updated**: 2026-04-15 (Phase 47 component subsections: BeyondReceptionistSection, IdentitySection, PracticalObjectionsGrid + AudioPlayerCard, OwnerControlPullQuote, FAQSection + FAQChatWidget — added narrative docs for all 7 sections; HeroSection copy updated to REPOS-01 complement framing ("Voco Answers So You Can Keep"); FinalCTA subtitle updated to REPOS-02 owner-control ("Your rules. Your schedule."). Previous entry: 2026-04-04 — Public AI chatbot + FeaturesGrid → FeaturesCarousel + pricing page conversion optimization + Phase 29 hero demo + Phase 21 tiers + Phase 13 premium dark redesign)
+**Last updated**: 2026-04-15 (Phase 48.1 — revenue-recovery repositioning: landing pivoted from feature-platform framing to revenue-pain framing. Section count: 7 content sections + FinalCTA ribbon. New components: AudioDemoSection (tabbed call demo + transcript), IntegrationsStrip (6 logos Live/Coming-soon), CostOfSilenceBlock ($260,400/year stat), YouStayInControlSection (identity + WHO/WHEN/WHAT cards + pull quote). Updated components: HeroSection (revenue-pain H1, dual CTA, no HeroDemoBlock), FeaturesCarousel (trimmed 9→4 pillars), FAQSection (+2 entries, #audio-demo link). Deleted 12 legacy components: HowItWorksSection + variants, SocialProofSection, the Beyond/Identity/OwnerControl/HeroDemo/PracticalObjections family. "Voco AI" naming scope per D-27: page metadata + hero sub only; body copy elsewhere stays "Voco". Landing page components do NOT use useTranslations — all copy is hardcoded in JSX. Previous entry: Phase 47 — Phase 47 narrative sections + AudioPlayerCard, OwnerControlPullQuote, FAQSection + FAQChatWidget)
 
 ---
 
@@ -20,11 +20,9 @@ This document is the single source of truth for the public marketing site, landi
 | **Landing Page** | `src/app/(public)/page.js` | Homepage: HeroSection + dynamically imported below-fold sections |
 | **Landing Sections** | `src/app/components/landing/` | All landing section components + AnimatedSection + LandingNav + LandingFooter |
 | **Shared Components** | `src/components/landing/AuthAwareCTA.js` | Auth-aware CTA button (authenticated vs unauthenticated routing) |
-| **Hero Demo Block** | `src/app/components/landing/HeroDemoBlock.jsx` | Client wrapper managing input-to-player state transition (dynamic, ssr:false) |
-| **Hero Demo Input** | `src/app/components/landing/HeroDemoInput.jsx` | Client component: business name input + loading state + auth-aware skip link |
-| **Hero Demo Player** | `src/app/components/landing/HeroDemoPlayer.jsx` | Client component: waveform player with Web Audio API playback + post-play CTA |
-| **Demo Voice API** | `src/app/api/demo-voice/route.js` | POST: ElevenLabs TTS for dynamic business name segment; IP rate-limiting (10s) |
-| **Static Audio** | `public/audio/demo-{intro,mid,outro}.mp3` | Pre-rendered ElevenLabs demo conversation segments (caller + AI) |
+| **Audio Demo** | `src/app/components/landing/AudioDemoSection.jsx` | 2-tab tabbed call demo (Emergency / Routine) with synchronized transcript, 24-bar waveform, `__vocoPlayingAudio` singleton, `ssr:false` (audio API) |
+| **Demo Audio Stubs** | `public/audio/demo-emergency.mp3`, `public/audio/demo-routine.mp3` | Stub audio files (copies of demo-intro.mp3) — replace with real Gemini voice recordings before production |
+| **Static Audio** | `public/audio/demo-{intro,mid,outro}.mp3` | Pre-rendered ElevenLabs demo conversation segments (legacy, kept for AudioPlayerCard) |
 | **Pricing** | `src/app/(public)/pricing/` | Pricing page + tier data + PricingTiers + ComparisonTable + ROICalculator + FAQSection |
 | **About** | `src/app/(public)/about/page.js` | Mission, problem, values, "why Voco" sections |
 | **Contact** | `src/app/(public)/contact/` | Contact page + ContactForm.jsx |
@@ -56,15 +54,16 @@ AuthAwareCTA ("use client"):
   supabase.auth.getUser() → if logged in → /dashboard
                           → if not logged in → /onboarding
 
-Hero Demo Flow (Phase 29):
-  HeroSection (Server) → HeroDemoBlock (Client, dynamic ssr:false)
-    → HeroDemoInput: user enters business name (2+ chars)
-        → onClick: POST /api/demo-voice (ElevenLabs TTS for name segment)
-                 + fetch /audio/demo-{intro,mid,outro}.mp3 in parallel
-        → onAudioReady({ audioBuffers: [intro, name, mid, outro] })
-    → HeroDemoPlayer: Web Audio API stitches buffers into single AudioBuffer
-        → autoplay, waveform bars progress, elapsed time M:SS
-        → on ended: "Start Your Free Trial" CTA appears
+Audio Demo Flow (Phase 48.1):
+  HeroSection (static) → AudioDemoSection (dynamic, ssr:false, id="audio-demo")
+    → 2 pill tabs: Emergency / Routine — tab switch pauses + resets audio, swaps transcript
+    → AudioPlayerCard-style player: 24-bar waveform, play/pause, MM:SS elapsed
+    → Synchronized transcript: timeupdate drives active-line highlight (orange, border-l-2)
+    → __vocoPlayingAudio singleton: starting a tab pauses any other playing audio globally
+    → Error fallback: "Audio unavailable — read the full transcript below."
+
+Legacy Hero Demo Flow (Phase 29 — removed in Phase 48.1):
+  HeroSection → HeroDemoBlock (deleted) → HeroDemoInput / HeroDemoPlayer (deleted)
 
 Public Chatbot Flow:
   PublicChatButton (FAB, fixed bottom-right, all public pages via layout.js)
@@ -97,29 +96,18 @@ Public Chatbot Flow:
 | `src/app/api/contact/route.js` | POST /api/contact — Resend per-request, honeypot check, inquiry routing |
 | `src/app/components/landing/LandingNav.jsx` | Fixed top nav — transparent → blur on scroll, mobile drawer |
 | `src/app/components/landing/LandingFooter.jsx` | Footer — newsletter display, 3-col links, back-to-top button |
-| `src/app/components/landing/HeroSection.jsx` | Hero — Spline 3D scene (desktop), RotatingText h1, subtitle, HeroDemoBlock, mobile image fallback |
-| `src/app/components/landing/HeroDemoBlock.jsx` | Client wrapper: manages audioBuffers state; renders HeroDemoInput → HeroDemoPlayer transition |
-| `src/app/components/landing/HeroDemoInput.jsx` | Business name input bar + "Listen to Your Demo" orange CTA; fetches TTS + static MP3s; auth-aware skip link |
-| `src/app/components/landing/HeroDemoPlayer.jsx` | Waveform player: Web Audio API stitching, play/pause, elapsed time, post-play "Start Your Free Trial" |
-| `src/app/api/demo-voice/route.js` | POST /api/demo-voice — ElevenLabs TTS for business name segment; validates name; IP rate-limits 10s |
-| `public/audio/demo-intro.mp3` | Pre-rendered caller opening line: "Hey, I'd like to get my AC serviced..." |
-| `public/audio/demo-mid.mp3` | Pre-rendered mid-conversation: address, slot offer, caller acceptance |
-| `public/audio/demo-outro.mp3` | Pre-rendered AI closing: "You're all set — Thursday at 2 PM..." |
-| `src/app/components/landing/FeaturesCarousel.jsx` | **Full-stack workflow showcase** — horizontal auto-advance carousel, 9 premium feature cards (24/7 Answering, **Custom Pickup Rules**, 70+ Languages, Real-Time Booking, CRM, Automated Lead Recovery, SMS/Notifications, Invoicing, Analytics). Each card has eyebrow + title + tagline + description + embedded proof visual. Custom Pickup Rules sits at position 2 to front-load the control story; `PickupRulesVisual` shows schedule + ring-delay + VIP bypass — copy lifted from `src/app/dashboard/more/call-routing/page.js` so marketing matches product. Progress bar + icon nav below. Owns `id="features"` (ScrollLinePath anchor). Auto-advance 6s, stops on user interaction. |
+| `src/app/components/landing/HeroSection.jsx` | Phase 48.1 — Spline 3D scene (desktop), revenue-pain H1 ("Stop losing $1,000+…"), dual CTA (primary: #audio-demo anchor; secondary: /auth/signin), micro-proof line, mobile warm glow. No RotatingText on H1, no HeroDemoBlock. |
+| `src/app/components/landing/AudioDemoSection.jsx` | Phase 48.1 — `'use client'`, `ssr:false`. 2 pill tabs (Emergency/Routine), 24-bar waveform, synchronized transcript (active line orange + border-l-2), `__vocoPlayingAudio` singleton, `preload="metadata"`, error fallback. `id="audio-demo"` (hero CTA anchor target). |
+| `src/app/components/landing/IntegrationsStrip.jsx` | Phase 48.1 — 6 integration logos: Google Calendar + Outlook (full-color, green "Live" chip); Jobber + Housecall Pro + ServiceTitan + Zapier (grayscale, muted "Coming soon" chip). Text wordmarks (SVG sourcing deferred to design pass). Desktop row, 3+3 grid at 375px. Inside ScrollLinePath. |
+| `src/app/components/landing/CostOfSilenceBlock.jsx` | Phase 48.1 — Static $260,400/year stat block. H2: "The math isn't close". Orange underline accent on stat. "Calculate yours →" links to /pricing#calculator. Centered single-column layout. Inside ScrollLinePath. |
+| `src/app/components/landing/FeaturesCarousel.jsx` | Phase 48.1 — Trimmed 9→4 pillars: 1. 24/7 AI Answering, 2. Real-Time Calendar Booking, 3. Speaks Your Trade (Singlish + code-switching + 70+ languages), 4. Automated Lead Recovery. Owns `id="features"` (ScrollLinePath anchor — do NOT remove). Auto-advance, chevron nav, pill indicators, useReducedMotion. Inside ScrollLinePath. |
+| `src/app/components/landing/YouStayInControlSection.jsx` | Phase 48.1 — React fragment: white-bg identity+cards section (H2 "You Stay in Control", 3 WHO/WHEN/WHAT control cards with CARD_CLS + STAT_CHIP_CLS) + dark `bg-[#1C1412]` pull-quote section ("You set the rules. Voco follows them."). OUTSIDE ScrollLinePath. |
 | `src/app/components/landing/FeaturesGrid.jsx` | (Legacy) Bento grid layout — still exists but no longer imported by homepage |
-| `src/app/components/landing/SocialProofSection.jsx` | Testimonial / social proof cards |
-| `src/app/components/landing/HowItWorksSection.jsx` | Server Component — HowItWorksSticky via dynamic import |
-| `src/app/components/landing/HowItWorksTabs.jsx` | Roving tabindex WAI-ARIA Tabs, AnimatePresence mode=wait |
-| `src/app/components/landing/HowItWorksSticky.jsx` | Sticky scroll variant of HowItWorks steps |
-| `src/app/components/landing/FinalCTASection.jsx` | Dark CTA section — CSS-only reduced-motion guard, Server Component. Subtitle ships Phase 47 REPOS-02 owner-control copy ("Your rules. Your schedule. Your customers.") |
-| `src/app/components/landing/BeyondReceptionistSection.jsx` | **Category-expansion + pain-kill positioning** — sits between HowItWorks and FeaturesCarousel inside ScrollLinePath. Headline "Answering the phone is the easy part." 2-card comparison grid: muted "Other AI receptionists / Answer the call. That's it." vs. tall orange-accented "Voco / 6-row workflow stack (answers, books, captures, confirms, invoices, reports)." Below: 3 pain-kill pairs (Lost jobs → Every call booked, Paperwork → Invoices sent, Chasing leads → Auto-recovery). `id="beyond-receptionist"`, `bg-white`, 2nd child of ScrollLinePath. Server Component. |
-| `src/app/components/landing/IdentitySection.jsx` | Phase 47 — OBJ-06 identity/change-aversion emotional section. Server Component. |
-| `src/app/components/landing/PracticalObjectionsGrid.jsx` | Phase 47 — OBJ-02/03/04/05/08/09 consolidated 6-card grid. Server Component outer; embeds AudioPlayerCard client island for OBJ-02. |
-| `src/app/components/landing/AudioPlayerCard.jsx` | Phase 47 — OBJ-02 inline mini-player. `'use client'`. Coordinates via `window.__vocoPlayingAudio` singleton (pause-other rule). |
-| `src/app/components/landing/OwnerControlPullQuote.jsx` | Phase 47 — REPOS-04 dark-section owner-control pull-quote ("You set the rules. Voco follows them."). Server Component. |
-| `src/app/components/landing/FAQSection.jsx` | Phase 47 — OBJ-01 + D-10 FAQ accordion (7 Q&A) + chat panel grid. `'use client'` (Radix Accordion requirement); embeds FAQChatWidget. |
+| `src/app/components/landing/FinalCTASection.jsx` | Dark CTA ribbon — `bg-[#1C1412]`, CSS-only reduced-motion guard. |
+| `src/app/components/landing/AudioPlayerCard.jsx` | Phase 47 — `'use client'` mini-player pattern. Coordinates via `window.__vocoPlayingAudio` singleton. Kept as supporting component; AudioDemoSection extends this pattern. |
+| `src/app/components/landing/FAQSection.jsx` | Phase 48.1 updated — OBJ-01 FAQ accordion (9 Q&A: 7 original + q8 language coverage + q9 high-ticket/complex jobs). "Hear it yourself" link updated from #hero → #audio-demo. `'use client'` (Radix Accordion); embeds FAQChatWidget. |
 | `src/app/components/landing/FAQChatWidget.jsx` | Phase 47 — `'use client'` chat island posting to `/api/public-chat`. History capped at 10 entries client-side. |
-| `src/app/components/landing/ScrollLinePath.jsx` | Decorative copper sine-wave SVG drawn between Features and Testimonials anchors. Children: exactly 4 — HowItWorks, BeyondReceptionistSection, FeaturesCarousel (owns `id="features"` — wave start-dot), SocialProof (owns `id="testimonials"` — wave crossing). BeyondReceptionistSection sits above the wave, so inserting it doesn't affect wave geometry. |
+| `src/app/components/landing/ScrollLinePath.jsx` | Decorative copper sine-wave SVG. Phase 48.1: wraps exactly 3 children — IntegrationsStrip, CostOfSilenceBlock, FeaturesCarousel (owns `id="features"` — wave start-dot). `id="testimonials"` no longer exists (SocialProofSection deleted); ScrollLinePath 65%-height fallback handles this gracefully. |
 | `src/app/components/landing/AnimatedSection.jsx` | Framer Motion scroll-triggered animation (AnimatedSection, AnimatedStagger, AnimatedItem) |
 | `src/components/landing/AuthAwareCTA.js` | CTA button — routes authenticated users to /dashboard, new users to /onboarding |
 | `src/components/landing/PublicChatButton.jsx` | Floating 64px FAB (Headset icon) + "Ask Voco AI" speech bubble — toggles chat panel open/closed |
@@ -177,9 +165,26 @@ The `Toaster` (from sonner) is placed in the root layout so ContactForm toast no
 
 **Above-fold (static import)**: `HeroSection` — statically imported for best LCP. No loading state.
 
-**Below-fold (dynamic imports)**: `HowItWorksSection`, `FeaturesCarousel`, `SocialProofSection`, `FinalCTASection` — all dynamically imported via `next/dynamic` with explicit loading skeletons to prevent CLS.
+**Below-fold (dynamic imports, Phase 48.1)**: `AudioDemoSection` (ssr:false), `IntegrationsStrip`, `CostOfSilenceBlock`, `FeaturesCarousel`, `YouStayInControlSection`, `FAQSection`, `FinalCTASection` — all dynamically imported via `next/dynamic` with explicit h-[NNNpx] loading skeletons to prevent CLS.
 
-Each loading skeleton has hardcoded `min-height` values that match the section's expected height, preventing layout shift during hydration.
+Skeleton heights: AudioDemoSection h-[420px], IntegrationsStrip h-[200px], CostOfSilenceBlock h-[280px], FeaturesCarousel h-[560px], YouStayInControlSection h-[520px], FAQSection h-[400px], FinalCTASection h-[240px].
+
+**Page structure (Phase 48.1):**
+```
+<main>
+  <ScrollProgress />
+  <HeroSection />                    ← static import
+  <AudioDemoSection />               ← dynamic, ssr:false, id="audio-demo"
+  <ScrollLinePath>
+    <IntegrationsStrip />            ← dynamic
+    <CostOfSilenceBlock />           ← dynamic
+    <FeaturesCarousel />             ← dynamic, id="features" (ScrollLinePath anchor)
+  </ScrollLinePath>
+  <YouStayInControlSection />        ← dynamic, OUTSIDE ScrollLinePath
+  <FAQSection />                     ← dynamic
+  <FinalCTASection />                ← dynamic
+</main>
+```
 
 **`ScrollProgress`**: Milestone dot nav (desktop left sidebar + mobile bottom dots). Hidden while hero section is visible — only appears after hero's bottom edge scrolls past 50% viewport. Hides again at CTA section.
 
@@ -189,83 +194,45 @@ Each loading skeleton has hardcoded `min-height` values that match the section's
 
 ### HeroSection (`src/app/components/landing/HeroSection.jsx`)
 
-Server Component with client sub-components (Phase 29 — stripped to focus attention on demo input):
-- **Spline 3D scene**: `SplineScene` (dynamic import, CDN web component, zero bundle impact). URL: `https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode`. Desktop-only (hidden on mobile).
-- **Mobile fallback**: Static `<Image>` of dashboard mockup — `priority` for LCP. Rendered below hero content.
-- **RotatingText**: 21st.dev animated component, rotates `['Competitor', 'Rival', 'Neighbor']` at 3s interval. Title uses forced `<br />` tags to lock line breaks: "Every Missed Call Is a Job Your / {RotatingText} Just / Booked" — prevents shorter words from reflowing lines. **Width behavior**: `useRef` + `getBoundingClientRect()` + `useLayoutEffect` measures current word width, container animates via `transition-[width] duration-200`. In-flow invisible measurement span provides height; animated text is absolutely positioned on top.
-- **HeroDemoBlock**: Client component (dynamic, ssr:false) managing the input-to-player demo experience. Replaces the old `AuthAwareCTA` + "Watch Demo" buttons.
-- **Background**: `bg-[#050505]` near-black with `min-h-[600px] md:min-h-[700px]` fixed height, radial gradient orange accent, dot grid texture, floating blur orb.
-- **Removed in Phase 29**: Eyebrow pill, "Watch Demo" button, social proof row, `AuthAwareCTA` from hero. Attention fully on demo input bar.
+Phase 48.1 rewrite — static import for best LCP:
+- **H1** (exact, locked): `Stop losing $1,000+ every time you miss a call.` — declarative, loss-framed, no RotatingText.
+- **Sub**: `Voco AI answers, triages, and books every call — in under 1 ring.` — single in-body use of "Voco AI" (D-27).
+- **Primary CTA**: `Hear Voco in action` — orange button, anchors `#audio-demo`. Min 44px height.
+- **Secondary CTA**: `Start 5-minute setup →` — link-style, smaller than primary, links to `/auth/signin`.
+- **Micro-proof line**: `Answers in English, Spanish, Mandarin, Malay, and 70+ more. 5-minute setup. No installs.` — below CTAs, `text-white/35`.
+- **Spline 3D scene**: preserved on desktop (`hidden md:block`), hidden on mobile.
+- **Background**: `bg-[#050505]` with radial gradient orange overlay + grid texture + floating orb.
+- **HeroDemoBlock removed** (Phase 48.1): replaced by 2-CTA layout. HeroDemoBlock, HeroDemoInput, HeroDemoPlayer all deleted from repo.
 
-### HeroDemoBlock (`src/app/components/landing/HeroDemoBlock.jsx`)
+### AudioDemoSection (`src/app/components/landing/AudioDemoSection.jsx`)
 
-`'use client'`, loaded via `dynamic()` with `ssr: false` from HeroSection.
+Phase 48.1 — `'use client'`, `ssr:false`. Section 2 on the page (after Hero). `id="audio-demo"` (anchor target for hero primary CTA). Background: `bg-white`. 2 pill tabs (Emergency / Routine): active tab `bg-[#F97316]/10 border-[#F97316]/30 text-[#F97316]`, idle `text-[#475569]`. Player: 24-bar waveform, play/pause (min 44px), MM:SS. Transcript: `timeupdate` drives active-line highlight (orange, `border-l-2 border-[#F97316] pl-2`, weight 600); inactive lines `text-[#475569]` weight 400. `__vocoPlayingAudio` singleton pauses other players on play. Tab switch: pause + currentTime=0 + state reset before swap. Error fallback: "Audio unavailable — read the full transcript below." `preload="metadata"` on all audio elements.
 
-Manages `audioBuffers` state (`null` or `ArrayBuffer[]`). When `null`, renders `HeroDemoInput`. When populated, unmounts input and renders `HeroDemoPlayer` with `animate-in fade-in slide-in-from-bottom-2 duration-200`. Transition is React state-based (no Framer Motion), satisfying D-12/D-13 (player replaces input in-place, same position).
+### IntegrationsStrip (`src/app/components/landing/IntegrationsStrip.jsx`)
 
-### HeroDemoInput (`src/app/components/landing/HeroDemoInput.jsx`)
+Phase 48.1 — Section 3. Inside ScrollLinePath. Background: `bg-[#FAFAF9]`. H2: "Works with what you already use". 6 integration tiles: Google Calendar + Outlook (full-color, green "Live" chip using `STAT_CHIP_CLS` pattern); Jobber + Housecall Pro + ServiceTitan + Zapier (grayscale `filter: grayscale(1) opacity(0.5)`, muted "Coming soon" chip). Text wordmarks used (SVG sourcing deferred to design pass). Desktop: horizontal row; 375px: 3+3 grid. Static display only — no interaction, no tooltips.
 
-`'use client'`. Props: `onAudioReady({ audioBuffers: ArrayBuffer[] })`.
+### CostOfSilenceBlock (`src/app/components/landing/CostOfSilenceBlock.jsx`)
 
-States: `'idle'` | `'loading'`. Business name validated `>= 2 chars` to enable the CTA button.
-
-On submit: fires 4 parallel fetch calls — `POST /api/demo-voice` + `fetch('/audio/demo-intro.mp3')` + `fetch('/audio/demo-mid.mp3')` + `fetch('/audio/demo-outro.mp3')`. On success, calls `onAudioReady({ audioBuffers: [introBuf, nameBuf, midBuf, outroBuf] })`.
-
-Auth-aware skip link: dynamically imports supabase-browser in `useEffect`, calls `getUser()`. Shows "Go to Dashboard" if logged in, "Skip the demo — Start your free trial" → `/onboarding` if not.
-
-Input bar: `flex-col sm:flex-row` (stacks on mobile), `bg-white/[0.10] border border-white/[0.12] rounded-xl focus-within:ring-1 focus-within:ring-[#F97316]`. Button loading state: `<Loader2 className="animate-spin size-4" /> Generating...`.
-
-### HeroDemoPlayer (`src/app/components/landing/HeroDemoPlayer.jsx`)
-
-`'use client'`. Props: `audioBuffers: ArrayBuffer[]` (order: `[intro, name, mid, outro]`).
-
-Web Audio API: `AudioContext`, decodes all buffers via `decodeAudioData()`. Stitches sequence: `[ringtone] → [pause] → [AI greeting] → [gap] → [caller] → [gap] → [mid conversation] → [gap] → [outro]` with programmatic ringtone (440+480Hz dual tone, 0.8s) and silence gaps (0.6-0.9s) for natural pacing. Subtle phone line noise (`amplitude 0.0005`) mixed into combined buffer. Autoplay on mount. Play/pause/replay via `AudioBufferSourceNode`. Progress tracked via `requestAnimationFrame`.
-
-Waveform: 40 bars (desktop) / 28 bars (mobile via `matchMedia`). Pre-computed `AMPLITUDE` envelope (sine wave, deterministic). **Seekable**: clicking on waveform container seeks to that position via `getBoundingClientRect()` ratio. Active bars (`position < playhead`): `bg-[#F97316]`. Inactive: `bg-white/[0.15]`. Elapsed time: `M:SS` via `tabular-nums`. Reduced motion: flat bars at 40% height.
-
-CTA: "Start Your Free Trial" link → `/onboarding` always visible once player mounts, left-aligned with `rounded-lg`, arrow icon, orange glow hover.
+Phase 48.1 — Section 4. Inside ScrollLinePath. Background: `bg-white`. H2: "The math isn't close". Stat: `$260,400/year` at `text-5xl md:text-6xl font-semibold` with orange underline accent. Supporting copy explains math (3 missed calls/week × avg ticket × 52 weeks). CTA link: "Calculate yours →" at `text-[#F97316] font-semibold` pointing to `/pricing#calculator`. Centered single-column layout (`max-w-xl mx-auto text-center`).
 
 ### FeaturesCarousel (`src/app/components/landing/FeaturesCarousel.jsx`)
 
-`'use client'`. Feature showcase replacing the legacy FeaturesGrid bento layout. Section background: `#FAFAF9` (very light warm white). Each feature has a unique micro-visual illustration (e.g., language bubbles, waveform, calendar check). Prev/next chevron navigation with dot indicators. Uses `AnimatedSection` for scroll-triggered entrance. `useReducedMotion` from Framer Motion disables transition animations when prefers-reduced-motion is active.
+Phase 48.1 trimmed — Section 5. Inside ScrollLinePath. 4 pillars (narrative order: coverage → conversion → comprehension → safety net): 1. 24/7 AI Answering, 2. Real-Time Calendar Booking, 3. Speaks Your Trade (includes Singlish, code-switching, 70+ languages), 4. Automated Lead Recovery. `id="features"` on outer `<section>` — **do NOT remove**, ScrollLinePath wave start-dot depends on it. `'use client'`, auto-advance, chevron nav, pill indicators, `useReducedMotion`. Background: `#FAFAF9`.
 
-**Legacy note**: `FeaturesGrid.jsx` still exists in the codebase but is no longer imported by the homepage. The homepage uses `FeaturesCarousel` (dynamically imported via `next/dynamic` with loading skeleton).
+**Legacy note**: `FeaturesGrid.jsx` still exists but is not imported anywhere active.
 
-### SocialProofSection (`src/app/components/landing/SocialProofSection.jsx`)
+### YouStayInControlSection (`src/app/components/landing/YouStayInControlSection.jsx`)
 
-Testimonial cards in `md:grid-cols-3`. Background: `#F5F5F4` (light warm section). Uses `AnimatedStagger` + `AnimatedItem` for staggered card reveal.
-
-### HowItWorksSection (`src/app/components/landing/HowItWorksSection.jsx`)
-
-Server Component — no `'use client'`. Imports `HowItWorksSticky` via `dynamic()` for bundle splitting. Section background: `#F5F5F4` (user override of charcoal D-18 spec — creates visual rhythm break between dark hero and dark features sections).
-
-**`HowItWorksSticky`** (`src/app/components/landing/HowItWorksSticky.jsx`): sticky scroll variant showing step cards as user scrolls. Inline `mobileSteps` data array (same source as sticky content) avoids an additional dynamic import for mobile breakpoint.
-
-**`HowItWorksTabs`** (`src/app/components/landing/HowItWorksTabs.jsx`): Roving tabindex per WAI-ARIA Tabs pattern. `AnimatePresence mode=wait` with `key=active` for sequential step transitions (current tab exits before next enters).
-
-### BeyondReceptionistSection (`src/app/components/landing/BeyondReceptionistSection.jsx`)
-
-Phase 47 (post-47 replacement for the original AfterTheCallStrip) — Server Component sitting as the **2nd child** of `ScrollLinePath` (between HowItWorksSection and FeaturesCarousel). Headline "Answering the phone is the easy part." Renders a 2-card comparison grid (muted "Other AI receptionists / Answer the call. That's it." vs. orange-accented "Voco / 6-row workflow stack: answers, books, captures, confirms, invoices, reports") plus a row of 3 pain-kill pairs (Lost jobs → Every call booked, Paperwork → Invoices sent, Chasing leads → Auto-recovery). `id="beyond-receptionist"`, `bg-white`. No `'use client'` — pure presentation, lazy-imported from `page.js` via `next/dynamic` with a bg-matched skeleton.
-
-### IdentitySection (`src/app/components/landing/IdentitySection.jsx`)
-
-Phase 47 OBJ-06 — Server Component placed **after** `</ScrollLinePath>` (between SocialProofSection and PracticalObjectionsGrid in the page flow). Identity/change-aversion emotional section. Single centered column (`max-w-[720px]`) with three essay-style paragraphs in gray `#475569` body text: "Voco doesn't show up on your truck..." / "It answers the way you told it to..." / "Every job you earned is still yours." Typography-only — no images, no interactive elements. Wrapped in `AnimatedSection` for scroll-triggered fade-up.
-
-### PracticalObjectionsGrid (`src/app/components/landing/PracticalObjectionsGrid.jsx`)
-
-Phase 47 OBJ-02/03/04/05/08/09 — Server Component **outer shell** that renders 6 counter-objection cards in a 2-column grid (`md:grid-cols-2 gap-6`) on a `#FAFAF9` stone background. Each card has its own lucide icon, title, 2-3 sentence body, and trade-specific artifact (stat chip, numbered steps, checklist bullets, trade-icon grid, or embedded audio). The OBJ-02 card embeds `AudioPlayerCard` as a client island for sonic proof — everything else is server-rendered. Wrapped in `AnimatedStagger` + `AnimatedItem` so cards reveal sequentially on scroll.
+Phase 48.1 — Section 6. OUTSIDE ScrollLinePath (after `</ScrollLinePath>`). React fragment exporting two `<section>` elements as one component: (1) white-bg identity+cards section with H2 "You Stay in Control", sub "Smart defaults. Your overrides. Two minutes if you want them — zero if you don't.", 3-paragraph identity intro, and 3 WHO/WHEN/WHAT control cards using `CARD_CLS`+`STAT_CHIP_CLS` patterns with character scenarios (forbidden vocab: configure/settings/dashboard/routing rules/options panel); (2) dark `bg-[#1C1412]` closing pull quote "You set the rules. Voco follows them." with radial orange overlay.
 
 ### AudioPlayerCard (`src/app/components/landing/AudioPlayerCard.jsx`)
 
-Phase 47 supporting component — `'use client'` island embedded inside PracticalObjectionsGrid's OBJ-02 card. Plays `/audio/demo-intro.mp3` via a custom ref-based `HTMLAudioElement` controller (no external player library). Orange `#F97316` play/pause toggle, 24-bar waveform visualization (bars filled as playback progresses), `m:ss` time display. Coordinates across multiple instances via a global `window.__vocoPlayingAudio` singleton so starting one audio element pauses any other that may be playing. Preloads metadata only (`preload="metadata"`) to avoid bandwidth cost when the card scrolls into view without a click.
-
-### OwnerControlPullQuote (`src/app/components/landing/OwnerControlPullQuote.jsx`)
-
-Phase 47 REPOS-04 — Server Component placed between PracticalObjectionsGrid and FAQSection. Dark atmospheric pull-quote on `bg-[#1C1412]` with a radial orange-gradient overlay (`rgba(249,115,22,0.12)`). Centered `max-w-[640px]` quote text (~24-30px, white, semi-bold) and italic attribution "— The Voco product principle." Pure presentational container — no interactivity. Mirrors FinalCTA's dark mood but muted and lower-intensity.
+Phase 47 supporting component (kept) — `'use client'` mini-player. Plays audio via `HTMLAudioElement`. 24-bar waveform, orange play/pause, `m:ss` time. `window.__vocoPlayingAudio` singleton (pause-other rule). `preload="metadata"`. AudioDemoSection extends this pattern without directly importing this file.
 
 ### FAQSection (`src/app/components/landing/FAQSection.jsx`)
 
-Phase 47 OBJ-01 + D-10 — `'use client'` (required by shadcn Radix Accordion, which registers event handlers internally and cannot render as a Server Component). Two-column grid (`lg:grid-cols-[3fr_2fr]`) on `bg-white`. Left: Radix `Accordion type="single" collapsible` mapping over a 7-entry `FAQS` data array — each `{value, q, a}` where `a` is either a plain string or a JSX fragment supporting inline links (Q1 links to `#hero`, Q3 links to `/pricing`). Right: embedded `FAQChatWidget` (see below). Mobile stacks chat below the accordion. Imported from `@/components/ui/accordion` (shadcn install from plan 47-01).
+Phase 48.1 updated — `'use client'` (Radix Accordion). 9 Q&A entries (7 original + q8 language coverage: English/Spanish/Mandarin/Malay/Tagalog/Vietnamese/70+/Singlish/code-switching + q9 high-ticket/complex jobs). "Hear it yourself" link updated to `#audio-demo` (was `#hero`). Two-column grid (`lg:grid-cols-[3fr_2fr]`) on `bg-white`; right column: FAQChatWidget. Mobile stacks chat below accordion.
 
 ### FAQChatWidget (`src/app/components/landing/FAQChatWidget.jsx`)
 

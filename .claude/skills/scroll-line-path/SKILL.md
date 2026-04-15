@@ -6,38 +6,39 @@ description: >
 
 # Scroll Line Path System
 
-A decorative copper sine wave that draws itself as the user scrolls through the middle of the home page. The wave is **single-segment**: it starts at the Features boundary dot (below How It Works and BeyondReceptionistSection) and continues through FeaturesCarousel + SocialProofSection to the bottom of the wrapper. There is no wave in the HowItWorks region — that's above the dot.
+A decorative copper sine wave that draws itself as the user scrolls through the middle of the home page. The wave is **single-segment**: it starts at the Features boundary dot (at FeaturesCarousel top, `#features` anchor) and continues to the bottom of the wrapper. Phase 48.1: wraps exactly 3 children (IntegrationsStrip, CostOfSilenceBlock, FeaturesCarousel). There is no wave above the dot.
 
 ## File Locations
 
 | File | Role |
 |------|------|
 | `src/app/components/landing/ScrollLinePath.jsx` | The component — SVG, measurement, animation, wave builder |
-| `src/app/(public)/page.js` | Integration — wraps 4 sections as children |
+| `src/app/(public)/page.js` | Integration — wraps exactly 3 sections as children (Phase 48.1) |
 
 ## Architecture
 
 ### Page Integration
 
-`ScrollLinePath` wraps exactly **4 children** in this JSX order (source of truth: `src/app/(public)/page.js`):
+`ScrollLinePath` wraps exactly **3 children** in this JSX order (Phase 48.1 — source of truth: `src/app/(public)/page.js`):
 
 ```jsx
+<HeroSection />          {/* static, outside ScrollLinePath */}
+<AudioDemoSection />     {/* dynamic, outside ScrollLinePath */}
 <ScrollLinePath>
-  <HowItWorksSection />
-  <BeyondReceptionistSection />
-  <FeaturesCarousel />
-  <SocialProofSection />
+  <IntegrationsStrip />  {/* Section 3 — inside wave */}
+  <CostOfSilenceBlock /> {/* Section 4 — inside wave */}
+  <FeaturesCarousel />   {/* Section 5 — inside wave, owns id="features" */}
 </ScrollLinePath>
-<IdentitySection />
-<PracticalObjectionsGrid />
-<OwnerControlPullQuote />
+<YouStayInControlSection /> {/* OUTSIDE ScrollLinePath — dark pull quote creates CLS boundary */}
 <FAQSection />
 <FinalCTASection />
 ```
 
-Historical note: in the original Phase 47 design the 3rd child was `AfterTheCallStrip`; it was replaced with `BeyondReceptionistSection` in commit `dcf2ab3`. `FeaturesCarousel` was rebuilt as the premium 8-feature workflow showcase in commit `71121b9`. The wave geometry does not change when child identity changes — only the children count and their measured Y positions matter.
+**WARNING: Do NOT add `id="features"` removal or rename** — the copper wave dot anchors on this element. FeaturesCarousel's outer `<section id="features">` must be preserved.
 
-**Sections after `</ScrollLinePath>`** (IdentitySection, PracticalObjectionsGrid, OwnerControlPullQuote, FAQSection, FinalCTASection) are NOT threaded by the line. The wave ends at the bottom of the wrapper, not at FinalCTA.
+Historical note (Phase 47 → 48.1): previously wrapped 4 children (HowItWorksSection, BeyondReceptionistSection, FeaturesCarousel, SocialProofSection). Phase 48.1 deleted HowItWorks, BeyondReceptionist, and SocialProof; added IntegrationsStrip and CostOfSilenceBlock. `id="testimonials"` (previously on SocialProofSection) no longer exists — ScrollLinePath's 65%-height fallback for the `crossings` array handles this gracefully. Expected post-48.1 behavior: no `#testimonials` element, wave still draws correctly.
+
+**Sections after `</ScrollLinePath>`** (YouStayInControlSection, FAQSection, FinalCTASection) are NOT threaded by the line. The wave ends at the bottom of the wrapper.
 
 ### CSS Stacking (critical — do not change without understanding this)
 
@@ -81,11 +82,11 @@ count = Math.max(Math.round(span / 400), 1)
 
 Each segment is half a wave: alternates left/right peaks at `cx ± amp`, with control points at 33% and 67% of the segment height for smooth curvature. `dir` flips each segment so peaks alternate.
 
-**Crossings** (intermediate Y positions where the wave must pass through the centerline) are filtered to only those between `startY` and `endY`. In practice this is `testimonialsY` if it falls mid-wave.
+**Crossings** (intermediate Y positions where the wave must pass through the centerline) are filtered to only those between `startY` and `endY`. Previously this was `testimonialsY` (from `SocialProofSection id="testimonials"`). Post-Phase 48.1: `SocialProofSection` is deleted, so `#testimonials` no longer exists. `ScrollLinePath` falls back to a default crossing at 65% of wrapper height — this is expected behavior and requires no code change.
 
 ### The Dot
 
-One copper dot at `featuresY + 60` (the How It Works → BeyondReceptionistSection → Features boundary region). Two concentric circles:
+One copper dot at `featuresY + 60` (the IntegrationsStrip → CostOfSilenceBlock → FeaturesCarousel boundary region — top of FeaturesCarousel). Two concentric circles:
 
 - Filled: `r="5"`, `fill="#F97316"`, `fillOpacity="0.6"`
 - Ring: `r="13"`, `stroke="#F97316"`, `strokeWidth="1.5"`, `strokeOpacity="0.15"`
@@ -178,4 +179,6 @@ Reorder the children in `page.js`. As long as `#features` and `#testimonials` an
 
 **Wave looks wrong after layout change**: The measurements happen on mount + 100ms + 1000ms delays. If sections load later (heavy dynamic imports — several ScrollLinePath children use `next/dynamic`), add another `setTimeout(measure, ...)` or trigger a re-measure.
 
-**Wave appears above HowItWorks**: Should not happen — the wave starts at `featuresY + 60`. If it does, `#features` is probably missing and `featuresY` is defaulting to 0. Verify FeaturesCarousel (or whatever currently carries `id="features"`) renders.
+**Wave appears at top of wrapper or dot is at position 0**: `#features` is missing. `featuresY` defaults to 0. Verify `FeaturesCarousel.jsx` outer `<section>` still has `id="features"` — **do NOT remove this id**. The copper wave dot and wave start-point depend entirely on this element.
+
+**No `#testimonials` element (post-Phase 48.1)**: This is expected. `SocialProofSection` was deleted in Phase 48.1. ScrollLinePath falls back to a 65% crossing — no fix needed. Do not add a fake `id="testimonials"` element.
