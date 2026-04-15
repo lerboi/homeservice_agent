@@ -413,7 +413,7 @@ export default function LeadsPage() {
         <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
           <Users className="size-4 text-stone-500" />
         </div>
-        <h1 className="text-xl font-semibold text-[#0F172A]">Leads</h1>
+        <h1 className="text-xl font-semibold text-foreground">Leads</h1>
         {!loading && (
           <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2.5 py-0.5 text-xs font-medium">
             {leads.length}
@@ -429,7 +429,7 @@ export default function LeadsPage() {
             onClick={() => { setSelectMode((prev) => { if (prev) setSelectedLeads(new Set()); return !prev; }); }}
             className={`flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-medium transition-colors ${
               selectMode
-                ? 'bg-[#C2410C] text-white hover:bg-[#9A3412]'
+                ? 'bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent-hover)]'
                 : 'border border-stone-200 text-stone-600 bg-white hover:bg-stone-50'
             }`}
             aria-pressed={selectMode}
@@ -453,11 +453,11 @@ export default function LeadsPage() {
   } else if (displayedLeads.length === 0 && isFiltered) {
     mainContent = (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm text-[#475569] mb-2">No leads match your filters.</p>
+        <p className="text-sm text-muted-foreground mb-2">No leads match your filters.</p>
         <button
           type="button"
           onClick={handleClearFilters}
-          className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium"
+          className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
         >
           Clear filters
         </button>
@@ -510,11 +510,11 @@ export default function LeadsPage() {
           />
         )}
         <div className="min-w-0">
-          <p className="text-sm font-medium text-[#0F172A]">
+          <p className="text-sm font-medium text-foreground">
             {selectedLeads.size} of {eligibleLeads.length} selected
           </p>
           {selectedRevenue > 0 && (
-            <p className="text-xs text-[#475569]">
+            <p className="text-xs text-muted-foreground">
               ${selectedRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} estimated revenue
             </p>
           )}
@@ -525,7 +525,7 @@ export default function LeadsPage() {
           <button
             type="button"
             disabled={batchCreating}
-            className="bg-[#C2410C] hover:bg-[#9A3412] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
+            className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
           >
             {batchCreating ? 'Creating...' : 'Review & Create'}
           </button>
@@ -539,8 +539,8 @@ export default function LeadsPage() {
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {selectedLeadDetails.map((lead) => (
                     <div key={lead.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-stone-50">
-                      <span className="font-medium text-[#0F172A] truncate">{lead.caller_name || lead.from_number || 'Unknown'}</span>
-                      <span className="text-xs text-[#475569] shrink-0 ml-2">{lead.job_type || '—'}</span>
+                      <span className="font-medium text-foreground truncate">{lead.caller_name || lead.from_number || 'Unknown'}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{lead.job_type || '—'}</span>
                     </div>
                   ))}
                 </div>
@@ -551,7 +551,7 @@ export default function LeadsPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBatchCreate}
-              className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
+              className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white"
             >
               Create {selectedLeads.size} {selectedLeads.size === 1 ? 'Draft' : 'Drafts'}
             </AlertDialogAction>

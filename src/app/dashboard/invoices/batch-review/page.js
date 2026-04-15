@@ -128,11 +128,11 @@ export default function BatchReviewPage() {
     return (
       <div className={`${card.base} p-6`}>
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-sm text-[#475569] mb-4">No invoices to review.</p>
+          <p className="text-sm text-muted-foreground mb-4">No invoices to review.</p>
           <button
             type="button"
             onClick={() => router.push('/dashboard/leads')}
-            className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium"
+            className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
           >
             Back to Leads
           </button>
@@ -149,8 +149,8 @@ export default function BatchReviewPage() {
     return (
       <div className={`${card.base} p-0`}>
         <div className="px-6 pt-6 pb-4">
-          <h1 className="text-xl font-semibold text-[#0F172A]">Batch Send Results</h1>
-          <p className="text-sm text-[#475569] mt-1">
+          <h1 className="text-xl font-semibold text-foreground">Batch Send Results</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {allSuccess
               ? `All ${summary.sent} invoices sent successfully.`
               : `${summary.sent} of ${summary.sent + summary.failed} invoices sent. ${summary.failed} failed.`}
@@ -175,7 +175,7 @@ export default function BatchReviewPage() {
                   <XCircle className="h-5 w-5 text-red-600 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[#0F172A]">
+                  <p className="text-sm font-medium text-foreground">
                     {inv?.invoice_number || r.invoice_id}
                     {inv?.customer_name ? ` — ${inv.customer_name}` : ''}
                   </p>
@@ -195,7 +195,7 @@ export default function BatchReviewPage() {
           <button
             type="button"
             onClick={() => router.push('/dashboard/invoices')}
-            className="bg-[#C2410C] hover:bg-[#9A3412] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             Done
           </button>
@@ -218,9 +218,9 @@ export default function BatchReviewPage() {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <h1 className="text-xl font-semibold text-[#0F172A]">Review Batch Invoices</h1>
+            <h1 className="text-xl font-semibold text-foreground">Review Batch Invoices</h1>
           </div>
-          <p className="text-sm text-[#475569] ml-7">
+          <p className="text-sm text-muted-foreground ml-7">
             Review each draft invoice before sending. Click any invoice to edit.
           </p>
         </div>
@@ -230,7 +230,7 @@ export default function BatchReviewPage() {
             <AlertDialogTrigger asChild>
               <button
                 type="button"
-                className="bg-[#C2410C] hover:bg-[#9A3412] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 Send All
               </button>
@@ -246,7 +246,7 @@ export default function BatchReviewPage() {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleSendAll}
-                  className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
+                  className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white"
                 >
                   Send All
                 </AlertDialogAction>
@@ -259,7 +259,7 @@ export default function BatchReviewPage() {
       {/* ── Sending progress ────────────────────────────────────────────── */}
       {sending && (
         <div className="px-6 pb-4">
-          <p className="text-sm text-[#475569] mb-2">
+          <p className="text-sm text-muted-foreground mb-2">
             Sending {invoices.length} invoices...
           </p>
           <Progress value={sendProgress} className="h-2" />
@@ -276,11 +276,11 @@ export default function BatchReviewPage() {
           </>
         ) : invoices.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm text-[#475569] mb-4">No invoices to review.</p>
+            <p className="text-sm text-muted-foreground mb-4">No invoices to review.</p>
             <button
               type="button"
               onClick={() => router.push('/dashboard/leads')}
-              className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium"
+              className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
             >
               Back to Leads
             </button>
@@ -294,26 +294,26 @@ export default function BatchReviewPage() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#0F172A]">
+                    <span className="text-sm font-semibold text-foreground">
                       {inv.invoice_number}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2 py-0.5 text-xs font-medium">
                       Draft
                     </span>
                   </div>
-                  <p className="text-xs text-[#475569] mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {inv.customer_name || 'No customer name'}
                     {inv.customer_email ? ` — ${inv.customer_email}` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-sm font-medium text-[#0F172A]">
+                  <span className="text-sm font-medium text-foreground">
                     ${formatMoney(inv.total)}
                   </span>
                   <button
                     type="button"
                     onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}
-                    className="text-stone-500 hover:text-[#0F172A] transition-colors"
+                    className="text-stone-500 hover:text-foreground transition-colors"
                     aria-label={`Edit invoice ${inv.invoice_number}`}
                   >
                     <Pencil className="h-4 w-4" />

@@ -36,13 +36,13 @@ export default function AIVoiceSettingsPage() {
 
   return (
     <div className={`${card.base} p-6`}>
-      <h1 className="text-xl font-semibold text-[#0F172A] mb-1">AI & Voice Settings</h1>
-      <p className="text-sm text-[#475569] mb-6">Your AI phone number and test call.</p>
+      <h1 className="text-xl font-semibold text-foreground mb-1">AI & Voice Settings</h1>
+      <p className="text-sm text-muted-foreground mb-6">Your AI phone number and test call.</p>
       <SettingsAISection phoneNumber={phoneNumber} initialVoice={currentVoice} loading={loading} />
       <div className="mt-6 pt-6 border-t border-stone-200">
         <Link
           href="/dashboard/more/call-routing"
-          className="flex items-center gap-3 text-sm text-[#475569] hover:text-[#0F172A] transition-colors"
+          className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <PhoneForwarded className="h-4 w-4" />
           <span>Call routing</span>

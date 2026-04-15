@@ -106,7 +106,7 @@ export default function AccountPage() {
   if (loading) {
     return (
       <div className={`${card.base} p-6`}>
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-6">Account</h1>
+        <h1 className="text-xl font-semibold text-foreground mb-6">Account</h1>
         <div className="space-y-5">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="space-y-2">
@@ -123,8 +123,8 @@ export default function AccountPage() {
     <div className="space-y-6">
       {/* Profile section */}
       <div className={`${card.base} p-6`}>
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-1">Account</h1>
-        <p className="text-sm text-[#475569] mb-6">Manage your business profile and account settings.</p>
+        <h1 className="text-xl font-semibold text-foreground mb-1">Account</h1>
+        <p className="text-sm text-muted-foreground mb-6">Manage your business profile and account settings.</p>
 
         <form onSubmit={handleSave} className="space-y-5">
           <div className="space-y-2">
@@ -135,7 +135,7 @@ export default function AccountPage() {
               onChange={(e) => handleChange('business_name', e.target.value)}
               placeholder="e.g. Smith Plumbing"
             />
-            <p className="text-xs text-[#475569]">This is how your AI receptionist greets callers.</p>
+            <p className="text-xs text-muted-foreground">This is how your AI receptionist greets callers.</p>
           </div>
 
           <div className="space-y-2">
@@ -157,7 +157,7 @@ export default function AccountPage() {
               onChange={(e) => handleChange('owner_email', e.target.value)}
               placeholder="e.g. john@smithplumbing.com"
             />
-            <p className="text-xs text-[#475569]">Used for notifications. Your login email is {meta.email}.</p>
+            <p className="text-xs text-muted-foreground">Used for notifications. Your login email is {meta.email}.</p>
           </div>
 
           <div className="space-y-2">
@@ -169,7 +169,7 @@ export default function AccountPage() {
               onChange={(e) => handleChange('owner_phone', e.target.value)}
               placeholder="e.g. +1 555 123 4567"
             />
-            <p className="text-xs text-[#475569]">Used for SMS notifications and escalation calls.</p>
+            <p className="text-xs text-muted-foreground">Used for SMS notifications and escalation calls.</p>
           </div>
 
           {error && (
@@ -198,28 +198,28 @@ export default function AccountPage() {
 
       {/* Account info */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-base font-semibold text-[#0F172A] mb-4">Account details</h2>
+        <h2 className="text-base font-semibold text-foreground mb-4">Account details</h2>
         <dl className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <dt className="text-[#475569]">Login email</dt>
-            <dd className="text-[#0F172A] font-medium">{meta.email}</dd>
+            <dt className="text-muted-foreground">Login email</dt>
+            <dd className="text-foreground font-medium">{meta.email}</dd>
           </div>
           {meta.trade_type && (
             <div className="flex justify-between">
-              <dt className="text-[#475569]">Trade</dt>
-              <dd className="text-[#0F172A] font-medium capitalize">{meta.trade_type}</dd>
+              <dt className="text-muted-foreground">Trade</dt>
+              <dd className="text-foreground font-medium capitalize">{meta.trade_type}</dd>
             </div>
           )}
           {meta.country && (
             <div className="flex justify-between">
-              <dt className="text-[#475569]">Country</dt>
-              <dd className="text-[#0F172A] font-medium">{meta.country}</dd>
+              <dt className="text-muted-foreground">Country</dt>
+              <dd className="text-foreground font-medium">{meta.country}</dd>
             </div>
           )}
           {meta.created_at && (
             <div className="flex justify-between">
-              <dt className="text-[#475569]">Member since</dt>
-              <dd className="text-[#0F172A] font-medium">
+              <dt className="text-muted-foreground">Member since</dt>
+              <dd className="text-foreground font-medium">
                 {new Date(meta.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
               </dd>
             </div>
@@ -229,8 +229,8 @@ export default function AccountPage() {
 
       {/* Sign out */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-base font-semibold text-[#0F172A] mb-2">Sign out</h2>
-        <p className="text-sm text-[#475569] mb-4">Sign out of your account on this device.</p>
+        <h2 className="text-base font-semibold text-foreground mb-2">Sign out</h2>
+        <p className="text-sm text-muted-foreground mb-4">Sign out of your account on this device.</p>
         <Button
           variant="outline"
           onClick={() => setShowLogoutDialog(true)}
@@ -251,7 +251,7 @@ export default function AccountPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-[#C2410C] hover:bg-[#B53B0A]">
+            <AlertDialogAction onClick={handleLogout} className="bg-[var(--brand-accent)] hover:bg-[#B53B0A]">
               Sign out
             </AlertDialogAction>
           </AlertDialogFooter>

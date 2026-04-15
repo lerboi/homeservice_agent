@@ -218,7 +218,7 @@ export default function IntegrationsPage() {
                 ) : (
                   <Button
                     size="sm"
-                    className="w-full bg-[#C2410C] text-white hover:bg-[#C2410C]/90"
+                    className="w-full bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
                     onClick={() => handleConnect(provider.id)}
                     disabled={isConnecting}
                   >

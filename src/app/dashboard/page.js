@@ -77,10 +77,10 @@ export default function DashboardHomePage() {
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
           </span>
           <div>
-            <h1 className="font-semibold text-2xl text-[#0F172A] leading-tight">
+            <h1 className="font-semibold text-2xl text-foreground leading-tight">
               {getGreeting()}
             </h1>
-            <p className="font-normal text-sm text-[#475569] leading-normal">
+            <p className="font-normal text-sm text-muted-foreground leading-normal">
               AI Receptionist is active
             </p>
           </div>
@@ -109,7 +109,7 @@ export default function DashboardHomePage() {
 
       {/* Recent activity — tertiary context */}
       <div className={`${card.base} p-5`}>
-        <h2 className="font-semibold text-base text-[#0F172A] leading-[1.4] mb-4">
+        <h2 className="font-semibold text-base text-foreground leading-[1.4] mb-4">
           Recent activity
         </h2>
         <RecentActivityFeed

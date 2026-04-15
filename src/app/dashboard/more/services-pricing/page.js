@@ -35,7 +35,7 @@ import { SortableServiceRow } from '@/components/dashboard/SortableServiceRow';
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
   urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
-  routine: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70 hover:bg-[#0F172A]/[0.06]',
+  routine: 'bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/[0.06]',
 };
 
 const VALID_URGENCY_TAGS = ['emergency', 'routine', 'urgent'];
@@ -279,7 +279,7 @@ export default function ServicesPricingPage() {
     return (
       <div className={`${card.base} p-6`}>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-[#0F172A]">{t('page_heading')}</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t('page_heading')}</h1>
           <Button
             variant="outline"
             size="sm"
@@ -293,10 +293,10 @@ export default function ServicesPricingPage() {
 
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Wrench className="h-12 w-12 text-stone-300 mb-4" />
-          <h2 className="text-xl font-semibold text-[#0F172A] mb-2">{t('empty_heading')}</h2>
-          <p className="text-base text-[#475569] mb-6 max-w-sm">{t('empty_body')}</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('empty_heading')}</h2>
+          <p className="text-base text-muted-foreground mb-6 max-w-sm">{t('empty_body')}</p>
           <Button
-            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
             onClick={() => setAddingService(true)}
           >
             {t('empty_cta')}
@@ -312,7 +312,7 @@ export default function ServicesPricingPage() {
     <div className={`${card.base} p-6`}>
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-[#0F172A]">{t('page_heading')}</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t('page_heading')}</h1>
         <Button
           variant="outline"
           size="sm"
@@ -337,7 +337,7 @@ export default function ServicesPricingPage() {
                 <span className="text-red-700">Emergency</span>
               </SelectItem>
               <SelectItem value="routine">
-                <span className="text-[#475569]">Routine</span>
+                <span className="text-muted-foreground">Routine</span>
               </SelectItem>
               <SelectItem value="urgent">
                 <span className="text-amber-700">Urgent</span>
@@ -366,12 +366,12 @@ export default function ServicesPricingPage() {
         >
           <div className="border border-stone-200 rounded-lg overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 py-2 bg-[#F5F5F4] border-b border-stone-200">
+            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 py-2 bg-[var(--warm-surface)] border-b border-stone-200">
               <span className="w-4" /> {/* checkbox header spacer */}
               <span className="w-11" /> {/* drag handle header spacer */}
-              <span className="text-sm font-semibold text-[#475569]">Service Name</span>
-              <span className="text-sm font-semibold text-[#475569] w-36 text-center">Urgency Tag</span>
-              <span className="text-sm font-semibold text-[#475569] w-10 text-center">Actions</span>
+              <span className="text-sm font-semibold text-muted-foreground">Service Name</span>
+              <span className="text-sm font-semibold text-muted-foreground w-36 text-center">Urgency Tag</span>
+              <span className="text-sm font-semibold text-muted-foreground w-10 text-center">Actions</span>
             </div>
 
             {/* Sortable service rows */}

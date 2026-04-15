@@ -220,7 +220,7 @@ export default function InvoiceSettingsPage() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="mt-2 text-xs text-[#C2410C] hover:underline"
+              className="mt-2 text-xs text-[var(--brand-accent)] hover:underline"
             >
               {settings.logo_url ? 'Change logo' : 'Upload logo'}
             </button>
@@ -238,7 +238,7 @@ export default function InvoiceSettingsPage() {
               value={settings.business_name}
               onChange={(e) => setSettings((p) => ({ ...p, business_name: e.target.value }))}
               placeholder="e.g., Smith Plumbing LLC"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
           </div>
 
@@ -252,7 +252,7 @@ export default function InvoiceSettingsPage() {
               value={settings.license_number}
               onChange={(e) => setSettings((p) => ({ ...p, license_number: e.target.value }))}
               placeholder="e.g., LIC-12345"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
           </div>
 
@@ -266,7 +266,7 @@ export default function InvoiceSettingsPage() {
               value={settings.address}
               onChange={(e) => setSettings((p) => ({ ...p, address: e.target.value }))}
               placeholder="e.g., 123 Main St, Austin, TX 78701"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
           </div>
 
@@ -280,7 +280,7 @@ export default function InvoiceSettingsPage() {
               value={settings.phone}
               onChange={(e) => setSettings((p) => ({ ...p, phone: e.target.value }))}
               placeholder="e.g., (512) 555-0100"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
           </div>
 
@@ -294,7 +294,7 @@ export default function InvoiceSettingsPage() {
               value={settings.email}
               onChange={(e) => setSettings((p) => ({ ...p, email: e.target.value }))}
               placeholder="e.g., info@smithplumbing.com"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
           </div>
         </div>
@@ -326,7 +326,7 @@ export default function InvoiceSettingsPage() {
                 setSettings((p) => ({ ...p, tax_rate: storedVal }));
               }}
               placeholder="e.g., 8.25"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 pr-8 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 pr-8 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
             <span className={`absolute right-3 text-sm ${body} pointer-events-none`}>%</span>
           </div>
@@ -336,7 +336,7 @@ export default function InvoiceSettingsPage() {
 
       {/* Section B2: Late Fees */}
       <div className={`${card.base} p-6 space-y-5`}>
-        <h2 className="text-lg font-semibold text-[#0F172A]">Late Fees</h2>
+        <h2 className="text-lg font-semibold text-foreground">Late Fees</h2>
 
         <div className="flex items-center gap-3">
           <Switch
@@ -393,7 +393,7 @@ export default function InvoiceSettingsPage() {
                         }))
                       }
                       placeholder="0.00"
-                      className="w-full h-9 rounded-md border border-stone-200 bg-white pl-7 pr-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+                      className="w-full h-9 rounded-md border border-stone-200 bg-white pl-7 pr-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
                     />
                   </div>
                 </>
@@ -417,7 +417,7 @@ export default function InvoiceSettingsPage() {
                         }))
                       }
                       placeholder="0"
-                      className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 pr-24 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+                      className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 pr-24 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
                     />
                     <span className={`absolute right-3 text-sm ${body} pointer-events-none`}>% per month</span>
                   </div>
@@ -463,7 +463,7 @@ export default function InvoiceSettingsPage() {
             onChange={(e) => setSettings((p) => ({ ...p, default_notes: e.target.value }))}
             placeholder="e.g., Thank you for your business!"
             rows={3}
-            className={`w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-[#0F172A] placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1`}
+            className={`w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-foreground placeholder:text-stone-400 resize-y focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1`}
           />
           <p className={`text-xs ${body}`}>Appears at the bottom of every invoice. Editable per invoice.</p>
         </div>
@@ -485,7 +485,7 @@ export default function InvoiceSettingsPage() {
               value={settings.invoice_prefix}
               onChange={(e) => setSettings((p) => ({ ...p, invoice_prefix: e.target.value }))}
               placeholder="e.g., INV"
-              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-[#0F172A] placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1"
+              className="w-full h-9 rounded-md border border-stone-200 bg-white px-3 text-sm text-foreground placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
             />
             <p className={`text-xs ${body}`}>e.g., INV, SP, ABC — alphanumeric, max 10 characters</p>
           </div>
@@ -495,7 +495,7 @@ export default function InvoiceSettingsPage() {
               Next Invoice Number
             </label>
             <div className="h-9 rounded-md border border-stone-100 bg-stone-50 px-3 flex items-center">
-              <span className="text-sm text-[#475569]">{numberPreview}</span>
+              <span className="text-sm text-muted-foreground">{numberPreview}</span>
             </div>
             <p className={`text-xs ${body}`}>Format preview — increments automatically</p>
           </div>

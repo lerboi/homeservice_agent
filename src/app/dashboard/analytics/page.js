@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
             <BarChart3 className="size-4 text-stone-500" />
           </div>
-          <h1 className="text-xl font-semibold text-[#0F172A]">Analytics</h1>
+          <h1 className="text-xl font-semibold text-foreground">Analytics</h1>
         </div>
         {!loading && (!leads || leads.length === 0) && (!calls || calls.length === 0) ? (
           <EmptyStateAnalytics />

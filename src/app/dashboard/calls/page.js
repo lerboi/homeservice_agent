@@ -162,7 +162,7 @@ function CallCard({ call }) {
         {/* Caller + time */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className={`text-sm font-medium truncate ${isShort ? 'text-stone-400' : 'text-[#0F172A]'}`}>
+            <p className={`text-sm font-medium truncate ${isShort ? 'text-stone-400' : 'text-foreground'}`}>
               {formatPhone(call.from_number)}
             </p>
             {isShort && (
@@ -174,7 +174,7 @@ function CallCard({ call }) {
               </span>
             )}
           </div>
-          <p className="text-xs text-[#475569] mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {formatTime(call.created_at)}
             {call.duration_seconds > 0 && <span className="mx-1.5 text-stone-300">·</span>}
             {call.duration_seconds > 0 && <span>{formatDuration(call.duration_seconds)}</span>}
@@ -211,8 +211,8 @@ function CallCard({ call }) {
             <div className="px-4 pb-4 pt-1 border-t border-stone-100">
               {isOwnerPickup ? (
                 <>
-                  <p className="text-sm text-[#475569] mt-2">You handled this call directly.</p>
-                  <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-[#475569]">
+                  <p className="text-sm text-muted-foreground mt-2">You handled this call directly.</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground">
                     {call.duration_seconds > 0 && (
                       <span className="inline-flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {formatDuration(call.duration_seconds)}
@@ -223,7 +223,7 @@ function CallCard({ call }) {
                     <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-stone-100">
                       <a
                         href={`tel:${call.from_number}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90 active:scale-95 transition-all"
                       >
                         <PhoneOutgoing className="h-3 w-3" />
                         Call Back
@@ -268,7 +268,7 @@ function CallCard({ call }) {
                   </div>
 
                   {/* Extra info row */}
-                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-[#475569]">
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
                     {call.disconnection_reason && (
                       <span>Ended: {call.disconnection_reason.replace(/_/g, ' ')}</span>
                     )}
@@ -282,7 +282,7 @@ function CallCard({ call }) {
                       <span>Exception: {call.exception_reason.replace(/_/g, ' ')}</span>
                     )}
                     {hasRecording && (
-                      <span className="inline-flex items-center gap-1 text-[#C2410C]">
+                      <span className="inline-flex items-center gap-1 text-[var(--brand-accent)]">
                         <Mic className="h-3 w-3" /> Recording available
                       </span>
                     )}
@@ -293,7 +293,7 @@ function CallCard({ call }) {
                     {call.from_number && (
                       <a
                         href={`tel:${call.from_number}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#C2410C] text-white hover:bg-[#C2410C]/90 active:scale-95 transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90 active:scale-95 transition-all"
                       >
                         <PhoneOutgoing className="h-3 w-3" />
                         Call Back
@@ -302,7 +302,7 @@ function CallCard({ call }) {
                     {call.from_number && !isShort && (
                       <a
                         href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-[#0F172A] hover:bg-stone-200 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-stone-100 text-foreground hover:bg-stone-200 transition-colors"
                       >
                         <Users className="h-3 w-3" />
                         View Lead
@@ -332,7 +332,7 @@ function DetailItem({ icon: Icon, label, value }) {
       <Icon className="h-3.5 w-3.5 text-stone-400 mt-0.5 shrink-0" />
       <div>
         <p className="text-[10px] text-stone-400 uppercase tracking-wide">{label}</p>
-        <p className="text-xs font-medium text-[#0F172A]">{value}</p>
+        <p className="text-xs font-medium text-foreground">{value}</p>
       </div>
     </div>
   );
@@ -346,14 +346,14 @@ function EmptyState({ hasFilters, onClear }) {
       <Phone className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
       {hasFilters ? (
         <>
-          <h2 className="text-base font-semibold text-[#0F172A] mb-2">No calls match your filters</h2>
-          <p className="text-sm text-[#475569] mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
+          <h2 className="text-base font-semibold text-foreground mb-2">No calls match your filters</h2>
+          <p className="text-sm text-muted-foreground mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
           <Button variant="outline" size="sm" onClick={onClear}>Clear all filters</Button>
         </>
       ) : (
         <>
-          <h2 className="text-base font-semibold text-[#0F172A] mb-2">No calls yet</h2>
-          <p className="text-sm text-[#475569] max-w-sm">When your AI receptionist answers a call, it will show up here with all the details.</p>
+          <h2 className="text-base font-semibold text-foreground mb-2">No calls yet</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">When your AI receptionist answers a call, it will show up here with all the details.</p>
         </>
       )}
     </div>
@@ -516,11 +516,11 @@ export default function CallLogsPage() {
                 <stat.icon className={`size-4 ${stat.iconColor}`} />
               </div>
               <div>
-                <p className="text-[10px] text-[#475569] uppercase tracking-wider">{stat.label}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
                 {loading ? (
                   <Skeleton className="h-5 w-10 mt-0.5" />
                 ) : (
-                  <p className={`text-lg font-bold ${stat.accent ? 'text-[#C2410C]' : 'text-[#0F172A]'}`}>
+                  <p className={`text-lg font-bold ${stat.accent ? 'text-[var(--brand-accent)]' : 'text-foreground'}`}>
                     {stat.value}
                   </p>
                 )}
@@ -554,7 +554,7 @@ export default function CallLogsPage() {
           <Button
             variant="outline"
             size="sm"
-            className={`h-9 gap-1.5 shrink-0 ${hasFilters ? 'border-[#C2410C] text-[#C2410C]' : ''}`}
+            className={`h-9 gap-1.5 shrink-0 ${hasFilters ? 'border-[var(--brand-accent)] text-[var(--brand-accent)]' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="h-3.5 w-3.5" />
@@ -565,7 +565,7 @@ export default function CallLogsPage() {
           </Button>
 
           {hasFilters && (
-            <Button variant="ghost" size="sm" className="h-9 text-xs text-[#475569] shrink-0" onClick={clearFilters}>
+            <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground shrink-0" onClick={clearFilters}>
               Clear
             </Button>
           )}
@@ -625,8 +625,8 @@ export default function CallLogsPage() {
         <div className={`${card.base} p-8`}>
           <div className="flex flex-col items-center justify-center text-center">
             <Phone className="h-10 w-10 text-stone-300 mb-3" />
-            <p className="text-sm font-medium text-[#0F172A] mb-1">Failed to load calls</p>
-            <p className="text-xs text-[#475569] mb-4 max-w-xs">{error}</p>
+            <p className="text-sm font-medium text-foreground mb-1">Failed to load calls</p>
+            <p className="text-xs text-muted-foreground mb-4 max-w-xs">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchCalls}>Try again</Button>
           </div>
         </div>
@@ -651,7 +651,7 @@ export default function CallLogsPage() {
         <div className="space-y-4">
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="text-xs font-medium text-[#475569] uppercase tracking-wider mb-2 px-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1">
                 {group.label}
               </p>
               <div className="space-y-2">

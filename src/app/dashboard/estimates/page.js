@@ -70,7 +70,7 @@ export default function EstimatesPage() {
           <h1 className="text-xl font-semibold text-stone-900">Estimates</h1>
           <Link
             href="/dashboard/estimates/new"
-            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#C2410C]/90 text-white text-sm font-medium transition-colors"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             Create Estimate
@@ -99,13 +99,13 @@ export default function EstimatesPage() {
         {!loading && !error && estimates.length === 0 && activeStatus === 'all' && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <ClipboardList className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
-            <h2 className="text-base font-semibold text-[#0F172A] mb-2">No estimates yet</h2>
-            <p className="text-sm text-[#475569] max-w-sm mb-6">
+            <h2 className="text-base font-semibold text-foreground mb-2">No estimates yet</h2>
+            <p className="text-sm text-muted-foreground max-w-sm mb-6">
               Send professional estimates to your customers and convert more leads into paying jobs.
             </p>
             <Link
               href="/dashboard/estimates/new"
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#C2410C]/90 text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Create Your First Estimate
@@ -188,7 +188,7 @@ export default function EstimatesPage() {
       {/* Mobile floating action button */}
       <Link
         href="/dashboard/estimates/new"
-        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#C2410C] hover:bg-[#C2410C]/90 text-white shadow-lg flex items-center justify-center transition-colors"
+        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white shadow-lg flex items-center justify-center transition-colors"
         aria-label="Create Estimate"
       >
         <Plus className="w-6 h-6" />

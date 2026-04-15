@@ -42,7 +42,7 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-xl font-semibold text-[#0F172A]">Billing</h1>
+        <h1 className="text-xl font-semibold text-foreground">Billing</h1>
 
         {/* Plan card skeleton */}
         <div className={`${card.base} p-6`}>
@@ -92,12 +92,12 @@ export default function BillingPage() {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-6">Billing</h1>
+        <h1 className="text-xl font-semibold text-foreground mb-6">Billing</h1>
         <div className={`${card.base} p-12 flex flex-col items-center text-center gap-4`}>
           <AlertCircle className="h-12 w-12 text-stone-400" aria-hidden="true" />
           <div>
-            <h2 className="text-lg font-semibold text-[#0F172A]">Unable to load billing information</h2>
-            <p className="text-sm text-[#475569] mt-1">
+            <h2 className="text-lg font-semibold text-foreground">Unable to load billing information</h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Please refresh the page or contact support if the problem persists.
             </p>
           </div>
@@ -116,12 +116,12 @@ export default function BillingPage() {
   if (!subscription) {
     return (
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-6">Billing</h1>
+        <h1 className="text-xl font-semibold text-foreground mb-6">Billing</h1>
         <div className={`${card.base} p-12 flex flex-col items-center text-center gap-4`}>
           <AlertCircle className="h-12 w-12 text-stone-400" aria-hidden="true" />
           <div>
-            <h2 className="text-lg font-semibold text-[#0F172A]">No active subscription found</h2>
-            <p className="text-sm text-[#475569] mt-1">
+            <h2 className="text-lg font-semibold text-foreground">No active subscription found</h2>
+            <p className="text-sm text-muted-foreground mt-1">
               Please contact support if you believe this is an error.
             </p>
           </div>
@@ -175,15 +175,15 @@ export default function BillingPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-xl font-semibold text-[#0F172A]">Billing</h1>
+      <h1 className="text-xl font-semibold text-foreground">Billing</h1>
 
       {/* Section 1: Plan Card */}
       <div className={`${card.base} p-6`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xl font-semibold text-[#0F172A]">{planName}</p>
+            <p className="text-xl font-semibold text-foreground">{planName}</p>
             {displayPrice && (
-              <p className="text-sm text-[#475569] mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {displayPrice}{isAnnual && ' (billed annually)'}
               </p>
             )}
@@ -203,24 +203,24 @@ export default function BillingPage() {
 
       {/* Section 2: Usage Meter */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-4">Call Usage</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Call Usage</h2>
         <div className="flex flex-col items-center">
           <UsageRingGauge
             callsUsed={callsUsed}
             callsLimit={callsLimit}
             overageRate={overageRate}
           />
-          <p className="text-xs text-[#475569] mt-3">Resets on {resetDate}</p>
+          <p className="text-xs text-muted-foreground mt-3">Resets on {resetDate}</p>
         </div>
       </div>
 
       {/* Section 3: Billing Details */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-4">Billing Details</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Billing Details</h2>
         <div className="divide-y divide-stone-100">
           <div className="flex justify-between py-3">
-            <span className="text-sm text-[#475569]">{renewalLabel}</span>
-            <span className="text-sm text-[#0F172A] font-medium">{renewalDate}</span>
+            <span className="text-sm text-muted-foreground">{renewalLabel}</span>
+            <span className="text-sm text-foreground font-medium">{renewalDate}</span>
           </div>
         </div>
         <div className="mt-4">
@@ -243,7 +243,7 @@ export default function BillingPage() {
 
       {/* Section 4: Recent Invoices */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-4">Recent Invoices</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Recent Invoices</h2>
 
         {invoices.length > 0 ? (
           <>
@@ -267,10 +267,10 @@ export default function BillingPage() {
 
                   return (
                     <TableRow key={inv.id}>
-                      <TableCell className="text-sm text-[#475569]">
+                      <TableCell className="text-sm text-muted-foreground">
                         {format(new Date(inv.date * 1000), 'MMM d, yyyy')}
                       </TableCell>
-                      <TableCell className="text-sm text-[#0F172A] font-medium">
+                      <TableCell className="text-sm text-foreground font-medium">
                         ${(inv.amount / 100).toFixed(2)}
                       </TableCell>
                       <TableCell>
@@ -284,7 +284,7 @@ export default function BillingPage() {
                             href={inv.hosted_invoice_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-[#475569] hover:text-[#0F172A] transition-colors"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
                             aria-label="View invoice"
                           >
                             <ExternalLink className="h-4 w-4" aria-hidden="true" />
@@ -299,7 +299,7 @@ export default function BillingPage() {
             <div className="mt-4 pt-4 border-t border-stone-100">
               <a
                 href="/api/billing/portal?return_url=/dashboard/more/billing"
-                className="text-sm text-[#475569] hover:text-[#0F172A] underline transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground underline transition-colors"
               >
                 View all invoices
               </a>
@@ -309,8 +309,8 @@ export default function BillingPage() {
           <div className="flex flex-col items-center text-center py-8 gap-3">
             <Receipt className="h-10 w-10 text-stone-300" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium text-[#0F172A]">No invoices yet</p>
-              <p className="text-sm text-[#475569] mt-1">
+              <p className="text-sm font-medium text-foreground">No invoices yet</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Your first invoice will appear after your trial ends.
               </p>
             </div>

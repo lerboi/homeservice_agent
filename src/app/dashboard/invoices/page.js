@@ -167,7 +167,7 @@ export default function InvoicesPage() {
             </Link>
             <button
               onClick={handleCreateInvoice}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Create Invoice
@@ -217,8 +217,8 @@ export default function InvoicesPage() {
         {!loading && !error && invoices.length === 0 && activeStatus === 'all' && !debouncedSearch && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FileText className="h-10 w-10 text-stone-300 mb-4" aria-hidden="true" />
-            <h2 className="text-base font-semibold text-[#0F172A] mb-2">No invoices yet</h2>
-            <p className="text-sm text-[#475569] max-w-sm mb-6">
+            <h2 className="text-base font-semibold text-foreground mb-2">No invoices yet</h2>
+            <p className="text-sm text-muted-foreground max-w-sm mb-6">
               Send professional, white-labeled invoices to your customers in three simple steps.
             </p>
 
@@ -233,7 +233,7 @@ export default function InvoicesPage() {
               <ArrowRight className="size-4 text-stone-300 mt-[-18px]" />
               <div className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center justify-center size-10 rounded-full bg-orange-50">
-                  <FileText className="size-5 text-[#C2410C]" />
+                  <FileText className="size-5 text-[var(--brand-accent)]" />
                 </div>
                 <span className="text-xs text-stone-500">Create invoice</span>
               </div>
@@ -272,7 +272,7 @@ export default function InvoicesPage() {
 
             <button
               onClick={handleCreateInvoice}
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-[#C2410C] hover:bg-[#9A3412] text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Create Your First Invoice
@@ -379,7 +379,7 @@ export default function InvoicesPage() {
       {/* Mobile floating action button */}
       <button
         onClick={handleCreateInvoice}
-        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#C2410C] hover:bg-[#9A3412] text-white shadow-lg flex items-center justify-center transition-colors"
+        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white shadow-lg flex items-center justify-center transition-colors"
         aria-label="Create Invoice"
       >
         <Plus className="w-6 h-6" />

@@ -658,8 +658,8 @@ export default function CalendarPage() {
       {isMobile && todayAppts.length > 0 && effectiveViewMode === 'day' && (
         <div className={`${card.base} p-3`}>
           <div className="flex items-center gap-2 mb-2">
-            <CalendarDays className="size-3.5 text-[#C2410C]" />
-            <h2 className="text-xs font-semibold text-[#0F172A]">Up Next</h2>
+            <CalendarDays className="size-3.5 text-[var(--brand-accent)]" />
+            <h2 className="text-xs font-semibold text-foreground">Up Next</h2>
             <span className="ml-auto text-[10px] font-medium text-[#94A3B8]">
               {todayAppts.length} today
             </span>
@@ -677,7 +677,7 @@ export default function CalendarPage() {
                   onClick={() => handleAppointmentClick(appt)}
                 >
                   <p className={`text-[10px] font-semibold ${timeColor} leading-none mb-1`}>{startTime}</p>
-                  <p className="text-xs font-semibold text-[#0F172A] truncate">{appt.caller_name}</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{appt.caller_name}</p>
                 </button>
               );
             })}
@@ -696,20 +696,20 @@ export default function CalendarPage() {
             <Button variant="outline" size="icon" onClick={() => navigate('next')} aria-label="Next">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-base font-semibold text-[#0F172A] ml-1 tabular-nums">{dateLabel}</span>
+            <span className="text-base font-semibold text-foreground ml-1 tabular-nums">{dateLabel}</span>
           </div>
 
           <div className="flex rounded-lg border border-stone-200 overflow-hidden">
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-white' : 'bg-white text-muted-foreground hover:bg-stone-50'}`}
               onClick={() => setViewMode('month')}
             >
               Month
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-[#0F172A] text-white' : 'bg-white text-[#475569] hover:bg-stone-50'}`}
+              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-stone-200 ${effectiveViewMode === 'day' ? 'bg-foreground text-white' : 'bg-white text-muted-foreground hover:bg-stone-50'}`}
               onClick={() => setViewMode('day')}
             >
               Day
@@ -758,7 +758,7 @@ export default function CalendarPage() {
               <PopoverTrigger asChild>
                 <Button
                   aria-label="Create new event"
-                  className="h-8 px-2.5 md:px-3 bg-[#C2410C] hover:bg-[#9A3412] text-white rounded-lg"
+                  className="h-8 px-2.5 md:px-3 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white rounded-lg"
                 >
                   <Plus className="h-4 w-4 md:mr-1.5" />
                   <span className="hidden md:inline text-sm font-medium">New</span>
@@ -774,11 +774,11 @@ export default function CalendarPage() {
                     setQuickBookOpen(true);
                   }}
                 >
-                  <div className="size-9 rounded-lg bg-[#C2410C]/[0.08] flex items-center justify-center shrink-0">
-                    <UserPlus className="size-4 text-[#C2410C]" />
+                  <div className="size-9 rounded-lg bg-[var(--brand-accent)]/[0.08] flex items-center justify-center shrink-0">
+                    <UserPlus className="size-4 text-[var(--brand-accent)]" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0F172A]">Book appointment</div>
+                    <div className="text-sm font-semibold text-foreground">Book appointment</div>
                     <div className="text-xs text-[#64748B] mt-0.5">Add a customer job</div>
                   </div>
                 </button>
@@ -791,11 +791,11 @@ export default function CalendarPage() {
                     setTimeBlockSheetOpen(true);
                   }}
                 >
-                  <div className="size-9 rounded-lg bg-[#C2410C]/[0.08] flex items-center justify-center shrink-0">
-                    <CalendarPlus className="size-4 text-[#C2410C]" />
+                  <div className="size-9 rounded-lg bg-[var(--brand-accent)]/[0.08] flex items-center justify-center shrink-0">
+                    <CalendarPlus className="size-4 text-[var(--brand-accent)]" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#0F172A]">Block time</div>
+                    <div className="text-sm font-semibold text-foreground">Block time</div>
                     <div className="text-xs text-[#64748B] mt-0.5">Lunch, personal, vacation</div>
                   </div>
                 </button>
@@ -859,10 +859,10 @@ export default function CalendarPage() {
         {/* Today's Agenda */}
         <div className={`${card.base} p-5`}>
           <div className="flex items-center gap-2 mb-4">
-            <CalendarDays className="size-4 text-[#C2410C]" />
-            <h2 className="text-sm font-semibold text-[#0F172A]">Today&apos;s Agenda</h2>
+            <CalendarDays className="size-4 text-[var(--brand-accent)]" />
+            <h2 className="text-sm font-semibold text-foreground">Today&apos;s Agenda</h2>
             {todayAppts.length > 0 && (
-              <span className="ml-auto text-xs font-medium bg-[#0F172A]/[0.06] text-[#475569] px-2 py-0.5 rounded-full">
+              <span className="ml-auto text-xs font-medium bg-foreground/[0.06] text-muted-foreground px-2 py-0.5 rounded-full">
                 {todayAppts.length} appointment{todayAppts.length !== 1 ? 's' : ''}
               </span>
             )}
@@ -874,7 +874,7 @@ export default function CalendarPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <CalendarOff className="h-8 w-8 text-stone-300 mb-2" />
-                <p className="text-sm font-medium text-[#0F172A]">No appointments today</p>
+                <p className="text-sm font-medium text-foreground">No appointments today</p>
                 <p className="text-xs text-[#94A3B8] mt-0.5">Enjoy the day off.</p>
               </div>
             )
@@ -899,12 +899,12 @@ export default function CalendarPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className={`text-xs font-semibold ${timeColor} mb-0.5`}>{startTime} – {endTime}</p>
-                        <p className="text-sm font-semibold text-[#0F172A]">{appt.caller_name}</p>
+                        <p className="text-sm font-semibold text-foreground">{appt.caller_name}</p>
                         {addressLine && (
                           <p className="text-xs text-[#64748B] truncate mt-0.5">{addressLine}</p>
                         )}
                       </div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8] group-hover:text-[#475569] transition-colors shrink-0 mt-0.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8] group-hover:text-muted-foreground transition-colors shrink-0 mt-0.5">
                         View →
                       </span>
                     </div>
@@ -918,8 +918,8 @@ export default function CalendarPage() {
         {/* Calendar Connections */}
         <div className={`${card.base} p-5`}>
           <div className="flex items-center gap-2 mb-4">
-            <Link2 className="size-4 text-[#C2410C]" />
-            <h2 className="text-sm font-semibold text-[#0F172A]">Calendar Connections</h2>
+            <Link2 className="size-4 text-[var(--brand-accent)]" />
+            <h2 className="text-sm font-semibold text-foreground">Calendar Connections</h2>
           </div>
           <CalendarSyncCard />
         </div>
@@ -927,11 +927,11 @@ export default function CalendarPage() {
         {/* Working Hours */}
         <div className={`${card.base} p-5`}>
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="size-4 text-[#C2410C]" />
-            <h2 className="text-sm font-semibold text-[#0F172A]">Working Hours</h2>
+            <Clock className="size-4 text-[var(--brand-accent)]" />
+            <h2 className="text-sm font-semibold text-foreground">Working Hours</h2>
             <button
               onClick={() => setWhSheetOpen(true)}
-              className="ml-auto text-[11px] text-[#C2410C] hover:underline flex items-center gap-1"
+              className="ml-auto text-[11px] text-[var(--brand-accent)] hover:underline flex items-center gap-1"
             >
               <Pencil className="size-3" />
               Edit
@@ -941,8 +941,8 @@ export default function CalendarPage() {
             <div className="space-y-1.5">
               {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
                 <div key={row.label} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-[#0F172A]">{row.label}</span>
-                  <span className={row.closed ? 'text-stone-400' : 'text-[#475569]'}>{row.hours}</span>
+                  <span className="font-medium text-foreground">{row.label}</span>
+                  <span className={row.closed ? 'text-stone-400' : 'text-muted-foreground'}>{row.hours}</span>
                 </div>
               ))}
             </div>
@@ -952,7 +952,7 @@ export default function CalendarPage() {
               className="w-full py-6 text-center"
             >
               <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
-              <p className="text-sm font-medium text-[#0F172A]">Not configured</p>
+              <p className="text-sm font-medium text-foreground">Not configured</p>
               <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
             </button>
           )}
@@ -964,18 +964,18 @@ export default function CalendarPage() {
         <>
           <div className={`${card.base} p-5`}>
             <div className="flex items-center gap-2 mb-4">
-              <Link2 className="size-4 text-[#C2410C]" />
-              <h2 className="text-sm font-semibold text-[#0F172A]">Calendar Connections</h2>
+              <Link2 className="size-4 text-[var(--brand-accent)]" />
+              <h2 className="text-sm font-semibold text-foreground">Calendar Connections</h2>
             </div>
             <CalendarSyncCard />
           </div>
           <div className={`${card.base} p-5`}>
             <div className="flex items-center gap-2 mb-4">
-              <Clock className="size-4 text-[#C2410C]" />
-              <h2 className="text-sm font-semibold text-[#0F172A]">Working Hours</h2>
+              <Clock className="size-4 text-[var(--brand-accent)]" />
+              <h2 className="text-sm font-semibold text-foreground">Working Hours</h2>
               <button
                 onClick={() => setWhSheetOpen(true)}
-                className="ml-auto text-[11px] text-[#C2410C] hover:underline flex items-center gap-1"
+                className="ml-auto text-[11px] text-[var(--brand-accent)] hover:underline flex items-center gap-1"
               >
                 <Pencil className="size-3" />
                 Edit
@@ -985,8 +985,8 @@ export default function CalendarPage() {
               <div className="space-y-1.5">
                 {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
                   <div key={row.label} className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-[#0F172A]">{row.label}</span>
-                    <span className={row.closed ? 'text-stone-400' : 'text-[#475569]'}>{row.hours}</span>
+                    <span className="font-medium text-foreground">{row.label}</span>
+                    <span className={row.closed ? 'text-stone-400' : 'text-muted-foreground'}>{row.hours}</span>
                   </div>
                 ))}
               </div>
@@ -996,7 +996,7 @@ export default function CalendarPage() {
                 className="w-full py-6 text-center"
               >
                 <Clock className="h-8 w-8 text-stone-300 mx-auto mb-2" />
-                <p className="text-sm font-medium text-[#0F172A]">Not configured</p>
+                <p className="text-sm font-medium text-foreground">Not configured</p>
                 <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
               </button>
             )}
@@ -1050,7 +1050,7 @@ export default function CalendarPage() {
         <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "max-h-[85vh] rounded-t-2xl overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
           <SheetHeader>
             <SheetTitle>Working Hours</SheetTitle>
-            <p className="text-sm text-[#475569]">Set when you&apos;re available so your AI only books open slots.</p>
+            <p className="text-sm text-muted-foreground">Set when you&apos;re available so your AI only books open slots.</p>
           </SheetHeader>
           <div className="px-6 py-4">
             <WorkingHoursEditor />

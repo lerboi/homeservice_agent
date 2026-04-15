@@ -328,7 +328,7 @@ export default function EstimateEditorPage() {
           </div>
           <Link
             href="/dashboard/more/invoice-settings"
-            className="text-sm font-medium text-[#C2410C] hover:underline shrink-0"
+            className="text-sm font-medium text-[var(--brand-accent)] hover:underline shrink-0"
           >
             Go to Settings
           </Link>
@@ -345,7 +345,7 @@ export default function EstimateEditorPage() {
           <div className="mb-4">
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
-                <Search className="h-4 w-4 text-[#C2410C]" />
+                <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-stone-700">
                   Linked to: <span className="font-medium text-stone-900">{selectedLead.caller_name}</span>
                 </span>
@@ -651,7 +651,7 @@ export default function EstimateEditorPage() {
         <Button
           type="button"
           disabled={saving}
-          className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+          className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
           onClick={() => handleSave('sent')}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -674,7 +674,7 @@ export default function EstimateEditorPage() {
         <Button
           type="button"
           disabled={saving}
-          className="flex-1 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+          className="flex-1 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
           onClick={() => handleSave('sent')}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

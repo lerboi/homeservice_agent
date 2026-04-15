@@ -9,8 +9,8 @@ export default function NotificationsAndEscalationPage() {
     <div className="space-y-6">
       {/* Notifications section */}
       <div className={`${card.base} p-6`}>
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-1">Notifications</h1>
-        <p className="text-sm text-[#475569] mb-6">
+        <h1 className="text-xl font-semibold text-foreground mb-1">Notifications</h1>
+        <p className="text-sm text-muted-foreground mb-6">
           Choose how you get notified for each type of call outcome.
         </p>
         <NotificationPreferences />
@@ -18,8 +18,8 @@ export default function NotificationsAndEscalationPage() {
 
       {/* Escalation contacts section */}
       <div className={`${card.base} p-6`}>
-        <h2 className="text-xl font-semibold text-[#0F172A] mb-1">Escalation Contacts</h2>
-        <p className="text-sm text-[#475569] mb-6">
+        <h2 className="text-xl font-semibold text-foreground mb-1">Escalation Contacts</h2>
+        <p className="text-sm text-muted-foreground mb-6">
           When an emergency call comes in, your AI tries each contact in order before offering a booking slot or callback.
         </p>
         <EscalationChainSection />

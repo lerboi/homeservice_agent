@@ -489,7 +489,7 @@ export default function InvoiceDetailPage() {
                     <dd>
                       <Link
                         href={`/dashboard/leads?open=${invoice.lead_id}`}
-                        className="text-[#C2410C] hover:underline text-xs"
+                        className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
                         View Lead
                       </Link>
@@ -577,7 +577,7 @@ export default function InvoiceDetailPage() {
               {/* Send Invoice — draft only */}
               {isDraft && (
                 <Button
-                  className="w-full justify-start gap-2 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                  className="w-full justify-start gap-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
                   onClick={handleSendClick}
                   disabled={actionLoading}
                 >
@@ -687,7 +687,7 @@ export default function InvoiceDetailPage() {
         {isDraft && (
           <Button
             size="sm"
-            className="flex-1 gap-1.5 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="flex-1 gap-1.5 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
             onClick={handleSendClick}
             disabled={actionLoading}
           >

@@ -364,7 +364,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
               key={tier.id}
               className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                 selectedTierId === tier.id
-                  ? 'border-[#C2410C] bg-orange-50/50'
+                  ? 'border-[var(--brand-accent)] bg-orange-50/50'
                   : 'border-stone-200 hover:bg-stone-50'
               }`}
             >
@@ -374,7 +374,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
                 value={tier.id}
                 checked={selectedTierId === tier.id}
                 onChange={() => setSelectedTierId(tier.id)}
-                className="accent-[#C2410C]"
+                className="accent-[var(--brand-accent)]"
               />
               <div className="flex-1">
                 <p className="font-medium text-slate-900">{tier.tier_label}</p>
@@ -388,7 +388,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
             Cancel
           </Button>
           <Button
-            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
             onClick={handleConvert}
             disabled={converting}
           >
@@ -630,7 +630,7 @@ export default function EstimateDetailPage() {
                     <dd>
                       <Link
                         href={`/dashboard/invoices/${estimate.converted_to_invoice_id}`}
-                        className="text-[#C2410C] hover:underline text-xs"
+                        className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
                         View Invoice
                       </Link>
@@ -643,7 +643,7 @@ export default function EstimateDetailPage() {
                     <dd>
                       <Link
                         href={`/dashboard/leads?open=${estimate.lead_id}`}
-                        className="text-[#C2410C] hover:underline text-xs"
+                        className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
                         View Lead
                       </Link>
@@ -670,7 +670,7 @@ export default function EstimateDetailPage() {
               {/* Send Estimate -- draft only */}
               {isDraft && (
                 <Button
-                  className="w-full justify-start gap-2 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                  className="w-full justify-start gap-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
                   onClick={handleSend}
                   disabled={actionLoading}
                 >
@@ -753,7 +753,7 @@ export default function EstimateDetailPage() {
               {canConvert && (
                 isTiered ? (
                   <Button
-                    className="w-full justify-start gap-2 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                    className="w-full justify-start gap-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
                     onClick={() => setShowConvertDialog(true)}
                     disabled={actionLoading}
                   >
@@ -764,7 +764,7 @@ export default function EstimateDetailPage() {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
-                        className="w-full justify-start gap-2 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                        className="w-full justify-start gap-2 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
                         disabled={actionLoading}
                       >
                         <FileText className="h-4 w-4" />
@@ -782,7 +782,7 @@ export default function EstimateDetailPage() {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+                          className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
                           onClick={handleConvertSinglePrice}
                         >
                           Create Invoice
@@ -811,7 +811,7 @@ export default function EstimateDetailPage() {
         {isDraft && (
           <Button
             size="sm"
-            className="flex-1 gap-1.5 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="flex-1 gap-1.5 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
             onClick={handleSend}
             disabled={actionLoading}
           >
@@ -833,7 +833,7 @@ export default function EstimateDetailPage() {
         {canConvert && (
           <Button
             size="sm"
-            className="flex-1 gap-1.5 bg-[#C2410C] hover:bg-[#C2410C]/90 text-white"
+            className="flex-1 gap-1.5 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
             onClick={isTiered ? () => setShowConvertDialog(true) : handleConvertSinglePrice}
             disabled={actionLoading}
           >

@@ -40,7 +40,7 @@ const MORE_ITEMS = [
 export default function MorePage() {
   return (
     <div data-tour="more-page">
-      <h1 className="text-xl font-semibold text-[#0F172A] mb-4">More</h1>
+      <h1 className="text-xl font-semibold text-foreground mb-4">More</h1>
 
       {/* Ask Voco AI — mobile only */}
       <div className={`${card.base} overflow-hidden mb-4 lg:hidden`}>
@@ -53,12 +53,12 @@ export default function MorePage() {
             onClick={() => window.dispatchEvent(new Event('open-voco-chat'))}
             className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px] w-full text-left"
           >
-            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#C2410C]/[0.08] shrink-0">
-              <MessageSquare className="h-5 w-5 text-[#C2410C]" />
+            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
+              <MessageSquare className="h-5 w-5 text-[var(--brand-accent)]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#0F172A]">Ask Voco AI</p>
-              <p className="text-xs text-[#475569]">Get instant answers about your dashboard</p>
+              <p className="text-sm font-medium text-foreground">Ask Voco AI</p>
+              <p className="text-xs text-muted-foreground">Get instant answers about your dashboard</p>
             </div>
             <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
           </button>
@@ -80,12 +80,12 @@ export default function MorePage() {
                 href={item.href}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px]"
               >
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[#C2410C]/[0.08] shrink-0">
-                  <Icon className="h-5 w-5 text-[#C2410C]" />
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
+                  <Icon className="h-5 w-5 text-[var(--brand-accent)]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#0F172A]">{item.label}</p>
-                  <p className="text-xs text-[#475569] truncate">{item.description}</p>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
               </Link>
@@ -95,7 +95,7 @@ export default function MorePage() {
       </div>
 
       {/* Settings */}
-      <h2 className="text-xs font-medium text-[#475569] uppercase tracking-wider mb-2 px-1 lg:hidden">Settings</h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1 lg:hidden">Settings</h2>
       <div className={`${card.base} divide-y divide-stone-100 overflow-hidden`}>
         {MORE_ITEMS.map((item, i) => {
           const Icon = item.icon;
@@ -111,11 +111,11 @@ export default function MorePage() {
                 className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px]"
               >
                 <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-stone-100 shrink-0">
-                  <Icon className="h-5 w-5 text-[#475569]" />
+                  <Icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#0F172A]">{item.label}</p>
-                  <p className="text-xs text-[#475569] truncate">{item.description}</p>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
               </Link>

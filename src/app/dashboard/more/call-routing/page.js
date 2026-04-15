@@ -445,8 +445,8 @@ export default function CallRoutingPage() {
     >
       {/* Page header */}
       <div>
-        <h1 className="text-xl font-semibold text-[#0F172A] mb-1">Call Routing</h1>
-        <p className="text-sm text-[#475569]">
+        <h1 className="text-xl font-semibold text-foreground mb-1">Call Routing</h1>
+        <p className="text-sm text-muted-foreground">
           Control how incoming calls are handled &mdash; forward to your phone on a schedule, and mark priority callers who always ring through.
         </p>
       </div>
@@ -456,17 +456,17 @@ export default function CallRoutingPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`flex items-center justify-center h-10 w-10 rounded-lg transition-colors ${
-              schedule.enabled ? 'bg-[#C2410C]/10' : 'bg-stone-100'
+              schedule.enabled ? 'bg-[var(--brand-accent)]/10' : 'bg-stone-100'
             }`}>
               <PhoneForwarded className={`h-5 w-5 transition-colors ${
-                schedule.enabled ? 'text-[#C2410C]' : 'text-stone-400'
+                schedule.enabled ? 'text-[var(--brand-accent)]' : 'text-stone-400'
               }`} />
             </div>
             <div>
-              <span className="text-sm font-semibold text-[#0F172A] block">
+              <span className="text-sm font-semibold text-foreground block">
                 Answer calls yourself
               </span>
-              <span className="text-xs text-[#475569] block mt-0.5">
+              <span className="text-xs text-muted-foreground block mt-0.5">
                 {schedule.enabled
                   ? 'Calls ring your phone during scheduled hours'
                   : 'Your AI receptionist answers all calls'}
@@ -490,9 +490,9 @@ export default function CallRoutingPage() {
         <div className={`${card.base} p-6`}>
           <div className="flex items-center gap-2 mb-1">
             <UserCheck className="h-5 w-5 text-violet-500" />
-            <h2 className="text-lg font-semibold text-[#0F172A]">Priority Callers</h2>
+            <h2 className="text-lg font-semibold text-foreground">Priority Callers</h2>
           </div>
-          <p className="text-sm text-[#475569] mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             These callers always ring your phone — day or night, regardless of schedule.
           </p>
 
@@ -536,11 +536,11 @@ export default function CallRoutingPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <UserCheck className="h-4 w-4 text-violet-500 shrink-0" />
                       <div className="min-w-0">
-                        <span className="text-sm font-medium text-[#0F172A] block truncate">
+                        <span className="text-sm font-medium text-foreground block truncate">
                           {entry.number}
                         </span>
                         {entry.displayName && (
-                          <span className="text-xs text-[#475569]">{entry.displayName}</span>
+                          <span className="text-xs text-muted-foreground">{entry.displayName}</span>
                         )}
                       </div>
                     </div>
@@ -560,7 +560,7 @@ export default function CallRoutingPage() {
                         <button
                           type="button"
                           onClick={() => handleStartVipEdit(entry.idx)}
-                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors"
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-stone-100 transition-colors"
                           aria-label="Edit priority number"
                         >
                           <Pencil className="h-4 w-4" />
@@ -625,7 +625,7 @@ export default function CallRoutingPage() {
             >
               <div className={`${card.base} p-6`}>
                 <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-lg font-semibold text-[#0F172A]">Your Schedule</h2>
+                  <h2 className="text-lg font-semibold text-foreground">Your Schedule</h2>
                   <Button
                     variant="outline"
                     size="sm"
@@ -636,7 +636,7 @@ export default function CallRoutingPage() {
                     Copy from working hours
                   </Button>
                 </div>
-                <p className="text-sm text-[#475569] mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   When should calls ring your phone? Outside these hours, AI answers automatically.
                 </p>
 
@@ -652,7 +652,7 @@ export default function CallRoutingPage() {
                         key={key}
                         className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
                           isDayEnabled
-                            ? 'bg-white border-stone-200 border-l-[3px] border-l-[#C2410C]'
+                            ? 'bg-white border-stone-200 border-l-[3px] border-l-[var(--brand-accent)]'
                             : 'bg-stone-50/80 border-stone-100'
                         }`}
                       >
@@ -661,7 +661,7 @@ export default function CallRoutingPage() {
                           onCheckedChange={(checked) => handleDayToggle(key, checked)}
                           aria-label={`Toggle ${label}`}
                         />
-                        <span className={`text-sm font-medium min-w-[84px] ${isDayEnabled ? 'text-[#0F172A]' : 'text-stone-400'}`}>
+                        <span className={`text-sm font-medium min-w-[84px] ${isDayEnabled ? 'text-foreground' : 'text-stone-400'}`}>
                           {label}
                         </span>
 
@@ -670,14 +670,14 @@ export default function CallRoutingPage() {
                             <input type="time"
                               value={range.start}
                               onChange={(e) => handleTimeChange(key, 'start', e.target.value)}
-                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C] transition-shadow"
+                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                               aria-label={`${label} start time`}
                             />
                             <span className="text-stone-300 text-sm">&mdash;</span>
                             <input type="time"
                               value={range.end}
                               onChange={(e) => handleTimeChange(key, 'end', e.target.value)}
-                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#C2410C]/30 focus:border-[#C2410C] transition-shadow"
+                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                               aria-label={`${label} end time`}
                             />
                           </div>
@@ -701,10 +701,10 @@ export default function CallRoutingPage() {
             >
               <div className={`${card.base} p-6`}>
                 <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-lg font-semibold text-[#0F172A]">Your Phone Numbers</h2>
-                  <span className="text-sm text-[#475569]">{pickupNumbers.length} of 5</span>
+                  <h2 className="text-lg font-semibold text-foreground">Your Phone Numbers</h2>
+                  <span className="text-sm text-muted-foreground">{pickupNumbers.length} of 5</span>
                 </div>
-                <p className="text-sm text-[#475569] mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Add the phones you want to ring. All numbers ring at the same time &mdash; first to pick up gets the call.
                 </p>
 
@@ -745,7 +745,7 @@ export default function CallRoutingPage() {
                               onCheckedChange={setEditSmsForward}
                               aria-label="Forward SMS"
                             />
-                            <span className="text-sm text-[#475569]">Forward SMS</span>
+                            <span className="text-sm text-muted-foreground">Forward SMS</span>
                           </div>
                           <div className="flex gap-2">
                             <Button size="sm" onClick={handleSaveEdit}>Save</Button>
@@ -756,12 +756,12 @@ export default function CallRoutingPage() {
                         /* Display row */
                         <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <Phone className="h-4 w-4 text-[#475569] shrink-0" />
+                            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div className="min-w-0">
-                              <span className="text-sm font-medium text-[#0F172A] block truncate">
+                              <span className="text-sm font-medium text-foreground block truncate">
                                 {pn.number}
                               </span>
-                              <span className="text-xs text-[#475569]">{pn.label}</span>
+                              <span className="text-xs text-muted-foreground">{pn.label}</span>
                             </div>
                             {pn.sms_forward && (
                               <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
@@ -773,7 +773,7 @@ export default function CallRoutingPage() {
                             <button
                               type="button"
                               onClick={() => handleStartEdit(idx)}
-                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0F172A] hover:bg-stone-100 transition-colors"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-stone-100 transition-colors"
                               aria-label="Edit pickup number"
                             >
                               <Pencil className="h-4 w-4" />
@@ -819,7 +819,7 @@ export default function CallRoutingPage() {
                         onCheckedChange={setNewSmsForward}
                         aria-label="Forward SMS for new number"
                       />
-                      <span className="text-sm text-[#475569]">Forward SMS</span>
+                      <span className="text-sm text-muted-foreground">Forward SMS</span>
                     </div>
                     <Button variant="outline" onClick={handleAddPickupNumber}>
                       Add phone number
@@ -850,8 +850,8 @@ export default function CallRoutingPage() {
               transition={{ duration: 0.2, delay: 0.1 }}
             >
               <div className={`${card.base} p-6`}>
-                <h2 className="text-lg font-semibold text-[#0F172A] mb-1">Ring Duration</h2>
-                <p className="text-sm text-[#475569] mb-4">
+                <h2 className="text-lg font-semibold text-foreground mb-1">Ring Duration</h2>
+                <p className="text-sm text-muted-foreground mb-4">
                   How long should your phone ring before AI picks up?
                 </p>
                 <div className="space-y-3">
@@ -864,7 +864,7 @@ export default function CallRoutingPage() {
                       step={1}
                       className="flex-1 max-w-xs"
                     />
-                    <span className="text-sm font-medium text-[#0F172A] tabular-nums w-8">
+                    <span className="text-sm font-medium text-foreground tabular-nums w-8">
                       {dialTimeout}s
                     </span>
                   </div>
