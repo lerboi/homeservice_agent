@@ -124,7 +124,7 @@ export function FAQChatWidget() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything about Voco…"
           disabled={isLoading}
-          className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2 text-[15px] placeholder:text-[#71717A] focus:outline-none focus:border-[#F97316]/50 disabled:opacity-60"
+          className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2 text-[15px] text-[#0F172A] caret-[#F97316] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#F97316]/50 disabled:opacity-60"
           aria-label="Ask Voco anything about the product"
         />
         <button
