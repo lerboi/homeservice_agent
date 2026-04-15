@@ -456,10 +456,10 @@ export default function CallRoutingPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`flex items-center justify-center h-10 w-10 rounded-lg transition-colors ${
-              schedule.enabled ? 'bg-[var(--brand-accent)]/10' : 'bg-stone-100'
+              schedule.enabled ? 'bg-[var(--brand-accent)]/10' : 'bg-muted'
             }`}>
               <PhoneForwarded className={`h-5 w-5 transition-colors ${
-                schedule.enabled ? 'text-[var(--brand-accent)]' : 'text-stone-400'
+                schedule.enabled ? 'text-[var(--brand-accent)]' : 'text-muted-foreground'
               }`} />
             </div>
             <div>
@@ -499,7 +499,7 @@ export default function CallRoutingPage() {
           {/* Unified Priority Callers list */}
           <div className="space-y-2 mb-4">
             {unifiedPriority.length === 0 && (
-              <p className="text-sm text-stone-400 py-2">
+              <p className="text-sm text-muted-foreground py-2">
                 No priority callers yet. Add a phone number below to give someone priority access.
               </p>
             )}
@@ -507,7 +507,7 @@ export default function CallRoutingPage() {
               <div key={entry.key}>
                 {entry.source === 'standalone' && editingVipIdx === entry.idx ? (
                   /* Editing row — standalone only */
-                  <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 space-y-3">
+                  <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
                     <div className="space-y-1">
                       <Input
                         placeholder="+1 555 000 0000"
@@ -532,7 +532,7 @@ export default function CallRoutingPage() {
                   </div>
                 ) : (
                   /* Display row */
-                  <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <UserCheck className="h-4 w-4 text-violet-500 shrink-0" />
                       <div className="min-w-0">
@@ -560,7 +560,7 @@ export default function CallRoutingPage() {
                         <button
                           type="button"
                           onClick={() => handleStartVipEdit(entry.idx)}
-                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-stone-100 transition-colors"
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                           aria-label="Edit priority number"
                         >
                           <Pencil className="h-4 w-4" />
@@ -573,7 +573,7 @@ export default function CallRoutingPage() {
                             ? handleRemoveVipLead(entry.id)
                             : handleDeleteVipNumber(entry.idx)
                         }
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-destructive hover:bg-red-50 transition-colors"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors"
                         aria-label={entry.source === 'lead' ? 'Remove priority status from lead' : 'Remove priority number'}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -586,7 +586,7 @@ export default function CallRoutingPage() {
           </div>
 
           {/* Add priority number form */}
-          <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50/30 p-4 space-y-3">
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 space-y-3">
             <div className="space-y-1">
               <Input
                 placeholder="+1 555 000 0000"
@@ -652,8 +652,8 @@ export default function CallRoutingPage() {
                         key={key}
                         className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
                           isDayEnabled
-                            ? 'bg-white border-stone-200 border-l-[3px] border-l-[var(--brand-accent)]'
-                            : 'bg-stone-50/80 border-stone-100'
+                            ? 'bg-card border-border border-l-[3px] border-l-[var(--brand-accent)]'
+                            : 'bg-muted/80 border-border'
                         }`}
                       >
                         <Switch
@@ -661,7 +661,7 @@ export default function CallRoutingPage() {
                           onCheckedChange={(checked) => handleDayToggle(key, checked)}
                           aria-label={`Toggle ${label}`}
                         />
-                        <span className={`text-sm font-medium min-w-[84px] ${isDayEnabled ? 'text-foreground' : 'text-stone-400'}`}>
+                        <span className={`text-sm font-medium min-w-[84px] ${isDayEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {label}
                         </span>
 
@@ -670,19 +670,19 @@ export default function CallRoutingPage() {
                             <input type="time"
                               value={range.start}
                               onChange={(e) => handleTimeChange(key, 'start', e.target.value)}
-                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
+                              className="h-8 text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                               aria-label={`${label} start time`}
                             />
-                            <span className="text-stone-300 text-sm">&mdash;</span>
+                            <span className="text-muted-foreground/50 text-sm">&mdash;</span>
                             <input type="time"
                               value={range.end}
                               onChange={(e) => handleTimeChange(key, 'end', e.target.value)}
-                              className="h-8 text-sm rounded-lg border border-stone-200 px-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
+                              className="h-8 text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                               aria-label={`${label} end time`}
                             />
                           </div>
                         ) : (
-                          <span className="text-sm text-stone-400 italic flex-1">AI all day</span>
+                          <span className="text-sm text-muted-foreground italic flex-1">AI all day</span>
                         )}
                       </div>
                     );
@@ -710,7 +710,7 @@ export default function CallRoutingPage() {
 
                 {/* Empty state */}
                 {pickupNumbers.length === 0 && editingIdx === null && (
-                  <p className="text-sm text-stone-400 py-4">
+                  <p className="text-sm text-muted-foreground py-4">
                     No phone numbers yet. Add a number below to start receiving calls.
                   </p>
                 )}
@@ -721,7 +721,7 @@ export default function CallRoutingPage() {
                     <div key={idx}>
                       {editingIdx === idx ? (
                         /* Editing row */
-                        <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 space-y-3">
+                        <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
                           <div className="space-y-1">
                             <Input
                               placeholder="+1 555 000 0000"
@@ -754,7 +754,7 @@ export default function CallRoutingPage() {
                         </div>
                       ) : (
                         /* Display row */
-                        <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-4 py-3">
+                        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
                           <div className="flex items-center gap-3 min-w-0">
                             <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div className="min-w-0">
@@ -773,7 +773,7 @@ export default function CallRoutingPage() {
                             <button
                               type="button"
                               onClick={() => handleStartEdit(idx)}
-                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-stone-100 transition-colors"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                               aria-label="Edit pickup number"
                             >
                               <Pencil className="h-4 w-4" />
@@ -781,7 +781,7 @@ export default function CallRoutingPage() {
                             <button
                               type="button"
                               onClick={() => handleDeletePickupNumber(idx)}
-                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-stone-400 hover:text-destructive hover:bg-red-50 transition-colors"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors"
                               aria-label="Remove pickup number"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -795,7 +795,7 @@ export default function CallRoutingPage() {
 
                 {/* Add pickup number form */}
                 {pickupNumbers.length < 5 ? (
-                  <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50/30 p-4 space-y-3">
+                  <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 space-y-3">
                     <div className="space-y-1">
                       <Input
                         placeholder="+1 555 000 0000"
@@ -826,7 +826,7 @@ export default function CallRoutingPage() {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-sm text-stone-400 py-2">Maximum 5 numbers reached</p>
+                  <p className="text-sm text-muted-foreground py-2">Maximum 5 numbers reached</p>
                 )}
 
                 {/* Zero-numbers warning */}
@@ -868,7 +868,7 @@ export default function CallRoutingPage() {
                       {dialTimeout}s
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs text-stone-400 max-w-xs">
+                  <div className="flex justify-between text-xs text-muted-foreground max-w-xs">
                     <span>10 seconds</span>
                     <span>30 seconds</span>
                   </div>
@@ -887,7 +887,7 @@ export default function CallRoutingPage() {
             : 'translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        <div className="bg-white/95 backdrop-blur-md border-t border-stone-200 shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)] px-6 py-3">
+        <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)] px-6 py-3">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />

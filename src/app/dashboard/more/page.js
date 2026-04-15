@@ -51,7 +51,7 @@ export default function MorePage() {
         >
           <button
             onClick={() => window.dispatchEvent(new Event('open-voco-chat'))}
-            className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px] w-full text-left"
+            className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors min-h-[48px] w-full text-left"
           >
             <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
               <MessageSquare className="h-5 w-5 text-[var(--brand-accent)]" />
@@ -60,7 +60,7 @@ export default function MorePage() {
               <p className="text-sm font-medium text-foreground">Ask Voco AI</p>
               <p className="text-xs text-muted-foreground">Get instant answers about your dashboard</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </button>
         </motion.div>
       </div>
@@ -78,7 +78,7 @@ export default function MorePage() {
             >
               <Link
                 href={item.href}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px]"
+                className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors min-h-[48px]"
               >
                 <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
                   <Icon className="h-5 w-5 text-[var(--brand-accent)]" />
@@ -87,7 +87,7 @@ export default function MorePage() {
                   <p className="text-sm font-medium text-foreground">{item.label}</p>
                   <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </Link>
             </motion.div>
           );
@@ -108,16 +108,16 @@ export default function MorePage() {
             >
               <Link
                 href={item.href}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-stone-50 transition-colors min-h-[48px]"
+                className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors min-h-[48px]"
               >
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-stone-100 shrink-0">
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-muted shrink-0">
                   <Icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{item.label}</p>
                   <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-stone-400 shrink-0" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </Link>
             </motion.div>
           );

@@ -94,7 +94,7 @@ export default function BillingPage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-xl font-semibold text-foreground mb-6">Billing</h1>
         <div className={`${card.base} p-12 flex flex-col items-center text-center gap-4`}>
-          <AlertCircle className="h-12 w-12 text-stone-400" aria-hidden="true" />
+          <AlertCircle className="h-12 w-12 text-muted-foreground" aria-hidden="true" />
           <div>
             <h2 className="text-lg font-semibold text-foreground">Unable to load billing information</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -118,7 +118,7 @@ export default function BillingPage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-xl font-semibold text-foreground mb-6">Billing</h1>
         <div className={`${card.base} p-12 flex flex-col items-center text-center gap-4`}>
-          <AlertCircle className="h-12 w-12 text-stone-400" aria-hidden="true" />
+          <AlertCircle className="h-12 w-12 text-muted-foreground" aria-hidden="true" />
           <div>
             <h2 className="text-lg font-semibold text-foreground">No active subscription found</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -150,11 +150,11 @@ export default function BillingPage() {
     past_due: { className: 'bg-amber-100 text-amber-800 hover:bg-amber-100', label: 'Past Due' },
     cancelled: { className: 'bg-red-100 text-red-800 hover:bg-red-100', label: 'Cancelled' },
     canceled: { className: 'bg-red-100 text-red-800 hover:bg-red-100', label: 'Cancelled' },
-    paused: { className: 'bg-stone-100 text-stone-600 hover:bg-stone-100', label: 'Paused' },
+    paused: { className: 'bg-muted text-muted-foreground hover:bg-muted', label: 'Paused' },
     incomplete: { className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100', label: 'Incomplete' },
   };
   const statusBadge = statusBadgeConfig[subscription.status] || {
-    className: 'bg-stone-100 text-stone-600 hover:bg-stone-100',
+    className: 'bg-muted text-muted-foreground hover:bg-muted',
     label: subscription.status,
   };
 
@@ -296,7 +296,7 @@ export default function BillingPage() {
                 })}
               </TableBody>
             </Table>
-            <div className="mt-4 pt-4 border-t border-stone-100">
+            <div className="mt-4 pt-4 border-t border-border">
               <a
                 href="/api/billing/portal?return_url=/dashboard/more/billing"
                 className="text-sm text-muted-foreground hover:text-foreground underline transition-colors"
@@ -307,7 +307,7 @@ export default function BillingPage() {
           </>
         ) : (
           <div className="flex flex-col items-center text-center py-8 gap-3">
-            <Receipt className="h-10 w-10 text-stone-300" aria-hidden="true" />
+            <Receipt className="h-10 w-10 text-muted-foreground/50" aria-hidden="true" />
             <div>
               <p className="text-sm font-medium text-foreground">No invoices yet</p>
               <p className="text-sm text-muted-foreground mt-1">

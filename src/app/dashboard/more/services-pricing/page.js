@@ -283,7 +283,7 @@ export default function ServicesPricingPage() {
           <Button
             variant="outline"
             size="sm"
-            className="border-stone-200 hover:bg-stone-50"
+            className="border-border hover:bg-muted"
             onClick={() => setAddingService(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -292,7 +292,7 @@ export default function ServicesPricingPage() {
         </div>
 
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Wrench className="h-12 w-12 text-stone-300 mb-4" />
+          <Wrench className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">{t('empty_heading')}</h2>
           <p className="text-base text-muted-foreground mb-6 max-w-sm">{t('empty_body')}</p>
           <Button
@@ -316,7 +316,7 @@ export default function ServicesPricingPage() {
         <Button
           variant="outline"
           size="sm"
-          className="border-stone-200 hover:bg-stone-50"
+          className="border-border hover:bg-muted"
           onClick={() => setAddingService(true)}
         >
           <Plus className="h-4 w-4 mr-1" />
@@ -326,8 +326,8 @@ export default function ServicesPricingPage() {
 
       {/* Bulk action bar — shown when 2+ rows selected */}
       {selectedIds.size >= 2 && (
-        <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-stone-50 border border-stone-200 rounded-lg">
-          <span className="text-sm text-stone-600">{selectedIds.size} selected</span>
+        <div className="flex items-center gap-3 mb-3 px-4 py-2 bg-muted border border-border rounded-lg">
+          <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
           <Select onValueChange={handleBulkTagChange}>
             <SelectTrigger className="h-8 w-44">
               <SelectValue placeholder="Set tag for selected" />
@@ -364,9 +364,9 @@ export default function ServicesPricingPage() {
           items={services.map((s) => s.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="border border-stone-200 rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 py-2 bg-[var(--warm-surface)] border-b border-stone-200">
+            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 py-2 bg-[var(--warm-surface)] border-b border-border">
               <span className="w-4" /> {/* checkbox header spacer */}
               <span className="w-11" /> {/* drag handle header spacer */}
               <span className="text-sm font-semibold text-muted-foreground">Service Name</span>
@@ -390,7 +390,7 @@ export default function ServicesPricingPage() {
 
             {/* Add new service inline row */}
             {addingService && (
-              <div className="flex items-center px-4 min-h-14 border-t border-stone-100 gap-2">
+              <div className="flex items-center px-4 min-h-14 border-t border-border gap-2">
                 <Input
                   ref={newServiceInputRef}
                   placeholder="Service name"
@@ -401,7 +401,7 @@ export default function ServicesPricingPage() {
                   className="max-w-xs"
                   autoFocus
                 />
-                <span className="text-sm text-stone-400">Press Enter to add</span>
+                <span className="text-sm text-muted-foreground">Press Enter to add</span>
               </div>
             )}
           </div>

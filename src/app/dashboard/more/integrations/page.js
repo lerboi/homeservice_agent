@@ -126,19 +126,19 @@ export default function IntegrationsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-stone-900 mb-1">Integrations</h1>
+      <h1 className="text-xl font-semibold text-foreground mb-1">Integrations</h1>
 
       {/* Calendar Connections */}
-      <h2 className="text-base font-semibold text-stone-900 mt-8 mb-1">Calendar Connections</h2>
-      <p className="text-sm text-stone-500 mb-4">
+      <h2 className="text-base font-semibold text-foreground mt-8 mb-1">Calendar Connections</h2>
+      <p className="text-sm text-muted-foreground mb-4">
         Connect your calendar to automatically sync appointments.
       </p>
       <div className={`${card.base} p-5`}>
         <CalendarSyncCard />
       </div>
 
-      <h2 className="text-base font-semibold text-stone-900 mt-10 mb-1">Accounting Software</h2>
-      <p className="text-sm text-stone-500 mb-6">
+      <h2 className="text-base font-semibold text-foreground mt-10 mb-1">Accounting Software</h2>
+      <p className="text-sm text-muted-foreground mb-6">
         Connect your accounting software to automatically sync invoices when you send them.
       </p>
 
@@ -173,10 +173,10 @@ export default function IntegrationsPage() {
               <div key={provider.id} className={`${card.base} p-4 flex flex-col`}>
                 {/* Header: icon + name */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center justify-center h-8 w-8 bg-stone-100 rounded-lg">
-                    <Icon className="h-4 w-4 text-stone-600" />
+                  <div className="flex items-center justify-center h-8 w-8 bg-muted rounded-lg">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-sm font-medium text-stone-900">{provider.name}</span>
+                  <span className="text-sm font-medium text-foreground">{provider.name}</span>
                 </div>
 
                 {/* Connection status */}
@@ -187,13 +187,13 @@ export default function IntegrationsPage() {
                         Connected to {conn.display_name || provider.name}
                       </p>
                       {conn.last_synced_at && (
-                        <p className="text-xs text-stone-400 mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Last synced {relativeTime(conn.last_synced_at)}
                         </p>
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-stone-500">Not connected</p>
+                    <p className="text-sm text-muted-foreground">Not connected</p>
                   )}
                 </div>
 
