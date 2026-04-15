@@ -11,6 +11,37 @@ const SUGGESTIONS = [
 
 const ERROR_COPY = "Couldn't connect right now — try refreshing the page.";
 
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function renderAssistantContent(text) {
+  const nodes = [];
+  let cursor = 0;
+  let keyIndex = 0;
+  MARKDOWN_LINK_RE.lastIndex = 0;
+  let match;
+  while ((match = MARKDOWN_LINK_RE.exec(text)) !== null) {
+    if (match.index > cursor) {
+      nodes.push(text.slice(cursor, match.index));
+    }
+    const [, label, href] = match;
+    const external = /^https?:\/\//.test(href);
+    nodes.push(
+      <a
+        key={`ln-${keyIndex++}`}
+        href={href}
+        target={external ? '_blank' : undefined}
+        rel={external ? 'noopener noreferrer' : undefined}
+        className="font-semibold text-[#F97316] underline underline-offset-2 hover:text-[#EA580C]"
+      >
+        {label}
+      </a>
+    );
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes.length ? nodes : text;
+}
+
 export function FAQChatWidget() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -97,11 +128,11 @@ export function FAQChatWidget() {
             <div
               className={
                 m.role === 'user'
-                  ? 'bg-[#F97316] text-white rounded-2xl rounded-br-sm px-4 py-2 text-[15px] max-w-[85%]'
-                  : 'bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-[#475569] max-w-[85%]'
+                  ? 'bg-[#F97316] text-white rounded-2xl rounded-br-sm px-4 py-2 text-[15px] max-w-[85%] whitespace-pre-wrap'
+                  : 'bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-[#475569] max-w-[85%] whitespace-pre-wrap'
               }
             >
-              {m.content}
+              {m.role === 'assistant' ? renderAssistantContent(m.content) : m.content}
             </div>
           </div>
         ))}
