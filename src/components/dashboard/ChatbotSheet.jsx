@@ -64,8 +64,8 @@ export default function ChatbotSheet({ open, onOpenChange }) {
         side={isMobile ? 'bottom' : 'right'}
         className={
           isMobile
-            ? 'max-h-[85vh] rounded-t-2xl p-0 flex flex-col'
-            : 'w-[400px] sm:max-w-[400px] p-0 flex flex-col'
+            ? 'max-h-[85vh] rounded-t-2xl p-0 flex flex-col bg-card'
+            : 'w-[400px] sm:max-w-[400px] p-0 flex flex-col bg-card'
         }
         aria-label="Voco AI chat assistant"
       >
@@ -77,9 +77,9 @@ export default function ChatbotSheet({ open, onOpenChange }) {
         )}
 
         {/* Header */}
-        <SheetHeader className="px-4 py-3 border-b border-stone-100 shrink-0">
+        <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-[#C2410C]" />
+            <MessageSquare className="h-5 w-5 text-[var(--brand-accent)]" />
             <SheetTitle className="text-base font-semibold">Voco AI</SheetTitle>
             <SheetDescription className="sr-only">
               Ask questions about your dashboard, navigate features, or get help
@@ -105,7 +105,7 @@ export default function ChatbotSheet({ open, onOpenChange }) {
         </div>
 
         {/* Input row */}
-        <div className="px-4 pb-4 pt-2 border-t border-stone-100 shrink-0">
+        <div className="px-4 pb-4 pt-2 border-t border-border shrink-0">
           <div className="flex items-center gap-2">
             <Input
               ref={inputRef}
@@ -121,7 +121,7 @@ export default function ChatbotSheet({ open, onOpenChange }) {
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon-lg"
-              className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white h-10 w-10 shrink-0"
+              className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-[var(--brand-accent-fg)] h-10 w-10 shrink-0"
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>

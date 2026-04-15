@@ -40,12 +40,13 @@ import AudioPlayer from '@/components/dashboard/AudioPlayer';
 import TranscriptViewer from '@/components/dashboard/TranscriptViewer';
 import RevenueInput from '@/components/dashboard/RevenueInput';
 import { supabase } from '@/lib/supabase-browser';
+import { btn } from '@/lib/design-tokens';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
-  routine: { badge: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70', label: 'Routine' },
+  routine: { badge: 'bg-foreground/[0.06] text-foreground/70', label: 'Routine' },
   urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
 };
 
@@ -383,7 +384,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-card">
 
         {/* Loading state */}
         {loading && (
@@ -399,7 +400,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
         {!loading && fetchError && (
           <>
             <SheetHeader>
-              <SheetTitle className="text-xl text-[#0F172A]">Lead Details</SheetTitle>
+              <SheetTitle className="text-xl text-foreground">Lead Details</SheetTitle>
             </SheetHeader>
             <div className="px-6 flex flex-col items-center gap-4 py-8">
               <p className="text-sm text-stone-500 text-center">
@@ -431,7 +432,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
-                    className="flex-1 text-xl font-semibold text-[#0F172A] leading-snug border-b-2 border-[#C2410C] outline-none bg-transparent"
+                    className="flex-1 text-xl font-semibold text-foreground leading-snug border-b-2 border-[var(--brand-accent)] outline-none bg-transparent"
                     value={nameDraft}
                     onChange={(e) => setNameDraft(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave(); if (e.key === 'Escape') setEditingName(false); }}
@@ -446,7 +447,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </div>
               ) : (
                 <SheetTitle
-                  className="text-xl font-semibold text-[#0F172A] leading-snug mt-1 group cursor-pointer"
+                  className="text-xl font-semibold text-foreground leading-snug mt-1 group cursor-pointer"
                   onClick={() => { setNameDraft(lead.caller_name || ''); setEditingName(true); }}
                 >
                   {lead.caller_name || 'Unknown Caller'}
@@ -459,13 +460,13 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Caller section ── */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
                   <Phone className="h-4 w-4 text-stone-400 flex-shrink-0" />
                   {editingPhone ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
                         type="tel"
-                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        className="flex-1 text-sm border-b border-[var(--brand-accent)] outline-none bg-transparent py-0.5"
                         placeholder="+1 555 123 4567"
                         value={phoneDraft}
                         onChange={(e) => setPhoneDraft(e.target.value)}
@@ -483,7 +484,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     <div className="flex items-center gap-2 flex-1 group">
                       <a
                         href={`tel:${lead.from_number}`}
-                        className="text-[#C2410C] hover:text-[#9A3412] transition-colors"
+                        className="text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] transition-colors"
                       >
                         {lead.from_number}
                       </a>
@@ -499,7 +500,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setPhoneDraft(''); setEditingPhone(true); }}
                     >
                       + Add phone
@@ -507,13 +508,13 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   )}
                 </div>
                 {/* Email — inline editable */}
-                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
                   <Mail className="h-4 w-4 text-stone-400 flex-shrink-0" />
                   {editingEmail ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
                         type="email"
-                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        className="flex-1 text-sm border-b border-[var(--brand-accent)] outline-none bg-transparent py-0.5"
                         placeholder="customer@example.com"
                         value={emailDraft}
                         onChange={(e) => setEmailDraft(e.target.value)}
@@ -530,7 +531,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : lead.email ? (
                     <button
                       type="button"
-                      className="text-[#0F172A]/80 hover:text-[#C2410C] transition-colors text-left"
+                      className="text-foreground/80 hover:text-[var(--brand-accent)] transition-colors text-left"
                       onClick={() => { setEmailDraft(lead.email || ''); setEditingEmail(true); }}
                     >
                       {lead.email}
@@ -538,7 +539,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setEmailDraft(''); setEditingEmail(true); }}
                     >
                       + Add email
@@ -557,18 +558,18 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Job section ── */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Job Details
                 </h3>
 
                 {/* Job type — inline editable */}
-                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
                   <Briefcase className="h-4 w-4 text-stone-400 flex-shrink-0" />
                   {editingJobType ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
                         type="text"
-                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        className="flex-1 text-sm border-b border-[var(--brand-accent)] outline-none bg-transparent py-0.5"
                         placeholder="e.g. Plumbing repair"
                         value={jobTypeDraft}
                         onChange={(e) => setJobTypeDraft(e.target.value)}
@@ -597,7 +598,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setJobTypeDraft(''); setEditingJobType(true); }}
                     >
                       + Add job type
@@ -606,13 +607,13 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </div>
 
                 {/* Address — inline editable single-line */}
-                <div className="flex items-start gap-2 text-sm text-[#0F172A]/80">
+                <div className="flex items-start gap-2 text-sm text-foreground/80">
                   <MapPin className="h-4 w-4 text-stone-400 flex-shrink-0 mt-0.5" />
                   {editingAddress ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
                         type="text"
-                        className="flex-1 text-sm border-b border-[#C2410C] outline-none bg-transparent py-0.5"
+                        className="flex-1 text-sm border-b border-[var(--brand-accent)] outline-none bg-transparent py-0.5"
                         placeholder="Street, postal/ZIP"
                         value={addressDraft}
                         onChange={(e) => setAddressDraft(e.target.value)}
@@ -641,7 +642,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[#C2410C] transition-colors text-sm"
+                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setAddressDraft(''); setEditingAddress(true); }}
                     >
                       + Add address
@@ -650,7 +651,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </div>
 
                 {/* Urgency — Select (direct commit on change) */}
-                <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
                   <AlertCircle className="h-4 w-4 text-stone-400 flex-shrink-0" />
                   <Select
                     value={lead.urgency || 'routine'}
@@ -687,7 +688,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Audio player ── */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Call Recording
                 </h3>
                 <AudioPlayer src={recordingSrc} />
@@ -695,7 +696,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Transcript ── */}
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Transcript
                 </h3>
                 <TranscriptViewer
@@ -709,7 +710,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <>
                   <Separator className="bg-stone-100" />
                   <div className="space-y-2">
-                    <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Invoice
                     </h3>
 
@@ -730,7 +731,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     ) : (
                       <button
                         onClick={() => router.push(`/dashboard/invoices/new?lead_id=${lead.id}`)}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[#C2410C] border border-[#C2410C]/30 rounded-lg hover:bg-orange-50 transition-colors"
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[var(--brand-accent)] border border-[var(--brand-accent)]/30 rounded-lg hover:bg-accent transition-colors"
                       >
                         <FileText className="h-4 w-4" />
                         {lead.status === 'booked' ? 'Create Draft Invoice' : 'Create Invoice'}
@@ -739,7 +740,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
                     <button
                       onClick={() => router.push(`/dashboard/estimates/new?lead_id=${lead.id}`)}
-                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[#C2410C] border border-[#C2410C] rounded-lg hover:bg-[#C2410C]/10 transition-colors"
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-[var(--brand-accent)] border border-[var(--brand-accent)] rounded-lg hover:bg-[var(--brand-accent)]/10 transition-colors"
                     >
                       <ClipboardList className="h-4 w-4" />
                       Create Estimate
@@ -764,8 +765,8 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     <div className="flex items-center gap-2">
                       <UserCheck className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500' : 'text-stone-400'}`} />
                       <div>
-                        <span className="text-sm font-medium text-[#0F172A]">Priority Caller</span>
-                        <p className="text-xs text-[#475569]">Always ring your phone when this caller dials in.</p>
+                        <span className="text-sm font-medium text-foreground">Priority Caller</span>
+                        <p className="text-xs text-muted-foreground">Always ring your phone when this caller dials in.</p>
                       </div>
                     </div>
                     <Switch
@@ -797,7 +798,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
               {/* ── Pipeline actions: status select + revenue input ── */}
               <div className="space-y-3">
-                <h3 className="text-xs font-semibold text-[#475569] uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Pipeline Status
                 </h3>
 
@@ -819,7 +820,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                         value={status}
                         className={
                           status === lead.status
-                            ? 'border-l-2 border-[#C2410C] pl-2'
+                            ? 'border-l-2 border-[var(--brand-accent)] pl-2'
                             : ''
                         }
                       >
@@ -843,7 +844,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 <Button
                   onClick={handleSave}
                   disabled={saving || (selectedStatus === lead.status && !revenueAmount)}
-                  className="w-full min-h-[44px] bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] text-white font-semibold shadow-sm transition-all duration-150"
+                  className={`w-full min-h-[44px] font-semibold ${btn.primary}`}
                 >
                   {saving ? 'Saving...' : 'Update Status'}
                 </Button>
