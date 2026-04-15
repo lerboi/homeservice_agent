@@ -162,7 +162,7 @@ const BAR_RANGE_HOURS = BAR_RANGE_END - BAR_RANGE_START;
 
 function ScheduleBar({ dayData }) {
   if (!dayData?.enabled) {
-    return <div className="h-1.5 rounded-full bg-stone-100" />;
+    return <div className="h-1.5 rounded-full bg-muted" />;
   }
 
   const openDec = parseTimeToDecimal(dayData.open);
@@ -178,7 +178,7 @@ function ScheduleBar({ dayData }) {
     const bar2Width = ((closeDec - lunchEndDec) / BAR_RANGE_HOURS) * 100;
 
     return (
-      <div className="relative h-1.5 rounded-full bg-stone-100">
+      <div className="relative h-1.5 rounded-full bg-muted">
         <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar1Left}%`, width: `${bar1Width}%` }} />
         <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar2Left}%`, width: `${bar2Width}%` }} />
       </div>
@@ -189,7 +189,7 @@ function ScheduleBar({ dayData }) {
   const widthPct = ((closeDec - openDec) / BAR_RANGE_HOURS) * 100;
 
   return (
-    <div className="relative h-1.5 rounded-full bg-stone-100">
+    <div className="relative h-1.5 rounded-full bg-muted">
       <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${leftPct}%`, width: `${widthPct}%` }} />
     </div>
   );
@@ -377,7 +377,7 @@ export default function WorkingHoursEditor() {
         <Select value={timezone} onValueChange={setTimezone}>
           <SelectTrigger className="w-56 h-9 text-sm">
             <div className="flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+              <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <SelectValue />
             </div>
           </SelectTrigger>
@@ -396,19 +396,19 @@ export default function WorkingHoursEditor() {
 
       {/* Weekly overview */}
       <div className="rounded-xl border border-border bg-muted/50 p-4 mb-6">
-        <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Weekly Overview</p>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Weekly Overview</p>
         <div className="space-y-2">
           {DAYS.map((day) => {
             const d = hours[day] || DEFAULT_DAY;
             return (
               <div key={day} className="flex items-center gap-3">
-                <span className={`text-xs w-8 shrink-0 font-medium ${d.enabled ? 'text-foreground' : 'text-stone-400'}`}>
+                <span className={`text-xs w-8 shrink-0 font-medium ${d.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
                   {DAY_LABELS[day]}
                 </span>
                 <div className="flex-1 min-w-0">
                   <ScheduleBar dayData={d} />
                 </div>
-                <span className="text-[11px] text-stone-400 w-24 text-right shrink-0 tabular-nums">
+                <span className="text-[11px] text-muted-foreground w-24 text-right shrink-0 tabular-nums">
                   {d.enabled
                     ? d.lunchStart
                       ? `${formatTimeLabel(d.open)}\u2013${formatTimeLabel(d.lunchStart)}, ${formatTimeLabel(d.lunchEnd)}\u2013${formatTimeLabel(d.close)}`
@@ -421,10 +421,10 @@ export default function WorkingHoursEditor() {
         </div>
         {/* Time axis labels */}
         <div className="flex justify-between mt-2 px-11">
-          <span className="text-[10px] text-stone-300">6 AM</span>
-          <span className="text-[10px] text-stone-300">12 PM</span>
-          <span className="text-[10px] text-stone-300">6 PM</span>
-          <span className="text-[10px] text-stone-300">10 PM</span>
+          <span className="text-[10px] text-muted-foreground/50">6 AM</span>
+          <span className="text-[10px] text-muted-foreground/50">12 PM</span>
+          <span className="text-[10px] text-muted-foreground/50">6 PM</span>
+          <span className="text-[10px] text-muted-foreground/50">10 PM</span>
         </div>
       </div>
 
@@ -451,7 +451,7 @@ export default function WorkingHoursEditor() {
                   onCheckedChange={(checked) => updateDay(day, 'enabled', checked)}
                   aria-label={`Toggle ${DAY_LABELS_FULL[day]}`}
                 />
-                <span className={`text-sm font-medium min-w-[84px] ${isEnabled ? 'text-foreground' : 'text-stone-400'}`}>
+                <span className={`text-sm font-medium min-w-[84px] ${isEnabled ? 'text-foreground' : 'text-muted-foreground'}`}>
                   {DAY_LABELS_FULL[day]}
                 </span>
 
@@ -466,7 +466,7 @@ export default function WorkingHoursEditor() {
                         className="h-8 text-sm rounded-lg border border-border px-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)] transition-shadow"
                         aria-label={`${DAY_LABELS_FULL[day]} open time`}
                       />
-                      <span className="text-stone-300 text-sm">—</span>
+                      <span className="text-muted-foreground/50 text-sm">—</span>
                       <input
                         type="time"
                         value={dayData.close || '17:00'}
@@ -477,7 +477,7 @@ export default function WorkingHoursEditor() {
                     </div>
                   </>
                 ) : (
-                  <span className="text-sm text-stone-400 italic flex-1">Closed</span>
+                  <span className="text-sm text-muted-foreground italic flex-1">Closed</span>
                 )}
 
                 {/* Copy button — always shown */}
@@ -489,7 +489,7 @@ export default function WorkingHoursEditor() {
                     <button
                       type="button"
                       onClick={() => openCopyPopover(day)}
-                      className="h-8 w-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
                       aria-label={`Copy ${DAY_LABELS_FULL[day]} to other days`}
                     >
                       <Copy className="h-3.5 w-3.5" />
@@ -552,7 +552,7 @@ export default function WorkingHoursEditor() {
               {isEnabled && (
                 <div className="sm:hidden mt-3 flex items-center gap-2">
                   <div className="flex-1">
-                    <label className="text-[11px] text-stone-400 font-medium uppercase tracking-wider mb-1 block">Opens</label>
+                    <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1 block">Opens</label>
                     <input
                       type="time"
                       value={dayData.open || '08:00'}
@@ -561,9 +561,9 @@ export default function WorkingHoursEditor() {
                       aria-label={`${DAY_LABELS_FULL[day]} open time`}
                     />
                   </div>
-                  <span className="text-stone-300 mt-5">—</span>
+                  <span className="text-muted-foreground/50 mt-5">—</span>
                   <div className="flex-1">
-                    <label className="text-[11px] text-stone-400 font-medium uppercase tracking-wider mb-1 block">Closes</label>
+                    <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1 block">Closes</label>
                     <input
                       type="time"
                       value={dayData.close || '17:00'}
@@ -580,8 +580,8 @@ export default function WorkingHoursEditor() {
                 <div className="mt-2.5 ml-11 sm:ml-[calc(36px+84px+12px+12px)]">
                   {hasLunch ? (
                     <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted border border-border">
-                      <Clock className="h-3 w-3 text-stone-400" />
-                      <span className="text-xs text-stone-500">Break:</span>
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Break:</span>
                       <input
                         type="time"
                         value={dayData.lunchStart || '12:00'}
@@ -589,7 +589,7 @@ export default function WorkingHoursEditor() {
                         className="h-6 text-xs rounded border border-border px-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]/30 focus:border-[var(--brand-accent)]"
                         aria-label={`${DAY_LABELS_FULL[day]} break start`}
                       />
-                      <span className="text-stone-300 text-xs">–</span>
+                      <span className="text-muted-foreground/50 text-xs">–</span>
                       <input
                         type="time"
                         value={dayData.lunchEnd || '13:00'}
@@ -600,7 +600,7 @@ export default function WorkingHoursEditor() {
                       <button
                         type="button"
                         onClick={() => toggleLunchBreak(day)}
-                        className="h-5 w-5 flex items-center justify-center rounded text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
                         aria-label="Remove break"
                       >
                         <X className="h-3 w-3" />
@@ -610,7 +610,7 @@ export default function WorkingHoursEditor() {
                     <button
                       type="button"
                       onClick={() => toggleLunchBreak(day)}
-                      className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-[var(--brand-accent)] transition-colors py-1"
+                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[var(--brand-accent)] transition-colors py-1"
                     >
                       <Plus className="h-3 w-3" />
                       Add break
@@ -636,7 +636,7 @@ export default function WorkingHoursEditor() {
       <div className="mt-6 pt-5 border-t border-border">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-stone-400" />
+            <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">Default appointment duration</span>
           </div>
           <Select value={slotDuration} onValueChange={setSlotDuration}>
@@ -650,8 +650,8 @@ export default function WorkingHoursEditor() {
             </SelectContent>
           </Select>
         </div>
-        <p className="text-xs text-stone-400 mt-1.5 ml-6">
-          Your AI will offer <span className="font-medium text-stone-500">{SLOT_DURATION_OPTIONS.find((o) => o.value === slotDuration)?.label}</span> time slots when booking appointments.
+        <p className="text-xs text-muted-foreground mt-1.5 ml-6">
+          Your AI will offer <span className="font-medium text-muted-foreground">{SLOT_DURATION_OPTIONS.find((o) => o.value === slotDuration)?.label}</span> time slots when booking appointments.
         </p>
       </div>
 

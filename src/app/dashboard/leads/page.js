@@ -410,12 +410,12 @@ export default function LeadsPage() {
   const pageHeader = (
     <div className="flex items-center justify-between px-6 pt-6 pb-4">
       <div className="flex items-center gap-2.5">
-        <div className="flex items-center justify-center size-8 rounded-lg bg-stone-100">
-          <Users className="size-4 text-stone-500" />
+        <div className="flex items-center justify-center size-8 rounded-lg bg-muted">
+          <Users className="size-4 text-muted-foreground" />
         </div>
         <h1 className="text-xl font-semibold text-foreground">Leads</h1>
         {!loading && (
-          <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2.5 py-0.5 text-xs font-medium">
+          <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-xs font-medium">
             {leads.length}
           </span>
         )}
@@ -430,7 +430,7 @@ export default function LeadsPage() {
             className={`flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-medium transition-colors ${
               selectMode
                 ? 'bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent-hover)]'
-                : 'border border-stone-200 text-stone-600 bg-white hover:bg-stone-50'
+                : 'border border-border text-muted-foreground bg-card hover:bg-muted'
             }`}
             aria-pressed={selectMode}
           >
@@ -500,7 +500,7 @@ export default function LeadsPage() {
   }, [leads, selectedLeads]);
 
   const batchSelectBar = selectedLeads.size > 0 && (
-    <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 bg-white border-t border-stone-200 shadow-[0_-4px_12px_0_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
+    <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-4px_12px_0_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
       <div className="flex items-center gap-3 min-w-0">
         {eligibleLeads.length > 1 && (
           <Checkbox
@@ -538,7 +538,7 @@ export default function LeadsPage() {
                 <p className="mb-3">Draft invoices will be created with pre-filled customer information. You can review and edit each one before sending.</p>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {selectedLeadDetails.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-stone-50">
+                    <div key={lead.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted">
                       <span className="font-medium text-foreground truncate">{lead.caller_name || lead.from_number || 'Unknown'}</span>
                       <span className="text-xs text-muted-foreground shrink-0 ml-2">{lead.job_type || '—'}</span>
                     </div>

@@ -62,13 +62,13 @@ export default function TierEditor({ tier, onUpdate, onRemove, taxRate = 0, canR
             value={tier.tier_label || ''}
             onChange={handleLabelChange}
             placeholder="Tier name"
-            className="h-9 text-base font-semibold text-stone-900 border-none shadow-none px-0 focus-visible:ring-0 max-w-[200px]"
+            className="h-9 text-base font-semibold text-foreground border-none shadow-none px-0 focus-visible:ring-0 max-w-[200px]"
           />
           {canRemove && (
             <button
               type="button"
               onClick={onRemove}
-              className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+              className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
               aria-label="Remove tier"
               title="Remove tier"
             >
@@ -81,8 +81,8 @@ export default function TierEditor({ tier, onUpdate, onRemove, taxRate = 0, canR
 
         {/* Line items */}
         {(tier.line_items || []).length === 0 ? (
-          <div className="text-center py-6 border-2 border-dashed border-stone-200 rounded-lg">
-            <p className="text-sm text-stone-400 mb-3">No line items yet</p>
+          <div className="text-center py-6 border-2 border-dashed border-border rounded-lg">
+            <p className="text-sm text-muted-foreground mb-3">No line items yet</p>
             <Button type="button" variant="outline" size="sm" onClick={handleAddLineItem}>
               <Plus className="h-4 w-4 mr-1" />
               Add First Item
@@ -107,7 +107,7 @@ export default function TierEditor({ tier, onUpdate, onRemove, taxRate = 0, canR
             type="button"
             variant="outline"
             size="sm"
-            className="w-full border-dashed text-stone-500 hover:text-stone-700 hover:border-stone-400"
+            className="w-full border-dashed text-muted-foreground hover:text-foreground hover:border-border"
             onClick={handleAddLineItem}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -117,21 +117,21 @@ export default function TierEditor({ tier, onUpdate, onRemove, taxRate = 0, canR
 
         {/* Totals */}
         {(tier.line_items || []).length > 0 && (
-          <div className="bg-stone-50 rounded-lg p-3 space-y-1.5">
+          <div className="bg-muted rounded-lg p-3 space-y-1.5">
             <div className="flex justify-between text-sm">
-              <span className="text-stone-500">Subtotal</span>
-              <span className="font-medium text-stone-700 tabular-nums">${subtotal.toFixed(2)}</span>
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-medium text-foreground tabular-nums">${subtotal.toFixed(2)}</span>
             </div>
             {tax_amount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Tax ({taxRatePct}%)</span>
-                <span className="font-medium text-stone-700 tabular-nums">${tax_amount.toFixed(2)}</span>
+                <span className="text-muted-foreground">Tax ({taxRatePct}%)</span>
+                <span className="font-medium text-foreground tabular-nums">${tax_amount.toFixed(2)}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between pt-1">
-              <span className="font-semibold text-stone-900 text-sm">Tier Total</span>
-              <span className="font-bold text-stone-900 tabular-nums">${total.toFixed(2)}</span>
+              <span className="font-semibold text-foreground text-sm">Tier Total</span>
+              <span className="font-bold text-foreground tabular-nums">${total.toFixed(2)}</span>
             </div>
           </div>
         )}

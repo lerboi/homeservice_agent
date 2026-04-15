@@ -42,14 +42,14 @@ export function SortableServiceRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 items-center min-h-14 border-b border-stone-100 last:border-b-0 bg-white"
+      className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-4 px-4 items-center min-h-14 border-b border-border last:border-b-0 bg-card"
     >
       {/* Checkbox for bulk select */}
       <input
         type="checkbox"
         checked={isSelected}
         onChange={() => onSelectToggle(service.id)}
-        className="h-4 w-4 rounded border-stone-300 cursor-pointer"
+        className="h-4 w-4 rounded border-border cursor-pointer"
         aria-label={`Select ${service.name}`}
       />
 
@@ -58,7 +58,7 @@ export function SortableServiceRow({
         type="button"
         {...listeners}
         {...attributes}
-        className="flex items-center justify-center w-11 h-11 cursor-grab active:cursor-grabbing p-1 text-stone-400 hover:text-stone-600 rounded-md hover:bg-stone-50 transition-colors"
+        className="flex items-center justify-center w-11 h-11 cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-muted-foreground rounded-md hover:bg-muted transition-colors"
         aria-label="Drag to reorder"
       >
         <GripVertical className="h-4 w-4" />
@@ -84,7 +84,7 @@ export function SortableServiceRow({
           onValueChange={(value) => onTagChange(service.id, value)}
         >
           <SelectTrigger
-            className="h-8 w-8 p-0 border-0 shadow-none focus:ring-0 text-stone-400"
+            className="h-8 w-8 p-0 border-0 shadow-none focus:ring-0 text-muted-foreground"
             aria-label={`Change urgency for ${service.name}`}
           >
             <SelectValue />
@@ -107,7 +107,7 @@ export function SortableServiceRow({
       <button
         type="button"
         onClick={() => onRemove(service)}
-        className="w-10 flex items-center justify-center h-10 rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+        className="w-10 flex items-center justify-center h-10 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
         aria-label={`Remove ${service.name}`}
       >
         <X className="h-4 w-4" />

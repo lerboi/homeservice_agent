@@ -403,7 +403,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
               <SheetTitle className="text-xl text-foreground">Lead Details</SheetTitle>
             </SheetHeader>
             <div className="px-6 flex flex-col items-center gap-4 py-8">
-              <p className="text-sm text-stone-500 text-center">
+              <p className="text-sm text-muted-foreground text-center">
                 Couldn&apos;t load lead details.
               </p>
               <Button variant="outline" size="sm" onClick={fetchLead}>
@@ -423,7 +423,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   <Badge className={`text-xs font-semibold ${urgencyStyle.badge}`}>
                     {urgencyStyle.label}
                   </Badge>
-                  <span className="text-xs text-stone-400">
+                  <span className="text-xs text-muted-foreground">
                     {formatRelativeTime(lead.created_at)}
                   </span>
                 </div>
@@ -441,7 +441,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   <button type="button" onClick={handleNameSave} className="p-1 text-green-600 hover:text-green-700">
                     <Check className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => setEditingName(false)} className="p-1 text-stone-400 hover:text-stone-600">
+                  <button type="button" onClick={() => setEditingName(false)} className="p-1 text-muted-foreground hover:text-muted-foreground">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -451,7 +451,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   onClick={() => { setNameDraft(lead.caller_name || ''); setEditingName(true); }}
                 >
                   {lead.caller_name || 'Unknown Caller'}
-                  <Pencil className="inline-block h-3.5 w-3.5 ml-2 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Pencil className="inline-block h-3.5 w-3.5 ml-2 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </SheetTitle>
               )}
             </SheetHeader>
@@ -461,7 +461,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
               {/* ── Caller section ── */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-foreground/80">
-                  <Phone className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   {editingPhone ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
@@ -476,7 +476,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <button type="button" onClick={handlePhoneSave} className="p-0.5 text-green-600 hover:text-green-700">
                         <Check className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => setEditingPhone(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                      <button type="button" onClick={() => setEditingPhone(false)} className="p-0.5 text-muted-foreground hover:text-muted-foreground">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -490,7 +490,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       </a>
                       <button
                         type="button"
-                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity"
+                        className="p-0.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-muted-foreground transition-opacity"
                         onClick={() => { setPhoneDraft(lead.from_number || ''); setEditingPhone(true); }}
                         aria-label="Edit phone number"
                       >
@@ -500,7 +500,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
+                      className="text-muted-foreground hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setPhoneDraft(''); setEditingPhone(true); }}
                     >
                       + Add phone
@@ -509,7 +509,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </div>
                 {/* Email — inline editable */}
                 <div className="flex items-center gap-2 text-sm text-foreground/80">
-                  <Mail className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   {editingEmail ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
@@ -524,7 +524,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <button type="button" onClick={handleEmailSave} className="p-0.5 text-green-600 hover:text-green-700">
                         <Check className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => setEditingEmail(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                      <button type="button" onClick={() => setEditingEmail(false)} className="p-0.5 text-muted-foreground hover:text-muted-foreground">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -539,7 +539,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
+                      className="text-muted-foreground hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setEmailDraft(''); setEditingEmail(true); }}
                     >
                       + Add email
@@ -547,14 +547,14 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   )}
                 </div>
                 {firstCall?.start_timestamp && (
-                  <div className="flex items-center gap-2 text-sm text-stone-500">
-                    <Calendar className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <span>{formatDateTime(firstCall.start_timestamp)}</span>
                   </div>
                 )}
               </div>
 
-              <Separator className="bg-stone-100" />
+              <Separator className="bg-muted" />
 
               {/* ── Job section ── */}
               <div className="space-y-2">
@@ -564,7 +564,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
                 {/* Job type — inline editable */}
                 <div className="flex items-center gap-2 text-sm text-foreground/80">
-                  <Briefcase className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <Briefcase className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   {editingJobType ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
@@ -579,7 +579,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <button type="button" onClick={handleJobTypeSave} className="p-0.5 text-green-600 hover:text-green-700">
                         <Check className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => setEditingJobType(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                      <button type="button" onClick={() => setEditingJobType(false)} className="p-0.5 text-muted-foreground hover:text-muted-foreground">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -588,7 +588,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <span className="capitalize">{lead.job_type}</span>
                       <button
                         type="button"
-                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity"
+                        className="p-0.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-muted-foreground transition-opacity"
                         onClick={() => { setJobTypeDraft(lead.job_type || ''); setEditingJobType(true); }}
                         aria-label="Edit job type"
                       >
@@ -598,7 +598,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
+                      className="text-muted-foreground hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setJobTypeDraft(''); setEditingJobType(true); }}
                     >
                       + Add job type
@@ -608,7 +608,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
                 {/* Address — inline editable single-line */}
                 <div className="flex items-start gap-2 text-sm text-foreground/80">
-                  <MapPin className="h-4 w-4 text-stone-400 flex-shrink-0 mt-0.5" />
+                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   {editingAddress ? (
                     <div className="flex items-center gap-1.5 flex-1">
                       <input
@@ -623,7 +623,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <button type="button" onClick={handleAddressSave} className="p-0.5 text-green-600 hover:text-green-700">
                         <Check className="h-3.5 w-3.5" />
                       </button>
-                      <button type="button" onClick={() => setEditingAddress(false)} className="p-0.5 text-stone-400 hover:text-stone-600">
+                      <button type="button" onClick={() => setEditingAddress(false)} className="p-0.5 text-muted-foreground hover:text-muted-foreground">
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -632,7 +632,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       <span className="flex-1">{currentAddressText(lead)}</span>
                       <button
                         type="button"
-                        className="p-0.5 text-stone-300 opacity-0 group-hover:opacity-100 hover:text-stone-600 transition-opacity shrink-0"
+                        className="p-0.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 hover:text-muted-foreground transition-opacity shrink-0"
                         onClick={() => { setAddressDraft(currentAddressText(lead)); setEditingAddress(true); }}
                         aria-label="Edit address"
                       >
@@ -642,7 +642,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                   ) : (
                     <button
                       type="button"
-                      className="text-stone-400 hover:text-[var(--brand-accent)] transition-colors text-sm"
+                      className="text-muted-foreground hover:text-[var(--brand-accent)] transition-colors text-sm"
                       onClick={() => { setAddressDraft(''); setEditingAddress(true); }}
                     >
                       + Add address
@@ -652,7 +652,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
                 {/* Urgency — Select (direct commit on change) */}
                 <div className="flex items-center gap-2 text-sm text-foreground/80">
-                  <AlertCircle className="h-4 w-4 text-stone-400 flex-shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Select
                     value={lead.urgency || 'routine'}
                     onValueChange={async (v) => {
@@ -672,7 +672,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                       }
                     }}
                   >
-                    <SelectTrigger className="h-7 w-auto text-sm border-none shadow-none px-2 -mx-2 hover:bg-stone-50">
+                    <SelectTrigger className="h-7 w-auto text-sm border-none shadow-none px-2 -mx-2 hover:bg-muted">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -684,7 +684,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </div>
               </div>
 
-              <Separator className="bg-stone-100" />
+              <Separator className="bg-muted" />
 
               {/* ── Audio player ── */}
               <div className="space-y-2">
@@ -708,7 +708,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
               {/* ── Invoice section ── */}
               {(lead.status === 'booked' || lead.status === 'completed' || lead.status === 'paid') && (
                 <>
-                  <Separator className="bg-stone-100" />
+                  <Separator className="bg-muted" />
                   <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Invoice
@@ -717,15 +717,15 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                     {linkedInvoice ? (
                       <button
                         onClick={() => router.push(`/dashboard/invoices/${linkedInvoice.id}`)}
-                        className="flex items-center justify-between w-full px-3 py-2.5 text-sm border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+                        className="flex items-center justify-between w-full px-3 py-2.5 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
                       >
-                        <span className="flex items-center gap-2 text-stone-700 font-medium">
-                          <FileText className="h-4 w-4 text-stone-400" />
+                        <span className="flex items-center gap-2 text-foreground font-medium">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
                           {linkedInvoice.invoice_number}
                         </span>
                         <span className="flex items-center gap-2">
                           <InvoiceStatusBadge status={linkedInvoice.status} />
-                          <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                         </span>
                       </button>
                     ) : (
@@ -752,7 +752,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
               {/* ── Customer Journey Timeline ── */}
               {lead.from_number && (
                 <>
-                  <Separator className="bg-stone-100" />
+                  <Separator className="bg-muted" />
                   <CustomerTimeline phone={lead.from_number} leadId={lead.id} />
                 </>
               )}
@@ -760,10 +760,10 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
               {/* -- VIP Caller toggle -- */}
               {lead.from_number && (
                 <>
-                  <Separator className="bg-stone-100" />
+                  <Separator className="bg-muted" />
                   <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
-                      <UserCheck className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500' : 'text-stone-400'}`} />
+                      <UserCheck className={`h-3.5 w-3.5 ${lead.is_vip ? 'text-violet-500' : 'text-muted-foreground'}`} />
                       <div>
                         <span className="text-sm font-medium text-foreground">Priority Caller</span>
                         <p className="text-xs text-muted-foreground">Always ring your phone when this caller dials in.</p>
@@ -794,7 +794,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </>
               )}
 
-              <Separator className="bg-stone-100" />
+              <Separator className="bg-muted" />
 
               {/* ── Pipeline actions: status select + revenue input ── */}
               <div className="space-y-3">

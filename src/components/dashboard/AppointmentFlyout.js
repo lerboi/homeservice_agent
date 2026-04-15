@@ -204,24 +204,24 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {/* Details card */}
           <div className="rounded-lg border border-border bg-muted p-3 space-y-2.5">
             <div className="flex items-center gap-2 text-sm text-foreground">
-              <Clock className="h-4 w-4 text-stone-400 shrink-0" />
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="font-medium">{formatDateTime(appointment.start_time)}</span>
               <span className="text-muted-foreground text-xs">({formatDuration(appointment.start_time, appointment.end_time)})</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-foreground/80">
-              <MapPin className="h-4 w-4 text-stone-400 shrink-0" />
+              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
               <span>{appointment.street_name && appointment.postal_code
                 ? `${appointment.street_name}, ${appointment.postal_code}`
                 : appointment.service_address || 'No address'}</span>
             </div>
             {appointment.caller_phone && (
               <div className="flex items-center gap-2 text-sm text-foreground/80">
-                <Phone className="h-4 w-4 text-stone-400 shrink-0" />
+                <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span>{appointment.caller_phone}</span>
               </div>
             )}
             {appointment.booked_via && (
-              <div className="text-xs text-stone-400 ml-6">
+              <div className="text-xs text-muted-foreground ml-6">
                 Booked via {appointment.booked_via}{call?.created_at ? ` · Called ${formatRelativeTime(call.created_at)}` : ''}
               </div>
             )}
@@ -232,17 +232,17 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 className="flex items-center justify-between w-full text-sm text-foreground/80 pt-2 mt-1 border-t border-border hover:bg-accent transition-colors -mx-1 px-1 rounded"
               >
                 <span className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-stone-400 shrink-0" />
+                  <User className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span>
                     Lead: <span className="font-medium text-foreground">{linkedLead.caller_name || 'Unnamed'}</span>
-                    <span className="text-stone-400 ml-1.5">· {linkedLead.status}</span>
+                    <span className="text-muted-foreground ml-1.5">· {linkedLead.status}</span>
                   </span>
                 </span>
-                <ChevronRight className="h-4 w-4 text-stone-400" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
             {appointment.status === 'completed' && appointment.completed_at && (
-              <div className="flex items-center gap-2 text-sm text-emerald-700 pt-1 border-t border-stone-200/60">
+              <div className="flex items-center gap-2 text-sm text-emerald-700 pt-1 border-t border-border/60">
                 <Check className="h-4 w-4 shrink-0" />
                 <span>Completed on {formatDateTime(appointment.completed_at)}</span>
               </div>
@@ -251,7 +251,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
 
           {/* Call recording + transcript */}
           {call && (recordingSrc || call.transcript_text) && (
-            <div className="rounded-lg border border-stone-200/60 p-3 space-y-2">
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
               {recordingSrc && (
                 <a
                   href={recordingSrc}
@@ -274,7 +274,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                     {showTranscript ? 'Hide Transcript' : 'View Transcript'}
                   </button>
                   {showTranscript && (
-                    <div className="mt-1 p-3 bg-stone-900 rounded-lg text-sm text-stone-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+                    <div className="mt-1 p-3 bg-muted rounded-lg text-sm text-muted-foreground/70 whitespace-pre-wrap max-h-60 overflow-y-auto">
                       {call.transcript_text}
                     </div>
                   )}
@@ -285,7 +285,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
 
           {/* Notes */}
           {appointment.notes && (
-            <div className="rounded-lg border border-stone-200/60 p-3">
+            <div className="rounded-lg border border-border/60 p-3">
               <p className="text-sm text-foreground/80 leading-relaxed">{appointment.notes}</p>
             </div>
           )}

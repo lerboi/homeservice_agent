@@ -78,12 +78,12 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
   }
 
   return (
-    <div className={`rounded-lg border border-stone-200 border-l-4 ${colorClass} p-3 sm:p-4 transition-all hover:shadow-sm`}>
+    <div className={`rounded-lg border border-border border-l-4 ${colorClass} p-3 sm:p-4 transition-all hover:shadow-sm`}>
       {/* Top row: type + description + remove */}
       <div className="flex items-start gap-2 sm:gap-3">
         <div className="flex items-center gap-2 pt-0.5 shrink-0">
-          <GripVertical className="h-4 w-4 text-stone-300 hidden sm:block" />
-          <span className="text-xs font-medium text-stone-400 w-5 text-center">{index + 1}</span>
+          <GripVertical className="h-4 w-4 text-muted-foreground/50 hidden sm:block" />
+          <span className="text-xs font-medium text-muted-foreground w-5 text-center">{index + 1}</span>
         </div>
 
         <div className="flex-1 min-w-0 space-y-2">
@@ -116,7 +116,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
           <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
             {config.qty && (
               <div className="w-[72px]">
-                <Label className="text-[10px] text-stone-400 uppercase tracking-wider block mb-1">{config.qtyLabel}</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">{config.qtyLabel}</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -129,9 +129,9 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
             )}
 
             <div className="w-[90px]">
-              <Label className="text-[10px] text-stone-400 uppercase tracking-wider block mb-1">{config.priceLabel}</Label>
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">{config.priceLabel}</Label>
               <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">$</span>
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -145,7 +145,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
 
             {config.markup && (
               <div className="w-[72px]">
-                <Label className="text-[10px] text-stone-400 uppercase tracking-wider block mb-1">Markup</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Markup</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -155,7 +155,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
                     onChange={(e) => handleField('markup_pct', e.target.value)}
                     className="h-9 text-sm text-right pr-6 tabular-nums"
                   />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">%</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
                 </div>
               </div>
             )}
@@ -167,7 +167,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
                   onCheckedChange={(checked) => handleField('taxable', checked)}
                   className="scale-90"
                 />
-                <Label className="text-[10px] text-stone-400 uppercase tracking-wider cursor-pointer">Tax</Label>
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wider cursor-pointer">Tax</Label>
               </div>
             )}
 
@@ -176,8 +176,8 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
 
             {/* Line total */}
             <div className="text-right min-w-[80px]">
-              <Label className="text-[10px] text-stone-400 uppercase tracking-wider block mb-1">Total</Label>
-              <p className={`text-sm font-semibold tabular-nums ${isDiscount ? 'text-red-600' : 'text-stone-900'}`}>
+              <Label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Total</Label>
+              <p className={`text-sm font-semibold tabular-nums ${isDiscount ? 'text-red-600' : 'text-foreground'}`}>
                 {isDiscount && lineTotal !== 0 ? '-' : ''}${Math.abs(lineTotal).toFixed(2)}
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
         <button
           type="button"
           onClick={onRemove}
-          className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+          className="p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
           aria-label="Remove line item"
         >
           <Trash2 className="h-4 w-4" />

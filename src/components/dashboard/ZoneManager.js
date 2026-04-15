@@ -65,7 +65,7 @@ function PostalCodeInput({ onAdd }) {
         }
       }}
       placeholder="Add postal code…"
-      className="min-w-0 flex-1 h-7 text-xs border-0 outline-none focus:ring-0 bg-transparent placeholder:text-stone-400"
+      className="min-w-0 flex-1 h-7 text-xs border-0 outline-none focus:ring-0 bg-transparent placeholder:text-muted-foreground"
     />
   );
 }
@@ -182,7 +182,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
                 setNameValue(zone.name);
                 setEditingName(false);
               }}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-stone-400 hover:bg-muted transition-colors"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted transition-colors"
               aria-label="Cancel edit"
             >
               <X className="h-4 w-4" />
@@ -194,7 +194,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
             <button
               type="button"
               onClick={() => setEditingName(true)}
-              className="h-6 w-6 flex items-center justify-center rounded-md text-stone-400 hover:text-foreground/80 hover:bg-muted transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground/80 hover:bg-muted transition-colors"
               aria-label="Edit zone name"
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -206,7 +206,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
           <button
             type="button"
             onClick={() => setDeleteDialogOpen(true)}
-            className="h-7 w-7 flex items-center justify-center rounded-md text-stone-400 hover:text-red-600 hover:bg-red-50 transition-colors ml-auto"
+            className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors ml-auto"
             aria-label={`Delete ${zone.name}`}
           >
             <Trash2 className="h-4 w-4" />
@@ -243,7 +243,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
             <button
               type="button"
               onClick={() => removePostalCode(code)}
-              className="text-stone-400 hover:text-foreground/80 transition-colors ml-0.5"
+              className="text-muted-foreground hover:text-foreground/80 transition-colors ml-0.5"
               aria-label={`Remove ${code}`}
             >
               <X className="h-3 w-3" />
@@ -252,7 +252,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
         ))}
         <PostalCodeInput onAdd={addPostalCode} />
       </div>
-      <p className="text-xs text-stone-400 mt-1">Press Enter or comma to add a postal code</p>
+      <p className="text-xs text-muted-foreground mt-1">Press Enter or comma to add a postal code</p>
     </div>
   );
 }
@@ -449,7 +449,7 @@ export default function ZoneManager() {
               onBlur={handleAddZone}
               className="max-w-xs"
             />
-            <span className="text-sm text-stone-400">Press Enter to create</span>
+            <span className="text-sm text-muted-foreground">Press Enter to create</span>
           </div>
         )}
 
@@ -457,7 +457,7 @@ export default function ZoneManager() {
         {zones.length === 0 && !adding && (
           <div className="mt-4 rounded-lg border border-dashed border-border bg-muted p-8 flex flex-col items-center text-center">
             <div className="p-3 rounded-full bg-card border border-border mb-3">
-              <MapPin className="h-6 w-6 text-stone-400" />
+              <MapPin className="h-6 w-6 text-muted-foreground" />
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">No zones configured</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-xs">

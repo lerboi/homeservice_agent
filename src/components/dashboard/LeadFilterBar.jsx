@@ -117,7 +117,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
         className="h-9 px-2 text-sm border border-border rounded-md bg-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 flex-1 min-w-0"
         aria-label="Filter from date"
       />
-      <span className="text-xs text-stone-400 shrink-0">to</span>
+      <span className="text-xs text-muted-foreground shrink-0">to</span>
       <input
         type="date"
         value={filters.dateTo || ''}
@@ -134,7 +134,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
       <div className="flex items-center gap-3">
         {/* Search — always visible */}
         <div className="relative flex-1 min-w-0 sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
             placeholder="Search name or phone..."
@@ -169,7 +169,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
               className="sm:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-muted text-sm text-foreground font-medium shrink-0 hover:bg-card transition-colors"
               aria-label="Open filters"
             >
-              <SlidersHorizontal className="h-4 w-4 text-stone-500" />
+              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
               Filters
               {sheetFilterCount > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] text-[11px] font-semibold px-1 leading-none">
@@ -184,15 +184,15 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
             </SheetHeader>
             <div className="px-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Urgency</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Urgency</label>
                 {urgencySelect}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Job type</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job type</label>
                 {jobTypeInput}
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Date range</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date range</label>
                 {dateRange}
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
               <button
                 type="button"
                 onClick={() => removePill(pill.key)}
-                className="text-stone-500 hover:text-stone-800 ml-0.5"
+                className="text-muted-foreground hover:text-foreground ml-0.5"
                 aria-label={`Remove ${pill.key} filter`}
               >
                 <X className="h-3 w-3" />
