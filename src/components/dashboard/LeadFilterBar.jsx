@@ -84,7 +84,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
 
   const urgencySelect = (
     <Select value={filters.urgency || 'all'} onValueChange={handleUrgencyChange}>
-      <SelectTrigger className="h-9 text-sm border-stone-200 bg-stone-50" aria-label="Filter by urgency">
+      <SelectTrigger className="h-9 text-sm border-border bg-muted" aria-label="Filter by urgency">
         <SelectValue placeholder="All Urgencies" />
       </SelectTrigger>
       <SelectContent>
@@ -103,7 +103,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
       placeholder="Job type..."
       value={filters.jobType || ''}
       onChange={(e) => onFilterChange({ jobType: e.target.value })}
-      className="h-9 text-sm border-stone-200 bg-stone-50 focus:bg-white"
+      className="h-9 text-sm border-border bg-muted focus:bg-card"
       aria-label="Filter by job type"
     />
   );
@@ -114,7 +114,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
         type="date"
         value={filters.dateFrom || ''}
         onChange={(e) => onFilterChange({ dateFrom: e.target.value })}
-        className="h-9 px-2 text-sm border border-stone-200 rounded-md bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1 flex-1 min-w-0"
+        className="h-9 px-2 text-sm border border-border rounded-md bg-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 flex-1 min-w-0"
         aria-label="Filter from date"
       />
       <span className="text-xs text-stone-400 shrink-0">to</span>
@@ -122,14 +122,14 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
         type="date"
         value={filters.dateTo || ''}
         onChange={(e) => onFilterChange({ dateTo: e.target.value })}
-        className="h-9 px-2 text-sm border border-stone-200 rounded-md bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1 flex-1 min-w-0"
+        className="h-9 px-2 text-sm border border-border rounded-md bg-muted focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 flex-1 min-w-0"
         aria-label="Filter to date"
       />
     </div>
   );
 
   return (
-    <div className="bg-white border-b border-stone-200/60 px-4 py-3 sticky top-14 z-10">
+    <div className="bg-card border-b border-border px-4 py-3 sticky top-14 z-10">
       {/* Primary row */}
       <div className="flex items-center gap-3">
         {/* Search — always visible */}
@@ -140,7 +140,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
             placeholder="Search name or phone..."
             defaultValue={filters.search}
             onChange={handleSearchChange}
-            className="pl-9 h-9 text-sm border-stone-200 bg-stone-50 focus:bg-white"
+            className="pl-9 h-9 text-sm border-border bg-muted focus:bg-card"
             aria-label="Search leads"
           />
         </div>
@@ -154,7 +154,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
             <button
               type="button"
               onClick={onClear}
-              className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium shrink-0"
+              className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium shrink-0"
             >
               Clear all
             </button>
@@ -166,13 +166,13 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
           <SheetTrigger asChild>
             <button
               type="button"
-              className="sm:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-stone-200 bg-stone-50 text-sm text-[#0F172A] font-medium shrink-0 hover:bg-white transition-colors"
+              className="sm:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-muted text-sm text-foreground font-medium shrink-0 hover:bg-card transition-colors"
               aria-label="Open filters"
             >
               <SlidersHorizontal className="h-4 w-4 text-stone-500" />
               Filters
               {sheetFilterCount > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#C2410C] text-white text-[11px] font-semibold px-1 leading-none">
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] text-[11px] font-semibold px-1 leading-none">
                   {sheetFilterCount}
                 </span>
               )}
@@ -201,14 +201,14 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
                 type="button"
                 onClick={() => { onClear(); setSheetOpen(false); }}
                 disabled={!hasActiveFilters}
-                className="text-sm text-[#C2410C] hover:text-[#9A3412] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Clear all
               </button>
               <SheetClose asChild>
                 <button
                   type="button"
-                  className="bg-[#0F172A] hover:bg-[#0F172A]/90 text-white h-10 px-5 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-foreground hover:bg-foreground/90 text-background h-10 px-5 rounded-lg text-sm font-medium transition-colors"
                 >
                   Done
                 </button>
@@ -224,7 +224,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
           {activePills.map((pill) => (
             <span
               key={pill.key}
-              className="inline-flex items-center h-7 gap-1.5 bg-stone-100 text-stone-700 rounded-full px-3 text-xs"
+              className="inline-flex items-center h-7 gap-1.5 bg-muted text-muted-foreground rounded-full px-3 text-xs"
             >
               {pill.label}
               <button
