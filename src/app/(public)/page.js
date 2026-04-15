@@ -8,6 +8,9 @@ import { ScrollLinePath } from '@/app/components/landing/ScrollLinePath';
 // Phase 48.1: 7 content sections + FinalCTA ribbon.
 // ScrollLinePath wraps exactly 3 children: IntegrationsStrip, CostOfSilenceBlock, FeaturesCarousel.
 
+// AudioDemoSection declares 'use client' — Next.js App Router never SSRs 'use client' components.
+// ssr:false is omitted here (not allowed in Server Component dynamic() in Next.js 16) since the
+// 'use client' boundary in the component itself prevents server rendering of browser-only audio APIs.
 const AudioDemoSection = dynamic(
   () => import('@/app/components/landing/AudioDemoSection').then((m) => m.AudioDemoSection),
   {
@@ -18,7 +21,6 @@ const AudioDemoSection = dynamic(
         </div>
       </section>
     ),
-    ssr: false,
   }
 );
 
