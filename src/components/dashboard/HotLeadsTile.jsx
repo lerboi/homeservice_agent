@@ -73,8 +73,8 @@ export default function HotLeadsTile() {
   const count = data?.newLeadsCount ?? 0;
   const preview = data?.newLeadsPreview ?? [];
 
-  // ── Empty state ───────────────────────────────────────────────────────────
-  if (count === 0) {
+  // ── Empty state — only when there are no leads at all ─────────────────────
+  if (preview.length === 0) {
     return (
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -112,12 +112,14 @@ export default function HotLeadsTile() {
         </Link>
       </div>
 
-      <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
-        {count.toLocaleString('en-US')}
-        <span className="font-normal text-sm text-muted-foreground ml-2">
-          {count === 1 ? 'new lead' : 'new leads'}
-        </span>
-      </p>
+      {count > 0 && (
+        <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
+          {count.toLocaleString('en-US')}
+          <span className="font-normal text-sm text-muted-foreground ml-2">
+            {count === 1 ? 'new lead' : 'new leads'}
+          </span>
+        </p>
+      )}
 
       <ul className="flex flex-col divide-y divide-border">
         {preview.slice(0, 5).map((lead) => (

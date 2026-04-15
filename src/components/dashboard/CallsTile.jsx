@@ -48,12 +48,9 @@ function relativeTime(iso) {
 const MIN_MISSED_DURATION_SEC = 15;
 
 export default function CallsTile() {
-  // Last 24h window — date_from parameter matches the existing API contract.
-  const url = useMemo(() => {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const dateFrom = yesterday.toISOString().split('T')[0];
-    return `/api/calls?date_from=${dateFrom}&limit=20`;
-  }, []);
+  // Most recent calls — no date filter, just the latest 20 so we can still
+  // surface missed-call alerts from the wider window while showing the top 5.
+  const url = '/api/calls?limit=20';
 
   const { data, error, isLoading } = useSWRFetch(url);
 
@@ -80,7 +77,7 @@ export default function CallsTile() {
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
           <Phone className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Calls (last 24h)</h2>
+          <h2 className={titleClass}>Recent calls</h2>
         </div>
         <div className="flex flex-col gap-3">
           <Skeleton className="h-12 w-full" />
@@ -97,7 +94,7 @@ export default function CallsTile() {
       <div className={cardClass}>
         <div className="flex items-center gap-2">
           <Phone className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Calls (last 24h)</h2>
+          <h2 className={titleClass}>Recent calls</h2>
         </div>
         <div
           role="alert"
@@ -124,7 +121,7 @@ export default function CallsTile() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Phone className="h-5 w-5 text-muted-foreground" />
-            <h2 className={titleClass}>Calls (last 24h)</h2>
+            <h2 className={titleClass}>Recent calls</h2>
           </div>
           <Link href="/dashboard/calls" className={ctaClass}>
             View all calls
@@ -132,7 +129,7 @@ export default function CallsTile() {
         </div>
         <div className="flex flex-col gap-2 py-2">
           <p className="font-semibold text-base text-foreground leading-[1.4]">
-            No calls in the last 24 hours.
+            No calls yet.
           </p>
           <p className="font-normal text-sm text-muted-foreground leading-normal">
             Voco is listening. The moment someone calls, you&apos;ll see it
@@ -149,7 +146,7 @@ export default function CallsTile() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Phone className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Calls (last 24h)</h2>
+          <h2 className={titleClass}>Recent calls</h2>
         </div>
         <Link href="/dashboard/calls" className={ctaClass}>
           View all calls

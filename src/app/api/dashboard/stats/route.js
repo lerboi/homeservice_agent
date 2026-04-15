@@ -27,12 +27,11 @@ export async function GET() {
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('status', 'new'),
-    // Preview: up to 5 newest new leads with name + job type
+    // Preview: up to 5 most recent leads (any status) for dashboard tile
     supabase
       .from('leads')
-      .select('id, caller_name, job_type, from_number, created_at')
+      .select('id, caller_name, job_type, from_number, created_at, status')
       .eq('tenant_id', tenantId)
-      .eq('status', 'new')
       .order('created_at', { ascending: false })
       .limit(5),
     // Invoice outstanding: sent + overdue
