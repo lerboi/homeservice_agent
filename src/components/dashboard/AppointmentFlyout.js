@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
-  routine: { badge: 'bg-[#0F172A]/[0.06] text-[#0F172A]/70', label: 'Routine' },
+  routine: { badge: 'bg-foreground/[0.06] text-foreground/70', label: 'Routine' },
   urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
 };
 
@@ -188,7 +188,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-card">
         <SheetHeader>
           <div className="flex items-center gap-2">
             <Badge className={urgency.badge}>{urgency.label}</Badge>
@@ -202,20 +202,20 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
 
         <div className="px-6 space-y-4">
           {/* Details card */}
-          <div className="rounded-lg border border-stone-200/60 bg-[#FAFAF9] p-3 space-y-2.5">
-            <div className="flex items-center gap-2 text-sm text-[#0F172A]">
+          <div className="rounded-lg border border-border bg-muted p-3 space-y-2.5">
+            <div className="flex items-center gap-2 text-sm text-foreground">
               <Clock className="h-4 w-4 text-stone-400 shrink-0" />
               <span className="font-medium">{formatDateTime(appointment.start_time)}</span>
-              <span className="text-stone-400 text-xs">({formatDuration(appointment.start_time, appointment.end_time)})</span>
+              <span className="text-muted-foreground text-xs">({formatDuration(appointment.start_time, appointment.end_time)})</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+            <div className="flex items-center gap-2 text-sm text-foreground/80">
               <MapPin className="h-4 w-4 text-stone-400 shrink-0" />
               <span>{appointment.street_name && appointment.postal_code
                 ? `${appointment.street_name}, ${appointment.postal_code}`
                 : appointment.service_address || 'No address'}</span>
             </div>
             {appointment.caller_phone && (
-              <div className="flex items-center gap-2 text-sm text-[#0F172A]/80">
+              <div className="flex items-center gap-2 text-sm text-foreground/80">
                 <Phone className="h-4 w-4 text-stone-400 shrink-0" />
                 <span>{appointment.caller_phone}</span>
               </div>
@@ -229,12 +229,12 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
               <button
                 type="button"
                 onClick={() => router.push(`/dashboard/leads?open=${linkedLead.id}`)}
-                className="flex items-center justify-between w-full text-sm text-[#0F172A]/80 pt-2 mt-1 border-t border-stone-200/60 hover:bg-stone-50 transition-colors -mx-1 px-1 rounded"
+                className="flex items-center justify-between w-full text-sm text-foreground/80 pt-2 mt-1 border-t border-border hover:bg-accent transition-colors -mx-1 px-1 rounded"
               >
                 <span className="flex items-center gap-2">
                   <User className="h-4 w-4 text-stone-400 shrink-0" />
                   <span>
-                    Lead: <span className="font-medium text-[#0F172A]">{linkedLead.caller_name || 'Unnamed'}</span>
+                    Lead: <span className="font-medium text-foreground">{linkedLead.caller_name || 'Unnamed'}</span>
                     <span className="text-stone-400 ml-1.5">· {linkedLead.status}</span>
                   </span>
                 </span>
@@ -257,7 +257,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                   href={recordingSrc}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] font-medium"
+                  className="flex items-center gap-2 text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Listen to Recording
@@ -268,7 +268,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                   <button
                     type="button"
                     onClick={() => setShowTranscript(!showTranscript)}
-                    className="flex items-center gap-2 text-sm text-[#C2410C] hover:text-[#9A3412] text-left font-medium"
+                    className="flex items-center gap-2 text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] text-left font-medium"
                   >
                     <FileText className="h-4 w-4" />
                     {showTranscript ? 'Hide Transcript' : 'View Transcript'}
@@ -286,7 +286,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {/* Notes */}
           {appointment.notes && (
             <div className="rounded-lg border border-stone-200/60 p-3">
-              <p className="text-sm text-[#0F172A]/80 leading-relaxed">{appointment.notes}</p>
+              <p className="text-sm text-foreground/80 leading-relaxed">{appointment.notes}</p>
             </div>
           )}
 
@@ -320,7 +320,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
             <Button
               variant="outline"
               onClick={() => router.push(`/dashboard/invoices/new?lead_id=${linkedLead.id}`)}
-              className="w-full h-11 border-[#C2410C]/30 text-[#C2410C] hover:bg-orange-50"
+              className="w-full h-11 border-[var(--brand-accent)]/30 text-[var(--brand-accent)] hover:bg-accent"
             >
               <FileText className="h-4 w-4 mr-2" />
               Create Invoice
@@ -402,7 +402,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                         toast.error("Couldn't undo completion. Try again.");
                       }
                     }}
-                    className="bg-[#C2410C] hover:bg-[#9A3412] text-white"
+                    className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]"
                   >
                     Yes, Revert
                   </AlertDialogAction>

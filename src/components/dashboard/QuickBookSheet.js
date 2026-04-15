@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { btn } from '@/lib/design-tokens';
 
 /**
  * QuickBookSheet — create an appointment from a slot click or toolbar.
@@ -103,7 +104,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
         <SheetHeader>
           <SheetTitle>Book Appointment</SheetTitle>
           {slotDate && (
-            <p className="text-sm text-[#475569]">
+            <p className="text-sm text-muted-foreground">
               {slotDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at{' '}
               {slotDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </p>
@@ -231,7 +232,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
           </div>
 
           {/* Sync to calendar toggle */}
-          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F5F5F4] border border-stone-200/60">
+          <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted border border-border">
             <div className="flex items-center gap-2">
               <CalendarSync className="w-4 h-4 text-stone-500" />
               <span className="text-sm text-stone-700">Sync to calendar</span>
@@ -249,7 +250,7 @@ export default function QuickBookSheet({ open, onOpenChange, slotDate, onSave, i
           <Button
             onClick={handleSubmit}
             disabled={saving || !canSubmit}
-            className="w-full h-11 bg-[#C2410C] hover:bg-[#9A3412] text-white"
+            className={`w-full h-11 ${btn.primary}`}
           >
             {saving ? <Loader2 className="size-4 animate-spin mr-2" /> : <Plus className="size-4 mr-2" />}
             {saving ? 'Booking...' : 'Book Appointment'}
