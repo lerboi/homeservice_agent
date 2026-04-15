@@ -181,3 +181,59 @@ None — this plan is a pure CSS class migration with no data flow, auth, or end
 - [x] Commits 538cd24 and eb76b0f exist in git log
 - [x] `src/app/globals.css` contains `--sidebar-bg: #0F172A`
 - [x] No forbidden hex in `src/components/dashboard/` or `src/app/dashboard/`
+
+---
+
+## Gap Closure (2026-04-15, post-checkpoint)
+
+### Why the Original Plan's Audit Was Insufficient
+
+Plan 49-05's hex-audit test (`dark-mode-hex-audit.test.js`) only checked for **5 disallowed hex color literals** (`#C2410C`, `#9A3412`, `#F5F5F4`, `#0F172A`, `#475569`). It did NOT check for **Tailwind utility classes** that only work in light mode — specifically `bg-white`, `bg-stone-*`, `text-stone-*`, `border-stone-*`, and equivalents (`gray`, `neutral`, `zinc`, `slate`).
+
+After the original plan's commits (538cd24, eb76b0f) passed the hex audit test, 44 dashboard files with 716 light-only utility class hits remained undetected. User discovered the failure during Task 3 checkpoint: calls tab, calendar tab, and page headers rendered with white/light backgrounds in dark mode.
+
+The audit gap: the test gated hex literals but not Tailwind semantic token gaps. A comprehensive audit would need to check both.
+
+### What Was Fixed
+
+44 files / 716 hits migrated in 5 atomic batches + 1 final straggler sweep:
+
+| Batch | Commit | Files | Hits Fixed |
+|-------|--------|-------|-----------|
+| Batch 1: Calls + Calendar | 609399c | calls/page.js, calls/loading.js, calendar/page.js, CalendarView.js | ~100 |
+| Batch 2: Estimates | 1d68fcc | estimates/[id]/page.js, estimates/new/page.js, estimates/page.js | ~155 |
+| Batch 3: Invoices | 55acdb7 | invoices/[id]/page.js, invoices/page.js, invoices/batch-review/page.js, InvoiceEditor.jsx | ~173 |
+| Batch 4: More/Settings | a098941 | more/call-routing, invoice-settings, services-pricing, integrations, billing, page.js | ~109 |
+| Batch 5: Components | 65ab843 | LeadFlyout, WorkingHoursEditor, TierEditor, leads/page.js, AppointmentFlyout, LineItemRow, LeadFilterBar, SortableServiceRow, ZoneManager | ~128 |
+| Final Sweep | 52bbb13 | 18 straggler files: loading.js skeletons, analytics/page.js, invoices/new, ai-voice-settings, dashboard home, AnalyticsCharts, AudioPlayer, ChatbotSheet, LeadStatusPills, QuickBookSheet, SetupChecklistLauncher, TimeBlockSheet, TodayAppointmentsTile, TranscriptViewer, UsageTile, usage-threshold | ~51 |
+
+### Migration Rules Applied
+
+| Light-mode class | Migration target |
+|---|---|
+| `bg-white` (surface) | `bg-card` |
+| `bg-white/{opacity}` (surface with opacity) | `bg-card/{opacity}` |
+| `bg-stone-50`, `bg-stone-100`, `bg-stone-200` | `bg-muted` |
+| `text-stone-400`, `text-stone-500`, `text-stone-600` | `text-muted-foreground` |
+| `text-stone-700`, `text-stone-800`, `text-stone-900` | `text-foreground` |
+| `text-stone-300` (very light) | `text-muted-foreground/50` |
+| `border-stone-100` through `border-stone-600` | `border-border` |
+| Same patterns for `gray`, `neutral`, `zinc`, `slate` families | same targets |
+| `bg-white/20` on active brand-accent badge | `bg-white/20 dark:bg-white/15` (added dark: variant) |
+| `bg-stone-300` drawer handle | `bg-muted-foreground/30` |
+
+**CalendarView.js special handling:** The `URGENCY_STYLES` constant block (raw urgency category tiles — red/amber/blue appointment blocks) was skipped to preserve categorical colors. Only page chrome, grid lines, headers, and column separators were migrated.
+
+### Verification Results
+
+Comprehensive audit command after all migrations:
+```
+Files remaining: 0   Total hits remaining: 0
+```
+
+All 3 dark-mode tests remain GREEN (18/18 passing):
+- `dark-mode-hex-audit.test.js` — PASS
+- `dark-mode-infra.test.js` — PASS
+- `dark-mode-toggle-logic.test.js` — PASS
+
+Build: `✓ Compiled successfully` (exit 0)
