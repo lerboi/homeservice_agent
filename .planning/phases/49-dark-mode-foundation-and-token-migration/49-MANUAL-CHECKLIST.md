@@ -56,8 +56,16 @@ Completed as part of Task 4 (checkpoint:human-verify) after Tasks 1–3 land.
 
 ---
 
+## Infrastructure Verification Note
+
+**User approved infrastructure verification 2026-04-15.**
+
+Main content area still appears bright in dark mode — expected behavior. Plans 02-05 have not yet migrated consumers. The infrastructure layer (ThemeProvider, suppressHydrationWarning, semantic tokens in globals.css, sidebar toggle) is confirmed functional.
+
+Surfaces from Layout Shell — Sidebar and Perception checks (150ms feel, hard-reload flash, localStorage persistence, cross-tab sync) were observed and approved by the user.
+
 ## Sign-off
 
-Signed by: ___________________  
-Date: ___________________  
-Status: PENDING
+Signed by: User (leroyzzng@gmail.com)  
+Date: 2026-04-15  
+Status: APPROVED — Infrastructure verified. Ready for Plans 02-05.
