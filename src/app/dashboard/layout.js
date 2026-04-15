@@ -52,7 +52,7 @@ function DashboardLayoutInner({ children }) {
 
       {/* Main layout — wrapped in pointer-events-none when impersonating to disable all actions */}
       <div className={impersonateTenantId ? 'pointer-events-none opacity-60' : ''}>
-        <div className="min-h-screen bg-[#F5F5F4] relative">
+        <div className="min-h-screen bg-background relative">
           <GridTexture variant="light" />
           <DashboardSidebar />
 
@@ -102,7 +102,7 @@ function DashboardLayoutInner({ children }) {
 
 export default function DashboardLayout({ children }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F5F4]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <DashboardLayoutInner>{children}</DashboardLayoutInner>
     </Suspense>
   );

@@ -17,7 +17,7 @@ export default function BottomTabBar() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 safe-area-bottom"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border safe-area-bottom"
       aria-label="Main navigation"
       data-tour="bottom-nav"
     >
@@ -34,8 +34,8 @@ export default function BottomTabBar() {
               href={tab.href}
               className={`flex flex-col items-center justify-center flex-1 gap-0.5 min-w-0 transition-colors ${
                 active
-                  ? 'text-[#C2410C]'
-                  : 'text-stone-400 active:text-stone-600'
+                  ? 'text-[var(--brand-accent)]'
+                  : 'text-muted-foreground active:text-foreground'
               }`}
               aria-current={active ? 'page' : undefined}
             >

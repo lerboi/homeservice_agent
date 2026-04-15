@@ -12,21 +12,21 @@ export default function ConflictAlertBanner({ conflicts = [], onReviewConflicts 
   const count = conflicts.length;
 
   return (
-    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="mb-4 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+        <AlertTriangle className="h-5 w-5 text-amber-500 dark:text-amber-400 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-amber-800">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
             {count} calendar conflict{count !== 1 ? 's' : ''} need{count === 1 ? 's' : ''} your review
           </p>
-          <p className="text-sm text-amber-700 mt-1">
+          <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
             External calendar events overlap with platform bookings. Review and dismiss or reschedule.
           </p>
           {onReviewConflicts && (
             <Button
               variant="outline"
               size="sm"
-              className="mt-2 border-amber-300 text-amber-800 hover:bg-amber-100"
+              className="mt-2 border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40"
               onClick={onReviewConflicts}
             >
               Review Conflicts
@@ -35,7 +35,7 @@ export default function ConflictAlertBanner({ conflicts = [], onReviewConflicts 
         </div>
         <button
           type="button"
-          className="text-amber-400 hover:text-amber-600 transition-colors"
+          className="text-amber-400 dark:text-amber-500 hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
           onClick={() => setDismissed(true)}
           aria-label="Dismiss conflict alert"
         >
