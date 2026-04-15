@@ -94,10 +94,10 @@ export default function TrialCountdownBanner() {
     : `${daysRemaining} days left in your free trial`;
 
   const bgClass = isUrgent
-    ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/60'
-    : 'bg-gradient-to-r from-blue-50/80 to-indigo-50/60 border-b border-blue-200/40';
-  const textClass = isUrgent ? 'text-amber-900' : 'text-blue-900/80';
-  const iconClass = isUrgent ? 'text-amber-600' : 'text-blue-500';
+    ? 'bg-gradient-to-r from-amber-50 to-orange-50 dark:bg-amber-950/40 dark:from-amber-950/40 dark:to-amber-950/40 border-b border-amber-200/60 dark:border-amber-800/60'
+    : 'bg-gradient-to-r from-blue-50/80 to-indigo-50/60 dark:bg-blue-950/40 dark:from-blue-950/40 dark:to-blue-950/40 border-b border-blue-200/40 dark:border-blue-800/60';
+  const textClass = isUrgent ? 'text-amber-900 dark:text-amber-200' : 'text-blue-900/80 dark:text-blue-200';
+  const iconClass = isUrgent ? 'text-amber-600 dark:text-amber-400' : 'text-blue-500 dark:text-blue-400';
   const Icon = isUrgent ? AlertCircle : Clock;
 
   return (
@@ -108,17 +108,17 @@ export default function TrialCountdownBanner() {
       <Icon className={`h-3.5 w-3.5 ${iconClass} shrink-0`} aria-hidden="true" />
       <p className={`text-xs ${textClass} truncate`}>
         {bannerText}
-        <span className="mx-1.5 text-stone-300">·</span>
+        <span className="mx-1.5 text-stone-300 dark:text-stone-600">·</span>
         <a
           href="/dashboard/more/billing"
-          className={`font-medium ${isUrgent ? 'text-amber-800 hover:text-amber-950' : 'text-blue-700 hover:text-blue-900'} underline underline-offset-2 transition-colors`}
+          className={`font-medium ${isUrgent ? 'text-amber-800 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-100' : 'text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100'} underline underline-offset-2 transition-colors`}
         >
           View Billing
         </a>
       </p>
       <button
         onClick={() => setDismissed(true)}
-        className={`absolute right-3 p-1 rounded-md ${isUrgent ? 'text-amber-600 hover:text-amber-900 hover:bg-amber-100/60' : 'text-blue-400 hover:text-blue-700 hover:bg-blue-100/60'} transition-colors`}
+        className={`absolute right-3 p-1 rounded-md ${isUrgent ? 'text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/40' : 'text-blue-400 dark:text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100/60 dark:hover:bg-blue-900/40'} transition-colors`}
         aria-label="Dismiss banner"
       >
         <X className="h-3.5 w-3.5" />
