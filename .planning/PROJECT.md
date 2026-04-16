@@ -20,7 +20,7 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 - LiveKit agent customer context injection: pre-call system prompt section + on-demand `check_customer_account` tool
 - Setup checklist items `connect_jobber` and `connect_xero` in the post-onboarding flow
 - Next.js 16 caching uplift: `cacheComponents: true`, "use cache" + revalidateTag for dashboard integrations status
-- Phase 52 (Leads → Jobs rename) shipped first as v6.0's quick UI win
+- ✓ Phase 52 (Leads → Jobs rename) shipped 2026-04-17 — dashboard nav + URL `/dashboard/jobs` (308 redirect), status pills relabeled to home-service vernacular (`New · Scheduled · Completed · Paid · Lost` with `ml-2` Lost gap), copy reframed across 16 surfaces, chatbot knowledge corpus reframed, dashboard-crm-system skill synced; DB enum + API routes + component file names preserved
 - Phase 51 polish budget (empty states, skeletons, focus rings) absorbed at the tail of v6.0
 
 ## Previous Milestone: v5.0 Trust & Polish (Shipped 2026-04-16)
@@ -143,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-16 — v5.0 (Trust & Polish) shipped; v6.0 (Integrations & Focus) in planning*
+*Last updated: 2026-04-17 — v5.0 (Trust & Polish) shipped; v6.0 (Integrations & Focus) Phase 52 shipped, remaining phases in planning*
