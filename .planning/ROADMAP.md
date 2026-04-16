@@ -243,6 +243,17 @@ Plans:
 - [ ] 54-04-cache-components-enable-PLAN.md — next.config.js cacheComponents: true + build smoke test + 'use cache' loop smoke test (INTFOUND-03)
 - [ ] 54-05-business-integrations-frontend-PLAN.md — Business Integrations page (Server Component Pattern A) + BusinessIntegrationsClient + skill updates + human UI verify (INTFOUND-01)
 
+### Phase 55: Xero read-side integration (caller context)
+
+**Goal:** Wire Xero as the first live integration on the Phase 54 foundation so the AI can speak knowledgeably about a caller's account during inbound calls. Add Xero OAuth via the existing `xero-node` SDK (tokens stored in `accounting_credentials` with `provider='xero'` and a refresh-aware token getter), a `fetchCustomerByPhone(tenantId, phone)` reader that returns `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }` behind the `'use cache'` + `cacheTag` + `revalidateTag` loop with a 5-min TTL and <500ms p95, `/api/webhooks/xero` for invoice/payment invalidation, an AccountingConnectionCard wired into the Phase 54 "Business Integrations" page, a `connect_xero` item on the setup checklist, and on the Python side `livekit_agent/src/integrations/xero.py` + `_run_db_queries` parallel fetch + a `customer_context` section in the agent system prompt + a `check_customer_account()` tool.
+**Depends on:** Phase 53 (invoicing flag must exist so the Xero card status copy can reflect the invoicing-off state) and Phase 54 (integrations foundation — `accounting_credentials.provider='xero'`, `src/lib/integrations/` adapter, `/api/integrations/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell).
+**Requirements**: XERO-01, XERO-02, XERO-03, XERO-04
+**Pre-requisite user actions:** Register Xero dev app at developer.xero.com and set redirect URI to `/api/integrations/xero/callback` (blocks execution, not planning).
+**Plans:** TBD — populated by `/gsd-plan-phase 55`
+
+Plans:
+- [ ] TBD — run `/gsd-plan-phase 55` to generate
+
 ---
 
 ## Milestone v1.1 Phases
