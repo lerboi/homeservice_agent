@@ -17,6 +17,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 
 // Brand logos — inline SVG so no runtime bundle cost beyond these two components.
 // Xero glyph path sourced from simple-icons (MIT-licensed); Jobber wordmark is
@@ -38,21 +39,6 @@ function JobberIcon({ className }) {
       <path fill="#ffffff" d="M15.5 5.75v8.9c0 2.53-1.86 3.72-4.05 3.72-1.7 0-3-.66-3.9-1.82l1.9-1.76c.46.56 1.12.92 1.94.92.92 0 1.55-.52 1.55-1.72V5.75h2.56z" />
     </svg>
   );
-}
-
-// UI-SPEC Open Question #4 + CONTEXT.md D-10 architectural intent:
-// FeatureFlagsProvider (Phase 53) is the CANONICAL invoicing-flag source.
-// Import at module top so useFeatureFlags() runs at render time (primary path).
-// Phase 53's useFeatureFlags() already returns DEFAULT_FLAGS ({ invoicing: false })
-// when no Provider is mounted — so the hook itself is the fallback mechanism.
-// The try/catch below guards ONLY the case where the Phase 53 module file is
-// missing entirely (unlikely once Phase 53 merges; defensive for mid-merge window).
-let useFeatureFlagsHook;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
-  useFeatureFlagsHook = require('@/components/FeatureFlagsProvider').useFeatureFlags;
-} catch {
-  useFeatureFlagsHook = null;
 }
 
 // UI-SPEC locks these exact strings. Do NOT paraphrase.
@@ -102,48 +88,14 @@ const PROVIDER_ORDER = ['xero', 'jobber'];
 /**
  * Resolves the invoicing feature flag per UI-SPEC Open Question #4 (RESOLVED).
  *
- * PRIMARY path: call useFeatureFlags() at render time. Phase 53 guarantees that
- * the hook returns DEFAULT_FLAGS ({ invoicing: false }) if no Provider is
- * mounted, so no extra fallback logic is needed for the "Provider not wrapping
- * this page" case.
- *
- * FALLBACK path: fetch /api/tenant/features — exercised ONLY if the Phase 53
- * module file itself is missing (useFeatureFlagsHook resolved to null at the
- * module-load try/catch above). This is a defensive guard for the brief window
- * between Phase 54 merging and Phase 53 wiring stabilising across all branches.
- *
- * Net effect after Phase 53 is merged: useFeatureFlags() is the primary (and
- * only) path. Fetch fallback is dead code kept for merge-order resilience.
+ * Phase 53's FeatureFlagsProvider is the CANONICAL invoicing-flag source and
+ * is now merged. `useFeatureFlags()` returns DEFAULT_FLAGS ({ invoicing: false })
+ * when no Provider is mounted — so the hook itself handles the "outside the
+ * dashboard tree" case. Call it unconditionally per the Rules of Hooks.
  */
 function useInvoicingFlag() {
-  // Primary path — always call the hook if the module resolved.
-  // NOTE: Hooks must be called unconditionally. The decision of which path
-  // to take is made at module-load time (useFeatureFlagsHook === null?), not
-  // per-render — so calling the hook here is safe React-hooks-rules-wise.
-  if (useFeatureFlagsHook) {
-    const flags = useFeatureFlagsHook();
-    return Boolean(flags?.invoicing);
-  }
-
-  // Fallback path — Phase 53 module not found. Fetch the API route instead.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [invoicing, setInvoicing] = useState(null);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    let mounted = true;
-    fetch('/api/tenant/features')
-      .then((r) => r.json())
-      .then((data) => {
-        if (mounted) setInvoicing(Boolean(data?.invoicing));
-      })
-      .catch(() => {
-        if (mounted) setInvoicing(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-  return invoicing;
+  const flags = useFeatureFlags();
+  return Boolean(flags?.invoicing);
 }
 
 function statusLineFor(providerMeta, connected, invoicing) {
@@ -154,7 +106,7 @@ function statusLineFor(providerMeta, connected, invoicing) {
 
 export default function BusinessIntegrationsClient({ initialStatus }) {
   const searchParams = useSearchParams();
-  const invoicing = useInvoicingFlag(); // null | boolean
+  const invoicing = useInvoicingFlag(); // boolean (synchronous from Context)
 
   // Convert server-provided { xero, jobber } shape into {provider: row} map
   const [status, setStatus] = useState(() => ({
