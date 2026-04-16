@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Order matters — more specific routes first.
  */
 const ROUTE_DOC_MAP = {
-  '/dashboard/leads': 'leads.md',
+  '/dashboard/jobs': 'leads.md',
   '/dashboard/calendar': 'calendar.md',
   '/dashboard/calls': 'calls.md',
   '/dashboard/invoices': 'invoices.md',
@@ -43,7 +43,7 @@ const ROUTE_DOC_MAP = {
  * Checked in order — first match wins (breaks after 1 additional doc).
  */
 const KEYWORD_DOC_MAP = [
-  { keywords: ['lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'leads.md' },
+  { keywords: ['job', 'jobs', 'lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'leads.md' },
   { keywords: ['routing', 'route', 'forward', 'pickup', 'priority', 'vip', 'sms forward', 'forwarding'], doc: 'call-routing.md' },
   { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot', 'time block', 'vacation', 'lunch'], doc: 'calendar.md' },
   { keywords: ['call', 'calls', 'transcript', 'recording', 'voicemail'], doc: 'calls.md' },
@@ -59,7 +59,7 @@ const KEYWORD_DOC_MAP = [
  * Retrieve relevant knowledge docs for the given message and current route.
  *
  * @param {string} message - The user's chat message
- * @param {string} currentRoute - The current dashboard route (e.g. '/dashboard/leads')
+ * @param {string} currentRoute - The current dashboard route (e.g. '/dashboard/jobs')
  * @returns {Promise<string>} Concatenated markdown content (max 2 docs, joined with ---)
  */
 export async function getRelevantKnowledge(message, currentRoute) {
