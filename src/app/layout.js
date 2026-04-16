@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
@@ -22,7 +23,10 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }) {
+// Async shell that reads request-time locale/messages from next-intl (cookies()).
+// Under cacheComponents: true, this must live inside a <Suspense> boundary so the
+// static HTML shell can prerender while locale resolution happens at request time.
+async function LocaleShell({ children }) {
   const locale = await getLocale();
   const messages = await getMessages();
   return (
@@ -43,5 +47,23 @@ export default async function RootLayout({ children }) {
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+// Minimal static fallback while LocaleShell resolves. Keeps <html> present so
+// hydration has something to attach to and prevents a flash of unstyled content.
+function LocaleFallback() {
+  return (
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="relative" />
+    </html>
+  );
+}
+
+export default function RootLayout({ children }) {
+  return (
+    <Suspense fallback={<LocaleFallback />}>
+      <LocaleShell>{children}</LocaleShell>
+    </Suspense>
   );
 }
