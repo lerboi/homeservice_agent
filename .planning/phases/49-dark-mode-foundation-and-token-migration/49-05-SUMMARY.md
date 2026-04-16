@@ -237,3 +237,36 @@ All 3 dark-mode tests remain GREEN (18/18 passing):
 - `dark-mode-toggle-logic.test.js` — PASS
 
 Build: `✓ Compiled successfully` (exit 0)
+
+---
+
+## Task 3 Manual Verification — Approved
+
+User ran through dark-mode walkthrough and flagged issues in multiple rounds. Each round was resolved inline before final approval:
+
+**Round 1 issues → fix commits `3140f0b`, `ec39df8`:**
+- Calendar top toolbar `bg-[#FAFAF9]` → `bg-muted`
+- More page + Billing page `divide-stone-100` → `divide-border` (white lines between items)
+- Calendar column headers + all-day cells `bg-[#FAFAF9]` → `bg-muted`; today highlight `bg-[#FFFCFA]` / `bg-[#FFF7ED]` → `bg-[var(--selected-fill)]`; day abbreviation slate hex → `text-muted-foreground`
+- error.js + account page hover `bg-[#B53B0A]` → `hover:bg-[var(--brand-accent-hover)]`
+
+**Round 2 issues → fix commits `ec39df8` (continued), `b7df95c`:**
+- Calendar Day mode URGENCY_STYLES (emergency/routine/urgent tile colors) gained full `dark:` variants for block / badge / time / name
+- Day column today highlight `bg-[#FFFCFA]` → `bg-[var(--selected-fill)]`
+- Off-hours overlay on today column: `bg-orange-50/50 dark:bg-orange-950/20`
+- Appointment notes text: `text-[#64748B]` → `text-muted-foreground`
+- Month/Day view toggle active state: `bg-foreground text-white` → `bg-foreground text-background` (was white-on-white invisible in dark mode)
+- **Analytics feature removed entirely** per user request — deleted `/dashboard/analytics` and `/dashboard/more/analytics` routes, `AnalyticsCharts.jsx`, `EmptyStateAnalytics.jsx` components, sidebar nav entry, tour step, `analytics.md` knowledge doc, and chatbot keyword/route map entries
+
+**Round 3 usability fix → commit (tile relaxation):**
+- User reported home tiles showing empty-state text despite having data
+- **CallsTile** fetched only last 24h → now fetches last 20 of all time (shows top 5). Title "Calls (last 24h)" → "Recent calls". Empty state text updated.
+- **HotLeadsTile** filtered `status = 'new'` → now fetches last 5 leads any status. "X new leads" count only shown when count > 0. Empty state fires on truly zero leads, not zero new leads.
+- `/api/dashboard/stats` newLeadsPreview query dropped `.eq('status', 'new')`, added status to select.
+
+**Final approval:** User typed "approve it and finalise it" after tile fix — all dark-mode paths render correctly and home tiles surface real data.
+
+### Notes for Phase 50
+
+- CalendarView.js `URGENCY_STYLES` now HAS dark variants (was originally deferred). Phase 50 still owns any further dynamic `useTheme()`-driven chart color work if desired.
+- Analytics removal means Phase 50 no longer needs to touch AnalyticsCharts at all — that component is deleted.
