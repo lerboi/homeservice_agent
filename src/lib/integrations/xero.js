@@ -7,10 +7,16 @@
 
 import { XeroClient } from 'xero-node';
 
-const XERO_SCOPES = 'openid profile email accounting.transactions accounting.contacts offline_access';
+// Xero deprecated the legacy broad-access scope for apps created on/after
+// 2026-03-02; granular scopes are required. This bundle covers:
+//   - read + write invoices (push + read invoice context)
+//   - read + write contacts (findOrCreateCustomer creates contacts during push)
+//   - offline_access (refresh tokens)
+// Source: https://devblog.xero.com/upcoming-changes-to-xero-accounting-api-scopes-705c5a9621a0
+const XERO_SCOPES = 'openid profile email accounting.invoices accounting.invoices.read accounting.contacts accounting.contacts.read offline_access';
 
 /**
- * @implements {import('./types.js').AccountingAdapter}
+ * @implements {import('./types.js').IntegrationAdapter}
  */
 export class XeroAdapter {
   constructor() {
@@ -42,7 +48,7 @@ export class XeroAdapter {
     const consentUrl = xero.buildConsentUrl();
     // Append state parameter for CSRF / tenant tracking
     const url = new URL(consentUrl);
-    url.searchParams.set('state', tenantId);
+    url.searchParams.set('state', stateParam);
     return url.toString();
   }
 
@@ -97,7 +103,46 @@ export class XeroAdapter {
         ? newTokenSet.expires_at * 1000
         : Date.now() + (newTokenSet.expires_in * 1000),
       xero_tenant_id: tokenSet.xero_tenant_id,
+      scopes: XERO_SCOPES.split(' '),
     };
+  }
+
+  /**
+   * Revoke Xero OAuth tokens upstream.
+   * Per Xero docs: POST https://identity.xero.com/connect/revocation
+   * with client_id, client_secret, and token. Revokes the refresh token
+   * (and its access tokens) at the Xero identity provider.
+   *
+   * @param {import('./types.js').TokenSet} tokenSet
+   * @returns {Promise<void>}
+   */
+  async revoke(tokenSet) {
+    if (!tokenSet?.refresh_token) return;
+    const basic = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    try {
+      await fetch('https://identity.xero.com/connect/revocation', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${basic}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ token: tokenSet.refresh_token }).toString(),
+      });
+    } catch (err) {
+      console.error('[xero] revoke failed (non-fatal, row will still be deleted):', err.message);
+    }
+  }
+
+  /**
+   * Phase 54 stub. Phase 55 implements real fetch via xero-node getContacts +
+   * getInvoices with phone filter + caching in use-cache wrapper.
+   *
+   * @param {string} tenantId
+   * @param {string} phone
+   * @returns {Promise<import('./types.js').CustomerContext>}
+   */
+  async fetchCustomerByPhone(tenantId, phone) {
+    throw new Error('NotImplementedError: Xero fetchCustomerByPhone ships in Phase 55');
   }
 
   /**
