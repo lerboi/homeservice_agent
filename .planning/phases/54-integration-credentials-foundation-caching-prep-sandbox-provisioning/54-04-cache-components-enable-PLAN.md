@@ -243,11 +243,11 @@ If no Xero sandbox exists yet (most likely — per STATE.md the user hasn't regi
 Report back either (a) "smoke test passed — cache entry logged, revalidate fired" or (b) "no sandbox yet — confirmed cache read on empty status, will verify revalidate in Plan 05 human-verify."
   </how-to-verify>
   <files>(dev runtime — no files modified)</files>
-  <action>Run . Sign in as a tenant owner. Hit  and confirm a cache-miss log for  appears; hit again to confirm a cache hit (no DB query log). If Xero sandbox + .env exist, also fire  with  and re-hit status; expect a cache miss (revalidateTag fired). If no sandbox, verify steps 1-4 only and defer the revalidate loop to Plan 05's human-verify.</action>
+  <action>Run `NEXT_PRIVATE_DEBUG_CACHE=1 npm run dev`. Sign in as a tenant owner. Hit `http://localhost:3000/api/integrations/status` and confirm a cache-miss log for `integration-status-<tenantId>` appears; hit again to confirm a cache hit (no DB query log). If Xero sandbox + .env exist, also fire `POST /api/integrations/disconnect` with `{"provider":"xero"}` and re-hit status; expect a cache miss (revalidateTag fired). If no sandbox, verify steps 1-4 only and defer the revalidate loop to Plan 05's human-verify.</action>
   <verify>
-    <automated>MISSING — requires interactive dev server with authenticated session. Close substitute:  (should be 1).</automated>
+    <automated>MISSING — requires interactive dev server with authenticated session. Close substitute: `grep -c "'use cache'" src/lib/integrations/status.js` (should be 1).</automated>
   </verify>
-  <done>Cache-miss then cache-hit logged in dev-server output under ; revalidate path verified (or deferred to Plan 05 with user acknowledgment). No Turbopack freeze observed, or fallback to  noted.</done>
+  <done>Cache-miss then cache-hit logged in dev-server output under `integration-status-<tenantId>`; revalidate path verified (or deferred to Plan 05 with user acknowledgment). No Turbopack freeze observed, or fallback to `npm run dev -- --webpack` noted.</done>
   <resume-signal>Type "cache loop verified" (or "deferred to Plan 05 — no sandbox"). If the cache never appears in logs despite the directive being correctly placed, paste the last 30 lines of the dev-server output so we can diagnose whether it's a placement issue or a Turbopack/webpack mode interaction (researcher §Pitfall 6).</resume-signal>
 </task>
 
