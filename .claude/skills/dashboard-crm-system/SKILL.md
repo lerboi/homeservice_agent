@@ -7,7 +7,7 @@ description: "Complete architectural reference for the dashboard and CRM system 
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-04-16 (Phase 49 dark mode + token migration + Analytics feature removed: ThemeProvider wired in root layout with suppressHydrationWarning; next-themes with attribute="class"; sidebar sun/moon toggle between Ask Voco AI and Log Out; new semantic CSS variables in globals.css — `--brand-accent`, `--brand-accent-hover`, `--brand-accent-fg`, `--selected-fill`, `--warm-surface`, `--warm-surface-elevated`, `--sidebar-bg`; `@custom-variant dark :where(.dark, .dark *)`; 150ms body crossfade on theme change; `src/lib/design-tokens.js` rewritten to reference `var(--*)` tokens; entire dashboard tree migrated to bg-card/bg-muted/bg-background/text-foreground/text-muted-foreground/border-border (no more hardcoded bg-white/bg-stone-*/text-stone-* without dark: variants); URGENCY_STYLES in CalendarView gained full dark variants; Analytics feature removed entirely — `/dashboard/analytics` + `/dashboard/more/analytics` routes deleted, AnalyticsCharts + EmptyStateAnalytics components deleted, sidebar nav entry removed, DashboardTour analytics step removed, `analytics.md` chatbot knowledge doc removed; CallsTile now shows last 5 calls (no 24h window); HotLeadsTile shows last 5 leads of any status (no status=new filter). Previous: 2026-04-15 — Phase 48 setup checklist API, recurring UI invoice-only clarification, Phase 52 planned-only.)
+**Last updated**: 2026-04-17 (Phase 52 Leads → Jobs rename: dashboard sidebar + BottomTabBar nav label changed from "Leads" to "Jobs"; canonical URL renamed from the old Leads path to `/dashboard/jobs` with 308 permanent redirect [exact + wildcard] in `next.config.js`; status pill labels restructured to job-progression vernacular [New, Scheduled, Completed, Paid, Lost] with `ml-2` visual gap separating Lost from the active pipeline; Phase 49 categorical dark-mode pill palette preserved verbatim; LeadFlyout STATUS_LABELS [booked → 'Scheduled'], sheet titles, AlertDialog, and toasts reframed as "Job"; LeadCard STATUS_LABEL synced; LeadFilterBar aria-labels [Search jobs / Filter jobs]; EmptyStateLeads ['No jobs yet']; HotLeadsTile title/CTA/count labels/error/href reframed; AppointmentFlyout linkedLead button + 'Job:' prefix; DashboardTour step content + selector updated; Search API result label changed to 'Jobs' with /dashboard/jobs href [internal `type:'leads'` field key preserved]; notification email dashboard link → /dashboard/jobs; chatbot knowledge corpus reframed across 8 markdown files [/dashboard/jobs URLs + Jobs noun]; cross-dashboard 'View Lead' / 'Back to Leads' / 'Linked Lead' button copy in calls, invoices, batch-review, invoices/[id], estimates/[id] reframed to Job equivalents. PRESERVED unchanged per D-06/D-10: DB enum [`leads.status`: new, booked, completed, paid, lost], API routes [/api/leads/*], all component file names [LeadCard.jsx, LeadFlyout.jsx, LeadStatusPills.jsx, LeadFilterBar.jsx, EmptyStateLeads.jsx, HotLeadsTile.jsx], internal symbol names [PIPELINE_STATUSES, STATUS_OPTIONS, type:'leads', leadId, lead_id]. Final-state guarantee: a recursive grep for the legacy `leads` URL substring in `src/` returns zero hits; the only allowed mention is the `next.config.js` redirect source. Previous: 2026-04-16 (Phase 49 dark mode + token migration + Analytics feature removed: ThemeProvider wired in root layout with suppressHydrationWarning; next-themes with attribute="class"; sidebar sun/moon toggle between Ask Voco AI and Log Out; new semantic CSS variables in globals.css — `--brand-accent`, `--brand-accent-hover`, `--brand-accent-fg`, `--selected-fill`, `--warm-surface`, `--warm-surface-elevated`, `--sidebar-bg`; `@custom-variant dark :where(.dark, .dark *)`; 150ms body crossfade on theme change; `src/lib/design-tokens.js` rewritten to reference `var(--*)` tokens; entire dashboard tree migrated to bg-card/bg-muted/bg-background/text-foreground/text-muted-foreground/border-border (no more hardcoded bg-white/bg-stone-*/text-stone-* without dark: variants); URGENCY_STYLES in CalendarView gained full dark variants; Analytics feature removed entirely — `/dashboard/analytics` + `/dashboard/more/analytics` routes deleted, AnalyticsCharts + EmptyStateAnalytics components deleted, sidebar nav entry removed, DashboardTour analytics step removed, `analytics.md` chatbot knowledge doc removed; CallsTile now shows last 5 calls (no 24h window); HotLeadsTile shows last 5 leads of any status (no status=new filter). Previous: 2026-04-15 — Phase 48 setup checklist API, recurring UI invoice-only clarification, Phase 52 planned-only.)
 
 ---
 
@@ -39,7 +39,7 @@ Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
 ```
 layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (mobile) + DashboardTour + ChatbotSheet
   ├── page.js (/)                ← Adaptive home: setup mode (checklist hero) OR active mode (command center)
-  ├── leads/page.js              ← Status pill strip + filter bar + lead list + LeadFlyout
+  ├── jobs/page.js               ← Status pill strip + filter bar + job list + LeadFlyout (file moved from leads/ in Phase 52; 308 redirect in next.config.js)
   ├── calendar/page.js           ← CalendarView + ConflictAlertBanner + agenda
   ├── calls/page.js              ← Call logs: date-grouped expandable cards, filters, summary stats
   ├── invoices/page.js           ← Invoice list with status tabs, summary metrics, search
@@ -76,7 +76,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/BillingWarningBanner.js` | Persistent amber warning for past_due subscriptions with 3-day grace countdown |
 | `src/app/dashboard/TrialCountdownBanner.js` | Trial countdown banner (blue >3d, amber <=3d) with upgrade CTA |
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
-| `src/app/dashboard/leads/page.js` | Leads page: status pill strip, filter bar, lead list, Realtime subscription |
+| `src/app/dashboard/jobs/page.js` | Jobs page (formerly leads/page.js — moved Phase 52 with 308 redirect): status pill strip, filter bar, job list, Realtime subscription |
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
 | `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner. Month/Day toggle active state uses `bg-foreground text-background` (dark-mode-safe). |
 | `src/app/dashboard/invoices/batch-review/page.js` | Batch review of draft invoices — fetches by ?ids= query, edit/remove/send-all flow |
@@ -150,7 +150,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 
 ## 0. Scope Notes (read first)
 
-**Phase 52 (Leads → Jobs rename)** — planned but not executed. The `.planning/phases/52-*` directory exists but is empty. The codebase still uses "Leads" terminology: `/src/app/dashboard/leads`, `LeadStatusPills`, "Leads" label in `DashboardSidebar.jsx` and `BottomTabBar.jsx`. Do NOT rename without running the Phase 52 discuss + plan + execute cycle — the renames touch routing, API paths, Realtime channel names, and guided-tour copy.
+**Phase 52 (Leads → Jobs rename)** — completed 2026-04-17. The dashboard now uses "Jobs" terminology in user-facing copy: `/dashboard/jobs` (with 308 redirect from the prior `leads` path), "Jobs" labels in `DashboardSidebar.jsx` / `BottomTabBar.jsx`, status pills `New · Scheduled · Completed · Paid · Lost` (with `ml-2` gap before Lost). Internal symbols are PRESERVED — `LeadStatusPills.jsx`, `LeadCard.jsx`, `LeadFlyout.jsx`, `LeadFilterBar.jsx`, `EmptyStateLeads.jsx`, `HotLeadsTile.jsx` keep their file names; the `leads` DB table, `leads.status` enum (`new, booked, completed, paid, lost`), `/api/leads/*` routes, and Realtime channel filter `tenant_id=eq.${tenantId}` on the `leads` table are unchanged. The display label for the `booked` enum value is `Scheduled`. Final-state guarantee: a recursive grep for the legacy `leads` URL substring in `src/` returns zero hits; the only allowed mention is the `next.config.js` redirect source.
 
 **Recurring** — the `RecurringSetupDialog.jsx` and `RecurringBadge.jsx` components in `src/components/dashboard/` are **invoice-only**. They're wired into `/src/app/dashboard/invoices/page.js` and `/src/app/dashboard/invoices/[id]/page.js` to configure recurring invoice templates (frequency, start/end dates, next_date). Recurring invoice generation is handled by the `recurring-invoices` cron (see the scheduling-calendar-system skill's cron inventory) and backed by `invoices.is_recurring_template`/`recurring_*` columns (migration 032). There is NO recurring support for appointments — `AppointmentFlyout.js` contains zero recurring logic, and the `appointments` table has no recurrence columns. If a user asks for "recurring" on the dashboard, disambiguate: invoices (exists) vs. appointments (would need a new phase).
 
@@ -217,12 +217,13 @@ useEffect(() => {
 ```js
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/leads', label: 'Leads', icon: Users },
+  { href: '/dashboard/jobs', label: 'Jobs', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
+// Phase 52: nav label "Leads" → "Jobs"; canonical href is now /dashboard/jobs.
 // Phase 49: Analytics feature removed entirely — no more /dashboard/analytics route.
 // Between the Ask Voco AI button and Log Out, the sidebar renders a theme toggle
 // (sun/moon icon, uses next-themes setTheme) that flips the root <html> .dark class.
@@ -232,13 +233,13 @@ Active state: `border-l-2 border-[var(--brand-accent)]` left orange border. Desk
 
 **`BottomTabBar`** — `src/components/dashboard/BottomTabBar.jsx`
 
-Mobile-only fixed bottom nav. `lg:hidden`. 5 tabs (Home, Calls, Leads, Calendar, More). Animated orange indicator line (`layoutId="tab-indicator"`) slides between active tabs via framer-motion spring. Tab active state: `text-[var(--brand-accent)]` for active. Container uses `bg-card border-t border-border` for dark-mode support. Height: `h-16` (16 Tailwind units). Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)` via `safe-area-bottom` utility. Has `data-tour="bottom-nav"`.
+Mobile-only fixed bottom nav. `lg:hidden`. 5 tabs (Home, Calls, Jobs, Calendar, More). Animated orange indicator line (`layoutId="tab-indicator"`) slides between active tabs via framer-motion spring. Tab active state: `text-[var(--brand-accent)]` for active. Container uses `bg-card border-t border-border` for dark-mode support. Height: `h-16` (16 Tailwind units). Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)` via `safe-area-bottom` utility. Has `data-tour="bottom-nav"`.
 
 ```js
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/leads', label: 'Leads', icon: Users },
+  { href: '/dashboard/jobs', label: 'Jobs', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
@@ -260,7 +261,7 @@ Wraps `react-joyride` v3. Mounted at layout level (not page level) so it persist
 
 **Tour steps (5 total — Phase 49 removed Analytics step):**
 1. `[data-tour="home-page"]` — Command center overview
-2. `[href="/dashboard/leads"]` — Leads tracking
+2. `[href="/dashboard/jobs"]` — Jobs tracking
 3. `[href="/dashboard/calendar"]` — Calendar / appointments
 4. `[href="/dashboard/calls"]` — View every call your AI handled
 5. `[href="/dashboard/more"]` — Config hub (placement: 'top')
@@ -576,7 +577,7 @@ Body: `{ status, revenue_amount, previous_status }`. Validation: `status === 'pa
 
 ## 8. Dashboard Pages
 
-### Leads (`src/app/dashboard/leads/page.js`)
+### Jobs (`src/app/dashboard/jobs/page.js`) — formerly Leads, renamed Phase 52
 
 Client component. Features:
 - **Status pill strip** (`LeadStatusPills`): one clickable pill per pipeline status with live count; toggles the status filter client-side (no refetch)
@@ -710,7 +711,7 @@ Invoice state: `linkedInvoice` — fetched on open, reset on close.
 
 **File**: `src/components/dashboard/LeadStatusPills.jsx`
 
-Horizontal pill strip rendered between the page header and filter bar on the Leads page. One pill per pipeline status (`new`, `booked`, `completed`, `paid`, `lost`) with a live count badge. Clicking a pill sets `filters.status`; clicking the active pill clears it. Each status has a distinct active color matching the pipeline semantics (orange/blue/stone/green/red). Mobile-friendly: horizontal overflow with hidden scrollbar. No data fetching — counts are derived client-side from the parent's `leads` array.
+Horizontal pill strip rendered between the page header and filter bar on the Jobs page. One pill per pipeline status with a live count badge — DB enum values (`new`, `booked`, `completed`, `paid`, `lost`) drive the data, but display labels are home-service vernacular: **New · Scheduled · Completed · Paid · Lost** (the `booked` enum renders as "Scheduled"). The Lost pill is rendered with an `ml-2` left margin to visually separate the terminal-negative state from the active pipeline (Phase 52). Clicking a pill sets `filters.status`; clicking the active pill clears it. Each status has a distinct active color matching the pipeline semantics (Phase 49 categorical dark-mode palette: orange/blue/stone/green/red — preserved verbatim through Phase 52). Mobile-friendly: horizontal overflow with hidden scrollbar. No data fetching — counts are derived client-side from the parent's `leads` array.
 
 ### `EscalationChainSection()`
 
@@ -879,7 +880,7 @@ const channel = supabase
 
 **`ensureSlideInKeyframe()`** — injected once into `document.head` via a `<style>` tag with id `lead-slide-in-keyframe`. Injects `@keyframes slide-in-from-top` + `.animate-slide-in-from-top` class. Called from `useEffect` on leads page mount. Avoids CSS module complexity for Realtime-triggered animations.
 
-**Pages that subscribe**: leads/page.js (INSERT + UPDATE). Home page uses a different pattern — polling on mount, not Realtime subscription.
+**Pages that subscribe**: jobs/page.js (INSERT + UPDATE). Home page uses a different pattern — polling on mount, not Realtime subscription.
 
 ---
 
@@ -1083,7 +1084,7 @@ Server-only module. Two matching signals:
 
 ```js
 const ROUTE_DOC_MAP = {
-  '/dashboard/leads': 'leads.md',
+  '/dashboard/jobs': 'leads.md',  // Phase 52: nav route renamed; doc filename retained per D-10
   '/dashboard/calendar': 'calendar.md',
   '/dashboard/calls': 'calls.md',
   '/dashboard/invoices': 'invoices.md',
