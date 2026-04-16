@@ -8,23 +8,34 @@ An all-in-one AI platform for home service SMEs (plumbers, HVAC, electricians, e
 
 Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
 
-## Current Milestone: v5.0 Trust & Polish
+## Current Milestone: v6.0 Integrations & Focus (planning)
 
-**Goal:** Harden Voco's visual and conversion surface and elevate day-to-day usefulness — address the 5 most common home-service-owner objections to AI receptionists via new landing page sections, reposition Voco as a complementary full-stack AI workflow, redesign the dashboard home page into a daily-use hub for owners, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard to lift the product's perceived quality end-to-end.
+**Goal:** Refocus Voco on the Call System by extracting the internal invoicing system into an optional toggleable feature, and add native Jobber (GraphQL) and Xero (REST) integrations that provide the AI with real-time customer context — outstanding balances, job history, past visits — to make collections and booking conversations materially smarter without Voco acting as the primary accounting engine.
 
 **Target features:**
-- Landing page objection-busting sections countering all 5 PROBLEMS.md objections (robotic voice, trust/hallucination, price, trade specificity, tech-savvy setup) plus the identity objection (change aversion)
-- Landing page repositioning: hero, value props, and final CTA reframe Voco as complement-not-replacement full-stack AI workflow (captures lost revenue, zero downsides, owner stays in control)
-- Proof-driven sections leveraging existing dashboard/voice features as credibility (trade-specific training, escalation chain, hybrid AI+human backup, calendar sync, 5-minute setup)
-- Dashboard home page redesign as daily-use command center: improved setup checklist/todo system, integrated AI chat surface, at-a-glance daily operations (today's appointments, recent calls, hot leads, usage), clearer paths to "where do I go to do X" and "where do I find the answer to Y"
-- Full dark mode parity across every dashboard page, flyout, settings panel, analytics chart, Kanban, and modal
-- Persisted theme toggle per user with design token audit for color correctness in both modes
-- Overall UI/UX polish pass: typography, spacing, motion, empty states, loading states, hover/focus states, error states, mobile responsiveness, and visual consistency across public site + dashboard
+- Tenant-level `features_enabled` flag with invoicing default OFF for all tenants (still in dev — no breakage risk)
+- Native Jobber GraphQL OAuth + customer-by-phone lookup for caller context (jobs, invoices, balance)
+- Native Xero REST OAuth + customer-by-phone lookup for outstanding balance and recent invoices
+- Jobber schedule mirror into local `calendar_events` (treating Jobber as a third calendar provider alongside Google + Outlook)
+- LiveKit agent customer context injection: pre-call system prompt section + on-demand `check_customer_account` tool
+- Setup checklist items `connect_jobber` and `connect_xero` in the post-onboarding flow
+- Next.js 16 caching uplift: `cacheComponents: true`, "use cache" + revalidateTag for dashboard integrations status
+- Phase 52 (Leads → Jobs rename) shipped first as v6.0's quick UI win
+- Phase 51 polish budget (empty states, skeletons, focus rings) absorbed at the tail of v6.0
+
+## Previous Milestone: v5.0 Trust & Polish (Shipped 2026-04-16)
+
+**Shipped:** Phases 47, 48, 48.1, 49 (4 phases, 19 plans). Phase 50 absorbed into Phase 49 Plan 05; Phase 51 (polish pass) and Phase 52 (Leads → Jobs rename) deferred to v6.0. See `MILESTONES.md` for accomplishments and `milestones/v5.0-ROADMAP.md` for the full archive.
+
+**Original v5.0 goal:** Harden Voco's visual and conversion surface and elevate day-to-day usefulness — address the 5 most common home-service-owner objections to AI receptionists, reposition Voco as a complementary full-stack AI workflow, redesign the dashboard home page into a daily-use hub for owners, extend full dark mode coverage across the dashboard, and apply overall UI/UX polish across both the public site and dashboard to lift the product's perceived quality end-to-end.
 
 ## Requirements
 
 ### Validated
 
+- ✓ Landing page objection-busting + revenue-recovery repositioning ("Stop losing $1,000+" hero, AudioDemoSection, Cost-of-Silence stat, IntegrationsStrip, YouStayInControlSection consolidation, Voco AI rebrand) — v5.0 Phases 47 + 48.1
+- ✓ Dashboard home redesigned as daily-ops command center (DailyOpsHub bento grid, auto-detecting themed setup checklist, persistent AI chat via ChatProvider Context, 375px responsive) — v5.0 Phase 48
+- ✓ Full dark mode coverage across all dashboard pages, flyouts, modals, badges, charts, and calendar via ThemeProvider + semantic token migration — v5.0 Phase 49 (Phase 50 work absorbed)
 - ✓ AI voice receptionist answers inbound calls with sub-second pickup via Retell — v1.0 Phase 1
 - ✓ Multi-language voice support from day one — v1.0 Phase 1
 - ✓ Layered triage system: keywords + caller urgency + owner-configured rules — v1.0 Phase 2
@@ -53,6 +64,12 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 - [x] Multi-language end-to-end validation (voice → booking → notifications) — v2.0 Phase 18 (human UAT pending)
 - [x] Concurrency QA and load testing — v2.0 Phase 18 (integration test, human UAT pending)
 - [x] 5-minute onboarding gate validation with non-technical user — v2.0 Phase 18 (human UAT pending)
+- [ ] Invoicing as optional toggleable feature (default off for new tenants) — v6.0
+- [ ] Native Jobber GraphQL integration for real-time customer context during calls — v6.0
+- [ ] Native Xero REST integration for outstanding balance / invoice history during calls — v6.0
+- [ ] Jobber schedule mirror into local calendar_events for zero-latency slot availability — v6.0
+- [ ] Setup checklist items for connect_jobber + connect_xero in onboarding flow — v6.0
+- [ ] LiveKit agent customer context injection (system prompt + on-demand tool) — v6.0
 
 ### Out of Scope
 
@@ -102,6 +119,11 @@ Every inbound call is answered instantly and converted into a confirmed booking 
 | Booking-first over escalation-first | AI books all calls autonomously; urgency used for notification priority not routing; reduces missed bookings, simplifies call flow | v2.0 |
 | Escalation as exception only | Transfer only on AI confusion or explicit caller request; reduces owner interruptions while ensuring no dead ends | v2.0 |
 | Universal recovery SMS fallback | Every failed booking triggers recovery SMS; no call path ends without a next step for the caller | v2.0 |
+| Revenue-recovery framing over feature-platform framing | Hero, Cost-of-Silence stat, AudioDemoSection, and IntegrationsStrip lead with dollar-pain instead of feature lists; lifts conversion intent on first scroll | v5.0 (48.1) |
+| Dark mode via semantic CSS variables (not class toggles or inline styles) | One token migration per component, no useTheme() hook except for SVG inline styles; enables future palette tweaks without code changes | v5.0 (49) |
+| Invoicing as optional toggleable feature, not core | Voco's core value is the Call System; invoicing competes with ServiceTitan/Jobber and dilutes focus; default off for new tenants, reachable behind a settings toggle | v6.0 |
+| Native Jobber + Xero read-side integrations (no writes) | AI fetches customer context (balance, jobs, history) at call-time; Voco does not act as accounting engine — leaves writes to the connected system | v6.0 |
+| Jobber schedule mirrored into local calendar_events table | Zero-latency availability checks during calls (single Supabase query covers Google + Outlook + Jobber); webhook-driven freshness | v6.0 |
 
 ## Evolution
 
@@ -121,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-13 — Milestone v5.0 (Trust & Polish) started*
+*Last updated: 2026-04-16 — v5.0 (Trust & Polish) shipped; v6.0 (Integrations & Focus) in planning*
