@@ -128,7 +128,7 @@ export default function LeadsPage() {
     const openParam = searchParams.get('open');
     if (openParam) params.set('open', openParam);
     const qs = params.toString();
-    router.replace(`/dashboard/leads${qs ? `?${qs}` : ''}`, { scroll: false });
+    router.replace(`/dashboard/jobs${qs ? `?${qs}` : ''}`, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
@@ -139,7 +139,7 @@ export default function LeadsPage() {
       openHandled.current = true;
       setSelectedLeadId(openLeadId);
       setFlyoutOpen(true);
-      router.replace('/dashboard/leads', { scroll: false });
+      router.replace('/dashboard/jobs', { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -413,7 +413,7 @@ export default function LeadsPage() {
         <div className="flex items-center justify-center size-8 rounded-lg bg-muted">
           <Users className="size-4 text-muted-foreground" />
         </div>
-        <h1 className="text-xl font-semibold text-foreground">Leads</h1>
+        <h1 className="text-xl font-semibold text-foreground">Jobs</h1>
         {!loading && (
           <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-xs font-medium">
             {leads.length}
