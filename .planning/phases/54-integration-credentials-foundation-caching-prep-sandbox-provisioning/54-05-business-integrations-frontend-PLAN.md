@@ -175,6 +175,21 @@ import { FileSpreadsheet, Wrench, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
 
+// UI-SPEC Open Question #4 + CONTEXT.md D-10 architectural intent:
+// FeatureFlagsProvider (Phase 53) is the CANONICAL invoicing-flag source.
+// Import at module top so useFeatureFlags() runs at render time (primary path).
+// Phase 53's useFeatureFlags() already returns DEFAULT_FLAGS ({ invoicing: false })
+// when no Provider is mounted — so the hook itself is the fallback mechanism.
+// The try/catch below guards ONLY the case where the Phase 53 module file is
+// missing entirely (unlikely once Phase 53 merges; defensive for mid-merge window).
+let useFeatureFlagsHook;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, global-require
+  useFeatureFlagsHook = require('@/components/FeatureFlagsProvider').useFeatureFlags;
+} catch {
+  useFeatureFlagsHook = null;
+}
+
 // UI-SPEC locks these exact strings. Do NOT paraphrase.
 const PROVIDER_META = {
   xero: {
@@ -220,38 +235,50 @@ const PROVIDER_META = {
 const PROVIDER_ORDER = ['xero', 'jobber'];
 
 /**
- * Resolves the invoicing feature flag. Tries Phase 53's FeatureFlagsProvider
- * context first; falls back to fetching /api/tenant/features if the provider
- * is unavailable (ensures Plan 05 compiles even if Phase 53 wiring moved).
+ * Resolves the invoicing feature flag per UI-SPEC Open Question #4 (RESOLVED).
+ *
+ * PRIMARY path: call useFeatureFlags() at render time. Phase 53 guarantees that
+ * the hook returns DEFAULT_FLAGS ({ invoicing: false }) if no Provider is
+ * mounted, so no extra fallback logic is needed for the "Provider not wrapping
+ * this page" case.
+ *
+ * FALLBACK path: fetch /api/tenant/features — exercised ONLY if the Phase 53
+ * module file itself is missing (useFeatureFlagsHook resolved to null at the
+ * module-load try/catch above). This is a defensive guard for the brief window
+ * between Phase 54 merging and Phase 53 wiring stabilising across all branches.
+ *
+ * Net effect after Phase 53 is merged: useFeatureFlags() is the primary (and
+ * only) path. Fetch fallback is dead code kept for merge-order resilience.
  */
 function useInvoicingFlag() {
-  const [invoicing, setInvoicing] = useState(null);
+  // Primary path — always call the hook if the module resolved.
+  // NOTE: Hooks must be called unconditionally. The decision of which path
+  // to take is made at module-load time (useFeatureFlagsHook === null?), not
+  // per-render — so calling the hook here is safe React-hooks-rules-wise.
+  if (useFeatureFlagsHook) {
+    const flags = useFeatureFlagsHook();
+    return Boolean(flags?.invoicing);
+  }
 
+  // Fallback path — Phase 53 module not found. Fetch the API route instead.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [invoicing, setInvoicing] = useState(null);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    // Try Phase 53 hook dynamically (import may or may not resolve at runtime).
     let mounted = true;
-    import('@/components/providers/FeatureFlagsProvider')
-      .then((mod) => {
-        if (!mounted) return;
-        if (typeof mod.useFeatureFlags === 'function') {
-          // Hook must be called at render time; fall through to fetch path.
-          return fetch('/api/tenant/features').then((r) => r.json());
-        }
-        return fetch('/api/tenant/features').then((r) => r.json());
-      })
-      .catch(() => fetch('/api/tenant/features').then((r) => r.json()))
+    fetch('/api/tenant/features')
+      .then((r) => r.json())
       .then((data) => {
         if (mounted) setInvoicing(Boolean(data?.invoicing));
       })
       .catch(() => {
-        if (mounted) setInvoicing(false); // safe default
+        if (mounted) setInvoicing(false);
       });
     return () => {
       mounted = false;
     };
   }, []);
-
-  return invoicing; // null while loading, true/false after resolved
+  return invoicing;
 }
 
 function statusLineFor(providerMeta, connected, invoicing) {
@@ -695,185 +722,11 @@ Two skills synced: dashboard-crm-system documents the new Business Integrations 
 Record any discrepancies. Any UI-SPEC string mismatch or missing section is a blocker.
   </how-to-verify>
   <files>(dev runtime — verifying Plan 05 Tasks 1-3 output; no files modified by this task)</files>
-  <action>Run > homeservice-agent@0.1.0 build
-> next build
-
-▲ Next.js 16.2.0 (Turbopack)
-- Environments: .env.local
-- Experiments (use with caution):
-  · clientTraceMetadata
-
-  Creating an optimized production build ...
-✓ Compiled successfully in 21.0s
-  Running next.config.js provided runAfterProductionCompile ...
-✓ Completed runAfterProductionCompile in 618ms
-  Running TypeScript ...
-  Finished TypeScript in 126ms ...
-  Collecting page data using 11 workers ...
-  Generating static pages using 11 workers (0/139) ...
-  Generating static pages using 11 workers (34/139) 
-  Generating static pages using 11 workers (69/139) 
-  Generating static pages using 11 workers (104/139) 
-✓ Generating static pages using 11 workers (139/139) in 1071ms
-  Finalizing page optimization ...
-
-Route (app)
-┌ ƒ /
-├ ƒ /_not-found
-├ ƒ /about
-├ ƒ /admin
-├ ƒ /admin/forbidden
-├ ƒ /admin/inventory
-├ ƒ /admin/tenants
-├ ƒ /api/account
-├ ƒ /api/accounting/[provider]/auth
-├ ƒ /api/accounting/[provider]/callback
-├ ƒ /api/accounting/disconnect
-├ ƒ /api/accounting/status
-├ ƒ /api/admin/inventory
-├ ƒ /api/admin/inventory/bulk
-├ ƒ /api/admin/tenants
-├ ƒ /api/admin/tenants/[id]
-├ ƒ /api/ai-voice-settings
-├ ƒ /api/appointments
-├ ƒ /api/appointments/[id]
-├ ƒ /api/appointments/available-slots
-├ ƒ /api/billing/checkout-session
-├ ƒ /api/billing/data
-├ ƒ /api/billing/invoices
-├ ƒ /api/billing/portal
-├ ƒ /api/calendar-blocks
-├ ƒ /api/calendar-blocks/[id]
-├ ƒ /api/calendar-sync/disconnect
-├ ƒ /api/calendar-sync/set-primary
-├ ƒ /api/calendar-sync/status
-├ ƒ /api/calendar-sync/trigger
-├ ƒ /api/call-routing
-├ ƒ /api/calls
-├ ƒ /api/chat
-├ ƒ /api/contact
-├ ƒ /api/cron/cleanup-orphaned-calls
-├ ƒ /api/cron/invoice-reminders
-├ ƒ /api/cron/recurring-invoices
-├ ƒ /api/cron/renew-calendar-channels
-├ ƒ /api/cron/send-recovery-sms
-├ ƒ /api/cron/trial-reminders
-├ ƒ /api/customer-timeline
-├ ƒ /api/dashboard/stats
-├ ƒ /api/debug/test-error
-├ ƒ /api/demo-voice
-├ ƒ /api/escalation-contacts
-├ ƒ /api/estimates
-├ ƒ /api/estimates/[id]
-├ ƒ /api/estimates/[id]/convert
-├ ƒ /api/estimates/[id]/send
-├ ƒ /api/google-calendar/auth
-├ ƒ /api/google-calendar/callback
-├ ƒ /api/invoice-settings
-├ ƒ /api/invoices
-├ ƒ /api/invoices/[id]
-├ ƒ /api/invoices/[id]/ai-describe
-├ ƒ /api/invoices/[id]/payments
-├ ƒ /api/invoices/[id]/pdf
-├ ƒ /api/invoices/[id]/send
-├ ƒ /api/invoices/batch
-├ ƒ /api/invoices/batch-send
-├ ƒ /api/leads
-├ ƒ /api/leads/[id]
-├ ƒ /api/notification-settings
-├ ƒ /api/onboarding/checkout-session
-├ ƒ /api/onboarding/complete
-├ ƒ /api/onboarding/provision-number
-├ ƒ /api/onboarding/sg-availability
-├ ƒ /api/onboarding/sg-waitlist
-├ ƒ /api/onboarding/sms-confirm
-├ ƒ /api/onboarding/sms-verify
-├ ƒ /api/onboarding/start
-├ ƒ /api/onboarding/test-call
-├ ƒ /api/onboarding/test-call-status
-├ ƒ /api/onboarding/verify-checkout
-├ ƒ /api/outlook-calendar/auth
-├ ƒ /api/outlook-calendar/callback
-├ ƒ /api/public-chat
-├ ƒ /api/search
-├ ƒ /api/services
-├ ƒ /api/setup-checklist
-├ ƒ /api/stripe/webhook
-├ ƒ /api/usage
-├ ƒ /api/webhooks/google-calendar
-├ ƒ /api/webhooks/outlook-calendar
-├ ƒ /api/working-hours
-├ ƒ /api/zones
-├ ƒ /api/zones/[id]
-├ ƒ /auth/calendar-connected
-├ ƒ /auth/callback
-├ ƒ /auth/signin
-├ ƒ /billing/upgrade
-├ ƒ /blog
-├ ƒ /blog/[slug]
-├ ƒ /compare
-├ ƒ /compare/[comparison]
-├ ƒ /contact
-├ ƒ /dashboard
-├ ƒ /dashboard/calendar
-├ ƒ /dashboard/calls
-├ ƒ /dashboard/estimates
-├ ƒ /dashboard/estimates/[id]
-├ ƒ /dashboard/estimates/new
-├ ƒ /dashboard/invoices
-├ ƒ /dashboard/invoices/[id]
-├ ƒ /dashboard/invoices/batch-review
-├ ƒ /dashboard/invoices/new
-├ ƒ /dashboard/jobs
-├ ƒ /dashboard/more
-├ ƒ /dashboard/more/account
-├ ƒ /dashboard/more/ai-voice-settings
-├ ƒ /dashboard/more/billing
-├ ƒ /dashboard/more/calendar-connections
-├ ƒ /dashboard/more/call-routing
-├ ƒ /dashboard/more/escalation-contacts
-├ ƒ /dashboard/more/integrations
-├ ƒ /dashboard/more/invoice-settings
-├ ƒ /dashboard/more/notifications
-├ ƒ /dashboard/more/service-zones
-├ ƒ /dashboard/more/services-pricing
-├ ƒ /dashboard/more/working-hours
-├ ƒ /dashboard/services
-├ ƒ /dashboard/settings
-├ ƒ /demo
-├ ƒ /for
-├ ƒ /for/[persona]
-├ ƒ /glossary
-├ ƒ /glossary/[term]
-├ ○ /icon.png
-├ ƒ /integrations
-├ ƒ /integrations/[tool]
-├ ƒ /og
-├ ƒ /onboarding
-├ ƒ /onboarding/checkout
-├ ƒ /onboarding/checkout-success
-├ ƒ /onboarding/complete
-├ ƒ /onboarding/contact
-├ ƒ /onboarding/plan
-├ ƒ /onboarding/profile
-├ ƒ /onboarding/services
-├ ƒ /onboarding/test-call
-├ ƒ /onboarding/verify
-├ ƒ /pricing
-├ ƒ /privacy
-├ ○ /robots.txt
-├ ○ /sitemap.xml
-└ ƒ /terms
-
-
-ƒ Proxy (Middleware)
-
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand. Navigate to . Walk through 8 verification steps in <how-to-verify>: (1) build succeeds, (2) sign-in + nav, (3) visual check of H1/H2/subheading/cards verbatim against UI-SPEC, (4) click Connect Xero → redirect to login.xero.com; click Connect Jobber → error toast; (5) disconnect flow + AlertDialog + DB row deletion; (6)  cache hit/miss pattern; (7) dark-mode rendering; (8) keyboard/focus order. Record any delta between rendered copy and UI-SPEC strings.</action>
+  <action>Run `npm run build && npm run start`. Sign in as a tenant owner. Navigate to `/dashboard/more/integrations` and execute the 8-step verification walkthrough in <how-to-verify> (build check, visual audit against UI-SPEC strings, OAuth click-through, disconnect flow, cache smoke test under `NEXT_PRIVATE_DEBUG_CACHE=1`, dark mode, keyboard/focus). Record any delta between rendered copy and UI-SPEC expectations.</action>
   <verify>
     <automated>npm run build 2>&1 | tail -20 && grep -c "Business Integrations" src/app/dashboard/more/integrations/page.js</automated>
   </verify>
-  <done>All 8 verification steps pass; UI-SPEC copy audit clean; cache loop observable; no blockers. Human types "approved" to close Phase 54 ready for .</done>
+  <done>All 8 verification steps pass; UI-SPEC copy audit clean; cache loop observable; no blockers. Human types "approved" to close Phase 54 ready for `/gsd-verify-work`.</done>
   <resume-signal>Type "approved" if all 8 verification steps pass. If there's a blocker, paste the diff between what was rendered and the UI-SPEC expectation. If the cache smoke test didn't show a hit on second load, paste the last 30 lines of `NEXT_PRIVATE_DEBUG_CACHE=1` output — we may need to adjust `'use cache'` placement or check a 16.1.x Turbopack interaction.</resume-signal>
 </task>
 
