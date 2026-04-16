@@ -234,13 +234,13 @@ Plans:
 **Depends on:** Phase 53 (invoicing feature-flag already isolates legacy `/api/accounting/**` surface — Phase 54 sidesteps that gate by using new `/api/integrations/**` paths).
 **Requirements**: INTFOUND-01, INTFOUND-02, INTFOUND-03
 **Pre-requisite user actions:** Register Xero + Jobber dev/sandbox apps (blocks Phase 55/56 execution, not Phase 54 merge); update Xero dev-console redirect URI to `/api/integrations/xero/callback` before merge (no live tenants at risk — dev only).
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 54-01-migration-integrations-schema-PLAN.md — Migration 051 (CHECK swap + scopes + last_context_fetch_at) + BLOCKING supabase db push (INTFOUND-02)
 - [x] 54-02-lib-integrations-module-PLAN.md — src/lib/integrations/ module (types, adapter, xero with granular scopes, jobber stub, status with 'use cache') + QB/FB deletion + .env.example (INTFOUND-01, INTFOUND-03)
 - [x] 54-03-api-integrations-routes-PLAN.md — /api/integrations/{auth,callback,disconnect,status} route handlers with revalidateTag + pre-merge redirect URI checkpoint (INTFOUND-01)
-- [ ] 54-04-cache-components-enable-PLAN.md — next.config.js cacheComponents: true + build smoke test + 'use cache' loop smoke test (INTFOUND-03)
+- [x] 54-04-cache-components-enable-PLAN.md — next.config.js cacheComponents: true + build smoke test + 'use cache' loop smoke test (INTFOUND-03)
 - [ ] 54-05-business-integrations-frontend-PLAN.md — Business Integrations page (Server Component Pattern A) + BusinessIntegrationsClient + skill updates + human UI verify (INTFOUND-01)
 
 ### Phase 55: Xero read-side integration (caller context)
