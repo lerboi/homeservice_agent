@@ -7,7 +7,7 @@ import { LayoutDashboard, Users, Calendar, Phone, MoreHorizontal } from 'lucide-
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/leads', label: 'Leads', icon: Users },
+  { href: '/dashboard/jobs', label: 'Jobs', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];

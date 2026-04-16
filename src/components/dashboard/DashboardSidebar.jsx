@@ -15,7 +15,7 @@ import { getNextTheme, getToggleLabel, getToggleAriaLabel } from '@/lib/theme-to
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/leads', label: 'Leads', icon: Users },
+  { href: '/dashboard/jobs', label: 'Jobs', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },

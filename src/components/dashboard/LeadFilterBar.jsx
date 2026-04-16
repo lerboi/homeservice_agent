@@ -141,7 +141,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
             defaultValue={filters.search}
             onChange={handleSearchChange}
             className="pl-9 h-9 text-sm border-border bg-muted focus:bg-card"
-            aria-label="Search leads"
+            aria-label="Search jobs"
           />
         </div>
 
@@ -180,7 +180,7 @@ export default function LeadFilterBar({ filters, onFilterChange, onClear }) {
           </SheetTrigger>
           <SheetContent side="bottom" className="rounded-t-2xl pb-6">
             <SheetHeader>
-              <SheetTitle>Filter leads</SheetTitle>
+              <SheetTitle>Filter jobs</SheetTitle>
             </SheetHeader>
             <div className="px-6 space-y-4">
               <div className="space-y-1.5">

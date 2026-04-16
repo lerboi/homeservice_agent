@@ -33,7 +33,7 @@ export default function HotLeadsTile() {
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Hot / new leads</h2>
+          <h2 className={titleClass}>New jobs</h2>
         </div>
         <Skeleton className="h-9 w-20" />
         <div className="flex flex-col gap-3">
@@ -50,7 +50,7 @@ export default function HotLeadsTile() {
       <div className={cardClass}>
         <div className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Hot / new leads</h2>
+          <h2 className={titleClass}>New jobs</h2>
         </div>
         <div
           role="alert"
@@ -59,7 +59,7 @@ export default function HotLeadsTile() {
           <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
             <p className="font-semibold text-sm text-foreground leading-[1.4]">
-              Couldn&apos;t load leads.
+              Couldn&apos;t load jobs.
             </p>
             <p className="font-normal text-sm text-muted-foreground leading-normal">
               Check your connection and try again.
@@ -80,15 +80,15 @@ export default function HotLeadsTile() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-muted-foreground" />
-            <h2 className={titleClass}>Hot / new leads</h2>
+            <h2 className={titleClass}>New jobs</h2>
           </div>
-          <Link href="/dashboard/leads" className={ctaClass}>
-            View all leads
+          <Link href="/dashboard/jobs" className={ctaClass}>
+            View all jobs
           </Link>
         </div>
         <div className="flex flex-col gap-2 py-2">
           <p className="font-semibold text-base text-foreground leading-[1.4]">
-            No new leads right now.
+            No new jobs right now.
           </p>
           <p className="font-normal text-sm text-muted-foreground leading-normal">
             New inquiries from calls and forms land here first. Check back
@@ -105,10 +105,10 @@ export default function HotLeadsTile() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Hot / new leads</h2>
+          <h2 className={titleClass}>New jobs</h2>
         </div>
-        <Link href="/dashboard/leads" className={ctaClass}>
-          View all leads
+        <Link href="/dashboard/jobs" className={ctaClass}>
+          View all jobs
         </Link>
       </div>
 
@@ -116,7 +116,7 @@ export default function HotLeadsTile() {
         <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
           {count.toLocaleString('en-US')}
           <span className="font-normal text-sm text-muted-foreground ml-2">
-            {count === 1 ? 'new lead' : 'new leads'}
+            {count === 1 ? 'new job' : 'new jobs'}
           </span>
         </p>
       )}

@@ -52,7 +52,7 @@ const URGENCY_STYLES = {
 
 const STATUS_LABELS = {
   new: 'New',
-  booked: 'Booked',
+  booked: 'Scheduled',
   completed: 'Completed',
   paid: 'Paid',
   lost: 'Lost',
@@ -341,11 +341,11 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
 
       // Toast notifications per UI-SPEC
       if (selectedStatus === 'lost') {
-        toast.success('Lead marked as Lost');
+        toast.success('Job marked as Lost');
       } else if (revenueAmount && (selectedStatus === 'paid' || selectedStatus === 'completed')) {
         toast.success(`$${parseFloat(revenueAmount).toFixed(2)} recorded for ${lead.caller_name || 'lead'}`);
       } else {
-        toast.success(`${lead.caller_name || 'Lead'} moved to ${STATUS_LABELS[selectedStatus]}`);
+        toast.success(`${lead.caller_name || 'Job'} moved to ${STATUS_LABELS[selectedStatus]}`);
       }
 
       onStatusChange?.(updatedData.lead);
@@ -372,7 +372,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
       });
       if (!res.ok) throw new Error('Failed to mark as lost');
       const updatedData = await res.json();
-      toast.success('Lead marked as Lost');
+      toast.success('Job marked as Lost');
       onStatusChange?.(updatedData.lead);
       onOpenChange(false);
     } catch {
@@ -390,7 +390,7 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
         {loading && (
           <>
             <SheetHeader className="pb-0">
-              <SheetTitle className="sr-only">Loading lead details</SheetTitle>
+              <SheetTitle className="sr-only">Loading job details</SheetTitle>
             </SheetHeader>
             <LeadFlyoutSkeleton />
           </>
@@ -400,11 +400,11 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
         {!loading && fetchError && (
           <>
             <SheetHeader>
-              <SheetTitle className="text-xl text-foreground">Lead Details</SheetTitle>
+              <SheetTitle className="text-xl text-foreground">Job Details</SheetTitle>
             </SheetHeader>
             <div className="px-6 flex flex-col items-center gap-4 py-8">
               <p className="text-sm text-muted-foreground text-center">
-                Couldn&apos;t load lead details.
+                Couldn&apos;t load job details.
               </p>
               <Button variant="outline" size="sm" onClick={fetchLead}>
                 Retry
@@ -865,9 +865,9 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Mark this lead as Lost?</AlertDialogTitle>
+                    <AlertDialogTitle>Mark this job as Lost?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This lead will be moved to Lost. You can still view the call history.
+                      This job will be moved to Lost. You can still view the call history.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
