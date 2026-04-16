@@ -62,12 +62,12 @@ export async function GET(request) {
   if (leadsRes.data?.length) {
     results.push({
       type: 'leads',
-      label: 'Leads',
+      label: 'Jobs',
       items: leadsRes.data.map((l) => ({
         id: l.id,
         title: l.caller_name || l.from_number || 'Unknown',
         subtitle: l.job_type || l.status,
-        href: `/dashboard/leads?open=${l.id}`,
+        href: `/dashboard/jobs?open=${l.id}`,
       })),
     });
   }

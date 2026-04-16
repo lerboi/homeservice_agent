@@ -485,13 +485,13 @@ export default function InvoiceDetailPage() {
                 )}
                 {invoice.lead_id && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Linked Lead</dt>
+                    <dt className="text-muted-foreground">Linked Job</dt>
                     <dd>
                       <Link
-                        href={`/dashboard/leads?open=${invoice.lead_id}`}
+                        href={`/dashboard/jobs?open=${invoice.lead_id}`}
                         className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
-                        View Lead
+                        View Job
                       </Link>
                     </dd>
                   </div>

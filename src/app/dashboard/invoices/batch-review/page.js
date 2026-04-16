@@ -131,10 +131,10 @@ export default function BatchReviewPage() {
           <p className="text-sm text-muted-foreground mb-4">No invoices to review.</p>
           <button
             type="button"
-            onClick={() => router.push('/dashboard/leads')}
+            onClick={() => router.push('/dashboard/jobs')}
             className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
           >
-            Back to Leads
+            Back to Jobs
           </button>
         </div>
       </div>
@@ -279,10 +279,10 @@ export default function BatchReviewPage() {
             <p className="text-sm text-muted-foreground mb-4">No invoices to review.</p>
             <button
               type="button"
-              onClick={() => router.push('/dashboard/leads')}
+              onClick={() => router.push('/dashboard/jobs')}
               className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
             >
-              Back to Leads
+              Back to Jobs
             </button>
           </div>
         ) : (

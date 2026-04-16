@@ -261,11 +261,11 @@ export default function InvoicesPage() {
             {/* Completed leads prompt */}
             {completedLeadsCount > 0 && (
               <Link
-                href="/dashboard/leads?status=completed"
+                href="/dashboard/jobs?status=completed"
                 className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
               >
                 <Users className="size-4" />
-                {completedLeadsCount} completed lead{completedLeadsCount !== 1 ? 's' : ''} ready for invoicing
+                {completedLeadsCount} completed job{completedLeadsCount !== 1 ? 's' : ''} ready for invoicing
                 <ArrowRight className="size-3.5 ml-auto" />
               </Link>
             )}

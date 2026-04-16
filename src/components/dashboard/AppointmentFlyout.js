@@ -228,13 +228,13 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
             {linkedLead && (
               <button
                 type="button"
-                onClick={() => router.push(`/dashboard/leads?open=${linkedLead.id}`)}
+                onClick={() => router.push(`/dashboard/jobs?open=${linkedLead.id}`)}
                 className="flex items-center justify-between w-full text-sm text-foreground/80 pt-2 mt-1 border-t border-border hover:bg-accent transition-colors -mx-1 px-1 rounded"
               >
                 <span className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span>
-                    Lead: <span className="font-medium text-foreground">{linkedLead.caller_name || 'Unnamed'}</span>
+                    Job: <span className="font-medium text-foreground">{linkedLead.caller_name || 'Unnamed'}</span>
                     <span className="text-muted-foreground ml-1.5">· {linkedLead.status}</span>
                   </span>
                 </span>

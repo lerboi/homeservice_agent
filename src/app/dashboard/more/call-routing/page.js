@@ -340,7 +340,7 @@ export default function CallRoutingPage() {
   }
 
   function handleOpenLead(leadId) {
-    router.push(`/dashboard/leads?open=${leadId}`);
+    router.push(`/dashboard/jobs?open=${leadId}`);
   }
 
   // ── Save / Discard handlers ───────────────────────────────────────────────

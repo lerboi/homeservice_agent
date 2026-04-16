@@ -316,7 +316,7 @@ export async function sendOwnerNotifications({
   ownerEmail,
 }) {
   const callbackLink = `tel:${lead?.from_number}`;
-  const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000'}/dashboard/leads`;
+  const dashboardLink = `${process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000'}/dashboard/jobs`;
   const dashboardUrl = dashboardLink;
 
   const [smsResult, emailResult] = await Promise.allSettled([

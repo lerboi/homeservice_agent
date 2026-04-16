@@ -6,13 +6,13 @@ import { useReducedMotion } from 'framer-motion';
 const STEPS = [
   {
     target: '[data-tour="home-page"]',
-    content: "This is your command center. Check today's stats, upcoming appointments, and leads that need your attention.",
+    content: "This is your command center. Check today's stats, upcoming appointments, and jobs that need your attention.",
     disableBeacon: true,
     placement: 'bottom',
   },
   {
-    target: '[href="/dashboard/leads"]',
-    content: 'Your leads live here. Every call AI answers creates a lead you can track from new to paid.',
+    target: '[href="/dashboard/jobs"]',
+    content: 'Your jobs live here. Every call AI answers creates a job you can track from new to paid.',
     placement: 'bottom',
   },
   {

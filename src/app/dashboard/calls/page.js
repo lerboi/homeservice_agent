@@ -301,11 +301,11 @@ function CallCard({ call }) {
                     )}
                     {call.from_number && !isShort && (
                       <a
-                        href={`/dashboard/leads?search=${encodeURIComponent(call.from_number)}`}
+                        href={`/dashboard/jobs?search=${encodeURIComponent(call.from_number)}`}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-foreground hover:bg-muted transition-colors"
                       >
                         <Users className="h-3 w-3" />
-                        View Lead
+                        View Job
                       </a>
                     )}
                   </div>
