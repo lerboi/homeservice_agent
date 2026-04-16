@@ -2,10 +2,10 @@
 
 const PIPELINE_STATUSES = [
   { value: 'new',       label: 'New',       activeClass: 'bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] border-[var(--brand-accent)]' },
-  { value: 'booked',    label: 'Booked',    activeClass: 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500' },
+  { value: 'booked',    label: 'Scheduled', activeClass: 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500' },
   { value: 'completed', label: 'Completed', activeClass: 'bg-stone-700 dark:bg-stone-600 text-white border-stone-700 dark:border-border' },
   { value: 'paid',      label: 'Paid',      activeClass: 'bg-[#166534] dark:bg-emerald-600 text-white border-[#166534] dark:border-emerald-600' },
-  { value: 'lost',      label: 'Lost',      activeClass: 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500' },
+  { value: 'lost',      label: 'Lost',      activeClass: 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500', extraClass: 'ml-2' },
 ];
 
 const IDLE_CLASS =
@@ -19,11 +19,11 @@ export default function LeadStatusPills({ counts, activeStatus, onStatusChange }
   return (
     <div
       role="tablist"
-      aria-label="Filter leads by status"
+      aria-label="Filter jobs by status"
       className="flex items-center gap-2 overflow-x-auto px-6 pt-1 pb-4 -mb-px scroll-smooth
                  [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
     >
-      {PIPELINE_STATUSES.map(({ value, label, activeClass }) => {
+      {PIPELINE_STATUSES.map(({ value, label, activeClass, extraClass }) => {
         const count = counts?.[value] ?? 0;
         const isActive = activeStatus === value;
         return (
@@ -35,7 +35,7 @@ export default function LeadStatusPills({ counts, activeStatus, onStatusChange }
             onClick={() => handleClick(value)}
             className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-xs font-medium shrink-0
                         transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1
-                        ${isActive ? activeClass : IDLE_CLASS}`}
+                        ${isActive ? activeClass : IDLE_CLASS} ${extraClass || ''}`}
           >
             <span>{label}</span>
             <span
