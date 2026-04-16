@@ -1,13 +1,13 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the dashboard and CRM system — all dashboard pages, lead lifecycle and merging, status pill strip, analytics charts, escalation chain, settings panels, setup checklist, design tokens, guided tour, and Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, lead management, CRM components, analytics, escalation contacts, service management, settings, or design tokens. Also use when the user asks about how leads work, wants to modify dashboard UI, or needs to debug Realtime subscription issues."
+description: "Complete architectural reference for the dashboard and CRM system — all dashboard pages, lead lifecycle and merging, status pill strip, escalation chain, settings panels, setup checklist, design tokens (light + dark mode), guided tour, and Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, lead management, CRM components, escalation contacts, service management, settings, design tokens, or dark-mode theming. Also use when the user asks about how leads work, wants to modify dashboard UI, or needs to debug Realtime subscription issues."
 ---
 
 # Dashboard & CRM System — Complete Reference
 
 This document is the single source of truth for the entire dashboard and CRM system. Read this before making any changes to dashboard pages, lead management, or CRM components.
 
-**Last updated**: 2026-04-15 (Phase 48 setup checklist API covered: per-item `mark_done` + `dismiss` actions persisted to `tenants.checklist_overrides` JSONB (migration 050); clarified that recurring UI (`RecurringSetupDialog`, `RecurringBadge`) is invoice-only — no recurring support exists on appointments/calendar; Phase 52 (Leads → Jobs rename) is planned-only, directory empty, code still uses "Leads". Previous: 2026-04-04 — Estimates system, Invoice Settings, Integrations, batch invoice review, chatbot RAG, 9-setting More menu)
+**Last updated**: 2026-04-16 (Phase 49 dark mode + token migration + Analytics feature removed: ThemeProvider wired in root layout with suppressHydrationWarning; next-themes with attribute="class"; sidebar sun/moon toggle between Ask Voco AI and Log Out; new semantic CSS variables in globals.css — `--brand-accent`, `--brand-accent-hover`, `--brand-accent-fg`, `--selected-fill`, `--warm-surface`, `--warm-surface-elevated`, `--sidebar-bg`; `@custom-variant dark :where(.dark, .dark *)`; 150ms body crossfade on theme change; `src/lib/design-tokens.js` rewritten to reference `var(--*)` tokens; entire dashboard tree migrated to bg-card/bg-muted/bg-background/text-foreground/text-muted-foreground/border-border (no more hardcoded bg-white/bg-stone-*/text-stone-* without dark: variants); URGENCY_STYLES in CalendarView gained full dark variants; Analytics feature removed entirely — `/dashboard/analytics` + `/dashboard/more/analytics` routes deleted, AnalyticsCharts + EmptyStateAnalytics components deleted, sidebar nav entry removed, DashboardTour analytics step removed, `analytics.md` chatbot knowledge doc removed; CallsTile now shows last 5 calls (no 24h window); HotLeadsTile shows last 5 leads of any status (no status=new filter). Previous: 2026-04-15 — Phase 48 setup checklist API, recurring UI invoice-only clarification, Phase 52 planned-only.)
 
 ---
 
@@ -49,8 +49,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
   ├── estimates/page.js           ← Estimate list with status tabs (draft/sent/approved/declined/expired), summary cards
   ├── estimates/new/page.js       ← Estimate editor — single-price or tiered (Good/Better/Best), lead search + link
   ├── estimates/[id]/page.js      ← Estimate detail preview + actions (send, approve, decline, expire, convert to invoice)
-  └── more/page.js               ← Config hub: Ask Voco AI button (mobile), 2 quick-access links, 9 settings sections
-      ├── more/analytics/page.js          ← AnalyticsCharts (revenue, funnel, pipeline donut) — relocated from /dashboard/analytics in Phase 33
+  └── more/page.js               ← Config hub: Ask Voco AI button (mobile), 2 quick-access links, settings sections
       ├── more/services-pricing/page.js   ← Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/page.js      ← WorkingHoursEditor
       ├── more/calendar-connections/page.js ← CalendarSyncCard
@@ -79,13 +78,12 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/app/dashboard/page.js` | Adaptive home: setup mode (checklist hero + tour button) vs active mode (command center) |
 | `src/app/dashboard/leads/page.js` | Leads page: status pill strip, filter bar, lead list, Realtime subscription |
 | `src/app/dashboard/calls/page.js` | Call logs: date-grouped expandable cards, search, filters, summary stats |
-| `src/app/dashboard/analytics/page.js` | Analytics page: fetches all leads, renders AnalyticsCharts |
-| `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner |
+| `src/app/dashboard/calendar/page.js` | Calendar page: CalendarView + AppointmentFlyout + ConflictAlertBanner. Month/Day toggle active state uses `bg-foreground text-background` (dark-mode-safe). |
 | `src/app/dashboard/invoices/batch-review/page.js` | Batch review of draft invoices — fetches by ?ids= query, edit/remove/send-all flow |
 | `src/app/dashboard/estimates/page.js` | Estimate list with status tabs (draft/sent/approved/declined/expired), summary cards, mobile cards |
 | `src/app/dashboard/estimates/new/page.js` | Estimate editor — customer info, lead search + link, line items, tiered (Good/Better/Best) mode, dates, notes |
 | `src/app/dashboard/estimates/[id]/page.js` | Estimate detail: preview (single or tiered), metadata sidebar, actions (send, approve, decline, expire, convert to invoice, download PDF) |
-| `src/app/dashboard/more/page.js` | Config hub: Ask Voco AI button (mobile-only), 2 quick-access links (Invoices, Estimates), 9 settings sections |
+| `src/app/dashboard/more/page.js` | Config hub: Ask Voco AI button (mobile-only), 2 quick-access links (Invoices, Estimates), 9 settings sections. Uses `divide-border` (theme-aware) between items — NOT `divide-stone-100`. |
 | `src/app/dashboard/more/layout.js` | Pass-through layout for more/* route group |
 | `src/app/dashboard/more/services-pricing/page.js` | Service table with DnD, urgency tags, bulk select |
 | `src/app/dashboard/more/working-hours/page.js` | Wraps WorkingHoursEditor |
@@ -122,15 +120,15 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/DocumentListShell.jsx` | Shared UI primitives for document lists: StatusTabs, ListError, ListSkeleton, EmptyFiltered |
 | `src/app/dashboard/services/page.js` | redirect() to /dashboard/more/services-pricing |
 | `src/app/dashboard/settings/page.js` | redirect() to /dashboard/more |
-| `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 6 nav items (Home, Leads, Calendar, Calls, Analytics, More), no mobile drawer |
-| `src/components/dashboard/BottomTabBar.jsx` | Mobile-only fixed bottom nav: 5 tabs (Home, Leads, Calendar, Calls, Analytics — no More), h-[56px], lg:hidden, animated orange indicator |
+| `src/components/dashboard/DashboardSidebar.jsx` | Desktop-only left sidebar: 6 nav items (Home, Leads, Calendar, Calls, Invoices, More) + **theme toggle** (sun/moon) between Ask Voco AI and Log Out. Sidebar stays navy in both modes (uses `bg-[var(--sidebar-bg)]` = `#0F172A`). No mobile drawer. |
+| `src/components/dashboard/BottomTabBar.jsx` | Mobile-only fixed bottom nav: 5 tabs (Home, Calls, Leads, Calendar, More), h-[56px], lg:hidden, animated orange indicator. Uses `bg-card border-t border-border` for dark-mode compatibility. |
 | `src/components/dashboard/MoreBackButton.jsx` | "← Back to More" link shown on More sub-pages via more/layout.js |
-| `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 6 steps, brand-themed, layout-mounted |
+| `src/components/dashboard/DashboardTour.jsx` | Joyride guided tour wrapper: 5 steps (Analytics step removed in Phase 49), brand-themed, layout-mounted |
+| `src/components/theme-provider.jsx` | Client-side ThemeProvider — re-exports next-themes provider configured for `attribute="class"`, `defaultTheme="light"`, stores preference in localStorage key `theme` |
 | `src/app/api/calls/route.js` | GET calls (filtered by date, urgency, booking_outcome, phone search) |
 | `src/components/dashboard/LeadFlyout.jsx` | Right Sheet: lead detail, status change, audio/transcript, Create/View Invoice button for completed/paid leads, **Priority-caller toggle** (PATCH `is_vip` — reflected in the Call Routing unified Priority list) |
 | `src/components/dashboard/LeadStatusPills.jsx` | Clickable pill strip (new/booked/completed/paid/lost) with live counts; toggles status filter |
 | `src/components/dashboard/LeadFilterBar.jsx` | Responsive filter bar above the lead list. Desktop (≥640px): inline flex-wrap (search, urgency Select, job type Input, date range, Clear all). Mobile (<640px): search + `Filters` button that opens a bottom Sheet containing urgency/job-type/date-range with labels. Filter-count badge on the Filters button (excludes search since it stays visible). Status filter is NOT here — it lives in `LeadStatusPills` above. Active-filter pills row below the bar shows/removes any non-status filter. |
-| `src/components/dashboard/AnalyticsCharts.jsx` | Revenue line + funnel bar + pipeline donut (recharts) |
 | `src/components/dashboard/EscalationChainSection.js` | Escalation contacts CRUD + drag-to-reorder (@dnd-kit) |
 | `src/components/dashboard/SetupChecklist.jsx` | Themed checklist: profile/voice/calendar/billing accordions, conic-gradient progress ring, per-item Dismiss/Mark done/Jump actions, window-focus refetch (Phase 48 refactor) |
 | `src/components/dashboard/SetupChecklistLauncher.jsx` | Overlay launcher wrapping SetupChecklist — FAB + responsive Sheet (right on lg+, bottom on mobile), sessionStorage auto-open gate, hides when 100% complete (Phase 48-05 revision) |
@@ -222,29 +220,30 @@ const NAV_ITEMS = [
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },  // Phase 33: replaced Analytics
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
-// Note: Analytics is now accessible at /dashboard/more/analytics (not top nav)
+// Phase 49: Analytics feature removed entirely — no more /dashboard/analytics route.
+// Between the Ask Voco AI button and Log Out, the sidebar renders a theme toggle
+// (sun/moon icon, uses next-themes setTheme) that flips the root <html> .dark class.
 ```
 
-Active state: `border-l-2 border-[#C2410C]` left orange border. Desktop: `lg:fixed lg:w-60 bg-[#0F172A]`. Mobile: not rendered (replaced by BottomTabBar).
+Active state: `border-l-2 border-[var(--brand-accent)]` left orange border. Desktop: `lg:fixed lg:w-60 bg-[var(--sidebar-bg)]` (sidebar stays navy in both light/dark modes). Mobile: not rendered (replaced by BottomTabBar).
 
 **`BottomTabBar`** — `src/components/dashboard/BottomTabBar.jsx`
 
-Mobile-only fixed bottom nav. `lg:hidden`. 5 tabs (no More — accessible via gear icon in top bar). Animated orange indicator line (`layoutId="tab-indicator"`) slides between active tabs via framer-motion spring. Tab active state: `text-[#C2410C]` for active, `text-white/60` for inactive. Height: `h-[56px] min-h-[48px]` per tab for 48px touch targets. Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)`. Has `data-tour="bottom-nav"`.
+Mobile-only fixed bottom nav. `lg:hidden`. 5 tabs (Home, Calls, Leads, Calendar, More). Animated orange indicator line (`layoutId="tab-indicator"`) slides between active tabs via framer-motion spring. Tab active state: `text-[var(--brand-accent)]` for active. Container uses `bg-card border-t border-border` for dark-mode support. Height: `h-16` (16 Tailwind units). Safe area: `paddingBottom: env(safe-area-inset-bottom, 0px)` via `safe-area-bottom` utility. Has `data-tour="bottom-nav"`.
 
 ```js
 const TABS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
+  { href: '/dashboard/calls', label: 'Calls', icon: Phone },
   { href: '/dashboard/leads', label: 'Leads', icon: Users },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/dashboard/calls', label: 'Calls', icon: Phone },
-  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },  // Phase 33: replaced Analytics
+  { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
-// Active: tab.exact ? pathname === tab.href : pathname.startsWith(tab.href)
-// More tab omitted on mobile — settings gear icon (top-right) links to /dashboard/more
-// Analytics is accessible via /dashboard/more/analytics
+// Phase 49: Analytics tab removed. Invoices not in bottom bar — accessible via
+// the More hub's quick-access links (mobile) or sidebar (desktop).
 ```
 
 ---
@@ -259,13 +258,12 @@ Wraps `react-joyride` v3. Mounted at layout level (not page level) so it persist
 - `run` (boolean) — controlled by layout.js via `tourRunning` state
 - `onFinish` (function) — called when tour FINISHED or SKIPPED; layout resets `tourRunning = false`
 
-**Tour steps (6 total):**
+**Tour steps (5 total — Phase 49 removed Analytics step):**
 1. `[data-tour="home-page"]` — Command center overview
 2. `[href="/dashboard/leads"]` — Leads tracking
 3. `[href="/dashboard/calendar"]` — Calendar / appointments
 4. `[href="/dashboard/calls"]` — View every call your AI handled
-5. `[href="/dashboard/analytics"]` — Analytics / conversion
-6. `[href="/dashboard/more"]` — Config hub (placement: 'top')
+5. `[href="/dashboard/more"]` — Config hub (placement: 'top')
 
 **Key configuration:**
 - `primaryColor: '#C2410C'` — brand orange spotlight
@@ -589,10 +587,6 @@ Client component. Features:
 - **Animation**: new Realtime inserts get `_isNew: true` flag — `animate-slide-in-from-top` class (injected via `ensureSlideInKeyframe()`)
 - **Card wrapper**: `card.base` wrapper on return, `data-tour="leads-page"`
 
-### Analytics (`src/app/dashboard/analytics/page.js`)
-
-Fetches all leads via `GET /api/leads`, passes to `AnalyticsCharts`. Shows `EmptyStateAnalytics` if no leads. Has `card.base` wrapper and `data-tour="analytics-page"`.
-
 ### Calendar (`src/app/dashboard/calendar/page.js`)
 
 Client component. Month/day view toggle (mobile always forces day view). Two-row toolbar: Row 1 = navigation + view toggle, Row 2 = Today/Refresh + Show completed toggle + unified "+ New" popover.
@@ -718,22 +712,6 @@ Invoice state: `linkedInvoice` — fetched on open, reset on close.
 
 Horizontal pill strip rendered between the page header and filter bar on the Leads page. One pill per pipeline status (`new`, `booked`, `completed`, `paid`, `lost`) with a live count badge. Clicking a pill sets `filters.status`; clicking the active pill clears it. Each status has a distinct active color matching the pipeline semantics (orange/blue/stone/green/red). Mobile-friendly: horizontal overflow with hidden scrollbar. No data fetching — counts are derived client-side from the parent's `leads` array.
 
-### `AnalyticsCharts({ leads, loading })`
-
-**File**: `src/components/dashboard/AnalyticsCharts.jsx`
-
-Three charts using `recharts`:
-1. **Revenue Over Time** — `LineChart` with cumulative monthly revenue
-2. **Conversion Funnel** — `BarChart` (horizontal layout), new → booked → completed → paid
-3. **Pipeline Breakdown** — `PieChart` (donut, innerRadius=60) with all statuses
-
-Data builders:
-- `buildRevenueData(leads)` — groups by month key `YYYY-MM`, builds cumulative sum
-- `buildFunnelData(leads)` — count per status (new/booked/completed/paid)
-- `buildPipelineData(leads)` — count per all statuses, filters out zero values
-
-Empty state threshold: fewer than 5 leads OR 0 completed/paid leads.
-
 ### `EscalationChainSection()`
 
 **File**: `src/components/dashboard/EscalationChainSection.js`
@@ -802,39 +780,73 @@ const StatWidget = ({ label, value, Icon, formatter, index }) => { ... }
 
 Shared by both onboarding and dashboard. Import individual exports:
 
+**Phase 49 rewrite:** All hex literals were replaced with `var(--*)` references. The token file now reads from CSS variables defined in `globals.css`, which flip between light and dark themes automatically via the `.dark` class on `<html>`.
+
 ```js
+// Post-Phase 49 shape (illustrative — see src/lib/design-tokens.js for actual content):
 export const colors = {
-  brandOrange: '#C2410C',
-  brandOrangeDark: '#9A3412',
-  navy: '#0F172A',
-  warmSurface: '#F5F5F4',
-  bodyText: '#475569',
+  brandOrange: 'var(--brand-accent)',        // resolves to #C2410C light / slightly brighter dark
+  brandOrangeDark: 'var(--brand-accent-hover)',
+  navy: 'var(--sidebar-bg)',                 // stays #0F172A in both modes (sidebar is always navy)
+  warmSurface: 'var(--warm-surface)',        // bg-muted equivalent
+  bodyText: 'var(--muted-foreground)',       // text-muted-foreground
 };
 
 export const btn = {
-  primary: 'bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95 text-white shadow-[...] transition-all duration-150',
+  primary: 'bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)] transition-all duration-150',
 };
 
 export const card = {
-  base: 'bg-white rounded-2xl shadow-[0_1px_3px_0_rgba(0,0,0,0.04),...] border border-stone-200/60',
+  base: 'bg-card rounded-2xl shadow-[...] border border-border',
   hover: 'hover:shadow-[...] hover:-translate-y-0.5 transition-all duration-200',
 };
 
-export const glass = {
-  topBar: 'bg-white/80 backdrop-blur-md border-b border-stone-200/60',
-};
-
-export const gridTexture = {
-  dark: 'bg-[linear-gradient(rgba(255,255,255,0.02)_1px,...)] bg-[size:64px_64px]',
-  light: 'bg-[linear-gradient(rgba(0,0,0,0.015)_1px,...)] bg-[size:48px_48px]',
-};
-
-export const focus = { ring: 'focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-1' };
+export const focus = { ring: 'focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1' };
 export const selected = {
-  card: 'border-[#C2410C] bg-[#C2410C]/[0.04]',
-  cardIdle: 'border-stone-200 bg-[#F5F5F4] hover:bg-stone-100',
+  card: 'border-[var(--brand-accent)] bg-[var(--selected-fill)]',
+  cardIdle: 'border-border bg-muted hover:bg-accent',
 };
 ```
+
+### Dark Mode (Phase 49)
+
+Dark mode is implemented via `next-themes` with `attribute="class"` and `defaultTheme="light"`. Toggle lives in `DashboardSidebar.jsx` between Ask Voco AI and Log Out. Storage key: `localStorage.theme`.
+
+**Key CSS variables defined in `src/app/globals.css`** (both `:root` and `.dark` blocks):
+
+| Variable | Light | Dark | Use |
+|----------|-------|------|-----|
+| `--background` | warm cream | near-black | Body bg |
+| `--foreground` | near-black | near-white | Body text |
+| `--card` | white | elevated dark | Cards |
+| `--muted` | warm neutral | mid-dark | Secondary surfaces |
+| `--muted-foreground` | slate | light slate | Secondary text |
+| `--border` | stone-200 | dark border | Dividers |
+| `--brand-accent` | `#C2410C` | slightly brighter orange | CTAs |
+| `--brand-accent-hover` | `#9A3412` | darker orange | Hover |
+| `--brand-accent-fg` | white | white | Text on brand buttons |
+| `--selected-fill` | `#C2410C`/[0.04] | white/[0.04] | Selection tint |
+| `--warm-surface` | `#F5F5F4` | elevated dark | Warm surfaces |
+| `--sidebar-bg` | `#0F172A` | `#0F172A` | Sidebar (navy both modes) |
+
+**@custom-variant** is `:where(.dark, .dark *)` — a scoping hack so `dark:` Tailwind variants work correctly with `attribute="class"`.
+
+**Body transition**: `body { transition: background-color 150ms, color 150ms }` under `@media (prefers-reduced-motion: no-preference)` — produces a 150ms crossfade on toggle.
+
+**Root layout** adds `suppressHydrationWarning` to `<html>` ONLY — silences the server/client className mismatch that next-themes causes (server renders no class; client script adds `dark`). No other hydration warnings are suppressed.
+
+**What to use in new code:**
+- Surface: `bg-background` / `bg-card` / `bg-muted` — never `bg-white` or `bg-stone-*` without dark variant
+- Text: `text-foreground` / `text-muted-foreground` — never `text-stone-*` as a body-text color
+- Border: `border-border` — never `border-stone-*`
+- Divider: `divide-border` — never `divide-stone-100`
+- Primary CTA: `bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-[var(--brand-accent-fg)]`
+- Selection state: `border-[var(--brand-accent)] bg-[var(--selected-fill)]`
+- Hover highlight: `hover:bg-accent` / `hover:bg-muted`
+- Categorical badges (red/amber/green/blue/violet for status/urgency/provider): KEEP the hue but ADD `dark:bg-{color}-950/40 dark:text-{color}-300 dark:border-{color}-800/60`
+- Destructive: `bg-destructive text-destructive-foreground` or keep `bg-red-600` with dark variants
+
+**Phase 49 test gate**: `tests/unit/dark-mode-hex-audit.test.js` — must stay GREEN. Audits the dashboard tree for disallowed hex constants. Does NOT catch Tailwind utility misuse like `bg-white`/`bg-stone-*` — use the broader audit command documented in `.planning/phases/49-dark-mode-foundation-and-token-migration/49-05-SUMMARY.md` for that.
 
 **Page-level card ownership pattern (Phase 20):** Layout no longer wraps children in a card. Each page applies `card.base` to its own outermost wrapper. This prevents double-card stacking when pages have their own card styling.
 
@@ -994,11 +1006,11 @@ Index: `(tenant_id, created_at DESC)`. Queried directly via supabase-browser (RL
 
 ## 16. Key Design Decisions
 
-- **6-tab desktop / 5-tab mobile navigation (Phase 20, updated Phase 33)**: Desktop sidebar: Home, Leads, Calendar, Calls, Invoices, More. Mobile bottom bar: Home, Leads, Calendar, Calls, Invoices (no More — gear icon in top bar links to /dashboard/more). Analytics relocated to `/dashboard/more/analytics`. Estimates accessible via More quick-access links. Services and Settings consolidated into More menu. No mobile drawer pattern.
+- **6-tab desktop / 5-tab mobile navigation (Phase 20, updated Phase 33, Analytics removed Phase 49)**: Desktop sidebar: Home, Leads, Calendar, Calls, Invoices, More + theme toggle. Mobile bottom bar: Home, Calls, Leads, Calendar, More. Estimates accessible via the More hub's quick-access links. Services and Settings consolidated into More menu. No mobile drawer pattern.
 
 - **Page-level card ownership (Phase 20)**: Layout no longer wraps children in a card. Each page controls its own `card.base` wrapper. Prevents double-card stacking and gives each page independent padding control.
 
-- **BottomTabBar as mobile nav (Phase 20)**: 5 tabs (no More), `h-[56px]`, `min-h-[48px]` touch targets, `safe-area-inset-bottom`, `z-40`, `bg-[#0F172A]`. Animated orange indicator via `layoutId="tab-indicator"` (framer-motion spring). `pb-[72px]` on main content div to clear the bar. Mobile-only (`lg:hidden`). More accessible via gear icon in top bar.
+- **BottomTabBar as mobile nav (Phase 20, updated Phase 49)**: 5 tabs (Home, Calls, Leads, Calendar, More), `h-16`, `safe-area-bottom`, `z-40`, `bg-card border-t border-border` (theme-aware). Animated orange indicator via `layoutId="tab-indicator"` (framer-motion spring). Mobile-only (`lg:hidden`).
 - **Call logs page (Phase 20)**: `/dashboard/calls` — queries `GET /api/calls` (calls table directly, not through leads). Date-grouped expandable cards with urgency border, summary stats bar, search by phone, expandable filters (time range, urgency, booking outcome). Tap to expand detail panel (duration, urgency, booking, language, recording, SMS status, triage info). Short calls (<15s) dimmed with "missed" tag.
 - **Page transitions (Phase 20)**: framer-motion `AnimatePresence` on layout content area — `opacity: 0→1, y: 6→0` on route change. More sub-pages show `MoreBackButton` injected via `more/layout.js` on all sub-pages.
 
@@ -1076,7 +1088,6 @@ const ROUTE_DOC_MAP = {
   '/dashboard/calls': 'calls.md',
   '/dashboard/invoices': 'invoices.md',
   '/dashboard/estimates': 'estimates.md',
-  '/dashboard/more/analytics': 'analytics.md',
   '/dashboard/more/billing': 'billing.md',
   '/dashboard/more/services-pricing': 'settings.md',
   '/dashboard/more/working-hours': 'settings.md',
@@ -1099,7 +1110,6 @@ const KEYWORD_DOC_MAP = [
   { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },
   { keywords: ['invoice', 'invoices', 'payment', 'bill', 'pdf', 'send invoice'], doc: 'invoices.md' },
   { keywords: ['estimate', 'estimates', 'quote'], doc: 'estimates.md' },
-  { keywords: ['analytics', 'revenue', 'chart', 'stats', 'report'], doc: 'analytics.md' },
   { keywords: ['setting', 'settings', 'service', 'working hours', 'zone', 'notification', 'ai voice'], doc: 'settings.md' },
   { keywords: ['integration', 'quickbooks', 'xero', 'connect', 'sync'], doc: 'integrations.md' },
 ];
@@ -1109,7 +1119,7 @@ const KEYWORD_DOC_MAP = [
 
 ### Knowledge Base Docs
 
-`src/lib/chatbot-knowledge/` contains static markdown docs — one per dashboard area: `getting-started.md`, `leads.md`, `calendar.md`, `calls.md`, `invoices.md`, `estimates.md`, `analytics.md`, `billing.md`, `settings.md`, `integrations.md`.
+`src/lib/chatbot-knowledge/` contains static markdown docs — one per dashboard area: `getting-started.md`, `leads.md`, `calendar.md`, `calls.md`, `invoices.md`, `estimates.md`, `billing.md`, `settings.md`, `integrations.md`, `call-routing.md`.
 
 ### Triggers
 
