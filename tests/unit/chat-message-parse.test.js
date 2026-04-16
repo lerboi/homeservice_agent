@@ -2,19 +2,19 @@ import { parseMessageContent } from '@/lib/parse-message-content';
 
 describe('parseMessageContent', () => {
   test('extracts a single dashboard link', () => {
-    const input = 'You can manage your leads here.\n[Go to Leads](/dashboard/leads)';
+    const input = 'You can manage your jobs here.\n[Go to Jobs](/dashboard/jobs)';
     const result = parseMessageContent(input);
     expect(result.links).toHaveLength(1);
-    expect(result.links[0]).toEqual({ label: 'Go to Leads', href: '/dashboard/leads' });
-    expect(result.text).toBe('You can manage your leads here.');
+    expect(result.links[0]).toEqual({ label: 'Go to Jobs', href: '/dashboard/jobs' });
+    expect(result.text).toBe('You can manage your jobs here.');
   });
 
   test('extracts multiple dashboard links', () => {
     const input =
-      'Check these pages:\n[Go to Leads](/dashboard/leads)\n[Go to Calendar](/dashboard/calendar)';
+      'Check these pages:\n[Go to Jobs](/dashboard/jobs)\n[Go to Calendar](/dashboard/calendar)';
     const result = parseMessageContent(input);
     expect(result.links).toHaveLength(2);
-    expect(result.links[0]).toEqual({ label: 'Go to Leads', href: '/dashboard/leads' });
+    expect(result.links[0]).toEqual({ label: 'Go to Jobs', href: '/dashboard/jobs' });
     expect(result.links[1]).toEqual({ label: 'Go to Calendar', href: '/dashboard/calendar' });
   });
 
@@ -27,10 +27,10 @@ describe('parseMessageContent', () => {
 
   test('ignores non-dashboard links (external URLs)', () => {
     const input =
-      'Visit [Google](https://google.com) for more info.\n[Go to Leads](/dashboard/leads)';
+      'Visit [Google](https://google.com) for more info.\n[Go to Jobs](/dashboard/jobs)';
     const result = parseMessageContent(input);
     expect(result.links).toHaveLength(1);
-    expect(result.links[0].href).toBe('/dashboard/leads');
+    expect(result.links[0].href).toBe('/dashboard/jobs');
     expect(result.text).toContain('[Google](https://google.com)');
   });
 

@@ -55,7 +55,7 @@ describe('sendOwnerSMS', () => {
       urgency: 'routine',
       address: '123 Main St',
       callbackLink: 'tel:+15551234567',
-      dashboardLink: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardLink: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
@@ -73,7 +73,7 @@ describe('sendOwnerSMS', () => {
       urgency: 'emergency',
       address: '123 Main St, Springfield',
       callbackLink: 'tel:+15551234567',
-      dashboardLink: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardLink: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const body = mockCreate.mock.calls[0][0].body;
@@ -89,12 +89,12 @@ describe('sendOwnerSMS', () => {
       to: '+15559998888',
       businessName: 'Acme Plumbing',
       callbackLink: 'tel:+15551234567',
-      dashboardLink: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardLink: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const body = mockCreate.mock.calls[0][0].body;
     expect(body).toContain('tel:+15551234567');
-    expect(body).toContain('https://app.homeservice.ai/dashboard/leads');
+    expect(body).toContain('https://app.homeservice.ai/dashboard/jobs');
   });
 
   it('uses fallback values when callerName, jobType, and address are omitted', async () => {
@@ -102,7 +102,7 @@ describe('sendOwnerSMS', () => {
       to: '+15559998888',
       businessName: 'Acme Plumbing',
       callbackLink: 'tel:+15551234567',
-      dashboardLink: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardLink: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const body = mockCreate.mock.calls[0][0].body;

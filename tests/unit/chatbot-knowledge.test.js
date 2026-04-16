@@ -8,8 +8,8 @@ import { getRelevantKnowledge } from '@/lib/chatbot-knowledge/index.js';
 describe('getRelevantKnowledge', () => {
   // Test 1: Route match — specific dashboard page
   it('returns route-matched doc when currentRoute matches ROUTE_DOC_MAP', async () => {
-    const result = await getRelevantKnowledge('how do I filter leads?', '/dashboard/leads');
-    expect(result).toContain('# Leads');
+    const result = await getRelevantKnowledge('how do I filter jobs?', '/dashboard/jobs');
+    expect(result).toContain('# Jobs');
   });
 
   // Test 2: Keyword match overrides route when keyword is for different doc
@@ -26,8 +26,8 @@ describe('getRelevantKnowledge', () => {
 
   // Test 4: Returns both route doc AND keyword-matched doc
   it('returns both route-matched doc and keyword-matched doc when both apply', async () => {
-    const result = await getRelevantKnowledge('tell me about billing', '/dashboard/leads');
-    expect(result).toContain('# Leads');
+    const result = await getRelevantKnowledge('tell me about billing', '/dashboard/jobs');
+    expect(result).toContain('# Jobs');
     expect(result).toContain('# Billing');
   });
 
@@ -35,8 +35,8 @@ describe('getRelevantKnowledge', () => {
   it('returns at most 2 doc sections', async () => {
     // Message has multiple keyword matches across many docs
     const result = await getRelevantKnowledge(
-      'tell me about leads invoices calendar billing analytics',
-      '/dashboard/leads'
+      'tell me about jobs invoices calendar billing analytics',
+      '/dashboard/jobs'
     );
     // Count doc section separators (each doc beyond first is separated by ---)
     const separatorCount = (result.match(/\n\n---\n\n/g) || []).length;

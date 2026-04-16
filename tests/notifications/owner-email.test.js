@@ -50,7 +50,7 @@ describe('sendOwnerEmail', () => {
       to: 'owner@example.com',
       lead: { caller_name: 'Jane Doe', urgency: 'routine' },
       businessName: 'Acme Plumbing',
-      dashboardUrl: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardUrl: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -64,7 +64,7 @@ describe('sendOwnerEmail', () => {
       to: 'owner@example.com',
       lead: { caller_name: 'John Smith', urgency: 'emergency' },
       businessName: 'Acme Plumbing',
-      dashboardUrl: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardUrl: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const subject = mockSend.mock.calls[0][0].subject;
@@ -78,7 +78,7 @@ describe('sendOwnerEmail', () => {
       to: 'owner@example.com',
       lead,
       businessName: 'Acme Plumbing',
-      dashboardUrl: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardUrl: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const args = mockSend.mock.calls[0][0];
@@ -92,7 +92,7 @@ describe('sendOwnerEmail', () => {
       to: 'owner@example.com',
       lead: { caller_name: 'Jane Doe', urgency: 'routine' },
       businessName: 'Acme Plumbing',
-      dashboardUrl: 'https://app.homeservice.ai/dashboard/leads',
+      dashboardUrl: 'https://app.homeservice.ai/dashboard/jobs',
     });
 
     const from = mockSend.mock.calls[0][0].from;
@@ -107,7 +107,7 @@ describe('sendOwnerEmail', () => {
         to: 'owner@example.com',
         lead: { caller_name: 'Jane Doe', urgency: 'routine' },
         businessName: 'Acme Plumbing',
-        dashboardUrl: 'https://app.homeservice.ai/dashboard/leads',
+        dashboardUrl: 'https://app.homeservice.ai/dashboard/jobs',
       })
     ).resolves.not.toThrow();
   });
