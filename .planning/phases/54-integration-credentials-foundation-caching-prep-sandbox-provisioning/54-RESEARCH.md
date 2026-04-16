@@ -654,27 +654,31 @@ export function verifyOAuthState(state) {
 | A6 | `intuit-oauth`, `node-quickbooks`, `@freshbooks/api` packages have no other consumers in the repo after QB/FB adapter deletion | §Runtime State Inventory | If any other code imports these packages (e.g., a cron, a utility), deletion breaks unrelated code. Low risk — grep `require.*intuit-oauth\|node-quickbooks\|@freshbooks` in Plan 2 before uninstalling. |
 | A7 | `scopes TEXT[]` column is read cleanly by Python via supabase-py 2.x (no type coercion issue) | §User Constraints Claude's Discretion "Python agent credential reads" | If Phase 55 discovers TEXT[] round-trips incorrectly, the column needs a `_` suffix or conversion. Low risk — PostgREST TEXT[] maps to JSON arrays; Python gets `list[str]`. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does UI-SPEC Pattern B (client-side fetch of status) still satisfy CONTEXT.md D-10's "smoke test the cache loop end-to-end" requirement?**
    - What we know: D-10 says "the new `/dashboard/more/integrations` page renders from this cached read." UI-SPEC §Data Flow says page fetches `GET /api/integrations/status` on mount (client-side fetch). These are compatible if the `/api/integrations/status` Route Handler internally calls `getIntegrationStatus(tenantId)` — then the cache benefit lives in the API layer, not the page render.
    - What's unclear: Does the planner interpret "page renders from this cached read" strictly (Server Component calls `getIntegrationStatus` directly) or loosely (page indirectly benefits via the API route)?
    - Recommendation: Strict interpretation (Pattern A, Server Component with client-child) is the more decisive smoke test and makes Phase 55 caching easier. UI-SPEC §Open Question #4 already flags this flexibility. Confirm with user in Plan 5.
+   - RESOLVED: Pattern A (Server Component calls getIntegrationStatus directly) — Plan 05 Task 2.
 
 2. **Should the Xero scope bundle include `accounting.contacts` (write) to preserve invoice push capability behind the invoicing flag?**
    - What we know: Phase 35's `pushInvoice` calls `findOrCreateCustomer` which can create new Xero contacts (verified by reading `xero.js` lines 124-152).
    - What's unclear: Is invoice push intended to work immediately after Phase 54 merge (just gated by invoicing flag), or is it semi-deprecated until the invoicing feature is re-scoped?
    - Recommendation: Include `accounting.contacts` (write) — the flag gates the *behavior*, not the *capability grant*. Over-scoping is a cosmetic OAuth consent screen concern; under-scoping breaks invoicing when owners flip the flag on.
+   - RESOLVED: Include accounting.contacts write scope for Phase 35 invoice-push continuity — Plan 02 Task 2 XERO_SCOPES constant.
 
 3. **Should Phase 54 uninstall `intuit-oauth`, `node-quickbooks`, `@freshbooks/api` npm packages, or leave as orphaned dependencies?**
    - What we know: Packages are declared in `package.json` lines 25, 41, 42. After QB/FB adapter deletion, nothing imports them.
    - What's unclear: Preference for a clean `package-lock.json` diff in Phase 54 vs. batching npm cleanup with the Phase 58 `accounting_sync_log` cleanup.
    - Recommendation: Leave in Phase 54 (dead weight, no behavior impact). Remove in Phase 58. Prevents mid-phase `package-lock.json` churn and keeps Phase 54's blast radius focused on src/.
+   - RESOLVED: Defer npm uninstall of intuit-oauth/node-quickbooks/@freshbooks/api to Phase 58 cleanup batch — Plan 02 out_of_scope.
 
 4. **Is `accounting_sync_log` retained as-is, or are QB/FB rows also purged?**
    - What we know: `accounting_sync_log` has a free-text `provider` column (no CHECK constraint) — verified via 030 migration line 44. Legacy QB/FB rows there are harmless.
    - What's unclear: Cosmetic cleanup preference.
    - Recommendation: Leave untouched in Phase 54. Flag for Phase 58 cleanup candidacy.
+   - RESOLVED: Leave accounting_sync_log untouched in Phase 54 (no FK from it to accounting_credentials — researcher Finding 2) — Plan 01 Task 1 note.
 
 ## Validation Architecture
 
