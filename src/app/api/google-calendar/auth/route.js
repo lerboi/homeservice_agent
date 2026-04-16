@@ -23,12 +23,18 @@ export function signOAuthState(tenantId) {
 export function verifyOAuthState(state) {
   if (!state || !state.includes(':')) return null;
   const [tenantId, hmac] = state.split(':');
+  if (!tenantId || !hmac) return null;
   const expected = crypto.createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY)
     .update(tenantId)
     .digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'))) {
-    return null;
-  }
+  const received = Buffer.from(hmac, 'hex');
+  const expectedBuf = Buffer.from(expected, 'hex');
+  // timingSafeEqual throws RangeError when buffer lengths differ. An attacker-
+  // supplied malformed hex would otherwise bubble a 500 up to the callback
+  // instead of the intended ?error=invalid_state redirect. Length-check first
+  // to keep the verify path total.
+  if (received.length !== expectedBuf.length) return null;
+  if (!crypto.timingSafeEqual(received, expectedBuf)) return null;
   return tenantId;
 }
 
