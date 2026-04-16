@@ -55,13 +55,21 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
     xero_tenant_id: credentials.xero_tenant_id,
   });
 
+  const updatePayload = {
+    access_token: newTokenSet.access_token,
+    refresh_token: newTokenSet.refresh_token,
+    expiry_date: newTokenSet.expiry_date,
+  };
+
+  // Persist scopes when the refreshed TokenSet carries them, so the
+  // getIntegrationStatus reader (and downstream telemetry) stays in sync.
+  if (Array.isArray(newTokenSet.scopes) && newTokenSet.scopes.length > 0) {
+    updatePayload.scopes = newTokenSet.scopes;
+  }
+
   const { error } = await supabase
     .from('accounting_credentials')
-    .update({
-      access_token: newTokenSet.access_token,
-      refresh_token: newTokenSet.refresh_token,
-      expiry_date: newTokenSet.expiry_date,
-    })
+    .update(updatePayload)
     .eq('id', credentials.id);
 
   if (error) {
@@ -73,5 +81,6 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
     access_token: newTokenSet.access_token,
     refresh_token: newTokenSet.refresh_token,
     expiry_date: newTokenSet.expiry_date,
+    ...(updatePayload.scopes ? { scopes: updatePayload.scopes } : {}),
   };
 }

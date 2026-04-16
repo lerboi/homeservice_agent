@@ -69,6 +69,11 @@ export class XeroAdapter {
     // Auto-select first tenant (most users have one organization)
     const selectedTenant = tenants?.[0];
 
+    // Populate scopes from Xero's token response. `xero-node` exposes `scope`
+    // as a space-delimited string after `apiCallback`. Fall back to the static
+    // XERO_SCOPES bundle (what we requested) if the grant response omits it.
+    const scopeString = tokenSet.scope || '';
+
     return {
       access_token: tokenSet.access_token,
       refresh_token: tokenSet.refresh_token,
@@ -77,6 +82,7 @@ export class XeroAdapter {
         : Date.now() + (tokenSet.expires_in * 1000),
       xero_tenant_id: selectedTenant?.tenantId || null,
       display_name: selectedTenant?.tenantName || null,
+      scopes: scopeString ? scopeString.split(' ') : XERO_SCOPES.split(' '),
     };
   }
 
