@@ -6,6 +6,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.js');
 const nextConfig = {
   allowedDevOrigins: process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) || [],
   serverExternalPackages: ['@react-pdf/renderer'],
+  // Next.js 16 — opts the app into the 'use cache' + cacheTag + revalidateTag pipeline.
+  // Phase 54 INTFOUND-03. Smoke test: src/lib/integrations/status.js getIntegrationStatus.
+  cacheComponents: true,
   async redirects() {
     return [
       {
