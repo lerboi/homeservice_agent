@@ -1,5 +1,5 @@
 -- ============================================================
--- 051_integrations_schema.sql
+-- 052_integrations_schema.sql
 -- Phase 54: Integration credentials foundation + Next.js 16 caching prep
 -- Adds: scopes TEXT[], last_context_fetch_at TIMESTAMPTZ
 -- Tightens: provider CHECK to ('xero','jobber') — drops QuickBooks + FreshBooks
