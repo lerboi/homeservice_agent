@@ -30,7 +30,7 @@ messages/*.log
 
 # local env files
 .env
-.env.example
+!.env.example
 .env.local
 .env.development.local
 .env.test.local

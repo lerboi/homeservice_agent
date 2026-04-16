@@ -14,7 +14,9 @@
  * @module accounting/sync
  */
 
-import { getAccountingAdapter, refreshTokenIfNeeded } from './adapter.js';
+// Phase 54: accounting/adapter.js deleted; sync.js now imports from integrations/adapter.
+// getAccountingAdapter is aliased from getIntegrationAdapter for minimal-diff readability.
+import { getIntegrationAdapter as getAccountingAdapter, refreshTokenIfNeeded } from '@/lib/integrations/adapter';
 
 /**
  * Push an invoice to the tenant's connected accounting software.
