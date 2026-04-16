@@ -188,7 +188,7 @@ Plans:
 
 ### v6.0 Phase Checklist
 
-- [ ] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — pure frontend reframe of `/dashboard/leads` to match home-service mental model (Jobs vs Leads); page.js, LeadStatusPills, LeadCard, LeadFilterBar, nav labels; no DB/API/agent changes (deferred from v5.0)
+- [ ] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — 5 plans planned 2026-04-16; pure frontend reframe of `/dashboard/leads` to `/dashboard/jobs` (308 redirect for back-compat) to match home-service mental model; status pill restructure (New, Scheduled, Completed, Paid, Lost) with Lost gap; LeadFlyout / LeadCard / LeadFilterBar / EmptyStateLeads / HotLeadsTile / Sidebar / BottomTabBar / DashboardTour / search route / notification email / chatbot-knowledge corpus all reframed; dashboard-crm-system skill updated; no DB/API/agent/component-file-name changes
 - [ ] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards
 - [ ] **Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning** — extend `accounting_credentials.provider` CHECK to include `'jobber'`; new `src/lib/integrations/` shared module (types, credentials, HMAC OAuth state); enable `cacheComponents: true` in next.config.js; route scaffolding for `/api/integrations/[provider]/{auth,callback}`, `/api/integrations/{disconnect,status}`; user provisions Jobber + Xero dev/sandbox accounts
 - [ ] **Phase 55: Xero read-side integration (caller context)** — Xero OAuth via existing xero-node SDK, `fetchCustomerByPhone(tenantId, phone)` returning contact + outstandingBalance + lastInvoices, "use cache" with 5-min TTL + `revalidateTag`, `/api/webhooks/xero` for invoice change invalidation, AccountingConnectionCard in `/dashboard/more/integrations`, setup checklist `connect_xero` item, livekit_agent `src/integrations/xero.py` + `_run_db_queries` parallel fetch + `customer_context` prompt section + `check_customer_account` tool
@@ -210,6 +210,16 @@ Plans:
 - Python agent fetches Jobber/Xero directly (service-role Supabase reads creds → direct GraphQL/REST); no Next.js round-trip for context lookup
 - Next.js 16 caching scope = dashboard reads only (`cacheComponents: true` + `"use cache"` + `revalidateTag`); call path stays Python-direct
 - Phase 51 polish budget absorbed into Phase 58 tail rather than its own phase
+
+### Phase 53: Feature flag infrastructure + invoicing toggle
+
+**Goal:** Gate the Phase 33-35 invoicing system behind a per-tenant feature flag so v6.0 can refocus Voco on the Call System while preserving existing invoicing code for future opt-in. Adds a `tenants.features_enabled` JSONB column defaulting to `{"invoicing": false}` for ALL tenants (safe because v6.0 is still dev — no live users at risk), gates invoice/estimate pages + APIs + crons behind the flag, conditionally hides the Invoices surface (sidebar, BottomTabBar, LeadFlyout CTAs, More menu), and exposes a reversible settings toggle with no data loss.
+**Depends on:** None blocking — pure feature-flag layer over existing Phase 33-35 code; must ship before v6.0 phases 54-58 so integration work is isolated from the legacy invoicing surface.
+**Requirements**: TOGGLE-01, TOGGLE-02, TOGGLE-03, TOGGLE-04
+**Plans:** 0 plans (run /gsd:plan-phase 53 to break down)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 53 to break down)
 
 ---
 
@@ -754,13 +764,17 @@ Phases execute in order: 47 -> 48 -> 49 -> 50 -> 51
 
 ### Phase 52: Rename Leads tab to Jobs and restructure status pills for home-service mental model
 
-**Goal:** [To be planned]
-**Requirements**: TBD
-**Depends on:** Phase 51 (UI/UX Polish Pass) — token system and empty states must be stable before renaming visible tab surfaces; may be reprioritized independently if landing and dashboard work parallelizes
-**Plans:** 4/5 plans executed
+**Goal:** Reframe the dashboard's /dashboard/leads surface to /dashboard/jobs to match the home-service SME owner mental model — sidebar + bottom-tab nav labels become 'Jobs', canonical URL renames with a 308 permanent redirect for back-compat, status pill labels restructure to job-progression vernacular (New, Scheduled, Completed, Paid, Lost) with a visual gap separating the terminal-negative Lost pill from the active pipeline, and all user-facing 'Lead(s)' copy across LeadFlyout / LeadFilterBar / EmptyStateLeads / HotLeadsTile / search results / notification emails / chatbot knowledge reframes to 'Job(s)'. Pure frontend reframe — DB enum, /api/leads/* routes, voice agent, and component file names are all preserved unchanged per minimal-blast-radius rule.
+**Requirements**: RENAME-01, RENAME-02, RENAME-03
+**Depends on:** None blocking — pure UI copy + URL reframe of an existing surface (Phase 49 dark-mode pill palette is preserved verbatim, so no token-system dependency)
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 52 to break down)
+- [ ] 52-01-PLAN.md — Status pill restructure (LeadStatusPills + LeadCard label sync to Scheduled, Lost gap)
+- [ ] 52-02-PLAN.md — Page route move /dashboard/leads → /dashboard/jobs + H1 + 308 redirect in next.config.js
+- [ ] 52-03-PLAN.md — Chatbot knowledge corpus reframe (8 files: index.js + 7 markdown docs)
+- [ ] 52-04-PLAN.md — Copy reframe + internal href audit batch (16 files: flyout/filter/empty/hot/sidebar/bottom-tab + 10 internal-link files)
+- [ ] 52-05-PLAN.md — dashboard-crm-system skill update + final repo-wide grep verification + human checkpoint
 
 ---
 
