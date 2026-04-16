@@ -214,15 +214,9 @@ INSERT INTO accounting_credentials
 Confirm all three queries return the expected results.
   </how-to-verify>
   <files>supabase (project database — migration applied via CLI or Studio)</files>
-  <action>Apply  to the project database. Primary path:  from repo root. Fallback: paste the migration SQL into Supabase Studio SQL Editor and run. Verify with three SQL queries described in <how-to-verify> (information_schema.columns, pg_get_constraintdef, QB insert rejection).</action>
+  <action>Apply `supabase/migrations/051_integrations_schema.sql` to the project database. Primary path: `SUPABASE_ACCESS_TOKEN=<token> supabase db push` from repo root. Fallback: paste the migration SQL into Supabase Studio SQL Editor and run. Verify with three SQL queries described in <how-to-verify> (information_schema.columns, pg_get_constraintdef, QB insert rejection).</action>
   <verify>
-    <automated>MISSING — manual migration apply; confirmed via Supabase Studio queries (human-gated). Downstream plans run Unknown command: "test"
-
-
-Did you mean this?
-  npm test # Test a package
-To see a list of supported npm commands, run:
-  npm help which verifies module behavior but NOT live schema state.</automated>
+    <automated>MISSING — manual migration apply; confirmed via three Supabase Studio queries (see how-to-verify). Downstream plans run `npm test -- --testPathPatterns=integrations` which verifies module behavior but NOT live schema state.</automated>
   </verify>
   <done>Migration is applied to the live Supabase project; scopes + last_context_fetch_at columns present; QB insert rejected with check_violation; user confirms "migration applied" to resume.</done>
   <resume-signal>Type "migration applied" with a one-line summary of what `information_schema.columns` returned (did you see `scopes` and `last_context_fetch_at`? did the insert of `'quickbooks'` fail with check_violation?). If the CHECK constraint DROP failed because the real constraint name differed, paste the actual name — the executor will write a follow-up fix migration.</resume-signal>
