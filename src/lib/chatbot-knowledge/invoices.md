@@ -1,10 +1,10 @@
 # Invoices — Voco Dashboard
 
 ## What this section does
-The Invoices section lets you create, send, and track invoices for your jobs. Create invoices from leads or from scratch. Add line items with quantities and rates, apply taxes and discounts, and send via email or SMS. Track payment status through draft, sent, paid, and overdue stages.
+The Invoices section lets you create, send, and track invoices for your jobs. Create invoices from jobs or from scratch. Add line items with quantities and rates, apply taxes and discounts, and send via email or SMS. Track payment status through draft, sent, paid, and overdue stages.
 
 ## Key features
-- **Create invoices** — Start from a lead or create standalone; add line items with quantity, rate, and description
+- **Create invoices** — Start from a job or create standalone; add line items with quantity, rate, and description
 - **Tax and discounts** — Apply a percentage tax rate and a flat or percentage discount
 - **Send via email or SMS** — Send the invoice directly to the customer from the invoice editor
 - **PDF generation** — Download a professional PDF version of any invoice
@@ -17,7 +17,7 @@ Go to [Invoices](/dashboard/invoices)
 ## Common tasks
 
 ### How do I create a new invoice?
-Click "New Invoice" on the Invoices page, or open a lead and click "Create Invoice." Add line items using the "Add Item" button — enter the description, quantity, and rate. Set the tax rate and any discount. Click "Save" or "Send" when ready.
+Click "New Invoice" on the Invoices page, or open a job and click "Create Invoice." Add line items using the "Add Item" button — enter the description, quantity, and rate. Set the tax rate and any discount. Click "Save" or "Send" when ready.
 
 ### How do I send an invoice to a customer?
 Open the invoice and click "Send Invoice." Enter or confirm the customer's email address or phone number. The customer receives a link to view and pay the invoice online.
@@ -32,6 +32,6 @@ Invoices automatically move to Overdue status when the due date passes and payme
 Open the invoice detail page and click "Download PDF." A professional PDF is generated and downloaded to your device.
 
 ## Related sections
-- [Leads](/dashboard/leads)
+- [Jobs](/dashboard/jobs)
 - [Estimates](/dashboard/estimates)
 - [Invoice Settings](/dashboard/more/invoice-settings)

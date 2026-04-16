@@ -7,7 +7,7 @@ The Calls section shows a complete log of every call handled by your AI receptio
 - **Call log** — Full history of all calls, grouped by date
 - **Expandable cards** — Click any call to expand and see recording player and transcript
 - **Triage labels** — Emergency, urgent, or routine labels set by the AI based on call content
-- **Duration and outcome** — See call length and whether the AI booked, captured a lead, or escalated
+- **Duration and outcome** — See call length and whether the AI booked, captured a job, or escalated
 - **Filters** — Filter by outcome, urgency label, or date range
 
 ## How to navigate here
@@ -30,5 +30,5 @@ Expand the call card — the transcript appears below the audio player, showing 
 Use the search bar or date filter at the top of the Calls page to locate calls from a specific phone number or date range.
 
 ## Related sections
-- [Leads](/dashboard/leads)
+- [Jobs](/dashboard/jobs)
 - [Calendar](/dashboard/calendar)

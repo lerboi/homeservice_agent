@@ -32,4 +32,4 @@ Once a customer accepts an estimate, open the estimate and click "Convert to Inv
 
 ## Related sections
 - [Invoices](/dashboard/invoices)
-- [Leads](/dashboard/leads)
+- [Jobs](/dashboard/jobs)
