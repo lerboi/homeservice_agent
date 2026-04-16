@@ -318,6 +318,9 @@ The executor must update all of the following. A final `grep -r "/dashboard/lead
 - `src/app/dashboard/leads/page.js` → `src/app/dashboard/jobs/page.js` (H1 + internal /dashboard/leads refs)
 - `src/app/dashboard/leads/loading.js` → `src/app/dashboard/jobs/loading.js`
 
+**Confirmed no-op (D-09 surface, no user-facing copy change required):**
+- `src/components/dashboard/DailyOpsHub.jsx` — verified via grep: only references `lead/leads` inside JSDoc comments and a `HotLeadsTile` import name. No user-facing copy in this file. The "leads" reframe surfaces here exclusively through its child `HotLeadsTile.jsx` (already in primary mutations above). No mutation required.
+
 **Internal link updates (href only, no copy change):**
 - `src/components/dashboard/DashboardTour.jsx` — step href
 - `src/components/dashboard/AppointmentFlyout.js` — if it deep-links to leads page
