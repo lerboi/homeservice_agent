@@ -54,13 +54,13 @@ All values are token-driven via `src/lib/design-tokens.js`. No new sizes or weig
 |------|------|--------|-------------|---------------|
 | Page heading | 20px (text-xl) | 600 (font-semibold) | 1.4 | `text-xl font-semibold ${heading}` — mirrors invoice-settings page h1 |
 | Section/card heading | 14px (text-sm) | 600 (font-semibold) | 1.4 | `text-sm font-semibold ${heading}` — mirrors invoice-settings h2 |
-| Feature row label | 14px (text-sm) | 500 (font-medium) | 1.5 | `text-sm font-medium ${heading}` |
+| Feature row label | 14px (text-sm) | 600 (font-semibold) | 1.5 | `text-sm font-semibold ${heading}` — uses semibold (600) to match card heading tier; no third weight needed |
 | Feature row description | 12px (text-xs) | 400 (normal) | 1.5 | `text-xs ${body}` — `text-muted-foreground` |
 | Dialog title | 16px (text-base) | 600 (font-semibold) | 1.4 | shadcn AlertDialogTitle default |
 | Dialog description | 14px (text-sm) | 400 (normal) | 1.6 | shadcn AlertDialogDescription default |
 | Toast message | 14px (text-sm) | 400 (normal) | 1.5 | sonner default |
 
-**Rule:** Maximum 4 text sizes in this phase (xs, sm, base, xl). Maximum 2 weights (400 regular, 500/600 medium/semibold). Do not introduce new sizes.
+**Rule:** Maximum 4 text sizes in this phase (xs, sm, base, xl). Exactly 2 weights: 400 (regular) and 600 (semibold). `font-medium` (500) is not used — row labels adopt `font-semibold` to keep the weight palette to two tiers. Do not introduce new sizes.
 
 ---
 
@@ -108,6 +108,8 @@ All values reference CSS custom properties defined in `globals.css`. Light and d
 </div>
 ```
 
+**Focal point:** The Switch control is the primary interactive focal point on each row. The page title `Features` is the top-level visual anchor.
+
 **Feature row anatomy (each feature flag):**
 ```
 <div className="flex items-center justify-between gap-4 py-5 first:pt-0 last:pb-0 min-h-[64px]">
@@ -116,8 +118,8 @@ All values reference CSS custom properties defined in `globals.css`. Light and d
       <Icon className="h-5 w-5 text-muted-foreground" />
     </div>
     <div className="flex-1 min-w-0">
-      <p className={`text-sm font-medium ${heading}`}>{feature.label}</p>
-      <p className={`text-xs ${body} mt-0.5`}>{feature.description}</p>
+      <p className={`text-sm font-semibold ${heading}`}>{feature.label}</p>
+      <p className={`text-xs ${body} mt-1`}>{feature.description}</p>
     </div>
   </div>
   <Switch
@@ -209,7 +211,7 @@ All values reference CSS custom properties defined in `globals.css`. Light and d
 | AlertDialogDescription (N invoices, M estimates, both > 0) | `You have {N} invoice(s) and {M} estimate(s) on file. Disabling invoicing hides the invoicing tools from your dashboard — your data is preserved and you can re-enable anytime from this page.` |
 | AlertDialogDescription (invoices only, estimates = 0) | `You have {N} invoice(s) on file. Disabling invoicing hides the invoicing tools from your dashboard — your data is preserved and you can re-enable anytime from this page.` |
 | AlertDialogDescription (estimates only, invoices = 0) | `You have {M} estimate(s) on file. Disabling invoicing hides the invoicing tools from your dashboard — your data is preserved and you can re-enable anytime from this page.` |
-| Cancel button label | `Cancel` |
+| Cancel button label | `Keep Invoicing` |
 | Confirm button label | `Disable` |
 | Confirm button style | `bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)]` (NOT destructive red) |
 
@@ -228,7 +230,7 @@ All values reference CSS custom properties defined in `globals.css`. Light and d
 2. Rollback optimistic update (switch returns to `checked=true`).
 3. Show toast: `toast.error('Failed to disable invoicing. Try again.')`
 
-**On Cancel:** Dialog closes. Switch returns to `checked=true` (no state change). No toast.
+**On Cancel / Keep Invoicing:** Dialog closes. Switch returns to `checked=true` (no state change). No toast.
 
 **Dialog dark mode:** shadcn `AlertDialogContent` uses `bg-popover text-popover-foreground` via Radix — inherits dark mode automatically. The `AlertDialogDescription` uses `text-muted-foreground` — correct in both modes.
 
@@ -269,7 +271,7 @@ Account
 | Features More menu entry description | `Turn optional capabilities on or off` | MORE_ITEMS entry sub-label |
 | Flip-off dialog title | `Disable invoicing?` | AlertDialogTitle |
 | Flip-off confirm button | `Disable` | AlertDialogAction |
-| Flip-off cancel button | `Cancel` | AlertDialogCancel |
+| Flip-off cancel button | `Keep Invoicing` | AlertDialogCancel |
 | Toast — disable success | `Invoicing disabled. Re-enable here anytime.` | sonner toast.success |
 | Toast — disable error | `Failed to disable invoicing. Try again.` | sonner toast.error |
 | Toast — enable error | `Failed to enable invoicing. Try again.` | sonner toast.error |
