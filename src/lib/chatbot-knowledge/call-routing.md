@@ -7,7 +7,7 @@ Call Routing controls how incoming calls are handled. By default, every call goe
 - **Forwarding schedule** — Turn on call forwarding for specific days and time ranges. Inside the window, Voco rings your pickup numbers; outside, the AI answers. Supports overnight ranges (e.g. `19:00`–`09:00`).
 - **Pickup numbers** — Add up to 5 phone numbers to ring in parallel when forwarding is active. Each number has a label and an SMS-forwarding toggle.
 - **Dial timeout** — How long pickup numbers ring before Voco falls back to the AI (default 15 seconds).
-- **Priority Callers** — Named numbers and tagged customers who always ring your phone immediately, even outside forwarding hours or when you've hit your monthly forwarding cap. Two sources: standalone numbers you add here, and existing leads marked Priority from the Lead flyout. Shown in one unified list.
+- **Priority Callers** — Named numbers and tagged customers who always ring your phone immediately, even outside forwarding hours or when you've hit your monthly forwarding cap. Two sources: standalone numbers you add here, and existing jobs marked Priority from the Job flyout. Shown in one unified list.
 - **SMS forwarding** — When enabled per pickup number, inbound text messages to your Voco number are forwarded to that phone. A copy of every message is stored for audit.
 
 ## How to navigate here
@@ -27,12 +27,12 @@ After the dial timeout (default 15 seconds), Twilio falls back to the AI recepti
 ### How do I mark a caller as Priority?
 Two ways:
 1. **From Call Routing** — scroll to Priority Callers, enter the phone number and a label, click "Add priority number."
-2. **From a lead** — open the lead in the Leads tab, and toggle the Priority switch in the flyout. The number automatically appears in your Priority Callers list.
+2. **From a job** — open the job in the Jobs tab, and toggle the Priority switch in the flyout. The number automatically appears in your Priority Callers list.
 
 Priority callers bypass your forwarding schedule and your monthly forwarding cap — they always ring your pickup numbers directly.
 
 ### How do I remove Priority status?
-Open Call Routing → Priority Callers. Click the trash icon next to the entry. If the Priority came from a lead, this also clears `is_vip` on the lead.
+Open Call Routing → Priority Callers. Click the trash icon next to the entry. If the Priority came from a job, this also clears `is_vip` on the job.
 
 ### Why didn't a priority call reach me?
 Priority calls only reach you if you have at least one pickup number configured. Without any pickup numbers, the caller falls through to the AI. Check that you have at least one number listed.
@@ -42,5 +42,5 @@ When someone texts your Voco number, the message is forwarded to every pickup nu
 
 ## Related sections
 - [Notifications](/dashboard/more/notifications)
-- [Leads](/dashboard/leads)
+- [Jobs](/dashboard/jobs)
 - [AI Voice Settings](/dashboard/more/ai-voice-settings)

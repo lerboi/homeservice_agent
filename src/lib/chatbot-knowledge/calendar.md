@@ -38,9 +38,9 @@ On the calendar, click and drag on the time grid, or use the "Add time block" ac
 Open any one day of the block from the calendar flyout. You'll see a "Delete all N days" option that removes every block in the group in one click. Deleting a single day only removes that day.
 
 ### How do I mark an appointment as complete?
-Open the appointment flyout and click "Mark complete." The job moves to Completed on the lead, which makes it eligible for invoicing.
+Open the appointment flyout and click "Mark complete." The job moves to Completed on the job record, which makes it eligible for invoicing.
 
 ## Related sections
-- [Leads](/dashboard/leads)
+- [Jobs](/dashboard/jobs)
 - [Integrations](/dashboard/more/integrations)
 - [Working Hours](/dashboard/more/working-hours)
