@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 50 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 52 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -118,6 +118,8 @@ Realtime subscriptions (browser):
 | `supabase/migrations/048_calendar_blocks_group_id.sql` | Phase 42 — calendar_blocks gains group_id UUID to link multi-day blocks for bulk delete; partial index on group_id WHERE NOT NULL |
 | `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
 | `supabase/migrations/050_checklist_overrides.sql` | Phase 48 — Setup checklist per-item override persistence: tenants gains `checklist_overrides` JSONB NOT NULL DEFAULT '{}'. Consumed by `src/app/api/setup-checklist/route.js` to persist user dismissals and custom mark-done actions without adding row-per-item state. |
+| `supabase/migrations/051_features_enabled.sql` | Phase 53 — Feature flag infrastructure: tenants gains `features_enabled` JSONB NOT NULL DEFAULT '{}' ({ invoicing: boolean, ... }). Read by `FeatureFlagsProvider` at dashboard layout; gates `/api/accounting/**` in proxy.js. |
+| `supabase/migrations/052_integrations_schema.sql` | Phase 54 — **Integration credentials foundation** (originally planned as `051_integrations_schema` before Phase 53 renumber collision; file ships as 052 on disk). Sequenced transactional migration on `accounting_credentials`: (1) `DELETE FROM accounting_credentials WHERE provider IN ('quickbooks','freshbooks')` — purge pre-v6.0 rows before CHECK swap; (2) `DROP CONSTRAINT accounting_credentials_provider_check`; (3) `ADD CONSTRAINT accounting_credentials_provider_check CHECK (provider IN ('xero','jobber'))` — QB + FB values permanently invalid; (4) `ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[]` — populated by `/api/integrations/[provider]/callback` with granular OAuth scopes (Xero post-2026-03-02 scope set; Jobber equivalents); (5) `ADD COLUMN last_context_fetch_at TIMESTAMPTZ` NULL — populated by Phase 55+ `fetchCustomerByPhone` for telemetry. **No new indexes** — existing `UNIQUE (tenant_id, provider)` covers tenant-scoped reads. **Python compatibility:** `TEXT[]` → `list[str]`, `TIMESTAMPTZ` → `datetime` (for livekit-agent service-role reads in Phase 55+). **Forward-compat:** adding a future provider requires another DROP + ADD constraint cycle (same pattern). |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
 ---

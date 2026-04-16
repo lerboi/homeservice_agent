@@ -59,7 +59,7 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
       ├── more/ai-voice-settings/page.js  ← SettingsAISection
       ├── more/billing/page.js            ← Plan, usage meter, invoices
       ├── more/invoice-settings/page.js   ← Business identity, tax config, late fees, invoice defaults, numbering
-      ├── more/integrations/page.js       ← Calendar connections (CalendarSyncCard) + accounting software (QuickBooks, Xero, FreshBooks)
+      ├── more/integrations/page.js       ← Business Integrations (Phase 54): Calendar Connections (CalendarSyncCard, preserved) + Accounting & Job Management provider cards (Xero, Jobber). Server Component reads getIntegrationStatus('use cache').
       └── more/account/page.js            ← Profile editor, account details, sign out
 ```
 
@@ -100,7 +100,8 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 | `src/components/dashboard/UsageRingGauge.js` | SVG donut ring gauge for call usage visualization |
 | `src/app/dashboard/more/account/page.js` | Account page: profile editor (business_name, owner_name, owner_email, owner_phone), account details, sign out |
 | `src/app/dashboard/more/invoice-settings/page.js` | Invoice settings: business identity (logo upload via Supabase Storage), tax config, late fees (flat/percentage), defaults (payment terms, notes), numbering (prefix, preview) |
-| `src/app/dashboard/more/integrations/page.js` | Integrations hub: CalendarSyncCard + accounting software cards (QuickBooks, Xero, FreshBooks) with connect/disconnect OAuth flows |
+| `src/app/dashboard/more/integrations/page.js` | Business Integrations hub (Phase 54): Server Component — awaits `getIntegrationStatus(tenantId)` then renders Calendar Connections section (CalendarSyncCard, preserved) + Accounting & Job Management section with Xero + Jobber cards via `BusinessIntegrationsClient` (Client child) |
+| `src/components/dashboard/BusinessIntegrationsClient.jsx` | Client child (Phase 54): renders Xero (FileSpreadsheet) + Jobber (Wrench) provider cards, AlertDialog destructive confirm, sonner toasts, invoicing-flag-aware status-line copy (reads `useFeatureFlags()` from Phase 53); full-page `window.location.href` redirect on connect; optimistic disconnect via `POST /api/integrations/disconnect` |
 | `src/app/api/account/route.js` | GET/PATCH tenant profile fields (business_name, owner_name, owner_email, owner_phone) |
 | `src/app/api/estimates/route.js` | GET estimates (filtered by status/search/lead_id, with summary aggregates + status counts), POST create estimate (single-price or tiered) |
 | `src/app/api/estimates/[id]/route.js` | GET estimate detail (+ tiers + line items), PATCH update (status transitions + line item/tier replacement), DELETE draft estimates only |
@@ -422,22 +423,46 @@ Configures business identity and invoice defaults. Uses `invoice_settings` table
 - `GET` — returns `invoice_settings` row. Auto-creates seeded from `tenants.business_name` and `tenants.owner_email` if none exists.
 - `PATCH` — updates allowed fields. Validates: tax_rate (0-1), payment_terms (enum), invoice_prefix (regex `^[a-zA-Z0-9]{1,10}$`).
 
-### Integrations Page (`/dashboard/more/integrations`)
+### Business Integrations Page (`/dashboard/more/integrations`) — Phase 54
 
-**File**: `src/app/dashboard/more/integrations/page.js`
+**Files**:
+- `src/app/dashboard/more/integrations/page.js` — Server Component (no `'use client'`)
+- `src/components/dashboard/BusinessIntegrationsClient.jsx` — Client child
 
-Two sections:
+**Heading**: H1 "Business Integrations" (renamed from "Integrations" in Phase 54 D-04).
 
-1. **Calendar Connections** — wraps `CalendarSyncCard` component (Google/Outlook OAuth).
-2. **Accounting Software** — three provider cards (QuickBooks, Xero, FreshBooks). Each card shows connection status + relative last-sync time. Connect triggers OAuth via `GET /api/accounting/{provider}/auth`. Disconnect via `POST /api/accounting/disconnect` with `{ provider }`. AlertDialog confirmation on disconnect. Toast notifications on OAuth callback params (`?connected=`, `?error=`).
+**Shape**: Server Component reads `tenantId` via `getTenantId()` then `await getIntegrationStatus(tenantId)` — the status helper carries `'use cache'` + `cacheTag('integration-status-${tenantId}')` (D-10 smoke test for Next.js 16 cacheComponents loop). Result is passed as `initialStatus` prop to `BusinessIntegrationsClient`, which owns all interaction state.
 
-```js
-const ACCOUNTING_PROVIDERS = [
-  { id: 'quickbooks', name: 'QuickBooks', icon: BookOpen },
-  { id: 'xero', name: 'Xero', icon: FileSpreadsheet },
-  { id: 'freshbooks', name: 'FreshBooks', icon: Receipt },
-];
-```
+**Sections on page:**
+
+1. **Calendar Connections** (unchanged, preserved from pre-Phase-54) — `CalendarSyncCard` component (Google/Outlook OAuth).
+2. **Accounting & Job Management** — two provider cards side-by-side at md+, stacked <768px:
+   - **Xero** (`FileSpreadsheet` icon)
+   - **Jobber** (`Wrench` icon)
+
+QuickBooks and FreshBooks cards were **deleted** in Phase 54 (D-15) — not hidden.
+
+**Connect flow (per provider):**
+1. Owner clicks "Connect Xero" / "Connect Jobber" → Client fetches `GET /api/integrations/{provider}/auth`
+2. Response `{ url }` → full-page redirect via `window.location.href = url`
+3. Provider OAuth consent → provider redirects to `/api/integrations/{provider}/callback?code=...&state=...`
+4. Callback route upserts `accounting_credentials` row (Phase 54 schema — `provider`, `scopes TEXT[]`, `last_context_fetch_at TIMESTAMPTZ`) and calls `revalidateTag('integration-status-${tenantId}')`
+5. Redirect to `/dashboard/more/integrations?connected=xero` → page re-renders with fresh status; `useEffect` on searchParams fires `toast.success('Xero connected.')`
+
+**Disconnect flow:**
+1. Owner clicks "Disconnect" → AlertDialog opens with verbatim UI-SPEC title ("Disconnect Xero?" / "Disconnect Jobber?") and body copy
+2. Confirm → `POST /api/integrations/disconnect` with `{ provider }` body
+3. Server calls `adapter.revoke()` (best-effort) → deletes `accounting_credentials` row → `revalidateTag`
+4. Client optimistically removes connection from state; card re-renders disconnected
+
+**Invoicing flag dependency (Phase 53):**
+Status-line copy varies depending on `useFeatureFlags().invoicing` from `@/components/FeatureFlagsProvider`:
+- **Disconnected:** "Connect Xero to share customer history with your AI receptionist during calls."
+- **Connected, invoicing OFF:** "Connected. Sharing customer context with your AI receptionist."
+- **Connected, invoicing ON:** "Connected. Sharing customer context and sending invoices."
+(Mirror structure for Jobber.)
+
+All copy is locked verbatim in `54-UI-SPEC.md` Copywriting Contract.
 
 ### Billing Page (`/dashboard/more/billing`)
 
