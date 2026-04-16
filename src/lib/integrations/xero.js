@@ -39,16 +39,15 @@ export class XeroAdapter {
 
   /**
    * Generate Xero OAuth 2.0 authorization URL.
-   * @param {string} tenantId - Voco tenant ID (passed through state)
+   * @param {string} state - HMAC-signed state (from signOAuthState)
    * @param {string} redirectUri - OAuth callback URL
-   * @returns {string} Authorization URL
+   * @returns {Promise<string>} Authorization URL
    */
-  getAuthUrl(tenantId, redirectUri) {
+  async getAuthUrl(state, redirectUri) {
     const xero = this._createXeroClient(redirectUri);
-    const consentUrl = xero.buildConsentUrl();
-    // Append state parameter for CSRF / tenant tracking
+    const consentUrl = await xero.buildConsentUrl();
     const url = new URL(consentUrl);
-    url.searchParams.set('state', stateParam);
+    url.searchParams.set('state', state);
     return url.toString();
   }
 

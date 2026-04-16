@@ -42,7 +42,7 @@ export async function GET(request, { params }) {
   const adapter = await getIntegrationAdapter(provider);
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/${provider}/callback`;
   const state = signOAuthState(tenant.id);
-  const authUrl = adapter.getAuthUrl(state, redirectUri);
+  const authUrl = await adapter.getAuthUrl(state, redirectUri);
 
   return Response.json({ url: authUrl });
 }

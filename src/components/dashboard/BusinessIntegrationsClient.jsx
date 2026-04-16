@@ -14,9 +14,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileSpreadsheet, Wrench, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
+
+// Brand logos — inline SVG so no runtime bundle cost beyond these two components.
+// Xero glyph path sourced from simple-icons (MIT-licensed); Jobber wordmark is
+// a pill + stylized "J" approximation using Jobber's brand green (#1B9F4F).
+function XeroIcon({ className }) {
+  return (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} aria-label="Xero">
+      <title>Xero</title>
+      <path fill="#13B5EA" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm6.585 14.655c-1.485 0-2.69-1.206-2.69-2.689 0-1.485 1.207-2.691 2.69-2.691 1.485 0 2.69 1.207 2.69 2.691s-1.207 2.689-2.69 2.689zM7.53 14.644c-.099 0-.192-.041-.267-.116l-2.043-2.04-2.052 2.047c-.069.068-.16.108-.258.108-.202 0-.368-.166-.368-.368 0-.099.04-.191.111-.263l2.04-2.05-2.038-2.047c-.075-.069-.113-.162-.113-.261 0-.203.166-.366.368-.366.098 0 .188.037.258.105l2.055 2.048 2.048-2.045c.069-.071.162-.108.26-.108.211 0 .375.165.375.366 0 .098-.029.188-.104.258l-2.056 2.055 2.055 2.051c.068.069.104.16.104.258 0 .202-.165.368-.365.368h-.01zm11.055-4.602c-1.064 0-1.931.865-1.931 1.931 0 1.064.866 1.931 1.931 1.931s1.931-.867 1.931-1.931c0-1.065-.866-1.933-1.931-1.933v.002zm0 2.595c-.367 0-.666-.297-.666-.666 0-.367.3-.665.666-.665.367 0 .667.299.667.665 0 .369-.3.667-.667.666z" />
+    </svg>
+  );
+}
+
+function JobberIcon({ className }) {
+  return (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} aria-label="Jobber">
+      <title>Jobber</title>
+      <rect x="1" y="1" width="22" height="22" rx="5" fill="#1B9F4F" />
+      <path fill="#ffffff" d="M15.5 5.75v8.9c0 2.53-1.86 3.72-4.05 3.72-1.7 0-3-.66-3.9-1.82l1.9-1.76c.46.56 1.12.92 1.94.92.92 0 1.55-.52 1.55-1.72V5.75h2.56z" />
+    </svg>
+  );
+}
 
 // UI-SPEC Open Question #4 + CONTEXT.md D-10 architectural intent:
 // FeatureFlagsProvider (Phase 53) is the CANONICAL invoicing-flag source.
@@ -38,7 +60,7 @@ const PROVIDER_META = {
   xero: {
     id: 'xero',
     name: 'Xero',
-    Icon: FileSpreadsheet,
+    Icon: XeroIcon,
     connectLabel: 'Connect Xero',
     connectSuccessToast: 'Xero connected.',
     connectErrorToast: "Couldn't connect to Xero. Please try again.",
@@ -57,7 +79,7 @@ const PROVIDER_META = {
   jobber: {
     id: 'jobber',
     name: 'Jobber',
-    Icon: Wrench,
+    Icon: JobberIcon,
     connectLabel: 'Connect Jobber',
     connectSuccessToast: 'Jobber connected.',
     connectErrorToast: "Couldn't connect to Jobber. Please try again.",
