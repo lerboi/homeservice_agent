@@ -40,7 +40,7 @@ const STATUS_BADGE = {
 
 const STATUS_LABEL = {
   new: 'New',
-  booked: 'Booked',
+  booked: 'Scheduled',
   completed: 'Completed',
   paid: 'Paid',
   lost: 'Lost',
@@ -218,7 +218,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             size="sm"
             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent"
             onClick={() => onView?.(lead.id)}
-            aria-label={`View lead from ${lead.caller_name || 'unknown caller'}`}
+            aria-label={`View job from ${lead.caller_name || 'unknown caller'}`}
           >
             <Eye className="h-3.5 w-3.5 mr-1" />
             View
@@ -281,7 +281,7 @@ export default memo(function LeadCard({ lead, onView, invoiceStatus, selectable 
             size="sm"
             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent shrink-0"
             onClick={() => onView?.(lead.id)}
-            aria-label={`View lead from ${lead.caller_name || 'unknown caller'}`}
+            aria-label={`View job from ${lead.caller_name || 'unknown caller'}`}
           >
             <Eye className="h-3.5 w-3.5 mr-1" />
             View
