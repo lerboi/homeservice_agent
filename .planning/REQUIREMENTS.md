@@ -1,7 +1,67 @@
 # Requirements: HomeService AI Agent
 
-**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0)
+**Defined:** 2026-03-18 (v1.0), 2026-03-22 (v1.1), 2026-03-24 (v2.0), 2026-03-26 (v3.0), 2026-04-13 (v5.0), 2026-04-16 (v6.0)
 **Core Value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
+
+## v6.0 Requirements — Integrations & Focus
+
+**Goal:** Refocus on Call System; invoicing becomes optional; native Jobber + Xero read-side integrations for caller context.
+
+### Rename / UX (Phase 52)
+
+- **RENAME-01:** The dashboard navigation labels "Leads" are renamed to "Jobs" across sidebar, bottom tab bar, and breadcrumbs to match home-service owner mental model
+- **RENAME-02:** Lead status pills are restructured into a Jobs-oriented status flow (e.g. New → Quoted → Booked → In Progress → Completed → Paid) instead of CRM-pipeline language
+- **RENAME-03:** All references to "lead(s)" in user-facing copy on `/dashboard/leads` and `LeadFlyout` are reframed as "job(s)"; component file names may stay as-is to limit blast radius
+
+### Invoicing Toggle (Phase 53)
+
+- **TOGGLE-01:** A new `tenants.features_enabled` JSONB column exists with default `{"invoicing": false}` for ALL tenants (existing + new), enabling owners to opt into invoicing in settings
+- **TOGGLE-02:** When `features_enabled.invoicing = false`, all invoicing-related routes (`/dashboard/invoices/**`, `/dashboard/estimates/**`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices`, `/api/accounting/**`, `/api/invoice-settings`) return 404 / no-op for that tenant
+- **TOGGLE-03:** When `features_enabled.invoicing = false`, sidebar/BottomTabBar do not render an Invoices entry, LeadFlyout does not render Create Invoice / Create Estimate buttons, and the More menu does not list invoice-settings or accounting integrations
+- **TOGGLE-04:** Owners can toggle invoicing on/off from a settings panel; toggle is reversible with no data loss (existing invoice records preserved); cron jobs skip tenants with the flag off
+
+### Integration Foundation (Phase 54)
+
+- **INTFOUND-01:** A shared `src/lib/integrations/` module exposes a provider-agnostic interface (`getAuthUrl`, `exchangeCode`, `refreshTokenIfNeeded`, `fetchCustomerByPhone`, `revoke`) that Jobber and Xero adapters implement
+- **INTFOUND-02:** `accounting_credentials.provider` CHECK constraint is extended to include `'jobber'` (Xero already supported); `scopes TEXT[]` and `last_context_fetch_at TIMESTAMPTZ` columns added for telemetry
+- **INTFOUND-03:** `next.config.js` has `cacheComponents: true` enabled to support Next.js 16 `"use cache"` patterns for dashboard reads
+
+### Xero Read-Side (Phase 55)
+
+- **XERO-01:** A tenant can connect Xero via OAuth from `/dashboard/more/integrations`; tokens are stored in `accounting_credentials` with `provider='xero'`; refresh-aware token getter handles expiry
+- **XERO-02:** `fetchCustomerByPhone(tenantId, phone)` returns `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }` from Xero in <500ms p95 with 5-min "use cache" TTL
+- **XERO-03:** `/api/webhooks/xero` invalidates tenant's customer-context cache on invoice/payment events via `revalidateTag`
+- **XERO-04:** During an inbound call, the LiveKit agent fetches Xero context (parallel with tenant DB read), injects a non-empty `customer_context` section into the system prompt, and exposes `check_customer_account()` as a tool
+
+### Jobber Read-Side (Phase 56)
+
+- **JOBBER-01:** A tenant can connect Jobber via OAuth from `/dashboard/more/integrations`; tokens are stored in `accounting_credentials` with `provider='jobber'`
+- **JOBBER-02:** `fetchCustomerByPhone(tenantId, phone)` returns `{ client, recentJobs, outstandingInvoices, lastVisitDate }` via Jobber GraphQL in <500ms p95 with 5-min cache
+- **JOBBER-03:** `/api/webhooks/jobber` invalidates customer-context cache on client/job/invoice events
+- **JOBBER-04:** LiveKit agent merges Jobber + Xero context into the system prompt (Jobber preferred for home-service trade context)
+- **JOBBER-05:** `check_customer_account()` tool returns combined Jobber + Xero data when both providers connected
+
+### Jobber Schedule Mirror (Phase 57)
+
+- **JOBSCHED-01:** `calendar_events.provider` CHECK constraint includes `'jobber'`; Jobber visit/job webhook syncs into local `calendar_events` table
+- **JOBSCHED-02:** Slot availability checks (`check_availability` tool) cover Google + Outlook + Jobber events through a single `calendar_events` query — zero added call-path latency
+- **JOBSCHED-03:** A poll-fallback cron handles missed Jobber webhooks; subscription renewal is added to `/api/cron/renew-calendar-channels`
+
+### Setup Checklist + Skills + Telemetry (Phase 58)
+
+- **CHECKLIST-01:** `connect_jobber` and `connect_xero` items appear in the post-onboarding setup checklist (`/api/setup-checklist`); completion auto-detected via `accounting_credentials` row presence
+- **CHECKLIST-02:** Connection cards for both providers live in `/dashboard/more/integrations` and follow the existing CalendarSyncCard pattern
+- **CTX-01:** Telemetry logged to `accounting_credentials.last_context_fetch_at` and (lightweight) activity_log for fetch duration + cache hit rate per tenant per provider
+- **CTX-02:** New skill file `integrations-jobber-xero` documents OAuth flow, refresh logic, caching, agent-side injection, checklist entries, webhook invalidation
+- **CTX-03:** `voice-call-architecture` and `dashboard-crm-system` skills updated; `CLAUDE.md` references new skill
+
+### v5.0 Phase 51 Polish Absorbed (Phase 58 tail)
+
+- **POLISH-01 (deferred from v5.0):** Empty states for leads, calls, calendar, analytics with icon + headline + primary CTA
+- **POLISH-02 (deferred from v5.0):** Loading skeleton screens prevent CLS on dashboard data-fetch pages
+- **POLISH-03 (deferred from v5.0):** Consistent focus rings on all interactive elements via design-token focus color
+- **POLISH-04 (deferred from v5.0):** Inline error states with Retry button replace frozen spinners
+- **POLISH-05 (deferred from v5.0):** Async action buttons show spinner + disabled state during pending operation
 
 ## v3.0 Requirements
 

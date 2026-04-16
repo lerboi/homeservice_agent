@@ -179,6 +179,40 @@ Plans:
 
 ---
 
+## Milestone v6.0 Phases
+
+**Milestone:** v6.0 — Integrations & Focus
+**Goal:** Refocus Voco on the Call System by extracting the internal invoicing system into an optional toggleable feature, and add native Jobber (GraphQL) and Xero (REST) integrations that provide the AI with real-time customer context — outstanding balances, job history, past visits — to make collections and booking conversations materially smarter without Voco acting as the primary accounting engine.
+**Phase range:** 52-58 (7 phases)
+**Requirements:** ~20 v6.0 requirements (TOGGLE-01-04, JOBBER-01-05, XERO-01-04, JOBSCHED-01-03, CTX-01-03, CHECKLIST-01-02, RENAME-01-03)
+
+### v6.0 Phase Checklist
+
+- [ ] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — pure frontend reframe of `/dashboard/leads` to match home-service mental model (Jobs vs Leads); page.js, LeadStatusPills, LeadCard, LeadFilterBar, nav labels; no DB/API/agent changes (deferred from v5.0)
+- [ ] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards
+- [ ] **Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning** — extend `accounting_credentials.provider` CHECK to include `'jobber'`; new `src/lib/integrations/` shared module (types, credentials, HMAC OAuth state); enable `cacheComponents: true` in next.config.js; route scaffolding for `/api/integrations/[provider]/{auth,callback}`, `/api/integrations/{disconnect,status}`; user provisions Jobber + Xero dev/sandbox accounts
+- [ ] **Phase 55: Xero read-side integration (caller context)** — Xero OAuth via existing xero-node SDK, `fetchCustomerByPhone(tenantId, phone)` returning contact + outstandingBalance + lastInvoices, "use cache" with 5-min TTL + `revalidateTag`, `/api/webhooks/xero` for invoice change invalidation, AccountingConnectionCard in `/dashboard/more/integrations`, setup checklist `connect_xero` item, livekit_agent `src/integrations/xero.py` + `_run_db_queries` parallel fetch + `customer_context` prompt section + `check_customer_account` tool
+- [ ] **Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)** — Jobber OAuth + GraphQL via `graphql-request`, `fetchCustomerByPhone` returning client + recentJobs + outstandingInvoices, same caching/webhook/tool pattern as Xero; livekit_agent `src/integrations/jobber.py` + unified `customer_context` (Jobber preferred over Xero for home-services); setup checklist `connect_jobber` item
+- [ ] **Phase 57: Jobber schedule mirror into calendar_events** — extend `calendar_events.provider` CHECK to include `'jobber'`; Jobber visit/job webhook → sync to local `calendar_events` (zero call-path latency; same pattern as Google + Outlook); poll-fallback cron; agent slot query unchanged
+- [ ] **Phase 58: Setup checklist final wiring + skills + telemetry + UAT + Phase 51 polish absorption** — finalize `connect_jobber`/`connect_xero` checklist completion detection, new skill `integrations-jobber-xero`, update `voice-call-architecture` and `dashboard-crm-system` skills, telemetry on `last_context_fetch_at` + fetch duration + cache hit rate, end-to-end UAT scenarios, absorb Phase 51 polish budget items (empty states, skeletons, focus rings, error retry, async button states)
+
+### v6.0 Pre-requisites (user actions)
+
+- Register Jobber dev app at developer.getjobber.com (free, ~10 min) → blocks Phase 56 execution
+- Register Xero dev app at developer.xero.com → demo company auto-provisioned → blocks Phase 55 execution
+
+### v6.0 Key Decisions
+
+- Invoicing default OFF for ALL tenants (still in dev — no real users at risk); existing Phase 35 push code stays dormant behind the flag
+- Reuse `accounting_credentials` table for Jobber + Xero (extend provider CHECK); no new credentials table
+- Read-side only — Voco does NOT push invoices to Jobber/Xero in v6.0; existing Phase 35 push remains gated by invoicing flag
+- Jobber schedule mirrored into local `calendar_events` (Option B from architectural advisory) — single Supabase query covers Google + Outlook + Jobber on call path
+- Python agent fetches Jobber/Xero directly (service-role Supabase reads creds → direct GraphQL/REST); no Next.js round-trip for context lookup
+- Next.js 16 caching scope = dashboard reads only (`cacheComponents: true` + `"use cache"` + `revalidateTag`); call path stays Python-direct
+- Phase 51 polish budget absorbed into Phase 58 tail rather than its own phase
+
+---
+
 ## Milestone v1.1 Phases
 
 **Milestone:** v1.1 — Site Completeness & Launch Readiness
