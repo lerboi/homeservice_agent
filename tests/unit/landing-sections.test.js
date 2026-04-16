@@ -83,18 +83,17 @@ describe('IntegrationsStrip 48.1', () => {
     expect(src).toMatch(/Outlook/);
   });
 
-  it('lists Jobber, Housecall Pro, ServiceTitan, Zapier (coming soon)', () => {
+  it('lists main integrations Jobber, Xero, WhatsApp + both calendars', () => {
     const src = read('src/app/components/landing/IntegrationsStrip.jsx');
     expect(src).toMatch(/Jobber/);
-    expect(src).toMatch(/Housecall Pro/);
-    expect(src).toMatch(/ServiceTitan/);
-    expect(src).toMatch(/Zapier/);
+    expect(src).toMatch(/Xero/);
+    expect(src).toMatch(/WhatsApp/);
   });
 
-  it('renders all 6 integrations in a single unified list (post-redesign — Live/Coming-Soon split removed per design iteration)', () => {
+  it('separates Housecall Pro and ServiceTitan into a Coming Soon group', () => {
     const src = read('src/app/components/landing/IntegrationsStrip.jsx');
-    // Six integrations must all appear in the single INTEGRATIONS array
-    expect(src).toMatch(/INTEGRATIONS\s*=\s*\[[\s\S]*google-calendar[\s\S]*outlook[\s\S]*jobber[\s\S]*housecall-pro[\s\S]*servicetitan[\s\S]*zapier[\s\S]*\]/);
+    expect(src).toMatch(/COMING_SOON\s*=\s*\[[\s\S]*housecall-pro[\s\S]*servicetitan[\s\S]*\]/);
+    expect(src).toMatch(/Coming soon/i);
   });
 });
 
