@@ -1,6 +1,8 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+// Note: `export const runtime = 'edge'` was removed for Next.js 16 cacheComponents compatibility.
+// `runtime` segment config is rejected when nextConfig.cacheComponents is enabled (Phase 54 INTFOUND-03).
+// ImageResponse runs on the default (Node) runtime without regressions.
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
