@@ -516,11 +516,11 @@ Before Plan 05 merges (which completes the end-to-end flow), confirm Xero + Jobb
    - `curl -i -H 'Cookie: <authenticated session>' http://localhost:3000/api/integrations/xero/auth` → expect `200` JSON with `url` pointing at `login.xero.com`.
   </how-to-verify>
   <files>(external — Xero + Jobber developer portals; .env file)</files>
-  <action>Log in to https://developer.xero.com/app/manage/ and confirm the sandbox app (if registered) has redirect URI . Remove any old  entry. If not yet registered, skip — defer to Phase 55 kickoff. Repeat for Jobber at https://developer.getjobber.com/ (or defer to Phase 56). Spot-check  for XERO_CLIENT_ID/SECRET; JOBBER_CLIENT_ID/SECRET may be empty until Phase 56.</action>
+  <action>Log in to https://developer.xero.com/app/manage/ and confirm the sandbox app (if registered) has redirect URI `{NEXT_PUBLIC_APP_URL}/api/integrations/xero/callback`. Remove any old `{NEXT_PUBLIC_APP_URL}/api/accounting/xero/callback` entry. If not yet registered, skip — defer to Phase 55 kickoff. Repeat for Jobber at https://developer.getjobber.com/ (confirm redirect URI `{NEXT_PUBLIC_APP_URL}/api/integrations/jobber/callback`, or defer to Phase 56). Spot-check `.env` for XERO_CLIENT_ID/SECRET; JOBBER_CLIENT_ID/SECRET may be empty until Phase 56.</action>
   <verify>
-    <automated>MISSING — dev-console configuration is UI-driven. Optional curl smoke:  should return 200 JSON  if Xero sandbox + .env are set.</automated>
+    <automated>MISSING — dev-console configuration is UI-driven. Optional curl smoke: `curl -i -H 'Cookie: <session>' http://localhost:3000/api/integrations/xero/auth` should return 200 JSON `{ url: <login.xero.com consent URL> }` if Xero sandbox + .env are set.</automated>
   </verify>
-  <done>User confirms Xero + Jobber redirect URIs point to  (or explicitly defers to Phase 55/56 with no sandbox registered). Plan 04 can proceed.</done>
+  <done>User confirms Xero + Jobber redirect URIs point to `{NEXT_PUBLIC_APP_URL}/api/integrations/<provider>/callback` (or explicitly defers to Phase 55/56 with no sandbox registered). Plan 04 can proceed.</done>
   <resume-signal>Type "redirect URIs confirmed" (or "not yet registered — will do in Phase 55/56") to unblock Plan 04. If something broke (e.g., old URL still live in dev console, or auth endpoint returns 500), paste the error.</resume-signal>
 </task>
 
