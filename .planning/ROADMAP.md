@@ -228,6 +228,14 @@ Plans:
 - [ ] 53-07-features-panel-and-toggle-PLAN.md — /dashboard/more/features panel + PATCH route + flip-off dialog (TOGGLE-04)
 - [ ] 53-08-skill-docs-update-PLAN.md — auth-database-multitenancy + dashboard-crm-system skills updated (TOGGLE-01/02/03/04)
 
+### Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning
+
+**Goal:** Lay the plumbing that Phases 55-58 build on — migrate Xero into a new `src/lib/integrations/` shared module with a provider-agnostic adapter interface, delete QuickBooks + FreshBooks outright, extend the `accounting_credentials` schema (`scopes TEXT[]`, `last_context_fetch_at TIMESTAMPTZ`, provider CHECK = `('xero','jobber')`), scaffold canonical OAuth routes at `/api/integrations/**` (deleting the legacy `/api/accounting/**` equivalents), flip Next.js 16 `cacheComponents: true` and audit the dashboard Server Components, prove the `'use cache'` + `cacheTag` + `revalidateTag` loop with a real `getIntegrationStatus(tenantId)` reader, and rewrite `/dashboard/more/integrations` to the owner-facing "Business Integrations" page (provider-first cards, single-button unified-scope OAuth per provider, status-line copy reflecting invoicing flag state).
+**Depends on:** Phase 53 (invoicing feature-flag already isolates legacy `/api/accounting/**` surface — Phase 54 sidesteps that gate by using new `/api/integrations/**` paths).
+**Requirements:** INTFOUND-01, INTFOUND-02, INTFOUND-03
+**Pre-requisite user actions:** Register Xero + Jobber dev/sandbox apps (blocks Phase 55/56 execution, not Phase 54 merge); update Xero dev-console redirect URI to `/api/integrations/xero/callback` before merge (no live tenants at risk — dev only).
+**Plans:** 4-5 plans expected (planner finalizes) — migration, lib/integrations module + adapter migration + QB/FB deletion, routes cutover, cacheComponents audit + smoke-test helper, Business Integrations frontend rewrite.
+
 ---
 
 ## Milestone v1.1 Phases
