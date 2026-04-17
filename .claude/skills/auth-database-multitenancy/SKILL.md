@@ -118,7 +118,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/048_calendar_blocks_group_id.sql` | Phase 42 — calendar_blocks gains group_id UUID to link multi-day blocks for bulk delete; partial index on group_id WHERE NOT NULL |
 | `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
 | `supabase/migrations/050_checklist_overrides.sql` | Phase 48 — Setup checklist per-item override persistence: tenants gains `checklist_overrides` JSONB NOT NULL DEFAULT '{}'. Consumed by `src/app/api/setup-checklist/route.js` to persist user dismissals and custom mark-done actions without adding row-per-item state. |
-| `supabase/migrations/051_features_enabled.sql` | Phase 53 — Feature flag infrastructure: tenants gains `features_enabled` JSONB NOT NULL DEFAULT '{}' ({ invoicing: boolean, ... }). Read by `FeatureFlagsProvider` at dashboard layout; gates `/api/accounting/**` in proxy.js. |
+| `supabase/migrations/051_features_enabled.sql` | Phase 53 — Feature flag infrastructure: tenants gains `features_enabled JSONB NOT NULL DEFAULT '{"invoicing": false}'::jsonb` (shape: `{ invoicing: boolean, ... }`). No backfill needed — DEFAULT applies to existing rows on column add. No RLS policy change (existing `tenants_update_own` direct-owner policy covers SELECT/UPDATE on every column including this one). Foundation for the v6.0 invoicing toggle and future per-tenant feature flags (xero, jobber, …). Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; consumed by `FeatureFlagsProvider` at dashboard layout and by `/api/invoices/**`, `/api/estimates/**`, `/api/accounting/**` API gates. |
 | `supabase/migrations/052_integrations_schema.sql` | Phase 54 — **Integration credentials foundation** (originally planned as `051_integrations_schema` before Phase 53 renumber collision; file ships as 052 on disk). Sequenced transactional migration on `accounting_credentials`: (1) `DELETE FROM accounting_credentials WHERE provider IN ('quickbooks','freshbooks')` — purge pre-v6.0 rows before CHECK swap; (2) `DROP CONSTRAINT accounting_credentials_provider_check`; (3) `ADD CONSTRAINT accounting_credentials_provider_check CHECK (provider IN ('xero','jobber'))` — QB + FB values permanently invalid; (4) `ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[]` — populated by `/api/integrations/[provider]/callback` with granular OAuth scopes (Xero post-2026-03-02 scope set; Jobber equivalents); (5) `ADD COLUMN last_context_fetch_at TIMESTAMPTZ` NULL — populated by Phase 55+ `fetchCustomerByPhone` for telemetry. **No new indexes** — existing `UNIQUE (tenant_id, provider)` covers tenant-scoped reads. **Python compatibility:** `TEXT[]` → `list[str]`, `TIMESTAMPTZ` → `datetime` (for livekit-agent service-role reads in Phase 55+). **Forward-compat:** adding a future provider requires another DROP + ADD constraint cycle (same pattern). |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
@@ -217,6 +217,36 @@ return tenant?.id || null;
 **Key design**: Uses `user.id` (the Supabase auth UID) to query `tenants.owner_id`. Does NOT use `user.user_metadata` — tenant_id is never stored in Supabase auth user_metadata. The tenants table is the authoritative source.
 
 **Single client usage**: Uses `createSupabaseServer()` (the session-scoped anon client) for both the auth check AND the tenants query. Because the tenants table has an RLS policy `owner_id = auth.uid()`, the session client can only see the authenticated user's own tenant row — this enforces tenant isolation as defense-in-depth. There is no RLS chicken-and-egg problem because the user's session is already established when the query runs.
+
+### `src/lib/features.js` — getTenantFeatures(tenantId) (added Phase 53)
+
+Returns the per-tenant feature flags from `tenants.features_enabled`. Companion to `getTenantId()`.
+
+```js
+import { getTenantFeatures } from '@/lib/features';
+
+const features = await getTenantFeatures(tenantId);
+if (!features.invoicing) {
+  return new Response(null, { status: 404 }); // gate API route
+}
+```
+
+- **Service-role client** (`@/lib/supabase`) — works in cron contexts (no session) AND in API routes (caller already validated session via `getTenantId()` before reaching this helper).
+- Takes `tenantId` as an **explicit param** — not derived from session — making it safe across all execution contexts (route handler, cron, server component).
+- **Fail-CLOSED**: any error / missing row / null column / falsy tenantId returns `{ invoicing: false }`. A DB outage cannot accidentally enable a flag.
+- **Return shape is an object** so future flags compose without breaking call sites. Each flag is normalized via strict equality (`=== true`) so JSONB nulls / missing keys map to `false`.
+- **JSONB filter syntax for crons** (bypasses the helper — filter at the query level instead): `.eq('features_enabled->>invoicing', 'true')`. Note the value is the **string `'true'`**, not the boolean — PostgREST's `->>` operator returns text. Phase 53 `/api/cron/invoice-reminders` and `/api/cron/recurring-invoices` use this pattern to skip invoicing-disabled tenants at the SQL level.
+
+### `tenants.features_enabled` column (added Phase 53, migration 051)
+
+- **Column**: `features_enabled JSONB NOT NULL DEFAULT '{"invoicing": false}'::jsonb`
+- **Shape**: `{ invoicing: boolean, ... }` — a single JSONB map for all per-tenant feature flags.
+- **Default** `{"invoicing": false}` for ALL tenants — Voco v6.0 ships invoicing OFF; owners opt in via `/dashboard/more/features`.
+- **Future flags** (xero, jobber, …) extend this same column — no per-flag column proliferation.
+- **Read** via `getTenantFeatures(tenantId)` (above) in API routes / crons, or via the `useFeatureFlags()` hook in dashboard client components (mounted by `FeatureFlagsProvider` at the dashboard layout).
+- **Write** via `PATCH /api/tenant/features` from the `/dashboard/more/features` panel — merged into the existing JSONB map, not overwritten.
+- **RLS**: existing `tenants_update_own` direct-owner policy covers SELECT/UPDATE on every column including this one; no new policy needed.
+- **Proxy tenant fetch**: `src/proxy.js` extends its existing tenant SELECT to `'onboarding_complete, id, features_enabled'` — ONE read per request, reused by both the onboarding gate and the invoicing page gate. **Pitfall:** do NOT add a second `supabase.from('tenants')` call for feature reads in middleware; extend this existing SELECT.
 
 ---
 
@@ -1046,6 +1076,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 044: `ai_voice` (TEXT, nullable) — curated Gemini voice override; NULL = VOICE_MAP[tone_preset] fallback; CHECK (IN 'Aoede','Erinome','Sulafat','Zephyr','Achird','Charon')
 - 049: `vip_numbers` (JSONB NOT NULL DEFAULT '[]') — standalone Priority-caller phone numbers (unlimited, no CHECK). Webhook reads this for direct-routing check before evaluating schedule/caps.
 - 050: `checklist_overrides` (JSONB NOT NULL DEFAULT '{}') — per-item user actions (dismiss, mark-done) on the dashboard setup checklist. Keyed by checklist item id; values carry `status` + timestamp. Consumed by `/api/setup-checklist` GET/PATCH. Auto-detected completions are NOT stored here (they're derived live).
+- 051: `features_enabled` (JSONB NOT NULL DEFAULT `'{"invoicing": false}'::jsonb`) — per-tenant feature flags (shape `{ invoicing: boolean, ... }`). Default ships invoicing OFF for v6.0; owners opt in at `/dashboard/more/features`. Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; extended in `src/proxy.js` tenant SELECT alongside `onboarding_complete`. JSONB filter for crons: `.eq('features_enabled->>invoicing', 'true')` — value is the string `'true'`, not the boolean.
 
 **Appointments columns added across migrations** (all on `appointments` table):
 - 007: `external_event_id` (renamed from google_event_id), `external_event_provider`
