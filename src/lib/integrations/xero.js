@@ -19,6 +19,38 @@ import { refreshTokenIfNeeded } from './adapter.js';
 const XERO_SCOPES = 'openid profile email accounting.invoices accounting.invoices.read accounting.contacts accounting.contacts.read offline_access';
 
 /**
+ * Digits-only comparator for Xero phone matching.
+ *
+ * Xero stores phones three ways depending on how the user entered them:
+ *   1. Full string in PhoneNumber (e.g. "+15551234567", "(555) 123-4567", "555-1234")
+ *   2. Split across PhoneCountryCode + PhoneAreaCode + PhoneNumber ("1" / "555" / "1234567")
+ *   3. Mix of the above
+ *
+ * We extract digits from all three fields, concatenate, and compare the last 10
+ * digits against the E.164 caller's last 10. Looser than strict E.164 equality
+ * but far more robust against real-world Xero data — the 10-digit local number
+ * is globally unique enough within a tenant for caller-context resolution.
+ *
+ * Returns true iff at least one of the contact's phones has matching digits.
+ */
+export function xeroContactMatchesPhone(contact, phoneE164) {
+  const targetTen = phoneE164.replace(/\D/g, '').slice(-10);
+  if (targetTen.length < 7) return false;  // too short to be meaningful
+  const phones = Array.isArray(contact?.phones) ? contact.phones : [];
+  for (const p of phones) {
+    const parts = [
+      p?.phoneCountryCode || '',
+      p?.phoneAreaCode || '',
+      p?.phoneNumber || '',
+    ].join('');
+    const digits = parts.replace(/\D/g, '');
+    if (!digits) continue;
+    if (digits.slice(-10) === targetTen) return true;
+  }
+  return false;
+}
+
+/**
  * Module-level cached caller-context fetcher. Next.js 16 does NOT allow
  * `'use cache'` on class instance methods, so the cached surface lives here
  * and XeroAdapter.fetchCustomerByPhone delegates to it.
@@ -85,10 +117,7 @@ export async function fetchXeroCustomerByPhone(tenantId, phoneE164) {
     return { contact: null };
   }
   const candidates = contactsResp.body?.contacts || [];
-  const contact = candidates.find(
-    (c) => Array.isArray(c.phones)
-      && c.phones.some((p) => p.phoneNumber === phoneE164),
-  );
+  const contact = candidates.find((c) => xeroContactMatchesPhone(c, phoneE164));
   if (!contact) return { contact: null };
 
   let outstandingResp;
