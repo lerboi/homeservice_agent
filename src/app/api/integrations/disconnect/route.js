@@ -73,6 +73,7 @@ export async function POST(request) {
   }
 
   revalidateTag(`integration-status-${tenantId}`);
+  revalidateTag(`${provider}-context-${tenantId}`);
 
   return Response.json({ success: true });
 }

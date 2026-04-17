@@ -56,6 +56,7 @@ export async function GET(request, { params }) {
         display_name: tokenSet.display_name || null,
         scopes: tokenSet.scopes || [],
         connected_at: new Date().toISOString(),
+        error_state: null,
       },
       { onConflict: 'tenant_id,provider' },
     );
@@ -86,6 +87,7 @@ export async function GET(request, { params }) {
     }
 
     revalidateTag(`integration-status-${tenantId}`);
+    revalidateTag(`${provider}-context-${tenantId}`);
 
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}?connected=${provider}`,
