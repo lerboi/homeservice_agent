@@ -252,7 +252,7 @@ Plans:
 **Depends on:** Phase 53 (invoicing flag must exist so the Xero card status copy can reflect the invoicing-off state) and Phase 54 (integrations foundation — `accounting_credentials.provider='xero'`, `src/lib/integrations/` adapter, `/api/integrations/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell).
 **Requirements**: XERO-01, XERO-02, XERO-03, XERO-04
 **Pre-requisite user actions:** Register Xero dev app at developer.xero.com and set redirect URI to `/api/integrations/xero/callback` (blocks execution, not planning).
-**Plans:** 7/8 plans executed
+**Plans:** 9/8 plans complete
 
 Plans:
 - [x] 55-01-PLAN.md — Migration 053 error_state column + .env.example XERO_WEBHOOK_KEY + [BLOCKING] schema push

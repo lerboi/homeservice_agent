@@ -105,14 +105,15 @@ export async function fetchXeroCustomerByPhone(tenantId, phoneE164) {
     token_type: 'Bearer',
   });
 
-  const lastTen = phoneE164.replace(/\D/g, '').slice(-10);
+  // Phone storage varies across orgs (full E.164, 8/10-digit local, compound
+  // PhoneCountryCode/AreaCode/Number fields, formatted strings with spaces).
+  // An OData Contains filter based on any single canonical form misses other
+  // shapes, so we fetch Xero's default page (up to 100) and digits-match via
+  // xeroContactMatchesPhone. For orgs with >100 contacts pagination would be
+  // needed (P58 if hit in practice).
   let contactsResp;
   try {
-    contactsResp = await xero.accountingApi.getContacts(
-      xeroOrgId,
-      undefined,
-      `Phones[0].PhoneNumber.Contains("${lastTen}")`,
-    );
+    contactsResp = await xero.accountingApi.getContacts(xeroOrgId);
   } catch {
     return { contact: null };
   }
