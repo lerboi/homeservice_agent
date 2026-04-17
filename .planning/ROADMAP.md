@@ -252,15 +252,15 @@ Plans:
 **Depends on:** Phase 53 (invoicing flag must exist so the Xero card status copy can reflect the invoicing-off state) and Phase 54 (integrations foundation — `accounting_credentials.provider='xero'`, `src/lib/integrations/` adapter, `/api/integrations/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell).
 **Requirements**: XERO-01, XERO-02, XERO-03, XERO-04
 **Pre-requisite user actions:** Register Xero dev app at developer.xero.com and set redirect URI to `/api/integrations/xero/callback` (blocks execution, not planning).
-**Plans:** 8 plans
+**Plans:** 3/8 plans executed
 
 Plans:
-- [ ] 55-01-PLAN.md — Migration 053 error_state column + .env.example XERO_WEBHOOK_KEY + [BLOCKING] schema push
-- [ ] 55-02-PLAN.md — Next.js XeroAdapter.fetchCustomerByPhone + 'use cache' + two-tier cacheTag + tests
+- [x] 55-01-PLAN.md — Migration 053 error_state column + .env.example XERO_WEBHOOK_KEY + [BLOCKING] schema push
+- [x] 55-02-PLAN.md — Next.js XeroAdapter.fetchCustomerByPhone + 'use cache' + two-tier cacheTag + tests
 - [ ] 55-03-PLAN.md — OAuth wire-up: callback heals error_state + revalidates xero-context; disconnect revokes + invalidates
 - [ ] 55-04-PLAN.md — /api/webhooks/xero (HMAC-SHA256 + intent-verify handshake + invoice→phone resolution + per-phone revalidateTag)
 - [ ] 55-05-PLAN.md — BusinessIntegrationsClient Reconnect banner + last-synced timestamp + connect_xero checklist + XeroReconnectEmail + notifyXeroRefreshFailure + visual UAT
-- [ ] 55-06-PLAN.md — [CROSS-REPO livekit-agent] integrations/xero.py refresh-aware fetch + agent.py 4th parallel task with 800ms timeout
+- [x] 55-06-PLAN.md — [CROSS-REPO livekit-agent] integrations/xero.py refresh-aware fetch + agent.py 4th parallel task with 800ms timeout
 - [ ] 55-07-PLAN.md — [CROSS-REPO livekit-agent] prompt.py customer_context block (CRITICAL RULE) + check_customer_account tool + agent wiring + E2E call UAT
 - [ ] 55-08-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) + ROADMAP/STATE/REQUIREMENTS update
 
@@ -821,13 +821,20 @@ Plans:
 
 ### Phase 59: Customer/Job model separation — split leads into Customers (dedup by phone) and Jobs (one row per appointment), rewrite Jobs tab to query appointments, add Customer detail page, reattribute invoices per-job
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Refactor the single `leads` table into Customers (phone-deduped per tenant), Jobs (1:1 with booked appointments), and Inquiries (unbooked calls). Rewrite Jobs tab + add Inquiries tab + add Customer detail page with Merge + 7-day undo. Update Python LiveKit agent post-call path to use `record_call_outcome` RPC. Reattribute `invoices.lead_id` → `invoices.job_id` and `activity_log.lead_id` → three FKs (customer_id NOT NULL, job_id, inquiry_id). Lockstep deploy with 053a (create + backfill, keep legacy) shipped before Python agent redeploy, then 053b (drop legacy) after.
+**Requirements**: D-01..D-19 (locked decisions in 59-CONTEXT.md — no REQ-IDs in REQUIREMENTS.md; CONTEXT decisions serve as the requirement set)
 **Depends on:** Phase 58 (v6.0 complete)
-**Plans:** 0 plans
+**Plans:** 8 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 59 to break down)
+- [ ] 59-01-PLAN.md — Wave 0: phone E.164 util (libphonenumber-js) + Python parity fixture + pre-migration audit SQL + red-state test scaffolds for all Wave 1-3 [D-05]
+- [ ] 59-02-PLAN.md — Wave 1: migration 053a (create customers/jobs/inquiries/customer_calls/job_calls + RLS + Realtime + backfill from leads; keep legacy) + [BLOCKING] schema push [D-01, D-02, D-05, D-06, D-07, D-11, D-12, D-13, D-15, D-16]
+- [ ] 59-03-PLAN.md — Wave 1: record_call_outcome + merge_customer + unmerge_customer RPCs (SECURITY DEFINER, service_role-only) + [BLOCKING] schema push [D-10, D-14, D-16, D-19]
+- [ ] 59-04-PLAN.md — Wave 2: API routes /api/customers, /api/jobs, /api/inquiries (list/detail/patch + merge/unmerge/convert) [D-03, D-10, D-18, D-19]
+- [ ] 59-05-PLAN.md — Wave 2: Python LiveKit agent lockstep — swap legacy leads/lead_calls writes to record_call_outcome RPC + Railway deploy gate [D-04, D-14, D-16]
+- [ ] 59-06-PLAN.md — Wave 3: Jobs tab rewrite (query /api/jobs, Realtime on jobs table) + new Inquiries tab + JobStatusPills/InquiryStatusPills + sidebar/BottomTabBar nav + chatbot corpus split (customers.md, jobs.md, inquiries.md) [D-08, D-09, D-15]
+- [ ] 59-07-PLAN.md — Wave 3: Customer detail page (sticky header + Activity/Jobs/Invoices tabs) + CustomerEditModal + CustomerMergeDialog + UnmergeBanner + InquiryFlyout + JobFlyout + human-verify checkpoint [D-10, D-17, D-18, D-19]
+- [ ] 59-08-PLAN.md — Wave 4: migration 053b drop legacy leads/lead_calls + activity_log.customer_id NOT NULL + [BLOCKING] push with coverage survey + delete /api/leads + delete Lead* components + 4 skill files sync (auth-database-multitenancy, dashboard-crm-system, voice-call-architecture, payment-architecture) [D-01, D-03, D-11, D-12, D-14]
 
 ---
 
