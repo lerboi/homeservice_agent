@@ -6,6 +6,9 @@
  */
 
 import { XeroClient } from 'xero-node';
+import { cacheTag } from 'next/cache';
+import { createClient } from '@supabase/supabase-js';
+import { refreshTokenIfNeeded } from './adapter.js';
 
 // Xero deprecated the legacy broad-access scope for apps created on/after
 // 2026-03-02; granular scopes are required. This bundle covers:
@@ -142,15 +145,143 @@ export class XeroAdapter {
   }
 
   /**
-   * Phase 54 stub. Phase 55 implements real fetch via xero-node getContacts +
-   * getInvoices with phone filter + caching in use-cache wrapper.
+   * Fetch caller context from Xero by phone (E.164). Phase 55 D-01..D-05.
    *
-   * @param {string} tenantId
-   * @param {string} phone
+   * Returns { contact, outstandingBalance, lastInvoices, lastPaymentDate } on
+   * match; returns { contact: null } uniformly when:
+   *   - tenant has no accounting_credentials row for provider='xero' (disconnected)
+   *   - token refresh fails (Plan 05 owns the error_state write on the refresh path)
+   *   - no Xero contact's phone exactly matches phoneE164 (post-filter)
+   *   - phoneE164 is malformed
+   *   - any Xero API call throws (never rethrow out of a cached function)
+   *
+   * Caching: `'use cache'` MUST be the FIRST statement (known pitfall — silently
+   * disables otherwise). Two-tier cacheTag (D-05):
+   *   - xero-context-${tenantId}                 broad, invalidated on disconnect/reauth
+   *   - xero-context-${tenantId}-${phoneE164}    specific, invalidated by Plan 04 webhook
+   *
+   * Security: callers (LiveKit Python agent, internal Next.js consumers) must
+   * resolve `tenantId` from authenticated context, never from request bodies.
+   *
+   * @param {string} tenantId   Voco tenant_id (UUID)
+   * @param {string} phoneE164  E.164 phone, e.g. "+15551234567"
    * @returns {Promise<import('./types.js').CustomerContext>}
    */
-  async fetchCustomerByPhone(tenantId, phone) {
-    throw new Error('NotImplementedError: Xero fetchCustomerByPhone ships in Phase 55');
+  async fetchCustomerByPhone(tenantId, phoneE164) {
+    'use cache';
+    cacheTag(`xero-context-${tenantId}`);
+    cacheTag(`xero-context-${tenantId}-${phoneE164}`);
+
+    // Input guardrails — also prevent cacheTag/OData injection.
+    if (typeof tenantId !== 'string' || typeof phoneE164 !== 'string') {
+      return { contact: null };
+    }
+    if (!/^\+[1-9]\d{6,14}$/.test(phoneE164)) {
+      return { contact: null };
+    }
+
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
+    const { data: cred } = await admin
+      .from('accounting_credentials')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'xero')
+      .maybeSingle();
+    if (!cred) return { contact: null };
+
+    let refreshed;
+    try {
+      refreshed = await refreshTokenIfNeeded(admin, cred);
+    } catch {
+      // Refresh failure — Plan 05 owns the error_state write + owner email.
+      // From the read path we degrade silently.
+      return { contact: null };
+    }
+    this.setCredentials(refreshed);
+    const xeroOrgId = refreshed.xero_tenant_id;
+    if (!xeroOrgId) return { contact: null };
+
+    // 1. Contact lookup. Xero OData only supports `Contains` reliably on phone
+    //    fields. We narrow candidates with the last 10 digits, then enforce
+    //    E.164 exact equality in JS across all phone slots.
+    const lastTen = phoneE164.replace(/\D/g, '').slice(-10);
+    let contactsResp;
+    try {
+      contactsResp = await this._xeroClient.accountingApi.getContacts(
+        xeroOrgId,
+        undefined,
+        `Phones[0].PhoneNumber.Contains("${lastTen}")`,
+      );
+    } catch {
+      return { contact: null };
+    }
+    const candidates = contactsResp.body?.contacts || [];
+    const contact = candidates.find(
+      (c) => Array.isArray(c.phones)
+        && c.phones.some((p) => p.phoneNumber === phoneE164),
+    );
+    if (!contact) return { contact: null };
+
+    // 2. Outstanding balance: AUTHORISED + AmountDue>0
+    let outstandingResp;
+    try {
+      outstandingResp = await this._xeroClient.accountingApi.getInvoices(
+        xeroOrgId,
+        undefined,
+        `Status=="AUTHORISED" AND Contact.ContactID==guid("${contact.contactID}") AND AmountDue>0`,
+      );
+    } catch {
+      outstandingResp = { body: { invoices: [] } };
+    }
+    const outstandingInvoices = outstandingResp.body?.invoices || [];
+    const outstandingBalance = outstandingInvoices.reduce(
+      (sum, inv) => sum + (Number(inv.amountDue) || 0),
+      0,
+    );
+
+    // 3. Recent invoices: AUTHORISED + PAID, Date DESC, top 3
+    let recentResp;
+    try {
+      recentResp = await this._xeroClient.accountingApi.getInvoices(
+        xeroOrgId,
+        undefined,
+        `(Status=="AUTHORISED" OR Status=="PAID") AND Contact.ContactID==guid("${contact.contactID}")`,
+        'Date DESC',
+        undefined,
+        1,
+      );
+    } catch {
+      recentResp = { body: { invoices: [] } };
+    }
+    const allRecent = recentResp.body?.invoices || [];
+    const lastInvoices = allRecent.slice(0, 3).map((inv) => ({
+      invoiceNumber: inv.invoiceNumber,
+      date: inv.date,
+      total: inv.total,
+      amountDue: inv.amountDue,
+      status: inv.status,
+      reference: inv.reference,
+    }));
+
+    // 4. Last payment date: MAX(fullyPaidOnDate) across PAID
+    const paidDates = allRecent
+      .filter((inv) => inv.status === 'PAID' && inv.fullyPaidOnDate)
+      .map((inv) => inv.fullyPaidOnDate);
+    const lastPaymentDate = paidDates.length > 0
+      ? paidDates.sort().at(-1)
+      : null;
+
+    // 5. Telemetry — per-fetch last_context_fetch_at touch (cheap write).
+    await admin
+      .from('accounting_credentials')
+      .update({ last_context_fetch_at: new Date().toISOString() })
+      .eq('id', cred.id);
+
+    return { contact, outstandingBalance, lastInvoices, lastPaymentDate };
   }
 
   /**
