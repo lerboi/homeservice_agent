@@ -178,6 +178,22 @@ layout.js                        ← DashboardSidebar (desktop) + BottomTabBar (
 
 **Important**: Main content div uses `pb-[72px] lg:pb-6` to clear the 56px mobile tab bar.
 
+### Server/Client Layout Split (added Phase 53)
+
+The dashboard layout is split into TWO files (`layout.js` Server Component + `DashboardLayoutClient.jsx` Client Component) so server-side feature-flag fetching can happen once per request without losing the client-side interactivity the existing layout depends on (`usePathname`, `useSearchParams`, `AnimatePresence`, framer-motion, event listeners).
+
+- `src/app/dashboard/layout.js` (**Server Component** — NO `'use client'`):
+  - Calls `getTenantId()` and `getTenantFeatures(tenantId)` ONCE per request.
+  - Passes the resolved `features` object as a prop to `<DashboardLayoutClient>`.
+  - Fails closed: if no `tenantId` (session edge case), `features` defaults to `{ invoicing: false }`.
+
+- `src/app/dashboard/DashboardLayoutClient.jsx` (**Client Component** — has `'use client'`):
+  - Contains all the existing client-side layout: `ChatProvider`, `TooltipProvider`, `DashboardSidebar`, `BottomTabBar`, `AnimatePresence`, banners, `DashboardTour`, etc.
+  - Receives the `features` prop and wraps everything in `<FeatureFlagsProvider value={features}>` — first wrapper inside the inner function, OUTSIDE `ChatProvider`.
+  - Continues to export the same `DashboardLayout`/`DashboardLayoutInner` Suspense pattern for `useSearchParams()` compatibility.
+
+Pattern source: Phase 53 RESEARCH.md Pattern 4 (Option A). This is the dashboard's first Server/Client split; future phases that need server-fetched data for client UI should follow the same shape (fetch in server `layout.js`, pass as prop, wrap children in a Context Provider in the client layout).
+
 ### Admin Impersonation Support (Phase 28-03)
 
 When an admin clicks "View as" on the `/admin/tenants` page, they are navigated to:
@@ -210,6 +226,25 @@ useEffect(() => {
 // Render:
 <DashboardTour run={tourRunning} onFinish={() => setTourRunning(false)} />
 ```
+
+### FeatureFlagsProvider (added Phase 53)
+
+`src/components/FeatureFlagsProvider.jsx` exports a thin React Context wrapper plus a `useFeatureFlags()` hook for distributing per-tenant feature flags to dashboard client components.
+
+```jsx
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
+
+function InvoiceCTA() {
+  const { invoicing } = useFeatureFlags();
+  return invoicing ? <Button>Create Invoice</Button> : null;
+}
+```
+
+- **Mounted** by `DashboardLayoutClient.jsx` with `value={features}` (features fetched server-side by `layout.js` via `getTenantFeatures(tenantId)`).
+- **Default value**: the hook returns `{ invoicing: false }` when no Provider is mounted (e.g., a component used outside the dashboard tree) — **fail-closed** behaviour matches the helper's server-side default.
+- **Future flags** extend the value object without breaking existing consumers: `{ invoicing: boolean, xero: boolean, jobber: boolean, ... }`.
+- **Phase 53 consumers**: `DashboardSidebar`, `LeadFlyout`, `MorePage` (`/dashboard/more/page.js`), `FeaturesPage` (`/dashboard/more/features/page.js`), and `BusinessIntegrationsClient` (Phase 54 — reads `useFeatureFlags()` for invoicing-aware status-line copy).
+- **Sits alongside** the existing `ChatProvider`/`TooltipProvider` pattern — but its value is **server-injected**, not client-initialized, which is why the dashboard layout needed the Server/Client split above.
 
 **`DashboardSidebar({ businessName })`** — `src/components/dashboard/DashboardSidebar.jsx`
 
@@ -373,6 +408,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/service-zones', label: 'Service Zones & Travel', description: 'Define coverage areas and travel buffers', icon: MapPin },
   { href: '/dashboard/more/notifications', label: 'Notifications & Escalation', description: 'Alerts per call outcome and emergency contact chain', icon: Bell },
   { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
+  { href: '/dashboard/more/features', label: 'Features', description: 'Enable or disable optional features', icon: Zap }, // Phase 53 — always visible, never filtered
   { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
   { href: '/dashboard/more/integrations', label: 'Integrations', description: 'Connect accounting software for invoice sync', icon: Plug },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
@@ -422,6 +458,50 @@ Configures business identity and invoice defaults. Uses `invoice_settings` table
 **API Route**: `src/app/api/invoice-settings/route.js`
 - `GET` — returns `invoice_settings` row. Auto-creates seeded from `tenants.business_name` and `tenants.owner_email` if none exists.
 - `PATCH` — updates allowed fields. Validates: tax_rate (0-1), payment_terms (enum), invoice_prefix (regex `^[a-zA-Z0-9]{1,10}$`).
+
+### Features Page (`/dashboard/more/features`) — Phase 53
+
+**File**: `src/app/dashboard/more/features/page.js`
+
+Dedicated settings panel hosting per-tenant feature-flag toggles. Designed as a list-of-toggles to scale with future flags (xero, jobber, …) without a redesign.
+
+- **Always accessible** — explicitly EXCLUDED from the proxy gate matcher (`INVOICING_GATED_PATHS` in `src/proxy.js`). Owners must always be able to re-enable a disabled flag, so this route is never gated.
+- **Always in MORE_ITEMS** — the entry is never filtered out by the conditional render logic (see "Feature-Flag-Gated UI" below).
+- **Layout** mirrors `invoice-settings/page.js`: `<h1>Features</h1>` + `<Separator>` + `card.base` container with `divide-y` rows.
+- **Each feature row**: icon (lucide `Zap` for invoicing) in a `bg-muted` container, label + description (text-sm semibold + text-xs muted), shadcn `<Switch>` on the right.
+- **Flip-on**: silent (no toast confirmation — the UI change itself is the feedback).
+- **Flip-off**: conditional flow — if `invoices.count + estimates.count > 0`, show a shadcn `<AlertDialog>` with locked copy ("Disable invoicing?", **brand-accent** confirm button, NOT destructive/red) warning about hidden data; else silent flip. Data is preserved on disable — invoices / estimates remain in the DB, just hidden from UI.
+- **Toggle persistence**: `PATCH /api/tenant/features` with body `{ features: { invoicing: boolean } }`. Optimistic UI with rollback on error.
+- **Counts source**: `GET /api/tenant/invoicing-counts` — returns `{ invoices, estimates }` for the authenticated tenant. NOT gated by the invoicing flag (must work at flip-off time so the warning dialog can show the impact count).
+
+**Position in MORE_ITEMS**: between Billing (`/dashboard/more/billing`) and Invoice Settings (`/dashboard/more/invoice-settings`). Permanent — never filtered out.
+
+### Feature-Flag-Gated UI (added Phase 53)
+
+Three components hide invoicing UI when `features.invoicing = false`. All read the flag via `useFeatureFlags()`.
+
+1. **`DashboardSidebar`** — filters `NAV_ITEMS` at render time:
+   ```js
+   const { invoicing } = useFeatureFlags();
+   NAV_ITEMS
+     .filter((item) => item.href !== '/dashboard/invoices' || invoicing)
+     .map(...)
+   ```
+   The `space-y-1` gap collapses naturally when the item is removed; no compensation classes needed.
+2. **`LeadFlyout`** — wraps the entire invoice-related CTA block (Create Invoice / Create Estimate buttons + any linked-invoice display) in `{invoicing && (...)}`. **DOM removal**, NOT a disabled state. No "invoicing disabled" message inside the flyout — the Features panel is the canonical learning surface.
+3. **`MorePage`** (`/dashboard/more/page.js`) — derives two filtered lists at render:
+   - `visibleQuickAccess = invoicing ? QUICK_ACCESS : []` (hides Invoices + Estimates mobile quick links)
+   - `visibleMoreItems = MORE_ITEMS.filter(...)` hides BOTH `invoice-settings` AND `integrations` entries when invoicing is off (Phase 54 integrations are invoicing-adjacent)
+   - The Quick Access card is wrapped in `{visibleQuickAccess.length > 0 && (...)}` — when empty, the card container is NOT rendered (no empty card).
+
+**`BottomTabBar`** has NO Invoices tab in `TABS` (verified Phase 53) — no change needed there.
+
+**Defense in depth**: the UI hide is the top layer. Even if a user removes `display:none` via devtools:
+- Hitting `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings` returns a **302 redirect** to `/dashboard` via `src/proxy.js` page gate (Plan 03).
+- Hitting `/api/invoices/**`, `/api/estimates/**`, `/api/accounting/**` returns a **404 with empty body** (Plan 04 — indistinguishable from a non-existent route).
+- Invoice-reminder / recurring-invoice crons filter tenants via `.eq('features_enabled->>invoicing', 'true')` at the SQL level (Plan 05).
+
+Three enforcement layers (UI hide, proxy redirect, API 404) so no single bypass reveals invoicing functionality to disabled tenants.
 
 ### Business Integrations Page (`/dashboard/more/integrations`) — Phase 54
 
