@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
 import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
@@ -208,7 +210,12 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
           {PROVIDER_ORDER.map((providerKey) => {
             const meta = PROVIDER_META[providerKey];
             const Icon = meta.Icon;
-            const connected = Boolean(status[providerKey]);
+            const row = status[providerKey];
+            const connected = Boolean(row);
+            const hasError = connected && row?.error_state === 'token_refresh_failed';
+            const lastFetch = connected && row?.last_context_fetch_at
+              ? row.last_context_fetch_at
+              : null;
             const isConnecting = connecting === providerKey;
             const isDisconnecting = disconnecting === providerKey;
 
@@ -221,17 +228,60 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                   <span className="text-sm font-medium text-foreground">{meta.name}</span>
                 </div>
 
-                <p
-                  className={
-                    connected
-                      ? 'flex-1 text-sm text-emerald-600 dark:text-emerald-400 mb-4'
-                      : 'flex-1 text-sm text-muted-foreground mb-4'
-                  }
-                >
-                  {statusLineFor(meta, connected, invoicing)}
-                </p>
+                {hasError ? (
+                  <div className="flex-1 mb-4">
+                    <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                      <AlertDescription>
+                        Reconnect needed — Xero token expired. Your AI receptionist can&apos;t access Xero customer info until you reconnect.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                ) : (
+                  <p
+                    className={
+                      connected
+                        ? 'flex-1 text-sm text-emerald-600 dark:text-emerald-400 mb-4'
+                        : 'flex-1 text-sm text-muted-foreground mb-4'
+                    }
+                  >
+                    {statusLineFor(meta, connected, invoicing)}
+                    {lastFetch && (
+                      <span className="block mt-1 text-xs text-muted-foreground font-normal">
+                        Last synced {formatDistanceToNow(parseISO(lastFetch), { addSuffix: true })}
+                      </span>
+                    )}
+                  </p>
+                )}
 
-                {connected ? (
+                {hasError ? (
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      size="sm"
+                      className="w-full bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
+                      onClick={() => handleConnect(providerKey)}
+                      disabled={isConnecting}
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                          Reconnecting…
+                        </>
+                      ) : (
+                        `Reconnect ${meta.name}`
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      onClick={() => setDisconnectTarget(providerKey)}
+                      disabled={isDisconnecting}
+                    >
+                      {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
+                    </Button>
+                  </div>
+                ) : connected ? (
                   <Button
                     variant="outline"
                     size="sm"

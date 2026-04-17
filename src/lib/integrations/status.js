@@ -31,7 +31,7 @@ export async function getIntegrationStatus(tenantId) {
 
   const { data, error } = await admin
     .from('accounting_credentials')
-    .select('provider, scopes, last_context_fetch_at, connected_at, display_name')
+    .select('provider, scopes, last_context_fetch_at, connected_at, display_name, error_state')
     .eq('tenant_id', tenantId);
 
   if (error) {

@@ -15,6 +15,7 @@ export const VALID_ITEM_IDS = [
   'configure_zones',
   'setup_escalation',
   'setup_billing',
+  'connect_xero',
 ];
 
 /** Theme → item IDs map used by the SetupChecklist accordion (Phase 48 D-02). */
@@ -26,6 +27,7 @@ export const THEME_GROUPS = {
     'configure_hours',
     'configure_notifications',
     'configure_call_routing',
+    'connect_xero',
   ],
   calendar: ['connect_calendar', 'configure_zones', 'setup_escalation'],
   billing: ['setup_billing'],
@@ -94,6 +96,12 @@ const ITEM_META = {
     title: 'Activate billing',
     description: 'Pick a plan so your AI line stays active after the trial.',
     href: '/dashboard/more/billing',
+  },
+  connect_xero: {
+    title: 'Connect Xero',
+    description:
+      'Let your AI receptionist see customer history during calls.',
+    href: '/dashboard/more/integrations',
   },
 };
 
@@ -164,6 +172,7 @@ export function deriveChecklistItems(tenant, counts) {
     configure_zones: zoneCount > 0,
     setup_escalation: escalationCount > 0,
     setup_billing: !!hasActiveSubscription,
+    connect_xero: !!counts.xeroConnected,
   };
 
   const items = [];
@@ -194,8 +203,15 @@ export function deriveChecklistItems(tenant, counts) {
 
 async function fetchChecklistState(tenantId) {
   // Parallel: tenant row + 4 count/presence queries + current subscription row
-  const [tenantResult, serviceResult, calendarResult, zoneResult, escalationResult, subResult] =
-    await Promise.allSettled([
+  const [
+    tenantResult,
+    serviceResult,
+    calendarResult,
+    zoneResult,
+    escalationResult,
+    subResult,
+    xeroResult,
+  ] = await Promise.allSettled([
       supabase
         .from('tenants')
         .select(
@@ -230,6 +246,11 @@ async function fetchChecklistState(tenantId) {
         .eq('tenant_id', tenantId)
         .eq('is_current', true)
         .maybeSingle(),
+      supabase
+        .from('accounting_credentials')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'xero'),
     ]);
 
   const tenant = tenantResult.status === 'fulfilled' ? tenantResult.value.data : null;
@@ -246,6 +267,9 @@ async function fetchChecklistState(tenantId) {
   const hasActiveSubscription =
     subStatus === 'active' || subStatus === 'trialing' || subStatus === 'past_due';
 
+  const xeroConnected =
+    xeroResult.status === 'fulfilled' && (xeroResult.value.count ?? 0) > 0;
+
   return {
     tenant,
     serviceCount,
@@ -253,6 +277,7 @@ async function fetchChecklistState(tenantId) {
     zoneCount,
     escalationCount,
     hasActiveSubscription,
+    xeroConnected,
   };
 }
 
