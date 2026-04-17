@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { getTenantFeatures } from '@/lib/features';
 import { sendSingleInvoice } from '@/lib/invoice-send';
 
 /**
@@ -19,6 +20,11 @@ export async function POST(request) {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const features = await getTenantFeatures(tenantId);
+  if (!features.invoicing) {
+    return new Response(null, { status: 404 });
   }
 
   let body;

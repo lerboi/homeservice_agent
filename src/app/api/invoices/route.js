@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { getTenantFeatures } from '@/lib/features';
 import { formatInvoiceNumber } from '@/lib/invoice-number';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
 
@@ -22,6 +23,11 @@ export async function GET(request) {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const features = await getTenantFeatures(tenantId);
+  if (!features.invoicing) {
+    return new Response(null, { status: 404 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -137,6 +143,11 @@ export async function POST(request) {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const features = await getTenantFeatures(tenantId);
+  if (!features.invoicing) {
+    return new Response(null, { status: 404 });
   }
 
   let body;
