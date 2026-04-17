@@ -25,6 +25,28 @@ export async function GET(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // ── Phase 53 — feature flag pre-filter ──────────────────────────────────
+  // Skip every tenant with features_enabled.invoicing = false. PostgREST `->>`
+  // returns TEXT, so the literal value MUST be the string 'true' (not boolean
+  // true). Wrong syntax silently matches zero tenants and disables the cron
+  // for everyone. Verified against live DB during Plan 05 Task 3.
+  const { data: enabledTenants, error: tenantError } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('features_enabled->>invoicing', 'true');
+
+  if (tenantError) {
+    console.error('[recurring-invoices] Failed to fetch enabled tenants:', tenantError);
+    return Response.json({ error: 'Tenant filter failed' }, { status: 500 });
+  }
+
+  const enabledTenantIds = (enabledTenants || []).map((t) => t.id);
+
+  if (enabledTenantIds.length === 0) {
+    console.log('[recurring-invoices] No tenants with invoicing enabled — skipping');
+    return Response.json({ generated: 0 });
+  }
+
   const today = new Date().toISOString().split('T')[0];
 
   // Query recurring templates that are due
@@ -33,6 +55,7 @@ export async function GET(request) {
     .select('*')
     .eq('is_recurring_template', true)
     .eq('recurring_active', true)
+    .in('tenant_id', enabledTenantIds)             // ← Phase 53 filter
     .lte('recurring_next_date', today)
     .or('recurring_end_date.is.null,recurring_end_date.gte.' + today);
 
