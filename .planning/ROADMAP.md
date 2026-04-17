@@ -216,14 +216,14 @@ Plans:
 **Goal:** Gate the Phase 33-35 invoicing system behind a per-tenant feature flag so v6.0 can refocus Voco on the Call System while preserving existing invoicing code for future opt-in. Adds a `tenants.features_enabled` JSONB column defaulting to `{"invoicing": false}` for ALL tenants (safe because v6.0 is still dev — no live users at risk), gates invoice/estimate pages + APIs + crons behind the flag, conditionally hides the Invoices surface (sidebar, BottomTabBar, LeadFlyout CTAs, More menu), and exposes a reversible settings toggle with no data loss.
 **Depends on:** None blocking — pure feature-flag layer over existing Phase 33-35 code; must ship before v6.0 phases 54-58 so integration work is isolated from the legacy invoicing surface.
 **Requirements**: TOGGLE-01, TOGGLE-02, TOGGLE-03, TOGGLE-04
-**Plans:** 4/8 plans executed
+**Plans:** 5/8 plans executed
 
 Plans:
 - [x] 53-01-migration-features-enabled-PLAN.md — Migration 051 + BLOCKING supabase db push (TOGGLE-01)
 - [x] 53-02-features-helper-and-provider-PLAN.md — getTenantFeatures helper + FeatureFlagsProvider Context (TOGGLE-01/02/03)
 - [x] 53-03-proxy-gate-and-layout-split-PLAN.md — Proxy page gate + Server/Client layout split (TOGGLE-02)
 - [x] 53-04-api-gates-PLAN.md — 17 API route files: early-return 404 when invoicing=false (TOGGLE-02)
-- [ ] 53-05-cron-tenant-filter-PLAN.md — invoice-reminders + recurring-invoices crons skip flagged-off tenants (TOGGLE-02/04)
+- [x] 53-05-cron-tenant-filter-PLAN.md — invoice-reminders + recurring-invoices crons skip flagged-off tenants (TOGGLE-02/04)
 - [ ] 53-06-ui-hide-layer-PLAN.md — DashboardSidebar + LeadFlyout + More page conditional render (TOGGLE-03)
 - [ ] 53-07-features-panel-and-toggle-PLAN.md — /dashboard/more/features panel + PATCH route + flip-off dialog (TOGGLE-04)
 - [ ] 53-08-skill-docs-update-PLAN.md — auth-database-multitenancy + dashboard-crm-system skills updated (TOGGLE-01/02/03/04)
