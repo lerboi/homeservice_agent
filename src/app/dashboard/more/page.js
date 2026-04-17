@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { card } from '@/lib/design-tokens';
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 import {
   Wrench,
   Clock,
@@ -38,6 +39,18 @@ const MORE_ITEMS = [
 ];
 
 export default function MorePage() {
+  const { invoicing } = useFeatureFlags();
+
+  // Compute filtered lists once per render (Phase 53-06 UI hide layer)
+  const visibleQuickAccess = invoicing ? QUICK_ACCESS : [];
+  const visibleMoreItems = MORE_ITEMS.filter((item) => {
+    if (!invoicing && (
+      item.href === '/dashboard/more/invoice-settings' ||
+      item.href === '/dashboard/more/integrations'
+    )) return false;
+    return true;
+  });
+
   return (
     <div data-tour="more-page">
       <h1 className="text-xl font-semibold text-foreground mb-4">More</h1>
@@ -65,39 +78,42 @@ export default function MorePage() {
         </motion.div>
       </div>
 
-      {/* Quick access — Invoices & Estimates (visible on mobile where they're not in bottom bar) */}
-      <div className={`${card.base} divide-y divide-border overflow-hidden mb-4 lg:hidden`}>
-        {QUICK_ACCESS.map((item, i) => {
-          const Icon = item.icon;
-          return (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: i * 0.03, ease: 'easeOut' }}
-            >
-              <Link
-                href={item.href}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors min-h-[48px]"
+      {/* Quick access — Invoices & Estimates (visible on mobile where they're not in bottom bar)
+          Per Phase 53 UI-SPEC Surface 2: not rendered AT ALL when invoicing=false (no empty card). */}
+      {visibleQuickAccess.length > 0 && (
+        <div className={`${card.base} divide-y divide-border overflow-hidden mb-4 lg:hidden`}>
+          {visibleQuickAccess.map((item, i) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.href}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: i * 0.03, ease: 'easeOut' }}
               >
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
-                  <Icon className="h-5 w-5 text-[var(--brand-accent)]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{item.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-muted transition-colors min-h-[48px]"
+                >
+                  <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--brand-accent)]/[0.08] shrink-0">
+                    <Icon className="h-5 w-5 text-[var(--brand-accent)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{item.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Settings */}
       <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-1 lg:hidden">Settings</h2>
       <div className={`${card.base} divide-y divide-border overflow-hidden`}>
-        {MORE_ITEMS.map((item, i) => {
+        {visibleMoreItems.map((item, i) => {
           const Icon = item.icon;
           return (
             <motion.div
