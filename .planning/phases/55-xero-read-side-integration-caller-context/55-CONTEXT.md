@@ -11,10 +11,10 @@ Turn the Phase 54 Xero scaffolding into a live, end-to-end caller-context integr
 1. **Real `fetchCustomerByPhone(tenantId, phone)`** in `src/lib/integrations/xero.js` — returns `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }` from Xero via `xero-node` SDK, behind `'use cache'` + two-tier `cacheTag` with 5-min `cacheLife`. E.164-exact phone matching against `Phones.PhoneNumber`; outstanding scoped to `AUTHORISED + AmountDue>0`; last 3 invoices with compact fields.
 2. **Live OAuth end-to-end** at `/api/integrations/xero/{auth,callback}` — Phase 54 scaffolds return 501 today; P55 wires them to the unified-scope OAuth flow (`openid profile email accounting.transactions accounting.contacts offline_access`) with refresh-aware token getter. Disconnect revokes at Xero + deletes row + invalidates tenant-wide cache tag.
 3. **`/api/webhooks/xero` endpoint** — single app-level HMAC secret (`XERO_WEBHOOK_KEY`) verification, 200 OK on all verified signatures (silent-ignore for unknown tenants to prevent retry storms), resolves `invoice.contactId` → contact phone → `revalidateTag('xero-context-${tenantId}-${phoneE164}')`; falls back to broad tenant tag if contact has no phone. Handles Xero's webhook-intent-verification handshake.
-4. **Business Integrations frontend wiring** — Phase 54's `BusinessIntegrationCard` shell gets the real Connect/Disconnect interactions, shows `display_name` (Xero org) when connected, shows a "Reconnect needed" banner when token refresh fails, subtly surfaces `last_context_fetch_at`. Zero UI flashes caller-specific data.
+4. **Business Integrations frontend wiring** — Phase 54's `BusinessIntegrationsClient.jsx` (single client that renders both Xero + Jobber cards via `PROVIDER_META` map) gets error-state handling: a "Reconnect needed" banner when token refresh fails, Reconnect action, subtle `last_context_fetch_at` timestamp when connected. Zero UI flashes caller-specific data. Existing Connect/Disconnect wiring + the invoicing-flag confirm-connect dialog + the disconnect AlertDialog are already shipped and stay.
 5. **`connect_xero` setup checklist item** — P55 adds the row to `/api/setup-checklist` with completion auto-detected by `accounting_credentials` row presence (`provider='xero'`). P58 only polishes copy/ordering later.
-6. **Python agent (`livekit-agent/`) Xero hookup** —
-   - New `livekit-agent/src/integrations/xero.py` — service-role Supabase reads `accounting_credentials` row, direct Xero REST fetch with refresh-aware token logic (Python side), returns the same `{contact, outstandingBalance, lastInvoices, lastPaymentDate}` shape.
+6. **Python agent Xero hookup** (agent lives in a **separate repo** at `C:/Users/leheh/.Projects/livekit-agent/` / GitHub `lerboi/livekit_agent` — NOT in this monorepo; planner must open that repo to do the Python work) —
+   - New `src/integrations/xero.py` (relative to livekit-agent repo root) — service-role Supabase reads `accounting_credentials` row, direct Xero REST fetch with refresh-aware token logic (Python side), returns the same `{contact, outstandingBalance, lastInvoices, lastPaymentDate}` shape.
    - `_run_db_queries` in `agent.py:316` gains a fourth parallel task: `xero_context_task` with **800ms timeout**; on timeout/exception, `customer_context` is silently omitted (Sentry logged).
    - **Pre-session injection** — fetch is awaited before `session.start()` resolves the greeting, so the initial system prompt already contains a STATE-framed `customer_context` block near the top of the prompt with the same CRITICAL RULE framing used for anti-hallucination rules.
    - New `check_customer_account()` tool (registered in `src/tools/__init__.py`) re-serves the fetched data as a **STATE + DIRECTIVE** string — not speakable English — per the pinned LiveKit prompt philosophy (see canonical ref).
@@ -30,7 +30,7 @@ Explicitly **out of scope** (hard boundaries):
 - **No LiveKit agent framework changes.** Tool registration + prompt section + one new parallel task — no changes to `AgentSession`, `VocoAgent` class, SIP handling, post-call pipeline, or the pinned SDK versions.
 - **No Xero-side data writes.** Phase 35's invoice push stays gated behind the `invoicing` flag (P53). P55 is strictly read-side.
 - **No contact-creation-on-caller-match.** If the phone matches no Xero contact, `customer_context` is simply omitted from the prompt. Creating a Xero contact for walk-in callers is out of scope.
-- **No change to Phase 54's `accounting_credentials` schema.** Migration 051 already shipped `scopes TEXT[]` and `last_context_fetch_at TIMESTAMPTZ`. P55 uses the columns as-is.
+- **No change to Phase 54's `accounting_credentials` schema.** Migration **052** (`052_integrations_schema.sql`) already shipped `scopes TEXT[]` and `last_context_fetch_at TIMESTAMPTZ`. P55 uses the columns as-is. Any new P55 migration starts at **053**.
 
 </domain>
 
@@ -61,7 +61,7 @@ Explicitly **out of scope** (hard boundaries):
   DIRECTIVE: Answer factually only if the caller explicitly asks about their balance, bill, or recent work. Do not read invoice numbers unless asked. Do not volunteer figures.
   ```
   Breaks the parrot loop by forcing the model to translate rather than recite.
-- **D-10 (Privacy rule):** Silent awareness; never volunteer. Mirrors the `check_caller_history` precedent in `livekit-agent/src/tools/check_caller_history.py:107-117`. Agent must never proactively mention outstanding balance, invoice numbers, or past job descriptions. Facts are answered factually ONLY when the caller explicitly asks about their account, bill, or recent work. If asked "do you have my info?" → confirm presence without specifics ("we have your contact on file").
+- **D-10 (Privacy rule):** Silent awareness; never volunteer. Mirrors the `check_caller_history` precedent in `src/tools/check_caller_history.py:107-117` (livekit-agent separate repo). Agent must never proactively mention outstanding balance, invoice numbers, or past job descriptions. Facts are answered factually ONLY when the caller explicitly asks about their account, bill, or recent work. If asked "do you have my info?" → confirm presence without specifics ("we have your contact on file").
 - **D-11 (No-match behavior):** When the phone matches no Xero contact (OR when Xero is disconnected), the `customer_context` prompt block is **omitted entirely** — caller is indistinguishable from a cold-call first-time caller. If the agent still invokes `check_customer_account()`, the tool returns:
   ```
   STATE: no_xero_contact_for_phone.
@@ -72,16 +72,17 @@ Explicitly **out of scope** (hard boundaries):
 ### Area D — Owner-facing edge UX
 
 - **D-12 (`connect_xero` checklist item — full auto-detection in P55):** `/api/setup-checklist` response includes a `connect_xero` item. Completion auto-detected by presence of `accounting_credentials` row with `provider='xero'` for the tenant. P58 polishes copy/ordering but the functional wiring ships in P55 so the feature is shippable end-to-end on merge day.
-- **D-13 (Disconnect action):** AlertDialog confirmation → on confirm: (1) call Xero's token revoke endpoint via `xero-node` SDK, (2) delete the `accounting_credentials` row, (3) `revalidateTag('xero-context-${tenantId}')` to wipe all cached caller contexts for that tenant. Dialog copy should emphasize reversibility: "Disconnect Xero? Your AI receptionist will stop seeing caller account details. You can reconnect anytime."
+- **D-13 (Disconnect action):** AlertDialog confirmation → on confirm: (1) call Xero's token revoke endpoint via `xero-node` SDK, (2) delete the `accounting_credentials` row, (3) `revalidateTag('xero-context-${tenantId}')` to wipe all cached caller contexts for that tenant. **Dialog copy is already shipped** in `BusinessIntegrationsClient.jsx` (`PROVIDER_META.xero.dialogTitle` + `dialogBody`) — reuse verbatim: _"Disconnect Xero? / Your AI receptionist will stop sharing Xero customer history during calls. If invoicing is on, invoices will also stop syncing to Xero. Previously synced invoices are not affected. You can reconnect anytime."_ Mentions invoicing impact + "previously synced not affected" — materially better for owner trust than a bespoke P55 replacement.
 - **D-14 (Token-refresh failure surfacing — BOTH banner + email):** When background refresh fails (e.g., refresh_token revoked at Xero):
   - Persist `error_state` hint on the `accounting_credentials` row (column add — planner picks schema: dedicated `error_state TEXT NULL` column, or JSONB flag).
-  - Send a Resend email to the tenant owner: subject "Your Xero connection needs attention"; body mentions the caller-context feature and a CTA link to `/dashboard/more/integrations`.
-  - Business Integrations card on next owner visit renders a "Reconnect needed — Xero token expired" banner with a prominent Reconnect button (re-runs the OAuth flow, overwrites the existing row via upsert).
+  - Send a Resend email to the tenant owner: subject "Your Xero connection needs attention"; body names the specific degradation in plain language (e.g. _"Until you reconnect, your AI receptionist won't see caller billing info on incoming calls"_) — owners don't parse the term "caller context". CTA link to `/dashboard/more/integrations`.
+  - Business Integrations card on next owner visit renders a "Reconnect needed — Xero token expired" banner. **Reconnect as primary action; Disconnect still present as secondary text-link** so the "I'll walk away from Xero" owner can silence the alert without re-authing (never replace Disconnect with Reconnect-only).
   - Call path behavior stays as D-04 (800ms timeout → silent skip).
-- **D-15 (Card content):** Xero card on `/dashboard/more/integrations` displays:
-  - **Connected state:** org `display_name` from OAuth, status line from P54 ("Sharing customer context with your AI receptionist" / "... + sending invoices" when invoicing flag ON), subtle `last_context_fetch_at` timestamp (omit when null), Disconnect button.
-  - **Error state:** Reconnect banner per D-14, Reconnect button instead of Disconnect.
-  - **Disconnected state:** connect-CTA copy from P54, Connect Xero button.
+- **D-15 (Card content):** Xero card in `BusinessIntegrationsClient.jsx` displays:
+  - **Connected state:** existing shipped status line from P54 (`PROVIDER_META.xero.connectedStatusInvoicingOff` / `connectedStatusInvoicingOn`), subtle `last_context_fetch_at` timestamp below status (muted, omit when null, e.g. "Last synced 3 min ago"), Disconnect button (existing).
+  - **Error state:** Reconnect-needed banner per D-14, **Reconnect as primary button + Disconnect kept as secondary text-link** (do NOT swap Reconnect-for-Disconnect).
+  - **Disconnected state:** existing shipped disconnected status + Connect button (no change from P54).
+  - **Org `display_name`** (if captured from OAuth `updateTenants()`) displays next to the provider name when connected — optional enhancement, planner's call.
   - No match-rate, no call count, no duration histogram — those land in P58 (CTX-01 telemetry work).
 
 ### Claude's Discretion
@@ -89,11 +90,11 @@ Explicitly **out of scope** (hard boundaries):
 - **Xero Python SDK choice (`xero-python` vs. raw `httpx`):** Python side can use the official `xero-python` package or hand-rolled `httpx` calls. `xero-python` brings typed models but adds a dependency; `httpx` is already a transitive dep and gives exact control over timeouts. Planner picks based on footprint vs. correctness tradeoff.
 - **Exact `customer_context` prompt-section wording:** Structure (STATE + DIRECTIVE + CRITICAL RULE framing) is locked; exact copy for each field label and the privacy prohibitions is planner/implementer's call, informed by `prompt.py` style and reusing phrasing from `check_caller_history.py:107-117`.
 - **`last_context_fetch_at` update cadence:** Update on every successful fetch vs. only when cache is cold vs. throttle to once-per-minute. Low-cost write; planner decides.
-- **`error_state` schema shape:** Dedicated column vs. JSONB flag on `accounting_credentials`. If a new migration is needed for the column, it's `052_xero_error_state.sql`. Alternative: store in a separate lightweight table if the column feels cramped.
+- **`error_state` schema shape:** Dedicated column vs. JSONB flag on `accounting_credentials`. If a new migration is needed for the column, it's `053_xero_error_state.sql` (migration 052 is already used by P54's `integrations_schema.sql`). Alternative: store in a separate lightweight table if the column feels cramped.
 - **Webhook handler idempotency key:** Xero webhook payloads carry event timestamps and IDs. Planner decides whether to dedup in a small `xero_webhook_events` table (pattern from `stripe_webhook_events`) or trust Xero's delivery semantics + rely on `revalidateTag` being idempotent.
 - **Xero webhook event subscription scope:** INVOICE-only vs. INVOICE + CONTACT. Default to INVOICE (covers `AUTHORISED`, `PAID`, `VOIDED` state changes which drive `outstandingBalance`). Add CONTACT events only if caller-name or phone updates prove important — likely not.
 - **Ordering of `lastInvoices`:** Newest-first by `Date` vs. by `UpdatedDateUTC`. Planner picks whichever reads most usefully in the prompt (recent-job-activity perspective).
-- **Where `integrations/xero.py` lives on the Python side exactly:** `livekit-agent/src/integrations/xero.py` is the intent; if the `integrations/` dir doesn't exist yet, create it (sibling to `lib/`, `tools/`, `messages/`). Planner confirms after reading the agent tree.
+- **Where `integrations/xero.py` lives on the Python side exactly:** `src/integrations/xero.py` (inside the livekit-agent **separate repo** at `C:/Users/leheh/.Projects/livekit-agent/`); if the `integrations/` dir doesn't exist yet, create it (sibling to `lib/`, `tools/`, `messages/`). Planner confirms after reading the agent tree.
 - **How `check_customer_account()` tool handles mid-call reconnection**: if the caller's phone wasn't matched initially (no block in prompt) but the tool is invoked, it re-uses the cached empty-STATE directive. Planner decides whether to attempt a mid-call Xero re-fetch — probably not worth the latency.
 - **Resend email template tone:** Professional, short, no marketing copy. Planner drafts matching existing `billing_notifications` email voice.
 
@@ -116,7 +117,7 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
 - `.planning/ROADMAP.md` lines 204-212 — v6.0 Key Decisions (Python-direct fetches, Next.js 16 caching scope, `accounting_credentials` reuse)
 
 ### Prior Phase Context (LOCKED decisions to carry forward)
-- `.planning/phases/54-integration-credentials-foundation-caching-prep-sandbox-provisioning/54-CONTEXT.md` — P54 locks: unified OAuth scope bundle (D-03), `/api/integrations/**` canonical routes (D-05), `src/lib/integrations/xero.js` location (D-02), cache/revalidate loop shape (D-10), Migration 051 schema (D-11..D-15)
+- `.planning/phases/54-integration-credentials-foundation-caching-prep-sandbox-provisioning/54-CONTEXT.md` — P54 locks: unified OAuth scope bundle (D-03), `/api/integrations/**` canonical routes (D-05), `src/lib/integrations/xero.js` location (D-02), cache/revalidate loop shape (D-10), **Migration 052** (`052_integrations_schema.sql`) schema (D-11..D-15) — NOT 051 as earlier drafts claimed; 051 is `features_enabled.sql` from P53
 - `.planning/phases/53-feature-flag-infrastructure-invoicing-toggle/53-CONTEXT.md` — invoicing flag gate context. Note: P55's `/api/integrations/**` routes and `/api/webhooks/xero` are NOT gated by the invoicing flag (caller-context is valuable regardless of invoicing-push state). Card status-line copy (D-04 in P54) does reference the flag.
 - `.planning/phases/35-invoice-integrations-and-ai/35-CONTEXT.md` — original Xero push-side decisions (D-01..D-05), OAuth scope reference, invoice push flow that stays gated by invoicing flag
 
@@ -146,9 +147,9 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
   - `src/app/api/integrations/status/route.js` — P54-complete; read-only reference
   - `src/app/api/stripe/webhook/route.js` — webhook handler pattern (signature verification, raw body, idempotency table, 200-on-ignore)
   - `src/app/api/setup-checklist/route.js` — pattern for adding `connect_xero` row (D-12)
-  - `src/components/dashboard/BusinessIntegrationCard.jsx` (or `AccountingConnectionCard.jsx` if P54 kept the name) — card shell to extend for D-15 states
+  - `src/components/dashboard/BusinessIntegrationsClient.jsx` — **single client component** (renders BOTH Xero + Jobber cards inline via `PROVIDER_META` map); this is the actual shipped name, NOT `BusinessIntegrationCard.jsx` or `AccountingConnectionCard.jsx`
   - `src/lib/notifications.js` — `getResendClient()` for D-14 email
-- **Python side (`livekit-agent/`):**
+- **Python side — SEPARATE REPO** (`lerboi/livekit_agent` at `C:/Users/leheh/.Projects/livekit-agent/`, NOT in this monorepo):
   - `src/agent.py:316-401` — `_run_db_queries` function; P55 adds the fourth parallel task + awaits before `session.start()`
   - `src/supabase_client.py` — `get_supabase_admin()` for service-role Xero credential reads
   - `src/prompt.py` — `build_system_prompt`; P55 inserts `customer_context` block near top
@@ -160,12 +161,12 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
 - **Next.js side:**
   - `src/app/api/webhooks/xero/route.js` — HMAC verification + webhook-intent verification + contact→phone resolution + `revalidateTag`
   - Possibly `src/lib/integrations/webhook-verify.js` — if HMAC helper warrants extraction (Claude's discretion)
-  - Possibly `supabase/migrations/052_xero_error_state.sql` — only if D-14 uses a dedicated column (Claude's discretion)
-  - Possibly `supabase/migrations/052_xero_webhook_events.sql` — only if webhook handler uses an idempotency table (Claude's discretion)
-- **Python side:**
-  - `livekit-agent/src/integrations/__init__.py`
-  - `livekit-agent/src/integrations/xero.py` — service-role `accounting_credentials` read + Xero REST fetch + refresh handling
-  - `livekit-agent/src/tools/check_customer_account.py` — STATE+DIRECTIVE tool factory, pattern matched to `check_caller_history.py`
+  - Possibly `supabase/migrations/053_xero_error_state.sql` — only if D-14 uses a dedicated column (Claude's discretion). **Note:** migration 052 is already `052_integrations_schema.sql` from P54.
+  - Possibly `supabase/migrations/053_xero_webhook_events.sql` (OR `054_...` if error_state migration also lands) — only if webhook handler uses an idempotency table (Claude's discretion)
+- **Python side (separate repo at `C:/Users/leheh/.Projects/livekit-agent/`):**
+  - `src/integrations/__init__.py`
+  - `src/integrations/xero.py` — service-role `accounting_credentials` read + Xero REST fetch + refresh handling
+  - `src/tools/check_customer_account.py` — STATE+DIRECTIVE tool factory, pattern matched to `check_caller_history.py`
 
 ### Files Modified in Phase 55
 - **Next.js side:**
@@ -174,14 +175,14 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
   - `src/app/api/integrations/xero/callback/route.js` — wire real callback + upsert
   - `src/app/api/integrations/disconnect/route.js` — add Xero revoke + `revalidateTag`
   - `src/app/api/setup-checklist/route.js` — add `connect_xero` item
-  - `src/components/dashboard/BusinessIntegrationCard.jsx` — connected/error/disconnected states, Reconnect banner, Disconnect AlertDialog, `last_context_fetch_at` timestamp, Resend email trigger hookup
-  - `src/app/dashboard/more/integrations/page.js` — light touch if card-state orchestration lives here
+  - `src/components/dashboard/BusinessIntegrationsClient.jsx` — add error-state handling (Reconnect banner, Reconnect action keeping Disconnect as secondary), subtle `last_context_fetch_at` timestamp under connected status, Resend email trigger hookup. Connect/Disconnect + invoicing-flag confirm dialog + disconnect AlertDialog are already shipped and untouched.
+  - `src/app/dashboard/more/integrations/page.js` — pass `last_context_fetch_at` + error_state down via `initialStatus` prop
   - `.env.example` — add `XERO_WEBHOOK_KEY`
-- **Python side:**
-  - `livekit-agent/src/agent.py` — add `xero_context_task` to `_run_db_queries`, 800ms race, pass result to `build_system_prompt`
-  - `livekit-agent/src/prompt.py` — new `customer_context` block near top of prompt, CRITICAL RULE framing, silent-awareness rules
-  - `livekit-agent/src/tools/__init__.py` — register `check_customer_account`
-  - `livekit-agent/.env.example` — add Xero-related vars if any Python-specific (reuses `XERO_CLIENT_ID` etc. from Next.js .env)
+- **Python side (separate repo):**
+  - `src/agent.py` — add `xero_context_task` to `_run_db_queries`, 800ms race, pass result to `build_system_prompt`
+  - `src/prompt.py` — new `customer_context` block near top of prompt, CRITICAL RULE framing, silent-awareness rules
+  - `src/tools/__init__.py` — register `check_customer_account`
+  - `.env.example` — add Xero-related vars if any Python-specific (reuses `XERO_CLIENT_ID` etc. from Next.js .env)
 
 </canonical_refs>
 
@@ -213,7 +214,7 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
 - **`.env.example`** — add `XERO_WEBHOOK_KEY`; existing `XERO_CLIENT_ID` + `XERO_CLIENT_SECRET` from P54 reused.
 
 ### Blast Radius
-- **Next.js side:** ~7-10 source files touched — 3-4 route handlers (auth/callback wire, disconnect extend, new webhook route, setup-checklist append), 1-2 component files (BusinessIntegrationCard states), 1 lib file (integrations/xero.js — new method), 0-2 migration files (only if `error_state` or `xero_webhook_events` use dedicated columns/tables), 1 .env.example.
+- **Next.js side:** ~7-10 source files touched — 3-4 route handlers (auth/callback wire, disconnect extend, new webhook route, setup-checklist append), 1-2 component files (`BusinessIntegrationsClient.jsx` states), 1 lib file (integrations/xero.js — new method), 0-2 migration files (053+ only if `error_state` or `xero_webhook_events` use dedicated columns/tables), 1 .env.example.
 - **Python side:** 5-6 source files — 1 new `integrations/xero.py`, 1 new `tools/check_customer_account.py`, 1 `tools/__init__.py` (append registration), 1 `agent.py` (4th task), 1 `prompt.py` (new section), possibly 1 `.env.example`.
 - **Plan shape:** likely 5-7 plans. Candidate partition (planner confirms):
   1. Next.js `fetchCustomerByPhone` + cache primitive + xero adapter extension
@@ -258,7 +259,7 @@ None. STATE.md's only Xero-adjacent pending todo — "User to register Xero dev 
 - **Xero multi-org picker** — currently auto-selects first Xero organization after OAuth. If owners have multiple Xero orgs, only one is queried. Add an org-picker during OAuth or in the Business Integrations card if real owner demand emerges (likely during P58 or post-GA).
 - **Xero rate-limit back-off layer** — currently rely on the 5-min cache + Xero's headroom (60 req/min / 5 req/sec per tenant). Add explicit back-off + retry logic only if telemetry shows real throttling (P58 telemetry will reveal it).
 - **Xero contact-creation on caller match-fail** — when a caller isn't in Xero, we omit `customer_context`. Could proactively create a Xero contact for walk-in callers using captured lead data, but that's a push-side feature conflating with the invoicing flag. Defer to a future "Xero customer autocreation" phase gated by invoicing flag.
-- **Python SDK vs. raw HTTP for Xero fetches** — planner picks; if choice proves awkward post-merge, swap is contained to `livekit-agent/src/integrations/xero.py`. No external API commitment.
+- **Python SDK vs. raw HTTP for Xero fetches** — planner picks; if choice proves awkward post-merge, swap is contained to `src/integrations/xero.py` in the livekit-agent separate repo. No external API commitment.
 - **`check_customer_account` mid-call re-fetch** — current design re-serves cached data. If a caller's balance changes mid-call (rare) and the tool is called post-webhook-invalidation, the cache miss triggers a live fetch — fine. Add a "force-refresh" tool parameter only if a real use case emerges.
 - **Deep telemetry (match rate, duration histograms, cache hit rate)** — CTX-01 in P58. `last_context_fetch_at` is seeded in P55 as a foundation.
 - **Agent awareness of Xero connection state during conversation** — currently silent. If disconnected, prompt block omitted. If connected but fetch failed (timeout), block omitted. Could expose this via a "connection_state" hint, but adds prompt weight for edge cases.
