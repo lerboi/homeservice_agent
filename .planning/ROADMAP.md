@@ -252,16 +252,16 @@ Plans:
 **Depends on:** Phase 53 (invoicing flag must exist so the Xero card status copy can reflect the invoicing-off state) and Phase 54 (integrations foundation — `accounting_credentials.provider='xero'`, `src/lib/integrations/` adapter, `/api/integrations/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell).
 **Requirements**: XERO-01, XERO-02, XERO-03, XERO-04
 **Pre-requisite user actions:** Register Xero dev app at developer.xero.com and set redirect URI to `/api/integrations/xero/callback` (blocks execution, not planning).
-**Plans:** 3/8 plans executed
+**Plans:** 7/8 plans executed
 
 Plans:
 - [x] 55-01-PLAN.md — Migration 053 error_state column + .env.example XERO_WEBHOOK_KEY + [BLOCKING] schema push
 - [x] 55-02-PLAN.md — Next.js XeroAdapter.fetchCustomerByPhone + 'use cache' + two-tier cacheTag + tests
-- [ ] 55-03-PLAN.md — OAuth wire-up: callback heals error_state + revalidates xero-context; disconnect revokes + invalidates
-- [ ] 55-04-PLAN.md — /api/webhooks/xero (HMAC-SHA256 + intent-verify handshake + invoice→phone resolution + per-phone revalidateTag)
-- [ ] 55-05-PLAN.md — BusinessIntegrationsClient Reconnect banner + last-synced timestamp + connect_xero checklist + XeroReconnectEmail + notifyXeroRefreshFailure + visual UAT
+- [x] 55-03-PLAN.md — OAuth wire-up: callback heals error_state + revalidates xero-context; disconnect revokes + invalidates
+- [x] 55-04-PLAN.md — /api/webhooks/xero (HMAC-SHA256 + intent-verify handshake + invoice→phone resolution + per-phone revalidateTag)
+- [x] 55-05-PLAN.md — BusinessIntegrationsClient Reconnect banner + last-synced timestamp + connect_xero checklist + XeroReconnectEmail + notifyXeroRefreshFailure + visual UAT
 - [x] 55-06-PLAN.md — [CROSS-REPO livekit-agent] integrations/xero.py refresh-aware fetch + agent.py 4th parallel task with 800ms timeout
-- [ ] 55-07-PLAN.md — [CROSS-REPO livekit-agent] prompt.py customer_context block (CRITICAL RULE) + check_customer_account tool + agent wiring + E2E call UAT
+- [x] 55-07-PLAN.md — [CROSS-REPO livekit-agent] prompt.py customer_context block (CRITICAL RULE) + check_customer_account tool + agent wiring + E2E call UAT
 - [ ] 55-08-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) + ROADMAP/STATE/REQUIREMENTS update
 
 ---
@@ -1184,3 +1184,25 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 27. Country-Aware Onboarding and Number Provisioning | 3/3 | Complete   | 2026-03-26 |
 | 28. Admin Dashboard | 1/3 | Complete    | 2026-03-26 |
 | 29. Hero Section Interactive Demo | 4/4 | Complete   | 2026-03-26 |
+
+## Backlog
+
+### Phase 999.1: Booking urgency constraint mismatch (BACKLOG)
+
+**Goal:** Fix `book_appointment` tool to write an urgency value the `appointments_urgency_check` constraint accepts (likely `emergency`/`urgent`/`routine`). Discovered during Phase 55 UAT.
+**Evidence:** Error during call `call-_+6587528516_G96sErYNhgk3`:
+`new row for relation "appointments" violates check constraint "appointments_urgency_check"` — failing row had `urgency='high'`.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.2: LiveKit voice cutoff on tool calls (BACKLOG)
+
+**Goal:** Investigate and fix voice being cut off / tool calls being cancelled when the caller talks over the AI. LiveKit warnings `server cancelled tool calls` and `_SegmentSynchronizerImpl.playback_finished called before text/audio input is done` fire during normal call flow. Discovered during Phase 55 UAT.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
