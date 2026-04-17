@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Zap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
@@ -30,6 +31,7 @@ const FEATURES = [
 
 export default function FeaturesPage() {
   const initial = useFeatureFlags();
+  const router = useRouter();
 
   // Local optimistic state — we update immediately on Switch toggle, then
   // reconcile with the server response. On error we roll back to `initial`.
@@ -53,6 +55,9 @@ export default function FeaturesPage() {
         body: JSON.stringify({ features: { invoicing: nextValue } }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Invalidate Router Cache so the dashboard layout re-fetches features_enabled
+      // on next navigation — otherwise the stale RSC payload keeps the old flag value.
+      router.refresh();
       // Success toast only on disable confirmation flow (silent on enable per UI-SPEC).
       if (!nextValue) {
         toast.success('Invoicing disabled. Re-enable here anytime.');
