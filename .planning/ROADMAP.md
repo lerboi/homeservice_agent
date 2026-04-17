@@ -188,9 +188,12 @@ Plans:
 
 ### v6.0 Phase Checklist
 
-- [x] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — 5 plans planned 2026-04-16; pure frontend reframe of `/dashboard/leads` to `/dashboard/jobs` (308 redirect for back-compat) to match home-service mental model; status pill restructure (New, Scheduled, Completed, Paid, Lost) with Lost gap; LeadFlyout / LeadCard / LeadFilterBar / EmptyStateLeads / HotLeadsTile / Sidebar / BottomTabBar / DashboardTour / search route / notification email / chatbot-knowledge corpus all reframed; dashboard-crm-system skill updated; no DB/API/agent/component-file-name changes (completed 2026-04-16)
-- [x] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards (completed 2026-04-17)
-- [x] **Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning** — extend `accounting_credentials.provider` CHECK to include `'jobber'`; new `src/lib/integrations/` shared module (types, credentials, HMAC OAuth state); enable `cacheComponents: true` in next.config.js; route scaffolding for `/api/integrations/[provider]/{auth,callback}`, `/api/integrations/{disconnect,status}`; user provisions Jobber + Xero dev/sandbox accounts (completed 2026-04-16)
+- [x] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — 5 plans planned 2026-04-16; pure frontend reframe of `/dashboard/leads` to `/dashboard/jobs` (308 redirect for back-compat) to match home-service mental model; status pill restructure (New, Scheduled, Completed, Paid, Lost) with Lost gap; LeadFlyout / LeadCard / LeadFilterBar / EmptyStateLeads / HotLeadsTile / Sidebar / BottomTabBar / DashboardTour / search route / notification email / chatbot-knowledge corpus all reframed; dashboard-crm-system skill updated; no DB/API/agent/component-file-name changes
+ (completed 2026-04-16)
+- [x] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards
+ (completed 2026-04-17)
+- [x] **Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning** — extend `accounting_credentials.provider` CHECK to include `'jobber'`; new `src/lib/integrations/` shared module (types, credentials, HMAC OAuth state); enable `cacheComponents: true` in next.config.js; route scaffolding for `/api/integrations/[provider]/{auth,callback}`, `/api/integrations/{disconnect,status}`; user provisions Jobber + Xero dev/sandbox accounts
+ (completed 2026-04-16)
 - [ ] **Phase 55: Xero read-side integration (caller context)** — Xero OAuth via existing xero-node SDK, `fetchCustomerByPhone(tenantId, phone)` returning contact + outstandingBalance + lastInvoices, "use cache" with 5-min TTL + `revalidateTag`, `/api/webhooks/xero` for invoice change invalidation, AccountingConnectionCard in `/dashboard/more/integrations`, setup checklist `connect_xero` item, livekit_agent `src/integrations/xero.py` + `_run_db_queries` parallel fetch + `customer_context` prompt section + `check_customer_account` tool
 - [ ] **Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)** — Jobber OAuth + GraphQL via `graphql-request`, `fetchCustomerByPhone` returning client + recentJobs + outstandingInvoices, same caching/webhook/tool pattern as Xero; livekit_agent `src/integrations/jobber.py` + unified `customer_context` (Jobber preferred over Xero for home-services); setup checklist `connect_jobber` item
 - [ ] **Phase 57: Jobber schedule mirror into calendar_events** — extend `calendar_events.provider` CHECK to include `'jobber'`; Jobber visit/job webhook → sync to local `calendar_events` (zero call-path latency; same pattern as Google + Outlook); poll-fallback cron; agent slot query unchanged
@@ -249,10 +252,17 @@ Plans:
 **Depends on:** Phase 53 (invoicing flag must exist so the Xero card status copy can reflect the invoicing-off state) and Phase 54 (integrations foundation — `accounting_credentials.provider='xero'`, `src/lib/integrations/` adapter, `/api/integrations/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell).
 **Requirements**: XERO-01, XERO-02, XERO-03, XERO-04
 **Pre-requisite user actions:** Register Xero dev app at developer.xero.com and set redirect URI to `/api/integrations/xero/callback` (blocks execution, not planning).
-**Plans:** TBD — populated by `/gsd-plan-phase 55`
+**Plans:** 8 plans
 
 Plans:
-- [ ] TBD — run `/gsd-plan-phase 55` to generate
+- [ ] 55-01-PLAN.md — Migration 053 error_state column + .env.example XERO_WEBHOOK_KEY + [BLOCKING] schema push
+- [ ] 55-02-PLAN.md — Next.js XeroAdapter.fetchCustomerByPhone + 'use cache' + two-tier cacheTag + tests
+- [ ] 55-03-PLAN.md — OAuth wire-up: callback heals error_state + revalidates xero-context; disconnect revokes + invalidates
+- [ ] 55-04-PLAN.md — /api/webhooks/xero (HMAC-SHA256 + intent-verify handshake + invoice→phone resolution + per-phone revalidateTag)
+- [ ] 55-05-PLAN.md — BusinessIntegrationsClient Reconnect banner + last-synced timestamp + connect_xero checklist + XeroReconnectEmail + notifyXeroRefreshFailure + visual UAT
+- [ ] 55-06-PLAN.md — [CROSS-REPO livekit-agent] integrations/xero.py refresh-aware fetch + agent.py 4th parallel task with 800ms timeout
+- [ ] 55-07-PLAN.md — [CROSS-REPO livekit-agent] prompt.py customer_context block (CRITICAL RULE) + check_customer_account tool + agent wiring + E2E call UAT
+- [ ] 55-08-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) + ROADMAP/STATE/REQUIREMENTS update
 
 ---
 
