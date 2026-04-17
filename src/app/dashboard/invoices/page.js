@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users, Search, X } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Send, ArrowRight, Settings, Users, Search, X, Link2, Plug } from 'lucide-react';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,6 +27,38 @@ const STATUS_TABS = [
   { key: 'void',           label: 'Void' },
   { key: 'recurring',      label: 'Recurring' },
 ];
+
+function IntegrationPill({ status }) {
+  if (status === null) return null; // still loading
+
+  const connectedProvider = status?.xero ? 'xero' : status?.jobber ? 'jobber' : null;
+
+  if (connectedProvider) {
+    const name = connectedProvider === 'xero' ? 'Xero' : 'Jobber';
+    return (
+      <Link
+        href="/dashboard/more/integrations"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+        aria-label={`${name} connected — manage integrations`}
+      >
+        <Link2 className="h-3 w-3" aria-hidden="true" />
+        {name} connected
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href="/dashboard/more/integrations"
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground hover:bg-muted/70 transition-colors"
+      aria-label="Connect accounting software"
+    >
+      <Plug className="h-3 w-3" aria-hidden="true" />
+      Connect accounting
+      <ArrowRight className="h-3 w-3" aria-hidden="true" />
+    </Link>
+  );
+}
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -53,14 +85,16 @@ export default function InvoicesPage() {
   const [settingsComplete, setSettingsComplete] = useState(true);
   const [completedLeadsCount, setCompletedLeadsCount] = useState(0);
   const [syncStatusMap, setSyncStatusMap] = useState({});
+  const [integrationStatus, setIntegrationStatus] = useState(null);
 
-  // Fetch settings completeness + completed leads count (for empty state)
+  // Fetch settings completeness + completed leads count + integration status
   useEffect(() => {
     async function fetchContext() {
       try {
-        const [settingsRes, leadsRes] = await Promise.all([
+        const [settingsRes, leadsRes, integrationsRes] = await Promise.all([
           fetch('/api/invoice-settings'),
           fetch('/api/leads?status=completed&limit=0'),
+          fetch('/api/integrations/status'),
         ]);
         if (settingsRes.ok) {
           const { settings } = await settingsRes.json();
@@ -69,6 +103,10 @@ export default function InvoicesPage() {
         if (leadsRes.ok) {
           const { leads } = await leadsRes.json();
           setCompletedLeadsCount(leads?.length || 0);
+        }
+        if (integrationsRes.ok) {
+          const data = await integrationsRes.json();
+          setIntegrationStatus(data);
         }
       } catch {}
     }
@@ -156,7 +194,10 @@ export default function InvoicesPage() {
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-semibold text-foreground">Invoices</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-foreground">Invoices</h1>
+            <IntegrationPill status={integrationStatus} />
+          </div>
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/more/invoice-settings"

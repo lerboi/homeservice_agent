@@ -67,6 +67,24 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Connecting an accounting/job-management integration is a strong declaration
+    // that the owner wants invoice sync. Flip invoicing on if it isn't already —
+    // this avoids the chicken-and-egg where Xero is connected but produces no
+    // user-visible effect because the invoicing feature flag is still off.
+    const { data: tenantRow } = await supabase
+      .from('tenants')
+      .select('features_enabled')
+      .eq('id', tenantId)
+      .single();
+    if (tenantRow && tenantRow.features_enabled?.invoicing !== true) {
+      await supabase
+        .from('tenants')
+        .update({
+          features_enabled: { ...(tenantRow.features_enabled || {}), invoicing: true },
+        })
+        .eq('id', tenantId);
+    }
+
     revalidateTag(`integration-status-${tenantId}`);
 
     return NextResponse.redirect(

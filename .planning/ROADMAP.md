@@ -809,6 +809,16 @@ Plans:
 - [x] 52-04-PLAN.md — Copy reframe + internal href audit batch (16 files: flyout/filter/empty/hot/sidebar/bottom-tab + 10 internal-link files)
 - [x] 52-05-PLAN.md — dashboard-crm-system skill update + final repo-wide grep verification + human checkpoint
 
+### Phase 56: Customer/Job model separation — split leads into Customers (dedup by phone) and Jobs (one row per appointment), rewrite Jobs tab to query appointments, add Customer detail page, reattribute invoices per-job
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 55
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 56 to break down)
+
 ---
 
 ## Milestone v2.0 Phases

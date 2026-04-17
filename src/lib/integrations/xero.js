@@ -60,10 +60,13 @@ export class XeroAdapter {
    */
   async exchangeCode(code, redirectUri, extraParams = {}) {
     const xero = this._createXeroClient(redirectUri);
-    const tokenSet = await xero.apiCallback(code);
+    const callbackUrl = `${redirectUri}?code=${encodeURIComponent(code)}`;
+    const tokenSet = await xero.apiCallback(callbackUrl);
 
-    // After token exchange, get connected tenants (organizations)
-    await xero.updateTenants();
+    // Pass `false` to skip the extra GET /Organisation call — that endpoint
+    // requires the `accounting.settings` scope, which we don't request. The
+    // /connections response alone gives us tenantId + tenantName.
+    await xero.updateTenants(false);
     const tenants = xero.tenants;
 
     // Auto-select first tenant (most users have one organization)

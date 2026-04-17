@@ -46,10 +46,7 @@ export default function MorePage() {
   // Compute filtered lists once per render (Phase 53-06 UI hide layer)
   const visibleQuickAccess = invoicing ? QUICK_ACCESS : [];
   const visibleMoreItems = MORE_ITEMS.filter((item) => {
-    if (!invoicing && (
-      item.href === '/dashboard/more/invoice-settings' ||
-      item.href === '/dashboard/more/integrations'
-    )) return false;
+    if (!invoicing && item.href === '/dashboard/more/invoice-settings') return false;
     return true;
   });
 

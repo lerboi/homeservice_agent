@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0%
 
 - 2026-04-16: v5.0 milestone closed. 4 phases shipped (47, 48, 48.1, 49); Phase 50 absorbed into 49 Plan 05; Phases 51 and 52 deferred to v6.0. Phase 47-05 documented as superseded in part by Phase 48.1 revenue-recovery rewrite.
 - 2026-04-16: v6.0 (Integrations & Focus) opened. 7 phases planned (52, 53, 54, 55, 56, 57, 58). Detailed plan in conversation log.
+- 2026-04-17: Phase 56 added — Customer/Job model separation (split deduped leads into Customers + per-appointment Jobs, rewrite Jobs tab, add Customer detail page, reattribute invoices per-job). Note: this shifts previously-planned Jobber-read out of slot 56 → will need renumbering when planned.
 
 ### Pending Todos
 

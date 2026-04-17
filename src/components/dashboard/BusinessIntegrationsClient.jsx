@@ -116,6 +116,7 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
   const [connecting, setConnecting] = useState(null);
   const [disconnecting, setDisconnecting] = useState(null);
   const [disconnectTarget, setDisconnectTarget] = useState(null);
+  const [confirmConnectTarget, setConfirmConnectTarget] = useState(null);
 
   // OAuth callback landing toast (UI-SPEC copy verbatim)
   useEffect(() => {
@@ -137,8 +138,17 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
     }
   }, [searchParams]);
 
+  function requestConnect(providerKey) {
+    if (!invoicing) {
+      setConfirmConnectTarget(providerKey);
+      return;
+    }
+    handleConnect(providerKey);
+  }
+
   async function handleConnect(providerKey) {
     const meta = PROVIDER_META[providerKey];
+    setConfirmConnectTarget(null);
     setConnecting(providerKey);
     try {
       const res = await fetch(`/api/integrations/${providerKey}/auth`);
@@ -242,7 +252,7 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                   <Button
                     size="sm"
                     className="w-full bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
-                    onClick={() => handleConnect(providerKey)}
+                    onClick={() => requestConnect(providerKey)}
                     disabled={isConnecting}
                   >
                     {isConnecting ? (
@@ -260,6 +270,37 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
           })}
         </div>
       )}
+
+      <AlertDialog
+        open={!!confirmConnectTarget}
+        onOpenChange={(open) => {
+          if (!open) setConfirmConnectTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmConnectTarget
+                ? `Connect ${PROVIDER_META[confirmConnectTarget].name} and turn on invoicing?`
+                : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmConnectTarget
+                ? `Connecting ${PROVIDER_META[confirmConnectTarget].name} enables invoice sync, so invoicing will be turned on in your dashboard. You'll see Invoices appear in the sidebar and lead actions. You can turn invoicing off anytime from More → Features.`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
+              onClick={() => confirmConnectTarget && handleConnect(confirmConnectTarget)}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={!!disconnectTarget}
