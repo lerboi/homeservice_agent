@@ -78,6 +78,7 @@ calendar_events local mirror kept in sync (slot calculator reads from this, neve
 | `src/app/api/zones/route.js` | GET/POST/PUT — service zones and zone pair travel buffers |
 | `supabase/migrations/003_scheduling.sql` | Appointments, zones, credentials, events tables + `book_appointment_atomic` function |
 | `supabase/migrations/007_outlook_calendar.sql` | Adds is_primary to calendar_credentials; renames google_event_id → external_event_id on appointments |
+| `supabase/migrations/038_schema_hardening_2.sql` | `set_primary_calendar(p_tenant_id, p_provider)` RPC — atomic primary-calendar swap (single-statement UPDATE that flips is_primary across all of a tenant's calendar_credentials rows in one transaction). SECURITY DEFINER, service_role only. |
 
 ---
 
@@ -310,6 +311,16 @@ PATCH to `/subscriptions/{cred.watch_channel_id}` with new `expirationDateTime` 
 **`GET /api/outlook-calendar/callback`** — Accepts `?code=&state=tenantId`. Admin consent error detection: checks for `consent_required`, `interaction_required`, AADSTS65001, AADSTS90094 — redirects to `?calendar=admin_consent`. On success: exchanges code via `exchangeCodeForTokens(code)`, fetches display name via direct fetch to `https://graph.microsoft.com/v1.0/me` (NOT via `graphFetch` — simpler), determines `is_primary` (first connected calendar = true), upserts credentials, calls `createOutlookSubscription`, calls `syncOutlookCalendarEvents`, redirects to `?calendar=outlook_connected`.
 
 **`is_primary` determination**: Counts existing `calendar_credentials` rows for the tenant before upsert. If `count === 0`, new calendar gets `is_primary: true`.
+
+**Atomic primary swap — `set_primary_calendar(p_tenant_id uuid, p_provider text)` RPC** (migration 038, SECURITY DEFINER, service_role only):
+
+```sql
+UPDATE calendar_credentials
+SET is_primary = (provider = p_provider)
+WHERE tenant_id = p_tenant_id;
+```
+
+Single-statement swap that flips `is_primary` across all of a tenant's `calendar_credentials` rows in one transaction. Use whenever the user (re)elects which connected calendar is primary — eliminates the race window where two providers could both be marked primary if you wrote two separate `UPDATE`s. Invoke from server routes via the service-role Supabase client: `await supabase.rpc('set_primary_calendar', { p_tenant_id, p_provider })`. Browser/SSR clients cannot call this (REVOKE EXECUTE FROM PUBLIC).
 
 ---
 

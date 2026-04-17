@@ -107,6 +107,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/034_add_skipped_sms_status.sql` | Expand calls.recovery_sms_status CHECK to add 'skipped' (for short calls and booked callers) |
 | `supabase/migrations/035_lead_email_and_invoice_title.sql` | email column on leads + title column on invoices |
 | `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
+| `supabase/migrations/038_schema_hardening_2.sql` | Indexes (idx_subscriptions_stripe_customer_id) + `set_primary_calendar(p_tenant_id, p_provider)` RPC (atomic primary-calendar swap, SECURITY DEFINER, service_role only) |
 | `supabase/migrations/040_call_recordings_storage_policy.sql` | Phase 38 — Storage bucket `call-recordings` (private) + RLS policy `tenant_read_recordings`: owners can SELECT objects under their `{tenant_id}/` folder. Agent writes via S3 service-role (bypasses RLS). |
 | `supabase/migrations/041_calls_realtime.sql` | Phase 38 — `ALTER PUBLICATION supabase_realtime ADD TABLE calls` + `REPLICA IDENTITY FULL`. Enables the dashboard's Realtime subscription on `calls` (dashboard/calls/page.js). |
 | `supabase/migrations/042_call_routing_schema.sql` | Phase 39 — call routing schema: tenants gains call_forwarding_schedule JSONB (schedule evaluator input), pickup_numbers JSONB (CHECK len ≤ 5), dial_timeout_seconds INTEGER; calls gains routing_mode TEXT (nullable, CHECK IN ('ai','owner_pickup','fallback_to_ai')) + outbound_dial_duration_sec INTEGER; idx_calls_tenant_month index supports monthly outbound cap SUM query |
@@ -871,6 +872,28 @@ Renames urgency tier 'high_ticket' to 'urgent' across all four tables that carry
 - `leads.urgency`: CHECK emergency|routine|urgent
 - `appointments.urgency`: CHECK emergency|routine|urgent
 - `services.urgency_tag`: CHECK emergency|routine|urgent
+
+No new tables. No RLS changes.
+
+---
+
+### 038_schema_hardening_2.sql — Stripe Index + Atomic Primary-Calendar Swap
+
+Two unrelated hardening items grouped in one migration:
+
+1. **Index** `idx_subscriptions_stripe_customer_id` on `subscriptions(stripe_customer_id)` — speeds up Stripe webhook handler customer lookups.
+
+2. **`set_primary_calendar(p_tenant_id uuid, p_provider text)` RPC** (SECURITY DEFINER, returns void):
+
+```sql
+UPDATE calendar_credentials
+SET is_primary = (provider = p_provider)
+WHERE tenant_id = p_tenant_id;
+```
+
+Single-statement atomic swap so two providers cannot both be marked primary during a race window. Called by the calendar OAuth callback when the user (re)connects a provider and elects it as primary.
+
+**Lockdown:** `REVOKE ALL ON FUNCTION set_primary_calendar FROM PUBLIC; GRANT EXECUTE ... TO service_role;` — only service-role clients (server routes via `src/lib/supabase.js`) can invoke. Browser/SSR clients cannot.
 
 No new tables. No RLS changes.
 
