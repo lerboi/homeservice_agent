@@ -41,6 +41,7 @@ import TranscriptViewer from '@/components/dashboard/TranscriptViewer';
 import RevenueInput from '@/components/dashboard/RevenueInput';
 import { supabase } from '@/lib/supabase-browser';
 import { btn } from '@/lib/design-tokens';
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,7 @@ function LeadFlyoutSkeleton() {
  */
 export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange }) {
   const router = useRouter();
+  const { invoicing } = useFeatureFlags();
 
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -705,8 +707,8 @@ export default function LeadFlyout({ leadId, open, onOpenChange, onStatusChange 
                 />
               </div>
 
-              {/* ── Invoice section ── */}
-              {(lead.status === 'booked' || lead.status === 'completed' || lead.status === 'paid') && (
+              {/* ── Invoice section ── (hidden when invoicing feature flag off — Phase 53-06) */}
+              {invoicing && (lead.status === 'booked' || lead.status === 'completed' || lead.status === 'paid') && (
                 <>
                   <Separator className="bg-muted" />
                   <div className="space-y-2">
