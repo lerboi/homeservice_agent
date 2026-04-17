@@ -471,7 +471,7 @@ Dedicated settings panel hosting per-tenant feature-flag toggles. Designed as a 
 - **Each feature row**: icon (lucide `Zap` for invoicing) in a `bg-muted` container, label + description (text-sm semibold + text-xs muted), shadcn `<Switch>` on the right.
 - **Flip-on**: silent (no toast confirmation — the UI change itself is the feedback).
 - **Flip-off**: conditional flow — if `invoices.count + estimates.count > 0`, show a shadcn `<AlertDialog>` with locked copy ("Disable invoicing?", **brand-accent** confirm button, NOT destructive/red) warning about hidden data; else silent flip. Data is preserved on disable — invoices / estimates remain in the DB, just hidden from UI.
-- **Toggle persistence**: `PATCH /api/tenant/features` with body `{ features: { invoicing: boolean } }`. Optimistic UI with rollback on error.
+- **Toggle persistence**: `PATCH /api/tenant/features` with body `{ features: { invoicing: boolean } }`. Optimistic UI with rollback on error. **Must call `router.refresh()` after a successful PATCH** — `DashboardLayout` is a Server Component that resolves features via `getTenantFeatures()`, so its RSC payload is cached in Next.js Router Cache. Without `router.refresh()`, navigating away and back serves the stale cached payload and the toggle appears to revert. See `src/app/dashboard/more/features/page.js`.
 - **Counts source**: `GET /api/tenant/invoicing-counts` — returns `{ invoices, estimates }` for the authenticated tenant. NOT gated by the invoicing flag (must work at flip-off time so the warning dialog can show the impact count).
 
 **Position in MORE_ITEMS**: between Billing (`/dashboard/more/billing`) and Invoice Settings (`/dashboard/more/invoice-settings`). Permanent — never filtered out.
