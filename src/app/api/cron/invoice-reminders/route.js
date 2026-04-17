@@ -30,6 +30,29 @@ export async function GET(request) {
   let remindersSent = 0;
   let lateFeesApplied = 0;
 
+  // ── Phase 53 — feature flag pre-filter ──────────────────────────────────
+  // Skip every tenant with features_enabled.invoicing = false. PostgREST `->>`
+  // returns TEXT, so the literal value MUST be the string 'true' (not boolean
+  // true). Wrong syntax silently matches zero tenants and disables the cron
+  // for everyone. Verified against live DB during Plan 05 Task 3.
+  const { data: enabledTenants, error: tenantError } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('features_enabled->>invoicing', 'true');
+
+  if (tenantError) {
+    console.error('[invoice-reminders] Failed to fetch enabled tenants:', tenantError);
+    return Response.json({ error: 'Tenant filter failed' }, { status: 500 });
+  }
+
+  const enabledTenantIds = (enabledTenants || []).map((t) => t.id);
+
+  // Short-circuit when no tenants are enabled — saves the rest of the queries.
+  if (enabledTenantIds.length === 0) {
+    console.log('[invoice-reminders] No tenants with invoicing enabled — skipping');
+    return Response.json({ reminders_sent: 0, late_fees_applied: 0 });
+  }
+
   // ─── PART 1: Reminder Dispatch ──────────────────────────────────────────────
 
   try {
@@ -41,6 +64,7 @@ export async function GET(request) {
         customer_name, customer_email, customer_phone,
         reminders_enabled
       `)
+      .in('tenant_id', enabledTenantIds)              // ← Phase 53 filter
       .in('status', ['sent', 'overdue', 'partially_paid'])
       .eq('reminders_enabled', true)
       .not('due_date', 'is', null);
@@ -181,6 +205,7 @@ export async function GET(request) {
         id, invoice_number, total, due_date, status, tenant_id,
         late_fee_applied_at
       `)
+      .in('tenant_id', enabledTenantIds)              // ← Phase 53 filter
       .in('status', ['overdue', 'partially_paid'])
       .lt('due_date', today);
 
