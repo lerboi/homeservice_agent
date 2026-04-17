@@ -1,0 +1,185 @@
+-- ========================================================
+-- STEP A: Clean up the bogus test row from last verification
+-- ========================================================
+DELETE FROM accounting_credentials
+  WHERE provider = 'quickbooks' AND access_token = 'x';
+
+
+-- ========================================================
+-- STEP B: Apply the Phase 54-01 migration
+-- Paste this entire block into Supabase Studio SQL Editor and RUN.
+-- Confirm the editor says "Success. Rows: ..." - if it says nothing,
+-- the statement did not execute.
+-- ========================================================
+
+BEGIN;
+
+-- Step 1: Purge QB/FB rows BEFORE tightening CHECK
+DELETE FROM accounting_credentials
+  WHERE provider IN ('quickbooks', 'freshbooks');
+
+-- Step 2: Drop old CHECK constraint
+ALTER TABLE accounting_credentials
+  DROP CONSTRAINT accounting_credentials_provider_check;
+
+-- Step 3: Add tightened CHECK permitting xero + jobber only
+ALTER TABLE accounting_credentials
+  ADD CONSTRAINT accounting_credentials_provider_check
+  CHECK (provider IN ('xero', 'jobber'));
+
+-- Step 4: Add scopes TEXT[] column
+ALTER TABLE accounting_credentials
+  ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[];
+
+-- Step 5: Add last_context_fetch_at TIMESTAMPTZ column
+ALTER TABLE accounting_credentials
+  ADD COLUMN last_context_fetch_at TIMESTAMPTZ;
+
+COMMIT;
+
+
+-- ========================================================
+-- STEP C: Re-run verification (all 4 queries should now PASS)
+-- ========================================================
+
+-- QUERY 1: Confirm new columns exist
+-- Expected: scopes (ARRAY) and last_context_fetch_at (timestamp with time zone) present at the end of the list
+SELECT column_name, data_type, is_nullable, column_default
+  FROM information_schema.columns
+  WHERE table_name = 'accounting_credentials'
+  ORDER BY ordinal_position;
+
+Answer:
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "gen_random_uuid()"
+  },
+  {
+    "column_name": "tenant_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "provider",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "access_token",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "refresh_token",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": null
+  },
+  {
+    "column_name": "expiry_date",
+    "data_type": "bigint",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "realm_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "xero_tenant_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "account_id",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "display_name",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "connected_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "column_name": "last_synced_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()"
+  },
+  {
+    "column_name": "scopes",
+    "data_type": "ARRAY",
+    "is_nullable": "NO",
+    "column_default": "'{}'::text[]"
+  },
+  {
+    "column_name": "last_context_fetch_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "column_default": null
+  }
+]
+
+
+-- QUERY 2: Confirm CHECK constraint is tightened
+-- Expected: CHECK ((provider = ANY (ARRAY['xero'::text, 'jobber'::text])))
+SELECT pg_get_constraintdef(oid) AS definition
+  FROM pg_constraint
+  WHERE conname = 'accounting_credentials_provider_check';
+
+
+Answer:
+[
+  {
+    "definition": "CHECK ((provider = ANY (ARRAY['xero'::text, 'jobber'::text])))"
+  }
+]
+
+-- QUERY 3: Confirm the CHECK rejects quickbooks
+-- Expected: ERROR - check_violation (new row for relation "accounting_credentials" violates check constraint)
+INSERT INTO accounting_credentials
+  (tenant_id, provider, access_token, refresh_token)
+  VALUES
+  ((SELECT id FROM tenants LIMIT 1), 'quickbooks', 'x', 'x');
+
+
+Answer:
+Error: Failed to run sql query: ERROR: 23514: new row for relation "accounting_credentials" violates check constraint "accounting_credentials_provider_check" DETAIL: Failing row contains (9f5abfb4-2e5c-4def-805f-c9cf1123c7ea, 7954aa5c-8248-4b17-82f1-66ba9a42bc87, quickbooks, x, x, null, null, null, null, null, 2026-04-16 20:04:40.942799+00, null, 2026-04-16 20:04:40.942799+00, {}, null).
+
+-- QUERY 4: Confirm no legacy rows
+-- Expected: 0
+SELECT COUNT(*) AS lingering_legacy_rows
+  FROM accounting_credentials
+  WHERE provider IN ('quickbooks', 'freshbooks');
+
+
+Answer:
+
+[
+  {
+    "lingering_legacy_rows": 0
+  }
+]
