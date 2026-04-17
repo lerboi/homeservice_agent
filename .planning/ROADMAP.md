@@ -189,7 +189,7 @@ Plans:
 ### v6.0 Phase Checklist
 
 - [x] **Phase 52: Rename Leads tab to Jobs and restructure status pills** — 5 plans planned 2026-04-16; pure frontend reframe of `/dashboard/leads` to `/dashboard/jobs` (308 redirect for back-compat) to match home-service mental model; status pill restructure (New, Scheduled, Completed, Paid, Lost) with Lost gap; LeadFlyout / LeadCard / LeadFilterBar / EmptyStateLeads / HotLeadsTile / Sidebar / BottomTabBar / DashboardTour / search route / notification email / chatbot-knowledge corpus all reframed; dashboard-crm-system skill updated; no DB/API/agent/component-file-name changes (completed 2026-04-16)
-- [ ] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards
+- [x] **Phase 53: Feature flag infrastructure + invoicing toggle** — `tenants.features_enabled` JSONB (default `{invoicing: false}` for ALL tenants since dev-phase), gate routes `/dashboard/invoices`, `/dashboard/estimates`, `/dashboard/more/invoice-settings`, `/api/invoices/**`, `/api/estimates/**`, `/api/cron/invoice-reminders`, `/api/cron/recurring-invoices` behind the flag; conditionally hide Invoices nav, BottomTabBar, LeadFlyout CTAs; settings panel toggle; cron-job tenant skip guards (completed 2026-04-17)
 - [x] **Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning** — extend `accounting_credentials.provider` CHECK to include `'jobber'`; new `src/lib/integrations/` shared module (types, credentials, HMAC OAuth state); enable `cacheComponents: true` in next.config.js; route scaffolding for `/api/integrations/[provider]/{auth,callback}`, `/api/integrations/{disconnect,status}`; user provisions Jobber + Xero dev/sandbox accounts (completed 2026-04-16)
 - [ ] **Phase 55: Xero read-side integration (caller context)** — Xero OAuth via existing xero-node SDK, `fetchCustomerByPhone(tenantId, phone)` returning contact + outstandingBalance + lastInvoices, "use cache" with 5-min TTL + `revalidateTag`, `/api/webhooks/xero` for invoice change invalidation, AccountingConnectionCard in `/dashboard/more/integrations`, setup checklist `connect_xero` item, livekit_agent `src/integrations/xero.py` + `_run_db_queries` parallel fetch + `customer_context` prompt section + `check_customer_account` tool
 - [ ] **Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)** — Jobber OAuth + GraphQL via `graphql-request`, `fetchCustomerByPhone` returning client + recentJobs + outstandingInvoices, same caching/webhook/tool pattern as Xero; livekit_agent `src/integrations/jobber.py` + unified `customer_context` (Jobber preferred over Xero for home-services); setup checklist `connect_jobber` item
@@ -216,7 +216,7 @@ Plans:
 **Goal:** Gate the Phase 33-35 invoicing system behind a per-tenant feature flag so v6.0 can refocus Voco on the Call System while preserving existing invoicing code for future opt-in. Adds a `tenants.features_enabled` JSONB column defaulting to `{"invoicing": false}` for ALL tenants (safe because v6.0 is still dev — no live users at risk), gates invoice/estimate pages + APIs + crons behind the flag, conditionally hides the Invoices surface (sidebar, BottomTabBar, LeadFlyout CTAs, More menu), and exposes a reversible settings toggle with no data loss.
 **Depends on:** None blocking — pure feature-flag layer over existing Phase 33-35 code; must ship before v6.0 phases 54-58 so integration work is isolated from the legacy invoicing surface.
 **Requirements**: TOGGLE-01, TOGGLE-02, TOGGLE-03, TOGGLE-04
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 - [x] 53-01-migration-features-enabled-PLAN.md — Migration 051 + BLOCKING supabase db push (TOGGLE-01)
@@ -226,7 +226,7 @@ Plans:
 - [x] 53-05-cron-tenant-filter-PLAN.md — invoice-reminders + recurring-invoices crons skip flagged-off tenants (TOGGLE-02/04)
 - [x] 53-06-ui-hide-layer-PLAN.md — DashboardSidebar + LeadFlyout + More page conditional render (TOGGLE-03)
 - [x] 53-07-features-panel-and-toggle-PLAN.md — /dashboard/more/features panel + PATCH route + flip-off dialog (TOGGLE-04)
-- [ ] 53-08-skill-docs-update-PLAN.md — auth-database-multitenancy + dashboard-crm-system skills updated (TOGGLE-01/02/03/04)
+- [x] 53-08-skill-docs-update-PLAN.md — auth-database-multitenancy + dashboard-crm-system skills updated (TOGGLE-01/02/03/04)
 
 ### Phase 54: Integration credentials foundation + Next.js 16 caching prep + sandbox provisioning
 
