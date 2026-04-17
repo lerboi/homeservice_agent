@@ -777,6 +777,56 @@ Phase 40 completed the architectural cutover from SIP-only routing to webhook-ba
 
 ---
 
+## Phase 55: Xero Read-Side Caller Context (cross-repo)
+
+### Integration module (livekit-agent repo)
+
+- `livekit-agent/src/integrations/xero.py` — refresh-aware Xero REST fetcher via raw `httpx` (chosen over `xero-python` SDK for tighter timeout control and smaller dep footprint)
+- Service-role Supabase reads `accounting_credentials` row; refresh write-back persists `access_token + refresh_token + expiry_date + error_state=null` together to prevent Next.js/Python stale-token races
+- On refresh failure: writes `error_state='token_refresh_failed'` on the row and returns None silently. The **Next.js dashboard** surfaces the banner + Resend email (Plan 05). The Python agent **NEVER** sends email — would be noisy across calls
+- `expiry_date` column is BIGINT (epoch ms, written by Next.js as `Date.now() + expires_in*1000`); the Python parser handles both bigint and ISO 8601 strings
+- Default page of Xero contacts (up to 100) is fetched and digit-matched in code via compound PhoneCountryCode/AreaCode/Number fields — no OData Contains filter (was too strict across country formats)
+
+### Pre-session Xero fetch (D-08)
+
+The pre-session fetch for Xero customer context runs **before** `build_system_prompt` — the prompt-block injection requires data pre-session. Flow:
+
+1. `fetch_xero_context_bounded(tenant_id, from_number, timeout_seconds=2.5)` runs awaited before the prompt is built
+2. On timeout / exception / no-match: returns None → `customer_context=None` → prompt block omitted (D-11 uniform cold-call)
+3. Budget 2.5s covers refresh (if needed) + `getContacts` + 2 parallel `getInvoices` calls on Xero's cold API
+4. `_run_db_queries` then runs the 3 existing parallel tasks (subscription / intake / call_record) — xero is NOT inside _run_db_queries anymore
+5. Sentry captures timeout/error with tenant_id + hashed phone tag (SHA-256 first 8 chars — no PII)
+
+### customer_context prompt block
+
+`build_system_prompt(..., customer_context=None)` accepts the kwarg; the new `_build_customer_account_section` injects a CRITICAL RULE-framed STATE+DIRECTIVE block between repeat_caller and info_gathering. When customer_context is None, the block is omitted entirely.
+
+- STATE line: `contact=<name>; outstanding=$X across N invoices; last_invoice=INV-YYY $Z dated ... (status); last_payment=DATE`
+- DIRECTIVE: Answer factually ONLY when caller explicitly asks about balance/bill/recent work; do not volunteer
+- Extra CRITICAL RULE paragraph: "NEVER volunteer...Ask every question as if no records...If asked 'do you have my info?', confirm presence WITHOUT specifics"
+
+### check_customer_account tool
+
+- `livekit-agent/src/tools/check_customer_account.py` — factory `create_check_customer_account_tool(deps)` registered in `tools/__init__.py`
+- Re-serves `deps["customer_context"]` via shared formatter `format_customer_context_state()`; NEVER re-fetches from Xero
+- Returns locked `STATE: no_xero_contact_for_phone` string when customer_context is None
+- Always available (not gated on onboarding_complete)
+
+### Cross-runtime customer_context casing — INTENTIONAL divergence
+
+`fetchCustomerByPhone` in Next.js and `fetch_xero_customer_by_phone` in Python return the SAME LOGICAL SHAPE, but with LANGUAGE-IDIOMATIC casing:
+
+- **Next.js (camelCase):** `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }`
+- **Python (snake_case):** `{ contact, outstanding_balance, last_invoices, last_payment_date }`
+
+This is **intentional** language-idiomatic divergence — each runtime serializes per its ecosystem convention. They NEVER cross runtime boundaries: the agent prompt formatter (`format_customer_context_state` in tools/check_customer_account.py) reads the snake_case shape; the dashboard reads the camelCase shape. **DO NOT "unify" the casing** — it would break one side without benefit.
+
+### Privacy rule (D-10)
+
+The agent must NEVER volunteer customer name, outstanding balance, invoice numbers, or payment history. Answer factually only when explicitly asked. Mirrors `check_caller_history.py:107-117` phrasing.
+
+---
+
 ## Important: Keeping This Document Updated
 
 When making changes to any file listed in the File Map above, update the relevant sections of this skill document to reflect the new behavior. This ensures future conversations always have an accurate reference.

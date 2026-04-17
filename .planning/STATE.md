@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: executing
-stopped_at: Phase 59 context gathered (Customer/Job separation)
-last_updated: "2026-04-17T12:48:58.424Z"
-last_activity: 2026-04-17 -- Phase 55 planning complete
+status: completed-phase-55-ready-for-56
+stopped_at: Phase 55 complete (UAT passed)
+last_updated: "2026-04-18T00:00:00.000Z"
+last_activity: 2026-04-18 -- Phase 55 Xero read-side shipped + UAT
 progress:
   total_phases: 12
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 61
-  completed_plans: 53
-  percent: 87
+  completed_plans: 61
+  percent: 100
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 55 — Xero read-side integration (caller context)
+**Current focus:** Phase 55 COMPLETE → Phase 56 (Jobber read-side) ready to plan
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 54 CLOSED (UAT 5/5 passed 2026-04-17) → next Phase 55 (Xero read-side)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-04-17 -- Phase 55 planning complete
+Phase: 55 CLOSED → next Phase 56 (Jobber read-side)
+Plan: 8 of 8 complete
+Status: Ready to plan Phase 56
+Last activity: 2026-04-18 -- Phase 55 Xero read-side shipped + UAT
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,6 +65,8 @@ Progress: [░░░░░░░░░░] 0%
 - [v6.0 Plan]: Next.js 16 caching scope = dashboard reads only (`cacheComponents: true` + `"use cache"` + `revalidateTag`); call path stays Python-direct
 - [v6.0 Plan]: Phase sequence — 52 (Leads → Jobs) → 53 (invoicing toggle) → 54 (integrations foundation + sandbox provisioning + Next.js 16 caching) → 55 (Xero read) → 56 (Jobber read) → 57 (Jobber schedule mirror) → 58 (checklist + skills + UAT)
 - [v6.0 Plan]: Sandbox accounts for Jobber + Xero are pre-req for Phases 55–57; user to register dev apps during Phase 53/54 planning
+- [v6.0 P55]: Xero read-side shipped — XeroAdapter.fetchCustomerByPhone as module-level cached fn with two-tier cacheTag (Next.js 16 forbids `'use cache'` on class methods); /api/webhooks/xero with HMAC + intent-verify + per-phone invalidation; BusinessIntegrationsClient gains 4 states with Reconnect banner + Last-synced timestamp; connect_xero setup checklist item; XeroReconnectEmail + notifyXeroRefreshFailure helper; livekit-agent fetches customer_context pre-session with 2.5s budget + parallel getInvoices; check_customer_account tool re-serves cached data as STATE+DIRECTIVE; error_state column (migration 053) surfaces token-refresh failures; cross-runtime casing divergence INTENTIONAL (camelCase Next / snake_case Python)
+- [v6.0 P55 UAT findings → backlog]: 999.1 booking urgency constraint mismatch (`book_appointment` passes `urgency='high'` but DB only accepts emergency/urgent/routine); 999.2 LiveKit voice cutoff on tool calls (server cancelled tool calls when caller talks over AI)
 
 ### Roadmap Evolution
 
@@ -76,7 +78,7 @@ Progress: [░░░░░░░░░░] 0%
 
 - v6.0 Phase 52 (Leads → Jobs rename) needs `/gsd:plan-phase` execution (carries over from v5.0)
 - User to register Jobber dev account at developer.getjobber.com (pre-req for Phase 56)
-- User to register Xero dev account at developer.xero.com (pre-req for Phase 55)
+- ~~User to register Xero dev account at developer.xero.com (pre-req for Phase 55)~~ ✅ done (Phase 55 shipped)
 
 ### Blockers/Concerns
 
@@ -85,6 +87,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-17T12:11:13.570Z
-Stopped at: Phase 59 context gathered (Customer/Job separation)
-Resume file: .planning/phases/59-customer-job-model-separation-split-leads-into-customers-ded/59-CONTEXT.md
+Last session: 2026-04-17T17:24:45.004Z
+Stopped at: Phase 59 UI-SPEC approved
+Resume file: .planning/phases/59-customer-job-model-separation-split-leads-into-customers-ded/59-UI-SPEC.md

@@ -1243,6 +1243,42 @@ const KEYWORD_DOC_MAP = [
 
 ---
 
+## Phase 55: Business Integrations — 4 card states + connect_xero checklist + Xero reconnect email
+
+### BusinessIntegrationsClient.jsx — 4 states (was 3 in P54)
+
+1. **Disconnected** (P54) — muted status + "Connect Xero" button
+2. **Connected** (P54 + P55) — emerald status line + muted "Last synced X ago" line from `last_context_fetch_at` (uses `formatDistanceToNow(parseISO(...), { addSuffix: true })` from `date-fns`)
+3. **Reconnect needed** (NEW P55) — amber `<Alert>` with `AlertTriangle` icon when `row.error_state === 'token_refresh_failed'`; primary "Reconnect Xero" button (accent bg) + secondary ghost "Disconnect" text-link (red). Copy locked per UI-SPEC §State 3: `"Reconnect needed — Xero token expired. Your AI receptionist can't access Xero customer info until you reconnect."`
+4. **Loading** (P54) — skeleton cards
+
+Reference `.planning/phases/55-xero-read-side-integration-caller-context/55-UI-SPEC.md` for canonical copy + colors.
+
+### Setup checklist — new `connect_xero` item
+
+- Theme: `voice`
+- Auto-completion: presence of `accounting_credentials WHERE provider='xero'` (added to `fetchChecklistState` as a 7th parallel query)
+- Href: `/dashboard/more/integrations`
+- Registered in: `VALID_ITEM_IDS`, `THEME_GROUPS.voice`, `ITEM_META`, `deriveChecklistItems` (auto map)
+
+### Xero reconnect email + helper
+
+**`src/emails/XeroReconnectEmail.jsx`** — React Email template, copper-orange CTA button, plain-language body per UI-SPEC §Copywriting Contract. No PII, no balance, no invoice numbers.
+
+**`notifyXeroRefreshFailure(tenantId, ownerEmail)`** in `src/lib/notifications.js`:
+1. Writes `accounting_credentials.error_state = 'token_refresh_failed'` (service-role)
+2. `revalidateTag('integration-status-${tenantId}')` so dashboard re-renders banner on next read
+3. Sends Resend email — subject **"Your Xero connection needs attention"**, body directs owner to `/dashboard/more/integrations`
+4. Tolerates missing `ownerEmail` (skips email, keeps row write); never throws
+
+**Caller scope:** dashboard read paths ONLY (e.g. future admin Test Connection, cron sweep). NEVER called from the LiveKit Python agent call path — Python writes `error_state` directly but delegates email surfacing to dashboard (prevents per-call spam).
+
+### status.js — `error_state` now selected
+
+`getIntegrationStatus(tenantId)` selects `error_state` alongside existing fields so the client receives it in `initialStatus.xero`. Invalidate with `revalidateTag('integration-status-${tenantId}')` whenever the column changes.
+
+---
+
 ## Important: Keeping This Document Updated
 
 When making changes to any file listed in the File Map above, update the relevant sections of this skill document to reflect the new behavior. This ensures future conversations always have an accurate reference.

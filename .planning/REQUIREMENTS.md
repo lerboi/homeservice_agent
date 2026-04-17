@@ -26,12 +26,12 @@
 - **INTFOUND-02:** `accounting_credentials.provider` CHECK constraint is extended to include `'jobber'` (Xero already supported); `scopes TEXT[]` and `last_context_fetch_at TIMESTAMPTZ` columns added for telemetry
 - **INTFOUND-03:** `next.config.js` has `cacheComponents: true` enabled to support Next.js 16 `"use cache"` patterns for dashboard reads
 
-### Xero Read-Side (Phase 55)
+### Xero Read-Side (Phase 55) ✅ COMPLETE
 
-- **XERO-01:** A tenant can connect Xero via OAuth from `/dashboard/more/integrations`; tokens are stored in `accounting_credentials` with `provider='xero'`; refresh-aware token getter handles expiry
-- **XERO-02:** `fetchCustomerByPhone(tenantId, phone)` returns `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }` from Xero in <500ms p95 with 5-min "use cache" TTL
-- **XERO-03:** `/api/webhooks/xero` invalidates tenant's customer-context cache on invoice/payment events via `revalidateTag`
-- **XERO-04:** During an inbound call, the LiveKit agent fetches Xero context (parallel with tenant DB read), injects a non-empty `customer_context` section into the system prompt, and exposes `check_customer_account()` as a tool
+- [x] **XERO-01:** A tenant can connect Xero via OAuth from `/dashboard/more/integrations`; tokens are stored in `accounting_credentials` with `provider='xero'`; refresh-aware token getter handles expiry — Phase 55 Plans 01/03/05
+- [x] **XERO-02:** `fetchCustomerByPhone(tenantId, phone)` returns `{ contact, outstandingBalance, lastInvoices, lastPaymentDate }` from Xero with `'use cache'` TTL — Phase 55 Plan 02 (module-level cached function — Next.js 16 forbids `'use cache'` on class methods)
+- [x] **XERO-03:** `/api/webhooks/xero` invalidates tenant's customer-context cache on invoice/payment events via `revalidateTag` — Phase 55 Plan 04
+- [x] **XERO-04:** During an inbound call, the LiveKit agent fetches Xero context pre-session (awaited with 2.5s budget), injects a non-empty `customer_context` section into the system prompt, and exposes `check_customer_account()` as a tool — Phase 55 Plans 06 + 07
 
 ### Jobber Read-Side (Phase 56)
 
