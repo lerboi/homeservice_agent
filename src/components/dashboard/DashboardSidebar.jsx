@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/lib/supabase-browser';
 import { getNextTheme, getToggleLabel, getToggleAriaLabel } from '@/lib/theme-toggle-logic';
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
@@ -85,6 +86,7 @@ function ThemeToggleButton() {
 }
 
 export default function DashboardSidebar() {
+  const { invoicing } = useFeatureFlags();
   const pathname = usePathname();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
@@ -111,7 +113,7 @@ export default function DashboardSidebar() {
       {/* Main navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 flex flex-col">
         <div className="flex-1 space-y-1">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => item.href !== '/dashboard/invoices' || invoicing).map((item) => (
             <NavLink
               key={item.href}
               item={item}
