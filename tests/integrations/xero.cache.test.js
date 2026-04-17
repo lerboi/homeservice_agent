@@ -10,15 +10,15 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-describe("XeroAdapter.fetchCustomerByPhone cache directive", () => {
+describe("fetchXeroCustomerByPhone cache directive", () => {
   const source = readFileSync(
     resolve(process.cwd(), 'src/lib/integrations/xero.js'),
     'utf8',
   );
 
-  it("'use cache' is the first statement inside fetchCustomerByPhone", () => {
+  it("'use cache' is the first statement inside fetchXeroCustomerByPhone (module-level function — Next.js 16 forbids the directive on class methods)", () => {
     const fnMatch = source.match(
-      /async\s+fetchCustomerByPhone\s*\([^)]*\)\s*\{([\s\S]*?)\n\s*(?:cacheTag|const|let|var|return|await|if|try|throw)/,
+      /export\s+async\s+function\s+fetchXeroCustomerByPhone\s*\([^)]*\)\s*\{([\s\S]*?)\n\s*(?:cacheTag|const|let|var|return|await|if|try|throw)/,
     );
     expect(fnMatch).toBeTruthy();
     const head = fnMatch[1].trim();
