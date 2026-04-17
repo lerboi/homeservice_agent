@@ -18,6 +18,7 @@ import {
   Plug,
   ClipboardList,
   MessageSquare,
+  Zap,
 } from 'lucide-react';
 
 const QUICK_ACCESS = [
@@ -32,6 +33,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/more/notifications', label: 'Notifications & Escalation', description: 'Alerts per call outcome and emergency contact chain', icon: Bell },
   { href: '/dashboard/more/call-routing', label: 'Call Routing', description: 'Forward calls on a schedule and set priority callers who always ring through', icon: PhoneForwarded },
   { href: '/dashboard/more/billing', label: 'Billing', description: 'Plan, usage, and invoices', icon: CreditCard },
+  { href: '/dashboard/more/features', label: 'Features', description: 'Turn optional capabilities on or off', icon: Zap },
   { href: '/dashboard/more/invoice-settings', label: 'Invoice Settings', description: 'Business info, tax rate, and invoice numbering', icon: FileText },
   { href: '/dashboard/more/integrations', label: 'Integrations', description: 'Connect accounting software for invoice sync', icon: Plug },
   { href: '/dashboard/more/ai-voice-settings', label: 'AI & Voice Settings', description: 'Phone number, AI tone, and test call', icon: Bot },
