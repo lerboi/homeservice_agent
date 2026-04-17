@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: verifying
-stopped_at: Completed 53-07-PLAN.md
+status: ready
+stopped_at: Phase 54 closed — UAT 5/5 passed
 last_updated: "2026-04-17T08:05:01.403Z"
 last_activity: 2026-04-17
 progress:
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 54 — integration-credentials-foundation-caching-prep-sandbox-provisioning
+**Current focus:** Phase 55 — Xero read-side integration (caller context)
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 54 (integration-credentials-foundation-caching-prep-sandbox-provisioning) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
+Phase: 54 CLOSED (UAT 5/5 passed 2026-04-17) → next Phase 55 (Xero read-side)
+Plan: —
+Status: Ready to plan Phase 55
 Last activity: 2026-04-17
 
 Progress: [░░░░░░░░░░] 0%
