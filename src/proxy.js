@@ -77,7 +77,7 @@ export async function proxy(request) {
   if (user) {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('onboarding_complete, id')
+      .select('onboarding_complete, id, features_enabled')
       .eq('owner_id', user.id)
       .single();
 
@@ -132,6 +132,31 @@ export async function proxy(request) {
 
       // Subscription status is checked but no longer blocks dashboard access.
       // The BillingWarningBanner component shows warnings directly on the dashboard.
+    }
+
+    // ── Feature flag gate (TOGGLE-02 pages, D-01) ────────────────────────────
+    // Redirect to /dashboard when a tenant tries to visit an invoicing page with
+    // features_enabled.invoicing = false. Reads from the EXISTING tenant fetch
+    // above — DO NOT add a second supabase.from('tenants') call here (Pitfall 3).
+    //
+    // /dashboard/more/features is intentionally NOT in this list — it is the
+    // panel where owners re-enable invoicing, and must remain accessible when
+    // the flag is off (Pitfall 6).
+    const INVOICING_GATED_PATHS = [
+      '/dashboard/invoices',
+      '/dashboard/estimates',
+      '/dashboard/more/invoice-settings',
+    ];
+
+    const isInvoicingGatedPath = INVOICING_GATED_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(p + '/')
+    );
+
+    if (isInvoicingGatedPath && tenant) {
+      const invoicingEnabled = tenant.features_enabled?.invoicing === true;
+      if (!invoicingEnabled) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
   }
 
