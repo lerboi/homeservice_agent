@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { getTenantFeatures } from '@/lib/features';
 
 /**
  * GET /api/invoice-settings
@@ -12,6 +13,11 @@ export async function GET() {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const features = await getTenantFeatures(tenantId);
+  if (!features.invoicing) {
+    return new Response(null, { status: 404 });
   }
 
   // Try to fetch existing settings
@@ -80,6 +86,11 @@ export async function PATCH(request) {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const features = await getTenantFeatures(tenantId);
+  if (!features.invoicing) {
+    return new Response(null, { status: 404 });
   }
 
   let body;
