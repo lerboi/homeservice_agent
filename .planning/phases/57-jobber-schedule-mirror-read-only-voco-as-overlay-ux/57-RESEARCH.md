@@ -495,6 +495,8 @@ Cron flow:
 
 **Decision needed:** whether `last_context_fetch_at` is overloaded for schedule polling or a dedicated `jobber_last_schedule_poll_at` column is added. Recommend NEW column in Migration 055 for semantic clarity. [ASSUMED: ok to add.]
 
+**RESOLVED (Plan 01 + Plan 04):** Dedicated `accounting_credentials.jobber_last_schedule_poll_at TIMESTAMPTZ` column added in Migration 055. Cron (Plan 04) reads/writes this column exclusively and MUST NOT touch `last_context_fetch_at` (which Phase 56 customer-context fetches own). This prevents the race where a customer-context GraphQL touch between polls advances the schedule cursor and causes silent visit loss.
+
 ### Pattern 10: `ExternalEventBlock` retrofit + "Not in Jobber yet" pill (JOBSCHED-05, JOBSCHED-06)
 
 Current `ExternalEventBlock` (`src/components/dashboard/CalendarView.js:373-392`) hardcodes violet Google-calendar treatment. UI-SPEC §Component Inventory §1 replaces with unified slate-muted + provider-aware pill. Drop-in replacement — signature and call sites unchanged:
@@ -1201,27 +1203,31 @@ Framework install: none — project has full test infrastructure shipped.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Split vs. single cron for renew-calendar-channels?**
    - What we know: existing cron is daily; D-15 mandates 15-min poll. Cadence mismatch.
    - What's unclear: whether Google/Outlook renewal can tolerate running every 15 minutes without cost or API-quota impact.
    - Recommendation: Plan a dedicated `/api/cron/poll-jobber-visits` endpoint with `*/15 * * * *` and keep `/api/cron/renew-calendar-channels` on its current `0 2 * * *` schedule (Pattern 3 + Example 3).
+   - **RESOLVED:** Dedicated `/api/cron/poll-jobber-visits` at `*/15 * * * *` added; `renew-calendar-channels` preserved. See Plan 01 (vercel.json) and Plan 04 (cron handler).
 
 2. **Does a `provider_metadata JSONB` column on `calendar_events` earn its keep in v1?**
    - What we know: UI-SPEC wants per-visit click-through URLs, which needs `{job_id}` on Jobber rows to construct.
    - What's unclear: whether users actually use the day-view fallback often enough to justify the added schema surface.
    - Recommendation: Ship v1 WITHOUT the column; rely on day-view URL. Add in Phase 999.3 alongside push-back schema (the push phase needs structured metadata anyway).
+   - **RESOLVED:** `provider_metadata JSONB` deferred to Phase 999.3. No column added in Migration 055. Noted in Plan 01 Task 1 (explicit exclusion).
 
 3. **Email template design — standalone `BookingCopyToJobberEmail.jsx` or block inside a future "booking confirmation" template?**
    - What we know: no post-booking email template exists today. UI-SPEC implies a new one is needed.
    - What's unclear: is this the RIGHT moment to introduce a general booking-confirmation email, or should we scope narrowly to the Jobber-copy case?
    - Recommendation: Scope narrowly — new `BookingCopyToJobberEmail.jsx` fires only when Jobber is connected. If Voco later adds a generic booking-confirmation email, the Jobber block can become a conditional section inside it. Smaller surface now, no coupling to speculative future work.
+   - **RESOLVED:** Narrow standalone `BookingCopyToJobberEmail.jsx` chosen. See Plan 05 Task 3.
 
 4. **Who owns the "initial backfill" trigger point — OAuth callback, picker PATCH, or both?**
    - What we know: Connect-flow step is picker → PATCH → backfill. But users can reconfigure the picker from settings later, which also triggers diff-sync.
    - What's unclear: should OAuth callback kick off a "mirror all visits" backfill before the picker even runs?
    - Recommendation: NO. OAuth callback just writes tokens and redirects to the picker. The picker PATCH is the exclusive entry point to the mirror. This keeps "Jobber connected but not yet configured" states cleanly distinguishable from "Jobber connected and mirror populated." Document explicitly.
+   - **RESOLVED:** Picker-only backfill trigger. OAuth callback writes tokens and redirects to `/dashboard/integrations/jobber/setup`; picker PATCH (or solo auto-skip) is the sole entry to `rebuildJobberMirror`. See Plan 04 Tasks 2 and 3.
 
 5. **Nuke-and-repave vs. surgical diff on bookable-users PATCH?**
    - What we know: Pattern 5 stores assignee in `title`, not a structured column, so DB-level filtering by assignee_id is impossible. Surgical diff requires N Jobber GraphQL queries (one per removed user, one per added user window).
