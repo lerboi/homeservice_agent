@@ -315,6 +315,10 @@ export class JobberAdapter {
 // Phase 57: schedule mirror fetchers
 // ============================================================
 
+// Jobber's VisitFilterAttributes uses range-input filters
+// (startAt: { after, before }, updatedAt: { after }) — NOT flat
+// startAfter/startBefore/updatedAfter. The flat names are rejected with
+// "argumentNotAccepted" / "Did you mean `startAt`?" on the live schema.
 const VISITS_DELTA_QUERY = gql`
   query JobberVisitsDelta(
     $updatedAfter: ISO8601DateTime,
@@ -327,9 +331,8 @@ const VISITS_DELTA_QUERY = gql`
       first: $first
       after: $after
       filter: {
-        updatedAfter: $updatedAfter
-        startAfter: $startAfter
-        startBefore: $startBefore
+        startAt: { after: $startAfter, before: $startBefore }
+        updatedAt: { after: $updatedAfter }
       }
     ) {
       nodes {
@@ -361,13 +364,12 @@ const USERS_QUERY = gql`
   }
 `;
 
+// "Recent activity" is a UX heuristic for the picker (Active badge), not a
+// contract — drop the date filter and just take the most recent N visits.
+// Pagination caller bounds work via maxIterations below.
 const RECENT_VISITS_FOR_ACTIVITY_QUERY = gql`
-  query JobberRecentVisitsForActivity($startAfter: ISO8601DateTime!, $first: Int!, $after: String) {
-    visits(
-      first: $first
-      after: $after
-      filter: { startAfter: $startAfter }
-    ) {
+  query JobberRecentVisitsForActivity($first: Int!, $after: String) {
+    visits(first: $first, after: $after) {
       nodes {
         id
         assignedUsers(first: 5) { nodes { id } }
@@ -474,16 +476,20 @@ export async function fetchJobberUsersWithRecentActivity({ cred }) {
     cursor = data?.users?.pageInfo?.hasNextPage ? data.users.pageInfo.endCursor : null;
   } while (cursor);
 
-  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  // Activity heuristic: pull up to ~1500 most recent visits (3 pages × 500)
+  // and treat any user assigned to any of them as "active". Bounded by
+  // maxPages so a busy tenant doesn't make us walk years of history.
+  const ACTIVITY_MAX_PAGES = 3;
   const active = new Set();
   cursor = null;
-  do {
-    const data = await client.request(RECENT_VISITS_FOR_ACTIVITY_QUERY, { startAfter: since, first: 500, after: cursor });
+  for (let page = 0; page < ACTIVITY_MAX_PAGES; page += 1) {
+    const data = await client.request(RECENT_VISITS_FOR_ACTIVITY_QUERY, { first: 500, after: cursor });
     for (const v of data?.visits?.nodes ?? []) {
       for (const u of v?.assignedUsers?.nodes ?? []) active.add(u.id);
     }
     cursor = data?.visits?.pageInfo?.hasNextPage ? data.visits.pageInfo.endCursor : null;
-  } while (cursor);
+    if (!cursor) break;
+  }
 
   return users.map((u) => ({
     id: u.id,
