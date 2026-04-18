@@ -3,7 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const liveDb = SUPABASE_URL && SERVICE_KEY ? describe : describe.skip;
+// jest.setup.js installs placeholder env vars so module-level Supabase clients
+// don't throw at import time. Only run live-DB assertions when the env points
+// at a real project (the placeholder URL is test.supabase.co + 'test-' / 'service-role' keys).
+const isPlaceholder =
+  !SUPABASE_URL ||
+  SUPABASE_URL.includes('test.supabase.co') ||
+  !SERVICE_KEY ||
+  SERVICE_KEY === 'service-role' ||
+  SERVICE_KEY.startsWith('test-');
+const liveDb = isPlaceholder ? describe.skip : describe;
 
 liveDb('Migration 055 — Jobber schedule mirror (live DB)', () => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
