@@ -2,6 +2,7 @@ import { after } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
 import { createOrAttachLeadForManualAppointment } from '@/lib/leads';
+import { notifyBookingCopyToJobber } from '@/lib/notifications';
 
 /**
  * Compute travel buffer blocks between consecutive same-day appointments.
@@ -322,6 +323,20 @@ export async function POST(request) {
         }
       } catch (err) {
         console.error('[appointments] Calendar sync failed:', err.message);
+      }
+    });
+  }
+
+  // Phase 57 — fire-and-forget "copy this to Jobber" email. Non-blocking via
+  // after(); helper internally gates on Jobber-connected AND jobber_visit_id IS NULL,
+  // so this no-ops cleanly for tenants without Jobber. Voice-agent bookings
+  // (livekit-agent repo) wire this separately at their own post-booking site.
+  if (data) {
+    after(async () => {
+      try {
+        await notifyBookingCopyToJobber({ tenantId, appointmentId: data.id });
+      } catch (err) {
+        console.error('[appointments] notifyBookingCopyToJobber failed:', err?.message || err);
       }
     });
   }

@@ -19,6 +19,7 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
+import { JobberBookableUsersSection } from '@/components/dashboard/JobberBookableUsersSection';
 import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 
 // Brand logos — inline SVG so no runtime bundle cost beyond these two components.
@@ -287,22 +288,28 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                     </Button>
                   </div>
                 ) : connected ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                    onClick={() => setDisconnectTarget(providerKey)}
-                    disabled={isDisconnecting}
-                  >
-                    {isDisconnecting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        Disconnecting…
-                      </>
-                    ) : (
-                      'Disconnect'
-                    )}
-                  </Button>
+                  <>
+                    {/* Phase 57 — Jobber-only: bookable-users picker for the
+                        schedule-mirror feature. Shipped inside the connected card
+                        so owners can adjust the set without leaving integrations. */}
+                    {providerKey === 'jobber' && <JobberBookableUsersSection />}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 mt-3"
+                      onClick={() => setDisconnectTarget(providerKey)}
+                      disabled={isDisconnecting}
+                    >
+                      {isDisconnecting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                          Disconnecting…
+                        </>
+                      ) : (
+                        'Disconnect'
+                      )}
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     size="sm"
