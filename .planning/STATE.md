@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 56-01-PLAN.md
-last_updated: "2026-04-18T17:35:23.396Z"
+stopped_at: Completed 56-02-PLAN.md
+last_updated: "2026-04-18T17:41:15.501Z"
 last_activity: 2026-04-18
 progress:
   total_phases: 14
   completed_phases: 12
   total_plans: 68
-  completed_plans: 63
-  percent: 93
+  completed_plans: 64
+  percent: 94
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Milestone: v6.0 (planning)
 Phase: 56 (jobber-read-side-integration-customer-context-clients-jobs-invoices) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-04-18
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 | Phase 53 P05 | 14min | 3 tasks | 3 files |
 | Phase 53 P07 | 10min | 3 tasks | 4 files |
 | Phase 56 P01 | 35min | 2 tasks | 8 files |
+| Phase 56 P02 | 15min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,7 @@ Progress: [██████████] 100%
 - [v6.0 Plan]: Sandbox accounts for Jobber + Xero are pre-req for Phases 55–57; user to register dev apps during Phase 53/54 planning
 - [v6.0 P55]: Xero read-side shipped — XeroAdapter.fetchCustomerByPhone as module-level cached fn with two-tier cacheTag (Next.js 16 forbids `'use cache'` on class methods); /api/webhooks/xero with HMAC + intent-verify + per-phone invalidation; BusinessIntegrationsClient gains 4 states with Reconnect banner + Last-synced timestamp; connect_xero setup checklist item; XeroReconnectEmail + notifyXeroRefreshFailure helper; livekit-agent fetches customer_context pre-session with 2.5s budget + parallel getInvoices; check_customer_account tool re-serves cached data as STATE+DIRECTIVE; error_state column (migration 053) surfaces token-refresh failures; cross-runtime casing divergence INTENTIONAL (camelCase Next / snake_case Python)
 - [v6.0 P55 UAT findings → backlog]: 999.1 booking urgency constraint mismatch (`book_appointment` passes `urgency='high'` but DB only accepts emergency/urgent/routine); 999.2 LiveKit voice cutoff on tool calls (server cancelled tool calls when caller talks over AI)
+- [v6.0 P56-02]: Added provider-agnostic `accounting_credentials.external_account_id` via migration 054 (backfilled from `xero_tenant_id` for Xero rows; partial unique index on `(tenant_id, provider, external_account_id) WHERE NOT NULL`). `xero_tenant_id` retained — P58 will drop. `.env.example` clarifies `JOBBER_CLIENT_SECRET` doubles as the webhook HMAC key (no separate `JOBBER_WEBHOOK_SECRET` env var — Pitfall 1 option b). Unblocks Plan 03 webhook tenant-resolution lookup.
 - [2026-04-18 backlog 999.1 & 999.2 resolved]: (999.1) `src/tools/book_appointment.py` now normalizes urgency via `_normalize_urgency()` (maps `high`/`medium` → `urgent`, `low`/`normal` → `routine`, `critical`/`asap` → `emergency`, unknown → `routine`) before calling `atomic_book_slot`; tool description enumerates the three allowed values to stop Gemini inventing new ones. (999.2) `src/agent.py` passes a `RealtimeInputConfig` with `AutomaticActivityDetection` set to LOW start/end sensitivity, `prefix_padding_ms=400`, `silence_duration_ms=1000` to `google.realtime.RealtimeModel` — dampens Gemini server VAD so breaths/overlap no longer cancel in-flight tool calls (root cause: livekit/agents#4441). Barge-in preserved. Skill `voice-call-architecture` updated; both entries ready to be deleted from ROADMAP backlog section.
 
 ### Roadmap Evolution
@@ -89,6 +91,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-18T17:35:23.386Z
-Stopped at: Completed 56-01-PLAN.md
+Last session: 2026-04-18T17:41:15.492Z
+Stopped at: Completed 56-02-PLAN.md
 Resume file: None

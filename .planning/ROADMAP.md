@@ -270,11 +270,11 @@ Plans:
 **Depends on:** Phase 54 (integrations foundation — `accounting_credentials.provider='jobber'` CHECK constraint, `src/lib/integrations/` adapter contract, `/api/integrations/[provider]/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell) and Phase 55 (Xero adapter establishes the `IntegrationAdapter` pattern, the `fetchCustomerByPhone` return shape, the webhook invalidation pattern, the agent-side `customer_context` prompt block, and the `check_customer_account` tool that Phase 56 extends).
 **Requirements:** JOBBER-01, JOBBER-02, JOBBER-03, JOBBER-04, JOBBER-05
 **Pre-requisite user actions:** Register Jobber dev app at developer.getjobber.com (free, ~10 min) and set redirect URI to `/api/integrations/jobber/callback` (blocks execution, not planning).
-**Plans:** 1/7 plans executed
+**Plans:** 2/7 plans executed
 
 Plans:
 - [x] 56-01-PLAN.md — Next.js JobberAdapter: real exchangeCode/refreshToken/revoke + module-level fetchJobberCustomerByPhone + 'use cache' + two-tier cacheTag + 5 test files (JOBBER-01, JOBBER-02)
-- [ ] 56-02-PLAN.md — Migration 054 external_account_id column + backfill + unique index + .env.example webhook-secret overload note + [BLOCKING] supabase db push (JOBBER-01, JOBBER-03)
+- [x] 56-02-PLAN.md — Migration 054 external_account_id column + backfill + unique index + .env.example webhook-secret overload note + [BLOCKING] supabase db push (JOBBER-01, JOBBER-03)
 - [ ] 56-03-PLAN.md — /api/webhooks/jobber HMAC-SHA256 verify (key IS JOBBER_CLIENT_SECRET) + 5-event routing + per-phone revalidateTag + broad fallback (JOBBER-03)
 - [ ] 56-04-PLAN.md — BusinessIntegrationsClient Preferred badge + banner bug-fix + Jobber error state + integrations page data pass + disconnect Jobber branch + connect_jobber checklist + notifyJobberRefreshFailure + JobberReconnectEmail (JOBBER-01)
 - [ ] 56-05-PLAN.md — [CROSS-REPO livekit-agent] src/integrations/jobber.py service-role Supabase read + httpx Jobber GraphQL + refresh-token rotation write-back + pytest (JOBBER-02, JOBBER-04)
