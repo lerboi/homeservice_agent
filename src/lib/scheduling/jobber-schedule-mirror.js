@@ -134,7 +134,8 @@ export async function rebuildJobberMirror({ admin, cred, fetchVisitsPage }) {
       after: cursor,
     });
     for (const visit of visits ?? []) {
-      const clientName = visit.job?.client?.name?.full ?? null;
+      // Client.name is a scalar string on the live Jobber schema (not an object).
+      const clientName = visit.job?.client?.name ?? null;
       const res = await applyJobberVisit({
         admin,
         tenantId: cred.tenant_id,

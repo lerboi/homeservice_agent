@@ -205,7 +205,8 @@ export async function POST(request) {
           // (Plan 04) reconciles the gap. Same treatment for any unresolved id.
           const visit = await fetchJobberVisitById({ cred, id: evt.itemId }).catch(() => null);
           if (visit) {
-            const clientName = visit.job?.client?.name?.full ?? null;
+            // Client.name is scalar on the live Jobber schema.
+            const clientName = visit.job?.client?.name ?? null;
             await applyJobberVisit({
               admin,
               tenantId: vocoTenantId,

@@ -315,13 +315,18 @@ export class JobberAdapter {
 // Phase 57: schedule mirror fetchers
 // ============================================================
 
-// Jobber's VisitFilterAttributes uses range-input filters
-// (startAt: { after, before }, updatedAt: { after }) — NOT flat
-// startAfter/startBefore/updatedAfter. The flat names are rejected with
-// "argumentNotAccepted" / "Did you mean `startAt`?" on the live schema.
+// Jobber's VisitFilterAttributes accepts startAt: { after, before } range
+// input but does NOT expose an updatedAt filter — there is no server-side
+// delta-poll filter on visits. The cron path therefore re-fetches the full
+// P90/F180 window every 15 min and relies on applyJobberVisit's upsert
+// (UNIQUE on tenant_id, provider, external_id) for idempotency. The
+// updatedAfter caller arg is accepted but ignored at the GraphQL layer.
+//
+// Schema notes:
+//   User.name  → { full first last } (object)
+//   Client.name → String (scalar) — see P56 FETCH_QUERY line 38
 const VISITS_DELTA_QUERY = gql`
   query JobberVisitsDelta(
-    $updatedAfter: ISO8601DateTime,
     $startAfter: ISO8601DateTime!,
     $startBefore: ISO8601DateTime!,
     $first: Int!,
@@ -332,7 +337,6 @@ const VISITS_DELTA_QUERY = gql`
       after: $after
       filter: {
         startAt: { after: $startAfter, before: $startBefore }
-        updatedAt: { after: $updatedAfter }
       }
     ) {
       nodes {
@@ -341,7 +345,7 @@ const VISITS_DELTA_QUERY = gql`
         endAt
         visitStatus
         assignedUsers(first: 5) { nodes { id name { full } } }
-        job { id title client { id name { full } } }
+        job { id title client { id name } }
       }
       pageInfo { hasNextPage endCursor }
     }
@@ -387,7 +391,7 @@ const VISIT_BY_ID_QUERY = gql`
       endAt
       visitStatus
       assignedUsers(first: 5) { nodes { id name { full } } }
-      job { id title client { id name { full } } }
+      job { id title client { id name } }
     }
   }
 `;
@@ -408,17 +412,23 @@ async function getJobberGraphqlClient(admin, cred) {
 
 /**
  * Single-page fetch of Jobber visits in a time window. Pagination handled by caller.
- * Used by rebuildJobberMirror (full-window) and pollJobberVisitsDelta (updatedAfter).
+ * Used by rebuildJobberMirror (full-window) and the cron poll path.
+ *
+ * NOTE: `updatedAfter` is accepted for API stability but currently IGNORED — Jobber's
+ * VisitFilterAttributes does not expose an updatedAt filter. Cron re-fetches the
+ * full P90/F180 window every 15 min; idempotency comes from
+ * applyJobberVisit's UNIQUE(tenant_id, provider, external_id) upsert.
  *
  * @param {object} args
  * @param {object} args.cred                  accounting_credentials row
  * @param {string} args.windowStart           ISO8601
  * @param {string} args.windowEnd             ISO8601
- * @param {string|null} [args.updatedAfter]   ISO8601 — null for full backfill
+ * @param {string|null} [args.updatedAfter]   ISO8601 — accepted, but ignored at the GraphQL layer (see note)
  * @param {string|null} [args.after]          GraphQL cursor
  * @param {number} [args.first]               page size (default 100)
  * @returns {Promise<{ visits, pageInfo }>}
  */
+// eslint-disable-next-line no-unused-vars
 export async function fetchJobberVisits({ cred, windowStart, windowEnd, updatedAfter = null, after = null, first = 100 }) {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -426,7 +436,6 @@ export async function fetchJobberVisits({ cred, windowStart, windowEnd, updatedA
   );
   const client = await getJobberGraphqlClient(admin, cred);
   const data = await client.request(VISITS_DELTA_QUERY, {
-    updatedAfter,
     startAfter: windowStart,
     startBefore: windowEnd,
     first,

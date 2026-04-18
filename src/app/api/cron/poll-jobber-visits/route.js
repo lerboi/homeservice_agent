@@ -55,7 +55,8 @@ export async function GET(request) {
           first: 100,
         });
         for (const visit of visits ?? []) {
-          const clientName = visit.job?.client?.name?.full ?? null;
+          // Client.name is scalar on the live Jobber schema.
+          const clientName = visit.job?.client?.name ?? null;
           await applyJobberVisit({
             admin,
             tenantId: cred.tenant_id,
