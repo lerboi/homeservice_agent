@@ -345,10 +345,17 @@ const VISITS_DELTA_QUERY = gql`
   }
 `;
 
+// NOTE: Jobber's User.email returns the UserEmail object type, but the
+// `address` subfield was removed in newer API versions (live env returns
+// "Field 'address' doesn't exist on type 'UserEmail'"). The bookable-users
+// picker only displays name + Active badge — email is unused — so we omit
+// the email subselection entirely. If a future feature needs it, query
+// GraphiQL for the current UserEmail subfield (e.g. `email { primary }`)
+// before re-adding.
 const USERS_QUERY = gql`
   query JobberUsers($first: Int!, $after: String) {
     users(first: $first, after: $after) {
-      nodes { id name { full first last } email { address } }
+      nodes { id name { full first last } }
       pageInfo { hasNextPage endCursor }
     }
   }
@@ -483,7 +490,8 @@ export async function fetchJobberUsersWithRecentActivity({ cred }) {
     name: u.name?.full ?? `${u.name?.first ?? ''} ${u.name?.last ?? ''}`.trim(),
     first: u.name?.first ?? '',
     last: u.name?.last ?? '',
-    email: u.email?.address ?? null,
+    // email omitted from this query (UserEmail.address removed in newer Jobber API)
+    email: null,
     hasRecentActivity: active.has(u.id),
   }));
 }
