@@ -20,6 +20,47 @@ import { PROVIDERS } from '@/lib/integrations/types';
 
 const PAGE_URL = '/dashboard/more/integrations';
 
+// Jobber GraphQL constants — keep in sync with src/lib/integrations/jobber.js
+const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
+const JOBBER_API_VERSION = '2024-04-01';
+
+/**
+ * Post-token-exchange probe for Jobber — resolves the `accountId` the
+ * webhook handler (/api/webhooks/jobber) looks up via
+ * accounting_credentials.external_account_id (P56 Plan 02 migration 054).
+ *
+ * Returns the account.id string on success, null on any failure. Never
+ * throws — caller treats null as a non-fatal degraded state.
+ *
+ * @param {string} accessToken
+ * @returns {Promise<string|null>}
+ */
+async function probeJobberAccountId(accessToken) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(JOBBER_GRAPHQL_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-JOBBER-GRAPHQL-VERSION': JOBBER_API_VERSION,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ query: 'query { account { id } }' }),
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const body = await resp.json();
+    const id = body?.data?.account?.id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
+  } catch {
+    // Network/timeout/parse — scrubbed failure; caller handles.
+    return null;
+  }
+}
+
 export async function GET(request, { params }) {
   const { provider } = await params;
 
@@ -84,6 +125,29 @@ export async function GET(request, { params }) {
           features_enabled: { ...(tenantRow.features_enabled || {}), invoicing: true },
         })
         .eq('id', tenantId);
+    }
+
+    // P56 Plan 03 Task 3 — Jobber-only account-id write-back.
+    // The webhook handler at /api/webhooks/jobber looks up tenants via
+    // accounting_credentials.external_account_id. Without this probe + UPDATE,
+    // webhook delivery in production would silently no-op on unknown accountId.
+    if (provider === 'jobber') {
+      const accountId = await probeJobberAccountId(tokenSet.access_token);
+      if (accountId) {
+        await supabase
+          .from('accounting_credentials')
+          .update({ external_account_id: accountId })
+          .eq('tenant_id', tenantId)
+          .eq('provider', 'jobber');
+      } else {
+        // Probe failed — scrubbed log, no token material, no response body.
+        console.error(
+          '[integrations-callback] jobber account probe failed (tokens persisted; external_account_id remains NULL)',
+        );
+        return NextResponse.redirect(
+          `${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}?error=account_probe_failed&provider=jobber`,
+        );
+      }
     }
 
     revalidateTag(`integration-status-${tenantId}`);
