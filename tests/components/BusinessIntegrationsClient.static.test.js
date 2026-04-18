@@ -14,10 +14,10 @@ describe('BusinessIntegrationsClient — locked UI-SPEC copy', () => {
     'utf8',
   );
 
-  it('renders the Reconnect-needed banner copy verbatim', () => {
-    expect(source).toContain(
-      'Reconnect needed — Xero token expired. Your AI receptionist can',
-    );
+  it('renders the Reconnect-needed banner copy verbatim (Phase 56: provider-dynamic via {meta.name})', () => {
+    // Phase 56 Plan 04 bug fix — banner uses {meta.name} interpolation so both
+    // Xero and Jobber cards render the correct provider name.
+    expect(source).toMatch(/Reconnect needed — \{meta\.name\} token expired/);
     expect(source).toContain('until you reconnect.');
   });
 

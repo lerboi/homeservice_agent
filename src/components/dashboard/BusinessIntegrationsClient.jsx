@@ -226,6 +226,11 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                     <Icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-medium text-foreground">{meta.name}</span>
+                  {providerKey === 'jobber' && connected && !hasError && status.xero !== null && (
+                    <span className="ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                      Preferred
+                    </span>
+                  )}
                 </div>
 
                 {hasError ? (
@@ -233,7 +238,7 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                     <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
                       <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
                       <AlertDescription>
-                        Reconnect needed — Xero token expired. Your AI receptionist can&apos;t access Xero customer info until you reconnect.
+                        Reconnect needed — {meta.name} token expired. Your AI receptionist can&apos;t access {meta.name} customer info until you reconnect.
                       </AlertDescription>
                     </Alert>
                   </div>
