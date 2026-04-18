@@ -264,6 +264,23 @@ Plans:
 - [x] 55-07-PLAN.md — [CROSS-REPO livekit-agent] prompt.py customer_context block (CRITICAL RULE) + check_customer_account tool + agent wiring + E2E call UAT
 - [x] 55-08-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) + ROADMAP/STATE/REQUIREMENTS update
 
+### Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)
+
+**Goal:** Wire Jobber as the second live integration on the Phase 54 foundation so the AI receptionist has trade-relevant customer context (clients, recent jobs, outstanding invoices) during inbound calls — preferred over Xero for home-service tenants. Add Jobber OAuth (tokens stored in `accounting_credentials` with `provider='jobber'` and refresh-aware token getter), a `fetchCustomerByPhone(tenantId, phone)` reader using Jobber GraphQL via `graphql-request` that returns `{ client, recentJobs, outstandingInvoices, lastVisitDate }` behind the `'use cache'` + `cacheTag` + `revalidateTag` loop with 5-min TTL and <500ms p95, `/api/webhooks/jobber` for client/job/invoice invalidation, the Jobber half of the AccountingConnectionCard on `/dashboard/more/integrations`, a `connect_jobber` item on the setup checklist, and on the Python side `livekit_agent/src/integrations/jobber.py` + extension of `_run_db_queries` to fetch Jobber in parallel with Xero + a unified `customer_context` prompt section (Jobber preferred when both connected) + extension of the `check_customer_account()` tool to merge both providers.
+**Depends on:** Phase 54 (integrations foundation — `accounting_credentials.provider='jobber'` CHECK constraint, `src/lib/integrations/` adapter contract, `/api/integrations/[provider]/**` OAuth routes, `cacheComponents: true`, Business Integrations page shell) and Phase 55 (Xero adapter establishes the `IntegrationAdapter` pattern, the `fetchCustomerByPhone` return shape, the webhook invalidation pattern, the agent-side `customer_context` prompt block, and the `check_customer_account` tool that Phase 56 extends).
+**Requirements:** JOBBER-01, JOBBER-02, JOBBER-03, JOBBER-04, JOBBER-05
+**Pre-requisite user actions:** Register Jobber dev app at developer.getjobber.com (free, ~10 min) and set redirect URI to `/api/integrations/jobber/callback` (blocks execution, not planning).
+**Plans:** 7 plans
+
+Plans:
+- [ ] 56-01-PLAN.md — Next.js JobberAdapter: real exchangeCode/refreshToken/revoke + module-level fetchJobberCustomerByPhone + 'use cache' + two-tier cacheTag + 5 test files (JOBBER-01, JOBBER-02)
+- [ ] 56-02-PLAN.md — Migration 054 external_account_id column + backfill + unique index + .env.example webhook-secret overload note + [BLOCKING] supabase db push (JOBBER-01, JOBBER-03)
+- [ ] 56-03-PLAN.md — /api/webhooks/jobber HMAC-SHA256 verify (key IS JOBBER_CLIENT_SECRET) + 5-event routing + per-phone revalidateTag + broad fallback (JOBBER-03)
+- [ ] 56-04-PLAN.md — BusinessIntegrationsClient Preferred badge + banner bug-fix + Jobber error state + integrations page data pass + disconnect Jobber branch + connect_jobber checklist + notifyJobberRefreshFailure + JobberReconnectEmail (JOBBER-01)
+- [ ] 56-05-PLAN.md — [CROSS-REPO livekit-agent] src/integrations/jobber.py service-role Supabase read + httpx Jobber GraphQL + refresh-token rotation write-back + pytest (JOBBER-02, JOBBER-04)
+- [ ] 56-06-PLAN.md — [CROSS-REPO livekit-agent] src/lib/customer_context.py merge helper + agent.py 5th parallel task + prompt.py source annotations + check_customer_account extension + pytest (JOBBER-04, JOBBER-05)
+- [ ] 56-07-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) (JOBBER-01..05)
+
 ---
 
 ## Milestone v1.1 Phases
@@ -1187,22 +1204,22 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 
 ## Backlog
 
-### Phase 999.1: Booking urgency constraint mismatch (BACKLOG)
+### Phase 999.3: Bidirectional Jobber sync — push Voco bookings into Jobber (BACKLOG)
 
-**Goal:** Fix `book_appointment` tool to write an urgency value the `appointments_urgency_check` constraint accepts (likely `emergency`/`urgent`/`routine`). Discovered during Phase 55 UAT.
-**Evidence:** Error during call `call-_+6587528516_G96sErYNhgk3`:
-`new row for relation "appointments" violates check constraint "appointments_urgency_check"` — failing row had `urgency='high'`.
-**Requirements:** TBD
+**Goal:** When a tenant has Jobber connected, appointments booked by the Voco AI must automatically create a Jobber Visit assigned to the correct user, so Jobber remains the scheduling system-of-record and the tenant's crew sees Voco-booked jobs in their normal Jobber workflow. Phase 57 ships read-only mirror (Jobber → Voco). This phase closes the loop (Voco → Jobber push) with loop-dedup via `external_event_id`.
+
+**Why deferred past 57:** Read-side (56) + read-only schedule mirror (57) deliver caller context and availability awareness with minimal complexity. Push-side adds assignee-selection logic, loop-dedup across mirror + push, error-retry for Jobber API failures during a live call, and UX for "Voco booked this as a Jobber Visit for Tech X" — scope it once 56+57 have run in production and the assignee-selection design is validated.
+
+**Trigger to promote:** Phases 56+57 shipped + at least one tenant connected to Jobber with live call traffic + assignee-selection pattern validated (see Phase 57 discussion research).
+
+**Requirements:** TBD (depends on Phase 57 assignee-selection design)
 **Plans:** 0 plans
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
 
-### Phase 999.2: LiveKit voice cutoff on tool calls (BACKLOG)
+### Resolved
 
-**Goal:** Investigate and fix voice being cut off / tool calls being cancelled when the caller talks over the AI. LiveKit warnings `server cancelled tool calls` and `_SegmentSynchronizerImpl.playback_finished called before text/audio input is done` fire during normal call flow. Discovered during Phase 55 UAT.
-**Requirements:** TBD
-**Plans:** 0 plans
+- **999.1 Booking urgency constraint mismatch** — fixed 2026-04-18 (livekit_agent repo). `book_appointment` tool normalizes urgency to `emergency`/`urgent`/`routine` via `_normalize_urgency()` before calling `atomic_book_slot`; tool description enumerates allowed values.
+- **999.2 LiveKit voice cutoff on tool calls** — fixed 2026-04-18 (livekit_agent repo). `google.realtime.RealtimeModel` now receives a `RealtimeInputConfig` with LOW VAD sensitivity + `prefix_padding_ms=400` / `silence_duration_ms=1000`, so Gemini server VAD stops cancelling in-flight tool calls on breaths/overlap (upstream: livekit/agents#4441).
 
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
