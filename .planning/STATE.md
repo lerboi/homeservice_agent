@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: completed-phase-55-ready-for-56
-stopped_at: Phase 55 complete (UAT passed)
-last_updated: "2026-04-18T00:00:00.000Z"
+status: planning
+stopped_at: Phase 56 context gathered
+last_updated: "2026-04-18T10:19:23.287Z"
 last_activity: 2026-04-18 -- Phase 55 Xero read-side shipped + UAT
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 12
   total_plans: 61
-  completed_plans: 61
+  completed_plans: 62
   percent: 100
 ---
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 - [v6.0 Plan]: Sandbox accounts for Jobber + Xero are pre-req for Phases 55–57; user to register dev apps during Phase 53/54 planning
 - [v6.0 P55]: Xero read-side shipped — XeroAdapter.fetchCustomerByPhone as module-level cached fn with two-tier cacheTag (Next.js 16 forbids `'use cache'` on class methods); /api/webhooks/xero with HMAC + intent-verify + per-phone invalidation; BusinessIntegrationsClient gains 4 states with Reconnect banner + Last-synced timestamp; connect_xero setup checklist item; XeroReconnectEmail + notifyXeroRefreshFailure helper; livekit-agent fetches customer_context pre-session with 2.5s budget + parallel getInvoices; check_customer_account tool re-serves cached data as STATE+DIRECTIVE; error_state column (migration 053) surfaces token-refresh failures; cross-runtime casing divergence INTENTIONAL (camelCase Next / snake_case Python)
 - [v6.0 P55 UAT findings → backlog]: 999.1 booking urgency constraint mismatch (`book_appointment` passes `urgency='high'` but DB only accepts emergency/urgent/routine); 999.2 LiveKit voice cutoff on tool calls (server cancelled tool calls when caller talks over AI)
+- [2026-04-18 backlog 999.1 & 999.2 resolved]: (999.1) `src/tools/book_appointment.py` now normalizes urgency via `_normalize_urgency()` (maps `high`/`medium` → `urgent`, `low`/`normal` → `routine`, `critical`/`asap` → `emergency`, unknown → `routine`) before calling `atomic_book_slot`; tool description enumerates the three allowed values to stop Gemini inventing new ones. (999.2) `src/agent.py` passes a `RealtimeInputConfig` with `AutomaticActivityDetection` set to LOW start/end sensitivity, `prefix_padding_ms=400`, `silence_duration_ms=1000` to `google.realtime.RealtimeModel` — dampens Gemini server VAD so breaths/overlap no longer cancel in-flight tool calls (root cause: livekit/agents#4441). Barge-in preserved. Skill `voice-call-architecture` updated; both entries ready to be deleted from ROADMAP backlog section.
 
 ### Roadmap Evolution
 
@@ -87,6 +88,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-17T17:24:45.004Z
-Stopped at: Phase 59 UI-SPEC approved
-Resume file: .planning/phases/59-customer-job-model-separation-split-leads-into-customers-ded/59-UI-SPEC.md
+Last session: 2026-04-18T10:19:23.282Z
+Stopped at: Phase 56 context gathered
+Resume file: .planning/phases/56-jobber-read-side-integration-customer-context-clients-jobs-invoices/56-CONTEXT.md
