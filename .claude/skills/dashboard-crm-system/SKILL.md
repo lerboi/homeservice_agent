@@ -1279,6 +1279,55 @@ Reference `.planning/phases/55-xero-read-side-integration-caller-context/55-UI-S
 
 ---
 
+## Phase 56 — Jobber card states + Preferred badge + checklist item
+
+**Shipped:** 2026-04-18
+
+Jobber card states in `BusinessIntegrationsClient.jsx` — all four mirror the Xero card per UI-SPEC §Interaction States:
+
+- **State 1 (Disconnected):** Muted status line, primary "Connect Jobber" button (accent `#C2410C` / `#FB923C` dark-mode), invoicing-off confirm-connect dialog if `features_enabled.invoicing === false`.
+- **State 2 (Connected):** Emerald status text ("Connected. Sharing customer and job history..."), "Last synced N ago" timestamp below status when `last_context_fetch_at` is non-null, outline Disconnect button (red-600 border).
+- **State 3 (Error — `error_state === 'token_refresh_failed'`):** Amber inline Alert banner ("Reconnect needed — Jobber token expired..."), primary Reconnect button (accent), secondary Disconnect text-link (ghost red-600).
+- **State 4 (Loading Skeleton):** Same shared skeleton path as Xero card.
+
+**Preferred badge** (new in Phase 56 — UI-SPEC §Component Inventory):
+- Markup: `<span className="ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Preferred</span>`
+- Location: appended to the existing `flex items-center gap-3 mb-4` card header row AFTER the provider name span (right-aligned via `ml-auto`)
+- **Render condition:** `providerKey === 'jobber' && connected && status.xero !== null && !hasError`
+  - Only on the Jobber card (not Xero)
+  - Only when both providers have a non-null `accounting_credentials` row (both connected)
+  - Hidden in error state (Jobber is not actively preferred when its token is expired)
+- Signals to the owner that home-service context (clients, jobs, visits) prefers Jobber when both providers are connected — matches the underlying merge rule in `src/lib/customer_context.py::merge_customer_context`.
+
+**Bug fix (affects BOTH cards):** The Reconnect-needed banner previously hardcoded the word "Xero" at line ~237. Phase 56 fixed this to use `{meta.name}` (provider-dynamic) so the Jobber card's error state renders "Reconnect needed — Jobber token expired..." correctly.
+
+**Setup checklist item** (`connect_jobber`):
+- Appended in `src/app/api/setup-checklist/route.js` via the 6-point extension (VALID_ITEM_IDS, THEME_GROUPS.voice, ITEM_META, fetchChecklistState parallel fetch, deriveChecklistItems autoComplete, state-object surface)
+- Theme: `'voice'` (same group as `connect_xero`)
+- Required: `false`
+- Auto-completion: `!!counts.jobberConnected` (any `accounting_credentials` row with `provider='jobber'`)
+- Copy (locked, per UI-SPEC §Copywriting):
+  - Title: `"Connect Jobber"`
+  - Description: `"Let your AI receptionist see customer and job history during calls."`
+  - Href: `/dashboard/more/integrations`
+
+**Token-refresh-failure email** — new `src/emails/JobberReconnectEmail.jsx` + `notifyJobberRefreshFailure(tenantId, ownerEmail)` helper in `src/lib/notifications.js`. Subject: `"Your Jobber connection needs attention"`. CTA: `"Reconnect Jobber"` linking to `/dashboard/more/integrations`. Email body never echoes token material (security scrub — email template takes only `ctaUrl`, never a tokenSet prop).
+
+**Integrations page server component** (`src/app/dashboard/more/integrations/page.js`):
+- Fetches BOTH xero and jobber `accounting_credentials` rows via `Promise.all`
+- Passes `initialStatus={{ xero: xeroCreds, jobber: jobberCreds }}` to `<BusinessIntegrationsClient>`
+- Each row selects `id, last_context_fetch_at, error_state` only (never tokens to the client bundle)
+
+**Files changed by Phase 56:**
+- `src/components/dashboard/BusinessIntegrationsClient.jsx` — banner bug fix + Preferred badge
+- `src/app/dashboard/more/integrations/page.js` — Jobber row fetch + initialStatus
+- `src/app/api/setup-checklist/route.js` — connect_jobber item (6-point extension)
+- `src/app/api/integrations/disconnect/route.js` — Jobber branch (row delete + `revalidateTag('jobber-context-${tenantId}')`)
+- `src/lib/notifications.js` — notifyJobberRefreshFailure helper
+- `src/emails/JobberReconnectEmail.jsx` — new Resend template
+
+---
+
 ## Important: Keeping This Document Updated
 
 When making changes to any file listed in the File Map above, update the relevant sections of this skill document to reflect the new behavior. This ensures future conversations always have an accurate reference.
