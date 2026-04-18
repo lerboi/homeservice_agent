@@ -3,9 +3,6 @@ import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { getIntegrationAdapter, refreshTokenIfNeeded } from '@/lib/integrations/adapter';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
 /**
  * Xero webhook handler — Phase 55 (XERO-03).
  *
