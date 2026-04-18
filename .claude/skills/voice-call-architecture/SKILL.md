@@ -848,6 +848,53 @@ The agent must NEVER volunteer customer name, outstanding balance, invoice numbe
 
 ---
 
+## Phase 56 — Jobber read-side integration (customer context)
+
+**Shipped:** 2026-04-18
+
+**What changed:**
+- `_run_db_queries` (livekit-agent `src/agent.py` ~line 316) now runs **five** parallel tasks. The 5th is `jobber_context_task` — identical shape to P55's `xero_context_task`, running `asyncio.wait_for(fetch_jobber_customer_by_phone(tenant_id, from_number), timeout=0.8)` concurrently with (not after) the Xero task. Outer budget stays 2.5s.
+- New `src/integrations/jobber.py` (cross-repo — livekit-agent repo, not this monorepo) — service-role Supabase read of `accounting_credentials`, `httpx.AsyncClient` Jobber GraphQL POST with `X-JOBBER-GRAPHQL-VERSION: 2024-04-01` header, refresh-token rotation with mandatory write-back of the NEW refresh_token on every refresh.
+- New `src/lib/customer_context.py::merge_customer_context(jobber, xero) -> dict | None` — field-level merge with source annotations per Phase 56 CONTEXT D-07:
+  | Field | Winner | Fallback |
+  |-------|--------|----------|
+  | `client` | Jobber | Xero (renamed from `contact`) |
+  | `recentJobs` | Jobber | (omitted — Xero has no jobs) |
+  | `lastVisitDate` | Jobber | (omitted — Xero has no visits) |
+  | `outstandingBalance` | Xero | Jobber |
+  | `lastPaymentDate` | Xero | (omitted — Jobber has no field) |
+  | `lastInvoices` | Xero | Jobber.outstandingInvoices (renamed) |
+  Returns None when both miss (customer_context block omitted — D-11).
+- Merged dict carries `_sources` inner dict marking per-field provenance (`'Jobber' | 'Xero'`) — rendered as `(source)` suffix in STATE body (D-08).
+- `src/prompt.py::build_system_prompt` accepts the merged dict (not Xero-only); rendering omits fields that were absent (no `null` lines).
+- `src/tools/check_customer_account.py` — P55 registered; P56 extended its data source. Serializes merged `deps.customer_context` as STATE + DIRECTIVE (P55 D-09 verbatim shape). No re-fetch; no GraphQL/DB call.
+- Sentry captures on timeout/exception include tags `{tenant_id, provider: 'jobber'|'xero', phone_hash}` where phone_hash = first 8 chars of sha256 hex of from_number (never raw E.164).
+
+**Key files (cross-repo — livekit-agent):**
+- `src/integrations/jobber.py` — adapter with GraphQL fetch + refresh write-back
+- `src/lib/customer_context.py` — merge helper
+- `src/agent.py` — 5-task parallel + merge call
+- `src/prompt.py` — customer_context block with source annotations
+- `src/tools/check_customer_account.py` — extended data source
+
+**Key files (Next.js monorepo):**
+- `src/lib/integrations/jobber.js` — module-level `fetchJobberCustomerByPhone` cached with `'use cache'` + two-tier `cacheTag` (dashboard reads only; call path stays Python-direct)
+- `src/app/api/webhooks/jobber/route.js` — HMAC-SHA256 verify (key IS `JOBBER_CLIENT_SECRET`), 5-event routing, per-phone `revalidateTag`
+
+**Known limitations (document for future contributors):**
+- **Field-level merge silently suppresses Jobber/Xero discrepancies** in the prompt by design (e.g., Jobber shows $500 outstanding but Xero shows $0 after reconciliation → Gemini speaks $0). Owner-facing discrepancy telemetry is a Phase 58 CTX-01 candidate; out of P56 scope.
+- **7-digit local phone numbers** (e.g., `"555-1234"`) cannot be normalized to E.164 and are skipped during the phone match. Rare in practice (Jobber admin would have entered an area code); logged-but-unactionable.
+- **Voice pipeline does NOT validate ANI** (caller-ID). A caller spoofing a customer's phone number will be treated as that customer for `customer_context` purposes. Treat the block as convenience, not proof of identity. CNAM / STIR-SHAKEN validation is a future enhancement.
+- **Refresh-token rotation theft race** — if an attacker obtains a refresh token and races the legitimate refresh, Jobber invalidates whichever loses. Tenant must re-authenticate. Jobber's default policy; accepted.
+
+**Carried-forward constraints (Phase 55 decisions still apply):**
+- E.164 exact match (no fuzzy fallback) — Jobber's free-form phones normalized server-side before compare
+- 800ms per-provider timeout; silent-skip on failure
+- Pre-session prompt injection only (no post-greeting injection); tool re-serve on explicit ask
+- SDK pins: `livekit-agents==1.5.1`, `livekit-plugins-google@43d3734` — MUST NOT BUMP without revisiting P55 UAT findings 999.1/999.2
+
+---
+
 ## Important: Keeping This Document Updated
 
 When making changes to any file listed in the File Map above, update the relevant sections of this skill document to reflect the new behavior. This ensures future conversations always have an accurate reference.
