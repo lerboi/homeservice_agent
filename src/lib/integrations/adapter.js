@@ -74,6 +74,14 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
 
   if (error) {
     console.error('[integrations] Failed to persist refreshed tokens:', error.message);
+    // Do NOT return the un-persisted rotated tokens — Jobber rotates refresh_token
+    // on every refresh, so returning the new access_token here would orphan the
+    // rotated refresh_token (DB still holds the old, now-dead one). Throwing lets
+    // callers (fetchJobberCustomerByPhone, webhook handler) fall back to cached
+    // row / broad revalidation; the current access_token survives its remaining TTL.
+    throw new Error(
+      `Token rotation persistence failed for provider=${credentials.provider}: ${error.message}`,
+    );
   }
 
   return {
