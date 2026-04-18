@@ -1085,37 +1085,39 @@ async def check_customer_account(ctx: RunContext) -> str:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All questions below have been resolved via either (a) inline recommendations that have been adopted as planning decisions, or (b) explicit deferral to a specific plan task where a live-system probe locks the final answer. No blocking unknowns remain at plan-approval time.
 
 1. **Exact Jobber GraphQL filter syntax for phone number matching.**
    - What we know: `ClientFilterAttributes` exists as a filter input type; `phones` field exists on Client.
    - What's unclear: whether `filter: { phoneNumber: ... }` is the supported key name, or whether `searchTerm` is the catch-all.
-   - Recommendation: Plan 01 first task — probe GraphiQL (`Developer Center > Test in GraphiQL > Documentation`) and lock the exact filter key before writing `fetchJobberCustomerByPhone`. Fallback: paginate `clients(first: 50)` + JS-side filter if no phone-specific filter exists.
+   - **DEFERRED TO PLAN 01 TASK 2 (GraphiQL probe):** The pre-step of Plan 01 Task 2 performs a GraphiQL probe against `Developer Center > Test in GraphiQL > Documentation` and locks the exact filter key BEFORE writing `fetchJobberCustomerByPhone`. Fallback: paginate `clients(first: 50)` + JS-side filter if no phone-specific filter exists. This deferral is explicitly embedded in Plan 01 Task 2's A1/A2/A3/A4 checklist.
 
 2. **Jobber API version to pin.**
    - What we know: Format `YYYY-MM-DD`; 12-month support window; must be in `X-JOBBER-GRAPHQL-VERSION` header.
    - What's unclear: Latest stable version as of 2026-04-18 (changelog not fetched).
-   - Recommendation: Plan 01 starts by reading `developer.getjobber.com/docs/changelog` and pinning the most recent stable version. Pin as a constant in `src/lib/integrations/jobber.js` for ease of future bumps.
+   - **DEFERRED TO PLAN 01 TASK 2 (GraphiQL probe):** The pre-step of Plan 01 Task 2 reads `developer.getjobber.com/docs/changelog` and pins the most recent stable version as `JOBBER_API_VERSION` constant in `src/lib/integrations/jobber.js`. Current code uses `2024-04-01` as the research-time baseline; Task 2 confirms or bumps. Also mirrored into the Python adapter (Plan 05) and webhook handler (Plan 03).
 
 3. **Should `xero_tenant_id` column be repurposed for Jobber accountId, or should a new `external_account_id` column be added?**
    - What we know: Repurposing works with zero migration; adding a column is one migration.
    - What's unclear: Which is cleaner for P57+ (schedule mirror) and P58 (telemetry).
-   - Recommendation: Planner picks during plan decomposition. Lean toward a new `external_account_id TEXT` column (migration 054) because P57 also introduces `calendar_events.provider='jobber'` and a clean column name avoids debt.
+   - **RESOLVED:** Add a new `external_account_id TEXT` column via migration 054. Rationale: P57 also introduces `calendar_events.provider='jobber'` and a clean provider-agnostic column name avoids debt. `xero_tenant_id` is retained (backfilled into `external_account_id`) for P55 backward compatibility and deprecated in a future P58 cleanup. Locked in Plan 02 Task 1.
 
 4. **Should `JOBBER_WEBHOOK_SECRET` env var exist separately, or should the handler read `JOBBER_CLIENT_SECRET` directly?**
    - What we know: They're the same value (Jobber uses client_secret as HMAC key).
    - What's unclear: Whether the P58 telemetry phase might want to rotate them independently.
-   - Recommendation: Read `JOBBER_CLIENT_SECRET` directly in the handler. Add a `.env.example` comment explaining the overload. If future rotation needs diverge, add the separate env var then.
+   - **RESOLVED:** Read `JOBBER_CLIENT_SECRET` directly in `/api/webhooks/jobber/route.js`. No separate `JOBBER_WEBHOOK_SECRET` env var is introduced in P56. `.env.example` (Plan 02 Task 2) carries a comment block documenting the overload so future contributors don't hunt for a missing webhook secret. Locked in Plan 02 Task 2 + Plan 03 Task 2.
 
 5. **Should webhook events be deduplicated via a `jobber_webhook_events` table?**
    - What we know: `revalidateTag` is idempotent; Jobber is at-least-once; volume is low.
    - What's unclear: Whether P58 telemetry will reveal duplicate storm patterns requiring dedup.
-   - Recommendation: Skip dedup table in P56. Revisit in P58 if telemetry shows duplicate amplification.
+   - **RESOLVED:** Skip the dedup table in P56. The webhook handler relies on `revalidateTag` idempotency to absorb duplicates. P58 will revisit only if telemetry surfaces duplicate amplification (tracked as a deferred idea in CONTEXT.md).
 
 6. **Auto-register webhook subscriptions on OAuth callback, or require owner to configure in Developer Center?**
    - What we know: Jobber webhooks are configured at the APP level (Developer Center), not per-install.
    - What's unclear: Whether there's a GraphQL mutation to subscribe/unsubscribe topics programmatically.
-   - Recommendation: Leave as app-level config in Developer Center (set once when registering the app). Not a per-tenant action. Document in skill update.
+   - **RESOLVED:** Leave as app-level configuration in the Jobber Developer Center (set once when registering the app across all 5 topic subscriptions: `CLIENT_UPDATE`, `JOB_UPDATE`, `INVOICE_UPDATE`, `VISIT_COMPLETE`, `VISIT_UPDATE` — CONTEXT D-12). Not a per-tenant action; no code emits a subscribe mutation. Plan 07 skill updates document this for future contributors. Plan 56-VALIDATION.md Manual-Only row 3 enumerates the topics for the operator configuring Developer Center.
 
 ---
 

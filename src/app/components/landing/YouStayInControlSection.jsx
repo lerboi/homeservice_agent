@@ -10,10 +10,10 @@ export function YouStayInControlSection() {
             <div className="max-w-2xl">
               <div className="text-[13px] font-semibold text-[#F97316] tracking-[0.18em] uppercase mb-4">Your rules, your way</div>
               <h2 className="text-4xl md:text-5xl font-semibold text-[#0F172A] leading-[1.1] tracking-tight">
-                You Stay in Control.
+                You stay in control.
               </h2>
               <p className="mt-5 text-[17px] text-[#475569] leading-relaxed">
-                Three dials — who Voco answers for, when it picks up, and how it reports back. Change them anytime, or leave the smart defaults on and forget it.
+                Three dials. Who Voco answers for, when it picks up, how it reports back. Set once, forget it.
               </p>
             </div>
 
@@ -21,21 +21,21 @@ export function YouStayInControlSection() {
               <AnimatedItem>
                 <ControlColumn
                   label="Regulars ring you"
-                  caption="Pick the contacts who always ring straight through to your phone."
+                  caption="Trusted contacts go straight to your phone."
                   mock={<VipListMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
-                  label="Off-hours are covered"
-                  caption="Set the hours Voco answers and the hours calls come direct to you."
+                  label="Off-hours covered"
+                  caption="Voco takes the nights. You take the day."
                   mock={<HoursMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
-                  label="Every call lands on your phone"
-                  caption="Choose what Voco sends you after a call — urgency, transcript, one-tap callback."
+                  label="Every call, on your phone"
+                  caption="Urgency, transcript, one-tap callback — texted to you."
                   mock={<NotificationMock />}
                 />
               </AnimatedItem>

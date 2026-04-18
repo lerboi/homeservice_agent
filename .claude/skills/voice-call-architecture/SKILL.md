@@ -238,17 +238,37 @@ Three JSON config files in the agent repo define the SIP routing:
 ### Model Configuration
 
 ```python
+realtime_input_config = genai_types.RealtimeInputConfig(
+    automatic_activity_detection=genai_types.AutomaticActivityDetection(
+        start_of_speech_sensitivity=genai_types.StartSensitivity.START_SENSITIVITY_LOW,
+        end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_LOW,
+        prefix_padding_ms=400,
+        silence_duration_ms=1000,
+    ),
+)
+
 model = google.realtime.RealtimeModel(
     model="gemini-3.1-flash-live-preview",
     voice=voice_name,
     temperature=0.3,
     instructions=system_prompt,
+    realtime_input_config=realtime_input_config,
     thinking_config=genai_types.ThinkingConfig(
         thinking_level="minimal",
         include_thoughts=False,
     ),
 )
 ```
+
+### VAD Tuning — Gemini Server-Side Activity Detection (backlog 999.2 fix)
+
+The pinned `livekit-plugins-google` commit exposes the full Gemini `RealtimeInputConfig` via the `realtime_input_config=` kwarg on `RealtimeModel`. With the default (`START_SENSITIVITY_HIGH` / `END_SENSITIVITY_HIGH`, ~20ms prefix padding), Gemini's server VAD fires on caller breaths and minor overlap, and each false positive cancels the current response — including any in-flight tool calls. Symptoms during Phase 55 UAT: `server cancelled tool calls` warnings, AI voice cutting off mid-sentence, and the `_SegmentSynchronizerImpl.playback_finished called before text/audio input is done` warning. Root cause tracked upstream as livekit/agents#4441.
+
+Our config dampens server VAD so only deliberate caller speech triggers interruption:
+- `START_SENSITIVITY_LOW` + `prefix_padding_ms=400` — caller must speak ~400ms of sustained audio before barge-in fires.
+- `END_SENSITIVITY_LOW` + `silence_duration_ms=1000` — the server waits 1s of silence before treating the caller's turn as finished.
+
+Do **not** switch to `activity_handling=NO_INTERRUPTION` — that kills barge-in entirely, and callers need to be able to cut the AI off for emergencies.
 
 ### Voice Resolution (Phase 44: AI Voice Selection)
 
@@ -404,7 +424,8 @@ All tools execute **in-process** with direct Supabase access — no webhook roun
 
 **File**: `src/tools/book_appointment.py`
 
-- Parameters: `slot_start`, `slot_end`, `street_name`, `postal_code`, `caller_name`, `unit_number` (optional), `urgency` (default "routine")
+- Parameters: `slot_start`, `slot_end`, `street_name`, `postal_code`, `caller_name`, `unit_number` (optional), `urgency` (default "routine", must be one of `emergency`/`urgent`/`routine`)
+- **Urgency normalization**: `_normalize_urgency()` at the top of the module maps freeform Gemini output (e.g. `"high"` → `"urgent"`, `"low"`/`"normal"` → `"routine"`, `"critical"`/`"asap"` → `"emergency"`) to the three values accepted by `appointments_urgency_check`. Unknown values fall back to `"routine"`. Fix for backlog 999.1 after Phase 55 UAT call raised `appointments_urgency_check` with `urgency='high'`. Tool description also enumerates the allowed values so Gemini stops inventing new ones.
 - **Idempotency cache**: at the top of the function (after parameter validation), checks `deps["_last_booked_slot_key"]` against `f"{slot_start}|{slot_end}"`. On cache hit, returns the cached response immediately without re-running the booking. Prevents duplicate side effects when Gemini invokes the tool twice for the same slot.
 - Calls `atomic_book_slot()` via Supabase RPC
 - **On success**: booking_outcome='booked' written IMMEDIATELY (before side effects). Then `return_msg` is computed and **cached in deps BEFORE firing background tasks**. Calendar push and caller SMS are fired as **truly** non-blocking `asyncio.create_task()` (previously the `fire-and-forget` comments were inaccurate — both were awaited, blocking the tool for 1-4s). The tool now returns in ~300ms, eliminating the silence window that was triggering duplicate invocations.

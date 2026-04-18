@@ -31,14 +31,6 @@ async function LocaleShell({ children }) {
   const messages = await getMessages();
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
-      <head>
-        {/* Prefetch Spline scene file — low priority, doesn't block initial render */}
-        <link
-          rel="prefetch"
-          href="https://prod.spline.design/CN1NeDZqows-DMX0/scene.splinecode"
-          crossOrigin="anonymous"
-        />
-      </head>
       <body className="relative">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NextIntlClientProvider messages={messages}>
