@@ -63,4 +63,38 @@ date: 2026-04-19
 
 ## Pending Checkpoint
 
-Phase 57 cannot complete until the user runs through the 13-step human-verify walkthrough in 57-05-PLAN.md `<task>` 4 against a live dev environment with a connected Jobber sandbox tenant. Reply "verified" once all steps pass, or list the failing step numbers.
+Phase 57 cannot complete until the 13-step human-verify walkthrough (57-05-PLAN.md Task 4) passes against a live dev environment with a connected Jobber sandbox tenant.
+
+### Live-test progress (paused 2026-04-19)
+
+| Step | What | Status |
+|------|------|--------|
+| 1 | Connect-flow picker → setup page → save subset → redirect+toast | ✅ partial — picker rendered, save succeeded after fixes |
+| 9 | Bookable-users settings edit on integrations card | ✅ verified — rebuild ran, PATCH returned 200 |
+| 2 | Solo auto-skip when sandbox has 1 user | ⏸ pending |
+| 3 | Calendar banner appears + dismiss persists + incognito reappears | ⏸ pending |
+| 4 | Jobber muted-slate block + green pill + click opens secure.getjobber.com/calendar?date= | ⏸ pending |
+| 5 | Google/Outlook muted-slate regression | ⏸ pending |
+| 6 | Amber "Not in Jobber" pill on Voco appointment block | ⏸ pending |
+| 7 | "Not in Jobber yet" header pill in AppointmentFlyout | ⏸ pending |
+| 8 | Copy details toast → 6-line paste; Open in Jobber → new visit page | ⏸ pending |
+| 10 | Webhook live test (move/delete a Jobber visit, ≤15s reflection) | ⏸ pending |
+| 11 | Post-booking email arrives | ⏸ pending |
+| 12 | Dark-mode rendering | ⏸ pending |
+| 13 | 375px mobile reflow | ⏸ pending |
+
+### Live-fix log (issues caught + fixed during this paused walkthrough)
+
+| Commit | Issue | Fix |
+|--------|-------|-----|
+| `850a422` | `Field 'address' doesn't exist on type 'UserEmail'` | Dropped `email { address }` from USERS_QUERY (email unused by picker) |
+| `3dc6bd4` | `VisitFilterAttributes doesn't accept argument 'startAfter'` | Switched to range-input shape `startAt: { after, before }`; dropped time filter from activity query |
+| `dbab81b` | `VisitFilterAttributes doesn't accept argument 'updatedAt'` + `Client.name` is scalar (not `{ full }`) | Removed `updatedAt` filter (no server-side delta-poll on visits — full re-fetch + upsert idempotency); read `client.name` as scalar in mirror, cron, and webhook callers |
+
+### How to resume
+
+1. Have a connected Jobber sandbox + at least one Voco-booked appointment with `jobber_visit_id IS NULL` on the calendar this week
+2. Walk steps 2–8, 10–13 above
+3. Run `/gsd-verify-work 57` (or reply **"verified"** in a fresh session) to mark Phase 57 complete
+4. If a step fails, paste the issue and I'll patch and retry
+5. Note: the cron path (Step 10 fallback) re-fetches the full P90/F180 window every 15 min — slower than ideal but correct; Phase 58 can revisit if Jobber adds an updatedAt filter
