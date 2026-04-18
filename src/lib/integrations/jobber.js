@@ -348,7 +348,7 @@ const VISITS_DELTA_QUERY = gql`
 const USERS_QUERY = gql`
   query JobberUsers($first: Int!, $after: String) {
     users(first: $first, after: $after) {
-      nodes { id name { full first last } email }
+      nodes { id name { full first last } email { address } }
       pageInfo { hasNextPage endCursor }
     }
   }
@@ -483,7 +483,7 @@ export async function fetchJobberUsersWithRecentActivity({ cred }) {
     name: u.name?.full ?? `${u.name?.first ?? ''} ${u.name?.last ?? ''}`.trim(),
     first: u.name?.first ?? '',
     last: u.name?.last ?? '',
-    email: u.email ?? null,
+    email: u.email?.address ?? null,
     hasRecentActivity: active.has(u.id),
   }));
 }
