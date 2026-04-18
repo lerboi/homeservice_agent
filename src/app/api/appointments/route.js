@@ -117,7 +117,7 @@ export async function GET(request) {
       service_address, postal_code, street_name,
       caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
-      external_event_id, notes, created_at,
+      external_event_id, jobber_visit_id, notes, created_at,
       service_zones (id, name),
       leads!appointment_id (id, caller_name, status)
     `)

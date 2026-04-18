@@ -235,7 +235,7 @@ function CurrentTimeIndicator({ gridStartHour, gridEndHour, hourHeight = HOUR_HE
   );
 }
 
-function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPositionStyle, laneIndex = 0, laneCount = 1 }) {
+function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPositionStyle, laneIndex = 0, laneCount = 1, jobberConnected = false }) {
   const style = getPositionStyle(appointment.start_time, appointment.end_time);
   const isCompleted = appointment.status === 'completed';
   const urgency = appointment.urgency || 'routine';
@@ -270,6 +270,18 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
         <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-muted/80 flex items-center justify-center z-10" title="Outside working hours">
           <Clock className="w-2.5 h-2.5 text-muted-foreground" />
         </div>
+      )}
+
+      {/* Phase 57 (JOBSCHED-06): "Not in Jobber" pill on Voco-booked appointments
+          when Jobber is connected and the appointment hasn't been pushed yet.
+          Pill switches off automatically once Phase 999.3 populates jobber_visit_id (D-13). */}
+      {jobberConnected && !appointment.jobber_visit_id && !isOffHours && effectiveHeight >= 44 && (
+        <span
+          role="status"
+          className="absolute top-1 right-1 inline-flex items-center rounded-full px-1 py-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700"
+        >
+          Not in Jobber
+        </span>
       )}
 
       {/* Completed checkmark badge */}
@@ -370,22 +382,56 @@ function TravelBufferBlock({ buffer, getPositionStyle }) {
   );
 }
 
+// Phase 57: unified muted-slate surface for all external providers + provider pill.
+// Jobber blocks deep-link to the Jobber calendar in a new tab and DO NOT open the
+// Voco AppointmentFlyout (UI-SPEC §1).
+const PROVIDER_LABELS = {
+  jobber: 'From Jobber',
+  google: 'From Google',
+  outlook: 'From Outlook',
+};
+const PROVIDER_PILL_CLASSES = {
+  jobber: 'bg-[#1B9F4F]/10 text-[#1B9F4F] dark:bg-[#1B9F4F]/20 dark:text-emerald-300',
+  google: 'bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-300',
+  outlook: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300',
+};
+
 function ExternalEventBlock({ event, getPositionStyle, laneIndex = 0, laneCount = 1, isMobile = false, onClick }) {
   const style = getPositionStyle(event.start_time, event.end_time);
   const heightPx = parseInt(style.height, 10);
-  const providerLabel = event.provider === 'outlook' ? 'Outlook' : 'Google Calendar';
   const laneStyle = getLaneLayout(laneIndex, laneCount, isMobile);
+
+  const providerLabel = PROVIDER_LABELS[event.provider] ?? `From ${event.provider}`;
+  const providerPillClass = PROVIDER_PILL_CLASSES[event.provider] ?? 'bg-slate-100 text-slate-600';
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (event.provider === 'jobber') {
+      const date = String(event.start_time || '').slice(0, 10);
+      const url = date
+        ? `https://secure.getjobber.com/calendar?date=${date}`
+        : 'https://secure.getjobber.com/calendar';
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+    onClick?.(event);
+  };
 
   return (
     <button
       type="button"
-      className="absolute bg-violet-50 border-l-[3px] border-violet-400 rounded-md px-2 py-1 overflow-hidden shadow-sm cursor-pointer hover:bg-violet-100 transition-colors text-left z-[5]"
+      aria-label={`${event.title} — ${providerLabel} event`}
+      className="absolute bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 border-l-[3px] border-l-slate-300 dark:border-l-slate-600 rounded-md px-2 py-1 overflow-hidden shadow-sm cursor-pointer opacity-75 hover:opacity-90 hover:shadow-sm transition-all text-left z-[5]"
       style={{ ...style, ...laneStyle }}
-      onClick={(e) => { e.stopPropagation(); onClick?.(event); }}
+      onClick={handleClick}
     >
-      <div className="text-[11px] font-semibold text-violet-700 truncate leading-tight">{event.title}</div>
-      {heightPx >= 40 && (
-        <div className="text-[10px] text-violet-400 mt-0.5">{providerLabel}</div>
+      <div className="text-xs font-medium text-foreground truncate leading-tight">{event.title}</div>
+      {heightPx >= 36 && (
+        <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-medium mt-0.5 ${providerPillClass}`}>
+          {providerLabel}
+        </span>
       )}
     </button>
   );
@@ -486,6 +532,7 @@ export default function CalendarView({
   onExternalEventClick,
   workingHoursData = null,
   isMobile = false,
+  jobberConnected = false,
 }) {
   const today = new Date();
   const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
@@ -962,6 +1009,7 @@ export default function CalendarView({
                   laneIndex={w.laneIndex}
                   laneCount={w.laneCount}
                   getPositionStyle={getPositionStyle}
+                  jobberConnected={jobberConnected}
                 />
               ))}
 

@@ -27,6 +27,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { CopyToJobberSection } from '@/components/dashboard/CopyToJobberSection';
 
 const URGENCY_STYLES = {
   emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
@@ -66,7 +67,7 @@ function formatRelativeTime(iso) {
   return `${days}d ago`;
 }
 
-export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled, onStatusChange }) {
+export default function AppointmentFlyout({ appointment, conflict, open, onOpenChange, onCancelled, onStatusChange, jobberConnected = false }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [dismissingConflict, setDismissingConflict] = useState(false);
@@ -190,10 +191,20 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-card">
         <SheetHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge className={urgency.badge}>{urgency.label}</Badge>
             {appointment.status === 'completed' && (
               <Badge className="bg-green-100 text-green-700">Completed</Badge>
+            )}
+            {/* Phase 57 — "Not in Jobber yet" header pill (JOBSCHED-06).
+                Switches off automatically once Phase 999.3 populates jobber_visit_id. */}
+            {jobberConnected && !appointment.jobber_visit_id && (
+              <span
+                role="status"
+                className="inline-flex items-center rounded-full px-2 py-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700"
+              >
+                Not in Jobber yet
+              </span>
             )}
           </div>
           <SheetTitle className="text-xl">{appointment.caller_name}</SheetTitle>
@@ -312,6 +323,10 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
               </Button>
             </div>
           )}
+
+          {/* Phase 57 — Copy-to-Jobber section. Renders only when Jobber is connected
+              and the appointment has not been pushed (auto-handled by the section). */}
+          <CopyToJobberSection appointment={appointment} jobberConnected={jobberConnected} />
         </div>
 
         <SheetFooter className="flex-col gap-2">

@@ -16,6 +16,7 @@ import QuickBookSheet from '@/components/dashboard/QuickBookSheet';
 import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
 import ExternalEventSheet from '@/components/dashboard/ExternalEventSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
+import { JobberCopyBanner } from '@/components/dashboard/JobberCopyBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import { card } from '@/lib/design-tokens';
@@ -126,6 +127,9 @@ export default function CalendarPage() {
   const prefersReduced = useReducedMotion();
   const [workingHoursData, setWorkingHoursData] = useState(null);
   const [tenantId, setTenantId] = useState(null);
+  // Phase 57 — Jobber connection flag drives "Not in Jobber" pills, banner,
+  // and the AppointmentFlyout Copy-to-Jobber section.
+  const [jobberConnected, setJobberConnected] = useState(false);
   // Holds the most recent fetch range so the Realtime callback can range-filter
   // INSERT events against whatever view the user is currently looking at.
   const currentRangeRef = useRef({ start: null, end: null });
@@ -173,6 +177,14 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchWorkingHours();
+  }, []);
+
+  // Phase 57 — fetch jobber connection state once on mount.
+  useEffect(() => {
+    fetch('/api/integrations/jobber/connection-status')
+      .then((res) => (res.ok ? res.json() : { connected: false }))
+      .then((d) => setJobberConnected(!!d?.connected))
+      .catch(() => setJobberConnected(false));
   }, []);
 
   // Fetch tenant ID once for the Realtime subscription (user.id !== tenant.id).
@@ -654,6 +666,10 @@ export default function CalendarPage() {
         onReviewConflicts={handleReviewConflicts}
       />
 
+      {/* Phase 57 — dismissible "Jobber push coming soon" banner. Only renders
+          when Jobber is connected and the user has not yet dismissed it. */}
+      <JobberCopyBanner jobberConnected={jobberConnected} />
+
       {/* Mobile Agenda Strip — "Up Next" above calendar */}
       {isMobile && todayAppts.length > 0 && effectiveViewMode === 'day' && (
         <div className={`${card.base} p-3`}>
@@ -830,6 +846,7 @@ export default function CalendarPage() {
                 onExternalEventClick={(evt) => { setSelectedExternalEvent(evt); setExternalEventSheetOpen(true); }}
                 workingHoursData={workingHoursData}
                 isMobile={isMobile}
+                jobberConnected={jobberConnected}
               />
             </motion.div>
           ) : (
@@ -848,6 +865,7 @@ export default function CalendarPage() {
               onExternalEventClick={(evt) => { setSelectedExternalEvent(evt); setExternalEventSheetOpen(true); }}
               workingHoursData={workingHoursData}
               isMobile={isMobile}
+              jobberConnected={jobberConnected}
             />
           )}
         </div>
@@ -1012,6 +1030,7 @@ export default function CalendarPage() {
         onOpenChange={setFlyoutOpen}
         onCancelled={handleCancelled}
         onStatusChange={handleStatusChange}
+        jobberConnected={jobberConnected}
       />
 
       {/* Time Block Sheet */}
