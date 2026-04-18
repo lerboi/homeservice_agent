@@ -288,7 +288,12 @@ Plans:
 **Requirements:** JOBSCHED-01, JOBSCHED-02, JOBSCHED-03, JOBSCHED-04, JOBSCHED-05, JOBSCHED-06, JOBSCHED-07
 **Pre-requisite user actions:** None beyond Phase 56 (same Jobber dev app + OAuth scopes cover visit reads and webhook events).
 **Pre-research:** `.planning/phases/56-jobber-read-side-integration-customer-context-clients-jobs-invoices/57-PRERESEARCH.md` (answers bookable-user subset, overlay UX, and interim copy-flow open questions before discuss/planning).
-**Plans:** TBD during `/gsd:plan-phase 57`
+**Plans:** 5 plans
+- [ ] 57-01-PLAN.md — Migration 055 (CHECK widen, bookable_user_ids, jobber_visit_id, partial unique index) + vercel.json cron schedule
+- [ ] 57-02-PLAN.md — Visit mapper + Jobber visits/users GraphQL fetchers + rebuildJobberMirror helper
+- [ ] 57-03-PLAN.md — Webhook extension for VISIT_*/ASSIGNMENT_*/JOB_UPDATE mirror routing
+- [ ] 57-04-PLAN.md — Poll cron + bookable-users API + resync endpoint + setup page + picker component
+- [ ] 57-05-PLAN.md — Calendar overlay retrofit + Not-in-Jobber pills + banner + flyout copy section + booking email + integrations card picker
 
 ---
 
