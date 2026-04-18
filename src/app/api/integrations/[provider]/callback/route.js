@@ -140,10 +140,25 @@ export async function GET(request, { params }) {
           .eq('tenant_id', tenantId)
           .eq('provider', 'jobber');
       } else {
-        // Probe failed — scrubbed log, no token material, no response body.
-        console.error(
-          '[integrations-callback] jobber account probe failed (tokens persisted; external_account_id remains NULL)',
-        );
+        // Probe failed — roll back the just-upserted row so the user can retry
+        // cleanly. Leaving tokens persisted with external_account_id = NULL would
+        // show the integration as "connected" in the UI while silently dropping
+        // every webhook delivery (webhook handler filters on external_account_id).
+        const { error: rollbackErr } = await supabase
+          .from('accounting_credentials')
+          .delete()
+          .eq('tenant_id', tenantId)
+          .eq('provider', 'jobber');
+        if (rollbackErr) {
+          console.error(
+            '[integrations-callback] jobber rollback after probe failure failed:',
+            rollbackErr.message,
+          );
+        } else {
+          console.error(
+            '[integrations-callback] jobber account probe failed — row rolled back',
+          );
+        }
         return NextResponse.redirect(
           `${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}?error=account_probe_failed&provider=jobber`,
         );
