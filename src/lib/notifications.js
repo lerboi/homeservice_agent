@@ -12,6 +12,7 @@ import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { NewLeadEmail } from '@/emails/NewLeadEmail';
 import { XeroReconnectEmail } from '@/emails/XeroReconnectEmail';
+import { JobberReconnectEmail } from '@/emails/JobberReconnectEmail';
 import en from '../../messages/en.json' with { type: 'json' };
 import es from '../../messages/es.json' with { type: 'json' };
 
@@ -404,6 +405,66 @@ export async function notifyXeroRefreshFailure(tenantId, ownerEmail) {
   } catch (err) {
     console.warn(
       `[notifyXeroRefreshFailure] email send failed for tenant=${tenantId}:`,
+      err?.message || err,
+    );
+  }
+}
+
+// ─── Phase 56 Plan 04: Jobber token-refresh failure surfacing ────────────────
+
+/**
+ * Mirror of notifyXeroRefreshFailure (P55 D-14 carried forward per Phase 56
+ * CONTEXT.md) for Jobber. Persists `error_state='token_refresh_failed'` on
+ * the Jobber credentials row, invalidates the integration-status cache so the
+ * dashboard renders the Reconnect banner, and sends a one-shot Resend email
+ * to the tenant owner.
+ *
+ * Security: the email body NEVER echoes access_token / refresh_token /
+ * client_secret — `JobberReconnectEmail` accepts only `reconnectUrl`.
+ *
+ * Best-effort: never throws. Missing ownerEmail is tolerated (row is still
+ * marked; email skipped).
+ */
+export async function notifyJobberRefreshFailure(tenantId, ownerEmail) {
+  if (!tenantId) return;
+
+  try {
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+    await admin
+      .from('accounting_credentials')
+      .update({ error_state: 'token_refresh_failed' })
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'jobber');
+  } catch (err) {
+    console.warn(
+      `[notifyJobberRefreshFailure] error_state write failed for tenant=${tenantId}:`,
+      err?.message || err,
+    );
+  }
+
+  try {
+    revalidateTag(`integration-status-${tenantId}`);
+  } catch {
+    // revalidateTag may throw outside a request context (e.g. cron) — safe to ignore.
+  }
+
+  if (!ownerEmail) return;
+
+  try {
+    await getResendClient().emails.send({
+      from: 'Voco <noreply@voco.live>',
+      to: ownerEmail,
+      subject: 'Your Jobber connection needs attention',
+      react: JobberReconnectEmail({
+        reconnectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/more/integrations`,
+      }),
+    });
+  } catch (err) {
+    console.warn(
+      `[notifyJobberRefreshFailure] email send failed for tenant=${tenantId}:`,
       err?.message || err,
     );
   }

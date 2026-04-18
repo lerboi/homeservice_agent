@@ -16,6 +16,7 @@ export const VALID_ITEM_IDS = [
   'setup_escalation',
   'setup_billing',
   'connect_xero',
+  'connect_jobber',
 ];
 
 /** Theme → item IDs map used by the SetupChecklist accordion (Phase 48 D-02). */
@@ -28,6 +29,7 @@ export const THEME_GROUPS = {
     'configure_notifications',
     'configure_call_routing',
     'connect_xero',
+    'connect_jobber',
   ],
   calendar: ['connect_calendar', 'configure_zones', 'setup_escalation'],
   billing: ['setup_billing'],
@@ -103,6 +105,12 @@ const ITEM_META = {
       'Let your AI receptionist see customer history during calls.',
     href: '/dashboard/more/integrations',
   },
+  connect_jobber: {
+    title: 'Connect Jobber',
+    description:
+      'Let your AI receptionist see customer and job history during calls.',
+    href: '/dashboard/more/integrations',
+  },
 };
 
 // ─── Notification prefs helper (preserved from previous version) ─────────────
@@ -173,6 +181,7 @@ export function deriveChecklistItems(tenant, counts) {
     setup_escalation: escalationCount > 0,
     setup_billing: !!hasActiveSubscription,
     connect_xero: !!counts.xeroConnected,
+    connect_jobber: !!counts.jobberConnected,
   };
 
   const items = [];
@@ -211,6 +220,7 @@ async function fetchChecklistState(tenantId) {
     escalationResult,
     subResult,
     xeroResult,
+    jobberResult,
   ] = await Promise.allSettled([
       supabase
         .from('tenants')
@@ -251,6 +261,11 @@ async function fetchChecklistState(tenantId) {
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId)
         .eq('provider', 'xero'),
+      supabase
+        .from('accounting_credentials')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'jobber'),
     ]);
 
   const tenant = tenantResult.status === 'fulfilled' ? tenantResult.value.data : null;
@@ -270,6 +285,9 @@ async function fetchChecklistState(tenantId) {
   const xeroConnected =
     xeroResult.status === 'fulfilled' && (xeroResult.value.count ?? 0) > 0;
 
+  const jobberConnected =
+    jobberResult.status === 'fulfilled' && (jobberResult.value.count ?? 0) > 0;
+
   return {
     tenant,
     serviceCount,
@@ -278,6 +296,7 @@ async function fetchChecklistState(tenantId) {
     escalationCount,
     hasActiveSubscription,
     xeroConnected,
+    jobberConnected,
   };
 }
 
