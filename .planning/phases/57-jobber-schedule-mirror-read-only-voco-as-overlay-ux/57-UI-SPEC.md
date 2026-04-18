@@ -59,7 +59,7 @@ Declared values (must be multiples of 4):
 Exceptions:
 - `p-5` (20px) is the established card padding. Maintain exactly.
 - Touch targets on "Copy details" and "Open in Jobber" buttons: minimum 44px height on mobile (CONTEXT JOBSCHED-05 click-through requirement). Use `min-h-[44px]` on mobile breakpoint.
-- External event blocks in calendar grid follow existing 4px outer margin (`left-1 right-1`) for desktop, 2px for mobile — matching `getLaneLayout` as currently implemented.
+- External event blocks in calendar grid: 4px outer margin (`left-1 right-1`) on all breakpoints — matching `getLaneLayout` as currently implemented.
 
 Source: Phase 56 UI-SPEC (carried forward). Touch target exception is new for Phase 57.
 
@@ -75,12 +75,14 @@ Source: Phase 56 UI-SPEC (carried forward). Touch target exception is new for Ph
 | Timestamp / muted detail | 12px (`text-xs`) | 400 (regular) | 1.4 |
 | Provider pill text | 10px (`text-[10px]`) | 500 (`font-medium`) | 1.4 |
 | "Not in Jobber yet" pill text | 10px (`text-[10px]`) | 500 (`font-medium`) | 1.4 |
-| Event block title (external) | 11px (`text-[11px]`) | 600 (`font-semibold`) | tight |
+| Event block title (external) | 12px (`text-xs`) | 500 (`font-medium`) | tight |
 | Event block provider label | 10px (`text-[10px]`) | 400 (regular) | 1.4 |
 | Banner body text | 14px (`text-sm`) | 400 (regular) | 1.5 |
 | Bookable-users picker label | 14px (`text-sm`) | 500 (`font-medium`) | 1.4 |
 
-Source: Phase 56 UI-SPEC (carried forward). Provider pill and "Not in Jobber yet" pill sizes are new in Phase 57 — match existing `ExternalEventBlock` text density in `CalendarView.js`.
+Declared weights: **400 (regular)** and **500 (`font-medium`)** only.
+
+Source: Phase 56 UI-SPEC (carried forward). Provider pill and "Not in Jobber yet" pill sizes are new in Phase 57 — match existing `ExternalEventBlock` text density in `CalendarView.js`. Event block title collapsed from 11px to 12px (`text-xs`) to eliminate the arbitrary `text-[11px]` class; weight changed from 600 to 500 to stay within the 2-weight contract.
 
 ---
 
@@ -146,11 +148,11 @@ Replaces the existing `ExternalEventBlock` component in `CalendarView.js`. The e
 - Hover: `hover:opacity-90 hover:shadow-sm transition-all` (subtle affordance — block IS clickable to open in source)
 - Cursor: `cursor-pointer` (click-through to source-of-truth)
 
-**Provider pill (inside block, bottom-left, only when height >= 32px):**
+**Provider pill (inside block, bottom-left, only when height >= 36px):**
 - Jobber: `bg-[#1B9F4F]/10 text-[#1B9F4F] dark:bg-[#1B9F4F]/20 dark:text-emerald-300`
 - Google: `bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-300`
 - Outlook: `bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300`
-- Shape: `inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium`
+- Shape: `inline-flex items-center rounded-full px-2 py-1 text-[10px] font-medium`
 - Label text: `"From Jobber"` / `"From Google"` / `"From Outlook"`
 
 **Click behaviour:** `onClick` opens the external visit/event URL in a new tab (`window.open(url, '_blank', 'noopener')`). For Jobber, use per-visit URL if available; fall back to `https://app.getjobber.com/calendar` (Jobber calendar day-view). Google/Outlook: existing `onExternalEventClick` handler (already opens in source).
@@ -163,7 +165,7 @@ Inline badge rendered on `AppointmentBlock` in `CalendarView.js` AND in the `App
 
 **On calendar block (compact — only when block height >= 44px):**
 - Position: top-right corner of the appointment block, above the off-hours indicator
-- Shape: `inline-flex items-center rounded-full px-1 py-0.5 text-[10px] font-medium`
+- Shape: `inline-flex items-center rounded-full px-1 py-1 text-[10px] font-medium`
 - Colors: `bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700`
 - Label: `"Not in Jobber"` (shortened for block — "yet" omitted for space)
 
@@ -235,9 +237,9 @@ Rendered in two contexts:
 ```
 
 - Checkbox: shadcn `Checkbox`, `size="sm"`
-- Avatar: `w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-medium text-muted-foreground` (initials from first+last name)
+- Avatar: `w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground` (initials from first+last name)
 - User name: `text-sm font-medium text-foreground`
-- "Active" badge (recent-visits indicator): `inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300` — label: `"Active"`
+- "Active" badge (recent-visits indicator): `inline-flex items-center rounded-full px-2 py-1 text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300` — label: `"Active"`
 - Loading state (while fetching Jobber users): 3 `Skeleton` rows, each `h-9 rounded-md`
 - Empty state (zero users returned from Jobber API): `"No team members found in Jobber."` in `text-sm text-muted-foreground`, with a `Loader2`-based "Retry" button
 
@@ -407,7 +409,7 @@ For the executor: these are the exact UI surfaces this phase changes.
 
 ### `src/components/dashboard/CalendarView.js`
 
-1. **`ExternalEventBlock`** — replace violet treatment with unified slate muted treatment; add provider-aware pill (`"From Jobber"` / `"From Google"` / `"From Outlook"`); update `providerLabel` derivation to handle `'jobber'` provider
+1. **`ExternalEventBlock`** — replace violet treatment with unified slate muted treatment; add provider-aware pill (`"From Jobber"` / `"From Google"` / `"From Outlook"`); update `providerLabel` derivation to handle `'jobber'` provider; event block title uses `text-xs font-medium` (12px / weight 500)
 2. **`AppointmentBlock`** — add `"Not in Jobber yet"` amber pill (top-right, only when `jobberConnected` prop is true AND block height >= 44px)
 3. **CalendarView props** — add `jobberConnected: bool` prop (passed from calendar page)
 4. **External event click handler** — for Jobber events, open per-visit URL or fall back to `https://app.getjobber.com/calendar`
