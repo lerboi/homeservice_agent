@@ -337,12 +337,25 @@ export function FeaturesCarousel() {
       <div className="fc-grid relative max-w-[1040px] mx-auto grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] md:gap-16 gap-12 items-start">
         {/* LEFT — sticky visual stage (desktop only) */}
         <div className="fc-stage-wrap hidden md:block relative">
-          <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-[#F97316]/[0.08] border border-[#F97316]/20 text-[#F97316] text-[11px] font-semibold tracking-[0.14em] uppercase mb-4">
+          <div className="flex items-baseline gap-3 mb-5">
             <span
-              className="w-1.5 h-1.5 rounded-full bg-[#F97316]"
-              style={{ boxShadow: '0 0 0 4px rgba(249,115,22,0.2)' }}
-            />
-            Phase 0{activeIdx + 1} · {active.navLabel}
+              className="text-[42px] font-semibold text-[#0F172A] leading-none"
+              style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.04em' }}
+            >
+              {String(activeIdx + 1).padStart(2, '0')}
+            </span>
+            <span className="flex-1 h-px bg-stone-200 relative top-[-6px]">
+              <span
+                className="absolute left-0 top-0 h-px bg-[#F97316]"
+                style={{
+                  width: `${((activeIdx + 1) / FEATURES.length) * 100}%`,
+                  transition: 'width 350ms ease-out',
+                }}
+              />
+            </span>
+            <span className="text-[13px] font-medium text-[#475569] relative top-[-6px]">
+              {active.navLabel}
+            </span>
           </div>
 
           <div
@@ -394,7 +407,7 @@ export function FeaturesCarousel() {
             }}
           />
 
-          <div className="flex flex-col gap-10 md:gap-[180px]">
+          <div className="flex flex-col gap-10 md:gap-[180px] md:pb-[45vh]">
             {FEATURES.map((f, i) => {
               const isActive = i === activeIdx;
               const passed = i < activeIdx;

@@ -13,29 +13,29 @@ export function YouStayInControlSection() {
                 You stay in control.
               </h2>
               <p className="mt-5 text-[17px] text-[#475569] leading-relaxed">
-                Three dials. Who Voco answers for, when it picks up, how it reports back. Set once, forget it.
+                Three dials you set. Who Voco answers for, when it picks up, how it reports back. Change them any time.
               </p>
             </div>
 
             <AnimatedStagger className="mt-16 md:mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
               <AnimatedItem>
                 <ControlColumn
-                  label="Regulars ring you"
-                  caption="Trusted contacts go straight to your phone."
+                  label="Pick who skips the AI"
+                  caption="Add regulars to a VIP list — their calls ring your phone directly."
                   mock={<VipListMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
-                  label="Off-hours covered"
-                  caption="Voco takes the nights. You take the day."
+                  label="Set when Voco answers"
+                  caption="Choose the hours — nights, weekends, lunch, or all day. Your schedule."
                   mock={<HoursMock />}
                 />
               </AnimatedItem>
               <AnimatedItem>
                 <ControlColumn
-                  label="Every call, on your phone"
-                  caption="Urgency, transcript, one-tap callback — texted to you."
+                  label="Choose what you get notified about"
+                  caption="Pick which calls text you and what they include — urgency, transcript, callback."
                   mock={<NotificationMock />}
                 />
               </AnimatedItem>

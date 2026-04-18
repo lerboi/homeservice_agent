@@ -13,6 +13,8 @@ import { createClient } from '@supabase/supabase-js';
 import { NewLeadEmail } from '@/emails/NewLeadEmail';
 import { XeroReconnectEmail } from '@/emails/XeroReconnectEmail';
 import { JobberReconnectEmail } from '@/emails/JobberReconnectEmail';
+import { BookingCopyToJobberEmail } from '@/emails/BookingCopyToJobberEmail';
+import { buildJobberPasteBlock } from '@/components/dashboard/CopyToJobberSection.helpers';
 import en from '../../messages/en.json' with { type: 'json' };
 import es from '../../messages/es.json' with { type: 'json' };
 
@@ -452,5 +454,75 @@ export async function notifyJobberRefreshFailure(tenantId, ownerEmail) {
       `[notifyJobberRefreshFailure] email send failed for tenant=${tenantId}:`,
       err?.message || err,
     );
+  }
+}
+
+// ============================================================
+// Phase 57 Plan 05 — post-booking "copy to Jobber" email (JOBSCHED-06).
+// ============================================================
+
+/**
+ * Send the "Don't forget to add this to Jobber" email after a successful Voco
+ * booking. Gates on BOTH:
+ *   1. Tenant has a connected Jobber accounting_credentials row, AND
+ *   2. The appointment has not been pushed yet (jobber_visit_id IS NULL).
+ *
+ * Phase 999.3 will add a one-click "Push to Jobber" button alongside; until then,
+ * this email is the bridge so the owner's Jobber schedule stays in sync.
+ *
+ * Always non-throwing — booking flow must not break on email failures.
+ *
+ * @param {object} args
+ * @param {string} args.tenantId
+ * @param {string} args.appointmentId
+ */
+export async function notifyBookingCopyToJobber({ tenantId, appointmentId }) {
+  if (!tenantId || !appointmentId) return { sent: false, reason: 'missing_args' };
+
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+
+  try {
+    const { data: cred } = await admin
+      .from('accounting_credentials')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'jobber')
+      .maybeSingle();
+    if (!cred) return { sent: false, reason: 'jobber_not_connected' };
+
+    const { data: appt } = await admin
+      .from('appointments')
+      .select('id, start_time, end_time, service_address, caller_name, caller_phone, notes, jobber_visit_id')
+      .eq('id', appointmentId)
+      .maybeSingle();
+    if (!appt) return { sent: false, reason: 'appointment_not_found' };
+    if (appt.jobber_visit_id) return { sent: false, reason: 'already_pushed' };
+
+    const { data: tenant } = await admin
+      .from('tenants')
+      .select('email, personal_email, business_email')
+      .eq('id', tenantId)
+      .maybeSingle();
+    const ownerEmail = tenant?.business_email ?? tenant?.email ?? tenant?.personal_email;
+    if (!ownerEmail) return { sent: false, reason: 'no_owner_email' };
+
+    const pasteBlock = buildJobberPasteBlock(appt);
+
+    await getResendClient().emails.send({
+      from: 'Voco <noreply@voco.live>',
+      to: ownerEmail,
+      subject: "Don't forget to add this to Jobber",
+      react: BookingCopyToJobberEmail({ pasteBlock }),
+    });
+    return { sent: true };
+  } catch (err) {
+    console.warn(
+      `[notifyBookingCopyToJobber] failed for tenant=${tenantId} appointment=${appointmentId}:`,
+      err?.message || err,
+    );
+    return { sent: false, reason: 'send_failed' };
   }
 }
