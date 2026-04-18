@@ -39,6 +39,21 @@ import { createClient } from '@supabase/supabase-js';
 import { GraphQLClient, gql } from 'graphql-request';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { refreshTokenIfNeeded } from '@/lib/integrations/adapter';
+import { applyJobberVisit } from '@/lib/scheduling/jobber-schedule-mirror';
+import { fetchJobberVisitById } from '@/lib/integrations/jobber';
+
+// Phase 57 — Jobber schedule mirror topics (JOBSCHED-01).
+// Topic names per Jobber WebHookTopicEnum (verify in GraphiQL before locking
+// for a new API version). If renamed upstream, update this set.
+const JOBBER_VISIT_TOPICS = new Set([
+  'VISIT_CREATE',
+  'VISIT_UPDATE',
+  'VISIT_DESTROY',
+  'VISIT_COMPLETE',
+  'ASSIGNMENT_CREATE',
+  'ASSIGNMENT_UPDATE',
+  'ASSIGNMENT_DESTROY',
+]);
 
 const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
 const JOBBER_API_VERSION = '2024-04-01'; // keep in sync with src/lib/integrations/jobber.js
@@ -165,6 +180,54 @@ export async function POST(request) {
         revalidateTag(`jobber-context-${vocoTenantId}-${phone}`);
       }
     }
+
+    // ============================================================
+    // Phase 57: schedule mirror routing (JOBSCHED-01, D-16)
+    // Sibling branch — runs IN ADDITION to the customer-context revalidation
+    // above so the existing P56 cache flow is preserved unchanged.
+    // ============================================================
+    if (JOBBER_VISIT_TOPICS.has(evt.topic)) {
+      try {
+        if (evt.topic === 'VISIT_DESTROY' || evt.topic === 'VISIT_COMPLETE') {
+          // Hard-delete the mirror row. itemId IS the visit id for VISIT_*.
+          // VISIT_COMPLETE: per D-06, completed visits are NOT mirrored.
+          await admin
+            .from('calendar_events')
+            .delete()
+            .eq('tenant_id', vocoTenantId)
+            .eq('provider', 'jobber')
+            .eq('external_id', evt.itemId);
+        } else {
+          // VISIT_CREATE / VISIT_UPDATE / ASSIGNMENT_*
+          // For ASSIGNMENT_* the payload itemId may reference the assignment
+          // entity rather than the parent visit. fetchJobberVisitById will
+          // return null for non-visit ids — acceptable: the 15-min poll cron
+          // (Plan 04) reconciles the gap. Same treatment for any unresolved id.
+          const visit = await fetchJobberVisitById({ cred, id: evt.itemId }).catch(() => null);
+          if (visit) {
+            const clientName = visit.job?.client?.name?.full ?? null;
+            await applyJobberVisit({
+              admin,
+              tenantId: vocoTenantId,
+              visit,
+              bookableUserIds: cred.jobber_bookable_user_ids ?? null,
+              clientName,
+            });
+          }
+        }
+      } catch {
+        // Structured log only — never include cred/token/response material.
+        console.error(JSON.stringify({
+          scope: 'jobber-webhook-mirror',
+          tenant_id: vocoTenantId,
+          topic: evt.topic,
+          status: 'error',
+        }));
+        // Silent 200 below — Jobber retries handled idempotently via the
+        // calendar_events UNIQUE(tenant_id, provider, external_id) constraint.
+      }
+    }
+
     return new Response('', { status: 200 });
   } catch {
     // Any unexpected error — still respond 200 to prevent retry storms.
