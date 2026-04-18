@@ -134,11 +134,36 @@ export async function GET(request, { params }) {
     if (provider === 'jobber') {
       const accountId = await probeJobberAccountId(tokenSet.access_token);
       if (accountId) {
-        await supabase
+        const { error: extIdErr } = await supabase
           .from('accounting_credentials')
           .update({ external_account_id: accountId })
           .eq('tenant_id', tenantId)
           .eq('provider', 'jobber');
+        if (extIdErr) {
+          // Migration 056 enforces a global unique index on
+          // (provider, external_account_id). If another Voco tenant already has
+          // this Jobber accountId connected, the UPDATE will fail with a
+          // unique-violation (Postgres code 23505). Roll back the just-upserted
+          // row and surface a specific error so the user understands.
+          const isUniqueViolation =
+            extIdErr.code === '23505' ||
+            /duplicate key|unique constraint/i.test(extIdErr.message || '');
+          await supabase
+            .from('accounting_credentials')
+            .delete()
+            .eq('tenant_id', tenantId)
+            .eq('provider', 'jobber');
+          console.error(
+            '[integrations-callback] jobber external_account_id write-back failed:',
+            extIdErr.message,
+          );
+          const errCode = isUniqueViolation
+            ? 'account_already_connected'
+            : 'account_probe_failed';
+          return NextResponse.redirect(
+            `${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}?error=${errCode}&provider=jobber`,
+          );
+        }
       } else {
         // Probe failed — roll back the just-upserted row so the user can retry
         // cleanly. Leaving tokens persisted with external_account_id = NULL would
