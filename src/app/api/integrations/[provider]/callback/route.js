@@ -22,7 +22,7 @@ const PAGE_URL = '/dashboard/more/integrations';
 
 // Jobber GraphQL constants — keep in sync with src/lib/integrations/jobber.js
 const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
-const JOBBER_API_VERSION = '2024-04-01';
+const JOBBER_API_VERSION = '2025-04-16';
 
 /**
  * Post-token-exchange probe for Jobber — resolves the `accountId` the
@@ -51,12 +51,33 @@ async function probeJobberAccountId(accessToken) {
       body: JSON.stringify({ query: 'query { account { id } }' }),
     });
     clearTimeout(timeout);
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.error(
+        `[probeJobberAccountId] HTTP ${resp.status}: ${text.slice(0, 500)}`,
+      );
+      return null;
+    }
     const body = await resp.json();
+    if (body?.errors) {
+      console.error(
+        '[probeJobberAccountId] GraphQL errors:',
+        JSON.stringify(body.errors).slice(0, 500),
+      );
+    }
     const id = body?.data?.account?.id;
+    if (!id) {
+      console.error(
+        '[probeJobberAccountId] no account.id in response; body shape:',
+        JSON.stringify(body).slice(0, 500),
+      );
+    }
     return typeof id === 'string' && id.length > 0 ? id : null;
-  } catch {
-    // Network/timeout/parse — scrubbed failure; caller handles.
+  } catch (err) {
+    console.error(
+      '[probeJobberAccountId] network/parse error:',
+      err?.message || err,
+    );
     return null;
   }
 }
