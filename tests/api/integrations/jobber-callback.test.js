@@ -17,6 +17,9 @@ const mockUpsert = jest.fn(async () => ({ error: null }));
 const mockUpdateEqEq = jest.fn(async () => ({ error: null }));
 const mockUpdateEq = jest.fn(() => ({ eq: mockUpdateEqEq }));
 const mockUpdate = jest.fn(() => ({ eq: mockUpdateEq }));
+const mockDeleteEqEq = jest.fn(async () => ({ error: null }));
+const mockDeleteEq = jest.fn(() => ({ eq: mockDeleteEqEq }));
+const mockDelete = jest.fn(() => ({ eq: mockDeleteEq }));
 
 const mockTenantSingle = jest.fn(async () => ({
   data: { features_enabled: { invoicing: true } },
@@ -29,7 +32,7 @@ const mockTenantUpdate = jest.fn(() => ({ eq: mockTenantUpdateEq }));
 
 const mockFrom = jest.fn((table) => {
   if (table === 'accounting_credentials') {
-    return { upsert: mockUpsert, update: mockUpdate };
+    return { upsert: mockUpsert, update: mockUpdate, delete: mockDelete };
   }
   if (table === 'tenants') {
     return { select: mockTenantSelect, update: mockTenantUpdate };
@@ -110,7 +113,7 @@ describe('OAuth callback — Jobber account-id probe (P56 Plan 03 Task 3)', () =
     expect(loc).not.toContain('account_probe_failed');
   });
 
-  it('T-CB-2: probe returns malformed JSON — tokens persist but no external_account_id UPDATE; redirect has account_probe_failed', async () => {
+  it('T-CB-2: probe returns malformed JSON — row rolled back, redirect has account_probe_failed (WR-02 fix)', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ data: null }),
@@ -118,14 +121,15 @@ describe('OAuth callback — Jobber account-id probe (P56 Plan 03 Task 3)', () =
     const resp = await GET(makeReq('jobber'), {
       params: Promise.resolve({ provider: 'jobber' }),
     });
-    expect(mockUpsert).toHaveBeenCalledTimes(1); // tokens persisted
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockUpsert).toHaveBeenCalledTimes(1); // row was initially persisted
+    expect(mockUpdate).not.toHaveBeenCalled(); // UPDATE never attempted (probe nulled)
+    expect(mockDelete).toHaveBeenCalledTimes(1); // WR-02: row rolled back
     const loc = resp.headers.get('location');
     expect(loc).toContain('error=account_probe_failed');
     expect(loc).toContain('provider=jobber');
   });
 
-  it('T-CB-3: probe returns 401 — tokens persist but no external_account_id UPDATE', async () => {
+  it('T-CB-3: probe returns 401 — row rolled back, redirect has account_probe_failed (WR-02 fix)', async () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 401,
@@ -136,6 +140,7 @@ describe('OAuth callback — Jobber account-id probe (P56 Plan 03 Task 3)', () =
     });
     expect(mockUpsert).toHaveBeenCalledTimes(1);
     expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockDelete).toHaveBeenCalledTimes(1); // WR-02: row rolled back
     expect(resp.headers.get('location')).toContain('error=account_probe_failed');
   });
 
