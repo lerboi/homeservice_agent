@@ -310,3 +310,180 @@ export class JobberAdapter {
     return fetchJobberCustomerByPhone(tenantId, phoneE164);
   }
 }
+
+// ============================================================
+// Phase 57: schedule mirror fetchers
+// ============================================================
+
+const VISITS_DELTA_QUERY = gql`
+  query JobberVisitsDelta(
+    $updatedAfter: ISO8601DateTime,
+    $startAfter: ISO8601DateTime!,
+    $startBefore: ISO8601DateTime!,
+    $first: Int!,
+    $after: String
+  ) {
+    visits(
+      first: $first
+      after: $after
+      filter: {
+        updatedAfter: $updatedAfter
+        startAfter: $startAfter
+        startBefore: $startBefore
+      }
+    ) {
+      nodes {
+        id
+        startAt
+        endAt
+        visitStatus
+        assignedUsers(first: 5) { nodes { id name { full } } }
+        job { id title client { id name { full } } }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+const USERS_QUERY = gql`
+  query JobberUsers($first: Int!, $after: String) {
+    users(first: $first, after: $after) {
+      nodes { id name { full first last } email }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+const RECENT_VISITS_FOR_ACTIVITY_QUERY = gql`
+  query JobberRecentVisitsForActivity($startAfter: ISO8601DateTime!, $first: Int!, $after: String) {
+    visits(
+      first: $first
+      after: $after
+      filter: { startAfter: $startAfter }
+    ) {
+      nodes {
+        id
+        assignedUsers(first: 5) { nodes { id } }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+`;
+
+const VISIT_BY_ID_QUERY = gql`
+  query JobberVisitById($id: EncodedId!) {
+    visit(id: $id) {
+      id
+      startAt
+      endAt
+      visitStatus
+      assignedUsers(first: 5) { nodes { id name { full } } }
+      job { id title client { id name { full } } }
+    }
+  }
+`;
+
+/**
+ * Internal helper — build a graphql-request client for a refreshed cred row.
+ * Mirrors the inline construction used by fetchJobberCustomerByPhone above.
+ */
+async function getJobberGraphqlClient(admin, cred) {
+  const refreshed = await refreshTokenIfNeeded(admin, cred);
+  return new GraphQLClient(JOBBER_GRAPHQL_URL, {
+    headers: {
+      'Authorization': `Bearer ${refreshed.access_token}`,
+      'X-JOBBER-GRAPHQL-VERSION': JOBBER_API_VERSION,
+    },
+  });
+}
+
+/**
+ * Single-page fetch of Jobber visits in a time window. Pagination handled by caller.
+ * Used by rebuildJobberMirror (full-window) and pollJobberVisitsDelta (updatedAfter).
+ *
+ * @param {object} args
+ * @param {object} args.cred                  accounting_credentials row
+ * @param {string} args.windowStart           ISO8601
+ * @param {string} args.windowEnd             ISO8601
+ * @param {string|null} [args.updatedAfter]   ISO8601 — null for full backfill
+ * @param {string|null} [args.after]          GraphQL cursor
+ * @param {number} [args.first]               page size (default 100)
+ * @returns {Promise<{ visits, pageInfo }>}
+ */
+export async function fetchJobberVisits({ cred, windowStart, windowEnd, updatedAfter = null, after = null, first = 100 }) {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+  const client = await getJobberGraphqlClient(admin, cred);
+  const data = await client.request(VISITS_DELTA_QUERY, {
+    updatedAfter,
+    startAfter: windowStart,
+    startBefore: windowEnd,
+    first,
+    after,
+  });
+  return {
+    visits: data?.visits?.nodes ?? [],
+    pageInfo: data?.visits?.pageInfo ?? { hasNextPage: false, endCursor: null },
+  };
+}
+
+/**
+ * Fetch a single visit by ID. Used by webhook handler to resolve VISIT_UPDATE
+ * payloads (Jobber webhooks deliver only IDs, not full visit nodes).
+ */
+export async function fetchJobberVisitById({ cred, id }) {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+  const client = await getJobberGraphqlClient(admin, cred);
+  const data = await client.request(VISIT_BY_ID_QUERY, { id });
+  return data?.visit ?? null;
+}
+
+/**
+ * Fetch all Jobber users with a 30-day-activity flag per user.
+ *
+ * Two-query fallback (RESEARCH Pattern 7) — avoids assuming a users → visits
+ * nested filter exists:
+ *   1. Page through users(first:100) → all users
+ *   2. Page through visits(filter:{startAfter: 30d ago}, first:500) → assignee IDs
+ *   3. hasRecentActivity = id ∈ assigneeIdSet
+ */
+export async function fetchJobberUsersWithRecentActivity({ cred }) {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+  const client = await getJobberGraphqlClient(admin, cred);
+
+  const users = [];
+  let cursor = null;
+  do {
+    const data = await client.request(USERS_QUERY, { first: 100, after: cursor });
+    for (const u of data?.users?.nodes ?? []) users.push(u);
+    cursor = data?.users?.pageInfo?.hasNextPage ? data.users.pageInfo.endCursor : null;
+  } while (cursor);
+
+  const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  const active = new Set();
+  cursor = null;
+  do {
+    const data = await client.request(RECENT_VISITS_FOR_ACTIVITY_QUERY, { startAfter: since, first: 500, after: cursor });
+    for (const v of data?.visits?.nodes ?? []) {
+      for (const u of v?.assignedUsers?.nodes ?? []) active.add(u.id);
+    }
+    cursor = data?.visits?.pageInfo?.hasNextPage ? data.visits.pageInfo.endCursor : null;
+  } while (cursor);
+
+  return users.map((u) => ({
+    id: u.id,
+    name: u.name?.full ?? `${u.name?.first ?? ''} ${u.name?.last ?? ''}`.trim(),
+    first: u.name?.first ?? '',
+    last: u.name?.last ?? '',
+    email: u.email ?? null,
+    hasRecentActivity: active.has(u.id),
+  }));
+}
