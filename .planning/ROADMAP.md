@@ -281,6 +281,15 @@ Plans:
 - [ ] 56-06-PLAN.md — [CROSS-REPO livekit-agent] src/lib/customer_context.py merge helper + agent.py 5th parallel task + prompt.py source annotations + check_customer_account extension + pytest (JOBBER-04, JOBBER-05)
 - [ ] 56-07-PLAN.md — Skill sync (voice-call-architecture, auth-database-multitenancy, dashboard-crm-system) (JOBBER-01..05)
 
+### Phase 57: Jobber schedule mirror (read-only) + Voco-as-overlay UX
+
+**Goal:** Mirror Jobber visits into the existing `calendar_events` table so the AI's `check_availability` tool stays a single query across Google + Outlook + Jobber (zero added call-path latency), and introduce the Voco-as-overlay dashboard UX that respects Jobber as the source of truth until bidirectional push ships in Phase 999.3. Three architectural angles land together: (a) **bookable-user subset** — mirror only visits whose assignees intersect a per-tenant opt-in set of Jobber users (mirrors Jobber's own "bookable team members" pattern; avoids over-blocking multi-user accounts where office/seasonal staff shouldn't count toward availability); connect flow pulls users from Jobber, pre-selects users with ≥1 visit in the last 30 days, auto-skips if only one user exists, settings panel allows later edits and re-sync. (b) **Thin-overlay dashboard calendar** — Voco-booked appointments render first-class and editable; mirrored Jobber visits render muted with a "From Jobber" pill, not editable, click-through to the Jobber visit (matches Calendly/Acuity/Cal.com/Reclaim universal convention); same muted treatment applied consistently to existing Google/Outlook external events. (c) **Interim manual-copy UX** — because Voco→Jobber push is deferred to Phase 999.3, each Voco-only appointment gets a "Not in Jobber yet" badge, copy-to-clipboard action producing a paste-ready block (client/address/start/duration/notes), Jobber new-visit deep link, and an email fallback on booking with the same copy block; Voco booking ID (UUID) persisted on the appointment row as the idempotency key so 999.3 push can dedupe anything manually copied during the interim. Extends `calendar_events.provider` CHECK to include `'jobber'`; poll-fallback cron added to `/api/cron/renew-calendar-channels` for missed webhooks + subscription renewal; agent slot query unchanged.
+**Depends on:** Phase 56 (Jobber OAuth, `accounting_credentials.provider='jobber'`, `JobberAdapter` contract, `/api/webhooks/jobber` HMAC handler, `fetchCustomerByPhone` pattern — Phase 57 extends the same adapter with schedule-side reads and the same webhook endpoint with visit/job/assignment events).
+**Requirements:** JOBSCHED-01, JOBSCHED-02, JOBSCHED-03, JOBSCHED-04, JOBSCHED-05, JOBSCHED-06, JOBSCHED-07
+**Pre-requisite user actions:** None beyond Phase 56 (same Jobber dev app + OAuth scopes cover visit reads and webhook events).
+**Pre-research:** `.planning/phases/56-jobber-read-side-integration-customer-context-clients-jobs-invoices/57-PRERESEARCH.md` (answers bookable-user subset, overlay UX, and interim copy-flow open questions before discuss/planning).
+**Plans:** TBD during `/gsd:plan-phase 57`
+
 ---
 
 ## Milestone v1.1 Phases
