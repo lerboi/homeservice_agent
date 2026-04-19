@@ -44,6 +44,44 @@ function isSameDay(d1, d2) {
     d1.getDate() === d2.getDate();
 }
 
+// Local-day boundary helpers for multi-day event classification + rendering.
+function startOfLocalDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+// A Jobber/Google/Outlook event is "multi-day" when it's an explicit all-day
+// event OR it crosses a local-day boundary (e.g. a long service window, an
+// overnight emergency visit, a multi-day installation). Such events render
+// in the all-day strip on every day they span — same convention as Google
+// Calendar / Outlook — instead of being crushed into the timed grid.
+function isMultiDayEvent(event) {
+  if (event.is_all_day) return true;
+  const start = new Date(event.start_time);
+  const end = new Date(event.end_time);
+  return !isSameDay(start, end);
+}
+
+// Where does `day` fall within `event`'s multi-day span?
+//   - 'single'  event spans only this one day
+//   - 'first'   day is first day of the span (but not the last)
+//   - 'middle'  day is interior to the span
+//   - 'last'    day is last day of the span (but not the first)
+//   - null      event does not include this day
+function daySpanPosition(event, day) {
+  const dayStart = startOfLocalDay(day);
+  const eventStart = startOfLocalDay(new Date(event.start_time));
+  const eventEnd = startOfLocalDay(new Date(event.end_time));
+  if (dayStart < eventStart || dayStart > eventEnd) return null;
+  const isFirst = isSameDay(dayStart, eventStart);
+  const isLast = isSameDay(dayStart, eventEnd);
+  if (isFirst && isLast) return 'single';
+  if (isFirst) return 'first';
+  if (isLast) return 'last';
+  return 'middle';
+}
+
 /**
  * Lane-assignment (interval graph coloring) for overlapping calendar events.
  *
@@ -396,6 +434,79 @@ const PROVIDER_PILL_CLASSES = {
   outlook: 'bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300',
 };
 
+// Muted slate body + provider-accented left rail — matches the timed
+// ExternalEventBlock surface so the all-day strip feels like the same
+// family of events, just horizontally laid out.
+const PROVIDER_ALL_DAY_CLASSES = {
+  jobber:  'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-[#1B9F4F]',
+  google:  'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-violet-500',
+  outlook: 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-blue-500',
+};
+
+// Multi-day event chip for the all-day strip. Uses position-aware rounding
+// and chevrons so a span across day columns reads as one continuous bar —
+// the same pattern Google Calendar and Outlook use. The provider pill only
+// renders on the first/single-day chip to keep middle/end chips uncluttered.
+function AllDayExternalEventChip({ event, position, onExternalEventClick }) {
+  const provider = event.provider ?? 'other';
+  const providerLabel = PROVIDER_LABELS[provider] ?? `From ${provider}`;
+  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600';
+  const surfaceClass = PROVIDER_ALL_DAY_CLASSES[provider]
+    ?? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-slate-400';
+
+  const rounding =
+    position === 'single' ? 'rounded-md'
+    : position === 'first' ? 'rounded-l-md rounded-r-none border-r-0'
+    : position === 'last' ? 'rounded-r-md rounded-l-none border-l-0 border-l-transparent'
+    : 'rounded-none border-l-0 border-r-0 border-l-transparent'; // middle
+
+  const showTitle = position === 'single' || position === 'first';
+  const showContinuesChevronLeft = position === 'middle' || position === 'last';
+  const showContinuesChevronRight = position === 'first' || position === 'middle';
+  const showProviderPill = position === 'single' || position === 'first';
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (provider === 'jobber') {
+      const date = String(event.start_time || '').slice(0, 10);
+      const url = date
+        ? `https://secure.getjobber.com/calendar?date=${date}`
+        : 'https://secure.getjobber.com/calendar';
+      if (typeof window !== 'undefined') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+    onExternalEventClick?.(event);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label={`${event.title} — ${providerLabel}${position !== 'single' ? ' (multi-day)' : ''}`}
+      className={`w-full min-h-[32px] flex items-center gap-1.5 px-2 py-1 text-xs text-foreground border hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left overflow-hidden ${surfaceClass} ${rounding}`}
+    >
+      {showContinuesChevronLeft && (
+        <span aria-hidden="true" className="text-muted-foreground/70 shrink-0 text-[10px]">◄</span>
+      )}
+      {showTitle ? (
+        <span className="font-medium truncate flex-1">{event.title}</span>
+      ) : (
+        <span className="flex-1" />
+      )}
+      {showProviderPill && (
+        <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${providerPillClass}`}>
+          {providerLabel}
+        </span>
+      )}
+      {showContinuesChevronRight && (
+        <span aria-hidden="true" className="text-muted-foreground/70 shrink-0 text-[10px]">►</span>
+      )}
+    </button>
+  );
+}
+
 function ExternalEventBlock({ event, getPositionStyle, laneIndex = 0, laneCount = 1, isMobile = false, onClick }) {
   const style = getPositionStyle(event.start_time, event.end_time);
   const heightPx = parseInt(style.height, 10);
@@ -593,9 +704,13 @@ export default function CalendarView({
     return { top: `${top}px`, height: `${height}px` };
   }, [gridStartHour, gridEndHour, hourHeight]);
 
+  // An event is rendered in the all-day strip when it's flagged all-day OR
+  // when it crosses a day boundary (overnight / multi-day jobs). Otherwise
+  // the timed grid compresses a cross-midnight event into whatever fits in
+  // day-1's column — unreadable and hides the visit entirely on day 2+.
   const { allDayEvents, timedExternalEvents } = useMemo(() => ({
-    allDayEvents:        externalEvents.filter((e) =>  e.is_all_day),
-    timedExternalEvents: externalEvents.filter((e) => !e.is_all_day),
+    allDayEvents:        externalEvents.filter(isMultiDayEvent),
+    timedExternalEvents: externalEvents.filter((e) => !isMultiDayEvent(e)),
   }), [externalEvents]);
 
   // Separate all-day time blocks from timed time blocks
@@ -664,22 +779,75 @@ export default function CalendarView({
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startOffset = firstDay.getDay(); // 0=Sun
-    const totalDays = lastDay.getDate();
 
-    // Build 6-week grid (42 cells)
-    const cells = [];
+    // Build 6-week grid (42 cells), partitioned into week rows for the
+    // continuous multi-day bar layout (Google Calendar pattern).
     const gridStart = new Date(firstDay);
     gridStart.setDate(gridStart.getDate() - startOffset);
-    for (let i = 0; i < 42; i++) {
-      const cellDate = new Date(gridStart);
-      cellDate.setDate(gridStart.getDate() + i);
-      const dayAppts = appointments.filter((a) => isSameDay(new Date(a.start_time), cellDate));
-      const dayExternal = externalEvents.filter((e) => isSameDay(new Date(e.start_time), cellDate));
-      const dayBlocks = timeBlocks.filter((b) => isSameDay(new Date(b.start_time), cellDate));
-      cells.push({ date: cellDate, appointments: dayAppts, externalEvents: dayExternal, timeBlocks: dayBlocks });
+    const weekRows = [];
+    for (let w = 0; w < 6; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const cellDate = new Date(gridStart);
+        cellDate.setDate(gridStart.getDate() + w * 7 + d);
+        const dayAppts = appointments.filter((a) => isSameDay(new Date(a.start_time), cellDate));
+        // Only SINGLE-day external events render inside day cells. Multi-day
+        // events are drawn as continuous bars spanning the week row below.
+        const dayExternal = externalEvents.filter(
+          (e) => !isMultiDayEvent(e) && isSameDay(new Date(e.start_time), cellDate),
+        );
+        const dayBlocks = timeBlocks.filter((b) => isSameDay(new Date(b.start_time), cellDate));
+        week.push({ date: cellDate, appointments: dayAppts, externalEvents: dayExternal, timeBlocks: dayBlocks });
+      }
+      weekRows.push(week);
     }
+
+    const multiDayExternals = externalEvents.filter(isMultiDayEvent);
+
+    // Compute absolutely-positioned bars for each week row. A single event
+    // spanning week boundaries produces one bar per week row (with
+    // `continuesLeft` / `continuesRight` flags for chevron rendering).
+    // Lanes are packed greedily so overlapping bars stack vertically.
+    const BAR_HEIGHT = 18;
+    const BAR_GAP = 2;
+    const BAR_TOP_OFFSET = 28; // below day-number circle
+    const weekRowBars = weekRows.map((week) => {
+      const weekStart = startOfLocalDay(week[0].date);
+      const weekEnd = startOfLocalDay(week[6].date);
+      const bars = [];
+      for (const event of multiDayExternals) {
+        const eStart = startOfLocalDay(new Date(event.start_time));
+        const eEnd = startOfLocalDay(new Date(event.end_time));
+        if (eEnd < weekStart || eStart > weekEnd) continue;
+        const clampedStart = eStart < weekStart ? weekStart : eStart;
+        const clampedEnd = eEnd > weekEnd ? weekEnd : eEnd;
+        const startCol = week.findIndex((c) => isSameDay(c.date, clampedStart));
+        const endCol = week.findIndex((c) => isSameDay(c.date, clampedEnd));
+        if (startCol < 0 || endCol < 0) continue;
+        bars.push({
+          event,
+          startCol,
+          endCol,
+          continuesLeft: eStart < weekStart,
+          continuesRight: eEnd > weekEnd,
+        });
+      }
+      // Sort: start earliest first, ties broken by longer span (for stable
+      // packing — long bars claim low lanes so short ones can tuck beside).
+      bars.sort(
+        (a, b) => a.startCol - b.startCol || (b.endCol - b.startCol) - (a.endCol - a.startCol),
+      );
+      const laneEnd = []; // laneEnd[i] = last occupied column in lane i
+      for (const bar of bars) {
+        let lane = 0;
+        while (laneEnd[lane] !== undefined && laneEnd[lane] >= bar.startCol) lane++;
+        bar.lane = lane;
+        laneEnd[lane] = bar.endCol;
+      }
+      const maxLane = bars.reduce((m, b) => Math.max(m, b.lane), -1);
+      return { bars, maxLane };
+    });
 
     return (
       <div className="p-4">
@@ -692,84 +860,153 @@ export default function CalendarView({
           ))}
         </div>
 
-        {/* Date grid */}
-        <div className="grid grid-cols-7 border border-border rounded-lg overflow-hidden">
-          {cells.map((cell, i) => {
-            const isCurrentMonth = cell.date.getMonth() === month;
-            const isTodayCell = isSameDay(cell.date, today);
-            const totalCount = cell.appointments.length + cell.externalEvents.length;
-            const hasBlocks = cell.timeBlocks.length > 0;
-
-            // Interleave appointments and external events, sorted by time, show up to 2
-            const allItems = [
-              ...cell.appointments.map((a) => ({ ...a, _type: 'appt' })),
-              ...cell.externalEvents.map((e) => ({ ...e, _type: 'ext' })),
-            ].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-
+        {/* Date grid — one relative week row per 7 cells so multi-day
+            bars can be absolutely positioned above the cell content. */}
+        <div className="border border-border rounded-lg overflow-hidden">
+          {weekRows.map((week, wi) => {
+            const { bars, maxLane } = weekRowBars[wi];
+            const barsBlockPx = (maxLane + 1) * (BAR_HEIGHT + BAR_GAP);
+            const cellPaddingTop = barsBlockPx > 0 ? BAR_TOP_OFFSET + barsBlockPx : 4;
             return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => onDayClick?.(new Date(cell.date))}
-                className={`
-                  relative min-h-[72px] p-1.5 text-left border-b border-r border-border transition-colors
-                  ${hasBlocks && isCurrentMonth ? 'bg-muted' : isCurrentMonth ? 'bg-card hover:bg-muted' : 'bg-muted/50 hover:bg-muted/50'}
-                  ${isTodayCell ? 'ring-1 ring-inset ring-[var(--brand-accent)]/30' : ''}
-                `}
+              <div
+                key={wi}
+                className="relative grid grid-cols-7 border-b border-border last:border-b-0"
               >
-                <span className={`
-                  inline-flex items-center justify-center text-xs font-medium rounded-full size-6
-                  ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}
-                `}>
-                  {cell.date.getDate()}
-                </span>
-
-                {/* Time block indicators */}
-                {hasBlocks && (
-                  <div className="mt-0.5 space-y-0.5">
-                    {cell.timeBlocks.slice(0, 1).map((block) => (
-                      <div
-                        key={`tb-${block.id}`}
-                        className="text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium bg-muted text-muted-foreground"
+                {week.map((cell, ci) => {
+                  const isCurrentMonth = cell.date.getMonth() === month;
+                  const isTodayCell = isSameDay(cell.date, today);
+                  const totalCount = cell.appointments.length + cell.externalEvents.length;
+                  const hasBlocks = cell.timeBlocks.length > 0;
+                  const allItems = [
+                    ...cell.appointments.map((a) => ({ ...a, _type: 'appt' })),
+                    ...cell.externalEvents.map((e) => ({ ...e, _type: 'ext' })),
+                  ].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+                  return (
+                    <button
+                      key={ci}
+                      type="button"
+                      onClick={() => onDayClick?.(new Date(cell.date))}
+                      style={{ paddingTop: `${cellPaddingTop}px` }}
+                      className={`
+                        relative min-h-[96px] px-1.5 pb-1.5 text-left border-r border-border last:border-r-0 transition-colors
+                        ${hasBlocks && isCurrentMonth ? 'bg-muted' : isCurrentMonth ? 'bg-card hover:bg-muted' : 'bg-muted/50 hover:bg-muted/50'}
+                        ${isTodayCell ? 'ring-1 ring-inset ring-[var(--brand-accent)]/30' : ''}
+                      `}
+                    >
+                      <span
+                        className={`
+                          absolute top-1.5 left-1.5 inline-flex items-center justify-center text-xs font-medium rounded-full size-6
+                          ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}
+                        `}
                       >
-                        {block.title}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {totalCount > 0 && (
-                  <div className={`${hasBlocks ? '' : 'mt-0.5'} space-y-0.5`}>
-                    {allItems.slice(0, hasBlocks ? 1 : 2).map((item) => {
-                      const label = item._type === 'ext'
-                        ? (item.title || 'Event')
-                        : (item.caller_name || item.job_type || 'Appt');
-                      const time = item.is_all_day
-                        ? null
-                        : new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                      const isCompleted = item._type === 'appt' && item.status === 'completed';
-                      return (
-                        <div
-                          key={item.id || item.external_id}
-                          className={`text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium flex items-center gap-0.5 ${
-                            item._type === 'ext'
-                              ? 'bg-violet-100 text-violet-700'
-                              : isCompleted
-                                ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
-                                : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]'
-                          }`}
-                        >
-                          {isCompleted && <Check className="w-2.5 h-2.5 shrink-0" />}
-                          {time ? `${time} ${label}` : label}
+                        {cell.date.getDate()}
+                      </span>
+                      {hasBlocks && (
+                        <div className="space-y-0.5">
+                          {cell.timeBlocks.slice(0, 1).map((block) => (
+                            <div
+                              key={`tb-${block.id}`}
+                              className="text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium bg-muted text-muted-foreground"
+                            >
+                              {block.title}
+                            </div>
+                          ))}
                         </div>
-                      );
-                    })}
-                    {totalCount > (hasBlocks ? 1 : 2) && (
-                      <span className="text-[9px] text-muted-foreground px-1">+{totalCount - (hasBlocks ? 1 : 2)} more</span>
-                    )}
-                  </div>
-                )}
-              </button>
+                      )}
+                      {totalCount > 0 && (
+                        <div className={`${hasBlocks ? 'mt-0.5' : ''} space-y-0.5`}>
+                          {allItems.slice(0, hasBlocks ? 1 : 2).map((item) => {
+                            const label = item._type === 'ext'
+                              ? (item.title || 'Event')
+                              : (item.caller_name || item.job_type || 'Appt');
+                            const time = item.is_all_day
+                              ? null
+                              : new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                            const isCompleted = item._type === 'appt' && item.status === 'completed';
+                            return (
+                              <div
+                                key={item.id || item.external_id}
+                                className={`text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium flex items-center gap-0.5 ${
+                                  item._type === 'ext'
+                                    ? 'bg-violet-100 text-violet-700'
+                                    : isCompleted
+                                      ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
+                                      : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]'
+                                }`}
+                              >
+                                {isCompleted && <Check className="w-2.5 h-2.5 shrink-0" />}
+                                {time ? `${time} ${label}` : label}
+                              </div>
+                            );
+                          })}
+                          {totalCount > (hasBlocks ? 1 : 2) && (
+                            <span className="text-[9px] text-muted-foreground px-1">+{totalCount - (hasBlocks ? 1 : 2)} more</span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {/* Multi-day bars overlaid on the week row */}
+                {bars.map((bar, bi) => {
+                  const provider = bar.event.provider ?? 'other';
+                  const providerLabel = PROVIDER_LABELS[provider] ?? `From ${provider}`;
+                  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600';
+                  const surfaceClass = PROVIDER_ALL_DAY_CLASSES[provider]
+                    ?? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-slate-400';
+                  const leftPct = (bar.startCol / 7) * 100;
+                  const widthPct = ((bar.endCol - bar.startCol + 1) / 7) * 100;
+                  const top = BAR_TOP_OFFSET + bar.lane * (BAR_HEIGHT + BAR_GAP);
+                  const rounding = [
+                    bar.continuesLeft ? 'rounded-l-none border-l-0 border-l-transparent' : 'rounded-l-md',
+                    bar.continuesRight ? 'rounded-r-none border-r-0' : 'rounded-r-md',
+                  ].join(' ');
+                  const handleBarClick = (e) => {
+                    e.stopPropagation();
+                    if (provider === 'jobber') {
+                      const date = String(bar.event.start_time || '').slice(0, 10);
+                      const url = date
+                        ? `https://secure.getjobber.com/calendar?date=${date}`
+                        : 'https://secure.getjobber.com/calendar';
+                      if (typeof window !== 'undefined') {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }
+                      return;
+                    }
+                    onExternalEventClick?.(bar.event);
+                  };
+                  return (
+                    <button
+                      key={`${bar.event.id}-${bi}`}
+                      type="button"
+                      onClick={handleBarClick}
+                      aria-label={`${bar.event.title} — ${providerLabel} (multi-day)`}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${leftPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                        top: `${top}px`,
+                        height: `${BAR_HEIGHT}px`,
+                      }}
+                      className={`z-[2] flex items-center gap-1 px-1.5 text-[10px] font-medium text-foreground border overflow-hidden hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer ${surfaceClass} ${rounding}`}
+                    >
+                      {bar.continuesLeft && (
+                        <span aria-hidden="true" className="text-muted-foreground/70 shrink-0 text-[9px]">◄</span>
+                      )}
+                      <span className="truncate flex-1">{bar.event.title}</span>
+                      {!bar.continuesLeft && (
+                        <span className={`shrink-0 inline-flex items-center rounded-full px-1 py-0 text-[9px] font-medium ${providerPillClass}`}>
+                          {providerLabel}
+                        </span>
+                      )}
+                      {bar.continuesRight && (
+                        <span aria-hidden="true" className="text-muted-foreground/70 shrink-0 text-[9px]">►</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
@@ -851,30 +1088,37 @@ export default function CalendarView({
           <>
             <div className="border-b border-border bg-muted text-xs text-muted-foreground text-right pr-2 pt-2.5 font-medium">all&#x2011;day</div>
             {columns.map((day, i) => {
-              const dayAllDayEvents = getItemsForDay(day, allDayEvents);
+              // Multi-day events render a chip on every day their span
+              // intersects. daySpanPosition drives rounding + chevrons so
+              // adjacent chips visually connect into one continuous bar.
+              const dayAllDayEvents = allDayEvents
+                .map((e) => ({ event: e, position: daySpanPosition(e, day) }))
+                .filter((x) => x.position !== null);
               const dayAllDayBlocks = allDayBlocks.filter((b) => isSameDay(new Date(b.start_time), day));
               return (
                 <div key={i} className="border-b border-l border-border bg-muted">
-                  <div className="flex flex-wrap gap-1.5 px-2 py-2 min-h-[40px] items-center">
-                    {dayAllDayBlocks.map((block) => (
-                      <button
-                        key={`tb-${block.id}`}
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onTimeBlockClick?.(block); }}
-                        className="bg-amber-100 border border-amber-300 rounded-md px-2 py-1 text-xs text-amber-800 font-medium truncate max-w-full hover:bg-amber-200 hover:border-amber-400 active:scale-95 transition-all cursor-pointer"
-                      >
-                        {block.title}
-                      </button>
-                    ))}
-                    {dayAllDayEvents.map((e) => (
-                      <button
-                        key={e.id}
-                        type="button"
-                        onClick={(evt) => { evt.stopPropagation(); onExternalEventClick?.(e); }}
-                        className="bg-violet-50 border border-violet-200 rounded-md px-2 py-1 text-xs text-violet-600 font-medium truncate max-w-full hover:bg-violet-100 hover:border-violet-300 active:scale-95 transition-all cursor-pointer text-left"
-                      >
-                        {e.title}
-                      </button>
+                  <div className="flex flex-col gap-1 px-1 py-2 min-h-[40px] justify-center">
+                    {dayAllDayBlocks.length > 0 && (
+                      <div className="flex flex-wrap gap-1 px-1">
+                        {dayAllDayBlocks.map((block) => (
+                          <button
+                            key={`tb-${block.id}`}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onTimeBlockClick?.(block); }}
+                            className="bg-amber-100 border border-amber-300 rounded-md px-2 py-1 text-xs text-amber-800 font-medium truncate max-w-full hover:bg-amber-200 hover:border-amber-400 active:scale-95 transition-all cursor-pointer"
+                          >
+                            {block.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {dayAllDayEvents.map(({ event, position }) => (
+                      <AllDayExternalEventChip
+                        key={`${event.id}-${position}`}
+                        event={event}
+                        position={position}
+                        onExternalEventClick={onExternalEventClick}
+                      />
                     ))}
                   </div>
                 </div>
