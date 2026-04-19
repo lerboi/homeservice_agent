@@ -48,12 +48,37 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
   }
 
   const adapter = await getIntegrationAdapter(credentials.provider);
-  const newTokenSet = await adapter.refreshToken({
-    access_token: credentials.access_token,
-    refresh_token: credentials.refresh_token,
-    expiry_date: credentials.expiry_date,
-    xero_tenant_id: credentials.xero_tenant_id,
-  });
+  let newTokenSet;
+  try {
+    newTokenSet = await adapter.refreshToken({
+      access_token: credentials.access_token,
+      refresh_token: credentials.refresh_token,
+      expiry_date: credentials.expiry_date,
+      xero_tenant_id: credentials.xero_tenant_id,
+    });
+  } catch (refreshErr) {
+    // Refresh failed — token is revoked, expired, or the OAuth app changed.
+    // Persist error_state so the dashboard banner + calendar banner can
+    // prompt a reconnect, then rethrow so callers keep their existing
+    // fallback behavior (webhook silent-ignore, context fetch → broad
+    // revalidation). Best-effort, never throws from the notifier.
+    try {
+      const notifications = await import('../notifications.js');
+      const notify =
+        credentials.provider === 'jobber'
+          ? notifications.notifyJobberRefreshFailure
+          : notifications.notifyXeroRefreshFailure;
+      // Pass null email — the error_state persistence + cache invalidation
+      // is the critical path; email-notification can be wired separately.
+      await notify?.(credentials.tenant_id, null);
+    } catch (notifyErr) {
+      console.warn(
+        '[refreshTokenIfNeeded] notify failure',
+        notifyErr?.message || notifyErr,
+      );
+    }
+    throw refreshErr;
+  }
 
   const updatePayload = {
     access_token: newTokenSet.access_token,

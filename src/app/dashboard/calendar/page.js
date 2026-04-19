@@ -17,6 +17,7 @@ import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
 import ExternalEventSheet from '@/components/dashboard/ExternalEventSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import { JobberCopyBanner } from '@/components/dashboard/JobberCopyBanner';
+import { IntegrationReconnectBanner } from '@/components/dashboard/IntegrationReconnectBanner';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import { card } from '@/lib/design-tokens';
@@ -693,6 +694,11 @@ export default function CalendarPage() {
         conflicts={data.conflicts}
         onReviewConflicts={handleReviewConflicts}
       />
+
+      {/* Integration token health — shows if Jobber/Xero refresh has failed so
+          the owner can reconnect without hunting through settings. Polls every
+          30s so the banner appears shortly after a silent webhook failure. */}
+      <IntegrationReconnectBanner />
 
       {/* Phase 57 — dismissible "Jobber push coming soon" banner. Only renders
           when Jobber is connected and the user has not yet dismissed it. */}
