@@ -120,6 +120,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
 | `supabase/migrations/050_checklist_overrides.sql` | Phase 48 — Setup checklist per-item override persistence: tenants gains `checklist_overrides` JSONB NOT NULL DEFAULT '{}'. Consumed by `src/app/api/setup-checklist/route.js` to persist user dismissals and custom mark-done actions without adding row-per-item state. |
 | `supabase/migrations/051_features_enabled.sql` | Phase 53 — Feature flag infrastructure: tenants gains `features_enabled JSONB NOT NULL DEFAULT '{"invoicing": false}'::jsonb` (shape: `{ invoicing: boolean, ... }`). No backfill needed — DEFAULT applies to existing rows on column add. No RLS policy change (existing `tenants_update_own` direct-owner policy covers SELECT/UPDATE on every column including this one). Foundation for the v6.0 invoicing toggle and future per-tenant feature flags (xero, jobber, …). Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; consumed by `FeatureFlagsProvider` at dashboard layout and by `/api/invoices/**`, `/api/estimates/**`, `/api/accounting/**` API gates. |
+| `supabase/migrations/058_oauth_refresh_locks.sql` | Phase 999.5 — OAuth concurrent-refresh guard. Creates `oauth_refresh_locks` table (PK `(tenant_id, provider)`, holder_id + TTL expires_at) and two RPCs: `try_acquire_oauth_refresh_lock` (returns holder UUID or NULL) and `release_oauth_refresh_lock`. Wraps `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` so bursts of webhooks/crons can't fire duplicate Jobber/Xero refreshes (Jobber rotates refresh_token — duplicates orphan tokens). No RLS (service-role only). See Migration 058 section below for full contract. |
 | `supabase/migrations/052_integrations_schema.sql` | Phase 54 — **Integration credentials foundation** (originally planned as `051_integrations_schema` before Phase 53 renumber collision; file ships as 052 on disk). Sequenced transactional migration on `accounting_credentials`: (1) `DELETE FROM accounting_credentials WHERE provider IN ('quickbooks','freshbooks')` — purge pre-v6.0 rows before CHECK swap; (2) `DROP CONSTRAINT accounting_credentials_provider_check`; (3) `ADD CONSTRAINT accounting_credentials_provider_check CHECK (provider IN ('xero','jobber'))` — QB + FB values permanently invalid; (4) `ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[]` — populated by `/api/integrations/[provider]/callback` with granular OAuth scopes (Xero post-2026-03-02 scope set; Jobber equivalents); (5) `ADD COLUMN last_context_fetch_at TIMESTAMPTZ` NULL — populated by Phase 55+ `fetchCustomerByPhone` for telemetry. **No new indexes** — existing `UNIQUE (tenant_id, provider)` covers tenant-scoped reads. **Python compatibility:** `TEXT[]` → `list[str]`, `TIMESTAMPTZ` → `datetime` (for livekit-agent service-role reads in Phase 55+). **Forward-compat:** adding a future provider requires another DROP + ADD constraint cycle (same pattern). |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 
@@ -1244,6 +1245,45 @@ On refresh failure, Python writes `error_state='token_refresh_failed'`. Email/ba
 - OAuth callback at `/api/integrations/jobber/callback/route.js` writes `external_account_id = <Jobber accountId from token response or post-token GraphQL probe>`.
 
 **Pitfall (Phase 56 research Pitfall 8):** Do NOT repurpose `xero_tenant_id` for Jobber — it's named for Xero's domain and confuses future contributors. Always use `external_account_id` for new provider writes.
+
+---
+
+## Migration 058 — `oauth_refresh_locks` table + RPCs (Phase 999.5)
+
+**Shipped:** 2026-04-19
+
+Fixes the OAuth concurrent-refresh race documented in backlog Phase 999.5. Without this, a burst of webhooks (or webhook + voice call + cron-poll) entering the 5-min `accounting_credentials.expiry_date` window together could fire two `adapter.refreshToken()` calls — Jobber rotates the refresh_token on every refresh, so the second call either 401s (strict mode) or orphans the first caller's rotated token (permissive, last-write-wins).
+
+**Table: `oauth_refresh_locks`** — short-lived lease table, not tenant-scoped.
+
+| Column | Type | Notes |
+|---|---|---|
+| `tenant_id` | UUID NOT NULL | Part of composite PK |
+| `provider` | TEXT NOT NULL | Part of composite PK; `xero` or `jobber` |
+| `holder_id` | UUID NOT NULL | Random UUID minted per acquire call; used for safe release |
+| `acquired_at` | TIMESTAMPTZ NOT NULL DEFAULT now() | Debug visibility |
+| `expires_at` | TIMESTAMPTZ NOT NULL | TTL backstop against crashed holders |
+
+PRIMARY KEY `(tenant_id, provider)` — exactly one active lease per (tenant, provider) pair.
+
+**RLS:** Not enabled. Only the service-role client (via `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js`) ever touches this table. Intentionally left off so a future tightening doesn't accidentally block service-role writes.
+
+**RPC: `try_acquire_oauth_refresh_lock(p_tenant_id uuid, p_provider text, p_ttl_ms int DEFAULT 30000) → UUID`**
+
+Atomically acquires a fresh lock (or steals an expired one via `ON CONFLICT DO UPDATE WHERE expires_at < now()`). Serializes contending callers via `pg_advisory_xact_lock` keyed on `hashtext('oauth-refresh-<provider>-<tenant_id>')` so the conditional UPDATE can't interleave and lose updates.
+
+Returns the new `holder_id` UUID if this caller won the slot; returns NULL if another caller currently holds a non-expired lock.
+
+**RPC: `release_oauth_refresh_lock(p_tenant_id uuid, p_provider text, p_holder_id uuid) → VOID`**
+
+Deletes the lock row only if `holder_id` matches — stale releases (TTL already expired and another caller took over) are no-ops rather than accidentally freeing someone else's slot.
+
+**Contract in `adapter.js`:**
+1. Winner (got `holder_id`) proceeds with `adapter.refreshToken()` → DB update → `release_oauth_refresh_lock` in a `finally` block.
+2. Loser (got NULL) polls `accounting_credentials` for up to 3s (at 200ms intervals). If the winner persists fresh tokens within that window, loser returns them. Otherwise throws — caller falls back to cached data / broad revalidation (webhook silent-ignore, context fetch path).
+3. Refreshes that complete successfully now clear `error_state` in the update payload so the Reconnect banner doesn't persist after a healthy recovery (Phase 999.5 Issue 1 fix).
+
+**Tests:** `tests/integrations/refresh-lock.test.js` validates: 5 concurrent callers → exactly one wire refresh; error_state cleared on success; release RPC always fires (including on wire-refresh failure).
 
 ---
 
