@@ -1,6 +1,7 @@
 # Phase 58: Setup checklist final wiring + skills + telemetry + UAT + Phase 51 polish absorption — Context
 
 **Gathered:** 2026-04-19
+**Refined:** 2026-04-20 (post-research: 4 refinements — D-06, D-10, D-16, D-19 amended)
 **Status:** Ready for planning
 
 <domain>
@@ -27,13 +28,13 @@ Close out the v6.0 Jobber/Xero integration surface and ship the deferred v5.0 po
 
 ### Telemetry Depth + Surface
 - **D-05:** Python livekit_agent writes `NOW()` to `accounting_credentials.last_context_fetch_at` after each **successful** `fetchCustomerByPhone` call. Service-role Supabase write from the Python adapter layer (`src/integrations/xero.py`, `src/integrations/jobber.py`). No column added for failed-fetch timestamp — failure is tracked via `error_state` + Sentry.
-- **D-06:** Per-fetch telemetry events (duration, cache hit/miss, row counts) logged to the existing `activity_log` table with `action = 'integration_fetch'` and `meta` JSONB = `{ provider, duration_ms, cache_hit, counts: { customers, invoices, jobs }, phone_e164 }`. Zero schema change; reuses existing RLS and tooling. Retention follows current `activity_log` policy (no new retention decisions in this phase).
+- **D-06:** Per-fetch telemetry events (duration, cache hit/miss, row counts) logged to the existing `activity_log` table using the **real column names** `event_type = 'integration_fetch'` and `metadata` JSONB = `{ provider, duration_ms, cache_hit, counts: { customers, invoices, jobs }, phone_e164 }`. Zero schema change; reuses existing RLS and the `src/lib/leads.js` writer pattern. Retention follows current `activity_log` policy. (**Refined 2026-04-20:** original CONTEXT said `action`/`meta` — corrected to match migration 004 schema that's in production.)
 - **D-07:** Latency validation scope = **pre-call parallel lookup budget** (STATE.md line 97 open question). Measure p50/p95/p99 duration for the concurrent VIP + leads-history + Jobber + Xero lookup during call setup. Target ≤2.5s p95. Capture numbers in UAT.md and in a new `58-TELEMETRY-REPORT.md` artifact.
 - **D-08:** Owner-facing telemetry on the integrations card = **Last-synced timestamp only** (reuses `last_context_fetch_at`, same pattern Xero already uses). Duration/cache-hit-rate stays Claude-facing / ops-only (`activity_log` query).
 
 ### Skill File Structure
 - **D-09:** One consolidated skill: `integrations-jobber-xero`. Shared OAuth/caching/agent-injection sections up top, per-provider sections for divergent pieces (Xero REST vs Jobber GraphQL, OAuth scopes, webhook topic routing). Scope = **full architectural reference** — OAuth + refresh + HMAC state + refresh locks (Migration 058), caching layer (Next.js 16 `'use cache'` + `cacheTag` + why XeroAdapter uses module-level cached fn not class method), webhook handlers (HMAC verify, intent-verify, per-phone `revalidateTag`), Python agent injection (service-role Supabase reads → adapter → `customer_context` + `check_customer_account` tool), dashboard UI contract (`BusinessIntegrationsClient` 4-state machine, reconnect banner, setup checklist wiring), telemetry (from D-05/D-06).
-- **D-10:** Do a **full rewrite** of `voice-call-architecture` and `dashboard-crm-system` skills in this phase, using the `skill-creator` skill to drive the rewrite. Don't just add cross-reference pointers — the skills have drifted across v5.0 + v6.0 work and this is the milestone-close opportunity to bring them current. Cross-reference the new `integrations-jobber-xero` skill from both.
+- **D-10:** Do a **full rewrite** of `voice-call-architecture` and `dashboard-crm-system` skills in this phase, using the `skill-creator` skill to drive the rewrite via its **full create/review/eval workflow** (not just as a reference — invoke the skill-creator slash command and run the complete loop for each rewrite). Don't just add cross-reference pointers — the skills have drifted across v5.0 + v6.0 work and this is the milestone-close opportunity to bring them current. Cross-reference the new `integrations-jobber-xero` skill from both. (**Refined 2026-04-20:** depth = full skill-creator loop with evals, not convention-matched authoring.)
 - **D-11:** Add `integrations-jobber-xero` as a new row in the **Core Application Skills** table in `CLAUDE.md`, matching the format of the 8 existing skill entries (Covers / Read this when you need to...).
 
 ### UAT + Ship Gate
@@ -43,10 +44,10 @@ Close out the v6.0 Jobber/Xero integration surface and ship the deferred v5.0 po
 - **D-15:** Ship gate = **all UAT scenarios pass AND all automated tests green** (CI). Latency budget report documented with real numbers in `58-TELEMETRY-REPORT.md`. Then `/gsd:verify-work 58` runs, then `/gsd:complete-milestone v6.0`.
 
 ### Polish Budget Scope (POLISH-01..05)
-- **D-16:** Apply to **full dashboard surface** per v5.0 REQ literal — leads, calls, calendar, analytics, integrations, settings, jobs (the seven list/data pages). Not limited to v6.0-touched pages. This is the explicit v5.0 polish debt absorption.
+- **D-16:** Apply to **full dashboard surface** — the seven list/data pages that actually exist today: **jobs, calls, calendar, integrations, services, settings, more/billing**. Not limited to v6.0-touched pages. This is the explicit v5.0 polish debt absorption. (**Refined 2026-04-20:** original CONTEXT listed "leads, analytics" which no longer exist — `/dashboard/leads` was renamed to `/dashboard/jobs` in Phase 52 and `/dashboard/analytics` was deleted in Phase 49. Substituted with `services` and `more/billing` which are the other active list/data surfaces.)
 - **D-17:** POLISH-01 (empty states): every list/data page with no data shows icon + headline + primary CTA. Reuse or mirror `EmptyStateLeads` pattern.
 - **D-18:** POLISH-02 (loading skeletons): layout-matching skeletons on data fetches, no blank flashes. Prevent CLS.
-- **D-19:** POLISH-03 (focus rings): `focus-visible` rings via design-token focus color across all interactive elements (buttons, inputs, nav items, pill filters).
+- **D-19:** POLISH-03 (focus rings): `focus-visible` rings via design-token focus color across all interactive elements (buttons, inputs, nav items, pill filters). **Scope: global token migration** — update the ring directive in `src/lib/design-tokens.js` from `focus:` to `focus-visible:`, then sweep the codebase for stray `focus:ring` call sites and migrate each to `focus-visible:`. Single consistent token, no per-component opt-in. (**Refined 2026-04-20:** scope explicitly global token migration, not per-component.)
 - **D-20:** POLISH-04 (inline error + retry): data-fetch failures render an error state with a Retry button, not frozen UI.
 - **D-21:** POLISH-05 (async button states): save/send/sync actions show spinner + disabled state during pending operations.
 
