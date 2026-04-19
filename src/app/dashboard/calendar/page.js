@@ -358,6 +358,34 @@ export default function CalendarPage() {
     };
   }, [tenantId]);
 
+  // ── Supabase Realtime subscription for calendar_events ────────────────
+  // Fires on webhook-driven mirror changes (Jobber VISIT_*, Google/Outlook
+  // push notifications) so the calendar reflects external edits without a
+  // manual refresh. Re-fetch is simpler than surgical state patching here
+  // — low write volume and each event might affect appointment/conflict
+  // derivations that the GET endpoint already computes.
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel('calendar-events-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calendar_events',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, fetchData]);
+
   async function handleRefresh() {
     setRefreshing(true);
     try {
