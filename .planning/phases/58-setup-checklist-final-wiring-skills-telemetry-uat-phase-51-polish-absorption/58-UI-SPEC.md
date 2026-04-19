@@ -95,7 +95,7 @@ Three new primitives ship under `src/components/ui/`. Locked prop APIs below —
 | Outer container | `flex flex-col items-center justify-center py-16 text-center` | 64px vertical padding — matches `EmptyStateLeads` exactly |
 | Icon | `h-10 w-10 text-muted-foreground/30 mb-4` | 40px size, 30% muted — the "faded glyph" convention already used |
 | Headline | `text-base font-semibold text-foreground mb-2` | 16px / 600, `--foreground` (works both modes) |
-| Description | `text-sm text-muted-foreground max-w-sm mb-6` | 14px / 400, `--muted-foreground`, 384px max-width for readability |
+| Description | `text-sm text-muted-foreground max-w-sm mb-6` | 14px / inherits default (400), `--muted-foreground`, 384px max-width for readability |
 | CTA | shadcn `<Button>` default variant (copper bg via `btn.primary`) `asChild` when `ctaHref` | 44px min-height for touch target |
 
 **Dark-mode parity:** All colors flow through `--foreground` / `--muted-foreground` / `--brand-accent` CSS variables — already declared for both modes in `globals.css`. No mode-specific classes.
@@ -266,7 +266,7 @@ export const focus = {
 |---------|---------------------------|------------------------|
 | Leading icon | `Circle h-5 w-5 text-muted-foreground/40` | **New:** `<span>` red dot — `h-2 w-2 rounded-full bg-red-600 dark:bg-red-500` wrapped inside a 20px `flex items-center justify-center` container so the dot is centred where the `Circle` icon would be. Keeps row height constant. |
 | Title | `text-sm text-foreground` | Unchanged (stays `text-foreground`; dot carries the signal, not the title color) |
-| Subtitle (description) | existing `item.description` in `text-sm text-muted-foreground` | **New line inserted between title and existing description:** `text-xs font-medium text-red-600 dark:text-red-400 mt-0.5` — literal copy `"Reconnect needed"` (locked — see §10). Original description still renders below. |
+| Subtitle (description) | existing `item.description` in `text-sm text-muted-foreground` | **New line inserted between title and existing description:** `text-xs font-medium text-red-600 dark:text-red-400 mt-1` — literal copy `"Reconnect needed"` (locked — see §10). Original description still renders below. |
 | CTA button | `btn.primary` → "Finish setup" / "Continue" | Label swaps to `"Reconnect"` when `has_error === true`; variant stays `btn.primary` (copper) — reconnection is the primary next action, not a destructive one. `href` unchanged: `/dashboard/more/integrations`. |
 
 **Locked color tokens for the red dot:**
@@ -303,14 +303,14 @@ export const focus = {
 | Format | Relative — `formatDistanceToNow(parseISO(lastFetch), { addSuffix: true })` from `date-fns` → e.g. `"3 minutes ago"`, `"about 1 hour ago"`, `"2 days ago"` |
 | Absolute fallback | **Not locked for this phase** — `date-fns` `formatDistanceToNow` gracefully stretches into "about N months ago". If UAT surfaces readability issues beyond 7 days, planner adds absolute fallback in a follow-up. Not an immediate blocker. |
 | Copy prefix | `"Last synced "` (space-terminated) — locked exact string, case-sensitive. |
-| Typography | `text-xs text-muted-foreground font-normal` → 12px, 400 weight, secondary color |
+| Typography | `text-xs text-muted-foreground` → 12px (weight inherits Tailwind default 400), secondary color |
 | Conditional render | Only when `row?.last_context_fetch_at` is present AND `hasError === false` (error banner replaces the status copy entirely — no point showing a last-synced inside a "can't sync" state) |
 
 **Locked markup** (already in place for Xero; must render identically for Jobber):
 
 ```jsx
 {lastFetch && (
-  <span className="block mt-1 text-xs text-muted-foreground font-normal">
+  <span className="block mt-1 text-xs text-muted-foreground">
     Last synced {formatDistanceToNow(parseISO(lastFetch), { addSuffix: true })}
   </span>
 )}
@@ -495,8 +495,8 @@ Planner or executor owns these decisions:
 - [ ] Dimension 1 Copywriting: PASS — locked strings in §10; Voco brand; sentence case; Unicode ellipsis
 - [ ] Dimension 2 Visuals: PASS — primitives §4; red-dot §6; last-synced §7; focus ring §5
 - [ ] Dimension 3 Color: PASS — 60% warm surface / 30% card surface / 10% copper accent; accent reserved for primary CTAs + focus ring (§11)
-- [ ] Dimension 4 Typography: PASS — 12/14/16px sizes (xs/sm/base); 400 regular + 500 medium + 600 semibold; line heights inherit shadcn defaults
-- [ ] Dimension 5 Spacing: PASS — 4/8/16/24/32/48/64 scale (py-16 = 64px; mb-6 = 24px; mt-0.5 = 2px exception for tight subtitle placement)
+- [ ] Dimension 4 Typography: PASS — 12/14/16px sizes (xs/sm/base); 2 declared weights for emphasis tiers: **500 medium** (subtitles, badge text, emphasis) + **600 semibold** (headlines, CTAs, section labels). Body text inherits Tailwind's default (400); the 2 declared weights are for emphasis tiers only. Line heights inherit shadcn defaults.
+- [ ] Dimension 5 Spacing: PASS — pure multiples of 4 scale: 0, 4, 8, 16, 24, 32, 48, 64 (py-16 = 64px; mb-6 = 24px; mt-1 = 4px for subtitle placement). No sub-4px values.
 - [ ] Dimension 6 Registry Safety: PASS — zero third-party blocks; all shadcn official
 
 **Approval:** pending
