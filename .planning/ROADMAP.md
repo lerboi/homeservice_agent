@@ -308,10 +308,12 @@ Plans:
 
 **Depends on:** None blocking. Prompt-only change; orthogonal to Phase 57 and Phase 58.
 **Requirements:** Captured as decisions (D-*) in `60-CONTEXT.md` during discuss (no REQ-IDs in REQUIREMENTS.md — CONTEXT decisions serve as the requirement set, same pattern as Phase 59).
-**Plans:** TBD (likely 1-2 plans: prompt rewrite + cross-repo UAT)
+**Plans:** 3 plans
 
 Plans:
-- [ ] 60-XX-PLAN.md — TBD (generated after discuss + plan-phase)
+- [ ] 60-01-PLAN.md — Wave 0 prereqs (cross-repo access, UAT personas, Sentry playbook) + prompt.py edits for name-vocative suppression (D-01..D-05), single-question address intake (D-06..D-08), booking readback + corrections (D-02, D-09, D-10), and D-15 light structural audit
+- [ ] 60-02-PLAN.md — Tool-return rewrites to STATE+DIRECTIVE format across all 5 tools (D-16) + capture_lead description single-question-intake parity with book_appointment (D-11, D-12)
+- [ ] 60-03-PLAN.md — Spanish mirror of D-01..D-12 in es.json / prompt.py locale='es' path (D-13), user-review gate (D-14), and voice-call-architecture/SKILL.md sync per CLAUDE.md
 
 ### Phase 61: Google Maps address validation + structured address storage
 
