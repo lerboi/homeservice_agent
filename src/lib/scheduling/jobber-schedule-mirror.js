@@ -9,7 +9,13 @@
  * @module scheduling/jobber-schedule-mirror
  */
 
-const MIRRORED_STATUSES = new Set(['SCHEDULED', 'IN_PROGRESS']);
+// Jobber VisitStatusTypeEnum (verified via GraphiQL 2026-04-19):
+//   ACTIVE, COMPLETED, LATE, TODAY, UNSCHEDULED, UPCOMING
+// Mirror everything that's "not yet completed" AND has real start/end times.
+// UNSCHEDULED visits have no startAt/endAt — the mapper's null-check on
+// line below already drops them. COMPLETED is excluded here AND the webhook
+// hard-deletes on VISIT_COMPLETE (route.js).
+const MIRRORED_STATUSES = new Set(['ACTIVE', 'LATE', 'TODAY', 'UPCOMING']);
 
 function normalizeStatus(s) {
   return String(s ?? '').toUpperCase().replace(/-/g, '_');
