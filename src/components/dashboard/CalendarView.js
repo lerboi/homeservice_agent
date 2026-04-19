@@ -923,15 +923,19 @@ export default function CalendarView({
                               ? null
                               : new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                             const isCompleted = item._type === 'appt' && item.status === 'completed';
+                            const extProvider = item._type === 'ext' ? (item.provider ?? 'other') : null;
+                            const extClass = extProvider
+                              ? (PROVIDER_PILL_CLASSES[extProvider]
+                                  ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300')
+                              : null;
                             return (
                               <div
                                 key={item.id || item.external_id}
                                 className={`text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium flex items-center gap-0.5 ${
-                                  item._type === 'ext'
-                                    ? 'bg-violet-100 text-violet-700'
-                                    : isCompleted
-                                      ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
-                                      : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]'
+                                  extClass ??
+                                  (isCompleted
+                                    ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
+                                    : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]')
                                 }`}
                               >
                                 {isCompleted && <Check className="w-2.5 h-2.5 shrink-0" />}

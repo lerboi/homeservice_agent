@@ -368,7 +368,7 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!tenantId) return;
     const channel = supabase
-      .channel('calendar-events-realtime')
+      .channel(`calendar-events-${tenantId}`)
       .on(
         'postgres_changes',
         {

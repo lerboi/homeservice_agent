@@ -183,8 +183,8 @@ Plans:
 
 **Milestone:** v6.0 — Integrations & Focus
 **Goal:** Refocus Voco on the Call System by extracting the internal invoicing system into an optional toggleable feature, and add native Jobber (GraphQL) and Xero (REST) integrations that provide the AI with real-time customer context — outstanding balances, job history, past visits — to make collections and booking conversations materially smarter without Voco acting as the primary accounting engine.
-**Phase range:** 52-58 (7 phases)
-**Requirements:** ~20 v6.0 requirements (TOGGLE-01-04, JOBBER-01-05, XERO-01-04, JOBSCHED-01-03, CTX-01-03, CHECKLIST-01-02, RENAME-01-03)
+**Phase range:** 52-58, 60-62 (10 phases; 60-62 are voice-intake polish added at milestone tail — see below)
+**Requirements:** ~20 v6.0 requirements (TOGGLE-01-04, JOBBER-01-05, XERO-01-04, JOBSCHED-01-03, CTX-01-03, CHECKLIST-01-02, RENAME-01-03) + voice-intake-polish decisions D-* in 60/61/62 CONTEXT files
 
 ### v6.0 Phase Checklist
 
@@ -198,6 +198,9 @@ Plans:
 - [x] **Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)** — Jobber OAuth + GraphQL via `graphql-request`, `fetchCustomerByPhone` returning client + recentJobs + outstandingInvoices, same caching/webhook/tool pattern as Xero; livekit_agent `src/integrations/jobber.py` + unified `customer_context` (Jobber preferred over Xero for home-services); setup checklist `connect_jobber` item (completed 2026-04-18)
 - [ ] **Phase 57: Jobber schedule mirror (read-only) + Voco-as-overlay UX** — Mirror Jobber visits into `calendar_events` so `check_availability` stays a single query across Google + Outlook + Jobber (zero call-path latency). Three architectural angles beyond raw sync: (a) **Bookable-user subset** — mirror only visits assigned to a per-tenant opt-in set of Jobber users (mirrors Jobber's own "bookable team members" pattern; avoids over-blocking multi-user accounts where office/seasonal staff shouldn't count toward availability); connect flow shows user list, defaults pre-select users with ≥1 visit in last 30 days, auto-skips picker if only one Jobber user exists. (b) **Thin overlay dashboard calendar** — Voco-booked appointments render first-class and editable; mirrored Jobber visits render muted with "From Jobber" pill, not editable, click-through to Jobber (matches universal convention: Calendly/Acuity/Cal.com/Reclaim). (c) **Interim manual-copy UX** — because Voco→Jobber push is deferred to Phase 999.3, each Voco-only appointment gets a "Not in Jobber yet" badge, copy-to-clipboard action producing a paste-ready block, Jobber new-visit deep link, and email fallback on booking; Voco booking ID preserved so 999.3 push can dedupe anything manually copied during the interim. Extends `calendar_events.provider` CHECK to include `'jobber'`; poll-fallback cron added to `/api/cron/renew-calendar-channels`; agent slot query unchanged. Pre-research: `.planning/phases/56-.../57-PRERESEARCH.md`.
 - [ ] **Phase 58: Setup checklist final wiring + skills + telemetry + UAT + Phase 51 polish absorption** — finalize `connect_jobber`/`connect_xero` checklist completion detection, new skill `integrations-jobber-xero`, update `voice-call-architecture` and `dashboard-crm-system` skills, telemetry on `last_context_fetch_at` + fetch duration + cache hit rate, end-to-end UAT scenarios, absorb Phase 51 polish budget items (empty states, skeletons, focus rings, error retry, async button states)
+- [ ] **Phase 60: Voice prompt polish — name-once rule + single-question address intake framing** — prompt-only pass over `livekit_agent/src/prompt.py`: (a) stop the AI from re-addressing the caller by name during the call (names from many cultures are easy to mispronounce on TTS and repetition amplifies errors) — capture the name early, avoid vocative use, read it back only at booking confirmation; (b) restructure ADDRESS intake around a single "What's the address where you need the service?" opener with outcome-oriented collection rather than the current three-part "postal + street + unit" enumeration; (c) minor structural cleanup aligned to the Gemini 3.1 Flash Live + livekit-plugins-google git-pin 43d3734 constraints (anti-hallucination rules stay near the top with CRITICAL RULE framing; tool-result strings remain state+directive, not speakable English; trim any remaining VAD-redundant "let caller finish" guidance). No DB or API changes; no tool signature changes. Ships independently of 61/62.
+- [ ] **Phase 61: Google Maps address validation + structured address storage** — add Google Maps Platform integration (Address Validation API preferred; Places API fallback considered during discuss) used as a background validation pass during the booking flow; callers speak the address in whatever form is natural, the agent collects minimum fields, and validation runs in-process to produce a normalized `formatted_address` + `place_id` + `lat`/`lng` + structured components. DB migration adds validated address columns to `appointments` + `leads` (behind backward-compatible `service_address` text column); new `validate_address` internal helper OR pre-validation inside `book_appointment` (picked in discuss). Env vars + rate/cost controls + Sentry on validation failure. Agent behavior: validation result is authoritative for storage, but truth-claim rules per Phase 60 still apply (no speaking "confirmed" until the *booking* tool returns success). Also opens the door to better travel-buffer zone matching once lat/lng is stored.
+- [ ] **Phase 62: Jobber write-side — push booked customer + job into connected Jobber** (promoted from backlog 999.3) — when a tenant has Jobber connected and a booking succeeds, create/find the Jobber Client (by phone, reusing the Phase 56 `fetchJobberCustomerByPhone` path for the find-side) and create a Jobber Visit/Request assigned per the Phase 57 bookable-user rules, with the appointment's persisted `voco_booking_id` (JOBSCHED-07) used as the idempotency key so anything manually copy-pasted during the Phase 57 interim period does not duplicate. Fires from the post-call pipeline (`livekit_agent/src/post_call.py`), so it doesn't add call-path latency; OAuth scope audit (write scope may require user reconnect), error/retry strategy, UX for "Voco booked this as a Jobber Visit" pill in the calendar + flyout (replaces the "Not in Jobber yet" badge from Phase 57). Closes the Voco→Jobber loop. Supersedes Phase 999.3 in backlog.
 
 ### v6.0 Pre-requisites (user actions)
 
@@ -294,6 +297,55 @@ Plans:
 - [x] 57-03-PLAN.md — Webhook extension for VISIT_*/ASSIGNMENT_*/JOB_UPDATE mirror routing
 - [x] 57-04-PLAN.md — Poll cron + bookable-users API + resync endpoint + setup page + picker component
 - [ ] 57-05-PLAN.md — Calendar overlay retrofit + Not-in-Jobber pills + banner + flyout copy section + booking email + integrations card picker
+
+### Phase 60: Voice prompt polish — name-once rule + single-question address intake framing
+
+**Goal:** Tighten the Gemini 3.1 Flash Live receptionist's conversational behavior on two specific points without any DB, API, or tool-signature changes: (1) stop the AI from re-addressing the caller by name throughout the call (the name is captured early, but because many callers have culturally diverse names that TTS mispronounces, repeated vocative use amplifies the error and erodes trust) — the AI should note the name silently and only read it back once at booking confirmation; (2) reframe ADDRESS intake from the current three-part "postal/zip + street + unit" enumeration into a single natural opener ("What's the address where you need the service?") with outcome-oriented collection that adapts to whatever structure the caller volunteers. Alongside these two primary changes, absorb a structural pass aligned to the pinned model/SDK realities: keep anti-hallucination CRITICAL RULE framing near the top of the prompt (long-context audio attention drops toward the end), keep tool-result strings state+directive (never speakable English that invites the parrot loop), trim any VAD-redundant "let caller finish" guidance that Gemini's server VAD already handles, and preserve persona (professional / friendly / local_expert) as guardrails-not-scripts.
+
+**Why now:** Two specific owner-reported call-quality issues surfaced during the Phase 57 UAT flow and in live Railway calls — the repeated-name behavior especially is visible across every call. Both are pure prompt-surface problems (the SDK cannot force tool calls per turn; the prompt is the only enforcement surface for these classes of claims).
+
+**Scope boundary:** Prompt file only — `livekit_agent/src/prompt.py` + optionally `messages/en.json` / `messages/es.json` templated strings. No changes to `agent.py`, tool signatures, DB schema, or Next.js surface. Ships independently; 61 and 62 do not depend on it.
+
+**Depends on:** None blocking. Prompt-only change; orthogonal to Phase 57 and Phase 58.
+**Requirements:** Captured as decisions (D-*) in `60-CONTEXT.md` during discuss (no REQ-IDs in REQUIREMENTS.md — CONTEXT decisions serve as the requirement set, same pattern as Phase 59).
+**Plans:** TBD (likely 1-2 plans: prompt rewrite + cross-repo UAT)
+
+Plans:
+- [ ] 60-XX-PLAN.md — TBD (generated after discuss + plan-phase)
+
+### Phase 61: Google Maps address validation + structured address storage
+
+**Goal:** Replace the current "speak it, store the verbatim string" address flow with a background-validated, structured address capture. Caller speaks the address naturally; the agent extracts minimum fields during the normal info-gathering turn; a new `validate_address` helper (or integrated pre-check inside `book_appointment`) calls the Google Maps Platform Address Validation API in-process, returning a normalized `formatted_address`, `place_id`, `lat`/`lng`, and structured components. The normalized values land in `appointments` + `leads` alongside the existing `service_address` text column (kept for backward compatibility with the calendar UI, SMS templates, and Jobber push). Anti-hallucination rules from Phase 60 still govern speech: the agent may speak the address back to the caller for confirmation, but only actual tool-returned values are authoritative.
+
+**Secondary benefit:** Storing `lat`/`lng` enables materially better travel-buffer zone matching in Phase 3's `calculate_available_slots` downstream (current matching is postal-code-based and misses geographically adjacent postal codes).
+
+**Why now:** Directly enables the booking behavior improvement the user requested ("AI asks for the address, validates against Google Maps API in the background, then writes the confirmed structured record to the CRM and Jobber"). It's also the structural precondition for Phase 62's Jobber write-side, which benefits hugely from a normalized address (Jobber Client.properties expects structured fields, not a single freeform string).
+
+**Scope boundary:** New Google Maps integration (env vars, client module, rate/cost controls, Sentry on failure); DB migration adding validated-address columns to `appointments` + `leads` (nullable; populated when validation succeeds); livekit_agent tool/prompt updates; optionally a tiny Next.js-side reader if the dashboard should surface the validated address. Geocoding strategy (Address Validation API vs. Places API vs. Geocoding API) picked during discuss.
+
+**Depends on:** Phase 60 (the name-once + single-question framing is the conversational substrate this address flow sits on top of). Does not depend on Phase 62; can merge independently.
+**Requirements:** Captured as decisions in `61-CONTEXT.md`.
+**Pre-requisite user actions:** Create a Google Cloud project, enable the Address Validation API (and any backup APIs chosen during discuss), provision an API key restricted to the Railway + Vercel IP ranges, and fund the billing account (the Address Validation API is not free-tier; budget guardrails belong in discuss).
+**Plans:** TBD (likely 3-4 plans: DB migration + GMaps client + livekit tool wiring + tests/UAT)
+
+Plans:
+- [ ] 61-XX-PLAN.md — TBD (generated after discuss + plan-phase)
+
+### Phase 62: Jobber write-side — push booked customer + job into connected Jobber (promoted from Phase 999.3)
+
+**Goal:** Close the Voco→Jobber loop. When a tenant has Jobber connected and a booking succeeds, the post-call pipeline (`livekit_agent/src/post_call.py`) creates or finds the Jobber Client (using the Phase 56 `fetchJobberCustomerByPhone` path for the find-side — no duplicate clients by phone), then creates a Jobber Visit/Request assigned per the Phase 57 `bookable_user_ids` opt-in subset, with the appointment's persisted `voco_booking_id` (JOBSCHED-07) used as the idempotency key so anything a tenant manually copy-pasted into Jobber during the Phase 57 interim period does not duplicate. On push success, the dashboard's "Not in Jobber yet" badge from Phase 57 flips to "In Jobber" with a click-through to the Jobber visit; on push failure (token expired, scope missing, network), the appointment stays in the interim copy-paste UX state with the existing email-fallback path and a Sentry flag.
+
+**Why now:** Direct continuation of the user's request ("AI confirms the booking, writes to the CRM and the connected Jobber"). Phase 57 shipped the interim UX explicitly as a bridge to this phase; Phase 999.3 was backlogged pending Phase 57 completion and live-traffic validation of the assignee-selection pattern. With Phase 57 closing out (57-05 is the last pending plan) and the benefit of a structured Jobber-friendly address from Phase 61, this is the right moment to promote from backlog.
+
+**Scope boundary:** Jobber integration extension only — new GraphQL mutations (`clientCreate`, `requestCreate` or `scheduledItemCreate` as chosen during discuss), OAuth scope audit (write scope likely requires user reconnect — UX flow designed in discuss), post-call trigger wiring with idempotency, retry policy, Sentry on failure, and dashboard pill/flyout flip from "Not in Jobber yet" to "In Jobber". No changes to the call-path surface (the push runs post-call, never adds in-call latency).
+
+**Depends on:** Phase 57 (must be shipped — uses `appointments.voco_booking_id` + `tenants.bookable_user_ids`), Phase 61 (recommended — Jobber Client.properties writes cleanly from structured address; without it, push can fall back to freeform `service_address` but Jobber's normalization is weaker).
+**Requirements:** Captured as decisions in `62-CONTEXT.md`.
+**Pre-requisite user actions:** Confirm the Jobber dev app is configured for the required write scopes (likely `write_clients` + `write_requests`/`write_visits`); may require existing connected tenants to re-consent via the OAuth flow. Validate the assignee-selection pattern with the tenant during discuss.
+**Plans:** TBD (likely 4-5 plans: Jobber write module + post-call trigger + dashboard flip + retry/observability + cross-repo UAT)
+
+Plans:
+- [ ] 62-XX-PLAN.md — TBD (generated after discuss + plan-phase)
 
 ---
 
@@ -1218,19 +1270,24 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 
 ## Backlog
 
-### Phase 999.3: Bidirectional Jobber sync — push Voco bookings into Jobber (BACKLOG)
+### Phase 999.4: Calendar realtime auto-refresh for webhook-driven external events
 
-**Goal:** When a tenant has Jobber connected, appointments booked by the Voco AI must automatically create a Jobber Visit assigned to the correct user, so Jobber remains the scheduling system-of-record and the tenant's crew sees Voco-booked jobs in their normal Jobber workflow. Phase 57 ships read-only mirror (Jobber → Voco) plus interim copy-to-clipboard / email fallback UX. This phase closes the loop (Voco → Jobber push) with loop-dedup via `external_event_id`, and **must use the `voco_booking_id` persisted by Phase 57 (JOBSCHED-07) as the idempotency key** on the Jobber job so any tenant who manually copied a Voco booking into Jobber during the interim period does not end up with duplicates. Phase 57's copy-to-clipboard + email-fallback flow remains the permanent fallback mode for tenants who opt out of push.
+**Status:** Parked 2026-04-19. Intended as a UX polish for Phase 57 — when a Jobber / Google / Outlook webhook writes to `calendar_events`, the open `/dashboard/calendar` view should update within ~1s with no manual refresh.
 
-**Why deferred past 57:** Read-side (56) + read-only schedule mirror (57) deliver caller context and availability awareness with minimal complexity. Push-side adds assignee-selection logic, loop-dedup across mirror + push, error-retry for Jobber API failures during a live call, and UX for "Voco booked this as a Jobber Visit for Tech X" — scope it once 56+57 have run in production and the assignee-selection design is validated.
+**What's already in place:**
+- `supabase_realtime` publication has `calendar_events` added (migration 057).
+- `IntegrationReconnectBanner` polls `/api/integrations/status` every 30s and surfaces token-refresh failures.
+- Client subscription exists at `src/app/dashboard/calendar/page.js` (filtered by `tenant_id`).
 
-**Trigger to promote:** Phases 56+57 shipped + at least one tenant connected to Jobber with live call traffic + assignee-selection pattern validated (see Phase 57 discussion research).
+**Blocker:** Subscription reports `TIMED_OUT` / `CLOSED` in the browser — Supabase Realtime silently rejects because RLS evaluation on the old row needs `REPLICA IDENTITY FULL`. The migration was updated to set it, but in practice the subscribe still times out in this env. Needs deeper investigation: Dashboard Database → Replication toggle state, Realtime service restart, or alternative (polling / cache-tag revalidate on webhook).
 
-**Requirements:** TBD (depends on Phase 57 assignee-selection design)
-**Plans:** 0 plans
+**Acceptance:** Jobber / Google / Outlook push notifications auto-update the calendar view within 2 seconds with no refresh, on both desktop and mobile. Banner still surfaces token failures. Debug `[calendar-rt]` logs removed.
 
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+### Phase 999.3: Bidirectional Jobber sync — push Voco bookings into Jobber (PROMOTED → Phase 62)
+
+**Status:** Promoted to Phase 62 on 2026-04-19 as part of the voice-intake polish batch at the v6.0 tail (see Phase 62 above). Carries forward the `voco_booking_id` idempotency-key rule, the Phase 57 bookable-user assignee mapping, and the copy-to-clipboard + email-fallback as the permanent degraded-mode path.
+
+**Original goal (retained for reference):** When a tenant has Jobber connected, appointments booked by the Voco AI must automatically create a Jobber Visit assigned to the correct user, so Jobber remains the scheduling system-of-record and the tenant's crew sees Voco-booked jobs in their normal Jobber workflow. Phase 57 shipped read-only mirror (Jobber → Voco) plus interim copy-to-clipboard / email fallback UX. Phase 62 closes the loop (Voco → Jobber push) with loop-dedup via `external_event_id` and `voco_booking_id` as the idempotency key so any tenant who manually copied a Voco booking into Jobber during the interim period does not end up with duplicates.
 
 ### Resolved
 
