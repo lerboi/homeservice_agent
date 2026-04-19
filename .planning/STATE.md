@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 56-07-PLAN.md
-last_updated: "2026-04-18T22:20:52.563Z"
+stopped_at: Phase 60 context gathered
+last_updated: "2026-04-19T12:15:38.650Z"
 last_activity: 2026-04-18
 progress:
-  total_phases: 14
-  completed_phases: 13
+  total_phases: 17
+  completed_phases: 14
   total_plans: 73
-  completed_plans: 69
-  percent: 95
+  completed_plans: 74
+  percent: 100
 ---
 
 # Project State
@@ -83,6 +83,7 @@ Progress: [██████████] 100%
 - 2026-04-16: v5.0 milestone closed. 4 phases shipped (47, 48, 48.1, 49); Phase 50 absorbed into 49 Plan 05; Phases 51 and 52 deferred to v6.0. Phase 47-05 documented as superseded in part by Phase 48.1 revenue-recovery rewrite.
 - 2026-04-16: v6.0 (Integrations & Focus) opened. 7 phases planned (52, 53, 54, 55, 56, 57, 58). Detailed plan in conversation log.
 - 2026-04-17: Phase 56 added — Customer/Job model separation (split deduped leads into Customers + per-appointment Jobs, rewrite Jobs tab, add Customer detail page, reattribute invoices per-job). Note: this shifts previously-planned Jobber-read out of slot 56 → will need renumbering when planned.
+- 2026-04-19: Voice-intake polish batch added at v6.0 tail — Phases 60 (voice prompt polish: name-once + single-question address intake framing), 61 (Google Maps Address Validation API + structured address columns on appointments/leads), 62 (Jobber write-side — push booked customer + job, promoted from backlog 999.3). CONTEXT seed files written for each; ready for `/gsd:discuss-phase 60` etc. Phase 62 supersedes backlog 999.3 (backlog entry marked PROMOTED). v6.0 phase range extended to 52-58, 60-62 (10 phases). Phase 59 stays v7.0 prep (unchanged).
 
 ### Pending Todos
 
@@ -97,6 +98,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-18T22:20:52.554Z
-Stopped at: Completed 56-07-PLAN.md
-Resume file: None
+Last session: 2026-04-19T12:15:38.647Z
+Stopped at: Phase 60 context gathered
+Resume file: .planning/phases/60-voice-prompt-polish-name-once-and-single-question-address-intake/60-CONTEXT.md
