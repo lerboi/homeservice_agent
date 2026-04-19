@@ -54,3 +54,12 @@ skipped: 0
 blocked: 0
 
 ## Gaps
+
+### Hotfix 60.1 (2026-04-19) — regressions surfaced in first live call
+
+Two issues were found in the first live UAT call and fixed under phase 60.1 (see `60.1-SUMMARY.md`):
+
+- **Caller SMS wrong time.** Phase 60 regression — Gemini dropped the `+00:00` offset when re-emitting `slot_start` for `book_appointment`, and `_format_time_for_sms` silently treated naive ISO as system-local (UTC on Railway). Fixed with two-layer defense: `_ensure_utc_iso()` canonicalizes on entry, and `check_availability` STATE fields renamed to `slot_start_utc` / `slot_end_utc` with explicit "pass verbatim" directive. Re-test Persona 5 (no-name) and Persona 1 (baseline) to verify SMS shows the correct booked time.
+- **Tool-call voice glitches.** 4 `server cancelled tool calls` in a single 237s call due to over-confirmation + short fillers. Fixed with: SCHEDULING "no time-confirm before check" rule, TOOL NARRATION ~3s filler examples, `check_availability` tenant-cache reuse (~100-200ms saved per call), and stripped 15 redundant "Do not repeat this message text on-air." trailers. Re-test all personas that exercise `check_availability` for smoother audio.
+
+A third issue (~4s startup silence from customer_context fetch for tenants with no Jobber/Xero) was deferred at user request.
