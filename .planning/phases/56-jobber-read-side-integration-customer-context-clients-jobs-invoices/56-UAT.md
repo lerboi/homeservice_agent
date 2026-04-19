@@ -33,16 +33,16 @@ reason: "Deferred to later session — will test after Phase 57 ships and a stag
 
 ### 5. Refresh-failure email arrives in owner inbox when Jobber token expires
 expected: Force a Jobber refresh-token failure (revoke in Jobber dashboard, or mock a 401 from /api/oauth/token). Within seconds, owner's email receives a message with subject "Your Jobber connection needs attention". The body contains a CTA button "Reconnect Jobber" linking to `/dashboard/more/integrations`. No access_token, refresh_token, or client_secret appears anywhere in the email body or headers. The dashboard Jobber card flips to Error state (yellow reconnect banner) immediately.
-result: skipped
-reason: "Deferred to later session — requires either live call or scripted notifyJobberRefreshFailure invocation; will revisit together with Test 4 when LiveKit staged environment is ready."
+result: pass
+note: "Verified 2026-04-19 via scripts/test-jobber-refresh-email.mjs. Resend accepted the email, owner received it, amber Reconnect banner appeared on /dashboard/calendar (IntegrationReconnectBanner), and Jobber card on /dashboard/more/integrations flipped to Error state. Adapter refreshTokenIfNeeded now wires notifyJobberRefreshFailure automatically on 401."
 
 ## Summary
 
 total: 5
-passed: 3
+passed: 4
 issues: 0
 pending: 0
-skipped: 2
+skipped: 1
 blocked: 0
 
 ## Gaps

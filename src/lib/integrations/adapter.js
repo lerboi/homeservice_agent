@@ -68,9 +68,22 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
         credentials.provider === 'jobber'
           ? notifications.notifyJobberRefreshFailure
           : notifications.notifyXeroRefreshFailure;
-      // Pass null email — the error_state persistence + cache invalidation
-      // is the critical path; email-notification can be wired separately.
-      await notify?.(credentials.tenant_id, null);
+      // Resolve the tenant's owner email so the notifier can send the
+      // one-shot Reconnect email (notify tolerates null — error_state is
+      // still persisted even when email resolution fails).
+      let ownerEmail = null;
+      try {
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('email, personal_email, business_email')
+          .eq('id', credentials.tenant_id)
+          .maybeSingle();
+        ownerEmail =
+          tenant?.business_email ?? tenant?.email ?? tenant?.personal_email ?? null;
+      } catch {
+        // Best-effort — fall through with null email.
+      }
+      await notify?.(credentials.tenant_id, ownerEmail);
     } catch (notifyErr) {
       console.warn(
         '[refreshTokenIfNeeded] notify failure',
