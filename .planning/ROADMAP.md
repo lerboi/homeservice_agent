@@ -198,7 +198,7 @@ Plans:
 - [x] **Phase 56: Jobber read-side integration (customer context: clients, jobs, invoices)** — Jobber OAuth + GraphQL via `graphql-request`, `fetchCustomerByPhone` returning client + recentJobs + outstandingInvoices, same caching/webhook/tool pattern as Xero; livekit_agent `src/integrations/jobber.py` + unified `customer_context` (Jobber preferred over Xero for home-services); setup checklist `connect_jobber` item (completed 2026-04-18)
 - [ ] **Phase 57: Jobber schedule mirror (read-only) + Voco-as-overlay UX** — Mirror Jobber visits into `calendar_events` so `check_availability` stays a single query across Google + Outlook + Jobber (zero call-path latency). Three architectural angles beyond raw sync: (a) **Bookable-user subset** — mirror only visits assigned to a per-tenant opt-in set of Jobber users (mirrors Jobber's own "bookable team members" pattern; avoids over-blocking multi-user accounts where office/seasonal staff shouldn't count toward availability); connect flow shows user list, defaults pre-select users with ≥1 visit in last 30 days, auto-skips picker if only one Jobber user exists. (b) **Thin overlay dashboard calendar** — Voco-booked appointments render first-class and editable; mirrored Jobber visits render muted with "From Jobber" pill, not editable, click-through to Jobber (matches universal convention: Calendly/Acuity/Cal.com/Reclaim). (c) **Interim manual-copy UX** — because Voco→Jobber push is deferred to Phase 999.3, each Voco-only appointment gets a "Not in Jobber yet" badge, copy-to-clipboard action producing a paste-ready block, Jobber new-visit deep link, and email fallback on booking; Voco booking ID preserved so 999.3 push can dedupe anything manually copied during the interim. Extends `calendar_events.provider` CHECK to include `'jobber'`; poll-fallback cron added to `/api/cron/renew-calendar-channels`; agent slot query unchanged. Pre-research: `.planning/phases/56-.../57-PRERESEARCH.md`.
 - [ ] **Phase 58: Setup checklist final wiring + skills + telemetry + UAT + Phase 51 polish absorption** — finalize `connect_jobber`/`connect_xero` checklist completion detection, new skill `integrations-jobber-xero`, update `voice-call-architecture` and `dashboard-crm-system` skills, telemetry on `last_context_fetch_at` + fetch duration + cache hit rate, end-to-end UAT scenarios, absorb Phase 51 polish budget items (empty states, skeletons, focus rings, error retry, async button states)
-- [ ] **Phase 60: Voice prompt polish — name-once rule + single-question address intake framing** — prompt-only pass over `livekit_agent/src/prompt.py`: (a) stop the AI from re-addressing the caller by name during the call (names from many cultures are easy to mispronounce on TTS and repetition amplifies errors) — capture the name early, avoid vocative use, read it back only at booking confirmation; (b) restructure ADDRESS intake around a single "What's the address where you need the service?" opener with outcome-oriented collection rather than the current three-part "postal + street + unit" enumeration; (c) minor structural cleanup aligned to the Gemini 3.1 Flash Live + livekit-plugins-google git-pin 43d3734 constraints (anti-hallucination rules stay near the top with CRITICAL RULE framing; tool-result strings remain state+directive, not speakable English; trim any remaining VAD-redundant "let caller finish" guidance). No DB or API changes; no tool signature changes. Ships independently of 61/62.
+- [x] **Phase 60: Voice prompt polish — name-once rule + single-question address intake framing** — prompt-only pass over `livekit_agent/src/prompt.py`: (a) stop the AI from re-addressing the caller by name during the call (names from many cultures are easy to mispronounce on TTS and repetition amplifies errors) — capture the name early, avoid vocative use, read it back only at booking confirmation; (b) restructure ADDRESS intake around a single "What's the address where you need the service?" opener with outcome-oriented collection rather than the current three-part "postal + street + unit" enumeration; (c) minor structural cleanup aligned to the Gemini 3.1 Flash Live + livekit-plugins-google git-pin 43d3734 constraints (anti-hallucination rules stay near the top with CRITICAL RULE framing; tool-result strings remain state+directive, not speakable English; trim any remaining VAD-redundant "let caller finish" guidance). No DB or API changes; no tool signature changes. Ships independently of 61/62. (completed 2026-04-19)
 - [ ] **Phase 61: Google Maps address validation + structured address storage** — add Google Maps Platform integration (Address Validation API preferred; Places API fallback considered during discuss) used as a background validation pass during the booking flow; callers speak the address in whatever form is natural, the agent collects minimum fields, and validation runs in-process to produce a normalized `formatted_address` + `place_id` + `lat`/`lng` + structured components. DB migration adds validated address columns to `appointments` + `leads` (behind backward-compatible `service_address` text column); new `validate_address` internal helper OR pre-validation inside `book_appointment` (picked in discuss). Env vars + rate/cost controls + Sentry on validation failure. Agent behavior: validation result is authoritative for storage, but truth-claim rules per Phase 60 still apply (no speaking "confirmed" until the *booking* tool returns success). Also opens the door to better travel-buffer zone matching once lat/lng is stored.
 - [ ] **Phase 62: Jobber write-side — push booked customer + job into connected Jobber** (promoted from backlog 999.3) — when a tenant has Jobber connected and a booking succeeds, create/find the Jobber Client (by phone, reusing the Phase 56 `fetchJobberCustomerByPhone` path for the find-side) and create a Jobber Visit/Request assigned per the Phase 57 bookable-user rules, with the appointment's persisted `voco_booking_id` (JOBSCHED-07) used as the idempotency key so anything manually copy-pasted during the Phase 57 interim period does not duplicate. Fires from the post-call pipeline (`livekit_agent/src/post_call.py`), so it doesn't add call-path latency; OAuth scope audit (write scope may require user reconnect), error/retry strategy, UX for "Voco booked this as a Jobber Visit" pill in the calendar + flyout (replaces the "Not in Jobber yet" badge from Phase 57). Closes the Voco→Jobber loop. Supersedes Phase 999.3 in backlog.
 
@@ -308,12 +308,12 @@ Plans:
 
 **Depends on:** None blocking. Prompt-only change; orthogonal to Phase 57 and Phase 58.
 **Requirements:** Captured as decisions (D-*) in `60-CONTEXT.md` during discuss (no REQ-IDs in REQUIREMENTS.md — CONTEXT decisions serve as the requirement set, same pattern as Phase 59).
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 60-01-PLAN.md — Wave 0 prereqs (cross-repo access, UAT personas, Sentry playbook) + prompt.py edits for name-vocative suppression (D-01..D-05), single-question address intake (D-06..D-08), booking readback + corrections (D-02, D-09, D-10), and D-15 light structural audit
-- [ ] 60-02-PLAN.md — Tool-return rewrites to STATE+DIRECTIVE format across all 5 tools (D-16) + capture_lead description single-question-intake parity with book_appointment (D-11, D-12)
-- [ ] 60-03-PLAN.md — Spanish mirror of D-01..D-12 in es.json / prompt.py locale='es' path (D-13), user-review gate (D-14), and voice-call-architecture/SKILL.md sync per CLAUDE.md
+- [x] 60-01-PLAN.md — Wave 0 prereqs (cross-repo access, UAT personas, Sentry playbook) + prompt.py edits for name-vocative suppression (D-01..D-05), single-question address intake (D-06..D-08), booking readback + corrections (D-02, D-09, D-10), and D-15 light structural audit
+- [x] 60-02-PLAN.md — Tool-return rewrites to STATE+DIRECTIVE format across all 5 tools (D-16) + capture_lead description single-question-intake parity with book_appointment (D-11, D-12)
+- [x] 60-03-PLAN.md — Spanish mirror of D-01..D-12 in es.json / prompt.py locale='es' path (D-13), user-review gate (D-14), and voice-call-architecture/SKILL.md sync per CLAUDE.md
 
 ### Phase 61: Google Maps address validation + structured address storage
 
@@ -1271,6 +1271,42 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 | 29. Hero Section Interactive Demo | 4/4 | Complete   | 2026-03-26 |
 
 ## Backlog
+
+### Phase 999.5: OAuth refresh race + false-banner fix (Jobber + Xero)
+
+**Status:** Parked 2026-04-19 after deep investigation during Phase 56 / 57 UAT. Three distinct bugs in `src/lib/integrations/adapter.js` `refreshTokenIfNeeded`.
+
+**Issue 1 — `error_state` never cleared on successful refresh (CONFIRMED REAL, trivial fix):**
+adapter.js:108-111 updates `{access_token, refresh_token, expiry_date, scopes?}` only. If a prior race set `error_state='token_refresh_failed'`, subsequent successful refreshes leave the flag on — the Reconnect banner persists forever despite a healthy chain. The OAuth callback clears it; normal operation does not.
+
+**Issue 2 — Concurrent refresh race (CONFIRMED POSSIBLE, impact depends on Jobber behavior):**
+When two callers (webhook + poll cron, or webhook + voice call, or two webhooks in a burst) read the creds row within the 5-min-to-expiry window, both pass adapter.js:46 buffer check and call `adapter.refreshToken(R0)` concurrently. Outcomes:
+- Jobber strict: second call 401s, caller throws, Issue 1 kicks in.
+- Jobber permissive: both get new tokens (R1, R2), last-write-wins persists one, orphans the other. Chain survives; extra rotations occur.
+Either way, compounds Issue 1.
+
+**Issue 3 — DB write failure after Jobber-accepted refresh (CONFIRMED REAL PERMANENT BREAK, rare):**
+adapter.js:108-123. If `adapter.refreshToken()` succeeds (Jobber rotates R0 → R1 server-side, R0 dies) but the Supabase `update()` fails (outage, RLS edge case, network blip) — we throw. DB still holds R0 (dead). Next refresh uses R0 → 401 → chain permanently broken until manual reconnect. The code comment at line 115 acknowledges this: "DB still holds the old, now-dead one".
+
+**Caller count:** 7 call sites (`src/app/api/webhooks/jobber`, `src/app/api/webhooks/xero`, `src/app/api/cron/poll-jobber-visits`, `src/lib/integrations/jobber.js` getJobberGraphqlClient × 3, `src/lib/integrations/xero.js`, `src/lib/accounting/sync.js`, `src/app/api/appointments/route.js`'s after()). Cron runs every 15 min via `vercel.json`.
+
+**Fix plan (incremental):**
+1. **Trivial:** Add `error_state: null` to `updatePayload` in adapter.js:96. Also double-check OAuth callback clears it (likely already does in `src/app/api/integrations/[provider]/callback/route.js`).
+2. **Mutex:** Wrap the refresh-path (adapter.js:50-123) in `pg_advisory_xact_lock(hashtext('oauth-refresh-' || provider || '-' || tenant_id))` via a short transaction. Losing concurrent callers block, wake up, re-read DB (now has fresh tokens), and short-circuit on the 5-min-buffer check at line 46. Use `pg_try_advisory_lock` with a timeout rather than blocking indefinitely — otherwise a slow Jobber API call holds unrelated queries.
+3. **Release in finally:** lock must be released even on throw. If using `pg_advisory_xact_lock`, transaction commit/rollback releases it automatically — safer than session-level locks.
+4. **DO NOT** mask Issue 3 by retrying inside adapter — surface the DB-write-fail as reconnect-required (current behavior). A retry could rotate tokens twice.
+
+**Testing:**
+- Unit: mock `adapter.refreshToken`, fire 5 concurrent `refreshTokenIfNeeded` calls — assert exactly one wire call.
+- Integration: force a refresh window (set expiry_date to Date.now()+1000), hit the webhook endpoint 5× concurrently via `curl`, assert calendar_events rows appear and no `error_state` set.
+- Regression: existing unit tests for refresh-success, refresh-fail (401), DB-write-fail all still pass.
+
+**Gotchas:**
+- Service role client in Next.js uses its own Postgres connection pool. An advisory lock held during a 500ms Jobber refresh briefly serializes refresh attempts for the same tenant — acceptable since refresh is rare. Unrelated queries on the same connection pool are unaffected (lock is keyed per tenant).
+- Tests in `tests/notifications/jobber-refresh-email.test.js` (7 tests) assert notifier behavior on error. Must still pass unchanged.
+- `error_state` clearing must only happen AFTER the DB update succeeds. Do not clear optimistically.
+
+**Acceptance:** Under 20 concurrent webhooks in dev (token in expiry window), no false `error_state` writes, no calendar data gaps, `adapter.refreshToken` invoked exactly once per 60-min window per tenant. Banner never shows when the chain is actually healthy.
 
 ### Phase 999.4: Calendar realtime auto-refresh for webhook-driven external events
 
