@@ -310,7 +310,7 @@ Plans:
 
 **Requirements:** CHECKLIST-01, CHECKLIST-02, CTX-01, CTX-02, CTX-03, POLISH-01, POLISH-02, POLISH-03, POLISH-04, POLISH-05
 
-**Plans:** 5/7 plans executed
+**Plans:** 6/7 plans executed
 
 Plans:
 - [x] 58-01-PLAN.md — Wave 0 test scaffolds + UAT + TELEMETRY-REPORT skeletons (nyquist)
@@ -318,7 +318,7 @@ Plans:
 - [x] 58-03-PLAN.md — Python telemetry instrumentation + Jobber last-synced (CTX-01)
 - [x] 58-04-PLAN.md — Polish primitives (EmptyState/ErrorState/AsyncButton) + focus-visible token (POLISH-01/03/04/05)
 - [x] 58-05-PLAN.md — 7-page polish sweep + BusinessIntegrationsClient AsyncButton migration
-- [ ] 58-06-PLAN.md — integrations-jobber-xero skill + voice-call / dashboard-crm rewrites + CLAUDE.md (CTX-02, CTX-03)
+- [x] 58-06-PLAN.md — integrations-jobber-xero skill + voice-call / dashboard-crm rewrites + CLAUDE.md (CTX-02, CTX-03)
 - [ ] 58-07-PLAN.md — UAT execution + TELEMETRY-REPORT fill-in + refresh error_state tests (ship gate)
 
 ### Phase 60: Voice prompt polish — name-once rule + single-question address intake framing
