@@ -579,11 +579,11 @@ n| DEMO-01 | Phase 29 | Complete |
 | POLISH-08 | Phase 49 | Complete |
 | DARK-05 | Phase 50 | Pending |
 | DARK-10 | Phase 50 | Pending |
-| POLISH-01 | Phase 51 | Pending |
-| POLISH-02 | Phase 51 | Pending |
-| POLISH-03 | Phase 51 | Pending |
-| POLISH-04 | Phase 51 | Pending |
-| POLISH-05 | Phase 51 | Pending |
+| POLISH-01 | Phase 51 | Complete |
+| POLISH-02 | Phase 51 | Complete |
+| POLISH-03 | Phase 51 | Complete |
+| POLISH-04 | Phase 51 | Complete |
+| POLISH-05 | Phase 51 | Complete |
 | POLISH-06 | Phase 51 | Pending |
 | POLISH-07 | Phase 51 | Pending |
 | POLISH-09 | Phase 51 | Pending |
@@ -641,11 +641,11 @@ n| DEMO-01 | Phase 29 | Complete |
 
 ### UI/UX Polish (Dashboard + Landing)
 
-- [ ] **POLISH-01**: All dashboard list views (leads, calls, calendar, analytics) have dedicated empty states with icon + headline + primary CTA when no data exists
-- [ ] **POLISH-02**: All dashboard pages show layout-matching loading skeletons during data fetch (not blank flashes), preventing CLS
-- [ ] **POLISH-03**: All interactive elements (buttons, inputs, nav items, pill filters) have consistent `focus-visible` rings using the design-token focus color
-- [ ] **POLISH-04**: All data-fetching pages show an error state with a retry action when fetches fail, instead of frozen UI
-- [ ] **POLISH-05**: Async action buttons show spinner + disabled state during pending operations (save settings, send invoice, sync calendar)
+- [x] **POLISH-01**: All dashboard list views (leads, calls, calendar, analytics) have dedicated empty states with icon + headline + primary CTA when no data exists
+- [x] **POLISH-02**: All dashboard pages show layout-matching loading skeletons during data fetch (not blank flashes), preventing CLS
+- [x] **POLISH-03**: All interactive elements (buttons, inputs, nav items, pill filters) have consistent `focus-visible` rings using the design-token focus color
+- [x] **POLISH-04**: All data-fetching pages show an error state with a retry action when fetches fail, instead of frozen UI
+- [x] **POLISH-05**: Async action buttons show spinner + disabled state during pending operations (save settings, send invoice, sync calendar)
 - [ ] **POLISH-06**: DashboardHomeStats cards have a hover state (translate-y + shadow) with 200ms transition
 - [ ] **POLISH-07**: Lead status changes in LeadFlyout animate in the list via AnimatePresence + layout prop for clear user feedback
 - [x] **POLISH-08**: Dashboard typography consolidated to design-token color values (no lingering hardcoded hex text classes)
