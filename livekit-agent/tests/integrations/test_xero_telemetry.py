@@ -1,27 +1,27 @@
-"""Phase 58 Plan 01 Wave 0 scaffold — CTX-01 Xero telemetry writes.
+"""Phase 58 CTX-01 — Xero telemetry writes to activity_log.
 
-Verifies two telemetry side-effects when `fetch_xero_customer_by_phone` runs:
+Verifies three behaviors of `fetch_xero_customer_by_phone`:
 
-1. `_touch_last_context_fetch_at(cred_id)` UPDATEs `accounting_credentials`
-   with a fresh timestamp (surfaces in the integrations card "Last synced" line).
-2. A row is INSERTed into `activity_log` with `event_type='integration_fetch'`
+1. `_touch_last_context_fetch_at(cred_id)` fires once on success.
+2. One row is INSERTed into `activity_log` with `event_type='integration_fetch'`
    and `metadata` containing provider / duration_ms / cache_hit / counts /
-   phone_e164 keys.
-
-Neither side-effect fires when the fetch fails (covered by the third test).
-
-These tests WILL FAIL until Plan 58-03 extends
-`livekit-agent/src/integrations/xero.py :: fetch_xero_customer_by_phone` to
-emit the `integration_fetch` activity_log row on success. Wave 0 creates the
-failing target; downstream plan turns it green.
-
-Import path mirrors the existing livekit-agent test convention
-(`from src.integrations import xero as xero_mod`); see
-tests/test_xero_integration.py for precedent.
+   phone_e164 keys. Parallelized with `_touch_last_context_fetch_at` via
+   `asyncio.gather` so telemetry adds zero latency to the return path.
+3. Neither side-effect fires on failure.
 
 Real activity_log schema (supabase/migrations/004_leads_crm.sql lines 73-96):
-  - event_type text NOT NULL  (NOT 'action' — research flagged CONTEXT D-06 mismatch)
+  - event_type text NOT NULL  (NOT 'action' — CONTEXT D-06 mismatch, see
+                               58-RESEARCH §B.2 reconciliation Option A)
   - metadata jsonb            (NOT 'meta')
+
+Test scaffolds in this file are the Plan 58-01 Wave 0 targets; Plan 58-03
+turns them green by:
+  - Adding `get_supabase_admin` and `emit_integration_fetch` imports at
+    module-level of xero.py (so `patch.object(xero_mod, 'get_supabase_admin',
+    ...)` resolves).
+  - Emitting one `activity_log` row with `event_type='integration_fetch'` on
+    the success path via `asyncio.gather(_touch_last_context_fetch_at(...),
+    emit_integration_fetch(admin, ...))`.
 """
 from __future__ import annotations
 
@@ -36,9 +36,7 @@ from src.integrations import xero as xero_mod
 def admin_mock():
     """A MagicMock shaped like supabase admin client: chainable .table().update()/.insert()."""
     mock = MagicMock()
-    # .table('accounting_credentials').update({...}).eq('id', cred_id).execute()
     mock.table.return_value.update.return_value.eq.return_value.execute.return_value = None
-    # .table('activity_log').insert({...}).execute()
     mock.table.return_value.insert.return_value.execute.return_value = None
     return mock
 
@@ -57,24 +55,26 @@ def cred_fixture():
 
 
 @pytest.fixture
-def customer_fixture():
-    """Minimal Xero customer match shape."""
+def contact_fixture():
+    """Minimal Xero Contacts API shape (singular match returned by _get_contacts_by_phone)."""
     return {
-        "contact": {"ContactID": "xero-c-1", "Name": "Acme"},
-        "outstanding_balance": 0.0,
-        "invoices": [],
+        "ContactID": "xero-c-1",
+        "Name": "Acme Plumbing",
+        "FirstName": "Acme",
+        "LastName": "Plumbing",
+        "Phones": [{"PhoneNumber": "+15551234567"}],
     }
 
 
 @pytest.mark.asyncio
 async def test_xero_success_calls_touch_last_context_fetch_at(
-    admin_mock, cred_fixture, customer_fixture
+    admin_mock, cred_fixture, contact_fixture
 ):
     """On successful fetchCustomerByPhone, _touch_last_context_fetch_at fires once."""
     touch_mock = AsyncMock()
     with (
         patch.object(xero_mod, "_load_credentials", AsyncMock(return_value=cred_fixture)),
-        patch.object(xero_mod, "_get_contact_by_phone", AsyncMock(return_value=customer_fixture["contact"])),
+        patch.object(xero_mod, "_get_contacts_by_phone", AsyncMock(return_value=contact_fixture)),
         patch.object(xero_mod, "_get_outstanding_balance", AsyncMock(return_value=0.0)),
         patch.object(xero_mod, "_get_recent_invoices", AsyncMock(return_value=[])),
         patch.object(xero_mod, "_touch_last_context_fetch_at", touch_mock),
@@ -88,12 +88,12 @@ async def test_xero_success_calls_touch_last_context_fetch_at(
 
 @pytest.mark.asyncio
 async def test_xero_success_inserts_activity_log_row(
-    admin_mock, cred_fixture, customer_fixture
+    admin_mock, cred_fixture, contact_fixture
 ):
     """On success, an activity_log row with event_type='integration_fetch' is inserted."""
     with (
         patch.object(xero_mod, "_load_credentials", AsyncMock(return_value=cred_fixture)),
-        patch.object(xero_mod, "_get_contact_by_phone", AsyncMock(return_value=customer_fixture["contact"])),
+        patch.object(xero_mod, "_get_contacts_by_phone", AsyncMock(return_value=contact_fixture)),
         patch.object(xero_mod, "_get_outstanding_balance", AsyncMock(return_value=0.0)),
         patch.object(xero_mod, "_get_recent_invoices", AsyncMock(return_value=[])),
         patch.object(xero_mod, "_touch_last_context_fetch_at", AsyncMock()),
@@ -101,7 +101,6 @@ async def test_xero_success_inserts_activity_log_row(
     ):
         await xero_mod.fetch_xero_customer_by_phone("tenant-1", "+15551234567")
 
-    # Look at every .table('activity_log').insert({...}) call made on admin_mock.
     insert_calls = admin_mock.table.return_value.insert.call_args_list
     payloads = [
         c.args[0]
@@ -110,12 +109,15 @@ async def test_xero_success_inserts_activity_log_row(
     ]
     assert len(payloads) == 1, "expected exactly one integration_fetch activity_log row"
     payload = payloads[0]
+    assert payload["tenant_id"] == "tenant-1"
     metadata = payload["metadata"]
     assert metadata["provider"] == "xero"
     assert isinstance(metadata["duration_ms"], int) and metadata["duration_ms"] >= 0
     assert isinstance(metadata["cache_hit"], bool)
     assert "counts" in metadata and isinstance(metadata["counts"], dict)
-    assert "phone_e164" in metadata
+    # Xero counts shape is {customers, invoices} per 58-03 PLAN acceptance.
+    assert set(metadata["counts"].keys()) >= {"customers", "invoices"}
+    assert metadata["phone_e164"] == "+15551234567"
 
 
 @pytest.mark.asyncio
@@ -126,21 +128,18 @@ async def test_xero_failure_does_not_write_telemetry(admin_mock, cred_fixture):
         patch.object(xero_mod, "_load_credentials", AsyncMock(return_value=cred_fixture)),
         patch.object(
             xero_mod,
-            "_get_contact_by_phone",
+            "_get_contacts_by_phone",
             AsyncMock(side_effect=RuntimeError("Xero 500 — simulated failure")),
         ),
         patch.object(xero_mod, "_touch_last_context_fetch_at", touch_mock),
         patch.object(xero_mod, "get_supabase_admin", return_value=admin_mock),
     ):
-        # fetch_xero_customer_by_phone should swallow the error and return None
-        # (or raise — either way, telemetry MUST NOT fire)
         try:
             await xero_mod.fetch_xero_customer_by_phone("tenant-1", "+15551234567")
         except RuntimeError:
             pass
 
     touch_mock.assert_not_awaited()
-    # No activity_log insert with event_type='integration_fetch' on failure path
     insert_calls = admin_mock.table.return_value.insert.call_args_list
     fetch_rows = [
         c.args[0]
