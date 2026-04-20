@@ -94,4 +94,41 @@ describe('setup-checklist — connect_jobber item', () => {
     expect(routeSource).toMatch(/provider.*jobber|'jobber'/);
     expect(routeSource).toMatch(/jobberConnected/);
   });
+
+  // Phase 58 CHECKLIST-01 — error_state branch assertions
+  it('connect_jobber is complete when jobberConnected=true and jobberHasError=false', () => {
+    const items = deriveChecklistItems(baseTenant, {
+      serviceCount: 1,
+      calendarConnected: true,
+      zoneCount: 1,
+      escalationCount: 1,
+      hasActiveSubscription: true,
+      xeroConnected: false,
+      jobberConnected: true,
+      xeroHasError: false,
+      jobberHasError: false,
+    });
+    const j = items.find((i) => i.id === 'connect_jobber');
+    expect(j.complete).toBe(true);
+    expect(j.has_error).toBe(false);
+    expect(j.error_subtitle).toBeNull();
+  });
+
+  it('connect_jobber is incomplete + has_error when jobberHasError=true', () => {
+    const items = deriveChecklistItems(baseTenant, {
+      serviceCount: 1,
+      calendarConnected: true,
+      zoneCount: 1,
+      escalationCount: 1,
+      hasActiveSubscription: true,
+      xeroConnected: false,
+      jobberConnected: false,
+      xeroHasError: false,
+      jobberHasError: true,
+    });
+    const j = items.find((i) => i.id === 'connect_jobber');
+    expect(j.complete).toBe(false);
+    expect(j.has_error).toBe(true);
+    expect(j.error_subtitle).toBe('Reconnect needed');
+  });
 });

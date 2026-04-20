@@ -53,4 +53,41 @@ describe('setup-checklist connect_xero', () => {
     const items = deriveChecklistItems(tenant, { xeroConnected: false });
     expect(items.find((i) => i.id === 'connect_xero')).toBeUndefined();
   });
+
+  // Phase 58 CHECKLIST-01 — error_state branch assertions
+  it('connect_xero is complete when xeroConnected=true and xeroHasError=false', () => {
+    const items = deriveChecklistItems(baseTenant, {
+      serviceCount: 1,
+      calendarConnected: true,
+      zoneCount: 1,
+      escalationCount: 1,
+      hasActiveSubscription: true,
+      xeroConnected: true,
+      jobberConnected: false,
+      xeroHasError: false,
+      jobberHasError: false,
+    });
+    const x = items.find((i) => i.id === 'connect_xero');
+    expect(x.complete).toBe(true);
+    expect(x.has_error).toBe(false);
+    expect(x.error_subtitle).toBeNull();
+  });
+
+  it('connect_xero is incomplete + has_error when xeroHasError=true', () => {
+    const items = deriveChecklistItems(baseTenant, {
+      serviceCount: 1,
+      calendarConnected: true,
+      zoneCount: 1,
+      escalationCount: 1,
+      hasActiveSubscription: true,
+      xeroConnected: false,
+      jobberConnected: false,
+      xeroHasError: true,
+      jobberHasError: false,
+    });
+    const x = items.find((i) => i.id === 'connect_xero');
+    expect(x.complete).toBe(false);
+    expect(x.has_error).toBe(true);
+    expect(x.error_subtitle).toBe('Reconnect needed');
+  });
 });
