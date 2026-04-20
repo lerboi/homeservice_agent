@@ -296,6 +296,14 @@ export default function SetupChecklist({ onDataLoaded }) {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="flex flex-col gap-3">
+                    {/*
+                      Phase 58 CHECKLIST-01 contract — red-dot forwarding:
+                      item passes through as a single object so has_error +
+                      error_subtitle flow to ChecklistItem's red-dot /
+                      "Reconnect needed" / "Reconnect" CTA variant. Do NOT
+                      destructure — dropping has_error silently breaks the
+                      red-dot flow for failed Xero/Jobber token refresh.
+                    */}
                     {themeItems.map((item) => (
                       <ChecklistItem
                         key={item.id}
