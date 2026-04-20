@@ -113,7 +113,18 @@ export async function fetchXeroCustomerByPhone(tenantId, phoneE164) {
   // needed (P58 if hit in practice).
   let contactsResp;
   try {
-    contactsResp = await xero.accountingApi.getContacts(xeroOrgId);
+    // summaryOnly=false required to get Phones populated (Xero default strips them).
+    // Positional SDK signature: (tenantId, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly).
+    contactsResp = await xero.accountingApi.getContacts(
+      xeroOrgId,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+    );
   } catch {
     return { contact: null };
   }

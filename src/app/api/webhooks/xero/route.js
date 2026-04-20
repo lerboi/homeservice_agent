@@ -88,12 +88,17 @@ export async function POST(request) {
         const inv = invResp.body?.invoices?.[0];
         const contactID = inv?.contact?.contactID;
         if (contactID) {
+          // summaryOnly=false required to get Phones populated (Xero default strips them).
+          // Positional: (tenantId, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly).
           const contactsResp = await adapter._xeroClient.accountingApi.getContacts(
             xeroOrgId,
             undefined,
             undefined,
             undefined,
             [contactID],
+            undefined,
+            undefined,
+            false,
           );
           const contact = contactsResp.body?.contacts?.[0];
           phones = (contact?.phones || [])

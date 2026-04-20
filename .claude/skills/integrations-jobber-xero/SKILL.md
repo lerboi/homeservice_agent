@@ -178,6 +178,16 @@ reconciliation (Option A: `event_type` + `metadata`, NOT `action` + `meta`).
    no race with Next.js side. Telemetry `INSERT` uses a fresh UUID PK —
    also race-free. Both are parallelized via `asyncio.gather` in the
    Python adapters (zero added latency on fetch return path).
+9. **Xero `GET /Contacts` requires `summaryOnly=false` for phone data.**
+   Default response omits `PhoneNumber`/`PhoneCountryCode`/`PhoneAreaCode`
+   (returns PhoneType slots with null values). Any caller that matches
+   contacts by phone — `xeroContactMatchesPhone`, the Python pre-session
+   matcher, the webhook phone-cacheTag resolver — must pass the parameter.
+   Affected call sites kept in sync: `livekit-agent/src/integrations/xero.py`
+   `_get_contacts_by_phone`; `src/lib/integrations/xero.js`
+   `fetchCustomerByPhone`; `src/app/api/webhooks/xero/route.js` invoice
+   contact resolution. `findOrCreateCustomer` (email-search, ID-only read)
+   does not need the flag.
 
 ---
 
