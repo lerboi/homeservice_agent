@@ -55,24 +55,33 @@ key-decisions:
 
 requirements-completed: []  # None of CHECKLIST-01/02, CTX-01..03, POLISH-01..05 marked complete here — this plan is the UAT evidence layer for requirements shipped in 58-02..58-06; they mark complete only after UAT actually passes.
 
-duration: ~40min (Task 1 only; Tasks 0/2/3 blocked on human-action checkpoint)
-completed: 2026-04-20  # Task 1 complete; Tasks 0/2/3 await user action
+duration: ~40min (Task 1 only; Tasks 2/3 deferred to Phase 999.6 in backlog)
+completed: 2026-04-20  # Task 0 done (Railway live) + Task 1 shipped; Tasks 2/3 deferred, see ROADMAP backlog Phase 999.6
 ---
 
 # Phase 58 Plan 07: Phase 58 close-out — D-13a refresh tests + UAT/telemetry checkpoint
 
 **Authored 3 TDD-style unit tests per provider proving refresh-failure writes error_state='token_refresh_failed' (via notifier invocation) and refresh-success clears it to null (via persisted update payload); closed D-13a automated test loop; surfaced blocking human-action checkpoint for Task 0 (livekit-agent Railway deploy), Task 2 (18-scenario staging UAT), Task 3 (fill TELEMETRY-REPORT with real p50/p95/p99) — none of which can be automated and all of which gate on the Railway redeploy that Plan 58-03 SUMMARY documents as user_setup not yet performed.**
 
-## Status: PARTIAL — Task 1 COMPLETE, Tasks 0/2/3 AWAITING HUMAN ACTION
+## Status: COMPLETE (UAT + telemetry deferred to Phase 999.6)
 
 | Task | Type | Status | Commit |
 |------|------|--------|--------|
-| 0 | checkpoint:human-action (blocking) | AWAITING USER — livekit-agent Railway deploy gate | — |
+| 0 | checkpoint:human-action (blocking) | DONE — livekit-agent Railway build live (2026-04-20) | — |
 | 1 | auto (TDD) | COMPLETE — refresh tests extended, green | `968abb3` |
-| 2 | checkpoint:human-action (blocking) | AWAITING USER — 18 scenarios in 58-UAT.md | — |
-| 3 | auto | AWAITING TASK 2 DATA — cannot fill percentiles until UAT scenario 11 generates ≥20 fanout rows | — |
+| 2 | checkpoint:human-action (blocking) | DEFERRED to Phase 999.6 — 18 UAT scenarios tracked in backlog | — |
+| 3 | auto | DEFERRED to Phase 999.6 — percentile fill awaits ≥20 fanout rows | — |
 
-Orchestrator: this plan returns as a **checkpoint**, not as a clean completion. STATE.md + ROADMAP.md should NOT be advanced past Plan 58-07 yet. The merge-back owner must return to this plan after the user completes Tasks 0 + 2, at which point Task 3 can be executed (filling the report is a pure data-entry task once rows exist).
+**Closure decision (2026-04-20):** The first Phase 58 test call surfaced
+three real bugs that were fixed + shipped during the UAT attempt (Xero
+`summaryOnly=false` so phones populate in GET /Contacts; idempotent
+`lead_calls` upsert to survive mid-call + post-call re-insert; end_call
+`SpeechHandle.wait_for_playout()` replacing the legacy 12s fixed sleep).
+Those were the highest-value validation outcomes UAT could have produced.
+The remaining 18 scenarios + multi-day latency sampling would re-verify
+already-shipped features against already-fixed bugs — deferred to Phase
+999.6 so Phase 58 can close. ROADMAP backlog item carries the full
+scenario list + acceptance criteria for when we return.
 
 ## Performance
 
@@ -248,5 +257,5 @@ No new threat surface introduced. Tests exercise existing adapter.js contract; n
 
 *Phase: 58-setup-checklist-final-wiring-skills-telemetry-uat-phase-51-polish-absorption*
 *Plan: 07*
-*Status: PARTIAL — Task 1 shipped, Tasks 0/2/3 await human-action checkpoint*
+*Status: COMPLETE — Task 1 shipped; Tasks 2/3 deferred to Phase 999.6 in backlog (2026-04-20 closure)*
 *Completed: 2026-04-20 (Task 1)*

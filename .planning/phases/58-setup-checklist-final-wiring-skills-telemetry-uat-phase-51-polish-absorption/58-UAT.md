@@ -1,13 +1,14 @@
 ---
-status: draft
+status: deferred
 phase: 58-setup-checklist-final-wiring-skills-telemetry-uat-phase-51-polish-absorption
 source: [58-CONTEXT.md, 58-RESEARCH.md, 58-VALIDATION.md, 58-UI-SPEC.md]
 started: 2026-04-20
 updated: 2026-04-20
+deferred_to: Phase 999.6 (backlog)
 ---
 
 ## Current Test
-[none — UAT not yet started]
+[deferred to Phase 999.6 — see ROADMAP.md backlog]
 
 ## Tests
 

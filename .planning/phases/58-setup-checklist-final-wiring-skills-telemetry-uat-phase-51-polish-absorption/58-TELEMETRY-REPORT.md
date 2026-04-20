@@ -1,16 +1,17 @@
 ---
 phase: 58
 report: telemetry
-status: draft
+status: deferred
 created: 2026-04-20
 updated: 2026-04-20
+deferred_to: Phase 999.6 (backlog)
 ---
 
 # Phase 58 Telemetry Report
 
-**Collected:** <fill in date range — e.g., 2026-04-20 → 2026-04-22>
-**Sample size:** <N calls>
-**Environment:** staging | production (circle one)
+**Collected:** deferred — see Phase 999.6 in ROADMAP.md backlog
+**Sample size:** deferred (requires ≥20 `integration_fetch_fanout` rows in staging `activity_log`)
+**Environment:** staging (planned)
 
 ## Pre-call parallel lookup latency (D-07)
 

@@ -1295,6 +1295,43 @@ Phases execute in order: 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28
 
 ## Backlog
 
+### Phase 999.6: Phase 58 UAT + telemetry validation (deferred)
+
+**Status:** Deferred 2026-04-20 to close out Phase 58 faster. The Phase 58
+scope (setup-checklist red-dot error variant + integration telemetry +
+skill consolidation + polish sweeps) all shipped; the ship-gate UAT was
+set aside for post-launch validation.
+
+**What was deferred:**
+- **18 UAT scenarios** in `.planning/phases/58-.../58-UAT.md`:
+  - 1–8: Xero + Jobber connect / disconnect / refresh-fail red-dot / reconnect flows
+  - 9–10: Real test calls with Xero + Jobber customer context injection
+  - 11: Pre-call fanout latency measurement (requires ≥20 staged calls for p95)
+  - 12: Webhook-miss → Phase 57 poll fallback simulation
+  - 13–17: POLISH-03 focus ring / POLISH-01 empty states / POLISH-02 loading
+    skeletons / POLISH-04 error+retry / POLISH-05 AsyncButton spot-checks
+  - 18: Skill documentation sanity check (`integrations-jobber-xero` +
+    `voice-call-architecture` + `dashboard-crm-system` updated headers)
+- **Real p50/p95/p99 latency numbers** in `.planning/phases/58-.../58-TELEMETRY-REPORT.md`
+  (SQL queries already embedded; just needs ≥20 `integration_fetch_fanout`
+  rows in staging `activity_log` to execute).
+- **end_call playout-wait verification** — confirm the livekit-agents
+  1.5.1 `SpeechHandle.wait_for_playout()` fix (shipped in sibling repo as
+  `livekit_agent 728e7cc`) actually resolves the "farewell cuts off
+  halfway" symptom end-to-end.
+
+**Why deferred:** The Xero `summaryOnly=false` + `lead_calls` upsert +
+`end_call` playout-wait fixes landed during the first Phase 58 test call
+already cover the hottest real-world failure modes. Remaining UAT is
+re-verification of already-implemented features plus multi-day latency
+sampling; blocking the phase close on 2–3 hours of hands-on + 48h of
+staged calls doesn't change the shipped behavior.
+
+**Acceptance:** Mark all 18 UAT scenarios with pass/fail/skipped + notes,
+fill TELEMETRY-REPORT percentile tables from staging activity_log, confirm
+end_call farewell-complete behavior with one live call, flip both
+artifacts' frontmatter `status` from `deferred` back to `resolved`.
+
 ### Phase 999.5: OAuth refresh race + false-banner fix (Jobber + Xero)
 
 **Status:** Resolved 2026-04-19. Migration `058_oauth_refresh_locks.sql` adds a lease-based lock table + `try_acquire_oauth_refresh_lock` / `release_oauth_refresh_lock` RPCs. `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` now (a) clears `error_state: null` in the update payload on successful rotation (Issue 1), (b) acquires the lease before calling `adapter.refreshToken()` and releases it in a `finally` block (Issues 2 & 3), and (c) losers poll for up to 3s to read the winner's freshly-persisted tokens. Tests: `tests/integrations/refresh-lock.test.js` (3 new cases — 5-concurrent → 1 wire call, error_state cleared, release always fires). Prior investigation notes retained below.
