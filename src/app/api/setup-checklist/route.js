@@ -192,6 +192,12 @@ export function deriveChecklistItems(tenant, counts) {
       if (override.dismissed === true) continue;
       const meta = ITEM_META[id] || { title: id, description: '', href: '#' };
       const markDoneOverride = override.mark_done === true;
+      // Phase 58 CHECKLIST-01: only connect_xero / connect_jobber can enter the
+      // error sub-state. Emit has_error + error_subtitle uniformly on every item
+      // so ChecklistItem.jsx doesn't have to guard undefined fields.
+      const isErrorItem =
+        (id === 'connect_xero' && counts.xeroHasError === true) ||
+        (id === 'connect_jobber' && counts.jobberHasError === true);
       items.push({
         id,
         theme,
@@ -202,6 +208,8 @@ export function deriveChecklistItems(tenant, counts) {
         title: meta.title,
         description: meta.description,
         href: meta.href,
+        has_error: isErrorItem,
+        error_subtitle: isErrorItem ? 'Reconnect needed' : null,
       });
     }
   }
@@ -211,7 +219,9 @@ export function deriveChecklistItems(tenant, counts) {
 // ─── Server-side data fetcher ─────────────────────────────────────────────────
 
 async function fetchChecklistState(tenantId) {
-  // Parallel: tenant row + 4 count/presence queries + current subscription row
+  // Parallel: tenant row + count/presence queries + current subscription row.
+  // Phase 58 CHECKLIST-01: 4 accounting_credentials queries (healthy + error per
+  // provider) so connect_xero / connect_jobber can emit has_error + error_subtitle.
   const [
     tenantResult,
     serviceResult,
@@ -219,8 +229,10 @@ async function fetchChecklistState(tenantId) {
     zoneResult,
     escalationResult,
     subResult,
-    xeroResult,
-    jobberResult,
+    xeroOkResult,
+    xeroErrResult,
+    jobberOkResult,
+    jobberErrResult,
   ] = await Promise.allSettled([
       supabase
         .from('tenants')
@@ -256,16 +268,34 @@ async function fetchChecklistState(tenantId) {
         .eq('tenant_id', tenantId)
         .eq('is_current', true)
         .maybeSingle(),
+      // Xero — healthy (row exists AND error_state IS NULL) per D-01
       supabase
         .from('accounting_credentials')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId)
-        .eq('provider', 'xero'),
+        .eq('provider', 'xero')
+        .is('error_state', null),
+      // Xero — error (row exists AND error_state IS NOT NULL) per D-02
       supabase
         .from('accounting_credentials')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId)
-        .eq('provider', 'jobber'),
+        .eq('provider', 'xero')
+        .not('error_state', 'is', null),
+      // Jobber — healthy
+      supabase
+        .from('accounting_credentials')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'jobber')
+        .is('error_state', null),
+      // Jobber — error
+      supabase
+        .from('accounting_credentials')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'jobber')
+        .not('error_state', 'is', null),
     ]);
 
   const tenant = tenantResult.status === 'fulfilled' ? tenantResult.value.data : null;
@@ -282,11 +312,17 @@ async function fetchChecklistState(tenantId) {
   const hasActiveSubscription =
     subStatus === 'active' || subStatus === 'trialing' || subStatus === 'past_due';
 
+  // Phase 58 CHECKLIST-01: xeroConnected = healthy-only count (error_state IS NULL).
+  // Rows with error_state set do NOT bump xeroConnected → item stays incomplete,
+  // and xeroHasError separately signals the "Reconnect needed" sub-state (D-01 + D-02).
   const xeroConnected =
-    xeroResult.status === 'fulfilled' && (xeroResult.value.count ?? 0) > 0;
-
+    xeroOkResult.status === 'fulfilled' && (xeroOkResult.value.count ?? 0) > 0;
+  const xeroHasError =
+    xeroErrResult.status === 'fulfilled' && (xeroErrResult.value.count ?? 0) > 0;
   const jobberConnected =
-    jobberResult.status === 'fulfilled' && (jobberResult.value.count ?? 0) > 0;
+    jobberOkResult.status === 'fulfilled' && (jobberOkResult.value.count ?? 0) > 0;
+  const jobberHasError =
+    jobberErrResult.status === 'fulfilled' && (jobberErrResult.value.count ?? 0) > 0;
 
   return {
     tenant,
@@ -297,6 +333,8 @@ async function fetchChecklistState(tenantId) {
     hasActiveSubscription,
     xeroConnected,
     jobberConnected,
+    xeroHasError,
+    jobberHasError,
   };
 }
 
