@@ -1,18 +1,19 @@
+// Phase 58 Plan 58-04: thin wrapper around <EmptyState> (POLISH-01).
+// The hardcoded markup previously here is now centralised in
+// src/components/ui/empty-state.jsx — preserving this file name + named export
+// keeps every current caller (`/dashboard/jobs/page.js:23`) working without edit.
+
 import { Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export function EmptyStateLeads() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <Users className="h-10 w-10 text-muted-foreground/30 mb-4" aria-hidden="true" />
-      <h2 className="text-base font-semibold text-foreground mb-2">No jobs yet</h2>
-      <p className="text-sm text-muted-foreground max-w-sm mb-6">
-        When callers reach your AI, jobs appear here with caller details, job type, and urgency.
-      </p>
-      <Button asChild>
-        <Link href="/dashboard/more/ai-voice-settings">Make a Test Call</Link>
-      </Button>
-    </div>
+    <EmptyState
+      icon={Users}
+      headline="No jobs yet"
+      description="When callers reach your AI, jobs appear here with caller details, job type, and urgency."
+      ctaLabel="Make a Test Call"
+      ctaHref="/dashboard/more/ai-voice-settings"
+    />
   );
 }
