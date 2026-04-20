@@ -1,8 +1,18 @@
 'use client';
 
+// Phase 58 Plan 58-05 (POLISH-05): Connect / Disconnect / Reconnect buttons
+// migrated from the ad-hoc `disabled + inline Loader2 + ternary label` pattern
+// to the shared <AsyncButton pendingLabel="Connecting…|Disconnecting…|
+// Reconnecting…"> primitive from Plan 58-04. State variable names, handler
+// names, and the 4-state machine (connected / error / disconnected / loading)
+// are preserved verbatim. Focus sweep: zero `focus:ring*` literals remain in
+// this file (ring tokens live in design-tokens focus.ring which is already
+// focus-visible: per Plan 58-04).
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { AsyncButton } from '@/components/ui/async-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -15,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { card } from '@/lib/design-tokens';
@@ -262,30 +272,25 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
 
                 {hasError ? (
                   <div className="flex flex-col gap-2">
-                    <Button
+                    <AsyncButton
+                      pending={isConnecting}
+                      pendingLabel="Reconnecting…"
                       size="sm"
                       className="w-full bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
                       onClick={() => handleConnect(providerKey)}
-                      disabled={isConnecting}
                     >
-                      {isConnecting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                          Reconnecting…
-                        </>
-                      ) : (
-                        `Reconnect ${meta.name}`
-                      )}
-                    </Button>
-                    <Button
+                      {`Reconnect ${meta.name}`}
+                    </AsyncButton>
+                    <AsyncButton
+                      pending={isDisconnecting}
+                      pendingLabel="Disconnecting…"
                       size="sm"
                       variant="ghost"
                       className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
                       onClick={() => setDisconnectTarget(providerKey)}
-                      disabled={isDisconnecting}
                     >
-                      {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
-                    </Button>
+                      Disconnect
+                    </AsyncButton>
                   </div>
                 ) : connected ? (
                   <>
@@ -293,39 +298,27 @@ export default function BusinessIntegrationsClient({ initialStatus }) {
                         schedule-mirror feature. Shipped inside the connected card
                         so owners can adjust the set without leaving integrations. */}
                     {providerKey === 'jobber' && <JobberBookableUsersSection />}
-                    <Button
+                    <AsyncButton
+                      pending={isDisconnecting}
+                      pendingLabel="Disconnecting…"
                       variant="outline"
                       size="sm"
                       className="w-full border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 mt-3"
                       onClick={() => setDisconnectTarget(providerKey)}
-                      disabled={isDisconnecting}
                     >
-                      {isDisconnecting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                          Disconnecting…
-                        </>
-                      ) : (
-                        'Disconnect'
-                      )}
-                    </Button>
+                      Disconnect
+                    </AsyncButton>
                   </>
                 ) : (
-                  <Button
+                  <AsyncButton
+                    pending={isConnecting}
+                    pendingLabel="Connecting…"
                     size="sm"
                     className="w-full bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90"
                     onClick={() => requestConnect(providerKey)}
-                    disabled={isConnecting}
                   >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
-                        Connecting…
-                      </>
-                    ) : (
-                      meta.connectLabel
-                    )}
-                  </Button>
+                    {meta.connectLabel}
+                  </AsyncButton>
                 )}
               </div>
             );
