@@ -133,11 +133,13 @@ export async function createOrMergeLead({
     .maybeSingle();
 
   if (existingLead) {
-    // 3. Repeat caller — attach this call to the existing open lead
-    await supabase.from('lead_calls').insert({
-      lead_id: existingLead.id,
-      call_id: callId,
-    });
+    // 3. Repeat caller — attach this call to the existing open lead.
+    // Upsert with ignoreDuplicates because mid-call capture_lead and the
+    // post-call pipeline can both route here for the same (lead, call) pair.
+    await supabase.from('lead_calls').upsert(
+      { lead_id: existingLead.id, call_id: callId },
+      { onConflict: 'lead_id,call_id', ignoreDuplicates: true },
+    );
     return existingLead;
   }
 
@@ -166,11 +168,11 @@ export async function createOrMergeLead({
 
   const newLead = insertedLeads?.[0];
 
-  // 5. Insert into lead_calls junction
-  await supabase.from('lead_calls').insert({
-    lead_id: newLead.id,
-    call_id: callId,
-  });
+  // 5. Insert into lead_calls junction (upsert for idempotency — see step 3 rationale)
+  await supabase.from('lead_calls').upsert(
+    { lead_id: newLead.id, call_id: callId },
+    { onConflict: 'lead_id,call_id', ignoreDuplicates: true },
+  );
 
   // 6. Log activity for new lead creation
   await supabase.from('activity_log').insert({

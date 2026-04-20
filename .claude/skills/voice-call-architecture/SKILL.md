@@ -462,6 +462,12 @@ Parameters: `caller_name`, `phone`, `street_name`, `unit_number`,
 - STATE codes: `lead_captured lead_id=...`, `lead_invalid`, `lead_failed`.
 - Phase 60 D-11 parity: same single-question address + readback rules as
   book_appointment.
+- **Idempotent on `lead_calls` insert.** Mid-call `capture_lead` and the
+  post-call pipeline (step 9, `create_or_merge_lead()`) can both route to
+  the same (lead_id, call_id) pair. The junction write is an upsert with
+  `on_conflict=('lead_id','call_id')` + `ignore_duplicates=true` —
+  matches the TS-side `src/lib/leads.js` pattern. A plain INSERT would
+  raise `lead_calls_pkey` 23505 on the second call.
 
 ### check_customer_account — Re-serve Customer Context
 
@@ -485,10 +491,29 @@ wrapped in canonical `STATE|DIRECTIVE` envelope.
 
 ### end_call — Graceful Termination
 
-Returns a space character immediately. After 12s `asyncio.sleep()`:
-removes SIP participant via `LiveKitAPI().room.remove_participant()`,
-then `ctx.shutdown()` disconnects the agent (cascades into session close
-+ post-call pipeline). Delay lets farewell audio play through SIP buffer.
+Returns a `STATE:call_ending | DIRECTIVE:...` envelope that tells Gemini
+not to start a new turn after its current sentence completes.
+
+Schedules a detached `_delayed_disconnect` task that:
+1. Awaits `session.current_speech.wait_for_playout()` (livekit-agents 1.5.1
+   native API) — blocks until the in-flight audio stream has fully drained
+   through the SIP output. Capped at 20s as a hung-generation safety belt.
+2. Removes the SIP participant via `LiveKitAPI().room.remove_participant()`.
+3. Calls `ctx.shutdown()` which cascades into session close + post-call
+   pipeline.
+
+**Why not a fixed `asyncio.sleep(12)` (the legacy approach)?** A fixed
+timer cut off long farewells when speech exceeded the budget and fired
+too early on short ones. Worse, when Gemini called `end_call` mid-farewell,
+the old return string `"[Call disconnected — do not produce any further
+speech.]"` caused Gemini to abort its own in-flight audio, producing the
+"speech cuts off halfway" symptom. The new return lets the current
+sentence complete; the playout wait ensures the SIP buffer drains before
+the participant is removed.
+
+**Session handle plumbing:** `agent.py` sets `deps["session"] = session`
+immediately after `AgentSession(...)` is constructed so the tool's
+disconnect task can access `session.current_speech`.
 
 ### Phase 60.2 — Fix H reverted (accepted limitation)
 
