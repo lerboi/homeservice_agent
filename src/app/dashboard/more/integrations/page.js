@@ -3,6 +3,16 @@
 // ('use cache' + cacheTag inside status.js). Renders the Calendar Connections
 // section (preserved, unchanged) and delegates the Xero/Jobber provider cards
 // to BusinessIntegrationsClient for interactive state.
+//
+// Phase 58 D-08 confirmation (CTX-01 / Plan 58-03 Task 2): the upstream
+// getIntegrationStatus reader at src/lib/integrations/status.js line 34
+// selects `last_context_fetch_at` for BOTH provider rows (Xero + Jobber)
+// symmetrically, so initialStatus.jobber.last_context_fetch_at is
+// populated whenever the livekit-agent successfully fetches Jobber customer
+// context. BusinessIntegrationsClient renders "Last synced N ago" from
+// this field (matches the Xero card pattern shipped in Phase 55).
+// No code change needed on this page — D-08 already shipped via Phase 56
+// caching uplift that unified the select string across providers.
 
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
