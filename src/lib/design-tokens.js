@@ -31,8 +31,15 @@ export const gridTexture = {
 export const heading = 'text-foreground tracking-tight';
 export const body = 'text-muted-foreground';
 
+// Phase 58 POLISH-03: migrated from `focus:` to `focus-visible:` so the ring
+// reveals on keyboard-only focus (not mouse click). `ring-offset-[var(--background)]`
+// blends the 1px offset into the page background so dark mode doesn't show a
+// light halo around focused elements. Consumer sweep of hardcoded `focus:` class
+// literals across ChecklistItem / BusinessIntegrationsClient / dashboard pages
+// is Plan 58-05's scope; this change covers every consumer that imports the
+// `focus` export from `@/lib/design-tokens`.
 export const focus = {
-  ring: 'focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1',
+  ring: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)]',
 };
 
 export const selected = {
