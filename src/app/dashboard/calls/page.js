@@ -19,8 +19,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { card } from '@/lib/design-tokens';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
 import AudioPlayer from '@/components/dashboard/AudioPlayer';
 import { supabase } from '@/lib/supabase-browser';
+
+// Phase 58 Plan 58-05 (POLISH-01 / POLISH-04):
+//   - Empty state (no filters) uses the shared <EmptyState> primitive with the
+//     UI-SPEC §10.1 locked copy: "No calls yet" / "When callers reach your AI
+//     receptionist, they'll appear here with transcript and recording." /
+//     CTA "Make a test call" → /dashboard/more/ai-voice-settings.
+//   - The filtered-empty state stays as the local secondary variant.
+//   - <ErrorState onRetry={fetchCalls} /> replaces the ad-hoc AlertTriangle block.
 
 // ─── Visual maps ──────────────────────────────────────────────────────────────
 
@@ -339,23 +349,32 @@ function DetailItem({ icon: Icon, label, value }) {
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
+// Phase 58 Plan 58-05 (POLISH-01): the no-filter branch now delegates to the
+// shared <EmptyState> primitive with UI-SPEC §10.1 locked copy. The filtered
+// branch is a distinct "no match" surface so we keep the local variant with
+// its Clear-filters action — UI-SPEC only locks the zero-data-ever copy.
+// Renamed to CallsEmptyState so the imported <EmptyState> primitive is not
+// shadowed inside this module.
 
-function EmptyState({ hasFilters, onClear }) {
+function CallsEmptyState({ hasFilters, onClear }) {
+  if (!hasFilters) {
+    // Locked copy: "No calls yet" — UI-SPEC §10.1
+    return (
+      <EmptyState
+        icon={Phone}
+        headline="No calls yet"
+        description="When callers reach your AI receptionist, they'll appear here with transcript and recording."
+        ctaLabel="Make a test call"
+        ctaHref="/dashboard/more/ai-voice-settings"
+      />
+    );
+  }
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center px-4">
       <Phone className="h-10 w-10 text-muted-foreground/50 mb-4" aria-hidden="true" />
-      {hasFilters ? (
-        <>
-          <h2 className="text-base font-semibold text-foreground mb-2">No calls match your filters</h2>
-          <p className="text-sm text-muted-foreground mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
-          <Button variant="outline" size="sm" onClick={onClear}>Clear all filters</Button>
-        </>
-      ) : (
-        <>
-          <h2 className="text-base font-semibold text-foreground mb-2">No calls yet</h2>
-          <p className="text-sm text-muted-foreground max-w-sm">When your AI receptionist answers a call, it will show up here with all the details.</p>
-        </>
-      )}
+      <h2 className="text-base font-semibold text-foreground mb-2">No calls match your filters</h2>
+      <p className="text-sm text-muted-foreground mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
+      <Button variant="outline" size="sm" onClick={onClear}>Clear all filters</Button>
     </div>
   );
 }
@@ -622,13 +641,8 @@ export default function CallLogsPage() {
 
       {/* Call list — grouped by date */}
       {error ? (
-        <div className={`${card.base} p-8`}>
-          <div className="flex flex-col items-center justify-center text-center">
-            <Phone className="h-10 w-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm font-medium text-foreground mb-1">Failed to load calls</p>
-            <p className="text-xs text-muted-foreground mb-4 max-w-xs">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchCalls}>Try again</Button>
-          </div>
+        <div className={`${card.base} p-4`}>
+          <ErrorState message={error} onRetry={fetchCalls} />
         </div>
       ) : loading ? (
         <div className={`${card.base} p-4 space-y-3`}>
@@ -645,7 +659,7 @@ export default function CallLogsPage() {
         </div>
       ) : calls.length === 0 ? (
         <div className={card.base}>
-          <EmptyState hasFilters={!!hasFilters} onClear={clearFilters} />
+          <CallsEmptyState hasFilters={!!hasFilters} onClear={clearFilters} />
         </div>
       ) : (
         <div className="space-y-4">

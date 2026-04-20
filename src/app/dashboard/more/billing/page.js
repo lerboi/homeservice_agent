@@ -12,6 +12,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
+import { ErrorState } from '@/components/ui/error-state';
+
+// Phase 58 Plan 58-05 (POLISH-04): error surface swapped to the shared
+// <ErrorState onRetry /> primitive so every dashboard page renders failures
+// consistently. Retry re-runs the SWR fetchers via mutate().
 
 /**
  * Billing page — /dashboard/more/billing
@@ -25,11 +30,16 @@ import { useSWRFetch } from '@/hooks/useSWRFetch';
 export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
 
-  const { data: billingData, error: billingError, isLoading: billingLoading } = useSWRFetch('/api/billing/data');
-  const { data: invoicesData, isLoading: invoicesLoading } = useSWRFetch('/api/billing/invoices');
+  const { data: billingData, error: billingError, isLoading: billingLoading, mutate: mutateBilling } = useSWRFetch('/api/billing/data');
+  const { data: invoicesData, isLoading: invoicesLoading, mutate: mutateInvoices } = useSWRFetch('/api/billing/invoices');
 
   const loading = billingLoading || invoicesLoading;
   const error = billingError?.message || null;
+
+  const refetchBilling = () => {
+    mutateBilling();
+    mutateInvoices();
+  };
   const subscription = billingData?.subscription ?? null;
   const invoices = invoicesData?.invoices || [];
 
@@ -88,25 +98,15 @@ export default function BillingPage() {
     );
   }
 
-  // --- Error state ---
+  // --- Error state (POLISH-04) ---
+  // <ErrorState onRetry={refetchBilling} /> replaces the prior ad-hoc card;
+  // retry re-runs both SWR fetchers without a full page reload.
   if (error) {
     return (
       <div className="max-w-3xl mx-auto">
         <h1 className="text-xl font-semibold text-foreground mb-6">Billing</h1>
-        <div className={`${card.base} p-12 flex flex-col items-center text-center gap-4`}>
-          <AlertCircle className="h-12 w-12 text-muted-foreground" aria-hidden="true" />
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Unable to load billing information</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Please refresh the page or contact support if the problem persists.
-            </p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className={`${btn.primary} px-6 py-2.5 rounded-lg text-sm font-medium`}
-          >
-            Refresh Page
-          </button>
+        <div className={`${card.base} p-4`}>
+          <ErrorState message="Unable to load billing information. Please try again or contact support if the problem persists." onRetry={refetchBilling} />
         </div>
       </div>
     );

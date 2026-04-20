@@ -4,7 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, UserPlus, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
+import { ErrorState } from '@/components/ui/error-state';
 import { Button } from '@/components/ui/button';
+
+// Phase 58 Plan 58-05 (POLISH-01 / POLISH-04):
+//   - EmptyStateCalendar wraps <EmptyState icon={Calendar} /> and renders
+//     headline "No appointments yet" (UI-SPEC §10.1 locked copy) via the
+//     58-04 primitive. onConnect is now wired to open TimeBlockSheet — the
+//     UI-SPEC intent ("Add a time block" CTA) surfaced via the wrapper's
+//     shipped callback shape so we don't mutate the primitive.
+//   - <ErrorState onRetry={fetchData} /> renders when the appointments/blocks
+//     fetch throws — previously the catch silently swallowed the error.
 import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -115,6 +125,10 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [fading, setFading] = useState(false);
+  // Phase 58 Plan 58-05 (POLISH-04): surface fetchData failures so the calendar
+  // can render <ErrorState onRetry={fetchData} /> instead of the silent empty
+  // fallback the prior catch swallowed into.
+  const [fetchError, setFetchError] = useState(null);
   const [data, setData] = useState({
     appointments: [],
     externalEvents: [],
@@ -215,6 +229,7 @@ export default function CalendarPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       let start, end;
       if (effectiveViewMode === 'month') {
@@ -249,6 +264,10 @@ export default function CalendarPage() {
 
       setData({ ...json, timeBlocks: blocksResult });
     } catch {
+      // Phase 58 Plan 58-05 (POLISH-04): capture the failure so <ErrorState
+      // onRetry={fetchData} /> can render a retry affordance. Keep the safe
+      // empty-data fallback so inner components stay crash-free.
+      setFetchError("Couldn't load your calendar. Check your connection and try again.");
       setData({ appointments: [], externalEvents: [], travelBuffers: [], conflicts: [], timeBlocks: [] });
     } finally {
       setLoading(false);
@@ -686,6 +705,20 @@ export default function CalendarPage() {
     urgent: 'text-amber-600',
   };
 
+  // Phase 58 Plan 58-05 (POLISH-04): if the primary calendar fetch failed,
+  // render a top-level ErrorState with Retry instead of the (now-empty)
+  // calendar chrome. The fetchError is cleared on every fetchData() call, so
+  // pressing retry re-enters the loading state naturally.
+  if (fetchError && !loading) {
+    return (
+      <div className="space-y-4" data-tour="calendar-page">
+        <div className={`${card.base} p-4`}>
+          <ErrorState message={fetchError} onRetry={fetchData} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4" data-tour="calendar-page">
 
@@ -922,7 +955,7 @@ export default function CalendarPage() {
 
           {todayAppts.length === 0 ? (
             data.appointments.length === 0 ? (
-              <EmptyStateCalendar padding="py-6" onConnect={() => {}} />
+              <EmptyStateCalendar padding="py-6" onConnect={() => setTimeBlockSheetOpen(true)} />
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <CalendarOff className="h-8 w-8 text-muted-foreground/50 mb-2" />

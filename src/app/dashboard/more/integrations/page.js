@@ -21,14 +21,46 @@ import { getIntegrationStatus } from '@/lib/integrations/status';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import BusinessIntegrationsClient from '@/components/dashboard/BusinessIntegrationsClient';
 import { card } from '@/lib/design-tokens';
+import { ErrorState } from '@/components/ui/error-state';
+import IntegrationsRetryButton from '@/components/dashboard/IntegrationsRetryButton';
 
+// Phase 58 Plan 58-05 (POLISH-04): if getIntegrationStatus throws (e.g. a
+// transient Supabase outage), render <ErrorState> at the top-level instead of
+// crashing the whole server-rendered page. Retry is a thin client component
+// that calls router.refresh() — server components cannot own an onRetry
+// callback directly. NB: 58-03 already confirmed last_context_fetch_at is
+// selected symmetrically for Xero + Jobber via getIntegrationStatus (see
+// the block comment below); this plan does NOT touch the select string.
 export default async function IntegrationsPage() {
   const tenantId = await getTenantId();
   if (!tenantId) {
     redirect('/auth/signin');
   }
 
-  const initialStatus = await getIntegrationStatus(tenantId);
+  let initialStatus = null;
+  let statusError = null;
+  try {
+    initialStatus = await getIntegrationStatus(tenantId);
+  } catch {
+    statusError = "Couldn't load your integrations. Check your connection and try again.";
+  }
+
+  if (statusError) {
+    return (
+      <div>
+        <h1 className="text-xl font-semibold text-foreground mb-1">Business Integrations</h1>
+        <p className="text-sm text-muted-foreground mb-6">
+          Connect Xero and Jobber so your AI receptionist knows your customers&apos; history during calls.
+        </p>
+        <div className={`${card.base} p-4`}>
+          <ErrorState message={statusError} />
+          <div className="flex justify-center">
+            <IntegrationsRetryButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

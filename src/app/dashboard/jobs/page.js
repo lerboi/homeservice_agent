@@ -21,8 +21,15 @@ import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
 import LeadFlyout from '@/components/dashboard/LeadFlyout';
 import LeadStatusPills from '@/components/dashboard/LeadStatusPills';
 import { EmptyStateLeads } from '@/components/dashboard/EmptyStateLeads';
+import { ErrorState } from '@/components/ui/error-state';
 import { supabase } from '@/lib/supabase-browser';
 import { card } from '@/lib/design-tokens';
+
+// Phase 58 Plan 58-05 (POLISH-01 / POLISH-04):
+//   - EmptyStateLeads (wrapped <EmptyState icon={Users} headline="No jobs yet" .../>)
+//     renders when the jobs list is empty and no filters are active.
+//   - <ErrorState onRetry={...} /> replaces the ad-hoc red-text block on fetch
+//     failure; retry re-runs fetchLeads with the current filters.
 
 // ─── Realtime animation keyframe (injected once into document) ────────────────
 
@@ -386,7 +393,9 @@ export default function LeadsPage() {
     </div>
   );
 
-  // ── Error state ─────────────────────────────────────────────────────────
+  // ── Error state (POLISH-04) ─────────────────────────────────────────────
+  // <ErrorState onRetry={...} /> replaces the prior red-text block. Retry
+  // re-runs fetchLeads with current filters (clearing `error` on success).
 
   if (error) {
     return (
@@ -397,9 +406,7 @@ export default function LeadsPage() {
             onFilterChange={handleFilterChange}
             onClear={handleClearFilters}
           />
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
+          <ErrorState message={error} onRetry={() => fetchLeads(filters)} />
         </div>
       </div>
     );
