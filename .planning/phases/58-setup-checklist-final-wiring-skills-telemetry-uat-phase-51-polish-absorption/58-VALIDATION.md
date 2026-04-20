@@ -2,8 +2,8 @@
 phase: 58
 slug: setup-checklist-final-wiring-skills-telemetry-uat-phase-51-polish-absorption
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-20
 ---
 
