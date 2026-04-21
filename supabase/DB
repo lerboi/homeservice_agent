@@ -4,7 +4,7 @@
 CREATE TABLE public.accounting_credentials (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
-  provider text NOT NULL CHECK (provider = ANY (ARRAY['quickbooks'::text, 'xero'::text, 'freshbooks'::text])),
+  provider text NOT NULL CHECK (provider = ANY (ARRAY['xero'::text, 'jobber'::text])),
   access_token text NOT NULL,
   refresh_token text NOT NULL,
   expiry_date bigint,
@@ -15,6 +15,12 @@ CREATE TABLE public.accounting_credentials (
   connected_at timestamp with time zone NOT NULL DEFAULT now(),
   last_synced_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  scopes ARRAY NOT NULL DEFAULT '{}'::text[],
+  last_context_fetch_at timestamp with time zone,
+  error_state text,
+  external_account_id text,
+  jobber_bookable_user_ids ARRAY,
+  jobber_last_schedule_poll_at timestamp with time zone,
   CONSTRAINT accounting_credentials_pkey PRIMARY KEY (id),
   CONSTRAINT accounting_credentials_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
@@ -39,9 +45,15 @@ CREATE TABLE public.activity_log (
   lead_id uuid,
   metadata jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  customer_id uuid,
+  job_id uuid,
+  inquiry_id uuid,
   CONSTRAINT activity_log_pkey PRIMARY KEY (id),
   CONSTRAINT activity_log_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
-  CONSTRAINT activity_log_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id)
+  CONSTRAINT activity_log_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
+  CONSTRAINT activity_log_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT activity_log_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT activity_log_inquiry_id_fkey FOREIGN KEY (inquiry_id) REFERENCES public.inquiries(id)
 );
 CREATE TABLE public.admin_users (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -71,6 +83,7 @@ CREATE TABLE public.appointments (
   postal_code text,
   street_name text,
   completed_at timestamp with time zone,
+  jobber_visit_id text,
   CONSTRAINT appointments_pkey PRIMARY KEY (id),
   CONSTRAINT appointments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT appointments_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id),
@@ -122,7 +135,7 @@ CREATE TABLE public.calendar_credentials (
 CREATE TABLE public.calendar_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
-  provider text NOT NULL DEFAULT 'google'::text,
+  provider text NOT NULL DEFAULT 'google'::text CHECK (provider = ANY (ARRAY['google'::text, 'outlook'::text, 'jobber'::text])),
   external_id text NOT NULL,
   title text,
   start_time timestamp with time zone,
@@ -179,6 +192,47 @@ END,
   call_sid text,
   CONSTRAINT calls_pkey PRIMARY KEY (id),
   CONSTRAINT calls_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
+);
+CREATE TABLE public.customer_calls (
+  customer_id uuid NOT NULL,
+  call_id uuid NOT NULL,
+  CONSTRAINT customer_calls_pkey PRIMARY KEY (customer_id, call_id),
+  CONSTRAINT customer_calls_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_calls_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id)
+);
+CREATE TABLE public.customer_merge_audit (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  source_customer_id uuid NOT NULL,
+  target_customer_id uuid NOT NULL,
+  merged_by uuid,
+  merged_at timestamp with time zone NOT NULL DEFAULT now(),
+  unmerged_at timestamp with time zone,
+  row_counts jsonb NOT NULL DEFAULT '{}'::jsonb,
+  CONSTRAINT customer_merge_audit_pkey PRIMARY KEY (id),
+  CONSTRAINT customer_merge_audit_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT customer_merge_audit_source_customer_id_fkey FOREIGN KEY (source_customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_merge_audit_target_customer_id_fkey FOREIGN KEY (target_customer_id) REFERENCES public.customers(id),
+  CONSTRAINT customer_merge_audit_merged_by_fkey FOREIGN KEY (merged_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.customers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  phone_e164 text NOT NULL,
+  name text,
+  default_address text,
+  email text,
+  notes text,
+  tags ARRAY NOT NULL DEFAULT '{}'::text[],
+  merged_into uuid,
+  merged_at timestamp with time zone,
+  merge_snapshot jsonb,
+  lifetime_value numeric NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT customers_pkey PRIMARY KEY (id),
+  CONSTRAINT customers_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT customers_merged_into_fkey FOREIGN KEY (merged_into) REFERENCES public.customers(id)
 );
 CREATE TABLE public.escalation_contacts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -263,6 +317,22 @@ CREATE TABLE public.estimates (
   CONSTRAINT estimates_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT estimates_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
   CONSTRAINT estimates_converted_to_invoice_id_fkey FOREIGN KEY (converted_to_invoice_id) REFERENCES public.invoices(id)
+);
+CREATE TABLE public.inquiries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  job_type text,
+  service_address text,
+  urgency text NOT NULL DEFAULT 'routine'::text CHECK (urgency = ANY (ARRAY['emergency'::text, 'urgent'::text, 'routine'::text])),
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'converted'::text, 'lost'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  converted_to_job_id uuid,
+  CONSTRAINT inquiries_pkey PRIMARY KEY (id),
+  CONSTRAINT inquiries_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT inquiries_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT inquiries_converted_to_job_id_fkey FOREIGN KEY (converted_to_job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.invoice_line_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -364,10 +434,37 @@ CREATE TABLE public.invoices (
   recurring_active boolean NOT NULL DEFAULT false,
   generated_from_id uuid,
   title text,
+  job_id uuid,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT invoices_lead_id_fkey FOREIGN KEY (lead_id) REFERENCES public.leads(id),
-  CONSTRAINT invoices_generated_from_id_fkey FOREIGN KEY (generated_from_id) REFERENCES public.invoices(id)
+  CONSTRAINT invoices_generated_from_id_fkey FOREIGN KEY (generated_from_id) REFERENCES public.invoices(id),
+  CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.job_calls (
+  job_id uuid NOT NULL,
+  call_id uuid NOT NULL,
+  CONSTRAINT job_calls_pkey PRIMARY KEY (job_id, call_id),
+  CONSTRAINT job_calls_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_calls_call_id_fkey FOREIGN KEY (call_id) REFERENCES public.calls(id)
+);
+CREATE TABLE public.jobs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  appointment_id uuid NOT NULL UNIQUE,
+  originated_as_inquiry_id uuid,
+  status text NOT NULL DEFAULT 'scheduled'::text CHECK (status = ANY (ARRAY['scheduled'::text, 'completed'::text, 'paid'::text, 'cancelled'::text, 'lost'::text])),
+  urgency text NOT NULL DEFAULT 'routine'::text CHECK (urgency = ANY (ARRAY['emergency'::text, 'urgent'::text, 'routine'::text])),
+  revenue_amount numeric,
+  is_vip boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT jobs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT jobs_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id),
+  CONSTRAINT jobs_originated_as_inquiry_id_fkey FOREIGN KEY (originated_as_inquiry_id) REFERENCES public.inquiries(id)
 );
 CREATE TABLE public.lead_calls (
   lead_id uuid NOT NULL,
@@ -398,6 +495,14 @@ CREATE TABLE public.leads (
   CONSTRAINT leads_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
   CONSTRAINT leads_primary_call_id_fkey FOREIGN KEY (primary_call_id) REFERENCES public.calls(id),
   CONSTRAINT leads_appointment_id_fkey FOREIGN KEY (appointment_id) REFERENCES public.appointments(id)
+);
+CREATE TABLE public.oauth_refresh_locks (
+  tenant_id uuid NOT NULL,
+  provider text NOT NULL,
+  holder_id uuid NOT NULL,
+  acquired_at timestamp with time zone NOT NULL DEFAULT now(),
+  expires_at timestamp with time zone NOT NULL,
+  CONSTRAINT oauth_refresh_locks_pkey PRIMARY KEY (tenant_id, provider)
 );
 CREATE TABLE public.phone_inventory (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -503,6 +608,8 @@ CREATE TABLE public.tenants (
   dial_timeout_seconds integer NOT NULL DEFAULT 15,
   ai_voice text CHECK (ai_voice IS NULL OR (ai_voice = ANY (ARRAY['Aoede'::text, 'Erinome'::text, 'Sulafat'::text, 'Zephyr'::text, 'Achird'::text, 'Charon'::text]))),
   vip_numbers jsonb NOT NULL DEFAULT '[]'::jsonb,
+  checklist_overrides jsonb NOT NULL DEFAULT '{}'::jsonb,
+  features_enabled jsonb NOT NULL DEFAULT '{"invoicing": false}'::jsonb,
   CONSTRAINT tenants_pkey PRIMARY KEY (id),
   CONSTRAINT tenants_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
 );
