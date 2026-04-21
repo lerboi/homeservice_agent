@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Phase 60.3 context gathered
-last_updated: "2026-04-20T11:01:37.646Z"
-last_activity: 2026-04-20
+stopped_at: Phase 59 context re-discussed and updated
+last_updated: "2026-04-21T05:49:32.423Z"
+last_activity: 2026-04-21 -- Phase 59 execution started
 progress:
   total_phases: 18
   completed_phases: 16
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 60.2 — voice-tool-call-filler-race-and-vad-tuning
+**Current focus:** Phase 59 — customer-job-model-separation-split-leads-into-customers-ded
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 58
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-20
+Phase: 59 (customer-job-model-separation-split-leads-into-customers-ded) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 59
+Last activity: 2026-04-21 -- Phase 59 execution started
 
 Progress: [██████████] 100%
 
@@ -98,6 +98,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-20T04:27:52.922Z
-Stopped at: Phase 60.3 context gathered
-Resume file: .planning/phases/60.3-voice-agent-goodbye-cutoff-and-prompt-audit/60.3-CONTEXT.md
+Last session: 2026-04-20T17:07:23.886Z
+Stopped at: Phase 59 context re-discussed and updated
+Resume file: .planning/phases/59-customer-job-model-separation-split-leads-into-customers-ded/59-CONTEXT.md
