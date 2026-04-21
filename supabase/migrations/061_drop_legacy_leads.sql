@@ -91,6 +91,18 @@ ALTER TABLE activity_log DROP COLUMN lead_id;
 ALTER TABLE invoices DROP COLUMN lead_id;
 
 -- ========================================================================
+-- Drop estimates.lead_id (legacy FK to leads) — Phase 59 missed this in
+-- planning. The estimates table was added in Phase 34 (migration 030) with
+-- lead_id REFERENCES leads(id) ON DELETE SET NULL. Nothing in src/ code
+-- reads estimates.lead_id, and estimates already carries denormalized
+-- customer_name/phone/email/address snapshots. DROP COLUMN cascades to
+-- the FK constraint and the idx_estimates_lead_id index automatically.
+-- If a future phase needs to link estimates to customers, add a new
+-- estimates.customer_id FK cleanly.
+-- ========================================================================
+ALTER TABLE estimates DROP COLUMN lead_id;
+
+-- ========================================================================
 -- Drop legacy tables
 -- (059's Realtime publication entry added customers/jobs/inquiries;
 --  leads/lead_calls Realtime entries cascade automatically with DROP TABLE)
