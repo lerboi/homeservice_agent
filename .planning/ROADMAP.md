@@ -338,6 +338,25 @@ Plans:
 - [x] 60-02-PLAN.md — Tool-return rewrites to STATE+DIRECTIVE format across all 5 tools (D-16) + capture_lead description single-question-intake parity with book_appointment (D-11, D-12)
 - [x] 60-03-PLAN.md — Spanish mirror of D-01..D-12 in es.json / prompt.py locale='es' path (D-13), user-review gate (D-14), and voice-call-architecture/SKILL.md sync per CLAUDE.md
 
+### Phase 60.4: Booking timezone fix + STT language pinning (INSERTED)
+
+**Goal:** Resolve two orthogonal voice-call reliability bugs observed in live Railway traffic (2026-04-21 UAT call on `+6587528516`) that are NOT covered by Phase 60.2 (shipped) or Phase 60.3 (ready-for-planning, goodbye-cutoff scope): (1) **timezone offset in booking** — caller requested 3 PM SG time, Google Calendar event landed at 11 PM (matches an 8-hour UTC+8 shift — almost certainly a missing tzinfo on a datetime or an incorrect `timeZone` parameter in `events.insert()` / the slot-calculation math); (2) **STT language hallucination** — Gemini Live transcript emits German, Hindi, and other languages during silence or low-SNR segments even when the caller speaks only English. Post-call language classifier returns `language=en` correctly, but mid-call transcripts are corrupted, which breaks downstream transcript-dependent features (triage, post-call SMS recap, Xero/Jobber note sync).
+
+**Why now:** Issue #1 (booking time) is customer-facing and scary — a booking offset this large surfaces as a no-show or a wrong-day visit. Issue #3 (transcript) corrupts every call record going into the dashboard, Xero, and Jobber. Both bugs are config/logic-surface changes (no architectural rewrite); small-surface fixes iterated against a single UAT call loop. Bundling saves a deploy + test-call cycle vs. two separate phases.
+
+**Scope boundary:** Two narrow fix streams.
+- **Stream A (timezone)** — trace `check_availability` slot math, `book_appointment` tool handler, and the `src/lib/google_calendar.py` `events.insert()` call; identify where the +8h shift is introduced; fix + regression test. Possible touch points: `livekit-agent/src/tools/check_availability.py`, `livekit-agent/src/tools/book_appointment.py`, `livekit-agent/src/lib/google_calendar.py`. Exact file set determined during discuss.
+- **Stream B (STT language)** — pin the Gemini Live realtime model's input language on session start. Touch point: `livekit-agent/src/agent.py` where `RealtimeModel` is configured; likely a `language_code="en-US"` (or per-tenant locale) kwarg. Regression test: one UAT call with deliberate silences/low-SNR audio, assert transcript stays in English.
+
+No prompt.py, DB, or Next.js changes. Ships independently of 60.3 and 61.
+
+**Depends on:** Phase 60 (prompt baseline). Does NOT depend on 60.3 (they're orthogonal — 60.3 is end-of-call audio race + prompt audit; 60.4 is tool-logic timezone math + STT model config).
+**Requirements:** Captured as decisions in `60.4-CONTEXT.md` during discuss (no REQ-IDs).
+**Plans:** TBD (likely 2-3 plans: diagnosis/root-cause, Stream A timezone fix + UAT, Stream B language pin + UAT)
+
+Plans:
+- [ ] TBD (run `/gsd:discuss-phase 60.4` then `/gsd:plan-phase 60.4` to break down)
+
 ### Phase 61: Google Maps address validation + structured address storage
 
 **Goal:** Replace the current "speak it, store the verbatim string" address flow with a background-validated, structured address capture. Caller speaks the address naturally; the agent extracts minimum fields during the normal info-gathering turn; a new `validate_address` helper (or integrated pre-check inside `book_appointment`) calls the Google Maps Platform Address Validation API in-process, returning a normalized `formatted_address`, `place_id`, `lat`/`lng`, and structured components. The normalized values land in `appointments` + `leads` alongside the existing `service_address` text column (kept for backward compatibility with the calendar UI, SMS templates, and Jobber push). Anti-hallucination rules from Phase 60 still govern speech: the agent may speak the address back to the caller for confirmation, but only actual tool-returned values are authoritative.
