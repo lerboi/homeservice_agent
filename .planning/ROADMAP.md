@@ -951,7 +951,7 @@ Plans:
 **Goal:** Refactor the single `leads` table into Customers (phone-deduped per tenant), Jobs (1:1 with booked appointments), and Inquiries (unbooked calls). Rewrite Jobs tab + add Inquiries tab + add Customer detail page with Merge + 7-day undo. Update Python LiveKit agent post-call path to use `record_call_outcome` RPC. Reattribute `invoices.lead_id` → `invoices.job_id` and `activity_log.lead_id` → three FKs (customer_id NOT NULL, job_id, inquiry_id). Lockstep deploy with 059 (create + backfill, keep legacy) shipped before Python agent redeploy, then 061 (drop legacy) after.
 **Requirements**: D-01..D-19 (locked decisions in 59-CONTEXT.md — no REQ-IDs in REQUIREMENTS.md; CONTEXT decisions serve as the requirement set)
 **Depends on:** Phase 58 (v6.0 complete)
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 - [x] 59-01-PLAN.md — Wave 0: phone E.164 util (libphonenumber-js) + Python parity fixture + pre-migration audit SQL + red-state test scaffolds for all Wave 1-3 [D-05]
@@ -961,7 +961,7 @@ Plans:
 - [x] 59-05-PLAN.md — Wave 2: Python LiveKit agent lockstep — swap legacy leads/lead_calls writes to record_call_outcome RPC + Railway deploy gate [D-04, D-14, D-16]
 - [x] 59-06-PLAN.md — Wave 3: Jobs tab rewrite (query /api/jobs, Realtime on jobs table) + new Inquiries tab + JobStatusPills/InquiryStatusPills + sidebar/BottomTabBar nav + chatbot corpus split (customers.md, jobs.md, inquiries.md) [D-08, D-09, D-15]
 - [x] 59-07-PLAN.md — Wave 3: Customer detail page (sticky header + Activity/Jobs/Invoices tabs) + CustomerEditModal + CustomerMergeDialog + UnmergeBanner + InquiryFlyout + JobFlyout + human-verify checkpoint [D-10, D-17, D-18, D-19]
-- [ ] 59-08-PLAN.md — Wave 4: migration 061 drop legacy leads/lead_calls + activity_log.customer_id NOT NULL + [BLOCKING] push with coverage survey + delete /api/leads + delete Lead* components + 4 skill files sync (auth-database-multitenancy, dashboard-crm-system, voice-call-architecture, payment-architecture) [D-01, D-03, D-11, D-12, D-14]
+- [x] 59-08-PLAN.md — Wave 4: migration 061 drop legacy leads/lead_calls + activity_log.customer_id NOT NULL + [BLOCKING] push with coverage survey + delete /api/leads + delete Lead* components + 4 skill files sync (auth-database-multitenancy, dashboard-crm-system, voice-call-architecture, payment-architecture) [D-01, D-03, D-11, D-12, D-14]
 
 ---
 
