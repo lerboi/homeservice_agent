@@ -1,21 +1,22 @@
-"""Voco LiveKit Voice Agent — Phase 58 CTX-01 fanout-telemetry excerpt.
+"""Voco LiveKit Voice Agent — Phase 59 post-call RPC write path.
 
-This file in the Voco worktree documents the Phase 58 Plan 58-03 Task 2
-changes to the production agent (`C:\\Users\\leheh\\.Projects\\livekit-agent
-\\src\\agent.py`). The full 546-line production agent is maintained in the
-sibling repo and deploys to Railway.
+This file in the Voco worktree documents the Phase 59 Plan 05 changes to the
+production agent (`C:\\Users\\leheh\\.Projects\\livekit-agent\\src\\agent.py`).
+The full production agent is maintained in the sibling repo and deploys to Railway.
 
-The wrapping below measures the pre-session parallel fanout boundary where
-Xero + Jobber customer context is fetched concurrently (the real
-`asyncio.gather` per 58-RESEARCH §B.3 — recommended measurement boundary
-for D-07 latency budget validation).
+Phase 59 change: post-call pipeline now calls the `record_call_outcome` RPC
+(src/post_call/write_outcome.py) instead of direct inserts into the legacy
+`leads` + `lead_calls` tables. See Phase 59 CONTEXT D-14, D-16, D-02a, D-02b.
 
-Production integration pattern (applied to
-`livekit-agent/src/agent.py::entrypoint` ~line 145-172 in the sibling repo):
-the existing `fetch_merged_customer_context_bounded` call is wrapped with
-per-task timing captured via a `_timed_task` helper, and the aggregate
-boundary fires a fire-and-forget `emit_integration_fetch_fanout` telemetry
-row via `asyncio.create_task` so the session.start path is NEVER delayed.
+Phase 58 change (preserved): pre-session parallel Xero + Jobber customer context
+fetch is wrapped with per-task timing via `_timed_task`, with fire-and-forget
+`emit_integration_fetch_fanout` telemetry so session.start is NEVER delayed.
+
+Deploy ordering (CRITICAL — Pitfall 5 per Phase 59 CONTEXT D-04):
+  1. Plan 02 + 03 migrations pushed FIRST (creates customers/jobs/inquiries + RPC)
+  2. Plan 04 Next.js deploys (reads new tables)
+  3. This agent deploys (writes via RPC — D-02a: new tables only, no legacy writes)
+  4. Plan 08 Migration 053b pushed AFTER agent confirmed live (drops legacy tables)
 """
 from __future__ import annotations
 
@@ -25,9 +26,15 @@ import time
 from typing import Awaitable, Callable, Optional
 
 from .lib.telemetry import emit_integration_fetch_fanout
+from .post_call.write_outcome import record_outcome, RecordOutcomeError
 from .supabase_client import get_supabase_admin
 
 logger = logging.getLogger("voco-agent")
+
+
+# ---------------------------------------------------------------------------
+# Phase 58: pre-session customer context fetch with fanout telemetry
+# ---------------------------------------------------------------------------
 
 
 async def _timed_task(
@@ -63,11 +70,6 @@ async def fetch_customer_context_with_fanout_telemetry(
     fire-and-forget `asyncio.create_task(emit_integration_fetch_fanout(...))`
     so session.start is NEVER delayed by telemetry.
 
-    `per_task_ms` here captures the aggregate merged-fetch elapsed. Per-
-    provider breakdown is already recorded by `emit_integration_fetch`
-    inside xero.py / jobber.py (Phase 58 Plan 58-03 Task 1), so the fanout
-    row only needs to record the `merged` aggregate.
-
     Integration note: the production `entrypoint` in
     `C:/Users/leheh/.Projects/livekit-agent/src/agent.py` ~line 161 does:
 
@@ -83,12 +85,6 @@ async def fetch_customer_context_with_fanout_telemetry(
             timeout_seconds=2.5,
         )
     """
-    # REGRESSION GUARD: production agent.py's _run_db_queries gather at
-    # ~line 413 (sibling repo) MUST keep `return_exceptions=True` after this
-    # telemetry wrapping — that semantic is preserved because _timed_task
-    # uses try/finally (the finally clause runs on both success and
-    # exception, so a downstream `asyncio.gather(..., return_exceptions=True)`
-    # call still sees the original exception semantics).
     per_task_ms: dict[str, int] = {}
     _fanout_start = time.perf_counter()
 
@@ -100,9 +96,6 @@ async def fetch_customer_context_with_fanout_telemetry(
 
     _fanout_duration_ms = int((time.perf_counter() - _fanout_start) * 1000)
 
-    # Resolve admin defensively — missing env in tests must not crash the
-    # agent. Telemetry failure is always silent (logger.warning inside the
-    # helper).
     try:
         admin = get_supabase_admin()
     except Exception as exc:  # noqa: BLE001
@@ -112,9 +105,6 @@ async def fetch_customer_context_with_fanout_telemetry(
         )
         return customer_context
 
-    # Fire-and-forget — do NOT await. session.start must NOT wait on
-    # telemetry writes. asyncio.create_task schedules the coroutine on the
-    # running loop which the SDK keeps alive for the duration of the call.
     asyncio.create_task(
         emit_integration_fetch_fanout(
             admin,
@@ -126,3 +116,91 @@ async def fetch_customer_context_with_fanout_telemetry(
     )
 
     return customer_context
+
+
+# ---------------------------------------------------------------------------
+# Phase 59: post-call RPC write path (D-14 / D-16 / D-02a / D-02b)
+# ---------------------------------------------------------------------------
+# Production integration pattern (applied to run_post_call_pipeline in the
+# sibling repo, replacing the prior create_or_merge_lead / lead_calls inserts):
+#
+#   from src.post_call.write_outcome import record_outcome, RecordOutcomeError
+#
+#   # ... (steps 1-8: transcript, call update, booking reconciliation, usage
+#   #      tracking, language detection, triage, suggested slots, booking_outcome)
+#
+#   # Step 9 (Phase 59): replaced create_or_merge_lead() with record_call_outcome RPC.
+#   if call_duration_seconds >= 15:
+#       await _persist_call_outcome(
+#           supabase_service=supabase_service,
+#           tenant_id=tenant_id,
+#           from_number=from_number,
+#           extracted_info=extracted_info,
+#           booking_result=booking_result,
+#           triage_result=triage_result,
+#           call_id=call_id,
+#           tenant=tenant,
+#       )
+
+
+async def _persist_call_outcome(
+    supabase_service,
+    *,
+    tenant_id: str,
+    from_number: str,
+    extracted_info: dict,
+    booking_result: Optional[object],
+    triage_result: object,
+    call_id: str,
+    tenant: dict,
+) -> None:
+    """Phase 59 replacement for create_or_merge_lead() post-call step.
+
+    Single round-trip RPC call (D-14) replacing the prior multi-step:
+      1. leads INSERT / ON CONFLICT UPDATE
+      2. lead_calls junction INSERT
+
+    D-02a: writes EXCLUSIVELY to new tables via record_call_outcome RPC.
+           NO fallback to legacy leads/lead_calls — those tables are read-
+           only after 053a and dropped in 053b.
+    D-02b: On failure, the fix is a forward patch + redeploy. The except
+           branch intentionally does NOT insert into legacy leads.
+
+    T-59-05-04: Only call_id + tenant_id are logged. raw_phone / caller_name
+                are NEVER logged.
+    """
+    try:
+        result = await record_outcome(
+            supabase_service,
+            tenant_id=tenant_id,
+            raw_phone=from_number,
+            caller_name=extracted_info.get("caller_name"),
+            service_address=extracted_info.get("service_address"),
+            appointment_id=(
+                booking_result.appointment_id if booking_result else None
+            ),
+            urgency=triage_result.urgency,
+            call_id=call_id,
+            job_type=extracted_info.get("job_type"),
+            country_hint=tenant.get("country"),
+        )
+        logger.info(
+            "record_call_outcome ok tenant=%s customer=%s job=%s inquiry=%s",
+            tenant_id,
+            result.get("customer_id"),
+            result.get("job_id"),
+            result.get("inquiry_id"),
+        )
+    except RecordOutcomeError as e:
+        # D-02a + D-02b: NO fallback to legacy leads insert. Forward-fix-only.
+        # If this error is systemic, operator hotfixes the agent code and
+        # redeploys. Calls briefly lose DB persistence until redeploy — they do
+        # NOT get resurrected into the legacy schema (D-02b forbids this).
+        # T-59-05-04: log call_id + tenant_id only — never raw_phone or caller_name.
+        logger.error(
+            "record_call_outcome failed tenant=%s call=%s err=%s",
+            tenant_id,
+            call_id,
+            e,
+        )
+        # Do not re-raise; call already succeeded audio-wise.
