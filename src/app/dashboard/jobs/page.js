@@ -1,8 +1,13 @@
 'use client';
 
+// Phase 59 Plan 06: Jobs page rewritten to read from /api/jobs (not /api/leads).
+// Realtime subscription flipped from `leads` table → `jobs` table (D-15).
+// All Lead* component imports replaced with Job* equivalents.
+// Batch invoice select preserved (jobs status 'completed' → eligible).
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Users, Check } from 'lucide-react';
+import { Wrench, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -16,24 +21,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import LeadCard from '@/components/dashboard/LeadCard';
-import LeadFilterBar from '@/components/dashboard/LeadFilterBar';
+import JobCard from '@/components/dashboard/JobCard';
+import JobFilterBar from '@/components/dashboard/JobFilterBar';
 import LeadFlyout from '@/components/dashboard/LeadFlyout';
-import LeadStatusPills from '@/components/dashboard/LeadStatusPills';
-import { EmptyStateLeads } from '@/components/dashboard/EmptyStateLeads';
+import JobStatusPills from '@/components/dashboard/JobStatusPills';
+import { EmptyStateJobs, EmptyStateJobsFiltered } from '@/components/dashboard/EmptyStateJobs';
 import { ErrorState } from '@/components/ui/error-state';
 import { supabase } from '@/lib/supabase-browser';
 import { card } from '@/lib/design-tokens';
 
-// Phase 58 Plan 58-05 (POLISH-01 / POLISH-04):
-//   - EmptyStateLeads (wrapped <EmptyState icon={Users} headline="No jobs yet" .../>)
-//     renders when the jobs list is empty and no filters are active.
-//   - <ErrorState onRetry={...} /> replaces the ad-hoc red-text block on fetch
-//     failure; retry re-runs fetchLeads with the current filters.
+// Phase 59 Plan 06: Jobs page — source of truth is now /api/jobs + jobs Realtime channel.
+// LeadFlyout preserved until Plan 07 replaces it with JobFlyout.
 
 // ─── Realtime animation keyframe (injected once into document) ────────────────
 
-const SLIDE_IN_STYLE_ID = 'lead-slide-in-keyframe';
+const SLIDE_IN_STYLE_ID = 'job-slide-in-keyframe';
 
 function ensureSlideInKeyframe() {
   if (typeof document === 'undefined') return;
@@ -75,32 +77,32 @@ function buildQueryString(filters) {
   return params.toString();
 }
 
-const PIPELINE_STATUSES = ['new', 'booked', 'completed', 'paid', 'lost'];
+const PIPELINE_STATUSES = ['scheduled', 'completed', 'paid', 'lost', 'cancelled'];
 
 function hasActiveFilters(filters) {
   return Object.values(filters).some(Boolean);
 }
 
-// ─── Leads page ───────────────────────────────────────────────────────────────
+// ─── Jobs page ────────────────────────────────────────────────────────────────
 
-export default function LeadsPage() {
-  const [leads, setLeads] = useState([]);
+export default function JobsPage() {
+  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Flyout state
-  const [selectedLeadId, setSelectedLeadId] = useState(null);
+  // Flyout state — still uses LeadFlyout until Plan 07 replaces with JobFlyout
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
 
   // Tenant ID for Realtime filter
   const [tenantId, setTenantId] = useState(null);
 
-  // Invoice status map for badge indicators on lead cards
+  // Invoice status map for badge indicators on job cards
   const [invoiceStatusMap, setInvoiceStatusMap] = useState({});
 
   // Batch select state
   const [selectMode, setSelectMode] = useState(false);
-  const [selectedLeads, setSelectedLeads] = useState(new Set());
+  const [selectedJobs, setSelectedJobs] = useState(new Set());
   const [batchCreating, setBatchCreating] = useState(false);
 
   // Read initial filters from URL search params
@@ -138,13 +140,12 @@ export default function LeadsPage() {
     router.replace(`/dashboard/jobs${qs ? `?${qs}` : ''}`, { scroll: false });
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-open flyout from ?open= param (e.g. from invoice detail "View Lead")
-
+  // Auto-open flyout from ?open= param (e.g. from invoice detail "View Job")
   useEffect(() => {
-    const openLeadId = searchParams.get('open');
-    if (openLeadId && !openHandled.current) {
+    const openJobId = searchParams.get('open');
+    if (openJobId && !openHandled.current) {
       openHandled.current = true;
-      setSelectedLeadId(openLeadId);
+      setSelectedJobId(openJobId);
       setFlyoutOpen(true);
       router.replace('/dashboard/jobs', { scroll: false });
     }
@@ -169,27 +170,27 @@ export default function LeadsPage() {
     });
   }, []);
 
-  // ── Fetch leads ─────────────────────────────────────────────────────────
+  // ── Fetch jobs from /api/jobs ─────────────────────────────────────────────
 
-  const fetchLeads = useCallback(async (activeFilters) => {
+  const fetchJobs = useCallback(async (activeFilters) => {
     setLoading(true);
     setError(null);
     try {
       const qs = buildQueryString(activeFilters);
-      const res = await fetch(`/api/leads${qs ? `?${qs}` : ''}`);
-      if (!res.ok) throw new Error('Failed to load leads');
+      const res = await fetch(`/api/jobs${qs ? `?${qs}` : ''}`);
+      if (!res.ok) throw new Error('Failed to load jobs');
       const data = await res.json();
       // Sort by urgency: emergency first, then urgent, then routine
       const URGENCY_WEIGHT = { emergency: 3, urgent: 2, routine: 1 };
-      const sorted = (data.leads || []).sort((a, b) => {
+      const sorted = (data.jobs || []).sort((a, b) => {
         const wa = URGENCY_WEIGHT[a.urgency] || 0;
         const wb = URGENCY_WEIGHT[b.urgency] || 0;
         if (wa !== wb) return wb - wa;
         return new Date(b.created_at) - new Date(a.created_at);
       });
-      setLeads(sorted);
+      setJobs(sorted);
     } catch {
-      setError("Couldn't load leads. Check your connection and refresh the page.");
+      setError("We couldn't load your jobs. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -203,32 +204,30 @@ export default function LeadsPage() {
   );
 
   useEffect(() => {
-    fetchLeads(filters);
+    fetchJobs(filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serverQueryKey, fetchLeads]);
+  }, [serverQueryKey, fetchJobs]);
 
-  // ── Batch-fetch invoice statuses for lead cards ────────────────────────
-  // Use a stable string key derived from lead IDs so the effect only re-runs
-  // when leads are actually added/removed, not on every Realtime UPDATE
-  // (which creates a new array reference via .map() even if content is unchanged).
-  const leadIdKey = useMemo(() => leads.map((l) => l.id).join(','), [leads]);
+  // ── Batch-fetch invoice statuses for job cards ─────────────────────────
+  const jobIdKey = useMemo(() => jobs.map((j) => j.id).join(','), [jobs]);
 
   useEffect(() => {
-    if (!leadIdKey) return;
-    fetch(`/api/invoices?lead_ids=${leadIdKey}`)
+    if (!jobIdKey) return;
+    fetch(`/api/invoices?lead_ids=${jobIdKey}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!data?.invoices) return;
         const map = {};
         for (const inv of data.invoices) {
           if (inv.lead_id) map[inv.lead_id] = inv.status;
+          if (inv.job_id) map[inv.job_id] = inv.status;
         }
         setInvoiceStatusMap(map);
       })
       .catch(() => {});
-  }, [leadIdKey]);
+  }, [jobIdKey]);
 
-  // ── Supabase Realtime subscription ─────────────────────────────────────
+  // ── Supabase Realtime subscription — subscribed to `jobs` table (D-15) ──
   // Use a ref for filters so the INSERT callback reads the latest values
   // without including filters in the effect deps (which would destroy and
   // recreate the WebSocket channel on every filter change).
@@ -239,26 +238,26 @@ export default function LeadsPage() {
     if (!tenantId) return;
 
     const channel = supabase
-      .channel('leads-realtime')
+      .channel('jobs-realtime')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'leads',
+          table: 'jobs',
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
-          const newLead = { ...payload.new, _isNew: true };
+          const newJob = { ...payload.new, _isNew: true };
           const f = filtersRef.current;
           // Status is applied client-side (via pill strip), so don't filter INSERTs by status here.
           const matchesServerFilters = (
-            (!f.urgency || f.urgency === newLead.urgency_tag) &&
-            (!f.jobType || f.jobType === newLead.job_type) &&
-            (!f.search || (newLead.caller_name || '').toLowerCase().includes(f.search.toLowerCase()))
+            (!f.urgency || f.urgency === newJob.urgency) &&
+            (!f.jobType || f.jobType === newJob.job_type) &&
+            (!f.search || (newJob.caller_name || '').toLowerCase().includes(f.search.toLowerCase()))
           );
           if (matchesServerFilters) {
-            setLeads((prev) => [newLead, ...prev]);
+            setJobs((prev) => [newJob, ...prev]);
           }
         }
       )
@@ -267,13 +266,13 @@ export default function LeadsPage() {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'leads',
+          table: 'jobs',
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
-          setLeads((prev) =>
-            prev.map((l) =>
-              l.id === payload.new.id ? { ...payload.new, _isNew: false } : l
+          setJobs((prev) =>
+            prev.map((j) =>
+              j.id === payload.new.id ? { ...payload.new, _isNew: false } : j
             )
           );
         }
@@ -286,52 +285,49 @@ export default function LeadsPage() {
   }, [tenantId]);
 
   // ── Client-side status filtering + pipeline counts ─────────────────────
-  // `leads` holds everything matching the server-side filters (urgency, date, etc.)
-  // except status, which is applied here so the pill strip can show true counts.
-
   const pipelineCounts = useMemo(() => {
     const counts = PIPELINE_STATUSES.reduce((acc, s) => ({ ...acc, [s]: 0 }), {});
-    for (const lead of leads) {
-      if (counts[lead.status] !== undefined) counts[lead.status] += 1;
+    for (const job of jobs) {
+      if (counts[job.status] !== undefined) counts[job.status] += 1;
     }
     return counts;
-  }, [leads]);
+  }, [jobs]);
 
-  const displayedLeads = useMemo(
-    () => (filters.status ? leads.filter((l) => l.status === filters.status) : leads),
-    [leads, filters.status]
+  const displayedJobs = useMemo(
+    () => (filters.status ? jobs.filter((j) => j.status === filters.status) : jobs),
+    [jobs, filters.status]
   );
 
   // ── Batch eligibility ──────────────────────────────────────────────────
 
-  /** A lead is eligible for batch invoicing if completed AND has no existing invoice */
-  function isEligibleForBatch(lead) {
-    return lead.status === 'completed' && !invoiceStatusMap[lead.id];
+  /** A job is eligible for batch invoicing if completed AND has no existing invoice */
+  function isEligibleForBatch(job) {
+    return job.status === 'completed' && !invoiceStatusMap[job.id];
   }
 
-  const eligibleLeads = useMemo(
-    () => displayedLeads.filter(isEligibleForBatch),
+  const eligibleJobs = useMemo(
+    () => displayedJobs.filter(isEligibleForBatch),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [displayedLeads, invoiceStatusMap]
+    [displayedJobs, invoiceStatusMap]
   );
 
-  function toggleLeadSelection(leadId) {
-    setSelectedLeads((prev) => {
+  function toggleJobSelection(jobId) {
+    setSelectedJobs((prev) => {
       const next = new Set(prev);
-      if (next.has(leadId)) {
-        next.delete(leadId);
+      if (next.has(jobId)) {
+        next.delete(jobId);
       } else {
-        next.add(leadId);
+        next.add(jobId);
       }
       return next;
     });
   }
 
   function toggleSelectAllEligible() {
-    if (selectedLeads.size === eligibleLeads.length && eligibleLeads.length > 0) {
-      setSelectedLeads(new Set());
+    if (selectedJobs.size === eligibleJobs.length && eligibleJobs.length > 0) {
+      setSelectedJobs(new Set());
     } else {
-      setSelectedLeads(new Set(eligibleLeads.map((l) => l.id)));
+      setSelectedJobs(new Set(eligibleJobs.map((j) => j.id)));
     }
   }
 
@@ -343,17 +339,16 @@ export default function LeadsPage() {
       const res = await fetch('/api/invoices/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_ids: Array.from(selectedLeads) }),
+        body: JSON.stringify({ lead_ids: Array.from(selectedJobs) }),
       });
       if (!res.ok) throw new Error('Batch creation failed');
       const data = await res.json();
       const invoiceIds = (data.invoices || []).map((inv) => inv.id);
-      setSelectedLeads(new Set());
+      setSelectedJobs(new Set());
       if (invoiceIds.length > 0) {
         router.push(`/dashboard/invoices/batch-review?ids=${invoiceIds.join(',')}`);
       }
     } catch {
-      // Show inline error — toast not imported, keep simple
       setError("Couldn't create batch invoices. Try again.");
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -371,15 +366,14 @@ export default function LeadsPage() {
     setFilters(DEFAULT_FILTERS);
   }
 
-  function handleView(leadId) {
-    setSelectedLeadId(leadId);
+  function handleView(jobId) {
+    setSelectedJobId(jobId);
     setFlyoutOpen(true);
   }
 
-  function handleStatusChange(updatedLead) {
-    // Update the lead in the local list after a status change in the flyout
-    setLeads((prev) =>
-      prev.map((l) => (l.id === updatedLead.id ? { ...updatedLead, _isNew: false } : l))
+  function handleStatusChange(updatedJob) {
+    setJobs((prev) =>
+      prev.map((j) => (j.id === updatedJob.id ? { ...updatedJob, _isNew: false } : j))
     );
   }
 
@@ -393,20 +387,17 @@ export default function LeadsPage() {
     </div>
   );
 
-  // ── Error state (POLISH-04) ─────────────────────────────────────────────
-  // <ErrorState onRetry={...} /> replaces the prior red-text block. Retry
-  // re-runs fetchLeads with current filters (clearing `error` on success).
-
+  // ── Error state ─────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className={`${card.base} p-0`} data-tour="leads-page">
+      <div className={`${card.base} p-0`} data-tour="jobs-page">
         <div className="p-6">
-          <LeadFilterBar
+          <JobFilterBar
             filters={filters}
             onFilterChange={handleFilterChange}
             onClear={handleClearFilters}
           />
-          <ErrorState message={error} onRetry={() => fetchLeads(filters)} />
+          <ErrorState message={error} onRetry={() => fetchJobs(filters)} />
         </div>
       </div>
     );
@@ -418,22 +409,22 @@ export default function LeadsPage() {
     <div className="flex items-center justify-between px-6 pt-6 pb-4">
       <div className="flex items-center gap-2.5">
         <div className="flex items-center justify-center size-8 rounded-lg bg-muted">
-          <Users className="size-4 text-muted-foreground" />
+          <Wrench className="size-4 text-muted-foreground" />
         </div>
         <h1 className="text-xl font-semibold text-foreground">Jobs</h1>
         {!loading && (
           <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-xs font-medium">
-            {leads.length}
+            {jobs.length}
           </span>
         )}
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Select mode toggle — only when there are eligible leads to batch-invoice */}
-        {eligibleLeads.length > 0 && (
+        {/* Select mode toggle — only when there are eligible jobs to batch-invoice */}
+        {eligibleJobs.length > 0 && (
           <button
             type="button"
-            onClick={() => { setSelectMode((prev) => { if (prev) setSelectedLeads(new Set()); return !prev; }); }}
+            onClick={() => { setSelectMode((prev) => { if (prev) setSelectedJobs(new Set()); return !prev; }); }}
             className={`flex items-center gap-1 h-8 px-3 rounded-lg text-xs font-medium transition-colors ${
               selectMode
                 ? 'bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent-hover)]'
@@ -448,43 +439,32 @@ export default function LeadsPage() {
     </div>
   );
 
-  // ── Lead list content ──────────────────────────────────────────────────
+  // ── Job list content ────────────────────────────────────────────────────
 
   const isFiltered = hasActiveFilters(filters);
 
   let mainContent;
   if (loading) {
     mainContent = skeletonCards;
-  } else if (displayedLeads.length === 0 && !isFiltered) {
-    mainContent = <EmptyStateLeads />;
-  } else if (displayedLeads.length === 0 && isFiltered) {
-    mainContent = (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <p className="text-sm text-muted-foreground mb-2">No leads match your filters.</p>
-        <button
-          type="button"
-          onClick={handleClearFilters}
-          className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
-        >
-          Clear filters
-        </button>
-      </div>
-    );
+  } else if (displayedJobs.length === 0 && !isFiltered) {
+    mainContent = <EmptyStateJobs />;
+  } else if (displayedJobs.length === 0 && isFiltered) {
+    mainContent = <EmptyStateJobsFiltered onClear={handleClearFilters} />;
   } else {
     mainContent = (
       <div className="space-y-3">
-        {displayedLeads.map((lead) => (
+        {displayedJobs.map((job) => (
           <div
-            key={lead.id}
-            className={lead._isNew ? 'animate-slide-in-from-top' : ''}
+            key={job.id}
+            className={job._isNew ? 'animate-slide-in-from-top' : ''}
           >
-            <LeadCard
-              lead={lead}
+            <JobCard
+              job={job}
               onView={handleView}
-              invoiceStatus={invoiceStatusMap[lead.id]}
-              selectable={selectMode && isEligibleForBatch(lead)}
-              selected={selectedLeads.has(lead.id)}
-              onToggle={() => toggleLeadSelection(lead.id)}
+              invoiceStatus={invoiceStatusMap[job.id]}
+              selectable={selectMode && isEligibleForBatch(job)}
+              selected={selectedJobs.has(job.id)}
+              onToggle={() => toggleJobSelection(job.id)}
             />
           </div>
         ))}
@@ -494,31 +474,29 @@ export default function LeadsPage() {
 
   // ── Batch select bar ───────────────────────────────────────────────────
 
-  // Compute estimated revenue for selected leads (use `leads` so selection
-  // survives status-pill changes — a user can select then switch views).
   const selectedRevenue = useMemo(() => {
-    return leads
-      .filter((l) => selectedLeads.has(l.id))
-      .reduce((sum, l) => sum + Number(l.revenue_amount || 0), 0);
-  }, [leads, selectedLeads]);
+    return jobs
+      .filter((j) => selectedJobs.has(j.id))
+      .reduce((sum, j) => sum + Number(j.revenue_amount || 0), 0);
+  }, [jobs, selectedJobs]);
 
-  const selectedLeadDetails = useMemo(() => {
-    return leads.filter((l) => selectedLeads.has(l.id));
-  }, [leads, selectedLeads]);
+  const selectedJobDetails = useMemo(() => {
+    return jobs.filter((j) => selectedJobs.has(j.id));
+  }, [jobs, selectedJobs]);
 
-  const batchSelectBar = selectedLeads.size > 0 && (
+  const batchSelectBar = selectedJobs.size > 0 && (
     <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 bg-card border-t border-border shadow-[0_-4px_12px_0_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
       <div className="flex items-center gap-3 min-w-0">
-        {eligibleLeads.length > 1 && (
+        {eligibleJobs.length > 1 && (
           <Checkbox
-            checked={selectedLeads.size === eligibleLeads.length}
+            checked={selectedJobs.size === eligibleJobs.length}
             onCheckedChange={toggleSelectAllEligible}
-            aria-label="Select all eligible leads"
+            aria-label="Select all eligible jobs"
           />
         )}
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">
-            {selectedLeads.size} of {eligibleLeads.length} selected
+            {selectedJobs.size} of {eligibleJobs.length} selected
           </p>
           {selectedRevenue > 0 && (
             <p className="text-xs text-muted-foreground">
@@ -539,15 +517,15 @@ export default function LeadsPage() {
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create {selectedLeads.size} draft {selectedLeads.size === 1 ? 'invoice' : 'invoices'}?</AlertDialogTitle>
+            <AlertDialogTitle>Create {selectedJobs.size} draft {selectedJobs.size === 1 ? 'invoice' : 'invoices'}?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div>
                 <p className="mb-3">Draft invoices will be created with pre-filled customer information. You can review and edit each one before sending.</p>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {selectedLeadDetails.map((lead) => (
-                    <div key={lead.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted">
-                      <span className="font-medium text-foreground truncate">{lead.caller_name || lead.from_number || 'Unknown'}</span>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{lead.job_type || '—'}</span>
+                  {selectedJobDetails.map((job) => (
+                    <div key={job.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted">
+                      <span className="font-medium text-foreground truncate">{job.customer?.name || job.caller_name || job.from_number || 'Unknown'}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{job.job_type || '—'}</span>
                     </div>
                   ))}
                 </div>
@@ -560,7 +538,7 @@ export default function LeadsPage() {
               onClick={handleBatchCreate}
               className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white"
             >
-              Create {selectedLeads.size} {selectedLeads.size === 1 ? 'Draft' : 'Drafts'}
+              Create {selectedJobs.size} {selectedJobs.size === 1 ? 'Draft' : 'Drafts'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -570,16 +548,16 @@ export default function LeadsPage() {
 
   return (
     <>
-      <div className={`${card.base} p-0`} data-tour="leads-page">
+      <div className={`${card.base} p-0`} data-tour="jobs-page">
         {pageHeader}
 
-        <LeadStatusPills
+        <JobStatusPills
           counts={pipelineCounts}
           activeStatus={filters.status}
           onStatusChange={(status) => handleFilterChange({ status })}
         />
 
-        <LeadFilterBar
+        <JobFilterBar
           filters={filters}
           onFilterChange={handleFilterChange}
           onClear={handleClearFilters}
@@ -592,9 +570,9 @@ export default function LeadsPage() {
 
       {batchSelectBar}
 
-      {/* LeadFlyout — rendered outside the card stack to avoid stacking context issues */}
+      {/* LeadFlyout preserved until Plan 07 ships JobFlyout */}
       <LeadFlyout
-        leadId={selectedLeadId}
+        leadId={selectedJobId}
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         onStatusChange={handleStatusChange}
