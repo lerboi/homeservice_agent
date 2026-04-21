@@ -22,6 +22,7 @@ import InquiryFilterBar from '@/components/dashboard/InquiryFilterBar';
 import InquiryStatusPills from '@/components/dashboard/InquiryStatusPills';
 import { EmptyStateInquiries } from '@/components/dashboard/EmptyStateInquiries';
 import { ErrorState } from '@/components/ui/error-state';
+import InquiryFlyout from '@/components/dashboard/InquiryFlyout';
 import { supabase } from '@/lib/supabase-browser';
 import { card } from '@/lib/design-tokens';
 
@@ -83,6 +84,10 @@ export default function InquiriesPage() {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Flyout state — Plan 07: InquiryFlyout wired (replaces Plan 06 console.debug stub)
+  const [selectedInquiryId, setSelectedInquiryId] = useState(null);
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
 
   // Tenant ID for Realtime filter
   const [tenantId, setTenantId] = useState(null);
@@ -247,9 +252,16 @@ export default function InquiriesPage() {
     setFilters(DEFAULT_FILTERS);
   }
 
-  // Plan 07 stub — InquiryFlyout ships in Plan 07
+  // Plan 07: InquiryFlyout wired — replaces Plan 06 stub
   function handleView(inquiryId) {
-    console.debug('Plan 07 InquiryFlyout open', inquiryId);
+    setSelectedInquiryId(inquiryId);
+    setFlyoutOpen(true);
+  }
+
+  function handleStatusChange(updatedInquiry) {
+    setInquiries((prev) =>
+      prev.map((inq) => inq.id === updatedInquiry.id ? { ...inq, ...updatedInquiry } : inq)
+    );
   }
 
   // ── Loading state ───────────────────────────────────────────────────────
@@ -346,24 +358,34 @@ export default function InquiriesPage() {
   }
 
   return (
-    <div className={`${card.base} p-0`} data-page="inquiries-page">
-      {pageHeader}
+    <>
+      <div className={`${card.base} p-0`} data-page="inquiries-page">
+        {pageHeader}
 
-      <InquiryStatusPills
-        counts={statusCounts}
-        activeStatus={filters.status}
-        onStatusChange={(status) => handleFilterChange({ status })}
-      />
+        <InquiryStatusPills
+          counts={statusCounts}
+          activeStatus={filters.status}
+          onStatusChange={(status) => handleFilterChange({ status })}
+        />
 
-      <InquiryFilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClear={handleClearFilters}
-      />
+        <InquiryFilterBar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClear={handleClearFilters}
+        />
 
-      <div className="px-6 py-4">
-        {mainContent}
+        <div className="px-6 py-4">
+          {mainContent}
+        </div>
       </div>
-    </div>
+
+      {/* Plan 07: InquiryFlyout — D-10 offline convert + Mark as Lost */}
+      <InquiryFlyout
+        inquiryId={selectedInquiryId}
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        onStatusChange={handleStatusChange}
+      />
+    </>
   );
 }

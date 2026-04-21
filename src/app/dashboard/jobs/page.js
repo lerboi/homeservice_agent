@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import JobCard from '@/components/dashboard/JobCard';
 import JobFilterBar from '@/components/dashboard/JobFilterBar';
-import LeadFlyout from '@/components/dashboard/LeadFlyout';
+import JobFlyout from '@/components/dashboard/JobFlyout';
 import JobStatusPills from '@/components/dashboard/JobStatusPills';
 import { EmptyStateJobs, EmptyStateJobsFiltered } from '@/components/dashboard/EmptyStateJobs';
 import { ErrorState } from '@/components/ui/error-state';
@@ -570,9 +570,9 @@ export default function JobsPage() {
 
       {batchSelectBar}
 
-      {/* LeadFlyout preserved until Plan 07 ships JobFlyout */}
-      <LeadFlyout
-        leadId={selectedJobId}
+      {/* Plan 07: JobFlyout replaces LeadFlyout (Phase 59 D-09 status enum swap) */}
+      <JobFlyout
+        jobId={selectedJobId}
         open={flyoutOpen}
         onOpenChange={setFlyoutOpen}
         onStatusChange={handleStatusChange}
