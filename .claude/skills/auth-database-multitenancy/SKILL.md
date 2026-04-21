@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 50 migrations with table definitions, getTenantId pattern, and tenant data isolation. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 61 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), and activity_event_type strict enum with 16 values. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-04-15 (Migration 050 — Setup checklist overrides: `tenants.checklist_overrides` JSONB column for per-item dismissal and custom-completion persistence)
+**Last updated**: 2026-04-21 (Phase 59 Plan 08 — migrations 059/060/061: new customer/job/inquiry model, 3 RPCs, activity_event_type strict enum, DROP TABLE leads/lead_calls)
 
 ---
 
@@ -73,7 +73,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/001_initial_schema.sql` | tenants, calls tables + RLS + service_role bypass |
 | `supabase/migrations/002_onboarding_triage.sql` | services table, triage columns on calls, working_hours stub |
 | `supabase/migrations/003_scheduling.sql` | appointments, service_zones, zone_travel_buffers, calendar_credentials, calendar_events, book_appointment_atomic RPC |
-| `supabase/migrations/004_leads_crm.sql` | leads, lead_calls, activity_log + REPLICA IDENTITY FULL + Realtime |
+| `supabase/migrations/004_leads_crm.sql` | leads, lead_calls, activity_log + REPLICA IDENTITY FULL + Realtime — **SUPERSEDED by 059+061** (leads/lead_calls dropped; see Phase 59 section below) |
 | `supabase/migrations/005_setup_checklist.sql` | setup_checklist_dismissed column on tenants |
 | `supabase/migrations/006_escalation_contacts.sql` | escalation_contacts table + services.sort_order column |
 | `supabase/migrations/007_outlook_calendar.sql` | calendar_credentials.is_primary + appointments.external_event_id/provider |
@@ -123,6 +123,9 @@ Realtime subscriptions (browser):
 | `supabase/migrations/058_oauth_refresh_locks.sql` | Phase 999.5 — OAuth concurrent-refresh guard. Creates `oauth_refresh_locks` table (PK `(tenant_id, provider)`, holder_id + TTL expires_at) and two RPCs: `try_acquire_oauth_refresh_lock` (returns holder UUID or NULL) and `release_oauth_refresh_lock`. Wraps `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` so bursts of webhooks/crons can't fire duplicate Jobber/Xero refreshes (Jobber rotates refresh_token — duplicates orphan tokens). No RLS (service-role only). See Migration 058 section below for full contract. |
 | `supabase/migrations/052_integrations_schema.sql` | Phase 54 — **Integration credentials foundation** (originally planned as `051_integrations_schema` before Phase 53 renumber collision; file ships as 052 on disk). Sequenced transactional migration on `accounting_credentials`: (1) `DELETE FROM accounting_credentials WHERE provider IN ('quickbooks','freshbooks')` — purge pre-v6.0 rows before CHECK swap; (2) `DROP CONSTRAINT accounting_credentials_provider_check`; (3) `ADD CONSTRAINT accounting_credentials_provider_check CHECK (provider IN ('xero','jobber'))` — QB + FB values permanently invalid; (4) `ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[]` — populated by `/api/integrations/[provider]/callback` with granular OAuth scopes (Xero post-2026-03-02 scope set; Jobber equivalents); (5) `ADD COLUMN last_context_fetch_at TIMESTAMPTZ` NULL — populated by Phase 55+ `fetchCustomerByPhone` for telemetry. **No new indexes** — existing `UNIQUE (tenant_id, provider)` covers tenant-scoped reads. **Python compatibility:** `TEXT[]` → `list[str]`, `TIMESTAMPTZ` → `datetime` (for livekit-agent service-role reads in Phase 55+). **Forward-compat:** adding a future provider requires another DROP + ADD constraint cycle (same pattern). |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
+| `supabase/migrations/059_customers_jobs_inquiries.sql` | Phase 59 — CREATE customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit + RLS + Realtime + backfill from legacy leads |
+| `supabase/migrations/060_phase59_rpcs.sql` | Phase 59 — record_call_outcome, merge_customer, unmerge_customer RPCs (SECURITY DEFINER, service_role only) |
+| `supabase/migrations/061_drop_legacy_leads.sql` | Phase 59 — DROP TABLE leads + lead_calls, activity_event_type enum (16 values), DROP COLUMN lead_id from activity_log + invoices + estimates |
 
 ---
 
@@ -465,11 +468,13 @@ Cross-domain: See scheduling-calendar-system skill for full slot calculator, boo
 
 ---
 
-### 004_leads_crm.sql — CRM + Realtime
+### 004_leads_crm.sql — CRM + Realtime (SUPERSEDED by Phase 59)
 
-**Tables created**: `leads`, `lead_calls`, `activity_log`
+**SUPERSEDED**: Tables `leads` and `lead_calls` were dropped by migration 061 (Phase 59 Plan 08). The `activity_log` table remains but `lead_id` column was dropped by 061. New write path: `record_call_outcome` RPC (migration 060). See **Phase 59 section** below.
 
-**leads columns**:
+**Tables created**: `leads` *(dropped in 061)*, `lead_calls` *(dropped in 061)*, `activity_log`
+
+**leads columns** *(historical — table no longer exists)*:
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | |
@@ -485,17 +490,23 @@ Cross-domain: See scheduling-calendar-system skill for full slot calculator, boo
 | `appointment_id` | uuid | FK → appointments SET NULL |
 | `created_at`, `updated_at` | timestamptz | |
 
-**Realtime** (CRITICAL):
+**Realtime** (CRITICAL — leads was; customers/jobs/inquiries now):
 ```sql
+-- 004 original (leads — now dropped):
 ALTER PUBLICATION supabase_realtime ADD TABLE leads;
 ALTER TABLE leads REPLICA IDENTITY FULL;
+-- 059 replacement (customers/jobs/inquiries):
+ALTER PUBLICATION supabase_realtime ADD TABLE customers, jobs, inquiries;
+ALTER TABLE customers REPLICA IDENTITY FULL;
+ALTER TABLE jobs REPLICA IDENTITY FULL;
+ALTER TABLE inquiries REPLICA IDENTITY FULL;
 ```
 
 `REPLICA IDENTITY FULL` is required so Supabase Realtime emits row-level change events with full old+new row data, enabling tenant_id filter at the subscription level.
 
-**lead_calls**: Junction table. PK: `(lead_id, call_id)`. Many calls → one lead (repeat callers). RLS traverses through leads table.
+**lead_calls**: Junction table. PK: `(lead_id, call_id)`. *(Dropped in migration 061 — replaced by customer_calls + job_calls in 059.)*
 
-**activity_log**: `id`, `tenant_id` (FK), `event_type`, `lead_id` (FK SET NULL), `metadata` (jsonb), `created_at`. RLS: tenant_id child pattern.
+**activity_log**: `id`, `tenant_id` (FK), `event_type` *(now type `activity_event_type` enum — see Phase 59 Enums section)*, `customer_id` (FK customers, NULLABLE — system events have no customer context), `job_id` (FK jobs, NULLABLE), `inquiry_id` (FK inquiries, NULLABLE), `metadata` (jsonb), `created_at`. `lead_id` column dropped in 061 after backfill. RLS: tenant_id child pattern.
 
 **Extends calls**: `recovery_sms_sent_at` (timestamptz)
 
@@ -1064,9 +1075,15 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `calendar_credentials` | 003 | Google + Outlook OAuth tokens and sync state | Tenant child |
 | `calendar_events` | 003 | Local mirror of Google/Outlook events | Tenant child |
 | `calendar_blocks` | 046 | Personal time blocks (lunch, vacation, errands). Columns: id, tenant_id, title, start_time, end_time, is_all_day, note, external_event_id (047), group_id (048), created_at. 4 RLS policies. Syncs to Google/Outlook. Multi-day blocks share a group_id for bulk delete. | Tenant child |
-| `leads` | 004 | CRM records with Realtime enabled | Tenant child |
-| `lead_calls` | 004 | Junction: many calls → one lead | Via leads.tenant_id |
-| `activity_log` | 004 | Dashboard event feed | Tenant child |
+| `leads` | 004 | **DROPPED in 061** — CRM records (superseded by customers/jobs/inquiries) | — |
+| `lead_calls` | 004 | **DROPPED in 061** — Junction: many calls → one lead (superseded by customer_calls/job_calls) | — |
+| `activity_log` | 004 | Dashboard event feed — event_type now `activity_event_type` enum; customer_id/job_id/inquiry_id FKs; lead_id dropped | Tenant child |
+| `customers` | 059 | One row per (tenant_id, phone_e164). UNIQUE(tenant_id, phone_e164). Soft-delete via merged_into. Realtime FULL. | Tenant child |
+| `jobs` | 059 | One row per booked appointment. appointment_id NOT NULL UNIQUE (1:1 with appointments). Realtime FULL. | Tenant child |
+| `inquiries` | 059 | Unbooked calls. status: open/converted/lost. No cron/auto-timeout (D-07a). Realtime FULL. | Tenant child |
+| `customer_calls` | 059 | Junction: call → customer (always). Composite PK (customer_id, call_id). NOT in Realtime publication. | Via customers.tenant_id |
+| `job_calls` | 059 | Junction: call → job (only on job path). Composite PK (job_id, call_id). NOT in Realtime publication. | Via jobs.tenant_id |
+| `customer_merge_audit` | 059 | Permanent audit of all merges/unmerges. Retained forever. row_counts JSONB per-table. unmerged_at marks reversal without deleting row. | Tenant child |
 | `escalation_contacts` | 006 | Owner-configured escalation chain | Tenant child |
 | `subscriptions` | 010 | Stripe subscription state per tenant | Tenant child (SELECT-own only) |
 | `stripe_webhook_events` | 010 | Webhook idempotency (UNIQUE event_id) | Service role only |
@@ -1116,7 +1133,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 042: `routing_mode` (TEXT, nullable, CHECK IN 'ai'|'owner_pickup'|'fallback_to_ai'), `outbound_dial_duration_sec` (INTEGER) — set by the Twilio dial-status webhook
 - 045: `call_sid` (TEXT, nullable) — Twilio CallSid. Populated by webhook routing to link owner-pickup call records to dial-status callbacks. Sparse index `idx_calls_call_sid WHERE call_sid IS NOT NULL`.
 
-**Leads columns added across migrations** (all on `leads` table):
+**Leads columns added across migrations** (all on `leads` table — TABLE DROPPED IN 061):
 - 026: `postal_code`, `street_name`
 - 035: `email`
 - 036: `urgency` CHECK updated: 'high_ticket'→'urgent'
@@ -1130,6 +1147,8 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 031: `status` CHECK expanded to add 'partially_paid'
 - 032: `reminders_enabled`, `late_fee_applied_at`, `is_recurring_template`, `recurring_frequency`, `recurring_start_date`, `recurring_end_date`, `recurring_next_date`, `recurring_active`, `generated_from_id`
 - 035: `title`
+- 059: `job_id` (uuid FK → jobs ON DELETE SET NULL, NULLABLE) — Phase 59 reattribution; customer derivable via job.customer_id. Invoice attribution is now via jobs, not leads.
+- 061: `lead_id` column **DROPPED** — backfilled to job_id in 059; NOT NULL flip left conditional (ad-hoc invoices without a job remain possible per D-11).
 
 **Invoice_settings columns added across migrations**:
 - 030: `estimate_prefix`
@@ -1284,6 +1303,242 @@ Deletes the lock row only if `holder_id` matches — stale releases (TTL already
 3. Refreshes that complete successfully now clear `error_state` in the update payload so the Reconnect banner doesn't persist after a healthy recovery (Phase 999.5 Issue 1 fix).
 
 **Tests:** `tests/integrations/refresh-lock.test.js` validates: 5 concurrent callers → exactly one wire refresh; error_state cleared on success; release RPC always fires (including on wire-refresh failure).
+
+---
+
+## Phase 59: New Tables (Migration 059)
+
+Six new tables added by `059_customers_jobs_inquiries.sql`. Backfilled from legacy `leads`/`lead_calls` data. All use the tenant_id child RLS pattern + service_role bypass.
+
+### `customers`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | gen_random_uuid() |
+| `tenant_id` | uuid NOT NULL | FK → tenants CASCADE |
+| `phone_e164` | text NOT NULL | E.164 normalized. UNIQUE(tenant_id, phone_e164) — D-05 dedup key |
+| `name` | text | nullable |
+| `default_address` | text | nullable |
+| `email` | text | nullable |
+| `notes` | text | nullable |
+| `tags` | text[] | NOT NULL DEFAULT '{}' |
+| `merged_into` | uuid | FK → customers(id) ON DELETE SET NULL — D-19 soft-delete |
+| `merged_at` | timestamptz | nullable |
+| `merge_snapshot` | jsonb | D-19 undo: exact child IDs moved at merge time |
+| `lifetime_value` | numeric(12,2) | NOT NULL DEFAULT 0 — denormalized |
+| `created_at`, `updated_at` | timestamptz | NOT NULL |
+
+**Indexes**: `idx_customers_tenant_phone` on (tenant_id, phone_e164) WHERE merged_into IS NULL; `idx_customers_merged_at` on (merged_at) WHERE merged_into IS NOT NULL.
+
+**Realtime**: `REPLICA IDENTITY FULL`. Published via `supabase_realtime`.
+
+---
+
+### `jobs`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid NOT NULL | FK → tenants CASCADE |
+| `customer_id` | uuid NOT NULL | FK → customers CASCADE |
+| `appointment_id` | uuid NOT NULL | FK → appointments CASCADE. UNIQUE — 1:1 with appointments (D-06) |
+| `originated_as_inquiry_id` | uuid | FK → inquiries ON DELETE SET NULL — D-10 same-call auto-convert audit |
+| `status` | text NOT NULL | CHECK scheduled\|completed\|paid\|cancelled\|lost DEFAULT scheduled |
+| `urgency` | text NOT NULL | CHECK emergency\|urgent\|routine DEFAULT routine |
+| `revenue_amount` | numeric(10,2) | nullable |
+| `is_vip` | boolean | NOT NULL DEFAULT false |
+| `created_at`, `updated_at` | timestamptz | NOT NULL |
+
+**Indexes**: `idx_jobs_tenant_status_created` on (tenant_id, status, created_at DESC); `idx_jobs_customer` on (customer_id).
+
+**Realtime**: `REPLICA IDENTITY FULL`. Published via `supabase_realtime`.
+
+---
+
+### `inquiries`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid NOT NULL | FK → tenants CASCADE |
+| `customer_id` | uuid NOT NULL | FK → customers CASCADE |
+| `job_type` | text | nullable |
+| `service_address` | text | nullable |
+| `urgency` | text NOT NULL | CHECK emergency\|urgent\|routine DEFAULT routine |
+| `status` | text NOT NULL | CHECK open\|converted\|lost DEFAULT open |
+| `converted_to_job_id` | uuid | FK → jobs ON DELETE SET NULL — D-10 audit FK |
+| `created_at`, `updated_at` | timestamptz | NOT NULL |
+
+**D-07a**: Open inquiries stay open indefinitely — owner's responsibility to convert or mark lost. No cron, no auto-timeout, no visual staleness flag.
+
+**Indexes**: `idx_inquiries_tenant_status_created` on (tenant_id, status, created_at DESC); `idx_inquiries_customer` on (customer_id).
+
+**Realtime**: `REPLICA IDENTITY FULL`. Published via `supabase_realtime`.
+
+---
+
+### `customer_calls`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `customer_id` | uuid NOT NULL | FK → customers CASCADE. Part of composite PK |
+| `call_id` | uuid NOT NULL | FK → calls CASCADE. Part of composite PK |
+
+A call always links to one customer. **NOT in Realtime publication** (derived junction data). RLS traverses through customers.
+
+---
+
+### `job_calls`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `job_id` | uuid NOT NULL | FK → jobs CASCADE. Part of composite PK |
+| `call_id` | uuid NOT NULL | FK → calls CASCADE. Part of composite PK |
+
+A call links to a job only when the job path was taken. **NOT in Realtime publication**. RLS traverses through jobs.
+
+---
+
+### `customer_merge_audit`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | gen_random_uuid() |
+| `tenant_id` | uuid NOT NULL | FK → tenants CASCADE |
+| `source_customer_id` | uuid NOT NULL | FK → customers CASCADE |
+| `target_customer_id` | uuid NOT NULL | FK → customers CASCADE |
+| `merged_by` | uuid | FK → auth.users(id), nullable — service-role merges have no user |
+| `merged_at` | timestamptz | NOT NULL DEFAULT now() |
+| `unmerged_at` | timestamptz | NULL — set by unmerge_customer; row NEVER deleted |
+| `row_counts` | jsonb NOT NULL | `{jobs, inquiries, invoices, activity_log, customer_calls, job_calls}` counts at time of merge |
+
+**Retention: FOREVER** (D-19 expanded). `unmerge_customer` marks `unmerged_at` — never deletes the row. History of all consolidations is always reconstructible.
+
+**Indexes**: `idx_customer_merge_audit_tenant_merged_at` on (tenant_id, merged_at DESC); `idx_customer_merge_audit_source` on (source_customer_id) WHERE unmerged_at IS NULL.
+
+**NOT in Realtime publication** (admin/audit data). Admin view at `/dashboard/admin/merges`.
+
+---
+
+## Phase 59: RPCs (Migration 060)
+
+Three SECURITY DEFINER functions in `060_phase59_rpcs.sql`. All follow the pattern from `027_lock_rpc_functions.sql`: `REVOKE EXECUTE FROM PUBLIC; GRANT EXECUTE TO service_role`. Dashboard NEVER calls these directly — all calls route through service-role API routes.
+
+### `record_call_outcome` (D-14 / D-10 / D-16)
+
+```sql
+CREATE OR REPLACE FUNCTION record_call_outcome(
+  p_tenant_id       uuid,
+  p_phone_e164      text,
+  p_caller_name     text,
+  p_service_address text,
+  p_appointment_id  uuid,        -- NULL → inquiry path; NOT NULL → job path
+  p_urgency         text,
+  p_call_id         uuid,
+  p_job_type        text DEFAULT NULL
+) RETURNS jsonb
+```
+
+**Returns**: `{customer_id, job_id, inquiry_id}` — job_id null on inquiry path; inquiry_id null on job path.
+
+**Atomically**:
+1. UPSERTs customer by (tenant_id, phone_e164) — COALESCE preserves existing name/address
+2. Inserts job (if appointment_id present) OR inquiry (if absent)
+3. Links call → customer via customer_calls
+4. Links call → job via job_calls (job path only)
+
+**Callers**: Python LiveKit agent (`src/post_call/write_outcome.py` → `record_outcome()` async helper). This is the **sole write path** for post-call data — replaces `create_or_merge_lead()`.
+
+**D-02a**: No dual-write. After 059 ships, all writers use this RPC exclusively. Legacy `leads` table received zero new rows during the 059→061 window.
+
+**D-02b**: Forward-fix-only rollback. If the agent fails, patch + redeploy — do NOT revert migration.
+
+---
+
+### `merge_customer` (D-19 + D-19 expanded audit)
+
+```sql
+CREATE OR REPLACE FUNCTION merge_customer(
+  p_tenant_id uuid,
+  p_source_id uuid,
+  p_target_id uuid,
+  p_merged_by uuid DEFAULT NULL   -- auth.users.id of initiating owner; NULL for service-role merges
+) RETURNS jsonb
+```
+
+**Returns**: `{source_id, target_id, audit_id, moved_counts: {jobs, inquiries, invoices, activity_log, customer_calls, job_calls}}`
+
+**Atomically**:
+1. Validates: no self-merge; source + target both belong to tenant and not already merged
+2. Counts rows per child table (for audit)
+3. Builds `merge_snapshot` (exact child IDs) stored in `source.merge_snapshot` for undo
+4. Target-wins field merge using latest `updated_at` (COALESCE — target wins on conflicts)
+5. Repoints all children (jobs, inquiries, activity_log, customer_calls) to target
+6. Soft-deletes source (`merged_into = target_id`, `merged_at = now()`)
+7. INSERTs one permanent row into `customer_merge_audit`
+
+**Callers**: `/api/customers/[id]/merge` API route (service-role). UI uses `audit_id` to navigate to admin Merges view.
+
+---
+
+### `unmerge_customer` (D-19 7-day undo)
+
+```sql
+CREATE OR REPLACE FUNCTION unmerge_customer(
+  p_tenant_id uuid,
+  p_source_id uuid
+) RETURNS jsonb
+```
+
+**Returns**: `{source_id, restored_from, audit_id}`
+
+**Atomically**:
+1. Reads source's `merge_snapshot` — validates merged and within 7-day window
+2. Reverse-repoints ONLY the specific IDs captured at merge time (not blanket UPDATE)
+3. Restores source: clears `merged_into`, `merged_at`, `merge_snapshot`
+4. Marks `customer_merge_audit.unmerged_at = now()` — **NEVER deletes the audit row**
+
+**7-day window**: If `merged_at < now() - interval '7 days'`, raises `merge_window_expired`. After expiry: forward-fix only.
+
+**Callers**: `/api/customers/[id]/unmerge` API route (service-role). UnmergeBanner on customer detail page surfaces the action within the 7-day window.
+
+---
+
+## Phase 59: Enums (Migration 061)
+
+### `activity_event_type`
+
+Strict enum created by `061_drop_legacy_leads.sql` (D-12a). The `activity_log.event_type` column was coerced to this type using a CASE mapping; unknown legacy values fell through to `'other'`.
+
+**16 starting values** (additions require a future migration — deliberate friction keeps analytics clean):
+
+```
+call_received       inquiry_opened      inquiry_converted   inquiry_lost
+job_booked          job_completed       job_paid            job_cancelled
+customer_created    customer_updated    customer_merged     customer_unmerged
+invoice_created     invoice_paid        invoice_voided      other
+```
+
+**Usage**: Insert via `'event_name'::activity_event_type`. Postgres enforces at the TYPE level — invalid values raise an error. Event-specific payload in `activity_log.metadata` JSONB.
+
+---
+
+## Phase 59: Migration Entries (059 / 060 / 061)
+
+| Migration | Purpose |
+|-----------|---------|
+| `059_customers_jobs_inquiries.sql` | CREATE 6 new tables + RLS + Realtime + indexes + backfill from leads/lead_calls + new FK columns on invoices and activity_log |
+| `060_phase59_rpcs.sql` | 3 SECURITY DEFINER RPCs: record_call_outcome, merge_customer, unmerge_customer |
+| `061_drop_legacy_leads.sql` | CREATE TYPE activity_event_type (16 values) + ALTER COLUMN event_type coercion + DROP COLUMN lead_id from activity_log + invoices + estimates + DROP TABLE lead_calls + leads |
+
+**D-01 same-day gate**: 059 and 061 shipped same PR/same day after Python agent verified writing via `record_call_outcome` (live test call gate).
+
+**D-02b forward-fix-only**: No down-migration exists or will be written for any Phase 59 migration. If something breaks post-061, fix forward.
+
+**Backfill rules (D-13a/b/c)**:
+- **D-13a Orphan leads** (no appointment_id) → inquiries with status preserved verbatim
+- **D-13b Duplicate-phone leads** → collapse to ONE customer per (tenant_id, phone_e164); latest name/address wins
+- **D-13c Test/spam data** → backfilled as-is; no quality filtering; owner cleans up post-cutover
 
 ---
 
