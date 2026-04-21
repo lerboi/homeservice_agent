@@ -23,7 +23,7 @@
 
 import TodayAppointmentsTile from './TodayAppointmentsTile';
 import CallsTile from './CallsTile';
-import HotLeadsTile from './HotLeadsTile';
+import HotJobsTile from './HotJobsTile';
 import UsageTile from './UsageTile';
 
 export default function DailyOpsHub() {
@@ -36,7 +36,7 @@ export default function DailyOpsHub() {
         <TodayAppointmentsTile />
       </div>
       <CallsTile />
-      <HotLeadsTile />
+      <HotJobsTile />
       <div className="md:col-span-2">
         <UsageTile />
       </div>

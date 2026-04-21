@@ -1,7 +1,8 @@
 import { after } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
-import { createOrAttachLeadForManualAppointment } from '@/lib/leads';
+// Phase 59 Plan 08: createOrAttachLeadForManualAppointment removed (src/lib/leads.js deleted).
+// Manual bookings now create a customer + job via the record_call_outcome RPC (D-14).
 import { notifyBookingCopyToJobber } from '@/lib/notifications';
 
 /**
@@ -119,8 +120,7 @@ export async function GET(request) {
       caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
       external_event_id, jobber_visit_id, notes, created_at,
-      service_zones (id, name),
-      leads!appointment_id (id, caller_name, status)
+      service_zones (id, name)
     `)
     .eq('tenant_id', tenantId)
     .neq('status', 'cancelled')
@@ -244,28 +244,28 @@ export async function POST(request) {
     ...(notes ? { notes } : {}),
   }).eq('id', result.appointment_id);
 
+  // Phase 59 Plan 08 (D-14): upsert customer + create job via record_call_outcome RPC.
+  // Replaces createOrAttachLeadForManualAppointment. Non-blocking — appointment is already saved.
   try {
-    await createOrAttachLeadForManualAppointment({
-      tenantId,
-      appointmentId: result.appointment_id,
-      fromNumber: caller_phone,
-      callerName: caller_name,
-      jobType: job_type || null,
-      serviceAddress: composedAddress === 'TBD' ? null : composedAddress,
-      postalCode: postal_code || null,
-      streetName: street_name || null,
-      email: email || null,
+    const { normalizePhone } = await import('@/lib/phone/normalize.js');
+    const normalizedPhone = normalizePhone(caller_phone);
+    await supabase.rpc('record_call_outcome', {
+      p_tenant_id: tenantId,
+      p_phone_e164: normalizedPhone,
+      p_caller_name: caller_name || null,
+      p_service_address: composedAddress === 'TBD' ? null : composedAddress,
+      p_appointment_id: result.appointment_id,
+      p_urgency: 'routine',
+      p_call_id: null,
+      p_job_type: job_type || null,
     });
   } catch (err) {
-    console.error('[appointments] Lead create/attach failed, appointment still saved:', err.message);
+    console.error('[appointments] record_call_outcome failed, appointment still saved:', err.message);
   }
 
   const { data } = await supabase
     .from('appointments')
-    .select(`
-      *,
-      leads!appointment_id (id, caller_name, status)
-    `)
+    .select('*')
     .eq('id', result.appointment_id)
     .single();
 
