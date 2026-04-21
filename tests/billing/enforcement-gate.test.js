@@ -4,12 +4,15 @@
  *
  * The enforcement gate checks subscription status and blocks calls for
  * cancelled/paused/incomplete tenants. Extracted into src/lib/subscription-gate.js
- * since the LiveKit agent runs as a TypeScript service (not directly testable here).
+ * since the LiveKit agent runs as a separate Python service in a sibling repo
+ * (C:/Users/leheh/.Projects/livekit-agent, deployed to Railway) and is not
+ * directly testable here.
  *
  * Note: Architecture deviation from plan — the original target was
  * src/app/api/webhooks/retell/route.js, but that file was removed in the
  * Retell→LiveKit migration. The enforcement logic now lives in
- * src/lib/subscription-gate.js (used by livekit-agent/src/agent.ts).
+ * src/lib/subscription-gate.js (queried by the sibling-repo LiveKit agent
+ * on every inbound call).
  *
  * Test 1: Returns { blocked: true, reason: 'subscription_inactive' } when status is 'canceled'
  * Test 2: Returns { blocked: true, reason: 'subscription_inactive' } when status is 'paused'

@@ -2,11 +2,43 @@
 phase: 59-customer-job-model-separation-split-leads-into-customers-ded
 plan: "05"
 subsystem: python-agent
-status: partial
+status: port_pending
 tasks_complete: 2
 tasks_total: 3
 push_deferred: true
+port_pending: true
+port_target_repo: "C:/Users/leheh/.Projects/livekit-agent (sibling repo, deployed to Railway)"
 tags: [phase-59, wave-2, python-agent, lockstep, livekit, post-call, rpc]
+
+# PORT REQUIRED — original implementation landed in the wrong tree
+#
+# The 59-05 executor wrote record_outcome() + phone.py + agent.py edits
+# into homeservice_agent/livekit-agent/ (a partial scaffold subdir that
+# was NEVER deployed). Railway deploys from the sibling repo
+# C:/Users/leheh/.Projects/livekit-agent/ (remote: lerboi/livekit_agent.git),
+# which was not touched by the executor.
+#
+# On 2026-04-21 (post Phase 59 DB push success) the monorepo
+# livekit-agent/ subdir was deleted to prevent future drift/confusion.
+# The Plan 05 implementation must be ported to the sibling repo before
+# Phase 59 can be verified on a live test call.
+#
+# Source material for the port (retrievable from git history):
+#   - 22a7b1d feat(59-05): post_call/write_outcome.py + unit tests
+#   - 52f69ac feat(59-05): wire record_outcome into agent.py
+#   - 2bc564a docs(59-05): sync voice-call-architecture skill
+#   - 3f2521a fix(59): renumber migrations (also touched these files)
+#
+# Port structural notes:
+#   - Sibling has src/post_call.py as a single file (not a package)
+#   - Sibling's src/lib/phone.py is less strict (no validation, no
+#     country_hint arg) — RPC server-side validates E.164 anyway, so the
+#     sibling's existing _normalize_phone is sufficient; no phone.py
+#     change needed
+#   - Sibling's post_call.py currently calls
+#     `from .lib.leads import create_or_merge_lead` — Plan 05's objective
+#     is to replace that call with `record_call_outcome` RPC (D-02a: no
+#     dual-write; D-02b: forward-fix only)
 
 dependency_graph:
   requires:

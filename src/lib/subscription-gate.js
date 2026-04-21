@@ -3,12 +3,13 @@
  * Phase 25-01: ENFORCE-01, ENFORCE-02
  *
  * Checks whether a tenant's subscription status allows calls to proceed.
- * Used by the LiveKit agent (livekit-agent/src/agent.ts) to block inbound calls
- * for cancelled/paused/incomplete tenants.
+ * Used by the LiveKit agent (separate Python service; source lives in the
+ * sibling repo at C:/Users/leheh/.Projects/livekit-agent, deployed to Railway)
+ * to block inbound calls for cancelled/paused/incomplete tenants.
  *
  * Architecture note: Originally planned for src/app/api/webhooks/retell/route.js
  * but extracted here since the Retell→LiveKit migration moved call handling
- * to livekit-agent/src/agent.ts (a TypeScript service).
+ * to the Python livekit-agent service in the sibling repo.
  *
  * Design decisions (per 25-CONTEXT.md):
  * - D-02: Only checks status column — never trial_ends_at (Stripe webhook handles expiry)
