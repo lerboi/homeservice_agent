@@ -212,6 +212,34 @@ export async function mergeCustomer({ tenantId, sourceId, targetId, mergedBy = n
   return data; // { source_id, target_id, audit_id, moved_counts }
 }
 
+// ─── Activity (D-17 approach A: inline in detail response) ───────────────────
+
+/**
+ * Fetch the most recent activity_log rows for a customer.
+ * Approach A: ≤50 rows returned inline in GET /api/customers/[id] response.
+ * This avoids a separate dedicated route for Phase 59 V1 scope.
+ *
+ * @param {{ tenantId: string, customerId: string, limit?: number }} opts
+ * @returns {Promise<Array>}
+ */
+export async function getCustomerActivity({ tenantId, customerId, limit = 50 }) {
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('id, event_type, created_at, metadata, job_id, inquiry_id')
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    // Activity fetch failure is non-fatal — return empty array
+    console.error('[customers.js] getCustomerActivity error:', error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
 // ─── Unmerge (D-19 7-day undo) ───────────────────────────────────────────────
 
 /**

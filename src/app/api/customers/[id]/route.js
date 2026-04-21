@@ -13,7 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
-import { getCustomerWithStats, updateCustomer } from '@/lib/customers';
+import { getCustomerWithStats, updateCustomer, getCustomerActivity } from '@/lib/customers';
 
 export async function GET(request, { params }) {
   const tenantId = await getTenantId();
@@ -22,9 +22,16 @@ export async function GET(request, { params }) {
   }
 
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const includeActivity = searchParams.get('include_activity') === '1';
 
   try {
     const result = await getCustomerWithStats({ tenantId, customerId: id });
+    // Activity approach A (Plan 07): include ≤50 most-recent activity_log rows inline when requested.
+    if (includeActivity) {
+      const activity = await getCustomerActivity({ tenantId, customerId: id, limit: 50 });
+      result.activity = activity;
+    }
     return NextResponse.json(result);
   } catch (err) {
     const msg = String(err?.message ?? err);
