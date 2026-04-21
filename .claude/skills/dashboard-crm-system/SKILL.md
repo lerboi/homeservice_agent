@@ -1,6 +1,6 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs/leads, calendar, calls, invoices, estimates, more/*), lead lifecycle + merging, status pill strip (Jobs vernacular post-Phase 52), Kanban, escalation chain, settings panels, setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, lead management, CRM components, escalation contacts, service management, setup checklist, business integrations card, design tokens, or UI polish patterns."
+description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, inquiries tab, customers, calendar, calls, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, Inquiries tab from inquiries table, Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, design tokens, or UI polish patterns."
 ---
 
 # Dashboard & CRM System — Complete Reference
@@ -9,25 +9,35 @@ This document is the single source of truth for the dashboard and CRM
 system. Read this before making any changes to dashboard pages or CRM
 components.
 
-**Last updated**: 2026-04-20 (Phase 58 — skill consolidation:
-BusinessIntegrationsClient full coverage, setup checklist red-dot
-error variant, UI polish primitives EmptyState/ErrorState/AsyncButton,
-cross-ref to integrations-jobber-xero)
+**Last updated**: 2026-04-21 (Phase 59 — customer/job model separation:
+Jobs tab rewired to jobs table, new Inquiries tab, Customer detail page,
+Merge/Unmerge UX, Admin Merges view, D-07a owner-responsibility stance,
+chatbot corpus split into customers/jobs/inquiries)
 
 ---
 
 ## Scope Notes (read first)
 
-- **Phase 52 (Leads → Jobs rename, 2026-04-17)** — user-facing copy uses
-  "Jobs"; `/dashboard/jobs` is the canonical URL with a 308 redirect
-  from the prior leads path (`next.config.js`). Internal symbols
-  PRESERVED: `LeadStatusPills.jsx`, `LeadCard.jsx`, `LeadFlyout.jsx`,
-  `LeadFilterBar.jsx`, `EmptyStateLeads.jsx`, `HotLeadsTile.jsx` keep
-  their file names; `leads` DB table, `leads.status` enum
-  (`new, booked, completed, paid, lost`), `/api/leads/*` routes,
-  and Realtime channel filter unchanged. Display label for the
-  `booked` enum value is "Scheduled". Status pill order:
-  `New · Scheduled · Completed · Paid · Lost` with `ml-2` gap before Lost.
+- **Phase 59 (Customer/Job model separation, 2026-04-21)** — Full entity split.
+  `leads` DB table **dropped** (migration 061). All prior Lead* component files
+  **deleted**: `LeadStatusPills.jsx`, `LeadCard.jsx`, `LeadFlyout.jsx`,
+  `LeadFilterBar.jsx`, `EmptyStateLeads.jsx`, `HotLeadsTile.jsx`. `/api/leads/*`
+  routes **deleted**. Replaced by:
+  - **Jobs tab** (`/dashboard/jobs`) — queries `jobs` table; uses `JobCard`,
+    `JobFilterBar`, `JobStatusPills`, `EmptyStateJobs`, `HotJobsTile`
+  - **Inquiries tab** (`/dashboard/inquiries`) — queries `inquiries` table; own pill
+    strip + flyout; D-07a: stays open indefinitely (owner responsibility)
+  - **Customer detail page** (`/dashboard/customers/[id]`) — sticky header + 3 tabs
+    (Activity / Jobs / Invoices) + Edit modal + Merge/Unmerge UX
+  - **Admin Merges view** (`/dashboard/admin/merges`) — `customer_merge_audit` rows
+  - Chatbot knowledge corpus: `leads.md` deleted → `customers.md` + `jobs.md` +
+    `inquiries.md` (inquiries.md includes stale-inquiry D-07a explanation)
+- **Phase 52 (Leads → Jobs rename, 2026-04-17)** — user-facing copy used
+  "Jobs"; `/dashboard/jobs` was the canonical URL. **Phase 59 fully supersedes
+  Phase 52** — DB entity is now `jobs`, not `leads`. The 308 redirect from prior
+  leads path in `next.config.js` is preserved. Display label for `scheduled`
+  status is "Scheduled". Status pill order (Phase 59 Jobs):
+  `Scheduled · Completed · Paid · (gap) · Cancelled · Lost` with `ml-2` gap.
 - **Phase 49 (Dark mode + analytics removal, 2026-04-16)** — ThemeProvider
   wired in root layout; sidebar sun/moon toggle; semantic CSS variables
   (`--brand-accent`, `--brand-accent-hover`, `--selected-fill`,
@@ -71,41 +81,45 @@ cross-ref to integrations-jobber-xero)
 | Layer | Files | Purpose |
 |-------|-------|---------|
 | **Dashboard pages** | `src/app/dashboard/` | Page routes nested under layout |
-| **CRM components** | `src/components/dashboard/` | Lead cards, status pills, flyouts, tour, setup checklist |
+| **CRM components** | `src/components/dashboard/` | Job cards, status pills, flyouts, customer detail, merge UX, tour, setup checklist |
 | **UI primitives** | `src/components/ui/` | shadcn primitives + Phase 58 polish (`empty-state.jsx`, `error-state.jsx`, `async-button.jsx`) |
-| **API routes** | `src/app/api/{leads,calls,escalation-contacts,setup-checklist,invoices,estimates,invoice-settings,chat,account,notification-settings,working-hours,call-routing}/` | Lead CRUD, calls, escalation, checklist, invoices, chat, etc. |
-| **Business logic** | `src/lib/leads.js` | `createOrMergeLead()`, `getLeads()` — core lead logic |
+| **API routes** | `src/app/api/{customers,jobs,inquiries,calls,escalation-contacts,setup-checklist,invoices,estimates,invoice-settings,chat,account,notification-settings,working-hours,call-routing}/` | Customer/Job/Inquiry CRUD, calls, escalation, checklist, invoices, chat, etc. |
 | **Design system** | `src/lib/design-tokens.js` | Shared color palette + Phase 58 focus-visible ring token |
-| **Realtime** | Supabase `supabase_realtime` publication | Live lead/call/appointment updates via WebSocket |
+| **Realtime** | Supabase `supabase_realtime` publication | Live customers/jobs/inquiries/calls/appointments updates via WebSocket |
 
-### Call → Lead data flow
+**Deleted in Phase 59**: `src/lib/leads.js` (`createOrMergeLead()` / `getLeads()`), `/api/leads/*` routes, `LeadFlyout.jsx`, `LeadCard.jsx`, `LeadFilterBar.jsx`, `LeadStatusPills.jsx`, `EmptyStateLeads.jsx`, `HotLeadsTile.jsx`, `src/lib/chatbot-knowledge/leads.md`.
+
+### Call → Customer/Job data flow (Phase 59)
 
 ```
-Call ends → LiveKit agent post-call pipeline → createOrMergeLead()
+Call ends → Python LiveKit agent post-call pipeline → record_call_outcome RPC
   │
-  ▼  INSERT/UPDATE leads table (Supabase)
+  ▼  UPSERT customers + INSERT jobs OR inquiries (Supabase, single round-trip)
   │
-  ▼  Supabase Realtime broadcasts INSERT/UPDATE
+  ▼  Supabase Realtime broadcasts INSERT/UPDATE on customers/jobs/inquiries
   │
-  ▼  Dashboard /dashboard/jobs subscribes → payload → animates new row
+  ▼  Dashboard /dashboard/jobs OR /dashboard/inquiries subscribes → animates row
   │
-  ▼  DashboardHomeStats updates via Realtime
+  ▼  Customer detail page triple-subscribes: customers, jobs, inquiries filtered by customer_id
 ```
 
-### Dashboard page structure (post-Phase 52/49)
+### Dashboard page structure (post-Phase 59/58/52/49)
 
 ```
 layout.js                          DashboardSidebar (desktop) + BottomTabBar (mobile)
                                    + SetupChecklistLauncher + ChatbotSheet + DashboardTour
   │
-  ├── page.js (/)                  Daily Ops hub (bento tiles: TodayAppointments, Calls, HotLeads, Usage)
-  ├── jobs/page.js                 Status pill strip + filter bar + job list + LeadFlyout
+  ├── page.js (/)                  Daily Ops hub (bento tiles: TodayAppointments, Calls, HotJobsTile, Usage)
+  ├── jobs/page.js                 Status pill strip + filter bar + job list + JobFlyout
+  ├── inquiries/page.js            Status pill strip (Open/Converted/Lost) + filter bar + inquiry list + InquiryFlyout
+  ├── customers/[id]/page.js       Customer detail: sticky header + 3 tabs (Activity / Jobs / Invoices) + Edit modal + Merge/Unmerge
   ├── calendar/page.js             CalendarView + ConflictAlertBanner + agenda + TimeBlocks + Jobber overlays
   ├── calls/page.js                Date-grouped expandable call cards + filters + summary stats
   ├── invoices/                    List + new + detail + batch-review
   ├── estimates/                   List + new + detail (single-price or tiered)
   ├── services/page.js             Phase 58: first-class polished page (was redirect stub)
   ├── settings/page.js             Phase 58: first-class polished form (was redirect stub)
+  ├── admin/merges/page.js         Admin-only: customer_merge_audit log (D-19 expanded) — NOT linked from sidebar
   └── more/page.js                 Config hub: quick-access + settings sections
       ├── more/services-pricing/   Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/      WorkingHoursEditor
@@ -154,13 +168,15 @@ request without losing client-side interactivity.
 
 ### Navigation
 
-**`DashboardSidebar`** — desktop-only (lg+). 6 nav items:
-Home, Jobs, Calendar, Calls, Invoices, More. Sidebar stays navy in
+**`DashboardSidebar`** — desktop-only (lg+). 7 nav items:
+Home, Jobs, Inquiries, Calendar, Calls, Invoices, More. Sidebar stays navy in
 both light/dark modes (`bg-[var(--sidebar-bg)]`). Between Ask Voco AI
 button and Log Out: theme toggle (sun/moon) via `next-themes.setTheme`.
 
 **`BottomTabBar`** — mobile-only (`lg:hidden`). 5 tabs: Home, Calls,
-Jobs, Calendar, More. Animated orange indicator (framer-motion spring).
+Jobs, Inquiries, More. **Calendar demoted to More overflow** (Phase 59 —
+added Inquiries tab to BottomTabBar, Calendar moved to More menu to stay
+at 5 tabs). Animated orange indicator (framer-motion spring).
 Uses `bg-card border-t border-border` for dark-mode compatibility.
 `data-tour="bottom-nav"`.
 
@@ -282,64 +298,185 @@ Reconnect-flow interaction.
 
 ---
 
-## 5. Jobs Page (formerly Leads)
+## 5. Jobs Tab (Phase 59 — rewired to jobs table)
 
 **File**: `src/app/dashboard/jobs/page.js`
 
 Client component. Status pill strip + filter bar + job list + Realtime
-subscription.
+subscription on `jobs` table (filtered by `tenant_id`).
 
-### LeadStatusPills
+### JobStatusPills
 
-**File**: `src/components/dashboard/LeadStatusPills.jsx`
+**File**: `src/components/dashboard/JobStatusPills.jsx`
 
 Horizontal pill strip. One pill per pipeline status with live count.
-DB enum (`new/booked/completed/paid/lost`) drives data; display labels
-are home-service vernacular: **New · Scheduled · Completed · Paid · Lost**
-(`booked` → "Scheduled"). Lost has `ml-2` gap separating from active
-pipeline. Phase 49 categorical dark-mode palette preserved. Clicking
-the active pill clears filter. Counts derived client-side from parent's
-`leads` array.
+DB enum (`scheduled/completed/paid/cancelled/lost`) drives data. Display
+labels: **Scheduled · Completed · Paid · (gap) · Cancelled · Lost**.
+`ml-2` gap before Cancelled separates active from terminal states.
+Phase 49 categorical dark-mode palette preserved. Clicking active pill
+clears filter. Counts derived client-side from parent's `jobs` array.
 
-### LeadFilterBar
+### JobFilterBar
 
-**File**: `src/components/dashboard/LeadFilterBar.jsx`
+**File**: `src/components/dashboard/JobFilterBar.jsx`
 
 Desktop (≥640px): inline flex-wrap (search, urgency Select, job type
-Input, date range, Clear all). Mobile (<640px): search + Filters
-button that opens a bottom Sheet. Filter-count badge excludes search
-(stays visible). Status filter NOT here — in `LeadStatusPills`.
-Active-filter pills row below for non-status filters.
+Input, date range, Clear all). Mobile (<640px): search + Filters button
+that opens a bottom Sheet. Status filter in `JobStatusPills`.
 
-### LeadFlyout
+### JobFlyout (formerly LeadFlyout)
 
-**File**: `src/components/dashboard/LeadFlyout.jsx`
+**File**: `src/components/dashboard/JobFlyout.jsx`
 
-Right Sheet. On open: fetches `/api/leads/${leadId}` (with transcript)
-AND `/api/invoices?lead_id=${leadId}` for linked-invoice check. Renders:
+Right Sheet. On open: fetches `/api/jobs/${jobId}` (with transcript)
+AND `/api/invoices?job_id=${jobId}` for linked-invoice check. Renders:
 
 - Urgency badge + relative time
-- Caller info (phone, timestamp)
+- Customer info (phone, timestamp) — links to `/dashboard/customers/[customerId]`
 - Job details (job_type, service_address, triage layer/confidence)
 - `AudioPlayer` recording URL
 - `TranscriptViewer` (structured + text)
 - Status `Select` + `RevenueInput` (for completed/paid)
-- "Update Status" → `PATCH /api/leads/${leadId}`
-- **Phase 33 Create/View Invoice**: Create button shown when status is
-  `completed` or `paid` AND no linked invoice. View button shown when
-  linked invoice exists.
-- **Priority-caller toggle** (Phase 46): PATCH `is_vip` — reflected in
-  Call Routing unified Priority list.
+- "Update Status" → `PATCH /api/jobs/${jobId}`
+- **Create/View Invoice**: Create button when status completed or paid AND no linked invoice. View when linked.
 - "Mark as Lost" with AlertDialog.
 
-`URGENCY_STYLES`, `STATUS_LABELS` (with booked → Scheduled),
-`STATUS_OPTIONS`. `formatRelativeTime(iso)` helper.
+`URGENCY_STYLES`, `STATUS_LABELS`, `STATUS_OPTIONS`. `formatRelativeTime(iso)` helper.
 
-### Empty state — Phase 58
+### HotJobsTile
 
-`EmptyStateLeads.jsx` is now a thin wrapper delegating to shared
-`<EmptyState icon={Users} headline="No jobs yet" ... ctaHref="/dashboard/more/ai-voice-settings" />`.
-Named export preserved for backward compat. See Section 11.
+**File**: `src/components/dashboard/HotJobsTile.jsx`
+
+Replaces `HotLeadsTile` (deleted in Phase 59). Queries `jobs` table —
+last 5 jobs of any status. Wired in `DailyOpsHub`.
+
+### EmptyStateJobs
+
+**File**: `src/components/dashboard/EmptyStateJobs.jsx`
+
+Thin wrapper delegating to shared `<EmptyState icon={Users} headline="No jobs yet"
+... ctaHref="/dashboard/more/ai-voice-settings" />`. See Section 11.
+
+---
+
+## 5b. Inquiries Tab (Phase 59 — new)
+
+**File**: `src/app/dashboard/inquiries/page.js`
+
+Client component. Status pill strip + filter bar + inquiry list + Realtime
+subscription on `inquiries` table (filtered by `tenant_id`).
+
+### D-07a Owner Responsibility Stance
+
+Open inquiries stay `open` indefinitely. **No cron, no auto-timeout, no
+visual staleness flag in V1.** Matches "inbox" mental model — owner converts
+or marks lost when ready. The Inquiries tab is the owner's responsibility to
+triage. Revisit if owners report cognitive load from inbox filling up.
+
+The chatbot knowledge doc `inquiries.md` includes a "Stale inquiries" section
+explaining this D-07a policy.
+
+### InquiryStatusPills
+
+**File**: `src/components/dashboard/InquiryStatusPills.jsx`
+
+Horizontal pill strip. Status enum: `open/converted/lost`. Display labels:
+**Open · Converted · (gap) · Lost** with `ml-2` gap before Lost.
+
+### InquiryFilterBar
+
+**File**: `src/components/dashboard/InquiryFilterBar.jsx`
+
+Search + urgency filter + date range. Default filter: `status=open`.
+
+### InquiryFlyout
+
+**File**: `src/components/dashboard/InquiryFlyout.jsx`
+
+Right Sheet. Shows inquiry details, customer link, urgency badge,
+transcript (if call linked), status Select. Actions:
+- "Convert to Job" button → `POST /api/inquiries/${id}/convert` (creates Job + marks inquiry `converted`)
+- "Mark as Lost" → `PATCH /api/inquiries/${id}` with `{status: 'lost'}`
+- Links to customer detail page (`/dashboard/customers/[customerId]`)
+
+---
+
+## 5c. Customer Detail Page (Phase 59 — new)
+
+**File**: `src/app/dashboard/customers/[id]/page.js`
+
+### Layout
+
+Sticky header + 3 tabs:
+
+```
+CustomerDetailHeader (sticky)
+  name, phone, default_address, lifetime_value, outstanding_balance
+  Jobber/Xero context badges (gracefully absent when not connected)
+  Overflow menu: Edit, Merge into another, View merge history → /dashboard/admin/merges
+  UnmergeBanner (shown when customer.merged_into is set on the TARGET — 7-day undo)
+
+Tabs:
+  Activity    Unified chronological timeline (calls + booking events + invoice events + notes)
+  Jobs        JobCard list filtered by customer_id (Phase 49 pill palette)
+  Invoices    Invoice list scoped to this customer (gated by features_enabled.invoicing — Phase 53)
+```
+
+### Realtime subscriptions (3)
+
+```js
+// Triple-subscribe (D-15):
+supabase.channel(`customer-${id}`).on('postgres_changes', { table: 'customers', filter: `id=eq.${id}` }, ...)
+supabase.channel(`jobs-${id}`).on('postgres_changes', { table: 'jobs', filter: `customer_id=eq.${id}` }, ...)
+supabase.channel(`inquiries-${id}`).on('postgres_changes', { table: 'inquiries', filter: `customer_id=eq.${id}` }, ...)
+```
+
+### Edit Modal (D-18)
+
+Full CRUD modal triggered by Edit button. Fields: name, default_address,
+email, notes, tags. Phone is **read-only** — to "change" a customer's
+phone the owner uses Merge. Save → `PATCH /api/customers/[id]`.
+Modal pattern matches existing dashboard editing UX.
+
+### Merge UX (D-19)
+
+Secondary action in CustomerDetailHeader overflow menu ("Merge into another").
+Flow:
+1. Typeahead picker → select target customer
+2. Preview dialog: "Will move: N jobs, M inquiries, K invoices, L calls.
+   Name 'X' will become 'Y'. Undoable for 7 days."
+3. Confirm → `POST /api/customers/[id]/merge` → `merge_customer` RPC
+4. Response includes `audit_id` → UI can navigate to `/dashboard/admin/merges`
+
+### UnmergeBanner (D-19)
+
+Shown on the **target** customer's detail page when a merge has been
+performed within the last 7 days. Surfaces undo button → `POST /api/customers/[id]/unmerge`
+→ `unmerge_customer` RPC. After 7 days the banner disappears
+(window expired — forward-fix only).
+
+---
+
+## 5d. Admin Merges View (D-19 expanded)
+
+**Route**: `/dashboard/admin/merges`
+
+**API**: `GET /api/admin/merges`
+
+Admin-only. Reads `customer_merge_audit` rows (tenant-scoped).
+**NOT linked from sidebar or BottomTabBar** — discoverable only via:
+- Direct URL
+- CustomerDetailHeader overflow menu "View merge history" entry
+
+Surfaces:
+- All merge events for the tenant (active, expired-undo-window, successfully-unmerged)
+- `merged_at`, `unmerged_at` (NULL = still merged or window expired), `merged_by`
+- `row_counts` JSONB per child table
+- Links to source and target customer detail pages
+
+**Retention semantics**: `customer_merge_audit` rows are retained forever.
+`unmerged_at` marks a successful undo but does NOT delete the row. The view
+shows the complete history of all consolidations for audit/legal purposes.
 
 ---
 
@@ -661,22 +798,39 @@ not inline hex codes in dashboard components.
 
 | Table | Added in | Purpose |
 |-------|----------|---------|
-| `leads` | 004 | Live lead updates on jobs page |
+| `leads` | 004 | **DROPPED** (migration 061) — superseded by customers/jobs/inquiries |
+| `customers` | 059 | Live customer updates (`REPLICA IDENTITY FULL`) |
+| `jobs` | 059 | Live job updates on jobs tab (`REPLICA IDENTITY FULL`) |
+| `inquiries` | 059 | Live inquiry updates on inquiries tab (`REPLICA IDENTITY FULL`) |
 | `calls` | 041 | Live call updates on calls page (`REPLICA IDENTITY FULL`) |
 | `appointments` | (standard) | Calendar live updates |
 | `calendar_events` | 057 | Provider='jobber' schedule-mirror live updates |
 
+**NOT published** (derived/audit-only): `customer_calls`, `job_calls`, `customer_merge_audit`.
+
 ### Client subscription pattern
 
 ```js
-// src/app/dashboard/jobs/page.js
+// Jobs tab — src/app/dashboard/jobs/page.js
 const channel = supabase
-  .channel(`leads-${tenantId}`)
+  .channel(`jobs-${tenantId}`)
   .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'leads',
+      { event: '*', schema: 'public', table: 'jobs',
         filter: `tenant_id=eq.${tenantId}` },
       (payload) => handleRealtimeEvent(payload))
   .subscribe();
+
+// Inquiries tab — src/app/dashboard/inquiries/page.js
+const channel = supabase
+  .channel(`inquiries-${tenantId}`)
+  .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'inquiries',
+        filter: `tenant_id=eq.${tenantId}` },
+      (payload) => handleRealtimeEvent(payload))
+  .subscribe();
+
+// Customer detail — triple-subscribe (customers + jobs + inquiries by customer_id)
+// See Section 5c for subscription details.
 ```
 
 Cleanup via `channel.unsubscribe()` in effect return.
@@ -747,9 +901,18 @@ persistence. Opened via `open-voco-chat` window event.
 
 | Route | File | Purpose |
 |-------|------|---------|
-| `GET /api/leads` | `src/app/api/leads/route.js` | Filtered + paginated; NO transcript_text |
-| `GET /api/leads/[id]` | `src/app/api/leads/[id]/route.js` | Full lead WITH transcript |
-| `PATCH /api/leads/[id]` | same | Status / revenue / `is_vip` update |
+| `GET /api/leads` | **DELETED** (Phase 59) | Replaced by /api/jobs + /api/inquiries |
+| `GET/PATCH /api/leads/[id]` | **DELETED** (Phase 59) | Replaced by /api/jobs/[id] + /api/inquiries/[id] |
+| `GET /api/customers` | `src/app/api/customers/route.js` | Filtered + paginated customer list |
+| `GET/PATCH /api/customers/[id]` | `src/app/api/customers/[id]/route.js` | Customer detail + update |
+| `POST /api/customers/[id]/merge` | same dir | Calls merge_customer RPC; returns audit_id |
+| `POST /api/customers/[id]/unmerge` | same dir | Calls unmerge_customer RPC (7-day window) |
+| `GET /api/jobs` | `src/app/api/jobs/route.js` | Filtered + paginated; NO transcript_text |
+| `GET/PATCH /api/jobs/[id]` | `src/app/api/jobs/[id]/route.js` | Full job WITH transcript; status/revenue update |
+| `GET /api/inquiries` | `src/app/api/inquiries/route.js` | Filtered + paginated; default status=open |
+| `GET/PATCH /api/inquiries/[id]` | `src/app/api/inquiries/[id]/route.js` | Inquiry detail + status update |
+| `POST /api/inquiries/[id]/convert` | same dir | Convert inquiry to job (manual offline flow) |
+| `GET /api/admin/merges` | `src/app/api/admin/merges/route.js` | Tenant-scoped customer_merge_audit rows (admin-only) |
 | `GET /api/calls` | `src/app/api/calls/route.js` | Filtered (date, urgency, outcome, search) |
 | `GET/PATCH /api/escalation-contacts` | `src/app/api/escalation-contacts/route.js` | CRUD + reorder |
 | `GET/PATCH /api/setup-checklist` | `src/app/api/setup-checklist/route.js` | Derived items + dismiss/mark-done |
@@ -762,7 +925,7 @@ persistence. Opened via `open-voco-chat` window event.
 | `GET/PATCH /api/account` | `src/app/api/account/route.js` | Tenant profile |
 | `GET/PATCH /api/notification-settings` | same pattern | `notification_preferences` JSONB |
 | `PUT /api/working-hours` | same pattern | `working_hours` + `slot_duration_mins` + `tenant_timezone` |
-| `GET/PATCH /api/call-routing` | same pattern | Schedule + pickup + dial_timeout + `vip_numbers` + sibling `vip_leads` |
+| `GET/PATCH /api/call-routing` | same pattern | Schedule + pickup + dial_timeout + `vip_numbers` |
 
 ---
 
@@ -770,7 +933,7 @@ persistence. Opened via `open-voco-chat` window event.
 
 | Migration | Purpose |
 |-----------|---------|
-| `004_leads_crm.sql` | `leads`, `lead_calls`, `activity_log` tables + Realtime publication |
+| `004_leads_crm.sql` | `leads`, `lead_calls`, `activity_log` tables + Realtime — **SUPERSEDED by 059+061** |
 | `005_setup_checklist.sql` | `tenants.setup_checklist_dismissed` column |
 | `006_escalation_contacts.sql` | `escalation_contacts` + `services.sort_order` |
 | `032_recurring_invoices.sql` | Invoice recurrence columns |
@@ -786,6 +949,9 @@ persistence. Opened via `open-voco-chat` window event.
 | `055_jobber_schedule_mirror.sql` | Phase 57 — calendar_events provider='jobber' |
 | `057_calendar_events_realtime.sql` | Phase 57 — calendar_events in Realtime publication |
 | `058_oauth_refresh_locks.sql` | Phase 55 — OAuth refresh race elimination |
+| `059_customers_jobs_inquiries.sql` | Phase 59 — CREATE customers/jobs/inquiries/customer_calls/job_calls/customer_merge_audit + backfill |
+| `060_phase59_rpcs.sql` | Phase 59 — record_call_outcome + merge_customer + unmerge_customer RPCs |
+| `061_drop_legacy_leads.sql` | Phase 59 — DROP TABLE leads/lead_calls + activity_event_type enum + DROP COLUMN lead_id |
 
 Full migration catalog lives in `auth-database-multitenancy`.
 
@@ -793,8 +959,12 @@ Full migration catalog lives in `auth-database-multitenancy`.
 
 ## 18. Key Design Decisions
 
+- **Phase 59 entity model**: DB entities are now `customers`, `jobs`, `inquiries`. All internal symbols match (`job_id`, `customer_id`, `inquiry_id`). The old `leads`/`leadId`/`lead_id` symbols are gone — do NOT reintroduce them.
+- **D-07a open inquiries**: Never add a cron, auto-timeout, or visual staleness flag to open inquiries without a new phase decision. Inbox model — owner manages triage.
+- **Admin Merges view is intentionally hidden**: Only accessible via direct URL or CustomerDetailHeader overflow menu. Not linked from sidebar or BottomTabBar. Do NOT add a nav link without explicit decision.
+- **Merge is irreversible after 7 days**: UnmergeBanner disappears after 7 days. The audit row persists forever but the undo action is unavailable. Forward-fix only after window expires (D-02b posture applied to merge undo as well).
 - **Single source of truth for copy**: user-facing Jobs copy lives in
-  components; DB enum values + API routes use `leads`/`leadId`/`lead_id`.
+  components; DB enum values + API routes match the new entity names.
   Never rename internal symbols without coordinated migration.
 - **Fail-closed feature flags**: no Provider → `{ invoicing: false }`.
 - **Progressive enhancement for checklist**: uniform `has_error` +
@@ -826,22 +996,44 @@ Full migration catalog lives in `auth-database-multitenancy`.
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Jobs page shows stale leads | Realtime subscription lost | Check `channel.subscribe()`, browser console for WebSocket errors |
+| Jobs tab shows no data | Realtime subscription on wrong table (old `leads`) | Check subscription uses `table: 'jobs'` not `table: 'leads'` |
+| Inquiries tab always empty | Default filter may be excluding non-open | Check `status=open` default filter; verify `inquiries` Realtime subscription |
+| Customer detail page flickers on activity | Only one of 3 Realtime channels subscribed | Ensure triple-subscribe: customers + jobs + inquiries filtered by customer_id |
+| UnmergeBanner not showing | Checking `source.merged_into` instead of target's perspective | Banner should appear on TARGET customer page, not source |
+| Merge throws "source_invalid" | Source already merged OR wrong tenant | Check `customers.merged_into IS NULL` before initiating merge |
+| Admin merges page 404 | Not admin user OR navigating without admin gate | Route is `/dashboard/admin/merges`; ensure verifyAdmin() passes |
+| HotJobsTile shows "No jobs" after Phase 59 deploy | DailyOpsHub still importing deleted HotLeadsTile | Fix import to `HotJobsTile` |
 | Setup checklist item shows red-dot without "Reconnect needed" subtitle | `error_subtitle` not emitted uniformly OR `has_error` missing | Check `deriveChecklistItems` returns both fields; see 58-02 |
 | BusinessIntegrationsClient stuck on "Connecting…" | Callback didn't `revalidateTag('integration-status-${tenantId}')` | See `integrations-jobber-xero/references/caching.md` |
 | Calendar shows empty grids on error instead of retry affordance | `fetchError` state missing | Top-level `<ErrorState onRetry={fetchData}/>` early-return |
 | Hardcoded `focus:ring-2` on new component | Missed Phase 58 POLISH-03 sweep | Import `{ focus }` from `@/lib/design-tokens` or use `focus-visible:` directly |
-| `<EmptyState>` import shadows local helper | Name collision (e.g., calls/page.js had local `function EmptyState`) | Rename local → `<PageName>EmptyState`; delegate zero-data to shared primitive |
+| `<EmptyState>` import shadows local helper | Name collision | Rename local → `<PageName>EmptyState`; delegate zero-data to shared primitive |
 | Invoices/estimates batch-review 404 | Missing `?ids=` query param | Expected — route requires ID list |
 | Recurring setup dialog for appointment | Not supported — invoice-only | Disambiguate user intent before implementation |
 | Dashboard dark-mode regression | Hardcoded `bg-white`/`bg-stone-*` without `dark:` variant | Swap to `bg-card`/`bg-muted` semantic tokens |
 
 ---
 
+## 20. Chatbot Knowledge Corpus (Phase 59 split)
+
+**File**: `src/lib/chatbot-knowledge/index.js`
+
+Phase 59 replaced `leads.md` with three separate files:
+
+| File | Covers |
+|------|--------|
+| `customers.md` | Customer dedup, merge/unmerge, customer detail page, phone immutability |
+| `jobs.md` | Job lifecycle (scheduled→completed→paid), job cards, invoice link |
+| `inquiries.md` | Inquiry lifecycle (open→converted/lost), D-07a stale-inquiry owner-responsibility policy, conversion flow |
+
+`ROUTE_DOC_MAP` updated: `/dashboard/jobs` → `jobs.md`, `/dashboard/inquiries` → `inquiries.md`, `/dashboard/customers/*` → `customers.md`. `KEYWORD_DOC_MAP` updated with new entity keywords.
+
+---
+
 ## Keeping this document updated
 
 When modifying any file under `src/app/dashboard/`,
-`src/components/dashboard/`, `src/app/api/{leads,calls,escalation-contacts,setup-checklist,...}/`,
+`src/components/dashboard/`, `src/app/api/{customers,jobs,inquiries,calls,escalation-contacts,setup-checklist,...}/`,
 or `src/lib/design-tokens.js`, update the relevant sections here.
 
 **For Xero/Jobber-specific changes:** update `integrations-jobber-xero`
