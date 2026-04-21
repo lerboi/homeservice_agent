@@ -1,8 +1,8 @@
 -- D-06: jobs.appointment_id NOT NULL UNIQUE enforced
--- TODO(Plan 02): uncomment after 053a migration applied
+-- TODO(Plan 02): uncomment after 059 migration applied
 
 -- This scaffold verifies the jobs table constraints once Plan 02 creates the table.
--- Run manually via psql after 053a is applied and before running Plan 03.
+-- Run manually via psql after 059 is applied and before running Plan 03.
 --
 -- How to run:
 --   psql $DATABASE_URL -f tests/db/test_jobs_constraints.sql

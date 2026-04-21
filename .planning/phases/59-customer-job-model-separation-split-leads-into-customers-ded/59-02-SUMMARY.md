@@ -12,9 +12,9 @@ tags: [phase-59, wave-1, migration, rls, realtime, backfill, supabase, postgres]
 requires:
   - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
     plan: "01"
-    provides: "Pre-audit SQL (053_pre_audit.sql) with expected_customers, expected_jobs, expected_inquiries, duplicate_phone_groups, orphan_leads_by_status counts"
+    provides: "Pre-audit SQL (059_pre_migration_audit.sql) with expected_customers, expected_jobs, expected_inquiries, duplicate_phone_groups, orphan_leads_by_status counts"
 provides:
-  - "supabase/migrations/053a_customers_jobs_inquiries.sql: 6 new tables with RLS, Realtime, and full backfill from legacy leads/lead_calls"
+  - "supabase/migrations/059_customers_jobs_inquiries.sql: 6 new tables with RLS, Realtime, and full backfill from legacy leads/lead_calls"
   - "customers: UNIQUE(tenant_id, phone_e164) D-05 dedup key + D-19 merge_snapshot/merged_into/merged_at"
   - "jobs: appointment_id NOT NULL + UNIQUE(appointment_id) D-06 strict 1:1"
   - "inquiries: 3-state status enum D-07"
@@ -29,13 +29,13 @@ affects:
   - "59-05 (Python agent: new write paths to customers/jobs/inquiries post-deploy)"
   - "59-06 (UI/Realtime: dashboard subscribes to customers/jobs/inquiries)"
   - "59-07 (Merge UI reads customer_merge_audit)"
-  - "59-08 (053b: NOT NULL flips, DROP legacy, event_type enum — gated on live-push verification)"
+  - "59-08 (061: NOT NULL flips, DROP legacy, event_type enum — gated on live-push verification)"
 
 # Tech tracking
 tech-stack:
   added: []
   patterns:
-    - "Two-phase cutover (D-01/D-02): 053a creates + backfills; 053b (Plan 08) drops legacy after Python agent lockstep"
+    - "Two-phase cutover (D-01/D-02): 059 creates + backfills; 061 (Plan 08) drops legacy after Python agent lockstep"
     - "Forward-fix-only rollback (D-02b): no down-migration; patch + redeploy if downstream fails after push"
     - "D-13b duplicate-phone collapse: array_agg ORDER BY created_at DESC FILTER (WHERE name IS NOT NULL) — latest non-null name/address wins"
     - "D-13a orphan-status verbatim: CASE maps new/followup → open; preserves open/lost/converted"
@@ -45,17 +45,17 @@ tech-stack:
 
 key-files:
   created:
-    - "supabase/migrations/053a_customers_jobs_inquiries.sql"
+    - "supabase/migrations/059_customers_jobs_inquiries.sql"
   modified: []
 
 key-decisions:
   - "D-02a: Legacy leads/lead_calls become READ-ONLY from commit forward — no new writes; dropped in Plan 08"
   - "D-02b: Forward-fix-only rollback — no down-migration; patch and redeploy if anything downstream fails post-push"
-  - "D-12a: activity_log.event_type strict enum (16 values) deferred to Plan 08 / 053b — 053a only adds 3 new FK columns to activity_log"
+  - "D-12a: activity_log.event_type strict enum (16 values) deferred to Plan 08 / 061 — 059 only adds 3 new FK columns to activity_log"
   - "D-13b latest-wins: most-recent lead name + address wins when multiple leads share (tenant_id, phone_e164)"
   - "D-13c no filtering: test/spam rows backfill as-is; operator cleans up via dashboard post-cutover"
   - "D-19 expanded: customer_merge_audit retained forever; merge_snapshot JSONB on customers for undo"
-  - "Pitfall 1: invoices.job_id and activity_log.customer_id kept NULLABLE in 053a — NOT NULL flip gated on Plan 08 coverage check"
+  - "Pitfall 1: invoices.job_id and activity_log.customer_id kept NULLABLE in 059 — NOT NULL flip gated on Plan 08 coverage check"
   - "Push deferred by user decision: live Supabase push batched to pre-Plan-08 slot"
 
 patterns-established:
@@ -70,7 +70,7 @@ duration: "~15 min (Tasks 1-2)"
 completed: "2026-04-21"
 ---
 
-# Phase 59 Plan 02: Migration 053a Create + Backfill Summary
+# Phase 59 Plan 02: Migration 059 Create + Backfill Summary
 
 **6-table customer/job schema (customers, jobs, inquiries, junctions, customer_merge_audit) with RLS, Realtime, and full D-13a/b/c backfill committed — live Supabase push intentionally deferred to Plan 08 batch.**
 
@@ -84,7 +84,7 @@ completed: "2026-04-21"
 
 ## Accomplishments
 
-- Wrote migration 053a as a single BEGIN/COMMIT transaction: CREATE TABLE (6 tables), 8 indexes, 12 RLS policies, Realtime publication (3 tables), new FK columns on `invoices` and `activity_log`, and full backfill from legacy `leads`/`lead_calls`.
+- Wrote migration 059 as a single BEGIN/COMMIT transaction: CREATE TABLE (6 tables), 8 indexes, 12 RLS policies, Realtime publication (3 tables), new FK columns on `invoices` and `activity_log`, and full backfill from legacy `leads`/`lead_calls`.
 - Implemented D-13b duplicate-phone collapse (array_agg latest-wins), D-13a orphan-status verbatim mapping, and D-13c no-quality-filter rules — confirmed against plan acceptance criteria.
 - Task 3 (schema-push) deferred by explicit user decision; push batched to pre-Plan-08 slot.
 
@@ -97,7 +97,7 @@ completed: "2026-04-21"
 
 ## Files Created/Modified
 
-- `supabase/migrations/053a_customers_jobs_inquiries.sql` — Full CREATE + backfill migration. Single transaction (BEGIN/COMMIT). Source-of-truth for all tables Plans 03–08 build against.
+- `supabase/migrations/059_customers_jobs_inquiries.sql` — Full CREATE + backfill migration. Single transaction (BEGIN/COMMIT). Source-of-truth for all tables Plans 03–08 build against.
 
 ## What Was Built
 
@@ -133,8 +133,8 @@ Two policies per table: `tenant_own` (USING/WITH CHECK via `tenants WHERE owner_
 
 ### Decisions Made
 
-- D-12a confirmed: `activity_log.event_type` strict enum deferred to 053b / Plan 08. 053a adds only the 3 new FK columns.
-- Pitfall 1: `invoices.job_id` and `activity_log.customer_id` NULLABLE in 053a. Plan 08 surveys NULL counts before deciding NOT NULL enforcement.
+- D-12a confirmed: `activity_log.event_type` strict enum deferred to 061 / Plan 08. 059 adds only the 3 new FK columns.
+- Pitfall 1: `invoices.job_id` and `activity_log.customer_id` NULLABLE in 059. Plan 08 surveys NULL counts before deciding NOT NULL enforcement.
 - Push deferred by user decision (Task 3) — not a technical blocker.
 
 ## Deviations from Plan
@@ -145,7 +145,7 @@ Two policies per table: `tenant_own` (USING/WITH CHECK via `tenants WHERE owner_
 - **Found during:** Task 1 (CREATE TABLE section)
 - **Issue:** `jobs.originated_as_inquiry_id REFERENCES inquiries(id)` and `inquiries.converted_to_job_id REFERENCES jobs(id)` are mutually circular. Both tables cannot be created simultaneously with inline FKs.
 - **Fix:** Created `inquiries` first (without `converted_to_job_id`), then `jobs` (with `originated_as_inquiry_id`), then `ALTER TABLE inquiries ADD COLUMN converted_to_job_id REFERENCES jobs(id)`. Standard Postgres circular FK resolution.
-- **Files modified:** `supabase/migrations/053a_customers_jobs_inquiries.sql`
+- **Files modified:** `supabase/migrations/059_customers_jobs_inquiries.sql`
 - **Commit:** a411018
 
 ---
@@ -172,7 +172,7 @@ The migration file is committed at `a411018`. The live Supabase project does NOT
 Before running `supabase db push`, run the pre-audit and verify the 10 named counts:
 
 ```bash
-SUPABASE_ACCESS_TOKEN=<token> supabase db execute --file supabase/migrations/053_pre_audit.sql
+SUPABASE_ACCESS_TOKEN=<token> supabase db execute --file supabase/audits/059_pre_migration_audit.sql
 ```
 
 Record these values:
@@ -252,7 +252,7 @@ customer_merge_audit: 0, legacy leads: [N] still present
 
 ## Downstream Risk — Building Against Migration File Without Live Tables
 
-Plans 03, 04, 05, 06, 07 will be built against `053a_customers_jobs_inquiries.sql` as sole source-of-truth. No live Supabase introspection until the batched push.
+Plans 03, 04, 05, 06, 07 will be built against `059_customers_jobs_inquiries.sql` as sole source-of-truth. No live Supabase introspection until the batched push.
 
 **Implications:**
 
@@ -262,7 +262,7 @@ Plans 03, 04, 05, 06, 07 will be built against `053a_customers_jobs_inquiries.sq
 - Realtime subscription tests (Plan 06) require a live DB — blocked until post-push.
 - Merge UI (Plan 07) reads `customer_merge_audit` — smoke tests blocked until post-push.
 
-**Mitigation:** All downstream plans must use column names, types, and constraints exactly as written in `053a_customers_jobs_inquiries.sql`. Any discrepancy surfaces as a runtime error during Plan 08 live-push validation. The batched push before Plan 08 is the hard integration gate.
+**Mitigation:** All downstream plans must use column names, types, and constraints exactly as written in `059_customers_jobs_inquiries.sql`. Any discrepancy surfaces as a runtime error during Plan 08 live-push validation. The batched push before Plan 08 is the hard integration gate.
 
 ---
 
@@ -291,7 +291,7 @@ When ready to push (before Plan 08 live-call test):
 
 ## Self-Check: PASSED
 
-- FOUND: supabase/migrations/053a_customers_jobs_inquiries.sql
+- FOUND: supabase/migrations/059_customers_jobs_inquiries.sql
 - FOUND: commit a411018 in git log
 - status: partial, tasks_complete: 2, tasks_total: 3, push_deferred: true all set in frontmatter
 

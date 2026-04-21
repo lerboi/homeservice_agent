@@ -1,5 +1,5 @@
 -- ============================================================
--- 054_phase59_rpcs.sql
+-- 060_phase59_rpcs.sql
 -- Phase 59 Plan 03: Three atomic RPCs for the customer/job model.
 -- ============================================================
 --
@@ -23,7 +23,7 @@
 --   Dashboard never calls these directly — all calls route through service-role API routes.
 --
 -- NOTE: Tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit)
---   are created by 053a_customers_jobs_inquiries.sql. This migration depends on 053a being
+--   are created by 059_customers_jobs_inquiries.sql. This migration depends on 059 being
 --   applied first. Live push batched to pre-Plan-08 slot (per Plan 02/03 SUMMARY).
 -- ============================================================
 

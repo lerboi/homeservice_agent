@@ -16,12 +16,12 @@ Out of scope: changes to the Phase 33–35 invoicing UI itself (only FK reattrib
 ## Implementation Decisions
 
 ### Migration & cutover
-- **D-01 (revised 2026-04-21):** Two-phase cutover — `053a_customers_jobs_inquiries.sql` creates `customers`, `jobs`, `inquiries`, `customer_calls`, `job_calls` + RLS + Realtime + backfills from existing `leads`/`appointments`/`lead_calls`; **legacy `leads`/`lead_calls` tables are KEPT** (read-only after 053a, no new writes). `053b_drop_legacy.sql` drops legacy tables and enforces `activity_log.customer_id NOT NULL`. 053b ships **same PR / same day** as 053a, after the Python LiveKit agent is verified writing to the new RPC via a live test call. Reconciles the old big-bang intent with the actual plans (59-02 ships 053a, 59-08 ships 053b) and the safer deploy story.
+- **D-01 (revised 2026-04-21):** Two-phase cutover — `059_customers_jobs_inquiries.sql` creates `customers`, `jobs`, `inquiries`, `customer_calls`, `job_calls` + RLS + Realtime + backfills from existing `leads`/`appointments`/`lead_calls`; **legacy `leads`/`lead_calls` tables are KEPT** (read-only after 059, no new writes). `061_drop_legacy.sql` drops legacy tables and enforces `activity_log.customer_id NOT NULL`. 061 ships **same PR / same day** as 059, after the Python LiveKit agent is verified writing to the new RPC via a live test call. Reconciles the old big-bang intent with the actual plans (59-02 ships 059, 59-08 ships 061) and the safer deploy story.
 - **D-02:** Forward-only migrations. No down scripts. Idempotent backfill. If a backfill bug surfaces, write a corrective migration. Matches existing `supabase/migrations/` style.
-- **D-02a (new 2026-04-21):** **New tables only** during the 053a→053b window. As soon as 053a ships, all writers (Next.js API routes + Python agent) write exclusively to `customers`/`jobs`/`inquiries`. The legacy `leads`/`lead_calls` tables receive zero new rows — they exist only as the rollback snapshot. **No dual-write.** Keeps code paths clean and avoids drift between tables.
-- **D-02b (new 2026-04-21):** **Forward-fix only rollback.** Dev-phase (no real users). If the Python agent deploy fails after 053a applies, the fix is to patch the agent and redeploy — not to revert the migration. PLAN risk section must name this explicitly so the executor doesn't write a phantom rollback migration. Matches D-02 forward-only philosophy.
+- **D-02a (new 2026-04-21):** **New tables only** during the 059→061 window. As soon as 059 ships, all writers (Next.js API routes + Python agent) write exclusively to `customers`/`jobs`/`inquiries`. The legacy `leads`/`lead_calls` tables receive zero new rows — they exist only as the rollback snapshot. **No dual-write.** Keeps code paths clean and avoids drift between tables.
+- **D-02b (new 2026-04-21):** **Forward-fix only rollback.** Dev-phase (no real users). If the Python agent deploy fails after 059 applies, the fix is to patch the agent and redeploy — not to revert the migration. PLAN risk section must name this explicitly so the executor doesn't write a phantom rollback migration. Matches D-02 forward-only philosophy.
 - **D-03:** API routes split: `/api/leads/*` → `/api/customers/*` + `/api/jobs/*` + `/api/inquiries/*`. All dashboard fetch sites and chatbot tools updated in this phase. No deprecation window — clean break. `/api/leads/*` routes deleted in 59-08 (Wave 4) after Python agent confirmed on new RPC.
-- **D-04:** Voice agent (Python LiveKit, separate Railway repo) updated in same phase as the DB cutover. Lockstep deploy required (Next.js + agent). Capture deploy ordering in PLAN risk section: 053a migration → Next.js deploy (new API routes + Realtime subscriptions) → Python agent deploy → verify with live test call → 053b migration drops legacy.
+- **D-04:** Voice agent (Python LiveKit, separate Railway repo) updated in same phase as the DB cutover. Lockstep deploy required (Next.js + agent). Capture deploy ordering in PLAN risk section: 059 migration → Next.js deploy (new API routes + Realtime subscriptions) → Python agent deploy → verify with live test call → 061 migration drops legacy.
 
 ### Entity definitions
 - **D-05:** Customer dedup: `UNIQUE(tenant_id, phone_e164)`. Phone normalized to E.164 via `libphonenumber-js` before insert (Node) and parity fixture for Python (Wave 0 plan 59-01). Phone is the dedup key and is **immutable** post-create — to "change" a customer's phone, owner uses Merge. No secondary email/address dedup — deliberately simple.
@@ -40,7 +40,7 @@ Out of scope: changes to the Phase 33–35 invoicing UI itself (only FK reattrib
 
 ### Invoice reattribution + activity log
 - **D-11:** `invoices.lead_id` → `invoices.job_id NOT NULL`. Backfill: for each existing invoice, find the lead's `appointment_id` → resolve to the new `job_id`. Customer is derivable via `job.customer_id`. Multi-job invoices handled by line items referencing job_id (out of scope for this phase if not already supported).
-- **D-12:** `activity_log` schema: `customer_id NOT NULL`, `job_id NULLABLE`, `inquiry_id NULLABLE` (**three explicit FKs, not polymorphic**). Customer-level events (created, contact info changed, merged) have only customer_id. Job-level events (booked, completed, paid) have customer_id + job_id. Inquiry events (opened, converted, lost) have customer_id + inquiry_id. Existing `lead_id` column dropped in 053b after backfill.
+- **D-12:** `activity_log` schema: `customer_id NOT NULL`, `job_id NULLABLE`, `inquiry_id NULLABLE` (**three explicit FKs, not polymorphic**). Customer-level events (created, contact info changed, merged) have only customer_id. Job-level events (booked, completed, paid) have customer_id + job_id. Inquiry events (opened, converted, lost) have customer_id + inquiry_id. Existing `lead_id` column dropped in 061 after backfill.
 - **D-12a (new 2026-04-21):** `activity_log.event_type` is a **strict enum**, not free-form. Starting set: `call_received`, `inquiry_opened`, `inquiry_converted`, `inquiry_lost`, `job_booked`, `job_completed`, `job_paid`, `job_cancelled`, `customer_created`, `customer_updated`, `customer_merged`, `customer_unmerged`, `invoice_created`, `invoice_paid`, `invoice_voided`, `other` (catch-all). Event-specific payload lives in existing/new `metadata` JSONB. Adding new event types requires a migration — deliberate friction keeps analytics sane.
 - **D-13:** Backfill rule: every existing `activity_log.lead_id` row → `customer_id` from the lead's resolved customer + `job_id` if the lead had an `appointment_id`, else `inquiry_id`.
 
@@ -100,7 +100,7 @@ None — no todos cross-referenced this phase.
 - `supabase/migrations/004_leads_crm.sql` — current `leads`, `lead_calls`, `activity_log` definitions, RLS policies, Realtime publication (the table being split)
 - `supabase/migrations/003_scheduling.sql` — `appointments` table (Job's 1:1 partner)
 - `supabase/migrations/051_features_enabled.sql` — `tenants.features_enabled` JSONB (Invoices tab on Customer page is gated by this)
-- `supabase/migrations/` — full migration history; new migrations will be `053a` and `053b`
+- `supabase/migrations/` — full migration history; new migrations will be `059` and `061`
 
 ### Phase 33–35 invoicing (FK reattribution target)
 - Phase 33-35 invoice tables — `invoices.lead_id` is what we're repointing to `job_id`
@@ -142,7 +142,7 @@ None — no todos cross-referenced this phase.
 - **3 Supabase client types** (browser/server/service-role) per auth-database-multitenancy skill — new routes must pick the right one. RPCs called from the Python agent use service-role.
 - **RLS by tenant** — every new table needs `tenant_id` + matching policies. Mirror the `leads` policy structure exactly: `tenant_own` (auth.uid join through tenants.owner_id) + `service_role_all`.
 - **REPLICA IDENTITY FULL + ALTER PUBLICATION supabase_realtime** — required for any Realtime-published table (per Phase 4 / 043_appointments_realtime pattern).
-- **Forward-only migrations**, idempotent SQL, named like `NNN_description.sql` — next numbers are `053a_customers_jobs_inquiries.sql` and `053b_drop_legacy.sql`.
+- **Forward-only migrations**, idempotent SQL, named like `NNN_description.sql` — next numbers are `059_customers_jobs_inquiries.sql` and `061_drop_legacy.sql`.
 - **Lockstep Next.js + Python agent deploys** — when the agent's write path changes, both must ship together. Capture deploy order in PLAN.
 - **SECURITY DEFINER RPCs** — `record_call_outcome`, `merge_customer`, `unmerge_customer` follow the Phase 55 Xero pattern of service-role-only execution.
 
@@ -163,7 +163,7 @@ None — no todos cross-referenced this phase.
 - Same-call auto-convert chosen over "any new appointment for this customer auto-converts" because of the gas-line-vs-clogged-sink scenario: unrelated future bookings should NOT silently mark old inquiries as converted.
 - 7-day merge undo added because merge is destructive and the user explicitly raised "what is merge actually for" — signals desire for reversibility.
 - Permanent `customer_merge_audit` table added 2026-04-21 because owners may want to reconstruct merge history even after the 7-day undo window has expired — the row_counts JSONB preserves "what this merge touched" in case of legal/audit questions.
-- Two-phase 053a/053b cutover adopted same day 2026-04-21 because coordinating the Python Railway redeploy with a Next.js deploy is a real failure mode — CONTEXT originally assumed single-PR big-bang, plans drifted to two-phase during planning, this resolves that drift formally.
+- Two-phase 059/061 cutover adopted same day 2026-04-21 because coordinating the Python Railway redeploy with a Next.js deploy is a real failure mode — CONTEXT originally assumed single-PR big-bang, plans drifted to two-phase during planning, this resolves that drift formally.
 - Customer page editing chose Full CRUD modal over inline click-to-edit for footgun reduction (consistent with user's general preference for deliberate confirmation flows).
 
 </specifics>
@@ -183,7 +183,7 @@ None — no todos cross-referenced this phase.
 - **Inquiry status expansion** (`follow_up_scheduled`, `unqualified`) — deliberately held back; V1 ships with 3-state enum. Revisit if real users report missing states.
 - **Auto-timeout on stale open inquiries** — V1 leaves open inquiries alone forever (owner responsibility). Revisit if dashboards start feeling cluttered for power users.
 - **Phone-or-email secondary dedup** — V1 is phone-only. Revisit if callers frequently use different numbers for the same household/business.
-- **Dual-write or feature-flagged RPC** during 053a→053b — deliberately NOT doing this. Dev-phase risk tolerance + same-day window means forward-fix is the rollback. Revisit if Phase 59 ever repeats in production with real users.
+- **Dual-write or feature-flagged RPC** during 059→061 — deliberately NOT doing this. Dev-phase risk tolerance + same-day window means forward-fix is the rollback. Revisit if Phase 59 ever repeats in production with real users.
 
 ### Reviewed Todos (not folded)
 None — no todos were surfaced for cross-reference.

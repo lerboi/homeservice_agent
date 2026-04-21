@@ -9,7 +9,7 @@
 
 import { createSupabaseServer } from './supabase-server.js';
 
-// Valid job status values (053a_customers_jobs_inquiries.sql CHECK constraint)
+// Valid job status values (059_customers_jobs_inquiries.sql CHECK constraint)
 const VALID_JOB_STATUSES = ['scheduled', 'completed', 'paid', 'cancelled', 'lost'];
 const VALID_URGENCIES = ['emergency', 'urgent', 'routine'];
 

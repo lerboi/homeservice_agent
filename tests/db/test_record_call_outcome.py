@@ -1,5 +1,5 @@
 """
-Integration tests for record_call_outcome RPC (Plan 03 / migration 054_phase59_rpcs.sql).
+Integration tests for record_call_outcome RPC (Plan 03 / migration 060_phase59_rpcs.sql).
 
 Decision IDs validated:
   D-05  — customer dedup by (tenant_id, phone_e164)
@@ -9,7 +9,7 @@ Decision IDs validated:
 
 Security: ASVS V4 — RPC callable only by service_role (T-59-03-01).
 
-NOTE: These tests require a live Supabase instance with migration 054_phase59_rpcs.sql
+NOTE: These tests require a live Supabase instance with migration 060_phase59_rpcs.sql
 applied. All tests are marked skip with reason "push-deferred" because the live push
 is batched to the pre-Plan-08 slot (per Plan 02 SUMMARY). Remove the skip decorators
 after the push is confirmed (Plan 08 Task 1).

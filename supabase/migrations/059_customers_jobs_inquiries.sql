@@ -1,10 +1,10 @@
 -- ============================================================
--- 053a_customers_jobs_inquiries.sql
+-- 059_customers_jobs_inquiries.sql
 -- Phase 59: Customer/Job model separation — CREATE + backfill.
 -- ============================================================
 
--- 053a — Phase 59 Customer/Job model separation: create new schema + backfill.
--- Per CONTEXT D-01: two-phase cutover. 053b (Plan 08) drops legacy after Python agent lockstep.
+-- 059 — Phase 59 Customer/Job model separation: create new schema + backfill.
+-- Per CONTEXT D-01: two-phase cutover. 061 (Plan 08) drops legacy after Python agent lockstep.
 -- Per CONTEXT D-02a: FROM COMMIT FORWARD, legacy leads/lead_calls are READ-ONLY.
 --   All writers (Next.js API routes + Python agent via record_call_outcome RPC) write
 --   exclusively to customers/jobs/inquiries. NO DUAL-WRITE. Legacy tables exist only as
@@ -16,7 +16,7 @@
 --   applies NO quality filtering (test/spam data backfills as-is; owner cleans up).
 -- Per CONTEXT D-19 expanded (2026-04-21): customer_merge_audit table retained forever.
 -- Per CONTEXT D-12a: activity_log.event_type strict enum migration is deliberately
---   DEFERRED to Plan 08 / 053b. 053a only adds the three new FK columns.
+--   DEFERRED to Plan 08 / 061. 059 only adds the three new FK columns.
 
 BEGIN;
 
@@ -212,7 +212,7 @@ ALTER TABLE inquiries REPLICA IDENTITY FULL;
 -- Section 5: NEW columns on existing tables
 -- ============================================================
 
--- D-11: invoices.job_id — NULLABLE in 053a per Pitfall 1.
+-- D-11: invoices.job_id — NULLABLE in 059 per Pitfall 1.
 -- Plan 08 inspects COUNT(*) WHERE lead_id IS NOT NULL AND job_id IS NULL — if 0, flips to NOT NULL;
 -- if > 0, escalates to discuss-phase.
 ALTER TABLE invoices
@@ -220,15 +220,15 @@ ALTER TABLE invoices
 -- invoices.lead_id STAYS; Plan 08 drops after manual survey of NULL rows confirms coverage.
 
 -- D-12: activity_log three new FK columns (customer_id, job_id, inquiry_id).
--- NOTE (D-12a): activity_log.event_type strict enum migration is deliberately DEFERRED to Plan 08 / 053b.
--- Rationale: 053a is already large; coercing event_type to the strict 16-value enum requires
+-- NOTE (D-12a): activity_log.event_type strict enum migration is deliberately DEFERRED to Plan 08 / 061.
+-- Rationale: 059 is already large; coercing event_type to the strict 16-value enum requires
 -- first verifying backfill coverage mapped every legacy row into one of the enum values.
--- Plan 08 / 053b adds the enum type + ALTER COLUMN TYPE coercion atomically.
+-- Plan 08 / 061 adds the enum type + ALTER COLUMN TYPE coercion atomically.
 ALTER TABLE activity_log
   ADD COLUMN customer_id uuid REFERENCES customers(id) ON DELETE CASCADE,
   ADD COLUMN job_id uuid REFERENCES jobs(id) ON DELETE SET NULL,
   ADD COLUMN inquiry_id uuid REFERENCES inquiries(id) ON DELETE SET NULL;
--- activity_log.lead_id STAYS NOT NULL in 053a; Plan 08 flips to NULLABLE + drops after verifying backfill coverage.
+-- activity_log.lead_id STAYS NOT NULL in 059; Plan 08 flips to NULLABLE + drops after verifying backfill coverage.
 
 -- ============================================================
 -- Section 6: Backfill from legacy tables
@@ -359,13 +359,13 @@ WHERE a.lead_id = l.id;
 -- value maps to one of the 16 starting enum values.
 
 -- ============================================================
--- DO NOT in 053a:
+-- DO NOT in 059:
 --   DROP TABLE leads
 --   DROP TABLE lead_calls
 --   DROP COLUMN invoices.lead_id
 --   DROP COLUMN activity_log.lead_id
 --   ALTER COLUMN activity_log.customer_id SET NOT NULL
---   CREATE TYPE event_type (Plan 08 / 053b owns this per D-12a)
+--   CREATE TYPE event_type (Plan 08 / 061 owns this per D-12a)
 --   CREATE FUNCTION record_call_outcome (Plan 03 owns this)
 --   CREATE FUNCTION merge_customer / unmerge_customer (Plan 03 owns this)
 -- Per D-02: forward-only, no down script.

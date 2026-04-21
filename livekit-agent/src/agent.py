@@ -16,7 +16,7 @@ Deploy ordering (CRITICAL — Pitfall 5 per Phase 59 CONTEXT D-04):
   1. Plan 02 + 03 migrations pushed FIRST (creates customers/jobs/inquiries + RPC)
   2. Plan 04 Next.js deploys (reads new tables)
   3. This agent deploys (writes via RPC — D-02a: new tables only, no legacy writes)
-  4. Plan 08 Migration 053b pushed AFTER agent confirmed live (drops legacy tables)
+  4. Plan 08 Migration 061 pushed AFTER agent confirmed live (drops legacy tables)
 """
 from __future__ import annotations
 
@@ -162,7 +162,7 @@ async def _persist_call_outcome(
 
     D-02a: writes EXCLUSIVELY to new tables via record_call_outcome RPC.
            NO fallback to legacy leads/lead_calls — those tables are read-
-           only after 053a and dropped in 053b.
+           only after 059 and dropped in 061.
     D-02b: On failure, the fix is a forward patch + redeploy. The except
            branch intentionally does NOT insert into legacy leads.
 

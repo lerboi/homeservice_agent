@@ -5,7 +5,7 @@
  * Query params: status, urgency, customer_id
  * Response: { jobs: [...] } — each job has customer + appointment + calls joined.
  *
- * D-06: Jobs always have appointment_id NOT NULL (source-of-truth: 053a migration).
+ * D-06: Jobs always have appointment_id NOT NULL (source-of-truth: 059 migration).
  * D-02a: Zero legacy leads/lead_calls reads.
  * T-59-04-01: RLS-bound server client + explicit tenant_id filter.
  */

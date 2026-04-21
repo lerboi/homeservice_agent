@@ -98,7 +98,7 @@ Tasks 1–3 complete and committed. Task 4 is a `checkpoint:human-verify` gate r
 - InquiryFlyout Convert to Job / Mark as Lost
 - JobFlyout parity with LeadFlyout
 
-**Push-deferred context:** Migrations 053a + 054 not yet pushed. API routes + RPCs exist as code but will fail at runtime against live DB. E2E live testing blocked until Plan 08's batched push. Code is ship-complete; checkpoint verification gates on Plan 08 DB push.
+**Push-deferred context:** Migrations 059 + 054 not yet pushed. API routes + RPCs exist as code but will fail at runtime against live DB. E2E live testing blocked until Plan 08's batched push. Code is ship-complete; checkpoint verification gates on Plan 08 DB push.
 
 ## Performance
 

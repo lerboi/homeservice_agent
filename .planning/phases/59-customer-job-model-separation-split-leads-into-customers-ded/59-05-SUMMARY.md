@@ -12,10 +12,10 @@ dependency_graph:
   requires:
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "02"
-      provides: "053a_customers_jobs_inquiries.sql (tables the RPC writes to)"
+      provides: "059_customers_jobs_inquiries.sql (tables the RPC writes to)"
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "03"
-      provides: "054_phase59_rpcs.sql: record_call_outcome RPC (D-14)"
+      provides: "060_phase59_rpcs.sql: record_call_outcome RPC (D-14)"
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "04"
       provides: "Next.js API routes for new tables (lockstep deploy partner)"
@@ -50,7 +50,7 @@ key-files:
     - "livekit-agent/src/agent.py"
 
 decisions:
-  - "Tests use mocked Supabase client (not real test DB) — push-deferred context override; integration tests deferred to Plan 08 when 053a+054 are live"
+  - "Tests use mocked Supabase client (not real test DB) — push-deferred context override; integration tests deferred to Plan 08 when 059+054 are live"
   - "src/lib/phone.py added as Rule 3 auto-fix — write_outcome.py imports _normalize_phone; file missing from mirror would block module import"
   - "agent.py updated with _persist_call_outcome() showing the Phase 59 production integration pattern alongside the Phase 58 telemetry wrapper"
 
@@ -83,7 +83,7 @@ Python agent's post-call pipeline switched from direct `leads`/`lead_calls` inse
 Single-function post-call write path:
 
 1. **Phone normalization** — `_normalize_phone(raw_phone, country_hint)` from `src/lib/phone.py`; raises `RecordOutcomeError("phone_normalize_failed: ...")` on empty/invalid input.
-2. **RPC call** — `supabase.rpc('record_call_outcome', params).execute()` with all 8 parameters matching the 054_phase59_rpcs.sql signature exactly.
+2. **RPC call** — `supabase.rpc('record_call_outcome', params).execute()` with all 8 parameters matching the 060_phase59_rpcs.sql signature exactly.
 3. **Shape validation** — result must be a dict containing `customer_id`; otherwise `RecordOutcomeError("rpc_returned_unexpected_shape: ...")`.
 
 **D-02a compliance:** Zero `.table(...)` or `.from_(...)` calls in the module. Write path is exclusively the RPC.

@@ -190,7 +190,7 @@
 
 # Re-discussion — 2026-04-21
 
-**Context at re-entry:** CONTEXT.md with 19 locked decisions existed; 8 plans already created. User chose "Full re-discussion" to revisit every area. One known conflict surfaced at entry: CONTEXT D-01 (big-bang) diverged from plans 59-02/59-08 + roadmap (two-phase 053a/053b).
+**Context at re-entry:** CONTEXT.md with 19 locked decisions existed; 8 plans already created. User chose "Full re-discussion" to revisit every area. One known conflict surfaced at entry: CONTEXT D-01 (big-bang) diverged from plans 59-02/59-08 + roadmap (two-phase 059/061).
 
 **Areas re-opened:** Migration cutover; Activity log FK shape; Inquiry conversion + lifecycle; Merge flow + dedup; Backfill edge cases.
 
@@ -200,7 +200,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Two-phase 053a/053b (recommended) | 053a creates + backfills + keeps legacy; 053b drops after Python agent verified. Matches drifted plans + roadmap. | ✓ |
+| Two-phase 059/061 (recommended) | 059 creates + backfills + keeps legacy; 061 drops after Python agent verified. Matches drifted plans + roadmap. | ✓ |
 | Big-bang single migration | Original D-01 stance. | |
 | Two-phase + tenant feature flag | Gradual rollout. Overkill for dev-phase. | |
 
@@ -210,26 +210,26 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Same PR / same day | 053a → agent redeploy → test call → 053b same day. Safety harness. | ✓ |
+| Same PR / same day | 059 → agent redeploy → test call → 061 same day. Safety harness. | ✓ |
 | One release cycle (days) | 1-3 day soak. | |
 | Skip | N/A (big-bang not chosen). | |
 
-### Dual-write during 053a→053b
+### Dual-write during 059→061
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| New tables only | 053a redirects ALL writers to new tables; old leads kept read-only. | ✓ |
+| New tables only | 059 redirects ALL writers to new tables; old leads kept read-only. | ✓ |
 | Dual-write | Both tables receive writes. More drift risk. | |
 | Snapshot-only old table | Old frozen at migration time. | |
 
 **New D-02a captures this.**
 
-### Rollback if Python deploy fails after 053a
+### Rollback if Python deploy fails after 059
 
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Forward-fix only | Dev-phase, no real users. Fix agent, redeploy. | ✓ |
-| Revert migration 053a | Reverse migration. Expensive to write. | |
+| Revert migration 059 | Reverse migration. Expensive to write. | |
 | Feature flag on RPC | Python falls back to legacy INSERT. More complexity. | |
 
 **New D-02b captures this. Will be called out explicitly in PLAN risk section.**
@@ -360,15 +360,15 @@
 - Inquiry status expansion (`follow_up_scheduled`, `unqualified`)
 - Auto-timeout on stale open inquiries
 - Phone-or-email secondary dedup
-- Dual-write / feature-flagged RPC during 053a→053b (dev-phase forward-fix suffices)
+- Dual-write / feature-flagged RPC during 059→061 (dev-phase forward-fix suffices)
 
 ## Net deltas to plans
 
 Plans 59-01..59-08 mostly survive. Meaningful deltas to surface during `/gsd:plan-phase 59`:
-- 59-02 (053a) — now includes explicit "legacy table stays read-only" note
+- 59-02 (059) — now includes explicit "legacy table stays read-only" note
 - 59-03 (RPCs) — unchanged; already included merge/unmerge
 - 59-03 (RPCs) — ADD customer_merge_audit table + INSERT/UPDATE inside merge/unmerge RPCs
 - 59-07 (Customer detail page) — no change required
-- 59-08 (053b) — explicit same-day-as-053a timing, event_type enum migration lives here
+- 59-08 (061) — explicit same-day-as-059 timing, event_type enum migration lives here
 - New admin "Merges" view — add to 59-07 or split into its own small plan
 

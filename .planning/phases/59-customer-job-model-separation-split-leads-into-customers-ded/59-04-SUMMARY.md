@@ -11,10 +11,10 @@ dependency_graph:
   requires:
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "02"
-      provides: "053a_customers_jobs_inquiries.sql (tables these routes query)"
+      provides: "059_customers_jobs_inquiries.sql (tables these routes query)"
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "03"
-      provides: "054_phase59_rpcs.sql (merge_customer, unmerge_customer RPCs)"
+      provides: "060_phase59_rpcs.sql (merge_customer, unmerge_customer RPCs)"
   provides:
     - "GET /api/customers — list with jobs_count + open_inquiries_count aggregates"
     - "GET /api/customers/[id] — detail with live-computed stats (lifetime_value, outstanding_balance, jobs_count, open_inquiries_count)"

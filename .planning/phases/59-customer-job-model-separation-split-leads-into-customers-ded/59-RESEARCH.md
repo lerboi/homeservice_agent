@@ -517,9 +517,9 @@ supabase.channel(`customer-${id}`)
 1. Merge DB migration (creates tables + RPC; old `leads` still exists until step 3).
 2. Deploy Next.js (reads new tables; `/api/leads` now 404).
 3. Deploy Python agent (writes via new RPC).
-4. Re-run migration 053 step 8 (`DROP TABLE leads`) — or split migration into 053a (create + backfill, keep old) and 053b (drop old) for safety.
+4. Re-run migration 053 step 8 (`DROP TABLE leads`) — or split migration into 059 (create + backfill, keep old) and 061 (drop old) for safety.
 **Warning signs:** Calls silently failing between step 2 and step 3.
-**Mitigation:** Split migration — 053a (create + backfill, keep `leads`/`lead_calls` in place) and 053b (drop legacy tables) as two separate files, applied with deploy in between.
+**Mitigation:** Split migration — 059 (create + backfill, keep `leads`/`lead_calls` in place) and 061 (drop legacy tables) as two separate files, applied with deploy in between.
 
 ### Pitfall 6: Existing `appointments.caller_phone` not normalized — breaks dedup alignment
 **What goes wrong:** `appointments.caller_phone` is written by the booking RPC from raw call data; it may not match the customer's `phone_e164`. If we ever re-derive customer from appointment, mismatches surface.
@@ -658,7 +658,7 @@ No new external dependencies introduced. Existing stack (Supabase, Next.js, Pyth
 | D-06 (job = appointment) | Insert job without appointment_id → CHECK fails | unit (SQL) | `psql -f tests/db/test_jobs_constraints.sql` | ❌ Wave 0 |
 | D-07 (inquiry enum) | Inquiry with invalid status → CHECK fails | unit (SQL) | same file | ❌ Wave 0 |
 | D-10 (same-call auto-convert) | record_call_outcome with appointment_id → job + no inquiry | integration | `pytest tests/db/test_record_call_outcome.py::test_auto_convert` | ❌ Wave 0 |
-| D-11 (invoice.job_id) | Backfill populates job_id for all invoices where lead had appointment | integration | `pytest tests/migrations/test_053_backfill.py::test_invoices_repointed` | ❌ Wave 0 |
+| D-11 (invoice.job_id) | Backfill populates job_id for all invoices where lead had appointment | integration | `pytest tests/migrations/test_059_backfill.py::test_invoices_repointed` | ❌ Wave 0 |
 | D-12/D-13 (activity_log) | Backfill populates customer_id + (job_id XOR inquiry_id) | integration | same file, different test | ❌ Wave 0 |
 | D-14 (RPC atomicity) | Simulated failure mid-RPC rolls back customer insert | integration | `pytest tests/db/test_record_call_outcome.py::test_transaction_rollback` | ❌ Wave 0 |
 | D-15 (Realtime) | INSERT on jobs triggers subscription payload | integration (e2e) | `npx vitest run tests/realtime/jobs.test.js` | ❌ Wave 0 |
@@ -676,12 +676,12 @@ No new external dependencies introduced. Existing stack (Supabase, Next.js, Pyth
 - [ ] `package.json` — confirm test framework + add `"test": "..."` script if missing.
 - [ ] `tests/db/test_record_call_outcome.py` (or `.test.js` equivalent) — RPC contract tests.
 - [ ] `tests/db/test_jobs_constraints.sql` — schema constraint tests.
-- [ ] `tests/migrations/test_053_backfill.py` — backfill assertions.
+- [ ] `tests/migrations/test_059_backfill.py` — backfill assertions.
 - [ ] `tests/api/customers.test.js` + `tests/api/jobs-list.test.js` + `tests/api/inquiries-list.test.js` — route contract tests.
 - [ ] `tests/realtime/jobs.test.js` — Realtime smoke.
 - [ ] `tests/db/test_merge_customer.py` — merge + undo.
 - [ ] `src/lib/phone/normalize.js` + companion test — E.164 contract matches Python agent's `_normalize_phone`.
-- [ ] Pre-migration audit SQL in `supabase/migrations/053a_audit.sql` (runs SELECTs, not DDL — documents expected pre-state).
+- [ ] Pre-migration audit SQL in `supabase/migrations/059_audit.sql` (runs SELECTs, not DDL — documents expected pre-state).
 
 ## Security Domain
 

@@ -3,7 +3,7 @@
 Replaces prior direct inserts into leads + lead_calls with a single
 record_call_outcome RPC call that atomically upserts the customer and
 creates either a job (booked) or inquiry (unbooked), plus links the call
-to both junction tables. See supabase/migrations/054_phase59_rpcs.sql.
+to both junction tables. See supabase/migrations/060_phase59_rpcs.sql.
 
 D-02a: This module writes EXCLUSIVELY to the RPC. There is no fallback
        path to legacy leads/lead_calls. If the RPC fails, record_outcome

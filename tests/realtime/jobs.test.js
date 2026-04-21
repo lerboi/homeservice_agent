@@ -5,7 +5,7 @@
  * T-59-06-01 mitigation: explicit filter `tenant_id=eq.<uuid>` scopes subscription;
  *   a cross-tenant INSERT MUST NOT fire the handler.
  *
- * Note (2026-04-21): migrations 053a (tables) are push-deferred until Plan 08.
+ * Note (2026-04-21): migrations 059 (tables) are push-deferred until Plan 08.
  * The `jobs` table does not exist in the live DB yet.
  * This test is written as a Jest integration test scaffold with the correct
  * Realtime subscription pattern and cross-tenant guard assertions.

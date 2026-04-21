@@ -1,8 +1,8 @@
--- READ-ONLY AUDIT. Do not run via supabase db push. Run manually before 053a.
+-- READ-ONLY AUDIT. Do not run via supabase db push. Run manually before 059.
 --
 -- Purpose: Validate data assumptions in the leads + invoices tables before
--- running the Phase 59 Plan 02 migration (053a) that creates the customers
--- and jobs tables. Output of these queries determines whether 053a can
+-- running the Phase 59 Plan 02 migration (059) that creates the customers
+-- and jobs tables. Output of these queries determines whether 059 can
 -- proceed as-designed or whether a fix-up pass is needed first.
 --
 -- D-13c: This audit makes NO quality judgments — do not filter test/spam data.
@@ -10,14 +10,14 @@
 -- and inquiries post-cutover.
 --
 -- How to run:
---   supabase db execute --file supabase/migrations/053_pre_audit.sql
---   OR: psql $DATABASE_URL -f supabase/migrations/053_pre_audit.sql
+--   supabase db execute --file supabase/audits/059_pre_migration_audit.sql
+--   OR: psql $DATABASE_URL -f supabase/audits/059_pre_migration_audit.sql
 --
 -- Expected clean-slate output (no legacy data):
 --   non_e164_phones               = 0
 --   invoices_for_unbooked_leads   = 0
 --
--- These counts also seed the assertions in tests/migrations/test_053_backfill.py
+-- These counts also seed the assertions in tests/migrations/test_059_backfill.py
 -- (expected_customers / expected_jobs / expected_inquiries) and the D-13a/D-13b
 -- backfill correctness checks in Plan 02.
 
@@ -26,7 +26,7 @@
 -- -----------------------------------------------------------------------
 
 -- Count of leads whose from_number is NULL or does not match E.164 regex.
--- Expected: 0 before running 053a. Any non-zero count requires a data fix-up.
+-- Expected: 0 before running 059. Any non-zero count requires a data fix-up.
 SELECT COUNT(*) AS non_e164_phones FROM leads
 WHERE from_number IS NULL OR from_number !~ '^\+[1-9]\d{6,14}$';
 
@@ -42,7 +42,7 @@ LIMIT 50;
 -- Invoices that belong to leads with no confirmed appointment.
 -- These would be orphaned when invoices.lead_id is repointed to jobs.id
 -- (since jobs require appointment_id IS NOT NULL).
--- Expected: 0 before running 053a.
+-- Expected: 0 before running 059.
 SELECT COUNT(*) AS invoices_for_unbooked_leads
 FROM invoices i
 JOIN leads l ON l.id = i.lead_id
@@ -52,7 +52,7 @@ WHERE l.appointment_id IS NULL;
 SELECT COUNT(*) AS invoices_without_lead FROM invoices WHERE lead_id IS NULL;
 
 -- -----------------------------------------------------------------------
--- Post-migration row count predictions (used by test_053_backfill.py)
+-- Post-migration row count predictions (used by test_059_backfill.py)
 -- -----------------------------------------------------------------------
 
 -- Number of distinct (tenant_id, from_number) pairs = expected customers after backfill.

@@ -12,9 +12,9 @@ dependency_graph:
   requires:
     - phase: 59-customer-job-model-separation-split-leads-into-customers-ded
       plan: "02"
-      provides: "053a_customers_jobs_inquiries.sql (tables these RPCs operate on)"
+      provides: "059_customers_jobs_inquiries.sql (tables these RPCs operate on)"
   provides:
-    - "supabase/migrations/054_phase59_rpcs.sql: record_call_outcome + merge_customer + unmerge_customer RPCs"
+    - "supabase/migrations/060_phase59_rpcs.sql: record_call_outcome + merge_customer + unmerge_customer RPCs"
     - "record_call_outcome: atomic customer UPSERT + job/inquiry branch + call junctions (D-14/D-10/D-16)"
     - "merge_customer: repoint children + merge_snapshot + customer_merge_audit INSERT with row_counts JSONB (D-19 + D-19 expanded)"
     - "unmerge_customer: snapshot-based reverse repoint + customer_merge_audit unmerged_at UPDATE (D-19 7-day undo)"
@@ -37,14 +37,14 @@ tech-stack:
 
 key-files:
   created:
-    - "supabase/migrations/054_phase59_rpcs.sql"
+    - "supabase/migrations/060_phase59_rpcs.sql"
   modified:
     - "tests/db/test_record_call_outcome.py"
     - "tests/db/test_merge_customer.py"
 
 decisions:
   - "Tests use push-deferred skip reason (not Plan-03-skip) — tests are implementation-complete; will activate after live push (Plan 08 Task 1)"
-  - "All 3 RPCs in single migration file (054_phase59_rpcs.sql) inside one BEGIN/COMMIT transaction"
+  - "All 3 RPCs in single migration file (060_phase59_rpcs.sql) inside one BEGIN/COMMIT transaction"
   - "row_counts JSONB on single line in INSERT to satisfy plan grep verification pattern"
   - "p_merged_by uuid DEFAULT NULL — nullable; NULL when RPC called server-side without a dashboard user"
   - "unmerge uses ORDER BY merged_at DESC LIMIT 1 on customer_merge_audit lookup — defensive against (impossible in current design) multiple audit rows for same source"
@@ -123,8 +123,8 @@ Mirrors `027_lock_rpc_functions.sql` exactly. No anon/authenticated role can inv
 
 | Task | Commit | Files |
 |------|--------|-------|
-| 1 — record_call_outcome RPC + tests | `15630e0` | `054_phase59_rpcs.sql` (new), `test_record_call_outcome.py` |
-| 2 — merge + unmerge RPCs + tests | `415afc2` | `054_phase59_rpcs.sql` (amended), `test_merge_customer.py` |
+| 1 — record_call_outcome RPC + tests | `15630e0` | `060_phase59_rpcs.sql` (new), `test_record_call_outcome.py` |
+| 2 — merge + unmerge RPCs + tests | `415afc2` | `060_phase59_rpcs.sql` (amended), `test_merge_customer.py` |
 | 3 — schema push | DEFERRED (blocking human-verify checkpoint) | — |
 
 ## Deviations from Plan
@@ -152,7 +152,7 @@ No new network endpoints introduced. The 3 RPCs are internal Postgres functions 
 
 **Status: code-complete, push-pending.**
 
-Migration `054_phase59_rpcs.sql` is committed at `415afc2`. The live Supabase project does NOT yet have these RPCs. Push is batched to pre-Plan-08 slot along with `053a_customers_jobs_inquiries.sql`.
+Migration `060_phase59_rpcs.sql` is committed at `415afc2`. The live Supabase project does NOT yet have these RPCs. Push is batched to pre-Plan-08 slot along with `059_customers_jobs_inquiries.sql`.
 
 ### Push command (when ready)
 
@@ -193,7 +193,7 @@ tests: 14/14 passed
 ## Self-Check: PASSED
 
 Files verified:
-- FOUND: supabase/migrations/054_phase59_rpcs.sql
+- FOUND: supabase/migrations/060_phase59_rpcs.sql
 - FOUND: tests/db/test_record_call_outcome.py
 - FOUND: tests/db/test_merge_customer.py
 

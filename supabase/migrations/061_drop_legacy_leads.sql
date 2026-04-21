@@ -1,11 +1,11 @@
--- 053b — Phase 59 Customer/Job model separation: drop legacy schema + event_type enum.
+-- 061 — Phase 59 Customer/Job model separation: drop legacy schema + event_type enum.
 -- Depends on: Plan 05 Python agent deployed (no more writes to leads/lead_calls) — verified
 --             by live test call in Task 2 of this plan BEFORE this migration runs.
---             Plan 02 migration 053a successfully backfilled.
+--             Plan 02 migration 059 successfully backfilled.
 -- Pitfall 1 + 5 resolution checkpoint; see Task 2 human-verify survey.
--- D-01: Ships same PR / same day as 053a after Python agent verified on new RPC.
+-- D-01: Ships same PR / same day as 059 after Python agent verified on new RPC.
 -- D-02b: Forward-fix-only rollback. No down-migration exists or will be written.
---        If 053b applies successfully but downstream breaks, fix forward — do NOT
+--        If 061 applies successfully but downstream breaks, fix forward — do NOT
 --        author a 053c_restore_leads.sql or any Phase 59 down-migration.
 -- D-12a: Create activity_log.event_type strict enum with 16 starting values verbatim.
 --        Adding new values requires a future migration — deliberate friction
@@ -69,7 +69,7 @@ ALTER TABLE activity_log
 -- ========================================================================
 ALTER TABLE activity_log ALTER COLUMN customer_id SET NOT NULL;
 
--- Drop lead_id from activity_log (backfilled in 053a; no longer needed)
+-- Drop lead_id from activity_log (backfilled in 059; no longer needed)
 ALTER TABLE activity_log DROP COLUMN lead_id;
 
 -- ========================================================================
@@ -81,12 +81,12 @@ ALTER TABLE activity_log DROP COLUMN lead_id;
 -- ========================================================================
 -- ALTER TABLE invoices ALTER COLUMN job_id SET NOT NULL;  -- ENABLE IF TASK 3 SURVEY 2 = 0
 
--- Drop lead_id from invoices (backfilled in 053a; no longer needed)
+-- Drop lead_id from invoices (backfilled in 059; no longer needed)
 ALTER TABLE invoices DROP COLUMN lead_id;
 
 -- ========================================================================
 -- Drop legacy tables
--- (053a's Realtime publication entry added customers/jobs/inquiries;
+-- (059's Realtime publication entry added customers/jobs/inquiries;
 --  leads/lead_calls Realtime entries cascade automatically with DROP TABLE)
 -- ========================================================================
 DROP TABLE IF EXISTS lead_calls;

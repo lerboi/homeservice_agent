@@ -7,12 +7,12 @@ dependency_graph:
   requires: []
   provides:
     - src/lib/phone/normalize.js (normalizeE164/isValidE164/formatInternational)
-    - supabase/migrations/053_pre_audit.sql (read-only audit before 053a)
+    - supabase/audits/059_pre_migration_audit.sql (read-only audit before 059)
     - tests/phone/fixtures/python_parity.json (Python parity sample set)
     - tests/db/test_jobs_constraints.sql (D-06 scaffold)
     - tests/db/test_record_call_outcome.py (D-05/D-10/D-14 scaffold)
     - tests/db/test_merge_customer.py (D-19 scaffold)
-    - tests/migrations/test_053_backfill.py (D-05/D-11/D-12/D-13 scaffold)
+    - tests/migrations/test_059_backfill.py (D-05/D-11/D-12/D-13 scaffold)
     - tests/api/customers.test.js (D-05/D-18/D-19 scaffold)
     - tests/api/jobs-list.test.js (D-06 scaffold)
     - tests/api/inquiries-list.test.js (D-10 scaffold)
@@ -27,13 +27,13 @@ key_files:
   created:
     - src/lib/phone/normalize.js
     - src/lib/phone/normalize.test.js
-    - supabase/migrations/053_pre_audit.sql
+    - supabase/audits/059_pre_migration_audit.sql
     - tests/phone/cross_validation.test.js
     - tests/phone/fixtures/python_parity.json
     - tests/db/test_jobs_constraints.sql
     - tests/db/test_record_call_outcome.py
     - tests/db/test_merge_customer.py
-    - tests/migrations/test_053_backfill.py
+    - tests/migrations/test_059_backfill.py
     - tests/api/customers.test.js
     - tests/api/jobs-list.test.js
     - tests/api/inquiries-list.test.js
@@ -71,7 +71,7 @@ Python parity cross-validation: `tests/phone/cross_validation.test.js` loads 8 r
 
 ### Task 2: Pre-migration Audit SQL
 
-`supabase/migrations/053_pre_audit.sql` is a read-only SELECT file (NOT a supabase migration) that the operator runs via psql before Plan 02's 053a DDL. Contains:
+`supabase/audits/059_pre_migration_audit.sql` is a read-only SELECT file (NOT a supabase migration) that the operator runs via psql before Plan 02's 059 DDL. Contains:
 - `non_e164_phones` count + offender sample (Pitfall 2)
 - `invoices_for_unbooked_leads` count (Pitfall 1)
 - `invoices_without_lead` count
@@ -86,7 +86,7 @@ Python parity cross-validation: `tests/phone/cross_validation.test.js` loads 8 r
 | tests/db/test_jobs_constraints.sql | 02 | D-06 |
 | tests/db/test_record_call_outcome.py | 03 | D-05, D-10, D-14 |
 | tests/db/test_merge_customer.py | 03 | D-19 |
-| tests/migrations/test_053_backfill.py | 02 | D-05, D-11, D-12, D-13 |
+| tests/migrations/test_059_backfill.py | 02 | D-05, D-11, D-12, D-13 |
 | tests/api/customers.test.js | 04 | D-05, D-18, D-19 |
 | tests/api/jobs-list.test.js | 04 | D-06 |
 | tests/api/inquiries-list.test.js | 04 | D-10 |
@@ -125,7 +125,7 @@ None — Wave 0 is scaffolding only. All Wave 1-3 test files are intentionally s
 |--------|------|-------------|
 | 4044454 | test | RED state: normalize.test.js scaffold |
 | 86ebe60 | feat | GREEN: normalize.js + cross_validation + fixture |
-| 6fcd8e1 | chore | 053_pre_audit.sql |
+| 6fcd8e1 | chore | 059_pre_migration_audit.sql |
 | 0326777 | test | Wave 1-3 red-state scaffolds (8 files) |
 
 ## Self-Check: PASSED
@@ -133,13 +133,13 @@ None — Wave 0 is scaffolding only. All Wave 1-3 test files are intentionally s
 Files verified:
 - FOUND: src/lib/phone/normalize.js
 - FOUND: src/lib/phone/normalize.test.js
-- FOUND: supabase/migrations/053_pre_audit.sql
+- FOUND: supabase/audits/059_pre_migration_audit.sql
 - FOUND: tests/phone/cross_validation.test.js
 - FOUND: tests/phone/fixtures/python_parity.json
 - FOUND: tests/db/test_jobs_constraints.sql
 - FOUND: tests/db/test_record_call_outcome.py
 - FOUND: tests/db/test_merge_customer.py
-- FOUND: tests/migrations/test_053_backfill.py
+- FOUND: tests/migrations/test_059_backfill.py
 - FOUND: tests/api/customers.test.js
 - FOUND: tests/api/jobs-list.test.js
 - FOUND: tests/api/inquiries-list.test.js

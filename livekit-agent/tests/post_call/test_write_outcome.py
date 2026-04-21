@@ -2,7 +2,7 @@
 
 Tests mock the Supabase client (push-deferred: RPC not yet live in Supabase).
 Integration tests against the real test DB are deferred until Plan 08 when the
-migration batch (053a + 054) is pushed live.
+migration batch (059 + 054) is pushed live.
 
 Test IDs mirror the plan's behaviour spec:
   - test_records_job_path        : appointment_id non-null → job_id set, inquiry_id None

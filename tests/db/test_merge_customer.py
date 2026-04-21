@@ -1,5 +1,5 @@
 """
-Integration tests for merge_customer and unmerge_customer RPCs (Plan 03 / 054_phase59_rpcs.sql).
+Integration tests for merge_customer and unmerge_customer RPCs (Plan 03 / 060_phase59_rpcs.sql).
 
 Decision IDs validated:
   D-19          — merge: repoint children; soft-delete source; 7-day undo window
@@ -8,7 +8,7 @@ Decision IDs validated:
 
 Security: ASVS V4 — T-59-03-02 (cross-tenant merge rejected).
 
-NOTE: These tests require a live Supabase instance with migrations 053a + 054_phase59_rpcs.sql
+NOTE: These tests require a live Supabase instance with migrations 059 + 060_phase59_rpcs.sql
 applied. All tests are marked skip with reason "push-deferred" because the live push is
 batched to the pre-Plan-08 slot (per Plan 02/03 SUMMARY). Remove the skip decorators after
 the push is confirmed (Plan 08 Task 1).

@@ -1,5 +1,5 @@
 """
-Scaffold tests for the 053a backfill migration (Plan 02).
+Scaffold tests for the 059 backfill migration (Plan 02).
 
 Decision IDs validated:
   D-05  — customer count derived from distinct E.164 phones
@@ -9,12 +9,12 @@ Decision IDs validated:
   D-13b — duplicate-phone leads collapse to one customer; name/address from most recent
   D-13c — no quality filtering (test/spam rows included verbatim)
 
-All tests are skipped until Plan 02 applies the 053a migration.
+All tests are skipped until Plan 02 applies the 059 migration.
 """
 import pytest
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_invoices_repointed():
     """D-11: After backfill, invoices.lead_id column replaced by job_id.
 
@@ -25,7 +25,7 @@ def test_invoices_repointed():
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_activity_log_three_fks():
     """D-12: After backfill, activity_log has three nullable FKs.
 
@@ -37,12 +37,12 @@ def test_activity_log_three_fks():
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_customer_count_matches_audit():
     """D-05 / D-13b: Post-backfill customers count matches pre-audit prediction.
 
     SELECT COUNT(*) FROM customers should equal the expected_customers count
-    produced by 053_pre_audit.sql:
+    produced by 059_pre_migration_audit.sql:
       SELECT COUNT(*) FROM (
         SELECT DISTINCT tenant_id, from_number FROM leads
         WHERE from_number IS NOT NULL
@@ -54,7 +54,7 @@ def test_customer_count_matches_audit():
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_orphan_leads_become_inquiries_status_preserved():
     """D-13a: Orphan leads (appointment_id IS NULL) backfill into inquiries
     with status preserved verbatim.
@@ -67,19 +67,19 @@ def test_orphan_leads_become_inquiries_status_preserved():
         COUNT(*) FROM inquiries WHERE status = S
 
     No status value is dropped, coerced, or renamed during backfill.
-    Run against the per-status breakdown from 053_pre_audit.sql
+    Run against the per-status breakdown from 059_pre_migration_audit.sql
     (`orphan_leads_by_status`) for row-count equality.
     """
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_duplicate_phone_collapse_uses_most_recent_lead():
     """D-13b: When multiple leads share (tenant_id, from_number), backfill
     collapses them to a single customer row whose name and address come
     from the MOST RECENT lead (ORDER BY created_at DESC LIMIT 1).
 
-    For each duplicate-phone group G identified by 053_pre_audit.sql:
+    For each duplicate-phone group G identified by 059_pre_migration_audit.sql:
       - Exactly one customers row exists for (G.tenant_id, G.from_number)
       - customers.name == (SELECT caller_name FROM leads
                             WHERE tenant_id = G.tenant_id
@@ -92,7 +92,7 @@ def test_duplicate_phone_collapse_uses_most_recent_lead():
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_no_quality_filtering_applied():
     """D-13c: Backfill processes every lead row verbatim — no filtering
     on test/spam/low-quality data.
@@ -108,7 +108,7 @@ def test_no_quality_filtering_applied():
     pass
 
 
-@pytest.mark.skip(reason="Plan 02: 053a not yet applied")
+@pytest.mark.skip(reason="Plan 02: 059 not yet applied")
 def test_job_count_matches_booked_leads():
     """D-06 / D-13a complement: leads with appointment_id IS NOT NULL
     backfill into jobs (expected_jobs count from audit), with the rest
