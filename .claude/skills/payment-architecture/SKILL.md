@@ -1,13 +1,13 @@
 ---
 name: payment-architecture
-description: Complete architectural reference for the payment, billing, and subscription system — Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table pattern, idempotency), Billing Meters overage system, subscription lifecycle (trialing/active/past_due/canceled/paused), usage tracking (increment_calls_used RPC), subscription enforcement gate, billing notifications (trial_will_end, payment_failed), billing dashboard (plan card, UsageRingGauge, invoices, Stripe Customer Portal), pricing page (3 plans with monthly/annual/overage), and all 4 billing DB tables with RLS policies. Use this skill whenever making changes to Stripe integration, checkout sessions, subscription handling, usage tracking, overage billing, billing notifications, billing dashboard, pricing page, or any payment-related API route. Also use when the user asks about how billing works, wants to modify subscription logic, or needs to debug payment/webhook issues.
+description: Complete architectural reference for the payment, billing, and subscription system — Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table pattern, idempotency), Billing Meters overage system, subscription lifecycle (trialing/active/past_due/canceled/paused), usage tracking (increment_calls_used RPC), subscription enforcement gate, billing notifications (trial_will_end, payment_failed), billing dashboard (plan card, UsageRingGauge, invoices, Stripe Customer Portal), pricing page (3 plans with monthly/annual/overage), all 4 billing DB tables with RLS policies. Phase 59: invoices.job_id attribution (lead_id removed — customer derivable via job.customer_id; ad-hoc invoices without a job remain possible per D-11). Use this skill whenever making changes to Stripe integration, checkout sessions, subscription handling, usage tracking, overage billing, billing notifications, billing dashboard, pricing page, or any payment-related API route. Also use when the user asks about how billing works, wants to modify subscription logic, or needs to debug payment/webhook issues.
 ---
 
 # Payment Architecture — Complete Reference
 
 This document is the single source of truth for the entire payment, billing, and subscription system. Read this before making any changes to Stripe integration, checkout flows, subscription handling, usage tracking, overage billing, or the billing dashboard.
 
-**Last updated**: 2026-04-15 (path header corrected; country-aware checkout clarified — country is captured on the onboarding contact step and read from the `tenants` row by the webhook handler post-checkout, not selected during `checkout-session` creation)
+**Last updated**: 2026-04-21 (Phase 59 — invoices.job_id attribution: lead_id column dropped by migration 061; job_id added by 059; NOT NULL conditional per D-11 — ad-hoc invoices without a job remain NULLABLE; customer derivable via job.customer_id. Customer detail Invoices tab added. increment_calls_used RPC unchanged.)
 
 ---
 
@@ -502,6 +502,7 @@ Both use React Email components with inline styles matching design tokens.
 - **Auth + Supabase clients**: See `auth-database-multitenancy` skill for `createSupabaseServer()` vs service role patterns, and why the webhook handler uses service role for all writes.
 - **Voice call post-call pipeline**: See `voice-call-architecture` skill for how the Python agent calls `increment_calls_used` and reports Stripe meter events.
 - **Dashboard billing page**: See `dashboard-crm-system` skill for how the billing page fits into the More menu structure and the BillingWarningBanner/TrialCountdownBanner in the dashboard layout.
+- **Phase 59 invoice attribution (Voco internal invoices — NOT Stripe invoices)**: The Voco `invoices` table (migrations 029 + Phase 59) had `lead_id` replaced by `job_id` (NULLABLE). Customer is now derivable via `invoices.job_id → jobs.customer_id`. Ad-hoc invoices without a job remain valid (D-11 — NOT NULL enforcement deferred). The Customer detail page's Invoices tab (Phase 59 Plan 07) queries `invoices JOIN jobs ON jobs.id = invoices.job_id WHERE jobs.customer_id = :id`, gated by `features_enabled.invoicing`. Full schema in `auth-database-multitenancy` skill.
 
 ---
 
