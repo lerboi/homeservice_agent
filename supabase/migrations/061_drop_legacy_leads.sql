@@ -64,10 +64,16 @@ ALTER TABLE activity_log
   );
 
 -- ========================================================================
--- activity_log.customer_id flip to NOT NULL
--- (safe only after Task 2 survey confirms 0 NULLs in activity_log.customer_id)
+-- activity_log.customer_id stays NULLABLE.
+-- Rationale: system events (billing, subscription, integration_fetch,
+-- setup_checklist, etc.) legitimately have no customer context. The
+-- record_call_outcome RPC always populates customer_id for call events,
+-- which is where the invariant actually matters. Forcing NOT NULL on the
+-- column would require deleting or synthesizing customers for non-call
+-- events, which is wrong. (Original design aspiration overridden by real
+-- data — Task 2 survey on 2026-04-21 found non-zero NULLs for system
+-- event types.)
 -- ========================================================================
-ALTER TABLE activity_log ALTER COLUMN customer_id SET NOT NULL;
 
 -- Drop lead_id from activity_log (backfilled in 059; no longer needed)
 ALTER TABLE activity_log DROP COLUMN lead_id;
