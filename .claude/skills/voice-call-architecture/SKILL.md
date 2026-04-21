@@ -8,7 +8,7 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-20 (Phase 58 — integration telemetry `integration_fetch_fanout` + skill consolidation cross-refs. See `references/phase-history.md` for incremental phase-by-phase history.)
+**Last updated**: 2026-04-21 (Phase 59 Plan 05 — post-call pipeline step 9 replaced `create_or_merge_lead()` with `record_outcome()` RPC call; `src/post_call/write_outcome.py` added; D-02a/D-02b posture codified. See `references/phase-history.md` for incremental phase-by-phase history.)
 
 ---
 
@@ -96,9 +96,11 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 
 | File | Role |
 |------|------|
-| `src/agent.py` | Entrypoint: tenant lookup, Gemini session, Egress, post-call trigger. Phase 58: `fetch_customer_context_with_fanout_telemetry` wrapper around pre-session merged fetch |
+| `src/agent.py` | Entrypoint: tenant lookup, Gemini session, Egress, post-call trigger. Phase 58: `fetch_customer_context_with_fanout_telemetry` wrapper. Phase 59: `_persist_call_outcome()` calls `record_call_outcome` RPC (D-14) |
 | `src/prompt.py` | System prompt builder — modular section builders, Phase 60 STATE+DIRECTIVE format, locale-conditional blocks |
-| `src/post_call.py` | Post-call pipeline — triage, notifications, lead creation, booking reconciliation |
+| `src/post_call.py` | Post-call pipeline — triage, notifications, booking reconciliation. **Phase 59:** step 9 replaced `create_or_merge_lead()` with `record_outcome()` RPC call |
+| `src/post_call/__init__.py` | Phase 59: post_call package marker |
+| `src/post_call/write_outcome.py` | Phase 59 D-14: `record_outcome()` async helper — normalizes phone, calls `record_call_outcome` RPC, raises `RecordOutcomeError`; D-02a (no dual-write), D-02b (forward-fix only) |
 | `src/supabase_client.py` | Singleton service-role Supabase client |
 | `src/utils.py` | Date formatting, initial slot calculation |
 | `src/webhook/__init__.py` | Webhook subpackage + `start_webhook_server` daemon thread |
@@ -121,7 +123,7 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 | `src/integrations/jobber.py` | Jobber adapter (Python) — see `integrations-jobber-xero` skill |
 | `src/lib/booking.py` | Atomic slot booking via Supabase RPC |
 | `src/lib/slot_calculator.py` | Available slot calculation |
-| `src/lib/leads.py` | Lead creation/merge logic |
+| `src/lib/leads.py` | Lead creation/merge logic — **Phase 59:** `create_or_merge_lead()` replaced by `record_outcome()` in post-call step 9; file retained until Plan 08 drops legacy `leads` table |
 | `src/lib/notifications.py` | SMS (Twilio) + Email (Resend) dispatch |
 | `src/lib/google_calendar.py` | Google Calendar push |
 | `src/lib/whisper_message.py` | Whisper message for warm transfers |
@@ -556,9 +558,14 @@ Runs in-process immediately on AgentSession close.
 7. Suggested slots — unbooked calls get up to 3 slots across next 3 days.
 8. Update call with triage + NULL fallback → `booking_outcome='not_attempted'`
    only where still NULL.
-9. Create/merge lead — if duration ≥ 15s via `create_or_merge_lead()`.
-   Name resolution: `booked_caller_name or _extract_field_from_transcript(...)`.
-   Appointment lookup: `booked_appointment_id` preferred over FK query.
+9. **Phase 59 — Record call outcome via RPC** — if duration ≥ 15s, calls
+   `record_outcome()` from `src/post_call/write_outcome.py`. Single
+   `record_call_outcome` RPC call that atomically upserts customer +
+   creates job (booked) or inquiry (unbooked) + links call junctions
+   (D-14/D-16). Replaces prior `create_or_merge_lead()` + `lead_calls`
+   insert. D-02a: NO fallback to legacy `leads`/`lead_calls`. D-02b:
+   on `RecordOutcomeError`, log call_id + tenant_id and continue — do
+   NOT re-raise or insert into legacy schema.
 10. Owner notifications — SMS/email per outcome preferences. Emergency
     always sends both. `send_owner_sms(from_number=to_number)` (Phase 46
     per-tenant from-number fix; `TWILIO_FROM_NUMBER` retained only as
