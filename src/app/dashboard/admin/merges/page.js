@@ -15,7 +15,9 @@ import { cookies } from 'next/headers';
 import MergesTable from '@/components/dashboard/admin/MergesTable';
 import { ArrowLeft } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// Next.js 16 + Cache Components: do NOT set `export const dynamic = 'force-dynamic'`
+// (incompatible with nextConfig.cacheComponents). This page is already dynamic
+// because it reads cookies() and passes cache: 'no-store' to the downstream fetch.
 
 async function fetchMerges({ focus, active }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
