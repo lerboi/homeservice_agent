@@ -1,0 +1,50 @@
+[
+  {
+    "raw": "+15555550100",
+    "countryHint": null,
+    "expected": "+15555550100",
+    "note": "US E.164 already-formatted — passthrough"
+  },
+  {
+    "raw": "5555550100",
+    "countryHint": "US",
+    "expected": "+15555550100",
+    "note": "US 10-digit with countryHint US"
+  },
+  {
+    "raw": "15555550100",
+    "countryHint": "US",
+    "expected": "+15555550100",
+    "note": "US 11-digit with country code prefix"
+  },
+  {
+    "raw": "91234567",
+    "countryHint": "SG",
+    "expected": "+6591234567",
+    "note": "SG 8-digit with countryHint SG"
+  },
+  {
+    "raw": "+6591234567",
+    "countryHint": null,
+    "expected": "+6591234567",
+    "note": "SG already E.164 — passthrough"
+  },
+  {
+    "raw": "+14165550123",
+    "countryHint": null,
+    "expected": "+14165550123",
+    "note": "CA E.164 already-formatted — passthrough"
+  },
+  {
+    "raw": "4165550123",
+    "countryHint": "CA",
+    "expected": "+14165550123",
+    "note": "CA 10-digit with countryHint CA"
+  },
+  {
+    "raw": "14165550123",
+    "countryHint": "CA",
+    "expected": "+14165550123",
+    "note": "CA 11-digit with country prefix"
+  }
+]
