@@ -120,10 +120,10 @@ GRANT EXECUTE ON FUNCTION record_call_outcome(uuid, text, text, text, uuid, text
 -- Returns: {source_id, target_id, audit_id, moved_counts: {...}}
 
 CREATE OR REPLACE FUNCTION merge_customer(
-  p_tenant_id  uuid,
-  p_source_id  uuid,
-  p_target_id  uuid,
-  p_merged_by  uuid DEFAULT NULL
+  p_tenant_id uuid,
+  p_source_id uuid,
+  p_target_id uuid,
+  p_merged_by uuid DEFAULT NULL
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -270,14 +270,7 @@ BEGIN
     p_target_id,
     p_merged_by,
     now(),
-    jsonb_build_object(
-      'jobs',           v_jobs_count,
-      'inquiries',      v_inquiries_count,
-      'invoices',       v_invoices_count,
-      'activity_log',   v_activity_count,
-      'customer_calls', v_customer_calls_count,
-      'job_calls',      v_job_calls_count
-    )
+    jsonb_build_object('jobs', v_jobs_count, 'inquiries', v_inquiries_count, 'invoices', v_invoices_count, 'activity_log', v_activity_count, 'customer_calls', v_customer_calls_count, 'job_calls', v_job_calls_count)
   )
   RETURNING id INTO v_audit_id;
 
