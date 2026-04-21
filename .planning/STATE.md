@@ -4,7 +4,7 @@ milestone: v6.0
 milestone_name: Phases
 status: executing
 stopped_at: Completed 59-08-PLAN.md — all 4 tasks done, 3 skill files synced, SUMMARY written
-last_updated: "2026-04-21T22:29:12.346Z"
+last_updated: "2026-04-21T22:30:05.942Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 19
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 59 (customer-job-model-separation-split-leads-into-customers-ded) — EXECUTING
-Plan: 5 of 8
+Phase: 60
+Plan: Not started
 Status: Ready to execute
 Last activity: 2026-04-21
 
