@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: "Completed 60.3-02-PLAN.md — UAT #1 captured, Branch P selected (ambiguous-evidence rule); Plan 3 unblocked"
-last_updated: "2026-04-22T09:22:57.590Z"
+stopped_at: "Completed 60.3-03-PLAN.md Branch P prompt-harden fix; UAT #2 PARTIAL verdict accepted; Stream A closed, Stream B (Plan 4) unblocked"
+last_updated: "2026-04-22T09:44:48.719Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 19
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Milestone: v6.0 (planning)
 Phase: 60.3 (voice-agent-goodbye-cutoff-and-prompt-audit) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13
 Status: Ready to execute
 Last activity: 2026-04-22
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 59 P08 | 526949 | 4 tasks | 18 files |
 | Phase 60.3 P01 | 10min | 3 tasks | 4 files |
 | Phase 60.3 P02 | 20min | 2 tasks | 2 files |
+| Phase 60.3 P03 | 90min | 4 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,7 @@ Progress: [██████████] 100%
 - [2026-04-18 backlog 999.1 & 999.2 resolved]: (999.1) `src/tools/book_appointment.py` now normalizes urgency via `_normalize_urgency()` (maps `high`/`medium` → `urgent`, `low`/`normal` → `routine`, `critical`/`asap` → `emergency`, unknown → `routine`) before calling `atomic_book_slot`; tool description enumerates the three allowed values to stop Gemini inventing new ones. (999.2) `src/agent.py` passes a `RealtimeInputConfig` with `AutomaticActivityDetection` set to LOW start/end sensitivity, `prefix_padding_ms=400`, `silence_duration_ms=1000` to `google.realtime.RealtimeModel` — dampens Gemini server VAD so breaths/overlap no longer cancel in-flight tool calls (root cause: livekit/agents#4441). Barge-in preserved. Skill `voice-call-architecture` updated; both entries ready to be deleted from ROADMAP backlog section.
 - [v6.0 P60.3-01]: Stream A goodbye-race instrumentation shipped to livekit-agent (`c4f0570` on `lerboi/livekit_agent` main; Railway auto-deploy triggered). `[goodbye_race]` JSON logger.info line + Sentry breadcrumb emitted on every call close with 6 timestamps (`end_call_invoked_at`, `last_text_token_at`, `last_audio_frame_at`, `playback_finished_at` + `text_done`/`audio_done`, `participant_disconnect_at` + `disconnect_reason`, `session_close_at` + `close_reason`), transcript_tail (last 3 turns, ≤500 chars, E.164 phone-redacted via `_PHONE_REDACT_RE`), and `tool_call_log_tail`. All via public livekit-agents 1.5.1 APIs — no private symbol monkey-patching. `_GoodbyeDiagHandler` stdlib logging.Handler reads `text_done`/`audio_done` from the synchronizer warning's LogRecord extra= fields (R-A3). `_flush_goodbye_diag` is the FIRST statement in `_on_close_async` so the record survives Fix I's 8s post-call pipeline timeout. 7 new unit tests green; baseline prompt tests green (2+4). 1 pre-existing `tests/webhook/test_routes.py::test_incoming_call_vip_lead` failure documented in 60.3 `deferred-items.md` (out of Stream A scope, touches `src/webhook/app.py`). Ready for Plan 02 UAT #1.
 - [v6.0 P60.3-02]: Stream A UAT #1 captured `[goodbye_race]` payload for call-_+6587528516 (174s, declined). Caller heard `"Alright, I'll get all"` cut mid-sentence. Evidence matches BOTH #5096 signature (`text_done=false, audio_done=true`) AND Branch P directional signal (`end_call_invoked_at` 11ms before `last_text_token_at`; `playback_finished_at` stale on earlier segment at -15.2s; 3× mid-call `_SegmentSynchronizerImpl` warnings at +152s/+202s/+222s — systemic pipeline race, not goodbye-isolated). Per Plan 2 ambiguity-resolution rule (lines 285-294) → **Selected fix: Branch P** (prompt-harden `_build_call_duration_section` at `src/prompt.py:544-556`; lower-risk, fully revertable prompt-only change). Plan 3 executes Branch P only; Branch G tasks (`end_call.py` `wait_for_playout` pre-guard) marked `skipped`. Post-Branch-P UAT #2 discriminates — if truncation persists, promote Branch G inside Phase 60.3 evidence loop. Non-blocking concerns: (a) systemic mid-call warnings may need own phase; (b) `playback_finished_at` stale-segment capture is instrumentation refinement note; (c) `tool_call_log_tail` empty on `end_call` firing is by-design gap. Artifacts: `60.3-HUMAN-UAT.md`, `60.3-STREAM-A-ANALYSIS.md`. Bundle commit `9811ea2`.
+- [v6.0 P60.3-03]: Stream A Branch P prompt-harden fix shipped to livekit-agent main (commit `ebaa556`; Railway auto-deployed). `_build_call_duration_section` promoted to `ENDING THE CALL — CRITICAL RULE:` block with WRONG (`"Thank you for calling Voco — have a' *click*`) / RIGHT (speak → silence → separate-turn end_call) inline failure-mode example; section reordered from near-end to position 5 of `build_system_prompt` (top-attention band, after `_build_outcome_words_section` before `_build_tool_narration_section`). 9/10-minute bounds preserved. 5 new TDD tests in `tests/test_prompt.py`. Branch G (tool-level `wait_for_playout` pre-guard) skipped per 60.3-STREAM-A-ANALYSIS.md selection. **UAT #2** (call-_+6587528516_B8XEm2FgLTGZ, 62s, declined): **Verdict PARTIAL**. Primary Stream A goal achieved — `_SegmentSynchronizerImpl` warning absent (vs 3× in UAT #1); `text_done`/`audio_done`/`playback_finished_at` keys absent from payload (healthy-pipeline signal); transcript_tail ends on complete sentence `"agent: I understand."` (no mid-word cutoff). **New gap surfaced:** model invoked end_call after saying only `"I understand."` — no farewell phrase at all. CRITICAL RULE enforces two-step mechanics but not farewell *content*. Scope-appropriate for Stream B (Plans 4-12 prompt audit); NOT a Branch-G swap candidate (no pipeline race evidence). The 11-12ms `end_call_invoked_at`→`last_text_token_at` delta is an instrumentation/timing artifact (identical magnitude both UATs = event-loop dispatch noise, not prompt-defiance). D-X-02 success criteria 3 & 4 satisfied; **Stream A closed, Stream B (Plan 4) unblocked**. Bundle commit `56a4493` (UAT evidence); final bundle commit pending (this STATE update + SUMMARY + ROADMAP).
 
 ### Roadmap Evolution
 
@@ -109,6 +111,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-22T09:22:57.581Z
-Stopped at: Completed 60.3-02-PLAN.md — UAT #1 captured, Branch P selected (ambiguous-evidence rule); Plan 3 unblocked
+Last session: 2026-04-22T09:44:48.711Z
+Stopped at: Completed 60.3-03-PLAN.md Branch P prompt-harden fix; UAT #2 PARTIAL verdict accepted; Stream A closed, Stream B (Plan 4) unblocked
 Resume file: None
