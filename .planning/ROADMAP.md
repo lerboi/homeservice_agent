@@ -338,6 +338,35 @@ Plans:
 - [x] 60-02-PLAN.md — Tool-return rewrites to STATE+DIRECTIVE format across all 5 tools (D-16) + capture_lead description single-question-intake parity with book_appointment (D-11, D-12)
 - [x] 60-03-PLAN.md — Spanish mirror of D-01..D-12 in es.json / prompt.py locale='es' path (D-13), user-review gate (D-14), and voice-call-architecture/SKILL.md sync per CLAUDE.md
 
+### Phase 60.3: Voice agent goodbye cut-off diagnosis + prompt best-practices audit
+
+**Goal:** Two parallel streams deferred from Phase 60.2. **Stream A —** diagnose the end-of-call mid-word truncation surfaced in the 60.2 UAT (`"Thank you for calling [cut]"` followed by silence; `_SegmentSynchronizerImpl.playback_finished called before text/audio input is done (text_done:false, audio_done:true)` immediately before participant disconnect — textbook upstream livekit/agents#5096 signature). Instrument → UAT → analyze → fix → re-UAT, iterating within the phase. **Stream B —** full best-practices audit of `livekit_agent/src/prompt.py::build_system_prompt()` (16 section builders × en + es locales) against the pinned realtime stack (Gemini 3.1 Flash Live + livekit-agents 1.5.1 + livekit-plugins-google @ 43d3734). Produce findings doc + per-section patch series so each change is atomic and revertable. Plus passive tracking only: Fix I (post-call 8s timeout) monitoring continues; Fix J (plugin upgrade) re-evaluation triggers documented but no active work.
+
+**What shipped:** Stream A diagnostic instrumentation (per-call `[goodbye_race]` JSON log + Sentry breadcrumb via 6 public-API hooks; phone-SHA256 + transcript-tail E.164-redact for privacy) + Branch P prompt-harden fix (`_build_call_duration_section` promoted to CRITICAL RULE block with inline WRONG/RIGHT example + reordered to position 5 in `build_system_prompt`). Stream B prompt audit doc (16 sections × 7 dimensions scored) + 8 per-section patch plans closing the D7 locale-parity gap across 15 sections (`_build_repeat_caller_section` is an intentional no-op, returning `""`). Test count: 101 baseline → 205 passed at phase close (+104 tests across 8 new test files; 60.2 inverted assertions preserved).
+
+**Outcome:** Primary Stream A goal achieved — no mid-word truncation in cumulative UAT; #5096-signature race no longer reproduces. PARTIAL verdict overall: (a) UAT #2 surfaced a decline-case farewell-content gap (model said `"I understand."` with no farewell) — addressed in Plan 05 content expansion; (b) cumulative UAT surfaced a NEW 16-second end_call-stall regression (Branch P's "separate turn with no additional speech" over-corrected — model waited indefinitely for the trigger and the caller manually hung up). (c) Spanish cumulative UAT call was not placed — ES branches ship to Railway but remain unverified against live Gemini Realtime audio. Anchor candidate for Phase 60.4: Call-Teardown + Tool-Stall Filler + Availability-Intent + ES verification.
+
+**Scope boundary:** No DB migrations. No tool signature changes (only `_build_*_section` signatures extended with `locale: str = "en"`). No `livekit-agents` upgrade past 1.5.1. No google-plugin upgrade past commit `43d3734`. No `_delayed_disconnect` 12s sleep tuning. `end_call.py`, `check_caller_history.py`, `check_customer_account.py` tool bodies untouched.
+
+**Depends on:** Phase 60.2 (shipped — Fix G VAD dampening + Fix I monitoring baseline). Orthogonal to Phase 60.4 (timezone + STT pinning). Ships independently of Phase 61 and 62.
+**Requirements:** Captured as decisions (D-A-01..06, D-B-01..06, D-X-01..03) in `60.3-CONTEXT.md` — no REQ-IDs in REQUIREMENTS.md (CONTEXT decisions serve as the requirement set, same pattern as Phases 59/60). Resolves Phase 60.2 deferred items `60.2-DEFER-A` (goodbye race) and `60.2-DEFER-B` (prompt audit).
+**Plans:** 13/13 plans complete
+
+Plans:
+- [x] 60.3-01-PLAN.md — Stream A instrumentation (6 hooks + `[goodbye_race]` JSON schema v1 + Sentry breadcrumb + phone-SHA256 + transcript redact)
+- [x] 60.3-02-PLAN.md — Stream A UAT #1 + STREAM-A-ANALYSIS.md (Branch P selected from ambiguous evidence per Plan-2 lower-risk rule)
+- [x] 60.3-03-PLAN.md — Stream A Branch P fix + UAT #2 (CRITICAL RULE + reorder pos 5 shipped; primary race goal achieved, decline-case farewell gap flagged)
+- [x] 60.3-04-PLAN.md — Prompt audit doc (16 sections × 7 dimensions scored; D7 dominates Plans 05-12)
+- [x] 60.3-05-PLAN.md — `_build_call_duration_section` — EN preserved, ES REGLA CRÍTICA with USTED register
+- [x] 60.3-06-PLAN.md — `_build_tool_narration_section` — ES filler phrases per tool; 60.2 invariants preserved
+- [x] 60.3-07-PLAN.md — `_build_voice_behavior_section` — ES energy-matching + readback + one-focused-thing
+- [x] 60.3-08-PLAN.md — `_build_corrections_section` — ES REGLA CRÍTICA with 5 numbered rules
+- [x] 60.3-09-PLAN.md — `_build_outcome_words_section` — ES highest-stakes D1 reserved-words; top-attention-zone complete
+- [x] 60.3-10-PLAN.md — `_build_info_gathering_section` — outer frame ES + D6 compression + PHONE NUMBER readback + postal_label wiring
+- [x] 60.3-11-PLAN.md — `_build_booking_section` — ES outer frame (85% gap closed); D1 invariants codified at test layer
+- [x] 60.3-12-PLAN.md — tail sections batch (8 builders: identity, working_hours, greeting, language, customer_account, intake_questions, decline_handling, transfer)
+- [x] 60.3-13-PLAN.md — cumulative UAT + SKILL.md Phase 60.3 subsection + phase SUMMARY rollup + this ROADMAP close
+
 ### Phase 60.4: Booking timezone fix + STT language pinning (INSERTED)
 
 **Goal:** Resolve two orthogonal voice-call reliability bugs observed in live Railway traffic (2026-04-21 UAT call on `+6587528516`) that are NOT covered by Phase 60.2 (shipped) or Phase 60.3 (ready-for-planning, goodbye-cutoff scope): (1) **timezone offset in booking** — caller requested 3 PM SG time, Google Calendar event landed at 11 PM (matches an 8-hour UTC+8 shift — almost certainly a missing tzinfo on a datetime or an incorrect `timeZone` parameter in `events.insert()` / the slot-calculation math); (2) **STT language hallucination** — Gemini Live transcript emits German, Hindi, and other languages during silence or low-SNR segments even when the caller speaks only English. Post-call language classifier returns `language=en` correctly, but mid-call transcripts are corrupted, which breaks downstream transcript-dependent features (triage, post-call SMS recap, Xero/Jobber note sync).
