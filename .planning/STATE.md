@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 60.3-05-PLAN.md; Stream B Plans 06-12 unblocked (inline-locale-branch pattern established)
-last_updated: "2026-04-22T10:00:16.400Z"
+stopped_at: Completed 60.3-06-PLAN.md; tool_narration locale parity live; Plans 07-12 unblocked (3 of 15 D7 gaps closed)
+last_updated: "2026-04-22T10:25:05.998Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 19
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Milestone: v6.0 (planning)
 Phase: 60.3 (voice-agent-goodbye-cutoff-and-prompt-audit) — EXECUTING
-Plan: 6 of 13
+Plan: 7 of 13
 Status: Ready to execute
 Last activity: 2026-04-22
 
@@ -70,6 +70,7 @@ Progress: [██████████] 100%
 | Phase 60.3 P03 | 90min | 4 tasks | 3 files |
 | Phase 60.3 P04 | 20min | 2 tasks | 1 files |
 | Phase 60.3 P05 | 15min | 2 tasks | 2 files |
+| Phase 60.3 P06 | 20min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,7 @@ Progress: [██████████] 100%
 - [v6.0 P60.3-02]: Stream A UAT #1 captured `[goodbye_race]` payload for call-_+6587528516 (174s, declined). Caller heard `"Alright, I'll get all"` cut mid-sentence. Evidence matches BOTH #5096 signature (`text_done=false, audio_done=true`) AND Branch P directional signal (`end_call_invoked_at` 11ms before `last_text_token_at`; `playback_finished_at` stale on earlier segment at -15.2s; 3× mid-call `_SegmentSynchronizerImpl` warnings at +152s/+202s/+222s — systemic pipeline race, not goodbye-isolated). Per Plan 2 ambiguity-resolution rule (lines 285-294) → **Selected fix: Branch P** (prompt-harden `_build_call_duration_section` at `src/prompt.py:544-556`; lower-risk, fully revertable prompt-only change). Plan 3 executes Branch P only; Branch G tasks (`end_call.py` `wait_for_playout` pre-guard) marked `skipped`. Post-Branch-P UAT #2 discriminates — if truncation persists, promote Branch G inside Phase 60.3 evidence loop. Non-blocking concerns: (a) systemic mid-call warnings may need own phase; (b) `playback_finished_at` stale-segment capture is instrumentation refinement note; (c) `tool_call_log_tail` empty on `end_call` firing is by-design gap. Artifacts: `60.3-HUMAN-UAT.md`, `60.3-STREAM-A-ANALYSIS.md`. Bundle commit `9811ea2`.
 - [v6.0 P60.3-03]: Stream A Branch P prompt-harden fix shipped to livekit-agent main (commit `ebaa556`; Railway auto-deployed). `_build_call_duration_section` promoted to `ENDING THE CALL — CRITICAL RULE:` block with WRONG (`"Thank you for calling Voco — have a' *click*`) / RIGHT (speak → silence → separate-turn end_call) inline failure-mode example; section reordered from near-end to position 5 of `build_system_prompt` (top-attention band, after `_build_outcome_words_section` before `_build_tool_narration_section`). 9/10-minute bounds preserved. 5 new TDD tests in `tests/test_prompt.py`. Branch G (tool-level `wait_for_playout` pre-guard) skipped per 60.3-STREAM-A-ANALYSIS.md selection. **UAT #2** (call-_+6587528516_B8XEm2FgLTGZ, 62s, declined): **Verdict PARTIAL**. Primary Stream A goal achieved — `_SegmentSynchronizerImpl` warning absent (vs 3× in UAT #1); `text_done`/`audio_done`/`playback_finished_at` keys absent from payload (healthy-pipeline signal); transcript_tail ends on complete sentence `"agent: I understand."` (no mid-word cutoff). **New gap surfaced:** model invoked end_call after saying only `"I understand."` — no farewell phrase at all. CRITICAL RULE enforces two-step mechanics but not farewell *content*. Scope-appropriate for Stream B (Plans 4-12 prompt audit); NOT a Branch-G swap candidate (no pipeline race evidence). The 11-12ms `end_call_invoked_at`→`last_text_token_at` delta is an instrumentation/timing artifact (identical magnitude both UATs = event-loop dispatch noise, not prompt-defiance). D-X-02 success criteria 3 & 4 satisfied; **Stream A closed, Stream B (Plan 4) unblocked**. Bundle commit `56a4493` (UAT evidence); final bundle commit pending (this STATE update + SUMMARY + ROADMAP).
 - [v6.0 P60.3-05]: `_build_call_duration_section` locale parity shipped to livekit-agent main (commits `144cbf9` RED + `9f27a7a` GREEN pushed; Railway auto-deployed). Signature becomes `_build_call_duration_section(t, locale: str = "en")`; `build_system_prompt` call site passes `locale` through. Spanish branch: `"TERMINAR LA LLAMADA — REGLA CRÍTICA"` block mirrors EN CRITICAL RULE with USTED register (consistent with existing Spanish info_gathering block), parallel INCORRECTO/CORRECTO failure-mode example, 9/10-minute numerals preserved, `"Voco"` brand enforced in both locales via test invariant. EN body unchanged from Plan 3 Branch P — ADD-ONLY change preserving all prior invariants. 8 new TDD inverted-assertion tests in `tests/test_prompt_call_duration.py`; full livekit-agent suite 120 passed, 1 deselected (pre-existing deferred VIP failure `test_incoming_call_vip_lead` — tracked in `deferred-items.md` since Plan 01). Header picked: TERMINAR over FINALIZAR (conversational register match). Style picked: USTED over TÚ (prompt.py internal-consistency). **Closes first of 15 D7 locale-parity gaps per 60.3-PROMPT-AUDIT.md**; establishes the inline-branch pattern Plans 06-12 will replicate. UAT #2 farewell-content gap NOT yet re-tested after this patch — per Plan 4 re-audit trigger, if post-Plan-5 UAT still shows the decline-case farewell omission, Plan 9 extends `_build_outcome_words_section` to add "farewell" as a reserved word.
+- [v6.0 P60.3-06]: `_build_tool_narration_section` locale parity shipped to livekit-agent main (commits `1e0da25` RED + `c2bd059` GREEN pushed; Railway auto-deployed). Signature becomes `_build_tool_narration_section(locale: str)` (no default — plan spec); `build_system_prompt` call site passes `locale`. Spanish branch: `"NARRACIÓN DE HERRAMIENTAS — REGLA CRÍTICA"` mirrors EN structure — 5 parallel rules (filler-before-tool contract, conversational register, ~3-second target, immediate tool invocation, filler-is-a-contract), 4 tool-specific example groups with 2-3 ~3-second Spanish filler phrases per tool. USTED register consistent with Plan 05. **Tool names (check_availability, book_appointment, capture_lead, transfer_call) NOT translated — code identifiers wired to src/tools/ registry.** EN body preserved verbatim from post-60.2 — D5 (VAD-redundant Rule 3 cancellation rationale post-Fix-G) and D6 (39-line section) compression DEFERRED because the EN prose is the source of the 60.2 Pitfall 6 invariants (reworking invites regression); audit explicitly acknowledged this tradeoff (Plan 06 action block line 174). 8 new TDD tests in `tests/test_prompt_tool_narration.py`; 60.2 guard-rail tests in `tests/test_prompt.py` updated minimally for signature change (invariant semantics unchanged — still asserting no-runtime-filler + speak-first). Plan 05's forward-looking `test_section_is_position_5_or_earlier_in_both_locales` updated to pair each locale with its tool_narration header (Plan 05 explicitly anticipated this Plan 6 follow-up in a comment). Full suite 128 passed, 1 deselected. **Closes third of 15 D7 locale-parity gaps** (after info_gathering pre-60.3 and call_duration in Plan 05); `grep "if locale == \"es\":" src/prompt.py` count now 3. Plans 07-12 unblocked.
 
 ### Roadmap Evolution
 
@@ -114,6 +116,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-22T10:00:16.392Z
-Stopped at: Completed 60.3-05-PLAN.md; Stream B Plans 06-12 unblocked (inline-locale-branch pattern established)
+Last session: 2026-04-22T10:25:05.989Z
+Stopped at: Completed 60.3-06-PLAN.md; tool_narration locale parity live; Plans 07-12 unblocked (3 of 15 D7 gaps closed)
 Resume file: None
