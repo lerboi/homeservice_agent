@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 59-08-PLAN.md — all 4 tasks done, 3 skill files synced, SUMMARY written
-last_updated: "2026-04-21T22:30:05.942Z"
-last_activity: 2026-04-21
+stopped_at: Completed 60.3-01-PLAN.md — Stream A instrumentation deployed to Railway (livekit-agent c4f0570); 7 tests green; ready for Plan 2 UAT
+last_updated: "2026-04-22T09:01:42.050Z"
+last_activity: 2026-04-22
 progress:
   total_phases: 19
   completed_phases: 16
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 59 — customer-job-model-separation-split-leads-into-customers-ded
+**Current focus:** Phase 60.3 — voice-agent-goodbye-cutoff-and-prompt-audit
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 60
-Plan: Not started
+Phase: 60.3 (voice-agent-goodbye-cutoff-and-prompt-audit) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
-Last activity: 2026-04-21
+Last activity: 2026-04-22
 
 Progress: [██████████] 100%
 
@@ -65,6 +65,7 @@ Progress: [██████████] 100%
 | Phase 59-customer-job-model-separation P06 | 1 session | 3 tasks | 17 files |
 | Phase 59 P07 | 1 session | 3 tasks | 17 files |
 | Phase 59 P08 | 526949 | 4 tasks | 18 files |
+| Phase 60.3 P01 | 10min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Progress: [██████████] 100%
 - [v6.0 P56-02]: Added provider-agnostic `accounting_credentials.external_account_id` via migration 054 (backfilled from `xero_tenant_id` for Xero rows; partial unique index on `(tenant_id, provider, external_account_id) WHERE NOT NULL`). `xero_tenant_id` retained — P58 will drop. `.env.example` clarifies `JOBBER_CLIENT_SECRET` doubles as the webhook HMAC key (no separate `JOBBER_WEBHOOK_SECRET` env var — Pitfall 1 option b). Unblocks Plan 03 webhook tenant-resolution lookup.
 - [v6.0 P56-03]: `/api/webhooks/jobber` shipped — HMAC-SHA256 raw-body verify via `JOBBER_CLIENT_SECRET` (Pitfall 1, no separate webhook-secret env var); `crypto.timingSafeEqual` constant-time compare; silent-200 on unknown accountId (prevents Jobber retry storms). Tenant resolution via `accounting_credentials.external_account_id` (P56-02 column). Topic-prefix routing: `CLIENT_*` → client query, `JOB_*`/`VISIT_*` → job→client query, `INVOICE_*` → invoice→client query; phones normalized via `libphonenumber-js.isPossible() + format('E.164')` → per-phone `revalidateTag('jobber-context-${tenantId}-${E164}')`; broad `jobber-context-${tenantId}` fallback on any GraphQL failure or zero valid phones. No `console.log`, no intent-verify branch (Pitfall 6). OAuth callback extended with Jobber-only `query { account { id } }` probe (5s AbortController timeout) that UPDATEs `external_account_id` on success; probe failure is non-destructive — tokens stay valid, redirect with `?error=account_probe_failed&provider=jobber` so UI surfaces reconnect. Xero callback path literally unchanged. 15 new tests (11 webhook + 4 callback); full regression suite 31/31.
 - [2026-04-18 backlog 999.1 & 999.2 resolved]: (999.1) `src/tools/book_appointment.py` now normalizes urgency via `_normalize_urgency()` (maps `high`/`medium` → `urgent`, `low`/`normal` → `routine`, `critical`/`asap` → `emergency`, unknown → `routine`) before calling `atomic_book_slot`; tool description enumerates the three allowed values to stop Gemini inventing new ones. (999.2) `src/agent.py` passes a `RealtimeInputConfig` with `AutomaticActivityDetection` set to LOW start/end sensitivity, `prefix_padding_ms=400`, `silence_duration_ms=1000` to `google.realtime.RealtimeModel` — dampens Gemini server VAD so breaths/overlap no longer cancel in-flight tool calls (root cause: livekit/agents#4441). Barge-in preserved. Skill `voice-call-architecture` updated; both entries ready to be deleted from ROADMAP backlog section.
+- [v6.0 P60.3-01]: Stream A goodbye-race instrumentation shipped to livekit-agent (`c4f0570` on `lerboi/livekit_agent` main; Railway auto-deploy triggered). `[goodbye_race]` JSON logger.info line + Sentry breadcrumb emitted on every call close with 6 timestamps (`end_call_invoked_at`, `last_text_token_at`, `last_audio_frame_at`, `playback_finished_at` + `text_done`/`audio_done`, `participant_disconnect_at` + `disconnect_reason`, `session_close_at` + `close_reason`), transcript_tail (last 3 turns, ≤500 chars, E.164 phone-redacted via `_PHONE_REDACT_RE`), and `tool_call_log_tail`. All via public livekit-agents 1.5.1 APIs — no private symbol monkey-patching. `_GoodbyeDiagHandler` stdlib logging.Handler reads `text_done`/`audio_done` from the synchronizer warning's LogRecord extra= fields (R-A3). `_flush_goodbye_diag` is the FIRST statement in `_on_close_async` so the record survives Fix I's 8s post-call pipeline timeout. 7 new unit tests green; baseline prompt tests green (2+4). 1 pre-existing `tests/webhook/test_routes.py::test_incoming_call_vip_lead` failure documented in 60.3 `deferred-items.md` (out of Stream A scope, touches `src/webhook/app.py`). Ready for Plan 02 UAT #1.
 
 ### Roadmap Evolution
 
@@ -105,6 +107,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-21T22:29:12.338Z
-Stopped at: Completed 59-08-PLAN.md — all 4 tasks done, 3 skill files synced, SUMMARY written
+Last session: 2026-04-22T09:01:42.042Z
+Stopped at: Completed 60.3-01-PLAN.md — Stream A instrumentation deployed to Railway (livekit-agent c4f0570); 7 tests green; ready for Plan 2 UAT
 Resume file: None
