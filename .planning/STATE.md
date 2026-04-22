@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 60.3-07-PLAN.md; voice_behavior locale parity live; Plans 08-12 unblocked (4 of 15 D7 gaps closed)
-last_updated: "2026-04-22T10:32:10.617Z"
+stopped_at: Completed 60.3-08-PLAN.md; corrections locale parity live; Plans 09-12 unblocked (5 of 15 D7 gaps closed)
+last_updated: "2026-04-22T10:39:52.269Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 19
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Milestone: v6.0 (planning)
 Phase: 60.3 (voice-agent-goodbye-cutoff-and-prompt-audit) — EXECUTING
-Plan: 8 of 13
+Plan: 9 of 13
 Status: Ready to execute
 Last activity: 2026-04-22
 
@@ -72,6 +72,7 @@ Progress: [██████████] 100%
 | Phase 60.3 P05 | 15min | 2 tasks | 2 files |
 | Phase 60.3 P06 | 20min | 2 tasks | 4 files |
 | Phase 60.3 P07 | 4min | 2 tasks | 2 files |
+| Phase 60.3 P08 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Progress: [██████████] 100%
 - [v6.0 P60.3-05]: `_build_call_duration_section` locale parity shipped to livekit-agent main (commits `144cbf9` RED + `9f27a7a` GREEN pushed; Railway auto-deployed). Signature becomes `_build_call_duration_section(t, locale: str = "en")`; `build_system_prompt` call site passes `locale` through. Spanish branch: `"TERMINAR LA LLAMADA — REGLA CRÍTICA"` block mirrors EN CRITICAL RULE with USTED register (consistent with existing Spanish info_gathering block), parallel INCORRECTO/CORRECTO failure-mode example, 9/10-minute numerals preserved, `"Voco"` brand enforced in both locales via test invariant. EN body unchanged from Plan 3 Branch P — ADD-ONLY change preserving all prior invariants. 8 new TDD inverted-assertion tests in `tests/test_prompt_call_duration.py`; full livekit-agent suite 120 passed, 1 deselected (pre-existing deferred VIP failure `test_incoming_call_vip_lead` — tracked in `deferred-items.md` since Plan 01). Header picked: TERMINAR over FINALIZAR (conversational register match). Style picked: USTED over TÚ (prompt.py internal-consistency). **Closes first of 15 D7 locale-parity gaps per 60.3-PROMPT-AUDIT.md**; establishes the inline-branch pattern Plans 06-12 will replicate. UAT #2 farewell-content gap NOT yet re-tested after this patch — per Plan 4 re-audit trigger, if post-Plan-5 UAT still shows the decline-case farewell omission, Plan 9 extends `_build_outcome_words_section` to add "farewell" as a reserved word.
 - [v6.0 P60.3-06]: `_build_tool_narration_section` locale parity shipped to livekit-agent main (commits `1e0da25` RED + `c2bd059` GREEN pushed; Railway auto-deployed). Signature becomes `_build_tool_narration_section(locale: str)` (no default — plan spec); `build_system_prompt` call site passes `locale`. Spanish branch: `"NARRACIÓN DE HERRAMIENTAS — REGLA CRÍTICA"` mirrors EN structure — 5 parallel rules (filler-before-tool contract, conversational register, ~3-second target, immediate tool invocation, filler-is-a-contract), 4 tool-specific example groups with 2-3 ~3-second Spanish filler phrases per tool. USTED register consistent with Plan 05. **Tool names (check_availability, book_appointment, capture_lead, transfer_call) NOT translated — code identifiers wired to src/tools/ registry.** EN body preserved verbatim from post-60.2 — D5 (VAD-redundant Rule 3 cancellation rationale post-Fix-G) and D6 (39-line section) compression DEFERRED because the EN prose is the source of the 60.2 Pitfall 6 invariants (reworking invites regression); audit explicitly acknowledged this tradeoff (Plan 06 action block line 174). 8 new TDD tests in `tests/test_prompt_tool_narration.py`; 60.2 guard-rail tests in `tests/test_prompt.py` updated minimally for signature change (invariant semantics unchanged — still asserting no-runtime-filler + speak-first). Plan 05's forward-looking `test_section_is_position_5_or_earlier_in_both_locales` updated to pair each locale with its tool_narration header (Plan 05 explicitly anticipated this Plan 6 follow-up in a comment). Full suite 128 passed, 1 deselected. **Closes third of 15 D7 locale-parity gaps** (after info_gathering pre-60.3 and call_duration in Plan 05); `grep "if locale == \"es\":" src/prompt.py` count now 3. Plans 07-12 unblocked.
 - [v6.0 P60.3-07]: `_build_voice_behavior_section` locale parity shipped to livekit-agent main (commits `2e035a4` RED + `2d24bbb` GREEN pushed; Railway auto-deployed). Signature becomes `_build_voice_behavior_section(locale: str)`; `build_system_prompt` call site passes `locale`. Spanish branch: `"ESTILO DE VOZ Y CONVERSACIÓN"` mirrors EN structure — energy-matching (calmado/tranquilizador stressed, relajado/cálido casual), slow readback of direcciones/fechas/horarios, one-focused-thing-at-a-time, acknowledgment-before-advancing. USTED register consistent with Plans 05/06. EN body preserved verbatim — D5 (VAD-redundant acknowledgment-pacing post-Fix-G) and D2 (advisory prose paraphrase risk) compression DEFERRED per audit's own "minimal en change" guidance; acknowledgment semantics are load-bearing for realtime back-and-forth coaching (Fix G VAD tells model WHEN caller finished; prompt tells model WHAT to do on boundary — acknowledge-then-advance, not barge-in-interrupt). Audit-dimension decisions (D2/D4/D5) annotated in source comments for re-audit traceability. No downstream test updates required (unlike Plan 06 which touched 60.2 guard-rail tests) — section not referenced in other test files. 6 new TDD tests in `tests/test_prompt_voice_behavior.py`; full suite 134 passed, 1 failed (pre-existing deferred VIP test since Plan 01 — unchanged). **Closes fourth of 15 D7 locale-parity gaps** (after info_gathering pre-60.3 + call_duration Plan 05 + tool_narration Plan 06); `grep "if locale == \"es\":" src/prompt.py` count now 4. Plans 08-12 unblocked.
+- [v6.0 P60.3-08]: `_build_corrections_section` locale parity shipped to livekit-agent main (commits `fcf81d1` RED + `9336955` GREEN pushed; Railway auto-deployed). Signature becomes `_build_corrections_section(locale: str)`; `build_system_prompt` passes `locale`. Spanish branch: `"MANEJO DE CORRECCIONES — REGLA CRÍTICA"` mirrors EN CRITICAL RULE — 5 numbered rules preserved (caller-correction-always-correct, discard-not-blend, repeat-only-corrected, never-reference-old, ask-for-correction-not-original), Spanish address example `"Calle Principal 123"` → `"Avenida Roble 456"`, universal-application close. EN body preserved verbatim — D2 negation-reframe (`"Never reference, compare with, or fall back"` → positive phrasing) DEFERRED because this section IS the anti-hallucination spine for caller-supplied facts; NEVER/DO NOT invariants are load-bearing and reframing without concrete UAT evidence of realtime-model negation inversion (R-B5 Assumption A1) is a regression risk. D1 ✓ (audit flagged as "critical for address/name readback" — preserved in both locales), D4 ✓ (Rule 1 STATE framing preserved in both locales: `"La corrección del llamante SIEMPRE es correcta. Tu versión anterior estaba EQUIVOCADA"`). ES register: body uses TÚ forms (repetiste, tu versión, pídele, no estás, dijiste) verbatim from the plan action block — inconsistent with Plans 05/06/07 USTED standardization; flagged for future Plan-12 batch ES register normalization. Gender-tolerant test polish: `always correct` ES assertion widened to accept feminine `correcta` (required by feminine noun `corrección`) alongside masculine `correcto` — plan spec was linguistically inconsistent; Rule 1 auto-fix before GREEN commit. 9 TDD tests in `tests/test_prompt_corrections.py`; full suite 143 passed, 1 failed (pre-existing deferred VIP test since Plan 01 — unchanged). No downstream test updates required — section not referenced in other test files. **Closes fifth of 15 D7 locale-parity gaps** (info_gathering pre-60.3 + call_duration P05 + tool_narration P06 + voice_behavior P07 + corrections P08); `grep "if locale == \"es\":" src/prompt.py` count now 5. Stream B top-attention-zone coverage complete for positions 2 (voice_behavior), 3 (corrections), 5 (call_duration), 6 (tool_narration); position 4 (outcome_words) is Plan 09's target — the last top-attention-zone English-only section. Plans 09-12 unblocked.
 
 ### Roadmap Evolution
 
@@ -118,6 +120,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-22T10:32:10.608Z
-Stopped at: Completed 60.3-07-PLAN.md; voice_behavior locale parity live; Plans 08-12 unblocked (4 of 15 D7 gaps closed)
+Last session: 2026-04-22T10:39:52.256Z
+Stopped at: Completed 60.3-08-PLAN.md; corrections locale parity live; Plans 09-12 unblocked (5 of 15 D7 gaps closed)
 Resume file: None
