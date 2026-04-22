@@ -381,10 +381,15 @@ No prompt.py, DB, or Next.js changes. Ships independently of 60.3 and 61.
 
 **Depends on:** Phase 60 (prompt baseline). Does NOT depend on 60.3 (they're orthogonal — 60.3 is end-of-call audio race + prompt audit; 60.4 is tool-logic timezone math + STT model config).
 **Requirements:** Captured as decisions in `60.4-CONTEXT.md` during discuss (no REQ-IDs).
-**Plans:** TBD (likely 2-3 plans: diagnosis/root-cause, Stream A timezone fix + UAT, Stream B language pin + UAT)
+**Plans:** 6 plans (planned 2026-04-23; decisions D-A-*, D-B-*, D-C-*, D-X-* in 60.4-CONTEXT.md + Stream C folded in per 60.3 follow-up #1)
 
 Plans:
-- [ ] TBD (run `/gsd:discuss-phase 60.4` then `/gsd:plan-phase 60.4` to break down)
+- [ ] 60.4-01-PLAN.md — Stream A structural fix (timeZone field on events.insert + tenant_timezone plumb + UTC fallback across 3 sites incl. post_call.py:612 + _ensure_utc_iso WARN)
+- [ ] 60.4-02-PLAN.md — Stream B defense-in-depth (language kwarg on RealtimeModel + ANTI-HALLUCINATION prompt directive in both locales — D-B-03 re-opened)
+- [ ] 60.4-03-PLAN.md — Bundled Streams A+B UAT (SG 3 PM booking + deliberate-silence transcript + Railway log kwarg check) — D-X-03
+- [ ] 60.4-04-PLAN.md — Stream C prompt nudge (Branch P CRITICAL RULE revised with within 1-2 seconds latency ceiling; two-step mechanics preserved)
+- [ ] 60.4-05-PLAN.md — Stream C UAT ([goodbye_race] delta < 2s; D-C-04 downgrade safeguard)
+- [ ] 60.4-06-PLAN.md — Phase close (voice-call-architecture SKILL.md subsection + 60.4-SUMMARY.md + ROADMAP + STATE)
 
 ### Phase 61: Google Maps address validation + structured address storage
 
