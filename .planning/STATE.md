@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: verifying
-stopped_at: Completed 60.3-13-PLAN.md (phase close) — Phase 60.3 shipped with PARTIAL verdict. SKILL.md §Phase 60.3 subsection + 60.3-SUMMARY.md rollup + ROADMAP Phase 60.3 entry all written. New 16s end_call-stall regression tracked for Phase 60.4 anchor.
-last_updated: "2026-04-22T14:05:20.605Z"
+stopped_at: Phase 60.4 context gathered (TZ hardening + STT research + Stream C fold-in)
+last_updated: "2026-04-22T14:36:46.590Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 20
@@ -131,6 +131,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-22T14:05:20.596Z
-Stopped at: Completed 60.3-13-PLAN.md (phase close) — Phase 60.3 shipped with PARTIAL verdict. SKILL.md §Phase 60.3 subsection + 60.3-SUMMARY.md rollup + ROADMAP Phase 60.3 entry all written. New 16s end_call-stall regression tracked for Phase 60.4 anchor.
-Resume file: None
+Last session: 2026-04-22T14:36:46.580Z
+Stopped at: Phase 60.4 context gathered (TZ hardening + STT research + Stream C fold-in)
+Resume file: .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-CONTEXT.md
