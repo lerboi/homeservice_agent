@@ -1395,10 +1395,10 @@ artifacts' frontmatter `status` from `deferred` back to `resolved`.
 **Requirements**: D-01 through D-13 locked in 63-CONTEXT.md (no separate REQ-IDs — decisions serve as requirements for this pure-dependency-migration phase).
 **Depends on:** Phase 62
 **Blocks:** Phase 60.4 resumption (Plans 04/05/06 of 60.4 are UAT-blocked by the cutoff race this phase targets — though 63-RESEARCH.md confirms the SegmentSynchronizer race is UNFIXED at 1.5.6; the upgrade still unblocks 60.4 resume on a supported SDK baseline, but the cutoff fix is a follow-up phase).
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 63-01-PLAN.md — Pin livekit-* at 1.5.6 on feature branch, clean pyproject comment, local pytest + boot smoke, Railway preview, one UAT call, merge-or-abort
+- [x] 63-01-PLAN.md — Pin livekit-* at 1.5.6 on feature branch, clean pyproject comment, local pytest + boot smoke, Railway preview, one UAT call, merge-or-abort
 
 ---
 
