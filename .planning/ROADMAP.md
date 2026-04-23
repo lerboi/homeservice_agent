@@ -1402,14 +1402,17 @@ Plans:
 
 ### Phase 63.1: Gemini 3 `generate_reply` regression fix (INSERTED)
 
-**Goal:** Remove the two `session.generate_reply()` call sites in `livekit-agent/src/agent.py` (L712 intake injection + L755 opening greeting) that were silently broken by Phase 63's upgrade to `livekit-plugins-google==1.5.6`. The plugin hard-disables `generate_reply` for `gemini-3.1-flash-live-preview` (capability-based routing per PR #5413 — the same payoff that motivated Phase 63). Confirmed via post-merge UAT on 2026-04-23 (call `call-_+6587528516_XwbNh8W3js2h`): agent silent on connect until caller speaks first; tenant intake questions never asked.
-**Requirements:** TBD during `/gsd:discuss-phase 63.1`. Seed context at `.planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md`.
+**Goal:** Remove the two `session.generate_reply()` call sites in `livekit-agent/src/agent.py` (L712 intake injection + L755 opening greeting) that were silently broken by Phase 63's upgrade to `livekit-plugins-google==1.5.6`. The plugin hard-disables `generate_reply` for `gemini-3.1-flash-live-preview` (capability-based routing per PR #5413 — the same payoff that motivated Phase 63). Confirmed via post-merge UAT on 2026-04-23 (call `call-_+6587528516_XwbNh8W3js2h`): agent silent on connect until caller speaks first; tenant intake questions never asked. Hybrid fix: intake questions hoisted pre-`session.start()` + threaded into `build_system_prompt`; opening greeting delivered via outcome-shaped FIRST TURN directive in `_build_greeting_section` (EN + ES parity) triggered by Gemini server VAD on first caller audio frame. Grep-based pytest guard prevents regression.
+**Requirements:** [PHASE-63.1-GOAL] (self-contained; no formal REQ-ID mapping).
 **Depends on:** Phase 63 (which introduced the regression).
 **Blocks:** Phase 60.4 resumption (the broken opening greeting would invalidate any 60.4 UAT).
-**Plans:** 0/? plans complete (to be planned).
+**Plans:** 4 plans
 
 Plans:
-- [ ] (to be planned via `/gsd:discuss-phase 63.1` → `/gsd:plan-phase 63.1`)
+- [ ] 63.1-01-PLAN.md — Wave 0 RED tests: greeting-directive tests (EN+ES+business_name+no-verbatim-script) and grep-guard test for session.generate_reply( in src/
+- [ ] 63.1-02-PLAN.md — Hoist intake_questions fetch pre-session.start() in src/agent.py; delete both session.generate_reply( call sites + session_ready Event; flip grep-guard RED→GREEN
+- [ ] 63.1-03-PLAN.md — Add outcome-shaped FIRST TURN / PRIMER TURNO directive to _build_greeting_section (EN+ES parity); flip 6 greeting-directive tests RED→GREEN
+- [ ] 63.1-04-PLAN.md — Railway preview + live UAT call (D-09 verification) + merge preserving D-08 commits + voice-call-architecture SKILL sync + STATE/ROADMAP/SUMMARY phase close
 
 ---
 
