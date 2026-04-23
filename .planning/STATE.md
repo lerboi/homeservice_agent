@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: verifying
-stopped_at: Phase 60.4 context gathered (TZ hardening + STT research + Stream C fold-in)
-last_updated: "2026-04-22T14:36:46.590Z"
-last_activity: 2026-04-22
+status: paused
+stopped_at: "Phase 60.4 Plans 01+02 shipped; Plan 03 UAT partial; 2 structural fixes shipped inline (slot_cache b46851b + slot_token 5e48273); awaiting UAT reconfirmation before Plan 04. See .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md"
+last_updated: "2026-04-24T00:00:00.000Z"
+last_activity: "2026-04-24 — Phase 60.4 paused mid-flight; slot_token structural fix pushed (livekit-agent 5e48273); handoff doc written for clean resume"
 progress:
   total_phases: 20
   completed_phases: 17
-  total_plans: 96
+  total_plans: 102
   completed_plans: 98
-  percent: 100
+  percent: 96
 ---
 
 # Project State
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 60.3 — voice-agent-goodbye-cutoff-and-prompt-audit
+**Current focus:** Phase 60.4 — booking-timezone-fix-and-stt-language-pinning
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 60.3 (voice-agent-goodbye-cutoff-and-prompt-audit) — EXECUTING
-Plan: 13 of 13
-Status: Phase complete — ready for verification
-Last activity: 2026-04-22
+Phase: 60.4 (booking-timezone-fix-and-stt-language-pinning) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 60.4
+Last activity: 2026-04-23 -- Phase 60.4 execution started
 
 Progress: [██████████] 100%
 
