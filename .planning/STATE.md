@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: "Phase 63 shipped GREEN but post-merge UAT surfaced `generate_reply` regression on gemini-3.1-flash-live-preview. Phase 63.1 seeded at .planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md. Next: `/gsd:discuss-phase 63.1`. Phase 60.4 blocked on 63.1."
-last_updated: "2026-04-23T19:58:53.159Z"
+stopped_at: Phase 63.1 context gathered
+last_updated: "2026-04-23T20:24:52.685Z"
 last_activity: 2026-04-23
 progress:
   total_phases: 20
@@ -133,7 +133,7 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-24
-Stopped at: Phase 63 added + Phase 60.4 paused pending 63. Ready to run `/gsd:plan-phase 63`.
-Resume file: .planning/phases/63-livekit-sdk-upgrade-to-1-5-6-mainline/
+Last session: 2026-04-23T20:24:52.676Z
+Stopped at: Phase 63.1 context gathered
+Resume file: .planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md
 60.4 paused at: .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md — resume only after 63 ships green UAT.
