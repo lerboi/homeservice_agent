@@ -381,11 +381,11 @@ No prompt.py, DB, or Next.js changes. Ships independently of 60.3 and 61.
 
 **Depends on:** Phase 60 (prompt baseline). Does NOT depend on 60.3 (they're orthogonal — 60.3 is end-of-call audio race + prompt audit; 60.4 is tool-logic timezone math + STT model config).
 **Requirements:** Captured as decisions in `60.4-CONTEXT.md` during discuss (no REQ-IDs).
-**Plans:** 6 plans (planned 2026-04-23; decisions D-A-*, D-B-*, D-C-*, D-X-* in 60.4-CONTEXT.md + Stream C folded in per 60.3 follow-up #1)
+**Plans:** 2/6 plans executed
 
 Plans:
-- [ ] 60.4-01-PLAN.md — Stream A structural fix (timeZone field on events.insert + tenant_timezone plumb + UTC fallback across 3 sites incl. post_call.py:612 + _ensure_utc_iso WARN)
-- [ ] 60.4-02-PLAN.md — Stream B defense-in-depth (language kwarg on RealtimeModel + ANTI-HALLUCINATION prompt directive in both locales — D-B-03 re-opened)
+- [x] 60.4-01-PLAN.md — Stream A structural fix (timeZone field on events.insert + tenant_timezone plumb + UTC fallback across 3 sites incl. post_call.py:612 + _ensure_utc_iso WARN)
+- [x] 60.4-02-PLAN.md — Stream B defense-in-depth (language kwarg on RealtimeModel + ANTI-HALLUCINATION prompt directive in both locales — D-B-03 re-opened)
 - [ ] 60.4-03-PLAN.md — Bundled Streams A+B UAT (SG 3 PM booking + deliberate-silence transcript + Railway log kwarg check) — D-X-03
 - [ ] 60.4-04-PLAN.md — Stream C prompt nudge (Branch P CRITICAL RULE revised with within 1-2 seconds latency ceiling; two-step mechanics preserved)
 - [ ] 60.4-05-PLAN.md — Stream C UAT ([goodbye_race] delta < 2s; D-C-04 downgrade safeguard)
@@ -1388,6 +1388,17 @@ artifacts' frontmatter `status` from `deferred` back to `resolved`.
 ### Phase 999.5: OAuth refresh race + false-banner fix (Jobber + Xero)
 
 **Status:** Resolved 2026-04-19. Migration `058_oauth_refresh_locks.sql` adds a lease-based lock table + `try_acquire_oauth_refresh_lock` / `release_oauth_refresh_lock` RPCs. `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` now (a) clears `error_state: null` in the update payload on successful rotation (Issue 1), (b) acquires the lease before calling `adapter.refreshToken()` and releases it in a `finally` block (Issues 2 & 3), and (c) losers poll for up to 3s to read the winner's freshly-persisted tokens. Tests: `tests/integrations/refresh-lock.test.js` (3 new cases — 5-concurrent → 1 wire call, error_state cleared, release always fires). Prior investigation notes retained below.
+
+### Phase 63: LiveKit SDK upgrade to 1.5.6 mainline
+
+**Goal:** Move livekit-agent off abandoned experimental branch (`livekit-plugins-google` commit `43d3734` on `A2A_ONLY_MODELS`) and onto mainline release pair `(livekit-agents==1.5.6, livekit-plugins-google==1.5.6)` released 2026-04-22. Gain PR #5413 Gemini 3.1 tool-response fix (capability-based routing via `mutable_*`); hope to resolve the `_SegmentSynchronizerImpl.playback_finished text_done=false` race causing mid-speech cutoffs (confirmed in UAT `2xCyyKAduZiY` 18:54 2026-04-23). Must execute on branch with Railway preview before merge to main. No feature additions — pure SDK migration preserving existing kwargs (voice/language/VAD/thinking_config) and tool signatures.
+**Requirements**: TBD — to be captured as decisions during `/gsd:plan-phase 63`.
+**Depends on:** Phase 62
+**Blocks:** Phase 60.4 resumption (Plans 04/05/06 of 60.4 are UAT-blocked by the cutoff race this phase targets).
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 63 to break down)
 
 ---
 
