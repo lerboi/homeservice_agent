@@ -1400,6 +1400,17 @@ artifacts' frontmatter `status` from `deferred` back to `resolved`.
 Plans:
 - [x] 63-01-PLAN.md — Pin livekit-* at 1.5.6 on feature branch, clean pyproject comment, local pytest + boot smoke, Railway preview, one UAT call, merge-or-abort
 
+### Phase 63.1: Gemini 3 `generate_reply` regression fix (INSERTED)
+
+**Goal:** Remove the two `session.generate_reply()` call sites in `livekit-agent/src/agent.py` (L712 intake injection + L755 opening greeting) that were silently broken by Phase 63's upgrade to `livekit-plugins-google==1.5.6`. The plugin hard-disables `generate_reply` for `gemini-3.1-flash-live-preview` (capability-based routing per PR #5413 — the same payoff that motivated Phase 63). Confirmed via post-merge UAT on 2026-04-23 (call `call-_+6587528516_XwbNh8W3js2h`): agent silent on connect until caller speaks first; tenant intake questions never asked.
+**Requirements:** TBD during `/gsd:discuss-phase 63.1`. Seed context at `.planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md`.
+**Depends on:** Phase 63 (which introduced the regression).
+**Blocks:** Phase 60.4 resumption (the broken opening greeting would invalidate any 60.4 UAT).
+**Plans:** 0/? plans complete (to be planned).
+
+Plans:
+- [ ] (to be planned via `/gsd:discuss-phase 63.1` → `/gsd:plan-phase 63.1`)
+
 ---
 
 **Original investigation (retained for reference):** Three distinct bugs in `src/lib/integrations/adapter.js` `refreshTokenIfNeeded`.

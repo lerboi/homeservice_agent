@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: "Phase 63 added + Phase 60.4 paused pending 63. Ready to run `/gsd:plan-phase 63`."
+stopped_at: "Phase 63 shipped GREEN but post-merge UAT surfaced `generate_reply` regression on gemini-3.1-flash-live-preview. Phase 63.1 seeded at .planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md. Next: `/gsd:discuss-phase 63.1`. Phase 60.4 blocked on 63.1."
 last_updated: "2026-04-23T19:58:53.159Z"
 last_activity: 2026-04-23
 progress:
