@@ -1392,13 +1392,13 @@ artifacts' frontmatter `status` from `deferred` back to `resolved`.
 ### Phase 63: LiveKit SDK upgrade to 1.5.6 mainline
 
 **Goal:** Move livekit-agent off abandoned experimental branch (`livekit-plugins-google` commit `43d3734` on `A2A_ONLY_MODELS`) and onto mainline release pair `(livekit-agents==1.5.6, livekit-plugins-google==1.5.6)` released 2026-04-22. Gain PR #5413 Gemini 3.1 tool-response fix (capability-based routing via `mutable_*`); hope to resolve the `_SegmentSynchronizerImpl.playback_finished text_done=false` race causing mid-speech cutoffs (confirmed in UAT `2xCyyKAduZiY` 18:54 2026-04-23). Must execute on branch with Railway preview before merge to main. No feature additions — pure SDK migration preserving existing kwargs (voice/language/VAD/thinking_config) and tool signatures.
-**Requirements**: TBD — to be captured as decisions during `/gsd:plan-phase 63`.
+**Requirements**: D-01 through D-13 locked in 63-CONTEXT.md (no separate REQ-IDs — decisions serve as requirements for this pure-dependency-migration phase).
 **Depends on:** Phase 62
-**Blocks:** Phase 60.4 resumption (Plans 04/05/06 of 60.4 are UAT-blocked by the cutoff race this phase targets).
-**Plans:** 0 plans
+**Blocks:** Phase 60.4 resumption (Plans 04/05/06 of 60.4 are UAT-blocked by the cutoff race this phase targets — though 63-RESEARCH.md confirms the SegmentSynchronizer race is UNFIXED at 1.5.6; the upgrade still unblocks 60.4 resume on a supported SDK baseline, but the cutoff fix is a follow-up phase).
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 63 to break down)
+- [ ] 63-01-PLAN.md — Pin livekit-* at 1.5.6 on feature branch, clean pyproject comment, local pytest + boot smoke, Railway preview, one UAT call, merge-or-abort
 
 ---
 
