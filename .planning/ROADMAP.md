@@ -1400,19 +1400,22 @@ artifacts' frontmatter `status` from `deferred` back to `resolved`.
 Plans:
 - [x] 63-01-PLAN.md — Pin livekit-* at 1.5.6 on feature branch, clean pyproject comment, local pytest + boot smoke, Railway preview, one UAT call, merge-or-abort
 
-### Phase 63.1: Gemini 3 `generate_reply` regression fix (INSERTED)
+### Phase 63.1: Gemini 3 `generate_reply` regression fix (COMPLETE 2026-04-24) ✅
 
 **Goal:** Remove the two `session.generate_reply()` call sites in `livekit-agent/src/agent.py` (L712 intake injection + L755 opening greeting) that were silently broken by Phase 63's upgrade to `livekit-plugins-google==1.5.6`. The plugin hard-disables `generate_reply` for `gemini-3.1-flash-live-preview` (capability-based routing per PR #5413 — the same payoff that motivated Phase 63). Confirmed via post-merge UAT on 2026-04-23 (call `call-_+6587528516_XwbNh8W3js2h`): agent silent on connect until caller speaks first; tenant intake questions never asked. Hybrid fix: intake questions hoisted pre-`session.start()` + threaded into `build_system_prompt`; opening greeting delivered via outcome-shaped FIRST TURN directive in `_build_greeting_section` (EN + ES parity) triggered by Gemini server VAD on first caller audio frame. Grep-based pytest guard prevents regression.
 **Requirements:** [PHASE-63.1-GOAL] (self-contained; no formal REQ-ID mapping).
 **Depends on:** Phase 63 (which introduced the regression).
-**Blocks:** Phase 60.4 resumption (the broken opening greeting would invalidate any 60.4 UAT).
-**Plans:** 4 plans
+**Blocks:** ~~Phase 60.4 resumption~~ — UNBLOCKED 2026-04-24 (merge `bc4befd` on livekit-agent/main).
+**Plans:** 4/4 plans executed
+**SUMMARY:** [.planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-SUMMARY.md](phases/63.1-gemini-3-generate-reply-regression-fix/63.1-SUMMARY.md)
 
 Plans:
-- [ ] 63.1-01-PLAN.md — Wave 0 RED tests: greeting-directive tests (EN+ES+business_name+no-verbatim-script) and grep-guard test for session.generate_reply( in src/
-- [ ] 63.1-02-PLAN.md — Hoist intake_questions fetch pre-session.start() in src/agent.py; delete both session.generate_reply( call sites + session_ready Event; flip grep-guard RED→GREEN
-- [ ] 63.1-03-PLAN.md — Add outcome-shaped FIRST TURN / PRIMER TURNO directive to _build_greeting_section (EN+ES parity); flip 6 greeting-directive tests RED→GREEN
-- [ ] 63.1-04-PLAN.md — Railway preview + live UAT call (D-09 verification) + merge preserving D-08 commits + voice-call-architecture SKILL sync + STATE/ROADMAP/SUMMARY phase close
+- [x] 63.1-01-PLAN.md — Wave 0 RED tests: greeting-directive tests (EN+ES+business_name+no-verbatim-script) and grep-guard test for session.generate_reply( in src/
+- [x] 63.1-02-PLAN.md — Hoist intake_questions fetch pre-session.start() in src/agent.py; delete both session.generate_reply( call sites + session_ready Event; flip grep-guard RED→GREEN
+- [x] 63.1-03-PLAN.md — Add outcome-shaped FIRST TURN / PRIMER TURNO directive to _build_greeting_section (EN+ES parity); flip 6 greeting-directive tests RED→GREEN
+- [x] 63.1-04-PLAN.md — Push phase-63.1-generate-reply-fix (cc5e43a) + merge --no-ff to livekit-agent/main (bc4befd) + skill sync + STATE/ROADMAP/SUMMARY (live UAT skipped by user directive; D-09 #1 verified offline via grep-guard; D-09 #2 deferred to next live prod call)
+
+**Outcome:** Regression shipped. `generate_reply is not compatible` warnings eliminated from all future calls (grep-guard test green on post-merge main). `intake_questions` now surface on first turn via `build_system_prompt(intake_questions=...)`. Greeting directive in prompt replaces the broken `generate_reply` trigger — Gemini server VAD fires it on first caller audio frame. 254 tests passing on fix branch; 1 pre-existing deferred VIP failure unchanged. All 9 D-08 Phase 60.4 + Phase 63 SHAs preserved on main post-merge. Phase 60.4 unblocked and ready to resume via HANDOFF doc.
 
 ---
 

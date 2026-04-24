@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Phase 63.1 context gathered
-last_updated: "2026-04-23T20:24:52.685Z"
-last_activity: 2026-04-23
+stopped_at: Phase 63.1 shipped; 60.4 ready to resume
+last_updated: "2026-04-24T00:00:00.000Z"
+last_activity: 2026-04-24 -- Phase 63.1 merged to livekit-agent main (bc4befd)
 progress:
   total_phases: 20
-  completed_phases: 17
-  total_plans: 102
-  completed_plans: 100
+  completed_phases: 18
+  total_plans: 106
+  completed_plans: 104
   percent: 98
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 63 — livekit-sdk-upgrade-to-1-5-6-mainline
+**Current focus:** Phase 60.4 — booking-timezone-fix-and-stt-language-pinning (unblocked after Phase 63.1 ship)
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 63
-Plan: Not started
-Status: Executing Phase 63
-Last activity: 2026-04-23
+Phase: 63.1 (gemini-3-generate-reply-regression-fix) — COMPLETE
+Plan: 4 of 4
+Status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
+Last activity: 2026-04-24 -- Phase 63.1 merged to livekit-agent main (bc4befd)
 
 Progress: [██████████] 100%
 
@@ -110,6 +110,8 @@ Progress: [██████████] 100%
 
 - [v6.0 P60.3-11]: `_build_booking_section` full ES outer-frame parity shipped to livekit-agent main (commits `bd65986` RED + `af2653e` GREEN pushed; Railway auto-deployed). Signature unchanged (`_build_booking_section(business_name, onboarding_complete, postal_label, locale="en")`). Body restructured from inline `if locale == "es"` expression (covering only the BEFORE BOOKING — READBACK block, ~15% of the section) to top-level `if locale == "es":` statement carrying the full protocol. **Spanish outer frame added** — RESERVA / PROGRAMACIÓN / REGLAS DE DISPONIBILIDAD / MANEJO DEL RESULTADO / ANTES DE RESERVAR — LECTURA DE CONFIRMACIÓN / DESPUÉS DE RESERVAR — mirrors EN 1:1 at the header level with parallel sub-bullets and a translated 2pm/3pm fresh-check example. USTED register throughout (consistent with pre-60.3 ES readback block). **EN body preserved verbatim** — the audit flagged the ES gap specifically and EN prose has been stable since pre-60.3. Only Rule-2 additions to EN: `postal_label` wired into readback address fields (`"street, city, state/country, {postal_label}"`) + `business_name` wired into onboarding-incomplete fallback (was generic). **ES readback block preserved verbatim** from R-B1 — already locale-correct; Plan 11 wrapped it with the new ES outer frame rather than rewriting; single addition: `{postal_label}` in the address parenthetical. **D1 anti-hallucination invariants codified at test layer** via inverted-substring assertions in BOTH locales: two-step availability contract (check_availability BEFORE book_appointment), mandatory readback (time + address before commit), anti-fabrication rule (never 'confirmed'/'booked' until book_appointment returns success). **Tool names (check_availability, book_appointment) NOT translated** — codified as test assertion, not just prose. **postal_label test matrix: 4 cells** (SG-EN, US-EN, SG-ES, US-ES) — more granular than Plan 10 because booking readback is the D1-critical address verification surface. **onboarding_complete=False fallback** — Rule-2 addition gained `business_name` interpolation in both locales (EN was generic; ES was entirely missing). **D6 compression DEFERRED** on vague-time-windows bullet — rewording D1-spine prose without concrete UAT evidence invites regression; annotated in source comment. 17 new TDD tests in `tests/test_prompt_booking.py` (10 plan-spec behaviors split by locale pairs yields 17 collected); full livekit-agent suite `179 passed, 1 deselected (pre-existing VIP test)`. EN/ES length delta 9.3% (EN 4463 / ES 4922) — tighter than Plan 10's 14% delta because EN was preserved verbatim during authoring. **Closes 8th of 15 D7 locale-parity gaps — the LARGEST Stream B partial-parity section.** `grep "if locale == \"es\":" src/prompt.py` count unchanged at 7 (booking's `if locale == "es"` was already counted as inline expression pre-Plan-11; Plan 11 promoted it to top-level statement form). Pattern-established: largest Stream B diff (net +123 lines) shipped without EN regression — demonstrates the invariant-lock template scales to the highest-stakes D1 surfaces. Plans 12-13 unblocked.
 
+- [v6.0 P63.1]: generate_reply regression shipped to livekit-agent main (merge commit `bc4befd`, `--no-ff`; branch `phase-63.1-generate-reply-fix` preserved all 5 fix/test commits). Both `session.generate_reply(...)` call sites deleted from `src/agent.py` (intake L702-717 + greeting L754-758); `session_ready = asyncio.Event()` removed as dead code; `_run_db_queries` refactored to named-tuple unpacking (Pitfall 2 mitigation). Intake_questions fetch hoisted pre-`session.start()` and threaded through `build_system_prompt(intake_questions=intake_questions_text)` so Gemini receives tenant-configured questions in the initial `instructions=system_prompt` payload. `_build_greeting_section` extended with outcome-shaped `FIRST TURN:` / `PRIMER TURNO:` block (EN+ES parity, USTED register, prepended to existing OPENING/APERTURA structure; no verbatim scripts). Gemini server VAD firing on first caller audio frame elicits the greeting in lieu of the broken `generate_reply` trigger. Regression guard `tests/test_no_generate_reply_in_src.py` (pure stdlib regex scan of `src/**/*.py`) + 6 `tests/test_prompt_greeting_directive.py` RED→GREEN tests lock the contract. Full livekit-agent suite 254 passed, 1 pre-existing deferred VIP failure. All 9 D-08 SHAs (c2482f8, 1df5223, b46851b, 5e48273, e580f14, 68828d7, 87d6883, 38352f2, 9ce12d6) preserved on main post-merge. **UAT verdict: live call skipped by user directive** — D-09 #1 (zero `generate_reply is not compatible` warnings) verified offline via grep-guard; D-09 #2 (agent-first-turn) deferred to next live prod call. **Phase 60.4 unblocked and ready to resume** via `.planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md`. Generalizable pattern established for any future 1.5.6 + Gemini-3.x data-injection need: pre-session fetch → `build_system_prompt(kwarg=...)` → prompt-level directive leveraging server VAD. homeservice_agent docs commit pending (SUMMARY + SKILL + STATE + ROADMAP bundled).
+
 ### Roadmap Evolution
 
 - 2026-04-16: v5.0 milestone closed. 4 phases shipped (47, 48, 48.1, 49); Phase 50 absorbed into 49 Plan 05; Phases 51 and 52 deferred to v6.0. Phase 47-05 documented as superseded in part by Phase 48.1 revenue-recovery rewrite.
@@ -133,7 +135,7 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-23T20:24:52.676Z
-Stopped at: Phase 63.1 context gathered
-Resume file: .planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-CONTEXT.md
-60.4 paused at: .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md — resume only after 63 ships green UAT.
+Last session: 2026-04-24
+Stopped at: Phase 63.1 shipped; 60.4 ready to resume
+Resume file: .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md
+60.4 status: UNBLOCKED — Phase 63.1 `generate_reply` regression fix merged to livekit-agent main (`bc4befd`). Resume via HANDOFF doc.

@@ -8,7 +8,7 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-22 (Phase 60.3 — Stream A goodbye-race diagnostic instrumentation + Branch P prompt-harden fix shipped; Stream B locale parity across 15 sections closed D-B-03; cumulative UAT verdict PARTIAL with a new 16s end_call-stall regression tracked for Phase 60.4. See `references/phase-history.md` for incremental phase-by-phase history.)
+**Last updated**: 2026-04-24 (Phase 63.1 — generate_reply regression fix shipped; two broken `session.generate_reply(...)` call sites deleted from `src/agent.py`; intake_questions fetch hoisted pre-`session.start()` and threaded through `build_system_prompt(intake_questions=...)`; `_build_greeting_section` extended with outcome-shaped FIRST TURN / PRIMER TURNO directive (EN+ES parity) so Gemini server VAD fires the greeting on the caller's first audio frame; grep-guard pytest prevents future `session.generate_reply(` regressions in `src/`. See `references/phase-history.md` for incremental phase-by-phase history.)
 
 ---
 
@@ -691,6 +691,106 @@ against Spanish prose will be verified in Phase 60.4.
 **Plans 60.3-01 through 60.3-13 full documentation** — see
 `.planning/phases/60.3-voice-agent-goodbye-cutoff-and-prompt-audit/`
 (context, research, audit, analysis, HUMAN-UAT, phase rollup).
+
+### Phase 63.1 — generate_reply regression fix (Gemini 3.1 + plugins-google 1.5.6)
+
+**What broke.** On the Phase 63 upgrade to `livekit-agents==1.5.6` +
+`livekit-plugins-google==1.5.6`, `RealtimeModel` for
+`gemini-3.1-flash-live-preview` began silently capability-dropping any
+`session.generate_reply(...)` call. Plugin warning + error logs:
+`generate_reply is not compatible with 'gemini-3.1-flash-live-preview'`
+and `failed to generate a reply: generate_reply is not compatible`.
+User-visible symptom: the agent never spoke the greeting, and tenant
+intake questions were never injected. The caller had to speak first
+for any agent turn to be emitted.
+
+**Root cause.** The 1.5.6 google plugin guards `generate_reply` on a
+per-model capability matrix; `gemini-3.1-flash-live-preview` is marked
+incompatible. Unlike the 1.5.1 + git `43d3734` pin (which supported
+it), the 1.5.6 mainline no-ops these calls rather than raising — they
+fail silently at runtime with only warnings, so tests and imports pass
+but live calls regress.
+
+**Fix shape (Plans 02 + 03).** Two-part hybrid:
+
+- **Plan 02 — `src/agent.py`.** Both `session.generate_reply(...)` call
+  sites deleted (intake injection L702-717 + greeting L754-758). The
+  intake_questions Supabase fetch was hoisted OUT of `_run_db_queries`
+  (parallel gather) and INTO the pre-session construction block
+  (mirroring the existing Xero/Jobber customer_context pattern), so
+  the fetched list is threaded through
+  `build_system_prompt(intake_questions=intake_questions_text)` and
+  arrives in Gemini's initial `instructions=system_prompt` payload.
+  `session_ready = asyncio.Event()` + `.set()` + `.wait()` fully
+  removed as dead code. `_run_db_queries` result-unpacking converted
+  from index-based (`results[N]`) to named tuple unpacking to prevent
+  reindex bugs.
+- **Plan 03 — `src/prompt.py`.** `_build_greeting_section` extended
+  append-only with a `FIRST TURN:` / `PRIMER TURNO:` block prepended
+  to the existing `OPENING:` / `APERTURA:` structure (both locale
+  branches, USTED register). Outcome-shaped (describes what the
+  caller hears, not a mechanical instruction sequence) — no verbatim
+  script strings like `"Thank you for calling"` / `"Gracias por
+  llamar"`. The replacement mechanism is the Gemini server VAD:
+  with `system_prompt` now containing a "the FIRST thing the caller
+  hears is a warm, branded greeting" directive, the VAD firing on the
+  caller's first audio frame elicits the greeting organically.
+
+**Regression guard.** `tests/test_no_generate_reply_in_src.py` — pure
+stdlib regex scan of `src/**/*.py` (skipping `__pycache__`) for
+`\bgenerate_reply\s*\(` with leading-`#` comment skip. Failure message
+embeds `file:lineno:line_content` and documents the 1.5.6+3.1 silent-
+drop failure mode so future regressions are caught at test time rather
+than in production. Paired with 6 `tests/test_prompt_greeting_directive.py`
+RED→GREEN tests locking the EN+ES directive contract at the
+`_build_greeting_section` section surface (scoped, not full-prompt, to
+avoid false positives from Phase 60.3 Plan 03
+`_build_call_duration_section`'s `"Thank you for calling Voco"` WRONG-
+example teaching string).
+
+**Commits (livekit-agent branch `phase-63.1-generate-reply-fix` →
+merged to `main` via `--no-ff` merge commit `bc4befd`):**
+
+| SHA     | Plan | Message |
+|---------|------|---------|
+| `943c9d9` | 01 | `test(63.1): RED tests for greeting directive + intake audit` |
+| `dab383e` | 01 | `test(63.1): RED grep-guard against session.generate_reply( in src/` |
+| `3e43bb3` | 02 | `fix(63.1): hoist intake_questions fetch pre-session; delete intake-side generate_reply` |
+| `823aab3` | 02 | `fix(63.1): delete greeting-side generate_reply + session_ready.set (grep-guard GREEN)` |
+| `cc5e43a` | 03 | `fix(63.1): outcome-shaped first-turn greeting directive in _build_greeting_section (EN+ES)` |
+| `bc4befd` | 04 | `merge(63.1): generate_reply regression fix` (--no-ff, preserves all Phase 60.4 + Phase 63 D-08 SHAs) |
+
+**Test suite status at phase close.** 254 passed, 1 pre-existing
+deferred VIP failure (`test_incoming_call_vip_lead`, tracked since
+Plan 60.3-01 in `deferred-items.md`). All 6 greeting-directive tests
+GREEN post-Plan-03; grep-guard GREEN on post-merge main.
+
+**Live UAT disposition.** Plan 04 Task 2 (live UAT call on Railway
+preview) was **skipped by explicit user directive** in favor of
+direct merge-to-main + prod Railway auto-deploy. D-09 #1 (zero
+`generate_reply is not compatible` warnings) verified offline via
+grep-guard test; D-09 #2 (agent speaks first) verification deferred
+to the next live call on prod. See
+`.planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-UAT.md`
+for the exact disposition record.
+
+**Applies to any future 1.5.6 + Gemini-3.x data-injection need.** The
+generalizable pattern this phase establishes:
+
+- Needed tenant/caller-specific data injected at call start → fetch
+  it pre-`session.start()` and include it in the initial
+  `build_system_prompt(...)` payload via a new kwarg.
+- Needed the agent to speak first / open with a specific shape →
+  encode it as an outcome-shaped directive in the relevant prompt
+  section; rely on Gemini server VAD (`silence_duration_ms`) firing
+  on first caller audio to elicit the turn.
+- Needed a regression guard against future `session.generate_reply(`
+  creep → extend `tests/test_no_generate_reply_in_src.py` or mirror
+  its pure-stdlib regex-scan pattern.
+
+**Plans 63.1-01 through 63.1-04 full documentation** — see
+`.planning/phases/63.1-gemini-3-generate-reply-regression-fix/`
+(context, research, per-plan SUMMARY, UAT, phase rollup).
 
 ---
 
