@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
-stopped_at: Phase 63.1 shipped; 60.4 ready to resume
-last_updated: "2026-04-24T05:59:04.387Z"
+stopped_at: Phase 64 context gathered
+last_updated: "2026-04-24T10:13:50.978Z"
 last_activity: 2026-04-24
 progress:
   total_phases: 20
@@ -136,7 +136,7 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-24
-Stopped at: Phase 63.1 shipped; 60.4 ready to resume
-Resume file: .planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md
+Last session: 2026-04-24T10:13:50.958Z
+Stopped at: Phase 64 context gathered
+Resume file: .planning/phases/64-livekit-pipeline-agent-migration/64-CONTEXT.md
 60.4 status: UNBLOCKED — Phase 63.1 `generate_reply` regression fix merged to livekit-agent main (`bc4befd`). Resume via HANDOFF doc.
