@@ -1417,6 +1417,30 @@ Plans:
 
 **Outcome:** Regression shipped. `generate_reply is not compatible` warnings eliminated from all future calls (grep-guard test green on post-merge main). `intake_questions` now surface on first turn via `build_system_prompt(intake_questions=...)`. Greeting directive in prompt replaces the broken `generate_reply` trigger — Gemini server VAD fires it on first caller audio frame. 254 tests passing on fix branch; 1 pre-existing deferred VIP failure unchanged. All 9 D-08 Phase 60.4 + Phase 63 SHAs preserved on main post-merge. Phase 60.4 unblocked and ready to resume via HANDOFF doc.
 
+### Phase 64: LiveKit pipeline agent migration (swap Gemini 3.1 Live Realtime → STT+LLM+TTS discrete pipeline)
+
+**Goal:** Migrate the LiveKit voice agent from the Gemini 3.1 Flash Live audio-to-audio Realtime architecture to a classical pipeline-agent stack (STT + LLM + TTS as discrete plugins). Preserve ALL existing behavior, prompts, tools, tenant logic, post-call pipeline, integrations, and Phase 59/60/63 functionality — this is a pure architectural swap. Motivation: Phase 63.1 live UAT (Plans 01-11) proved the Realtime stack at `livekit-agents==1.5.6` + `livekit-plugins-google==1.5.6` carries 5 upstream unfixed bugs that compound into unreliable call flow — mid-word truncation (`_SegmentSynchronizerImpl` race, #4486/#5096), capability-gated `generate_reply`/`say`/`update_chat_ctx` on 3.1 models (realtime_api.py:707, `mutable_chat_context=False`, `supports_say=False`), and tool-call cancellation on caller VAD (#4441). The LiveKit maintainer has closed workaround PRs (#5251, #5262) pending DeepMind guidance (#5234 still open). No local patching stabilized end-to-end booking. The pipeline architecture uses mature plugin APIs with no capability gates; each component (STT/LLM/TTS) can fail/retry independently. Tradeoff: ~500ms added per-turn latency (audio-to-audio ~300ms → pipeline ~800-1200ms) in exchange for definitively reliable behavior.
+
+**Architecture change:**
+- **FROM:** `AgentSession(llm=google.realtime.RealtimeModel(model="gemini-3.1-flash-live-preview", ...), tts=GeminiTTS(...))`
+- **TO:** `AgentSession(stt=google.STT(model="chirp_3", language="en-US", ...), llm=google.LLM(model="gemini-3.1-flash", ...), tts=GeminiTTS(voice="Zephyr", ...))`
+
+**Preserves (functionally unchanged):** Gemini 3.1 Flash as LLM (text mode), Zephyr voice via Gemini TTS, all 7 in-process tools (check_availability, book_appointment, capture_lead, check_caller_history, check_customer_account, transfer_call, end_call), build_system_prompt + all _build_*_section prompt builders, Phase 55/56 pre-session Xero/Jobber context fetch, Phase 59 record_outcome RPC + customer/job model, Phase 60.3 [goodbye_race] instrumentation, Phase 60.4 tenant_timezone + language pinning, Phase 63 SDK upgrade commits, tenant lookup + subscription gate + egress + post-call pipeline + notifications + triage.
+
+**Requirements:** TBD — surface during /gsd:discuss-phase 64.
+**Depends on:** Phase 63.1 (complete). No Phase 60.4 dependency — 60.4 can be re-verified post-migration or executed against the new pipeline (decide during discuss).
+**Blocks:** Phase 60.4 resumption path (resume against new pipeline OR re-verify).
+**Plans:** 0 plans (expected ~7 after /gsd:plan-phase 64)
+
+Expected plan outline (subject to plan-phase refinement):
+- [ ] 64-01: Side-by-side proof-of-concept (`src/agent_pipeline.py`) validating basic call flow + tool-calling + latency measurement on Railway preview.
+- [ ] 64-02: Port full entrypoint from `src/agent.py` — migrate tenant lookup, context fetch, DB queries, egress, [goodbye_race] instrumentation.
+- [ ] 64-03: Adapt VAD/interrupt config — translate Phase 60.2 + 60.4 barge-in tuning from `realtime_input_config` to pipeline-agent VAD semantics.
+- [ ] 64-04: Remove 63.1-06/07/11 workarounds — TTS-plugin greeting, input mute, silence_duration_ms override all become unnecessary on pipeline (session.say / session.generate_reply work natively).
+- [ ] 64-05: Revert prompt workarounds in _build_greeting_section (do-not-re-greet block) and simplify NO DOUBLE-BOOKING directive.
+- [ ] 64-06: Full UAT battery — 5+ live calls covering greeting, booking flow, barge-in, Spanish, decline, transfer, end_call. Verify post-call pipeline + activity_log + triage.
+- [ ] 64-07: Phase close — voice-call-architecture SKILL.md rewrite (pipeline is new SOT; Realtime moves to historical appendix), STATE.md + ROADMAP.md + 64-SUMMARY.md.
+
 ---
 
 **Original investigation (retained for reference):** Three distinct bugs in `src/lib/integrations/adapter.js` `refreshTokenIfNeeded`.
