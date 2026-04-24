@@ -561,19 +561,21 @@ from livekit.plugins import silero  # for silero.VAD.load()
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Latency validation**
+> All three open questions have been resolved for planning purposes. Each is either validated in Plan 05 UAT (non-blocking per D-10) or has a locked fallback that requires no code restructure. Dimension 11 (Research Resolution) satisfied.
+
+1. **Latency validation** — **RESOLVED:** measure in Plan 64-05 UAT; non-blocking per D-10. If p90 > 2s per turn, log as Phase 64.1 follow-up (candidate mitigations: `endpointing_sensitivity` tuning on Chirp 3, LLM response caching). Does NOT block merge.
    - What we know: industry benchmarks suggest 600–1200ms pipeline per-turn; Chirp 3 had a 2.4s outlier noted in issue comments.
    - What's unclear: actual per-turn latency on Railway with chirp_3 + gemini-3.1-flash + Gemini TTS on the SG tenant's network path.
    - Recommendation: measure in the UAT call. If p90 > 2s, enable `endpointing_sensitivity` tuning on Chirp 3 and increase LLM response caching. Do not block merge on latency.
 
-2. **Spanish Chirp 3 quality**
+2. **Spanish Chirp 3 quality** — **RESOLVED:** validate in Plan 64-05 UAT if feasible; non-blocking per D-10. The 205-test pytest suite from Phase 60.3-12 covers ES prompt coverage. If production ES regresses (real-voice SIP audio), log as Phase 64.1 follow-up. Locked fallback: swap `model="chirp_3"` → `model="chirp_2"` in `_build_pipeline_plugins` — single kwarg change, no code restructure. Does NOT block merge.
    - What we know: Chirp 3 has enhanced multilingual accuracy. The transcription bug is fixed (PR #3628). `languages="es-US"` + `detect_language=False` is the correct configuration.
    - What's unclear: whether Chirp 3's ES-US accuracy on SIP telephony audio (8kHz, SG carrier) is better or worse than Gemini Live's native Spanish comprehension.
    - Recommendation: Place an ES UAT call in Phase 64 if feasible. If ES quality regresses, the `chirp_2` fallback is available. Do not block merge on ES UAT.
 
-3. **Chirp 3 vs latest_long for phone audio**
+3. **Chirp 3 vs latest_long for phone audio** — **RESOLVED:** use `chirp_3` per D-07. `latest_long` remains a single-kwarg swap fallback if UAT transcription quality is poor on SIP 8kHz audio — no code restructure needed. If the fallback is exercised, log as Phase 64.1 decision (revisit STT model selection with production evidence).
    - What we know: Google offers `chirp_telephony` for 8kHz phone audio, but that is NOT in `SpeechModels` in the livekit-plugins-google plugin. `latest_long` is the default and is tuned for varied audio. `chirp_3` is best for multilingual.
    - What's unclear: which performs better on SIP-over-carrier 8kHz audio in practice.
    - Recommendation: Use `chirp_3` per D-07. If UAT transcription quality is poor, try `latest_long` as a quick fallback (single kwarg change, no other code change).
