@@ -46,7 +46,7 @@ session = AgentSession(llm=model, tts=greeting_tts)
 
 ```python
 session = AgentSession(
-    stt=google.STT(model="chirp_3", language=_locale_to_bcp47(locale), ...),
+    stt=google.STT(model="chirp_3", languages=_locale_to_bcp47(locale), detect_language=False, ...),
     llm=google.LLM(model="gemini-3.1-flash", ...),
     tts=GeminiTTS(voice_name=voice_name, model="gemini-2.5-flash-preview-tts", ...),
     vad=silero.VAD.load(min_silence_duration=2.5, ...),   # research confirms exact kwarg
@@ -98,7 +98,9 @@ The **pipeline architecture** (STT + LLM + TTS as discrete plugins) uses LiveKit
 
 - **D-06: TTS carries forward as `GeminiTTS(voice_name=voice_name, model="gemini-2.5-flash-preview-tts", instructions="Say this quickly, in a warm professional tone:")`.** Same plugin already attached for 63.1-06 greeting; promoted to session-level TTS. Zephyr / Kore / Puck voice set matches 1:1 with Gemini Live voice set — no audible switch for existing tenants.
 
-- **D-07: STT = `google.STT(model="chirp_3")` with `language=_locale_to_bcp47(locale)`.** Phase 60.4 Stream B's language-pin intent translates 1:1 from Realtime `language=` kwarg to pipeline STT `language=` kwarg. Spanish on Chirp 3 reliability is a research question (Q9 in Research Questions below).
+- **D-07: STT = `google.STT(model="chirp_3")` with `languages=_locale_to_bcp47(locale)` and `detect_language=False`.** Phase 60.4 Stream B's language-pin intent translates to pipeline STT — same BCP-47 input, renamed kwarg. Spanish on Chirp 3 reliability is a research question (Q9 in Research Questions below).
+
+  **[RESEARCH CORRECTION 2026-04-24]** Actual kwarg on `google.STT` at livekit-plugins-google 1.5.6 is `languages=` (PLURAL), not `language=` (singular). The singular kwarg is silently discarded (no TypeError) — a Spanish tenant would get English STT with no visible error. See 64-RESEARCH.md § Common Pitfalls — Pitfall 1 (HIGH RISK — SILENT FAILURE). Also add `detect_language=False` to prevent auto-detect from overriding the pin (Pitfall 2). Behavioral intent of D-07 unchanged — only the kwarg names are corrected.
 
 - **D-08: Cross-repo discipline unchanged.** All code changes ship in `C:/Users/leheh/.Projects/livekit-agent/`. Planning artifacts in `homeservice_agent/.planning/phases/64-.../`. `--no-verify` convention on both repos. Commit prefix `fix(64):` / `feat(64):` in livekit-agent, `docs(64-XX):` in homeservice_agent. Merge with `--no-ff` preserves per-plan commit history on main.
 
@@ -133,7 +135,7 @@ None — no matching pending todos for Phase 64 scope.
 - **Phase 59 customer/job model**: `customer_calls` / `job_calls` junctions, `activity_log` `integration_fetch` / `integration_fetch_fanout` events unchanged.
 - **Phase 60.3 `[goodbye_race]` instrumentation**: schema v1 remains byte-identical where possible; some fields (`text_done`, `audio_done`, `playback_finished_at`) may have different semantics on the pipeline path — research maps the event hooks, planner documents schema deltas in SUMMARY.
 - **Phase 60.4 Stream A tenant_timezone plumbing**: `events.insert(..., timeZone=tenant_timezone)` in `book_appointment` + `_ensure_utc_iso` fallback + 3 hardening sites all preserved.
-- **Phase 60.4 Stream B language pinning**: translated from `RealtimeModel(language=...)` to `google.STT(language=...)` — same semantic, different kwarg path.
+- **Phase 60.4 Stream B language pinning**: translated from `RealtimeModel(language=...)` to `google.STT(languages=..., detect_language=False)` — same BCP-47 semantic, renamed plural kwarg (see D-07 RESEARCH CORRECTION + 64-RESEARCH.md Pitfall 1).
 - **Phase 63 SDK 1.5.6 pins**: `livekit-agents==1.5.6` + `livekit-plugins-google==1.5.6` remain. Add `livekit-plugins-silero` pin (version via research).
 - **Phase 63.1 intake_questions pre-session hoist**: fetched pre-`session.start()` and passed via `build_system_prompt(intake_questions=...)` — works identically on pipeline (system prompt becomes LLM's system message on the first turn).
 - **Post-call pipeline**: transcript, recording path, language detection, triage, owner notifications, booking reconciliation, recovery SMS cron, usage tracking — all firing off `session.on("close")`.
