@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
-stopped_at: Phase 64 context gathered
-last_updated: "2026-04-24T10:13:50.978Z"
-last_activity: 2026-04-24
+status: idle
+stopped_at: Phase 64 reverted — UAT failed
+last_updated: "2026-04-25T00:00:00.000Z"
+last_activity: 2026-04-25 -- Phase 64 reverted; livekit-agent restored to 61a2e6e (Phase 63.1 Realtime)
 progress:
   total_phases: 20
   completed_phases: 17
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 60.4 — booking-timezone-fix-and-stt-language-pinning (unblocked after Phase 63.1 ship)
+**Current focus:** Idle — Phase 64 reverted; production running Phase 63.1 Realtime again.
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 63.1
-Plan: Not started
-Status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
-Last activity: 2026-04-24
+Phase: 64 (livekit-pipeline-agent-migration) — **REVERTED 2026-04-25** (UAT regressions: ~7s latency, self-echo interruption, model-name typo). See ROADMAP.md Phase 64 post-mortem for detail. livekit-agent main at `d4a1ee1` reverts working tree to `61a2e6e` (Phase 63.1 state). Phase 60.4 remains paused per prior HANDOFF.
+Plan: 3 of 6 executed (01, 02, 03) before UAT aborted; Plans 04/05/06 never completed.
+Status: Idle — awaiting decision on next phase.
+Last activity: 2026-04-25 -- Phase 64 reverted; livekit-agent main restored to 61a2e6e
 
 Progress: [██████████] 100%
 
