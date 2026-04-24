@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: executing
+status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
 stopped_at: Phase 63.1 shipped; 60.4 ready to resume
-last_updated: "2026-04-24T00:00:00.000Z"
-last_activity: 2026-04-24 -- Phase 63.1 merged to livekit-agent main (bc4befd)
+last_updated: "2026-04-24T05:59:04.387Z"
+last_activity: 2026-04-24
 progress:
   total_phases: 20
-  completed_phases: 18
-  total_plans: 106
-  completed_plans: 104
+  completed_phases: 17
+  total_plans: 102
+  completed_plans: 100
   percent: 98
 ---
 
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 63.1 (gemini-3-generate-reply-regression-fix) — COMPLETE
-Plan: 4 of 4
+Phase: 63.1
+Plan: Not started
 Status: Phase 63.1 shipped to livekit-agent main (merge bc4befd); Phase 60.4 ready to resume via HANDOFF
-Last activity: 2026-04-24 -- Phase 63.1 merged to livekit-agent main (bc4befd)
+Last activity: 2026-04-24
 
 Progress: [██████████] 100%
 

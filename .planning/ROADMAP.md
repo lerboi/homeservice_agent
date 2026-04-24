@@ -1406,7 +1406,7 @@ Plans:
 **Requirements:** [PHASE-63.1-GOAL] (self-contained; no formal REQ-ID mapping).
 **Depends on:** Phase 63 (which introduced the regression).
 **Blocks:** ~~Phase 60.4 resumption~~ — UNBLOCKED 2026-04-24 (merge `bc4befd` on livekit-agent/main).
-**Plans:** 4/4 plans executed
+**Plans:** 4/4 plans complete
 **SUMMARY:** [.planning/phases/63.1-gemini-3-generate-reply-regression-fix/63.1-SUMMARY.md](phases/63.1-gemini-3-generate-reply-regression-fix/63.1-SUMMARY.md)
 
 Plans:
