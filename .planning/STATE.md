@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: idle
-stopped_at: Phase 64 reverted — UAT failed
-last_updated: "2026-04-25T00:00:00.000Z"
-last_activity: 2026-04-25 -- Phase 64 reverted; livekit-agent restored to 61a2e6e (Phase 63.1 Realtime)
+status: Idle — awaiting decision on next phase.
+stopped_at: Phase 61 context gathered
+last_updated: "2026-04-25T07:29:49.778Z"
+last_activity: 2026-04-25 -- Phase 64 reverted; livekit-agent main restored to 61a2e6e
 progress:
   total_phases: 20
   completed_phases: 17
@@ -136,7 +136,7 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-24T10:13:50.958Z
-Stopped at: Phase 64 context gathered
-Resume file: .planning/phases/64-livekit-pipeline-agent-migration/64-CONTEXT.md
+Last session: 2026-04-25T07:29:49.766Z
+Stopped at: Phase 61 context gathered
+Resume file: .planning/phases/61-google-maps-address-validation-and-structured-address-storage/61-CONTEXT.md
 60.4 status: UNBLOCKED — Phase 63.1 `generate_reply` regression fix merged to livekit-agent main (`bc4befd`). Resume via HANDOFF doc.
