@@ -113,6 +113,17 @@ Add Google Maps Platform Address Validation as a background pre-check inside the
 ### Folded Todos
 None — no pending todos in `.planning/todos/` matched Phase 61 scope.
 
+### Post-Research Resolutions (2026-04-25, applied during /gsd-plan-phase 61)
+
+Two CONTEXT decisions referenced surfaces that no longer match the codebase post-Phase-59. User confirmed the corrections during plan-phase intake. Treat these as authoritative overrides of the matching D-XX above.
+
+- **D-F1′ (overrides D-F1):** Validated-address columns land on **`appointments` + `inquiries`** (NOT `leads`). Migration `061_drop_legacy_leads.sql` dropped the legacy `leads` table; Phase 59 reshaped that surface into `customers` + `jobs` + `inquiries`. `capture_lead.py` now writes to `inquiries` via the `record_call_outcome` RPC. Symmetry preserved: appointments (booked) + inquiries (unbooked leads). Customers and jobs are NOT touched in Phase 61 — multi-address-per-customer is the explicit reason (D-D2 backend-only stance: revisit when a UI surface justifies it).
+- **D-F3′ (overrides D-F3):** Backward-compat columns retained on whichever of {appointments, inquiries} actually had them pre-Phase-61. Planner audits both tables and pins the exact retention list (`service_address`, `postal_code`, `street_name` may not be 1:1 across both).
+- **D-D3′ (overrides D-D3):** "service_address overwritten with formatted_address on confirmed/confirmed_with_changes" applies to **whichever text column actually holds the spoken address on each table**. Planner pins the exact column name on `inquiries` (may not be `service_address`). The behavior — overwrite-on-success, preserve-on-failure — is unchanged.
+- **D-C2′ (overrides D-C2):** Telemetry lands in a **new sibling table `gmaps_validate_events`**, NOT `usage_events`. Schema: `(id uuid PK, tenant_id uuid, call_id text, verdict text, latency_ms int, cost_micro_cents int, created_at timestamptz)`. Strictly additive — does not touch the Phase 23/53 billing path on `usage_events` (which keeps its `call_id PK` idempotency contract). Same observability outcome; correct schema shape.
+- **Migration count:** Latest on disk is `061_drop_legacy_leads.sql`. Phase 61 migration is **`062`**. CLAUDE.md's "58 migrations" claim is stale and must be updated at phase tail.
+- **Verdict mapping (planner refinement):** Use Google's `verdict.possibleNextAction` field as the canonical decision input (Google's official decision tree), not the addressComplete + hasUnconfirmedComponents heuristic sketched in D-B3. Mapping: `ACCEPT → confirmed`; `CONFIRM | CONFIRM_ADD_SUBPREMISES → confirmed_with_changes`; `FIX → unconfirmed`; (HTTP error → `error`; region-not-supported → `unsupported_region`; agent skipped → `skipped`). The 6-state Voco enum (D-B3, D-F1) is unchanged; only the input field for the mapper changes.
+
 </decisions>
 
 <canonical_refs>
