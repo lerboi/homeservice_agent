@@ -1,0 +1,92 @@
+Research task only — no code changes, no commits, no new phase.
+
+Produce a scored gap analysis of whether the livekit-agent codebase uses Gemini 3.1 Flash Live correctly, with tool calling as the primary focus.
+
+**Context (read first):**
+- .planning/PROJECT.md — project overview
+- .planning/phases/64-livekit-pipeline-agent-migration/64-REVERTED.md — why Phase 64 was reverted, what Phase 63.1 issues we're living with
+- ~/.claude/projects/C--Users-leheh--Projects-homeservice-agent/memory/reference_livekit_generate_reply_gemini31.md — the `generate_reply` silent-drop quirk I already know about
+
+**Code to audit (sibling repo at C:/Users/leheh/.Projects/livekit-agent):**
+- src/agent.py — RealtimeModel construction, session wiring, tool registration, tool-call event handlers, 63.1-07 input mute workaround
+- src/tools/ — all 7 tools: check_availability, book_appointment, capture_lead, check_caller_history, check_customer_account, transfer_call, end_call
+- src/prompt.py — system-prompt directives relating to tool usage
+- pyproject.toml — confirm livekit-agents / livekit-plugins-google pins
+
+**Authoritative sources to fetch & cite (use WebFetch):**
+- https://ai.google.dev/gemini-api/docs/live  (Live API overview)
+- https://ai.google.dev/gemini-api/docs/live-guide  (session lifecycle, turn handling)
+- https://ai.google.dev/gemini-api/docs/live-tools  (function calling on Live — if URL 404s, search for the canonical Gemini Live function-calling page)
+- https://ai.google.dev/gemini-api/docs/models  (confirm gemini-3.1-flash-live-preview is current)
+- livekit-plugins-google RealtimeModel source: https://github.com/livekit/agents/tree/main/livekit-plugins/livekit-plugins-google/livekit/plugins/google/beta/realtime
+- Open issues tagged "gemini" or "realtime" on livekit/agents that are still unresolved: https://github.com/livekit/agents/issues?q=is%3Aissue+is%3Aopen+gemini
+
+**Specific questions to answer per tool:**
+1. Is the function declaration schema (name, parameters, description) in the exact shape Gemini Live expects for function calling?
+2. Does the tool's return value match Google's required tool-response schema for Live (vs regular generateContent)?
+3. What happens if the tool raises — does the error propagate back to the model in a way Live can recover from, or does it break the session?
+4. Is the tool designed with voice-agent constraints in mind (e.g. long-running tools vs conversational latency)?
+
+**Specific questions about session / runtime patterns:**
+1. RealtimeModel kwargs we pass — which are supported on gemini-3.1-flash-live-preview specifically vs silently ignored? Cite realtime_api.py capability-gate lines.
+2. generate_reply / say / update_chat_ctx — confirm each one's current capability-gate state on this model. Does our code gracefully skip them where gated, or does it attempt calls that silently drop?
+3. The 63.1-07 input-mute-during-greeting workaround — has Google's Live API since exposed a clean "hold the floor" or "greeting mode" primitive that would replace it? Check latest Live docs for barge-in controls.
+4. Server VAD vs client VAD — on Live, Google runs server-side VAD. Does our code accidentally double-handle endpointing with any client-side logic?
+5. Tool-call cancellation on caller VAD (livekit/agents #4441) — status? If still unfixed, does our code handle the truncated tool-call state, or could a caller talking mid-tool-execution corrupt session state?
+
+**Output path:**
+Write the audit to .planning/research/gemini-3.1-flash-live-audit.md
+
+**Output format:**
+
+```
+---
+generated: [today ISO date]
+livekit_agents_version: [from pyproject.toml]
+livekit_plugins_google_version: [from pyproject.toml]
+model: gemini-3.1-flash-live-preview
+audit_scope: tool calling + overall realtime session usage
+---
+
+# Gemini 3.1 Flash Live — Codebase Audit
+
+## Executive summary
+[3-5 bullets: what's ✅ solid, ⚠ concerning, ❌ wrong]
+
+## Per-tool analysis
+| Tool | Declaration | Execution | Error path | Notes |
+|---|---|---|---|---|
+| check_availability | ✅/⚠/❌ | ✅/⚠/❌ | ✅/⚠/❌ | file:line citation |
+| book_appointment | ... |
+| capture_lead | ... |
+| check_caller_history | ... |
+| check_customer_account | ... |
+| transfer_call | ... |
+| end_call | ... |
+
+### Deep dive: [only tools with ⚠ or ❌]
+[per-tool explanation with doc quote + code quote]
+
+## Session / runtime pattern analysis
+[Same ✅/⚠/❌ pattern for each of the 5 session questions above]
+
+## Findings
+Numbered list. Each entry:
+- **severity**: critical / high / medium / low
+- **evidence**: doc quote + code quote with path:line
+- **recommended action**: concrete fix, not hand-wavy
+- **estimated scope**: small (one commit) / medium (one plan) / large (new phase)
+
+## Sources
+[Every URL fetched + every code file read, with HEAD SHA if relevant]
+```
+
+**Do not:**
+- Change any code
+- Commit anything
+- Create a new phase
+- Update STATE.md / ROADMAP.md
+
+**Delegation guidance:** this is token-heavy (multiple doc fetches + code reads across two repos). Prefer spawning a gsd-phase-researcher subagent in foreground so the main context stays clean for follow-up decisions.
+
+Report back when the audit file is written. I'll review it and decide from the findings whether a Phase 65 is warranted.

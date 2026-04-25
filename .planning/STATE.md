@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
-status: Idle — awaiting decision on next phase.
+status: executing
 stopped_at: Phase 61 context gathered
-last_updated: "2026-04-25T07:29:49.778Z"
-last_activity: 2026-04-25 -- Phase 64 reverted; livekit-agent main restored to 61a2e6e
+last_updated: "2026-04-25T10:49:23.395Z"
+last_activity: 2026-04-25 -- Phase 61 planning complete
 progress:
   total_phases: 20
   completed_phases: 17
-  total_plans: 102
+  total_plans: 106
   completed_plans: 100
-  percent: 98
+  percent: 94
 ---
 
 # Project State
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 Milestone: v6.0 (planning)
 Phase: 64 (livekit-pipeline-agent-migration) — **REVERTED 2026-04-25** (UAT regressions: ~7s latency, self-echo interruption, model-name typo). See ROADMAP.md Phase 64 post-mortem for detail. livekit-agent main at `d4a1ee1` reverts working tree to `61a2e6e` (Phase 63.1 state). Phase 60.4 remains paused per prior HANDOFF.
 Plan: 3 of 6 executed (01, 02, 03) before UAT aborted; Plans 04/05/06 never completed.
-Status: Idle — awaiting decision on next phase.
-Last activity: 2026-04-25 -- Phase 64 reverted; livekit-agent main restored to 61a2e6e
+Status: Ready to execute
+Last activity: 2026-04-25 -- Phase 61 planning complete
 
 Progress: [██████████] 100%
 

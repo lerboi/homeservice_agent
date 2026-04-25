@@ -660,7 +660,7 @@ if result.get("success"):
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | Per-call cost is ~$0.017 USD (CONTEXT D-G3 figure) — pricing is now SKU-based ("Address Validation Pro" / "Enterprise") with subscription bundling at $1,200/mo for 250k calls. The $0.017 figure is from a 2023-era pay-as-you-go calculation. | Standard Stack / Common Pitfalls | Cost telemetry in `gmaps_validate_events.cost_micro_cents` may show the wrong value; doesn't break behavior, but billing forecasts may be off by 2-3x. Confirm exact rate from billing console after first invoice. |
+| A1 | Per-call cost is ~$0.017 USD (CONTEXT D-G3 figure) — pricing is now SKU-based ("Address Validation Pro" / "Enterprise") with subscription bundling at $1,200/mo for 250k calls. The $0.017 figure is from a 2023-era pay-as-you-go calculation. | Standard Stack / Common Pitfalls | Cost telemetry in `gmaps_validate_events.cost_micro_cents` may show the wrong value; doesn't break behavior, but billing forecasts may be off by 2-3x. Confirm exact rate from billing console after first invoice. **ACCEPTED:** plan ships with assumed pricing; planner notes that observed costs from gmaps_validate_events.cost_micro_cents will reconcile in the first month of live data. |
 | A2 | `httpx` ships transitively with the pinned `livekit-agents==1.5.6` + `supabase>=2.0` + `openai>=2.0` stack and will continue to. | Standard Stack — Pitfall 8 | Plan should defensively add `httpx>=0.27,<1` to direct deps anyway. |
 | A3 | Singapore HDB addresses surface as `street_number=block + route=street + subpremise=unit` (or subpremise absent). Google docs do not show an SG HDB example. | Architecture Patterns — Pattern 3 | If the API returns HDB block under a different componentType (e.g. `premise` or just embedded in formattedAddress), the Voco-normalized `street_number` will be wrong. UAT must include an SG HDB call. |
 | A4 | The `postalAddress.regionCode` field is reliably present on every successful response and is the canonical ISO country code source. Google reference docs imply it's always present in successful results but don't explicitly guarantee. | Architecture Patterns — Pattern 3, Pitfall 4 | If sometimes absent, `country_code` will be None on some rows. Mapper should fall back to a hardcoded map from `country` long-name to ISO code if missing — defensive, not first-line. |
@@ -669,12 +669,13 @@ if result.get("success"):
 | A7 | The CONTEXT D-C2 spec ("writes one row to `usage_events` (`event_type='gmaps_validate'`...)") was drafted from a Phase 53 mental model and conflicts with the actual `usage_events` schema. | Pitfall 1 / Open Questions | Plan adds a sibling `gmaps_validate_events` table; user confirms during planning. If the user wants to refactor `usage_events` itself, that's a bigger phase. |
 | A8 | The 6000 QPM quota is a per-project default and is not realistically reachable by Voco's call volume in 2026 (would require 6000 calls/minute). | Pitfall 7 | If hit, every validate returns 429 → verdict='error'. Plan should not waste effort on quota-management code. |
 
-## Open Questions
+## Open Questions (RESOLVED 2026-04-25)
 
 1. **`usage_events` vs new `gmaps_validate_events` table for D-C2 telemetry.**
    - What we know: Current `usage_events` schema is `(call_id text PRIMARY KEY, tenant_id uuid, created_at timestamptz)` — billing-idempotency-only, 1 row per call. CONTEXT D-C2 wants `event_type='gmaps_validate', verdict, latency_ms, cost_micro_cents` per validate (potentially N validates per call).
    - What's unclear: Did the user mean "the existing usage_events table" or "a usage_events-style telemetry table"?
    - Recommendation: Plan adds new `gmaps_validate_events` sibling table; planner re-confirms with user during /gsd-plan-phase. If user insists on `usage_events`, schema-pivot becomes a separate ~3-task plan within Phase 61.
+   - **RESOLVED 2026-04-25:** see CONTEXT.md §Post-Research Resolutions — D-C2′ (new sibling table `gmaps_validate_events` chosen; usage_events left untouched).
 
 2. **Should `book_appointment_atomic` be renamed to a v2 function?**
    - What we know: D-F2 says extend in place. Pattern from `026_address_fields.sql` already extended in place. 17-arg function signature is a code smell but not a bug.
@@ -685,6 +686,7 @@ if result.get("success"):
    - What we know: capture_lead.py calls `record_outcome` (not `atomic_book_slot`), which calls `record_call_outcome` RPC (Phase 59 D-10 path). That RPC writes to `inquiries` not `appointments`/`leads` directly post-Phase-59.
    - What's unclear: Phase 59 reshaped the leads model into Customers + Jobs + Inquiries. D-F1 says "appointments + leads" but `leads` was dropped in migration 061. The new equivalent is probably `inquiries` (or the customers+inquiries pair).
    - Recommendation: Researcher cannot verify the new lead-equivalent schema without reading 059 + 061 in depth (out of phase scope per the brief). **Planner MUST audit `inquiries` / `customers` / `jobs` table shapes during /gsd-plan-phase and confirm where the validated-address columns belong.** This is the highest-risk gap in this research.
+   - **RESOLVED 2026-04-25:** see CONTEXT.md §Post-Research Resolutions — D-F1′ (validated-address columns land on `appointments` + `inquiries`; `customers` and `jobs` are NOT touched in Phase 61).
 
 4. **Is `livekit-agent`'s `httpx` actually safe to rely on transitively?**
    - What we know: xero.py and jobber.py have been in production since Phase 55/56 (commits since 2026-04). No reported import failures.
@@ -856,7 +858,7 @@ if result.get("success"):
 | Pitfalls | HIGH (schema) / MEDIUM (quota / pricing) | usage_events mismatch verified; quota cited from docs not stress-tested |
 | Validation tests | HIGH | pytest config and existing test pattern verified |
 
-### Open Questions (planner must resolve)
+### Open Questions (planner must resolve) (RESOLVED 2026-04-25)
 1. New `gmaps_validate_events` table vs schema-pivot of `usage_events` (Open Question 1)
 2. Where do validated-address columns land for the `capture_lead` path post-Phase-59 (inquiries? customers? deprecated leads?) (Open Question 3 — HIGH risk)
 3. Confirm pricing rate against current GCP billing console (A1)

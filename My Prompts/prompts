@@ -41,7 +41,8 @@ Deeply read and understand the voice-call system code — all frontend pages and
 
 Prompt crafting prompt
 --------------
-When constructing or editing prompts in the livekit_agent (Python receptionist on Gemini 3.1 Flash Live, pinned to livekit-agents   ==1.5.1 + livekit-plugins-google git commit 43d3734), follow best practices for that exact model and SDK pin — not text-completion   conventions, and not features (like per_response_tool_choice) that don't exist in the pinned plugin. The prompt is your only enforcement surface; the SDK cannot force tool calls per turn, and the model is free to fabricate fluent outcomes if you don't constrain it.
+When constructing or editing prompts in the livekit_agent, follow best practices for the exact model (Gemini 3.1 flash live) and livekit SDK. The prompt is your only enforcement surface; the SDK cannot force tool calls per turn, and the model is free to fabricate fluent outcomes if you don't constrain it. You have to cross reference every
+planned implementation with the actual docs from google for gemini flash 3.1 live model and also for current livekit sdk version.
 
 For conversational behavior — info gathering, persona, language switching, decline handling, address verification, transfers — write outcome-oriented guidance. Tell the AI what it should achieve and what information it needs to extract, not exactly what to say. The receptionist must adapt to whatever the caller does (interruptions, out-of-order info, fragments, code-switching, romanized names, vague time windows). Over-scripting flattens both adaptability and persona. Detail constraints and success criteria, never utterances.
 
@@ -76,8 +77,9 @@ Look through all the issues and gather all the context and code needed to fully 
 When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
 
 
+Do proper research and find out the issue with 100% certainty and identify a 100% fix that is correct before implementing anything.
 
-
+Before
 
 Which option/design provides the best UI/UX that is usable in the real world and that provides the best possible user experience for the home service business owner using this feature?
 
