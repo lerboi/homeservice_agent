@@ -404,10 +404,13 @@ Plans:
 **Depends on:** Phase 60 (the name-once + single-question framing is the conversational substrate this address flow sits on top of). Does not depend on Phase 62; can merge independently.
 **Requirements:** Captured as decisions in `61-CONTEXT.md`.
 **Pre-requisite user actions:** Create a Google Cloud project, enable the Address Validation API (and any backup APIs chosen during discuss), provision an API key restricted to the Railway + Vercel IP ranges, and fund the billing account (the Address Validation API is not free-tier; budget guardrails belong in discuss).
-**Plans:** TBD (likely 3-4 plans: DB migration + GMaps client + livekit tool wiring + tests/UAT)
+**Plans:** 4 plans
 
 Plans:
-- [ ] 61-XX-PLAN.md — TBD (generated after discuss + plan-phase)
+- [ ] 61-01-PLAN.md — Migration 062: validated-address columns on appointments + inquiries, gmaps_validate_events sibling table, book_appointment_atomic + record_call_outcome RPC overloads, [BLOCKING] supabase db push (Wave 1)
+- [ ] 61-02-PLAN.md — google_maps.py integration module + Wave 0 fixtures + Wave 0 unit tests (verdict mapper, components mapper, error paths, Sentry gate, telemetry) (Wave 1)
+- [ ] 61-03-PLAN.md — book_appointment + capture_lead validation pre-check (D-B2 before slot lock), atomic_book_slot + record_outcome wrapper extensions, D-D3' service_address overwrite, D-E2 STATE+DIRECTIVE tool returns, integration tests (Wave 2)
+- [ ] 61-04-PLAN.md — D-E3 CRITICAL RULE in prompt.py EN+ES, D-E1 tool description rewrites, three SKILL.md updates + CLAUDE.md migration count fix, [BLOCKING] human UAT 4-call protocol (Wave 3)
 
 ### Phase 62: Jobber write-side — push booked customer + job into connected Jobber (promoted from Phase 999.3)
 
