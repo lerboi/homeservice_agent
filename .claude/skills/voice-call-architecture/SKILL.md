@@ -8,7 +8,7 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-**Last updated**: 2026-04-24 (Phase 63.1 — generate_reply regression fix shipped; two broken `session.generate_reply(...)` call sites deleted from `src/agent.py`; intake_questions fetch hoisted pre-`session.start()` and threaded through `build_system_prompt(intake_questions=...)`; `_build_greeting_section` extended with outcome-shaped FIRST TURN / PRIMER TURNO directive (EN+ES parity) so Gemini server VAD fires the greeting on the caller's first audio frame; grep-guard pytest prevents future `session.generate_reply(` regressions in `src/`. See `references/phase-history.md` for incremental phase-by-phase history.)
+**Last updated**: 2026-05-03 (Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.)
 
 ---
 
@@ -1124,3 +1124,87 @@ touchpoints.
 
 Phase-by-phase history lives at `references/phase-history.md` (absorbs
 the prior header's 10+ "Previous:" paragraphs).
+
+---
+
+## Phase 61 — Google Maps Address Validation Integration
+
+### What changed
+- **New module:** `src/integrations/google_maps.py` (412 LOC) —
+  `validate_address_bounded()` is the public entry point. Per-call
+  `httpx.AsyncClient` (matching `xero.py` / `jobber.py` pattern, NOT a
+  module-level singleton), 1.5s hard timeout (D-C1, dual-layer:
+  socket-level `httpx.Timeout` + task-level `asyncio.wait_for`), never
+  raises, always returns Voco-shaped dict with `verdict` key. Maps
+  Google's `verdict.possibleNextAction` → Voco verdicts
+  (`confirmed | confirmed_with_changes | unconfirmed | error | skipped | unsupported_region`)
+  via `map_verdict`; maps `result.address.addressComponents` → 9-key
+  Voco-normalized dict via `map_components` (D-D1).
+- **Pre-check in `book_appointment.py`:** validate runs BEFORE
+  `atomic_book_slot` (D-B2 — external HTTP outside slot-lock contention
+  window). On `confirmed` / `confirmed_with_changes`, `service_address`
+  is overwritten with Google's `formatted_address` (D-D3'). Booking
+  never blocks on Google — every verdict path proceeds to the RPC.
+- **Pre-check in `capture_lead.py`:** symmetric validation pre-check
+  (D-B4); same overwrite logic applied to inquiries via
+  `record_outcome` 14-arg RPC overload.
+- **Tool returns (D-E2):** STATE+DIRECTIVE shape extended with verdict
+  tokens — `BOOKED [verdict=validated]:`,
+  `BOOKED [verdict=validated_with_corrections]:`,
+  `BOOKED [verdict=unvalidated]:` (and `LEAD CAPTURED` equivalents).
+  Strings are NEVER spoken aloud; the agent reads them and decides how
+  to phrase the readback.
+- **New CRITICAL RULE (D-E3):** `_build_address_validation_section(locale)`
+  in `prompt.py` sits in the top-attention zone between
+  `_build_corrections_section` and `_build_outcome_words_section` —
+  alongside `outcome_words` / `corrections` / `call_duration`.
+  Prohibits 6 verbatim phrases (`"validated"`, `"verified"`,
+  `"confirmed against Google"`, `"found your address"`,
+  `"looked up your address"`, `"matches our records"`) unless preceding
+  tool return contained `verdict=validated` or
+  `verdict=validated_with_corrections`. Spanish mirror present per
+  Phase 60.3 D-B-03 locale-parity pattern (`VALIDACIÓN DE DIRECCIÓN —
+  REGLA CRÍTICA`).
+- **Tool descriptions rewritten (D-E1):** `book_appointment` +
+  `capture_lead` descriptions encode the validation precondition as
+  outcome-framed prompt-surface language. Gemini 3.1 Flash Live reads
+  tool descriptions during function-call decisions — the description
+  tells Gemini "consult the verdict in my return value before speaking"
+  without prescribing exact wording.
+- **Telemetry:** every validate writes one row to `gmaps_validate_events`
+  (new sibling table — D-C2' overrides CONTEXT D-C2 because
+  `usage_events` schema is call-billing-PK and cannot hold per-validate
+  rows). Sentry only on `verdict='error'` (D-A3 + D-C3) — unsupported
+  region and skipped paths never page.
+
+### Env var
+- `GOOGLE_MAPS_API_KEY` on Railway only (D-G1). Restricted to
+  "Address Validation API" via Cloud Console API restrictions (NOT
+  IP restrictions — D-G2; Railway egress IPs rotate). Module returns
+  `verdict='skipped'` if env var missing — graceful degradation.
+
+### Files
+| File | Role |
+|------|------|
+| `src/integrations/google_maps.py` | API client + verdict mapper + components mapper (Plan 02) |
+| `src/lib/booking.py` | `atomic_book_slot` wrapper extended with 6 new kwargs (Plan 03) |
+| `src/lib/write_outcome.py` | `record_outcome` wrapper extended with 6 new kwargs (Plan 03) |
+| `src/tools/book_appointment.py` | Validation pre-check + D-E1 description + D-E2 returns (Plans 03+04) |
+| `src/tools/capture_lead.py` | Symmetric pre-check + D-E1 description + D-E2 returns (Plans 03+04) |
+| `src/prompt.py` | `_build_address_validation_section` EN+ES (D-E3, Plan 04) |
+
+### Anti-hallucination invariants locked at the test layer
+- `tests/test_prompt_address_validation_rule.py` — EN+ES presence +
+  position (before tool_narration) + 6 prohibited phrases + verdict
+  tokens (Plan 04)
+- `tests/test_tool_descriptions_validation_precondition.py` — D-E1
+  outcome-framed wording in both tool specs (Plan 04)
+- `tests/test_book_appointment_validation.py` — D-D3' overwrite + D-E2
+  return shapes (10 tests, Plan 03)
+- `tests/test_capture_lead_validation.py` — D-B4 symmetry (8 tests,
+  Plan 03)
+- `tests/test_google_maps.py` — verdict + components mappers, HTTP
+  error paths, Sentry gate, telemetry shape (20 tests, Plan 02)
+- `tests/test_no_generate_reply_in_src.py` — Phase 63.1 regression
+  guard preserved
+

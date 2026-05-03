@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 61 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), and activity_event_type strict enum with 16 values. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 62 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), Phase 61 validated-address columns on appointments + inquiries + gmaps_validate_events sibling table + extended RPC overloads, and activity_event_type strict enum with 16 values. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-04-21 (Phase 59 Plan 08 — migrations 059/060/061: new customer/job/inquiry model, 3 RPCs, activity_event_type strict enum, DROP TABLE leads/lead_calls)
+**Last updated**: 2026-05-03 (Phase 61 Plan 04 — migration 062: validated-address columns on appointments + inquiries (6 nullable columns + verdict CHECK), new `gmaps_validate_events` sibling telemetry table with tenant-scoped RLS, `book_appointment_atomic` RPC overload extended from 11 to 17 args, `record_call_outcome` RPC overload extended from 8 to 14 args. Backward-compat preserved — all new RPC params DEFAULT NULL.)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 52 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 62 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -126,6 +126,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/059_customers_jobs_inquiries.sql` | Phase 59 — CREATE customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit + RLS + Realtime + backfill from legacy leads |
 | `supabase/migrations/060_phase59_rpcs.sql` | Phase 59 — record_call_outcome, merge_customer, unmerge_customer RPCs (SECURITY DEFINER, service_role only) |
 | `supabase/migrations/061_drop_legacy_leads.sql` | Phase 59 — DROP TABLE leads + lead_calls, activity_event_type enum (16 values), DROP COLUMN lead_id from activity_log + invoices + estimates |
+| `supabase/migrations/062_phase61_address_validation.sql` | Phase 61 — Google Maps Address Validation + structured address storage. **appointments**: 6 new nullable columns — `formatted_address text`, `place_id text`, `latitude numeric(10,7)`, `longitude numeric(10,7)`, `address_components jsonb`, `address_validation_verdict text` with CHECK constraint enforcing 6-state enum (`confirmed | confirmed_with_changes | unconfirmed | error | skipped | unsupported_region`). Backward-compat columns preserved (`service_address`, `postal_code`, `street_name`). **inquiries**: identical 6 columns + identical CHECK constraint (D-F1' override of CONTEXT D-F1 — Phase 59 dropped legacy `leads`; capture_lead now writes to inquiries via record_call_outcome RPC). **gmaps_validate_events**: new sibling telemetry table (D-C2' override of CONTEXT D-C2 — `usage_events` schema `(call_id PK, tenant_id, created_at)` cannot hold per-validate rows). Columns: `id uuid PK`, `tenant_id`, `call_id` (uuid FK calls(id) ON DELETE SET NULL), `verdict`, `latency_ms`, `cost_micro_cents`, `region_code`, `created_at`. RLS enabled with SELECT-own policy (`tenants WHERE owner_id = auth.uid()`); INSERT only via service-role. Index `(tenant_id, created_at DESC)`. **book_appointment_atomic RPC**: signature extended from 11 args to 17 args (drop-loop pg_proc overload eviction + CREATE OR REPLACE; new GRANT references the new 17-arg signature because Postgres treats different arities as different functions). All new params DEFAULT NULL — existing 11-arg callers unchanged. **record_call_outcome RPC**: signature extended from 8 args to 14 args (same overload pattern; ground-truth signature was 8-arg per migration 060, not the 5-arg in the original CONTEXT). All new params DEFAULT NULL. **Indexes added**: `idx_appointments_place_id WHERE place_id IS NOT NULL`, `idx_inquiries_place_id WHERE place_id IS NOT NULL`, `idx_gmaps_validate_events_tenant_created`. |
 
 ---
 

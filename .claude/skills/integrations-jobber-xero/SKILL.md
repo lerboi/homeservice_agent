@@ -9,7 +9,7 @@ This document is the single source of truth for the Jobber and Xero read-side
 integrations — OAuth, caching, webhooks, Python agent injection, dashboard UI,
 and telemetry. **Read this before making any changes to either provider.**
 
-**Last updated**: 2026-04-20 (Phase 58 — telemetry + checklist red-dot + skill consolidation)
+**Last updated**: 2026-05-03 (Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read.)
 
 ---
 
@@ -134,6 +134,45 @@ red-dot + "Reconnect needed" subtitle + "Reconnect" CTA swap.
 and `event_type='integration_fetch_fanout'` per-call (Phase 58). Owner-facing
 Last-synced timestamp on the BusinessIntegrationsClient card. Column-name
 reconciliation (Option A: `event_type` + `metadata`, NOT `action` + `meta`).
+
+---
+
+## Phase 61 cross-link — Voco-normalized address shape
+
+Phase 61 added a Voco-normalized `address_components` JSONB column to
+`appointments` and `inquiries` (D-D1 named-key shape):
+
+```
+{
+  "street_number": str | null,
+  "route": str | null,
+  "subpremise": str | null,
+  "locality": str | null,
+  "admin_area_level_1": str | null,
+  "admin_area_level_2": str | null,
+  "postal_code": str | null,
+  "country": str | null,
+  "country_code": str | null   // ISO short code from Google's postalAddress.regionCode
+}
+```
+
+The Voco-normalized shape is **what Phase 62 Jobber write-side will read**
+when pushing a booked appointment into Jobber's `Client.properties`.
+Named-key access — zero translation. Mapper in
+`livekit-agent/src/integrations/google_maps.py::map_components` is the
+source of truth; the mapper absorbs Google API surface changes (raw
+response is NOT stored). The companion `address_validation_verdict`
+column gates which Jobber-push paths are safe — only `confirmed` and
+`confirmed_with_changes` rows carry a Google-validated `formatted_address`
+suitable for downstream provider writes.
+
+Tool-return strings consumed by the LiveKit agent (`book_appointment` +
+`capture_lead`) are STATE+DIRECTIVE-shaped and carry the verdict token
+verbatim (`BOOKED [verdict=validated]:` etc.). The Phase 61
+`_build_address_validation_section(locale)` block in `prompt.py` enforces
+that the agent never speaks "validated"/"verified"/etc. unless the
+preceding tool return contained the validating verdict — see
+`voice-call-architecture` for the EN+ES CRITICAL RULE structure.
 
 ---
 
