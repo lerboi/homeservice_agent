@@ -1449,10 +1449,10 @@ Plans:
 **Requirements:** D-01 through D-11 locked in 63.2-CONTEXT.md (no separate REQ-IDs — decisions serve as requirements for this pure-dependency-migration phase, same posture as Phase 63).
 **Depends on:** Phase 63.1 (current livekit-agent/main tip — `61a2e6e fix(63.1-11)` + `d4a1ee1` Phase 64 revert).
 **Blocks:** Nothing — patch hygiene only. Future material upgrade phase (e.g., the SegmentSynchronizer cutoff-race fix when upstream ships it) will branch from post-63.2 main.
-**Plans:** 0/1 plans complete
+**Plans:** 2/1 plans complete
 
 Plans:
-- [ ] 63.2-01-PLAN.md — Bump four pins to 1.5.7 on `phase-63.2-livekit-1.5.7` branch, local clean reinstall + RealtimeModel boot smoke + pytest, push, Railway preview, one UAT call, merge `--no-ff` or abort
+- [x] 63.2-01-PLAN.md — Bump four pins to 1.5.7 on `phase-63.2-livekit-1.5.7` branch, local clean reinstall + RealtimeModel boot smoke + pytest, push, Railway preview, one UAT call, merge `--no-ff` or abort
 
 ### Phase 64: LiveKit pipeline agent migration — **REVERTED** (UAT FAILURE)
 
