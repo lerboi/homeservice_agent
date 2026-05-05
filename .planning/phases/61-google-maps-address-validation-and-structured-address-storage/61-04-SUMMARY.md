@@ -2,7 +2,7 @@
 phase: 61
 plan: 04
 subsystem: voice-call-architecture / livekit-agent / docs
-tags: [livekit-agent, prompt, address-validation, anti-hallucination, locale-parity, d-e1, d-e3, skills-sync, checkpoint-paused]
+tags: [livekit-agent, prompt, address-validation, anti-hallucination, locale-parity, d-e1, d-e3, skills-sync, uat-approved]
 
 dependency-graph:
   requires:
