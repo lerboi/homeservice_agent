@@ -417,12 +417,12 @@ Plans:
 **Goal:** Fix the production regression on the 2026-05-05 incident call (44s of silence after caller postal code, outcome=not_attempted) by reframing _build_address_validation_section to post-tool scope and removing the silence escape hatch; close advisory warnings WR-01 (tenant_id NOT NULL violation) + WR-02 (empty address_lines misclassified as unsupported_region) + WR-03 (success-path return shape doc drift); sync skill docs and capture the deadlock-pattern lesson in user memory.
 **Requirements:** PHASE-61.1-FIX-1 (rule scope), PHASE-61.1-FIX-2 (silence escape removed), PHASE-61.1-FIX-3 (worst-failure framing softened), PHASE-61.1-FIX-4 (tool-description disambiguation), PHASE-61.1-WR-01, PHASE-61.1-WR-02, PHASE-61.1-WR-03, PHASE-61.1-SKILL-SYNC, PHASE-61.1-LESSON-LEARNED.
 **Depends on:** Phase 61
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 61.1-01-PLAN.md — Prompt rule reframe (post-tool scope) + silence escape removed + tool description disambiguation + UAT (Wave 1, autonomous: false — BLOCKING real-call UAT)
 - [x] 61.1-02-PLAN.md — google_maps.py WR-01 (tenant_id falsy guard) + WR-02 (empty address_lines short-circuit) + 5 new tests (Wave 1, parallel-safe — different file from Plan 01)
-- [ ] 61.1-03-PLAN.md — WR-03 closeout: document both tool-return shapes accurately in voice-call-architecture + integrations-jobber-xero SKILLs (Wave 2)
+- [x] 61.1-03-PLAN.md — WR-03 closeout: document both tool-return shapes accurately in voice-call-architecture + integrations-jobber-xero SKILLs (Wave 2)
 - [ ] 61.1-04-PLAN.md — Phase 61.1 closeout: skill sync for prompt reframe + WR-01/02 fixes + new feedback memory capturing the silence-deadlock pattern (Wave 3)
 
 ### Phase 62: Jobber write-side — push booked customer + job into connected Jobber (promoted from Phase 999.3)
