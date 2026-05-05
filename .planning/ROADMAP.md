@@ -414,13 +414,16 @@ Plans:
 
 ### Phase 61.1: Phase 61 production regressions — address-validation rule deadlock and downstream fixes (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Fix the production regression on the 2026-05-05 incident call (44s of silence after caller postal code, outcome=not_attempted) by reframing _build_address_validation_section to post-tool scope and removing the silence escape hatch; close advisory warnings WR-01 (tenant_id NOT NULL violation) + WR-02 (empty address_lines misclassified as unsupported_region) + WR-03 (success-path return shape doc drift); sync skill docs and capture the deadlock-pattern lesson in user memory.
+**Requirements:** PHASE-61.1-FIX-1 (rule scope), PHASE-61.1-FIX-2 (silence escape removed), PHASE-61.1-FIX-3 (worst-failure framing softened), PHASE-61.1-FIX-4 (tool-description disambiguation), PHASE-61.1-WR-01, PHASE-61.1-WR-02, PHASE-61.1-WR-03, PHASE-61.1-SKILL-SYNC, PHASE-61.1-LESSON-LEARNED.
 **Depends on:** Phase 61
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 61.1 to break down)
+- [ ] 61.1-01-PLAN.md — Prompt rule reframe (post-tool scope) + silence escape removed + tool description disambiguation + UAT (Wave 1, autonomous: false — BLOCKING real-call UAT)
+- [ ] 61.1-02-PLAN.md — google_maps.py WR-01 (tenant_id falsy guard) + WR-02 (empty address_lines short-circuit) + 5 new tests (Wave 1, parallel-safe — different file from Plan 01)
+- [ ] 61.1-03-PLAN.md — WR-03 closeout: document both tool-return shapes accurately in voice-call-architecture + integrations-jobber-xero SKILLs (Wave 2)
+- [ ] 61.1-04-PLAN.md — Phase 61.1 closeout: skill sync for prompt reframe + WR-01/02 fixes + new feedback memory capturing the silence-deadlock pattern (Wave 3)
 
 ### Phase 62: Jobber write-side — push booked customer + job into connected Jobber (promoted from Phase 999.3)
 
@@ -1429,6 +1432,17 @@ Plans:
 - [x] 63.1-04-PLAN.md — Push phase-63.1-generate-reply-fix (cc5e43a) + merge --no-ff to livekit-agent/main (bc4befd) + skill sync + STATE/ROADMAP/SUMMARY (live UAT skipped by user directive; D-09 #1 verified offline via grep-guard; D-09 #2 deferred to next live prod call)
 
 **Outcome:** Regression shipped. `generate_reply is not compatible` warnings eliminated from all future calls (grep-guard test green on post-merge main). `intake_questions` now surface on first turn via `build_system_prompt(intake_questions=...)`. Greeting directive in prompt replaces the broken `generate_reply` trigger — Gemini server VAD fires it on first caller audio frame. 254 tests passing on fix branch; 1 pre-existing deferred VIP failure unchanged. All 9 D-08 Phase 60.4 + Phase 63 SHAs preserved on main post-merge. Phase 60.4 unblocked and ready to resume via HANDOFF doc.
+
+### Phase 63.2: LiveKit SDK patch upgrade to 1.5.7 (READY FOR EXECUTION)
+
+**Goal:** Patch-bump all four livekit-* dependencies in `livekit-agent/pyproject.toml` from `==1.5.6` (Phase 63 baseline, post-Phase-64-revert tip) to `==1.5.7` (released 2026-04-30). 1.5.7 ships two relevant upstream fixes: `gemini-live raw-schema parameters` and `realtime reply-after-interruption`. The 2026-05-05 Explore-agent surface audit confirmed **neither fix forces `src/` edits in this stack** — all `@function_tool(raw_schema=...)` call sites use the standard `parameters` key (not `parameters_json_schema`), and no custom interruption-recovery code exists. Pure hygiene patch bump. SegmentSynchronizer cutoff race + `server cancelled tool calls` warnings remain unfixed at 1.5.7 and are observational, not blocking.
+**Requirements:** D-01 through D-11 locked in 63.2-CONTEXT.md (no separate REQ-IDs — decisions serve as requirements for this pure-dependency-migration phase, same posture as Phase 63).
+**Depends on:** Phase 63.1 (current livekit-agent/main tip — `61a2e6e fix(63.1-11)` + `d4a1ee1` Phase 64 revert).
+**Blocks:** Nothing — patch hygiene only. Future material upgrade phase (e.g., the SegmentSynchronizer cutoff-race fix when upstream ships it) will branch from post-63.2 main.
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 63.2-01-PLAN.md — Bump four pins to 1.5.7 on `phase-63.2-livekit-1.5.7` branch, local clean reinstall + RealtimeModel boot smoke + pytest, push, Railway preview, one UAT call, merge `--no-ff` or abort
 
 ### Phase 64: LiveKit pipeline agent migration — **REVERTED** (UAT FAILURE)
 
