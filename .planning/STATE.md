@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Phase 61 context gathered
-last_updated: "2026-05-05T11:07:42.663Z"
+stopped_at: Phase 61.2 context gathered
+last_updated: "2026-05-05T12:42:13.278Z"
 last_activity: 2026-05-05 -- Phase 63.2 execution started
 progress:
-  total_phases: 21
+  total_phases: 22
   completed_phases: 19
   total_plans: 110
   completed_plans: 108
@@ -138,7 +138,7 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-25T07:29:49.766Z
-Stopped at: Phase 61 context gathered
-Resume file: .planning/phases/61-google-maps-address-validation-and-structured-address-storage/61-CONTEXT.md
+Last session: 2026-05-05T12:42:13.241Z
+Stopped at: Phase 61.2 context gathered
+Resume file: .planning/phases/61.2-phase-61-production-regressions-round-2-slot-hallucination-a/61.2-CONTEXT.md
 60.4 status: UNBLOCKED — Phase 63.1 `generate_reply` regression fix merged to livekit-agent main (`bc4befd`). Resume via HANDOFF doc.
