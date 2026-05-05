@@ -4,13 +4,13 @@ milestone: v6.0
 milestone_name: Phases
 status: executing
 stopped_at: Phase 61 context gathered
-last_updated: "2026-05-05T07:02:31.890Z"
+last_updated: "2026-05-05T08:12:51.179Z"
 last_activity: 2026-05-05
 progress:
-  total_phases: 20
-  completed_phases: 18
-  total_plans: 106
-  completed_plans: 104
+  total_phases: 21
+  completed_phases: 19
+  total_plans: 110
+  completed_plans: 108
   percent: 98
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 61 — google-maps-address-validation-and-structured-address-storage
+**Current focus:** Phase 61.1 — phase-61-production-regressions-address-validation-rule-dead
 
 ## Current Position
 
 Milestone: v6.0 (planning)
 Phase: 62
 Plan: Not started
-Status: Executing Phase 61
+Status: Executing Phase 61.1
 Last activity: 2026-05-05
 
 Progress: [██████████] 100%
