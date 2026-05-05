@@ -8,7 +8,7 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-**Last updated**: 2026-05-03 (Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.)
+**Last updated**: 2026-05-03 (Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added)
 
 ---
 
@@ -1148,12 +1148,31 @@ the prior header's 10+ "Previous:" paragraphs).
 - **Pre-check in `capture_lead.py`:** symmetric validation pre-check
   (D-B4); same overwrite logic applied to inquiries via
   `record_outcome` 14-arg RPC overload.
-- **Tool returns (D-E2):** STATE+DIRECTIVE shape extended with verdict
-  tokens — `BOOKED [verdict=validated]:`,
-  `BOOKED [verdict=validated_with_corrections]:`,
+- **Tool returns (D-E2):** Tool returns use TWO shapes — the success
+  path uses a label form `BOOKED [verdict=...]: <directive>` /
+  `LEAD CAPTURED [verdict=...]: <directive>` (battle-tested pre-Phase-61
+  label convention extended with the verdict token), and the failure
+  path uses the documented `STATE:... | DIRECTIVE:...` shape
+  (e.g. `STATE:lead_capture_failed reason=db_error | DIRECTIVE:...`).
+  Phase 61 (D-E2) extended the success label form with verdict tokens —
+  `BOOKED [verdict=validated]:`, `BOOKED [verdict=validated_with_corrections]:`,
   `BOOKED [verdict=unvalidated]:` (and `LEAD CAPTURED` equivalents).
+  The prompt CRITICAL RULE (`_build_address_validation_section`)
+  matches via SUBSTRING on the verdict tokens, so both shapes work.
   Strings are NEVER spoken aloud; the agent reads them and decides how
   to phrase the readback.
+
+  **Brittleness watch (WR-03 follow-up):** A future prompt revision
+  that keys on the `STATE:` prefix or the `|` separator would silently
+  drop the success paths. If you change how the prompt parses these
+  returns, audit `book_appointment.py` and `capture_lead.py` success
+  branches for symmetric updates. Verbatim success-path samples:
+    - `BOOKED [verdict=validated]: relay normalized address [...] and time [...] as confirmed; ask if anything else is needed`
+    - `BOOKED [verdict=validated_with_corrections]: relay normalized address [...] as the final form, explicitly invite caller confirmation...`
+    - `BOOKED [verdict=unvalidated]: relay address as caller spoke it; do NOT claim "validated"...`
+    - `LEAD CAPTURED [verdict=validated]: relay normalized address [...] as confirmed; ask if anything else is needed`
+    - `LEAD CAPTURED [verdict=validated_with_corrections]: relay normalized address [...] as the final form, explicitly invite caller confirmation...`
+    - `LEAD CAPTURED [verdict=unvalidated]: relay address as caller spoke it; do NOT claim "validated"...`
 - **New CRITICAL RULE (D-E3):** `_build_address_validation_section(locale)`
   in `prompt.py` sits in the top-attention zone between
   `_build_corrections_section` and `_build_outcome_words_section` —

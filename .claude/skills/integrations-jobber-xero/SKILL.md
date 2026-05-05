@@ -9,7 +9,7 @@ This document is the single source of truth for the Jobber and Xero read-side
 integrations — OAuth, caching, webhooks, Python agent injection, dashboard UI,
 and telemetry. **Read this before making any changes to either provider.**
 
-**Last updated**: 2026-05-03 (Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read.)
+**Last updated**: 2026-05-03 (Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read.) + Phase 61.1 WR-03 — corrected tool-return shape claim (success uses label form `BOOKED [verdict=...]:`, only failure path uses STATE+DIRECTIVE)
 
 ---
 
@@ -166,9 +166,16 @@ column gates which Jobber-push paths are safe — only `confirmed` and
 `confirmed_with_changes` rows carry a Google-validated `formatted_address`
 suitable for downstream provider writes.
 
-Tool-return strings consumed by the LiveKit agent (`book_appointment` +
-`capture_lead`) are STATE+DIRECTIVE-shaped and carry the verdict token
-verbatim (`BOOKED [verdict=validated]:` etc.). The Phase 61
+Tool-return shapes after Phase 61 fall into two patterns: the success path
+uses a label form (`BOOKED [verdict=validated]: <directive>`,
+`LEAD CAPTURED [verdict=validated_with_corrections]: <directive>`, etc.)
+and the failure path uses the STATE+DIRECTIVE form
+(`STATE:<reason> | DIRECTIVE:<action>`). Both carry the verdict token
+verbatim; the prompt's `_build_address_validation_section` substring-matches
+on `verdict=validated` / `verdict=validated_with_corrections` /
+`verdict=unvalidated` and is shape-agnostic. Source of truth:
+`livekit-agent/src/tools/book_appointment.py` and
+`livekit-agent/src/tools/capture_lead.py`. The Phase 61
 `_build_address_validation_section(locale)` block in `prompt.py` enforces
 that the agent never speaks "validated"/"verified"/etc. unless the
 preceding tool return contained the validating verdict — see
