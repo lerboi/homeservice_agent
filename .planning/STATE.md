@@ -4,8 +4,8 @@ milestone: v6.0
 milestone_name: Phases
 status: executing
 stopped_at: Phase 61 context gathered
-last_updated: "2026-05-05T08:12:51.179Z"
-last_activity: 2026-05-05
+last_updated: "2026-05-05T11:07:42.663Z"
+last_activity: 2026-05-05 -- Phase 63.2 execution started
 progress:
   total_phases: 21
   completed_phases: 19
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-16)
 
 **Core value:** Every inbound call is answered instantly and converted into a confirmed booking or qualified lead — no call goes to voicemail, no lead is lost to a competitor.
-**Current focus:** Phase 61.1 — phase-61-production-regressions-address-validation-rule-dead
+**Current focus:** Phase 63.2 — livekit-sdk-patch-1-5-7
 
 ## Current Position
 
 Milestone: v6.0 (planning)
-Phase: 62
-Plan: Not started
-Status: Executing Phase 61.1
-Last activity: 2026-05-05
+Phase: 63.2 (livekit-sdk-patch-1-5-7) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 63.2
+Last activity: 2026-05-05 -- Phase 63.2 execution started
 
 Progress: [██████████] 100%
 
@@ -122,7 +122,8 @@ Progress: [██████████] 100%
 - 2026-04-24: Phase 63 added — "LiveKit SDK upgrade to 1.5.6 mainline". Phase 60.4 PAUSED pending 63. Motivation for 63: current pin `livekit-plugins-google` at commit `43d3734` lives on the `A2A_ONLY_MODELS` experimental branch which upstream rejected (PRs #5238/#5251/#5262 closed unmerged); upstream chose a different design in PR #5413 (capability-based routing via `mutable_*`) shipped in 1.5.3. Target pair `(livekit-agents==1.5.6, livekit-plugins-google==1.5.6)` released 2026-04-22 supports `gemini-3.1-flash-live-preview` on mainline + fixes Gemini 3.1 tool-response handling. Also hoping (unconfirmed) it resolves the `_SegmentSynchronizerImpl.playback_finished text_done=false` race causing mid-speech cutoffs observed in UAT call `2xCyyKAduZiY` (18:54 2026-04-23). Must execute on branch with Railway preview before merge to main. 60.4's remaining plans (04/05/06) are UAT-blocked by the cutoff race; 60.4 resumes only after 63 ships. All 60.4 work already on main (Plans 01/02 + 5 inline commits) is production-valid regardless of SDK upgrade.
 - 2026-04-24: Phase 63 added — "LiveKit SDK upgrade to 1.5.6 mainline". Motivation: current pin `livekit-plugins-google` at commit `43d3734` lives on the `A2A_ONLY_MODELS` experimental branch which upstream rejected (PRs #5238/#5251/#5262 closed unmerged); upstream chose a different design in PR #5413 (capability-based routing via `mutable_*`) shipped in 1.5.3. Target pair `(livekit-agents==1.5.6, livekit-plugins-google==1.5.6)` released 2026-04-22 supports `gemini-3.1-flash-live-preview` on mainline + fixes Gemini 3.1 tool-response handling. Also hoping (unconfirmed) it resolves the `_SegmentSynchronizerImpl.playback_finished text_done=false` race causing mid-speech cutoffs observed in UAT call `2xCyyKAduZiY` (18:54 2026-04-23). Must execute on branch with Railway preview before merge to main.
 - 2026-04-24: Phase 64 added — "LiveKit pipeline agent migration" (swap Gemini 3.1 Flash Live Realtime audio-to-audio → STT + LLM + TTS discrete pipeline, preserve all behavior). Structural refactor motivated by Phase 63.1 live UAT (11 plans) confirming 5 upstream unfixed SDK bugs compound to make the Realtime path unreliable: `_SegmentSynchronizerImpl` mid-word truncation race (#4486/#5096), `generate_reply`/`say`/`update_chat_ctx` all capability-gated closed on 3.1 models, `server cancelled tool calls` on caller VAD (#4441). LiveKit maintainer closed workaround PRs (#5251, #5262) pending DeepMind guidance (#5234 open). Pipeline architecture uses mature plugin APIs with no capability gates; trades ~500ms per-turn latency for definitively reliable behavior. Preserves Gemini 3.1 Flash as LLM (text mode), Zephyr voice via Gemini TTS, all 7 tools, full prompt, Phase 55/56/59/60.3/60.4/63/63.1 functionality. Expected plan count ~7. Blocks Phase 60.4 resumption path decision. CONTEXT seed written at `.planning/phases/64-livekit-pipeline-agent-migration/64-CONTEXT.md`. Next: `/gsd:discuss-phase 64`.
-- 2026-05-05: Phase 61.1 inserted after Phase 61 (URGENT) — Phase 61 production regressions. First production call after Phase 61 ship (tenant "make it ai", SG caller +6587528516, 2026-05-05 07:09 UTC) showed agent going silent for 44s after caller gave postal code, ending in CLIENT_INITIATED disconnect with `outcome=not_attempted`. Diagnosis: address-validation CRITICAL RULE (livekit-agent prompt.py:170-245) plus its explicit "Silence … is always acceptable" escape hatch deadlocks the pre-tool readback step — agent can't speak the address without a verdict, can't get a verdict without invoking the tool, and can't invoke the tool until the caller acknowledges the readback. Conflicts with `feedback_livekit_prompt_philosophy.md` (outcome-based, non-directive). Phase 61.1 also scopes (a) the 3 advisory warnings from 61-REVIEW.md (WR-01 tenant_id NOT NULL violation in gmaps_validate_events; WR-02 empty address_lines misclassified as unsupported_region; WR-03 success-path return shape inconsistency) and (b) any further regressions surfacing from continued Phase 61 production usage. Incident details captured in `.planning/phases/61.1-…/61.1-INCIDENT.md`. Next: `/gsd:discuss-phase 61.1`.
+- 2026-05-05: Phase 61.1 inserted after Phase 61 (URGENT) — Phase 61 production regressions. First production call after Phase 61 ship (tenant "make it ai", SG caller +6587528516, 2026-05-05 07:09 UTC) showed agent going silent for 44s after caller gave postal code, ending in CLIENT_INITIATED disconnect with `outcome=not_attempted`. Diagnosis: address-validation CRITICAL RULE (livekit-agent prompt.py:170-245) plus its explicit "Silence … is always acceptable" escape hatch deadlocks the pre-tool readback step — agent can't speak the address without a verdict, can't get a verdict without invoking the tool, and can't invoke the tool until the caller acknowledges the readback. Conflicts with `feedback_livekit_prompt_philosophy.md` (outcome-based, non-directive). Phase 61.1 also scopes (a) the 3 advisory warnings from 61-REVIEW.md (WR-01 tenant_id NOT NULL violation in gmaps_validate_events; WR-02 empty address_lines misclassified as unsupported_region; WR-03 success-path return shape inconsistency) and (b) any further regressions surfacing from continued Phase 61 production usage. Incident details captured in `.planning/phases/61.1-…/61.1-INCIDENT.md`. Next: `/gsd:discuss-phase 61.1`. **Shipped + verified 2026-05-05** — production UAT confirmed deadlock fix end-to-end.
+- 2026-05-05: Phase 61.2 inserted after Phase 61 (URGENT) — Phase 61 production regressions, round 2. Same caller +6587528516, 2026-05-05 11:04 UTC, 132s call ended with `outcome=not_attempted`, `tool_call_log_tail: []` (zero tool invocations across the entire call). Phase 61.1 deadlock fix confirmed working (7 healthy `generate_reply` cycles, address-fragment readback shipped — agent said *"Got it, unit 0704"*). NEW failure: agent confirmed *"Thursday at 10 AM"* slot the caller never gave (caller pushed back: *"I never said that"*); never invoked `check_availability` or `book_appointment`. Hypothesis: Phase 61.1's prompt softening (per `feedback_livekit_prompt_philosophy.md`) may have removed too much tool-invocation pressure, leaving the agent in conversational-without-committing mode. Alternate hypothesis: documented Gemini 3.1 Flash Live preference for text continuation over function calls (cf `reference_livekit_generate_reply_gemini31.md`). Both may compound. Long-term answer: Phase 64 (LiveKit pipeline migration). Phase 61.2 = tactical fix on the Realtime path. Discuss/plan should pull the FULL call transcript from Supabase before committing to a fix. Incident details: `.planning/phases/61.2-…/61.2-INCIDENT.md`. Next: `/gsd:discuss-phase 61.2`.
 
 ### Pending Todos
 

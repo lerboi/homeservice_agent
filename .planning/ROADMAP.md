@@ -412,6 +412,16 @@ Plans:
 - [x] 61-03-PLAN.md — book_appointment + capture_lead validation pre-check (D-B2 before slot lock), atomic_book_slot + record_outcome wrapper extensions, D-D3' service_address overwrite, D-E2 STATE+DIRECTIVE tool returns, integration tests (Wave 2)
 - [x] 61-04-PLAN.md — D-E3 CRITICAL RULE in prompt.py EN+ES, D-E1 tool description rewrites, three SKILL.md updates + CLAUDE.md migration count fix, [BLOCKING] human UAT 4-call protocol (Wave 3)
 
+### Phase 61.2: Phase 61 production regressions round 2 — slot hallucination and zero tool invocations (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 61
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 61.2 to break down)
+
 ### Phase 61.1: Phase 61 production regressions — address-validation rule deadlock and downstream fixes (INSERTED)
 
 **Goal:** Fix the production regression on the 2026-05-05 incident call (44s of silence after caller postal code, outcome=not_attempted) by reframing _build_address_validation_section to post-tool scope and removing the silence escape hatch; close advisory warnings WR-01 (tenant_id NOT NULL violation) + WR-02 (empty address_lines misclassified as unsupported_region) + WR-03 (success-path return shape doc drift); sync skill docs and capture the deadlock-pattern lesson in user memory.
