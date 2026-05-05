@@ -412,6 +412,16 @@ Plans:
 - [x] 61-03-PLAN.md — book_appointment + capture_lead validation pre-check (D-B2 before slot lock), atomic_book_slot + record_outcome wrapper extensions, D-D3' service_address overwrite, D-E2 STATE+DIRECTIVE tool returns, integration tests (Wave 2)
 - [x] 61-04-PLAN.md — D-E3 CRITICAL RULE in prompt.py EN+ES, D-E1 tool description rewrites, three SKILL.md updates + CLAUDE.md migration count fix, [BLOCKING] human UAT 4-call protocol (Wave 3)
 
+### Phase 61.1: Phase 61 production regressions — address-validation rule deadlock and downstream fixes (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 61
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 61.1 to break down)
+
 ### Phase 62: Jobber write-side — push booked customer + job into connected Jobber (promoted from Phase 999.3)
 
 **Goal:** Close the Voco→Jobber loop. When a tenant has Jobber connected and a booking succeeds, the post-call pipeline (`livekit_agent/src/post_call.py`) creates or finds the Jobber Client (using the Phase 56 `fetchJobberCustomerByPhone` path for the find-side — no duplicate clients by phone), then creates a Jobber Visit/Request assigned per the Phase 57 `bookable_user_ids` opt-in subset, with the appointment's persisted `voco_booking_id` (JOBSCHED-07) used as the idempotency key so anything a tenant manually copy-pasted into Jobber during the Phase 57 interim period does not duplicate. On push success, the dashboard's "Not in Jobber yet" badge from Phase 57 flips to "In Jobber" with a click-through to the Jobber visit; on push failure (token expired, scope missing, network), the appointment stays in the interim copy-paste UX state with the existing email-fallback path and a Sentry flag.
