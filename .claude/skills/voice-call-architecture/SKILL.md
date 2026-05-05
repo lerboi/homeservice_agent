@@ -792,6 +792,103 @@ generalizable pattern this phase establishes:
 `.planning/phases/63.1-gemini-3-generate-reply-regression-fix/`
 (context, research, per-plan SUMMARY, UAT, phase rollup).
 
+### Phase 63.2 — LiveKit SDK patch upgrade 1.5.6 → 1.5.7 (hygiene + dry run)
+
+**What shipped.** Pure patch-version bump in
+`livekit-agent/pyproject.toml`: all four livekit-* pins moved from
+`==1.5.6` to `==1.5.7` (released 2026-04-30). Zero `src/` files
+modified — the audit-driven D-05 zero-forced-edits thesis held.
+
+**Upstream contents of 1.5.7 (per PyPI release notes):**
+
+1. `fix(gemini live): use parameters instead of parameters_json_schema for raw schema function tools`
+2. `fix: realtime reply generation after interruption`
+
+**Why neither fix forced a code edit (2026-05-05 audit).** Fix #1
+does not apply: all four `@function_tool(raw_schema=...)` call sites
+(`book_appointment.py:251`, `check_slot.py:70`, `check_day.py:53`,
+`next_available_days.py:43`) already use the standard JSON Schema
+`parameters` key; zero references to `parameters_json_schema` exist
+in `src/`. Fix #2 has no code dependency: the agent has no custom
+interruption-recovery path — only one `@session.on("agent_false_interruption")`
+diagnostic log handler at `src/agent.py:582-586`. Reply-after-
+interruption is fully delegated to Gemini server VAD + the SDK's
+internal handling.
+
+**Honest framing.** This is a **hygiene patch bump**, not a behavior
+fix. Motivations: (a) staying current with upstream patch fixes for
+bug-class reduction we don't yet know about, (b) dry-run muscle-
+memory before the next material upgrade. The SegmentSynchronizer
+cutoff race (`_SegmentSynchronizerImpl.playback_finished called
+before text/audio input is done`) and the `server cancelled tool
+calls` warnings remain byte-identical at 1.5.7 — tracked separately
+for a future phase, NOT this one's scope.
+
+**Branch + merge protocol (D-02 / D-10).** Cut feature branch
+`phase-63.2-livekit-1.5.7` from `livekit-agent/main` tip
+(`187d207`), single-commit pin bump (`8850b4f`), Railway preview
+green + one UAT call to `+14783755631` (SG tenant `+6587528516`)
+booking confirmed end-to-end with `check_availability` →
+`book_appointment` → Google Calendar event. User issued `merge`
+verdict; merged via `--no-ff` to `livekit-agent/main` as commit
+`d3b1f0a` (`fix(63.2): merge 1.5.7 patch upgrade`). All 12 D-04
+preserved SHAs (Phase 60.4 + 63 + 63.1 + Phase-64-revert) verified
+present on post-merge main.
+
+**Local preflight (Task 2).** Clean `pip uninstall` + `pip install
+--no-cache-dir -e .` resolved all four packages from
+`site-packages` (NOT a stale git-builds cache — Pitfall 3 mitigated
+the same way Phase 63 did). RealtimeModel boot-smoke green; the
+benign `'gemini-3.1-flash-live-preview' has limited mid-session
+update support` capability-hint console line still fires at 1.5.7,
+confirming PR #5413 capability routing remains active. Grep-guard
+`tests/test_no_generate_reply_in_src.py` GREEN.
+
+**Pytest deviation note.** Plan authored against expected baseline
+"254 passed / 1 failed" (Phase 60.4 era). Actual at execute time
+was "9 failed, 284 passed, 2 collection errors" — drift caused by
+codebase advancing through Phase 61 / 61.1 / Phase 64-revert
+between plan-authoring (2026-05-05) and execute. Executor verified
+all 9 failures + 2 collection errors are pre-existing on the 1.5.6
+baseline by rolling the venv back to 1.5.6 and re-running the same
+five test files; identical failures. None are 1.5.7-induced.
+Pre-existing baseline failures logged to `deferred-items.md`
+(Rule 1 scope-boundary path) — D-05, D-06, D-07 all hold.
+
+**Commit (livekit-agent branch `phase-63.2-livekit-1.5.7` →
+merged to `main` via `--no-ff` merge commit `d3b1f0a`):**
+
+| SHA       | Plan | Message |
+|-----------|------|---------|
+| `8850b4f` | 01   | `fix(63.2): bump livekit-* pins to 1.5.7 patch release` |
+| `d3b1f0a` | 01   | `fix(63.2): merge 1.5.7 patch upgrade` (--no-ff, preserves all 12 D-04 SHAs) |
+
+**Pyproject.toml comment block at 1.5.7 (lines 7-12):**
+
+```toml
+# Pinned at 1.5.7 (2026-04-30) — patch bump on top of Phase 63's 1.5.6 mainline.
+# 1.5.7 picks up: gemini-live raw-schema parameters fix + realtime reply-after-interruption fix.
+# See .planning/phases/63.2-livekit-sdk-patch-1-5-7/63.2-CONTEXT.md (audit confirms neither fix forces src/ edits in this stack).
+"livekit-agents==1.5.7",
+"livekit-plugins-google==1.5.7",
+"livekit-plugins-silero==1.5.7",
+"livekit-plugins-turn-detector==1.5.7",
+```
+
+**Hygiene-bump pattern established for future patch releases.**
+Single-commit pin-only branch, ~30-min checkpoint cycle, Railway
+preview gate, one UAT call before `--no-ff` merge. The pattern is
+valid for any future patch (1.5.8, 1.5.9) where upstream changelog
+inspection + `src/` audit shows zero forced edits. If any future
+patch *does* force a code edit, the branch grows scope or splits
+into a follow-up — this branch's thesis stays "pure pin bump".
+
+**Date.** Merged 2026-05-05.
+
+**Plan 63.2-01 full documentation** — see
+`.planning/phases/63.2-livekit-sdk-patch-1-5-7/`
+(context, plan, HUMAN-UAT, per-plan SUMMARY, phase rollup).
+
 ---
 
 ## 6. Post-Call Pipeline
