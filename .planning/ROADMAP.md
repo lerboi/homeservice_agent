@@ -413,6 +413,16 @@ Plans:
 - [x] 61-03-PLAN.md — book_appointment + capture_lead validation pre-check (D-B2 before slot lock), atomic_book_slot + record_outcome wrapper extensions, D-D3' service_address overwrite, D-E2 STATE+DIRECTIVE tool returns, integration tests (Wave 2)
 - [x] 61-04-PLAN.md — D-E3 CRITICAL RULE in prompt.py EN+ES, D-E1 tool description rewrites, three SKILL.md updates + CLAUDE.md migration count fix, [BLOCKING] human UAT 4-call protocol (Wave 3)
 
+### Phase 61.3: Phase 61 production regressions round 3 — cascade-recovery (slot hallucination after cancellation, listener emitter-mismatch, transcript fragmenting, greeting playout robustness) (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 61
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 61.3 to break down)
+
 ### Phase 61.2: Phase 61 production regressions round 2 — slot hallucination and zero tool invocations (INSERTED)
 
 **Goal:** Restore tool-invocation behavior + prevent slot-time hallucination on the LiveKit Gemini 3.1 Flash Live agent's system prompt after Phase 61.1 fixed the silent-deadlock failure mode. Same regression class as 61.1 (post-Phase-61 production failure on the voice agent prompt) but a different failure mode: agent is conversational (61.1 fix working), but never invokes tools and fabricates a slot time the caller never gave (incident `AJ_W7woUYGhG5CV`, 2026-05-05 11:04 UTC, 132s call, agent confirmed "Thursday at 10 AM" without caller saying it). Ship Fix 1 (URGENCY four-precondition tool-invocation trigger, EN+ES, non-directive) + Fix 2 (new dedicated `_build_slot_times_section` CRITICAL RULE hoisted to top-attention zone between address_validation and outcome_words, EN+ES, no silence license) + D-04 minor amendment (one-line OUTCOME WORDS to SLOT TIMES cross-reference, EN+ES) as a single coherent prompt rev. Phase 61.1 invariant `test_both_locales_pre_tool_readback_explicit` preserved. D-12 live SIP UAT call is the mandatory gate before declaring verified.
