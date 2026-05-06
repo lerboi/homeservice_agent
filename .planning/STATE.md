@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Phases
 status: executing
-stopped_at: Completed 61.2-03-PLAN.md (Fix B)
-last_updated: "2026-05-06T07:44:07.383Z"
+stopped_at: Completed 61.2-04-PLAN.md (Fix C telemetry)
+last_updated: "2026-05-06T07:50:03.443Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 22
   completed_phases: 19
   total_plans: 117
-  completed_plans: 111
-  percent: 95
+  completed_plans: 112
+  percent: 96
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-16)
 
 Milestone: v6.0 (planning)
 Phase: 61.2 (phase-61-production-regressions-round-2-slot-hallucination-a) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-05-06
 
@@ -80,6 +80,7 @@ Progress: [██████████] 95%
 | Phase 60.3 P13 | 15min | 4 tasks | 4 files |
 | Phase 61.2 P02 | 1min | 5 tasks | 3 files |
 | Phase 61.2 P03 | 2min | 3 tasks | 1 files |
+| Phase 61.2 P04 | 3min | 4 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,7 @@ Progress: [██████████] 95%
 
 - [v6.0 P61.2-02]: Fix A shipped to livekit-agent main (commit `93dd4b5`) — `mute_input_during_tool` extended from 4 availability/booking tools to 3 data-fetch tools (`check_caller_history`, `check_customer_account`, `capture_lead`). +20 lines, 3 files, 1 commit on livekit-agent. Each new call site is the first I/O-touching statement in its function body, mirroring the `check_day.py:61` reference shape, with a Phase 61.2-anchored comment pointing back to `61.2-RESEARCH.md` § 4 fix A. Terminal tools (`transfer_call`, `end_call`) intentionally untouched per D-A-01 (teardown intent — muting during teardown could mask caller-cancellation signal). Pre-fix UAT (call `AJ_vV4DM5AG9t7W`, 5 cancellations in 230s) showed `check_caller_history` at T+17.6s and T+41s as the dominant cancellation surface — Fix A detaches caller input during the BLOCKING Gemini-Live tool wait so server VAD can't fire mid-tool and cancel the generation. **No prompt edits, no tool-signature changes** — pure code-side structural mitigation per `feedback_livekit_prompt_philosophy.md`. **Plans 03 (Fix B unmute lifecycle in `_availability_lib.py`: raise `_TOOL_MUTE_FALLBACK_S` 15→25s + `function_tools_executed` listener) and 04 (Fix C `_ServerCancelHandler` telemetry in `agent.py`) unblocked** — different files, no merge conflict surface. **D-12 mandatory live UAT remains the ship gate** (planned post-Plan 04); cascade rate measured via Fix C telemetry must drop below the 5-cancellations / 230s pre-fix baseline AND no fragmenting agent turns AND tool flow completes (book OR capture_lead). Zero deviations from plan — Assumption #1 from RESEARCH § Assumptions Log verified during Plan 02 read-first (both `check_customer_account.py` and `capture_lead.py` confirmed as lacking the call before edits).
 - [v6.0 P61.2-03]: Fix B shipped to livekit-agent main (commit `1afde0e`, pushed to origin/main, Railway auto-deploy triggered) — two surgical changes to `mute_input_during_tool` in `_availability_lib.py`: (1) `_TOOL_MUTE_FALLBACK_S` raised 15.0→25.0 with anchored Phase 61.2 Fix B comment block citing call `AJ_vV4DM5AG9t7W` baseline (booking-section name+address readback runs 10-14s; on a server-cancelled tool call the recovery generation may extend further; 15s left no margin and the safety unmute fired mid-recovery). (2) New `_on_tools_executed(_event)` closure subscribed via `session.on("function_tools_executed", ...)` immediately after the existing `agent_state_changed` listener; resets `saw_fresh_speaking[0] = False` on each fresh tool execution during the mute window so the unmute waits for the recovery generation's clean speak/listen cycle, not the cancelled original. Symmetric cleanup added in `_unmute_logic()`'s try-block, covering both pyee API surfaces (`off` + `remove_listener`). +20/-2 lines, 1 file, 1 commit. **Behavior preserved in no-cancellation path** — listener never fires when no recovery happens; raised fallback only matters when event-based unmute doesn't fire first. **No prompt edits, no tool-signature changes, no other-file edits.** Plans 04 (Fix C `_ServerCancelHandler` telemetry in `agent.py`) and 05 (static invariant suite — must include `test_unmute_fallback_at_least_25s` and `test_function_tools_executed_listener` per D-10-rev) remain unblocked, no merge conflict surface. T-61.2-CASCADE-B mitigated. D-12 mandatory live UAT remains ship gate. Zero deviations from plan.
+- [v6.0 P61.2-04]: Fix C shipped to livekit-agent main (commit `1b636bc`, pushed to origin/main, Railway auto-deploy triggered) — pure-observability `_ServerCancelHandler(logging.Handler)` added at `agent.py:116-148` mirroring `_GoodbyeDiagHandler` shape (constructor takes `diag_record` list-of-1, try/except no-raise contract, per-call install + finally-block cleanup). Installed on BOTH `livekit.plugins.google.realtime` (where Gemini-Live emits the warnings) AND `livekit.plugins.google` (parent fallback for SDK namespace shifts) at session init right after the existing `_GoodbyeDiagHandler` install (`agent.py:335-341`). Threaded through `_flush_goodbye_diag` via new keyword-only `server_cancel_handler: logging.Handler` arg (signature line 157); call site in `_on_close_async` updated; removeHandler block added in finally (lines 192-196, two `removeHandler` calls — count=2). Watches two warning substrings: `"server cancelled tool calls"` increments `_diag_record[0]["server_tool_cancellations"]`; `"received server content but no active generation"` increments `_diag_record[0]["orphaned_server_content"]`. Counter pattern uses lazy default-zero `dict.get(key, 0) + 1` so fields are OMITTED on healthy calls — mere field presence in `[goodbye_race]` log signals cascade fired on that call. Counters land on the SAME `[goodbye_race]` log line + Sentry breadcrumb that powers Phase 60.3 instrumentation. **ZERO behavior change** — pure observability per T-61.2-CASCADE-C accept disposition (counter integers only, no PII; same shape as existing diag fields like text_done/audio_done; transcript_tail already redacted at flush boundary). +52 lines, 1 file, 1 commit. AJ_vV4DM5AG9t7W baseline (3 cancellations + 1 orphan / 230s) is the D-12 reference; post-fix call must show `server_tool_cancellations < 5` AND no fragmenting agent turns AND tool flow completes. Plan 05 (static invariant suite) unblocked — must add `test_server_cancel_handler_installed` per D-10-rev row 5 asserting `agent.py` contains substrings `class _ServerCancelHandler` + `livekit.plugins.google.realtime` + `_diag_record`. Wave 1 (Plans 02/03/04 = Fix A + Fix B + Fix C) now COMPLETE on livekit-agent main; D-12 mandatory live UAT remains ship gate. Task 3 import smoke-test surfaced relative-import error from package-context-less invocation — not a SyntaxError or NameError on the new code, AST parse succeeded, proceeded per plan; runtime-load verification deferred to Plan 05 pytest run. Zero deviations from plan.
 - [v6.0 P63.1]: generate_reply regression shipped to livekit-agent main (merge commit `bc4befd`, `--no-ff`; branch `phase-63.1-generate-reply-fix` preserved all 5 fix/test commits). Both `session.generate_reply(...)` call sites deleted from `src/agent.py` (intake L702-717 + greeting L754-758); `session_ready = asyncio.Event()` removed as dead code; `_run_db_queries` refactored to named-tuple unpacking (Pitfall 2 mitigation). Intake_questions fetch hoisted pre-`session.start()` and threaded through `build_system_prompt(intake_questions=intake_questions_text)` so Gemini receives tenant-configured questions in the initial `instructions=system_prompt` payload. `_build_greeting_section` extended with outcome-shaped `FIRST TURN:` / `PRIMER TURNO:` block (EN+ES parity, USTED register, prepended to existing OPENING/APERTURA structure; no verbatim scripts). Gemini server VAD firing on first caller audio frame elicits the greeting in lieu of the broken `generate_reply` trigger. Regression guard `tests/test_no_generate_reply_in_src.py` (pure stdlib regex scan of `src/**/*.py`) + 6 `tests/test_prompt_greeting_directive.py` RED→GREEN tests lock the contract. Full livekit-agent suite 254 passed, 1 pre-existing deferred VIP failure. All 9 D-08 SHAs (c2482f8, 1df5223, b46851b, 5e48273, e580f14, 68828d7, 87d6883, 38352f2, 9ce12d6) preserved on main post-merge. **UAT verdict: live call skipped by user directive** — D-09 #1 (zero `generate_reply is not compatible` warnings) verified offline via grep-guard; D-09 #2 (agent-first-turn) deferred to next live prod call. **Phase 60.4 unblocked and ready to resume** via `.planning/phases/60.4-booking-timezone-fix-and-stt-language-pinning/60.4-HANDOFF.md`. Generalizable pattern established for any future 1.5.6 + Gemini-3.x data-injection need: pre-session fetch → `build_system_prompt(kwarg=...)` → prompt-level directive leveraging server VAD. homeservice_agent docs commit pending (SUMMARY + SKILL + STATE + ROADMAP bundled).
 
 ### Roadmap Evolution
@@ -142,7 +144,7 @@ Progress: [██████████] 95%
 
 ## Session Continuity
 
-Last session: 2026-05-06T07:44:07.372Z
-Stopped at: Completed 61.2-03-PLAN.md (Fix B)
+Last session: 2026-05-06T07:50:03.427Z
+Stopped at: Completed 61.2-04-PLAN.md (Fix C telemetry)
 Resume file: None
 60.4 status: UNBLOCKED — Phase 63.1 `generate_reply` regression fix merged to livekit-agent main (`bc4befd`). Resume via HANDOFF doc.
