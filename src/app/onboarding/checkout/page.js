@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   // If returning from Stripe with session_id, go straight to verification
   const sessionId = searchParams.get('session_id');
   const [mounted, setMounted] = useState(false);
+  const [urlParamsApplied, setUrlParamsApplied] = useState(false);
   const [phase, setPhase] = useState(sessionId ? 'verifying' : 'checkout');
   const [checkoutError, setCheckoutError] = useState(null);
   const checkoutSessionIdRef = useRef(null);
@@ -33,7 +34,10 @@ export default function CheckoutPage() {
   // Wait for client hydration
   useEffect(() => setMounted(true), []);
 
-  // Accept plan/interval from URL params (returning from pricing page)
+  // Accept plan/interval from URL params (returning from pricing page).
+  // Flip urlParamsApplied so EmbeddedCheckoutProvider waits until selectedPlan
+  // has settled — mounting it earlier triggers a 400 (plan=null) and a
+  // "fetchClientSecret changed" warning when the value lands a tick later.
   useEffect(() => {
     const plan = searchParams.get('plan');
     const interval = searchParams.get('interval');
@@ -41,10 +45,11 @@ export default function CheckoutPage() {
       setSelectedPlan(plan);
       setSelectedInterval(interval === 'annual' ? 'annual' : 'monthly');
     }
+    setUrlParamsApplied(true);
   }, [searchParams, setSelectedPlan, setSelectedInterval]);
 
   // Check if plan is missing (show selection prompt instead of auto-redirect)
-  const needsPlan = mounted && !sessionId && !selectedPlan && !searchParams.get('plan');
+  const needsPlan = mounted && urlParamsApplied && !sessionId && !selectedPlan;
 
   // If returning from Stripe, run verification immediately
   useEffect(() => {
@@ -53,14 +58,21 @@ export default function CheckoutPage() {
     }
   }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch client secret for embedded checkout
+  // Read plan/interval via refs so fetchClientSecret has a stable identity.
+  // EmbeddedCheckoutProvider locks the callback on first mount and warns
+  // ("You cannot change fetchClientSecret after setting it") on any change.
+  const planRef = useRef(selectedPlan);
+  const intervalRef = useRef(selectedInterval);
+  useEffect(() => { planRef.current = selectedPlan; }, [selectedPlan]);
+  useEffect(() => { intervalRef.current = selectedInterval; }, [selectedInterval]);
+
   const fetchClientSecret = useCallback(async () => {
     const res = await fetch('/api/onboarding/checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plan: selectedPlan,
-        interval: selectedInterval,
+        plan: planRef.current,
+        interval: intervalRef.current,
         embedded: true,
       }),
     });
@@ -76,7 +88,7 @@ export default function CheckoutPage() {
       checkoutSessionIdRef.current = data.sessionId;
     }
     return data.clientSecret;
-  }, [selectedPlan, selectedInterval]);
+  }, []);
 
   // Handle checkout completion — wait for Stripe webhook to create subscription
   const handleComplete = useCallback(async () => {
@@ -188,6 +200,11 @@ export default function CheckoutPage() {
 
   // Checkout phase — embedded Stripe form
   if (phase === 'checkout') {
+    // Wait for URL params + sessionStorage to settle before mounting the
+    // provider. Mounting with selectedPlan=null fires fetchClientSecret
+    // immediately and the API rejects it (400 "Invalid plan").
+    const checkoutReady = urlParamsApplied && !!selectedPlan;
+
     return (
       <div>
         <h1 className="text-xl font-semibold text-[#0F172A] text-center">
@@ -198,12 +215,18 @@ export default function CheckoutPage() {
         </p>
 
         <div className="min-h-[300px]">
-          <EmbeddedCheckoutProvider
-            stripe={stripePromise}
-            options={{ fetchClientSecret, onComplete: handleComplete }}
-          >
-            <EmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
+          {checkoutReady ? (
+            <EmbeddedCheckoutProvider
+              stripe={stripePromise}
+              options={{ fetchClientSecret, onComplete: handleComplete }}
+            >
+              <EmbeddedCheckout />
+            </EmbeddedCheckoutProvider>
+          ) : (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin size-6 border-2 border-[#C2410C] border-t-transparent rounded-full" />
+            </div>
+          )}
         </div>
       </div>
     );
