@@ -329,7 +329,16 @@ Sections (order):
 5. **Opening Line** — greeting + recording disclosure.
 6. **Language** — default English. Switch only on explicit caller request
    to English / Spanish / Chinese / Malay / Tamil / Vietnamese. Unclear
-   speech treated as connection issue, not language barrier.
+   speech treated as connection issue, not language barrier. Phase 62
+   reframed ANTI-HALLUCINATION: when transcription appears in an
+   unsupported language (German / French / Italian / etc.), treat it as
+   an STT error of English audio — do NOT respond in the perceived
+   language and do NOT tell the caller "I only speak English" (both
+   reveal the STT failure). Substitute a connection-issue framing:
+   "Sorry, the audio cut out for a moment — could you say that again?"
+   Real language switches require an explicit caller phrase like
+   "Can we speak in Spanish?" — foreign text in transcript is NOT
+   consent. Call AJ_gpRzniyNoJBd (2026-05-07) is the regression source.
 7. **Repeat Caller** — empty (never reveal prior history; silent context).
 8. **Customer Context (Phase 55/56)** — `_build_customer_account_section`
    inserts a STATE+DIRECTIVE block if `customer_context` non-null.
@@ -339,8 +348,14 @@ Sections (order):
 9. **Info Gathering (Phase 60 D-01..D-08)** — outcome-framed. Three needed
    before scheduling: issue, name, complete address. Order not forced.
    - NAME USE DURING THE CALL: capture silently; no name vocative
-     mid-call. Single on-air confirmation is the booking readback.
-     Caller-invited override ("you can call me X") honored.
+     mid-call. The booking readback is the SOLE on-air name moment.
+     Phase 62 hardened the rule with an explicit forbidden-patterns
+     enumeration ("Thanks, {name}", "Got it, {name}", "{name}, I have…",
+     etc.) plus an outcome-based acknowledgment rule (acknowledgment
+     must not contain the caller's name; tone-flexible). Call
+     AJ_gpRzniyNoJBd (2026-05-07) caught Gemini violating the prior
+     less-explicit phrasing. Caller-invited override ("you can call me X")
+     honored.
    - SERVICE ADDRESS: single-question opener "What's the address where
      you need the service?" — replaces the old three-part walkthrough.
      One targeted follow-up per missing piece; never enumerate fields.
