@@ -1,13 +1,13 @@
 ---
 name: onboarding-flow
-description: "Complete architectural reference for the onboarding wizard — 5-step signup flow (profile, services, contact details, test call, checkout), all onboarding API routes, country-aware phone number provisioning (SG inventory via RPC, US/CA via Twilio API + SIP trunk association), trade templates, LiveKit SIP test call, Stripe Checkout Session, session persistence, and middleware auth guards. Use this skill whenever making changes to the onboarding wizard, signup flow, phone provisioning, trade templates, billing checkout, or wizard session management. Also use when the user asks about how onboarding works, wants to modify wizard steps, or needs to debug provisioning or OTP issues."
+description: "Complete architectural reference for the onboarding wizard — 4-step signup flow (profile, services, contact details, checkout), all onboarding API routes, country-aware phone number provisioning (SG inventory via RPC, US/CA via Twilio API + SIP trunk association), trade templates, Stripe Checkout Session, session persistence, and middleware auth guards. Test call functionality (LiveKit SIP) lives post-payment in dashboard settings, not in the wizard. Use this skill whenever making changes to the onboarding wizard, signup flow, phone provisioning, trade templates, billing checkout, or wizard session management. Also use when the user asks about how onboarding works, wants to modify wizard steps, or needs to debug provisioning or OTP issues."
 ---
 
 # Onboarding Flow — Complete Reference
 
 This document is the single source of truth for the onboarding wizard system. Read this before making any changes to onboarding pages, wizard session management, or provisioning routes.
 
-**Last updated**: 2026-04-15 (Clarified that AI voice selection (Phase 44) lives in Dashboard Settings, NOT the onboarding wizard — new tenants receive the curated Gemini default per `tone_preset` until they override it post-onboarding)
+**Last updated**: 2026-05-06 (Removed Test Call step from the wizard — wizard is now 4 steps. Test call functionality (TestCallPanel + `/api/onboarding/test-call` + `/api/onboarding/test-call-status`) remains live for post-payment use in dashboard settings, but is no longer exposed during onboarding. Step numbering shifted: Checkout is now Step 4.)
 
 ---
 
@@ -18,12 +18,13 @@ This document is the single source of truth for the onboarding wizard system. Re
 | **Step 1: Profile** | `/onboarding` (page.js) | Trade selector + business name + 2x POST to /start |
 | **Step 2: Services** | `/onboarding/services` | Edit pre-populated service list from TRADE_TEMPLATES. Also captures `selected_plan` + `selected_interval` from URL params (for users coming from pricing page) |
 | **Step 3: Contact Details** | `/onboarding/contact` | Owner name, phone, country + SG availability check → sms-confirm saves owner_name + owner_phone + country |
-| **Step 4: Test Call** | `/onboarding/test-call` | Test call panel (or skip if no phone yet). Loads phone via `GET /api/onboarding/test-call-status` |
-| **Step 5: Checkout** | `/onboarding/checkout` | Embedded Stripe Checkout (3 phases: checkout form → verifying webhook → success celebration). Auto-redirects to `/dashboard` after 5s |
+| **Step 4: Checkout** | `/onboarding/checkout` | Embedded Stripe Checkout (3 phases: checkout form → verifying webhook → success celebration). Auto-redirects to `/dashboard` after 5s |
 
 Auth (`/auth/signin`) is a prerequisite before the wizard but is not counted as a wizard step. Plan selection happens on the external `/pricing` page BEFORE entering the wizard — the services step captures `selected_plan` + `selected_interval` from URL params.
 
-**What is NOT in the wizard**: AI voice selection (Phase 44) lives in Dashboard Settings (`/dashboard/settings` → AI Voice), not here. New tenants use the curated Gemini default derived from their `tone_preset` (see the `VOICE_MAP` in the voice-call-architecture skill) until they explicitly override it post-onboarding. The onboarding test call (Step 4) always plays the default voice for the tenant's current `tone_preset`.
+**What is NOT in the wizard**:
+- **AI voice selection** (Phase 44) lives in Dashboard Settings (`/dashboard/settings` → AI Voice). New tenants use the curated Gemini default derived from their `tone_preset` (see the `VOICE_MAP` in the voice-call-architecture skill) until they explicitly override it post-onboarding.
+- **Test call** (LiveKit SIP outbound) is no longer part of the wizard — the wizard cannot run a test call before payment because the phone number is provisioned by the Stripe webhook *after* checkout. The `TestCallPanel` component, `/api/onboarding/test-call`, and `/api/onboarding/test-call-status` routes remain live and are used post-payment from dashboard settings.
 
 ```
 User selects plan on /pricing page (external)
@@ -43,11 +44,7 @@ User selects plan on /pricing page (external)
   → On zero SG available: show waitlist option → POST /api/onboarding/sg-waitlist
   → POST /api/onboarding/sms-confirm → owner_name + owner_phone + owner_email + country saved
        ↓
-  /onboarding/test-call (Step 4: Test Call)
-  → GET /api/onboarding/test-call-status → loads phone number
-  → TestCallPanel renders (or skip if no phone yet)
-       ↓
-  /onboarding/checkout (Step 5: Checkout)
+  /onboarding/checkout (Step 4: Checkout)
   → Embedded Stripe Checkout via EmbeddedCheckoutProvider
   → Phase 1: Stripe checkout form
   → Phase 2: Verifying — polls GET /api/onboarding/verify-checkout (up to 30 times)
@@ -61,7 +58,7 @@ User selects plan on /pricing page (external)
 - `/onboarding/plan` — redirects to `/pricing`
 - `/onboarding/checkout-success` — thin wrapper, not in active flow
 
-Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("Step X of 5"), orange progress bar, and wizard card.
+Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("Step X of 4"), orange progress bar, and wizard card.
 
 ---
 
@@ -73,16 +70,15 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 | `src/app/onboarding/page.js` | Step 1: Trade selector + business name (profile) |
 | `src/app/onboarding/services/page.js` | Step 2: Service list edit from TRADE_TEMPLATES |
 | `src/app/onboarding/contact/page.js` | Step 3: Contact Details — owner name, phone, country selector + SG availability check |
-| `src/app/onboarding/test-call/page.js` | Step 4 — test call panel or skip if no phone |
-| `src/app/onboarding/checkout/page.js` | Step 5 — embedded Stripe Checkout, webhook verification, success celebration |
+| `src/app/onboarding/checkout/page.js` | Step 4 — embedded Stripe Checkout, webhook verification, success celebration |
 | `src/app/onboarding/plan/page.js` | DEPRECATED — redirects to `/pricing` |
 | `src/app/onboarding/checkout-success/page.js` | DEPRECATED — not in active wizard flow |
-| `src/app/onboarding/complete/page.js` | Redirect to /dashboard (legacy, no longer called from test-call) |
+| `src/app/onboarding/complete/page.js` | Redirect to /dashboard (legacy, not in active wizard flow) |
 | `src/app/onboarding/profile/page.js` | Redirect to /onboarding (legacy URL compatibility) |
 | `src/app/onboarding/verify/page.js` | Redirect to /onboarding/contact (legacy URL compatibility) |
 | `src/app/auth/signin/page.js` | Auth page (email signup + OTP) — prerequisite, not a wizard step |
 | `src/app/auth/callback/route.js` | OAuth callback: exchanges code, redirects to /onboarding |
-| `src/components/onboarding/TestCallPanel.js` | Polling call state machine (ready/calling/in_progress/complete/timeout) — used in Step 4 (test-call) and dashboard settings |
+| `src/components/onboarding/TestCallPanel.js` | Polling call state machine (ready/calling/in_progress/complete/timeout) — post-payment use only (dashboard settings); no longer mounted in the onboarding wizard |
 | `src/components/onboarding/CelebrationOverlay.js` | Animated checkmark + radial pulse rings |
 | `src/components/onboarding/TradeSelector.js` | Trade picker grid (plumber/hvac/electrician/handyman) |
 | `src/components/onboarding/OtpInput.js` | 6-digit OTP box inputs |
@@ -91,8 +87,8 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 | `src/app/api/onboarding/provision-number/route.js` | **DEPRECATED**: provisioning now happens in Stripe webhook after checkout |
 | `src/app/api/onboarding/sms-confirm/route.js` | POST: save owner_name + owner_phone + owner_email + country in one round-trip |
 | `src/app/api/onboarding/sms-verify/route.js` | POST: phone OTP verification (signInWithOtp) |
-| `src/app/api/onboarding/test-call/route.js` | POST: trigger LiveKit SIP test call — used in Step 4 and dashboard settings |
-| `src/app/api/onboarding/test-call-status/route.js` | GET: poll for onboarding_complete + phone_number — used in Step 4 and dashboard settings |
+| `src/app/api/onboarding/test-call/route.js` | POST: trigger LiveKit SIP test call — post-payment use from dashboard settings |
+| `src/app/api/onboarding/test-call-status/route.js` | GET: poll for onboarding_complete + phone_number — post-payment use from dashboard settings |
 | `src/app/api/onboarding/complete/route.js` | POST: set onboarding_complete = true (legacy manual fallback) |
 | `src/app/api/onboarding/checkout-session/route.js` | POST: create Stripe Checkout Session with 14-day trial + CC required |
 | `src/app/api/onboarding/sg-availability/route.js` | GET: returns { available_count } for SG phone numbers from phone_inventory |
@@ -108,19 +104,18 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 
 `OnboardingLayout({ children })` — wraps all steps:
 - Logo link to `/`
-- Step counter: "Step X of 5" (`TOTAL_STEPS = 5`)
+- Step counter: "Step X of 4" (`TOTAL_STEPS = 4`)
 - Orange progress bar: `width: (currentStep / TOTAL_STEPS) * 100%`, `transition-all duration-500 ease-out`
 - White wizard card: `bg-white rounded-2xl shadow-[...] border border-stone-200/60`
 - Mobile: full-width flat card (`max-sm:rounded-none max-sm:shadow-none max-sm:border-none`)
 
-`getStep(pathname)` maps path to 1–5 for progress bar.
+`getStep(pathname)` maps path to 1–4 for progress bar.
 
 Pathname → step mapping:
 - `/onboarding` (profile) → Step 1
 - `/onboarding/services` → Step 2
 - `/onboarding/contact` (contact details) → Step 3
-- `/onboarding/test-call` → Step 4
-- `/onboarding/checkout` → Step 5
+- `/onboarding/checkout` → Step 4
 
 ---
 
@@ -165,19 +160,11 @@ Collects `owner_name` (required), `owner_phone` (required), and `country` (requi
 
 On country=SG select: fires `GET /api/onboarding/sg-availability` immediately (D-07) to show remaining count ("3 Singapore numbers available"). If available_count === 0: shows waitlist UI → user enters email → `POST /api/onboarding/sg-waitlist` → blocks proceed.
 
-On submit: `POST /api/onboarding/sms-confirm` with `{ phone, owner_name, country }`. Saves `owner_name`, `owner_phone`, `owner_email`, and `country` to tenants in one round-trip. Navigates to `/onboarding/test-call`.
+On submit: `POST /api/onboarding/sms-confirm` with `{ phone, owner_name, country }`. Saves `owner_name`, `owner_phone`, `owner_email`, and `country` to tenants in one round-trip. Navigates to `/onboarding/checkout`.
 
 Session state via `useWizardSession`: `owner_name`, `country`, `phone`.
 
-### Step 4: Test Call (`/onboarding/test-call/page.js`)
-
-**File**: `src/app/onboarding/test-call/page.js`
-
-Loads the tenant's phone number via `GET /api/onboarding/test-call-status`. Renders `TestCallPanel` if a phone number is available — user can make a test call to hear the AI receptionist. If no phone number is provisioned yet, user can skip this step.
-
-On complete or skip: navigates to `/onboarding/checkout`.
-
-### Step 5: Checkout (`/onboarding/checkout/page.js`)
+### Step 4: Checkout (`/onboarding/checkout/page.js`)
 
 **File**: `src/app/onboarding/checkout/page.js`
 
@@ -197,7 +184,7 @@ Embedded Stripe Checkout with 3 phases:
 
 ### Legacy: Complete (`/onboarding/complete/page.js`)
 
-Simple redirect to `/dashboard`. No longer called from the test-call page flow.
+Simple redirect to `/dashboard`. No longer called from the active wizard flow.
 
 ---
 
@@ -216,7 +203,7 @@ State machine via `callState`:
 
 **Polling**: `setInterval` at 4000ms. On `data.complete === true` → `clearInterval` + `setCallState('complete')` + `onComplete()`.
 
-**Dual context**: `context` prop (`'onboarding'` or `'settings'`) renders different UI styles — compact inline for settings panel, full-page for wizard.
+**Dual context**: `context` prop (`'onboarding'` or `'settings'`) renders different UI styles — compact inline for settings panel, full-page styling retained for legacy/post-payment surfaces. Component is no longer mounted by the onboarding wizard, but the `'onboarding'` style branch is kept in case the panel is reused elsewhere.
 
 ### `CelebrationOverlay()`
 
@@ -345,13 +332,13 @@ Phone OTP: calls `supabase.auth.signInWithOtp({ phone })`. Used for phone number
 
 **File**: `src/app/api/onboarding/test-call/route.js`
 
-Triggers LiveKit SIP outbound call to `owner_phone` via `SipClient.createSipParticipant()`. Returns `{ call_id: roomName }`. Used in Step 4 (test-call wizard step) and dashboard settings via `TestCallPanel`.
+Triggers LiveKit SIP outbound call to `owner_phone` via `SipClient.createSipParticipant()`. Returns `{ call_id: roomName }`. Called from `TestCallPanel` in dashboard settings (post-payment); no longer wired into the wizard.
 
 ### `GET /api/onboarding/test-call-status`
 
 **File**: `src/app/api/onboarding/test-call-status/route.js`
 
-Returns `{ complete: boolean, phone_number: string | null }` from tenants row. Used by Step 4 to load the tenant's phone number for the test call panel.
+Returns `{ complete: boolean, phone_number: string | null }` from tenants row. Used by `TestCallPanel` in dashboard settings to load the tenant's provisioned phone number.
 
 ### `GET /api/onboarding/sg-availability`
 
@@ -383,7 +370,7 @@ Creates a Stripe Checkout Session for the selected plan. Request: `{ plan: 'star
 
 **File**: `src/app/api/onboarding/complete/route.js`
 
-Legacy manual fallback: sets `onboarding_complete = true` on tenants. No longer called from the test-call page — `onboarding_complete` is now set by the `checkout.session.completed` webhook handler.
+Legacy manual fallback: sets `onboarding_complete = true` on tenants — but only after verifying that an `is_current = true` subscription row exists (subscription guard added 2026-03-28). `onboarding_complete` is normally set by the `checkout.session.completed` webhook handler; this route is retained as a backstop for direct API callers.
 
 ---
 

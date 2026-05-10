@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/lib/supabase-browser';
+import { formatInternational } from '@/lib/phone/normalize';
 
 export default function AccountPage() {
   const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export default function AccountPage() {
     owner_phone: '',
   });
   const [original, setOriginal] = useState(null);
-  const [meta, setMeta] = useState({ email: '', trade_type: '', country: '', created_at: '' });
+  const [meta, setMeta] = useState({ email: '', phone_number: '', trade_type: '', country: '', created_at: '' });
 
   useEffect(() => {
     async function load() {
@@ -51,6 +52,7 @@ export default function AccountPage() {
           setOriginal(fields);
           setMeta({
             email: data.email || '',
+            phone_number: data.phone_number || '',
             trade_type: data.trade_type || '',
             country: data.country || '',
             created_at: data.created_at || '',
@@ -119,8 +121,27 @@ export default function AccountPage() {
     );
   }
 
+  const aiNumberDisplay = meta.phone_number
+    ? formatInternational(meta.phone_number)
+    : null;
+
   return (
     <div className="space-y-6">
+      {/* AI receptionist number — read-only, surfaces the Twilio number provisioned at checkout */}
+      <div className={`${card.base} p-6`}>
+        <h2 className="text-base font-semibold text-foreground mb-1">Your AI receptionist number</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          This is the number your customers call. Forward your business line here so every call reaches your AI receptionist.
+        </p>
+        {aiNumberDisplay ? (
+          <p className="font-mono text-xl tabular-nums text-foreground select-all">{aiNumberDisplay}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            Your number is being provisioned. It usually appears within a minute of completing checkout — refresh shortly.
+          </p>
+        )}
+      </div>
+
       {/* Profile section */}
       <div className={`${card.base} p-6`}>
         <h1 className="text-xl font-semibold text-foreground mb-1">Account</h1>

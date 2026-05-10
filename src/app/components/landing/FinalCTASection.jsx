@@ -22,7 +22,7 @@ export function FinalCTASection() {
             is tonight.
           </h2>
           <p className="text-lg text-[#A1A1AA] mb-10 max-w-md mx-auto leading-relaxed">
-            Your rules. Your schedule. Your customers. Voco just makes sure you don't miss the next one. Live in 5 minutes — no credit card.
+            Your rules. Your schedule. Your customers. Voco just makes sure you don't miss the next one. Live in 5 minutes — cancel anytime.
           </p>
           <AuthAwareCTA variant="cta" />
         </AnimatedSection>

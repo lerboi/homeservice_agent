@@ -107,7 +107,7 @@ export default function OnboardingStep3Contact() {
         setLoading(false);
         return;
       }
-      router.push('/onboarding/test-call');
+      router.push('/onboarding/checkout');
     } catch {
       setError('Something went wrong. Please try again.');
       setLoading(false);

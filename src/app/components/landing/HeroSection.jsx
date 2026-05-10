@@ -138,7 +138,7 @@ export function HeroSection() {
             </span>
             <span className="w-[3px] h-[3px] rounded-full bg-white/25" />
             <span className="inline-flex items-center gap-1.5">
-              <Check className="w-3 h-3" /> No credit card
+              <Check className="w-3 h-3" /> Cancel anytime
             </span>
             <span className="w-[3px] h-[3px] rounded-full bg-white/25" />
             <span className="inline-flex items-center gap-1.5">

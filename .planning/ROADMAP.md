@@ -418,12 +418,12 @@ Plans:
 **Goal:** Close the slot-hallucination-after-Gemini-server-cancellation cascade with stall-detection + tool-result replay via update_chat_ctx. CONTEXT.md decisions D-01..D-12 LOCKED. Recovery is best-effort, fires BEFORE input unmute, observable via two new diag counters; D-12 live SIP UAT is the ship gate.
 **Requirements**: none mapped (CONTEXT.md decisions D-01..D-12 are the unit of work)
 **Depends on:** Phase 61
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
-- [ ] 61.3-01-PLAN.md — Data-capture plumbing: deps["_last_tool_state"] in 6 data-fetch tools + listener side-effect for call_id/name (livekit-agent, Wave 1)
-- [ ] 61.3-02-PLAN.md — Test scaffolding: tests/test_cascade_recovery_invariants.py with 6 substring-grep invariants (livekit-agent, Wave 1)
-- [ ] 61.3-03-PLAN.md — Recovery mechanism: _attempt_tool_result_replay async helper invoked from _unmute_logic TimeoutError branch (livekit-agent, Wave 2)
+- [x] 61.3-01-PLAN.md — Data-capture plumbing: deps["_last_tool_state"] in 6 data-fetch tools + listener side-effect for call_id/name (livekit-agent, Wave 1)
+- [x] 61.3-02-PLAN.md — Test scaffolding: tests/test_cascade_recovery_invariants.py with 6 substring-grep invariants (livekit-agent, Wave 1)
+- [x] 61.3-03-PLAN.md — Recovery mechanism: _attempt_tool_result_replay async helper invoked from _unmute_logic TimeoutError branch (livekit-agent, Wave 2)
 - [ ] 61.3-04-PLAN.md — SKILL.md Phase 61.3 closeout subsection + D-12 live SIP UAT checkpoint (homeservice_agent, Wave 3)
 
 ### Phase 61.2: Phase 61 production regressions round 2 — slot hallucination and zero tool invocations (INSERTED)

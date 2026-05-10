@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Briefcase, Wrench, UserCircle, PhoneCall, CreditCard, Check } from 'lucide-react';
+import { Briefcase, Wrench, UserCircle, CreditCard, Check } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import { OnboardingProvider, useOnboarding } from './OnboardingContext';
@@ -13,14 +13,13 @@ function getStep(pathname) {
   if (pathname === '/onboarding') return 1;
   if (pathname === '/onboarding/services') return 2;
   if (pathname === '/onboarding/contact') return 3;
-  if (pathname === '/onboarding/test-call') return 4;
-  if (pathname === '/onboarding/checkout') return 5;
+  if (pathname === '/onboarding/checkout') return 4;
   return 1;
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
-const STEP_ICONS = [Briefcase, Wrench, UserCircle, PhoneCall, CreditCard];
+const STEP_ICONS = [Briefcase, Wrench, UserCircle, CreditCard];
 
 function StepIndicator({ currentStep, completed }) {
   return (

@@ -209,7 +209,7 @@ export default function AboutPage() {
                 Your next emergency call is tonight.
               </h2>
               <p className="text-lg text-[#A1A1AA] mt-4 leading-relaxed">
-                Five-minute setup. No tech skills. No credit card.
+                Five-minute setup. No tech skills. Cancel anytime.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-4">

@@ -55,7 +55,7 @@ export default function TermsOfServicePage() {
 
           <SectionHeading>3. Free Trial</SectionHeading>
           <p>
-            New accounts receive a 14-day free trial with access to the full Service. No credit card is required to start the trial. At the end of the trial period, you must subscribe to a paid plan to continue using the Service. Unused trial days are not carried over or refunded.
+            New accounts receive a 14-day free trial with access to the full Service. A valid payment method is required to start the trial. You will not be charged during the 14-day trial period. At the end of the trial, you will be automatically billed for your selected plan unless you cancel before the trial ends. Unused trial days are not carried over or refunded.
           </p>
           <p>
             We reserve the right to limit, modify, or discontinue the free trial offering at any time.

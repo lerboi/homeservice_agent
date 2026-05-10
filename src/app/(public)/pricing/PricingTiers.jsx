@@ -55,6 +55,14 @@ export default function PricingTiers() {
             ? getAnnualPrice(tier.monthlyPrice)
             : tier.monthlyPrice;
 
+          // Annual disclosure: yearly total + savings, derived from the same
+          // rounded per-month value so it matches the Stripe annual price IDs.
+          const annualMonthly = tier.monthlyPrice !== null ? getAnnualPrice(tier.monthlyPrice) : null;
+          const yearlyTotal = annualMonthly !== null ? annualMonthly * 12 : null;
+          const yearlySavings = (tier.monthlyPrice !== null && annualMonthly !== null)
+            ? (tier.monthlyPrice - annualMonthly) * 12
+            : null;
+
           const isHighlighted = tier.highlighted;
 
           return (
@@ -93,6 +101,14 @@ export default function PricingTiers() {
                     <span className="text-xs text-white/30 line-through">
                       ${tier.monthlyPrice}/mo
                     </span>
+                  )}
+
+                  {/* Annual billing disclosure — surfaces the yearly amount Stripe charges */}
+                  {billing === 'annual' && yearlyTotal !== null && (
+                    <p className="text-[11px] text-white/40 mt-1 leading-tight">
+                      Billed yearly as ${yearlyTotal.toLocaleString()}
+                      {yearlySavings ? ` · save $${yearlySavings.toLocaleString()}/yr` : ''}
+                    </p>
                   )}
 
                   {/* Call limit + overage */}

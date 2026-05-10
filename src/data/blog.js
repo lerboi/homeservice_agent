@@ -107,7 +107,7 @@ The break-even point is a single converted call per month. After that, every rec
 
 ## Getting Started
 
-Voco offers a 14-day free trial with no credit card required. You can start answering every call tonight.
+Voco offers a 14-day free trial — cancel anytime before the trial ends and you won't be charged. You can start answering every call tonight.
 
 The plumbers who adopt AI answering first in their market get a compounding advantage: more reviews from satisfied customers who actually got through, higher Google ranking from review velocity, and more repeat customers who remember the instant professional response.
 

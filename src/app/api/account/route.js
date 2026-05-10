@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data: tenant, error } = await supabase
     .from('tenants')
-    .select('id, business_name, owner_name, owner_email, owner_phone, trade_type, country, created_at')
+    .select('id, business_name, owner_name, owner_email, owner_phone, phone_number, trade_type, country, created_at')
     .eq('owner_id', user.id)
     .single();
 
@@ -25,6 +25,7 @@ export async function GET() {
     owner_name: tenant.owner_name,
     owner_email: tenant.owner_email,
     owner_phone: tenant.owner_phone,
+    phone_number: tenant.phone_number,
     trade_type: tenant.trade_type,
     country: tenant.country,
     created_at: tenant.created_at,

@@ -76,7 +76,7 @@ export default async function PersonaDetailPage({ params }) {
               </Link>
             </div>
             <p className="text-xs text-[#64748B] mt-3">
-              14-day free trial — no credit card required
+              14-day free trial — cancel anytime
             </p>
           </div>
         </section>

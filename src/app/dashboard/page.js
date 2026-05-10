@@ -32,6 +32,7 @@ import { supabase } from '@/lib/supabase-browser';
 import DailyOpsHub from '@/components/dashboard/DailyOpsHub';
 import HelpDiscoverabilityCard from '@/components/dashboard/HelpDiscoverabilityCard';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
+import AiNumberBanner from '@/components/dashboard/AiNumberBanner';
 import { card } from '@/lib/design-tokens';
 
 function getGreeting() {
@@ -100,6 +101,9 @@ export default function DashboardHomePage() {
           {showTour ? 'Take the tour' : 'Tour'}
         </button>
       </div>
+
+      {/* AI receptionist number — surfaces the provisioned Twilio number with a link to Account */}
+      <AiNumberBanner />
 
       {/* Daily ops bento */}
       <DailyOpsHub />

@@ -47,7 +47,7 @@ const SELLING_POINTS_SIGNUP = [
   { icon: Phone, text: 'Every call answered 24/7' },
   { icon: Calendar, text: 'Auto-books appointments' },
   { icon: Zap, text: 'Setup in under 5 minutes' },
-  { icon: Shield, text: 'No credit card required' },
+  { icon: Shield, text: 'Cancel anytime' },
 ];
 
 const SELLING_POINTS_SIGNIN = [
