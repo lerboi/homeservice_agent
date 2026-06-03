@@ -112,8 +112,10 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 | `src/lib/phone.py` | `_normalize_phone()` module-level helper |
 | `src/lib/telemetry.py` | Phase 58: `emit_integration_fetch` + `emit_integration_fetch_fanout` helpers (see `integrations-jobber-xero` skill) |
 | `src/tools/__init__.py` | Tool registry — conditional registration based on onboarding |
-| `src/tools/book_appointment.py` | Atomic slot booking + calendar sync + SMS |
-| `src/tools/check_availability.py` | Real-time slot query + past-date validation |
+| `src/tools/book_appointment.py` | Atomic slot booking (slot_token-resolved) + address validation + calendar sync + SMS. Phase prod-readiness 2026-06: now also calls `mute_input_during_tool(deps)` after arg-parse and sets `deps["_last_tool_state"]` on all main return paths (cascade-recovery replay parity). |
+| `src/tools/check_slot.py` | Verify a specific (date, time) is bookable; registers a `slot_token`. (Replaces the date+time branch of the former monolithic `check_availability`.) |
+| `src/tools/check_day.py` | List open slots for a whole day; registers `slot_token`s. (Former day-listing branch of `check_availability`.) |
+| `src/tools/next_available_days.py` | Find the next N days with any availability; registers `slot_token`s. (Former next-available branch of `check_availability`.) |
 | `src/tools/capture_lead.py` | Mid-call lead capture on decline |
 | `src/tools/check_caller_history.py` | Silent context repeat-caller lookup |
 | `src/tools/check_customer_account.py` | Re-serve pre-session Xero/Jobber context |
@@ -169,18 +171,33 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
    it happens before `session.start()`.
 9. `build_system_prompt(locale, ..., customer_context=..., working_hours=...,
    tenant_timezone=...)`.
-10. `create_tools(deps)` — returns all 6 in-process tools with a shared
-    `deps` dict (mutable — filled in as the call progresses).
-11. `RealtimeModel` + `VocoAgent` + `AgentSession(llm=model)` — register
-    event handlers BEFORE `session.start()` to avoid race conditions.
+10. `create_tools(deps)` — returns the in-process tools with a shared
+    `deps` dict (mutable — filled in as the call progresses). `deps`
+    now also carries `"country"` (tenant ISO country code) — read by
+    `book_appointment.py`/`capture_lead.py` as the address-validation
+    `region_code` (prod-readiness 2026-06 fix; previously absent, so
+    non-US tenants always validated against region "US").
+11. `RealtimeModel` + `VocoAgent` + `AgentSession(llm=model, tts=GeminiTTS)`
+    — register event handlers BEFORE `session.start()`. The RealtimeModel
+    is now constructed with `session_resumption=SessionResumptionConfig(handle=None)`
+    (prod-readiness 2026-06) so the ~10-min Gemini server connection reset
+    reconnects against a resumption handle the SDK maintains, instead of
+    cold-starting. (See §"Greeting" + §"session_resumption" below.)
 12. `_run_db_queries` background tasks: subscription check + intake
     questions + calls row insert, as `asyncio.create_task()`.
 13. `await session.start(agent=agent, room=ctx.room, room_options=...)` —
     runs in parallel with DB queries.
-14. Greeting: `session.generate_reply(instructions="Greet the caller now.")`.
+14. Greeting: spoken via a **separate Gemini TTS `session.say()` path**, NOT
+    a Gemini agent-first reply. Gemini 3.1 Flash Live does not support
+    agent-first turns via `generate_reply`/`say-via-realtime`/`update_chat_ctx`
+    (all capability-gated closed for "3.1"; see §Phase 63.1). A separate
+    GeminiTTS pipeline is attached to the session, and `session.say(...)`
+    routes through `_tts_task`. The Gemini TTS voice set matches the Live
+    voice set 1:1, so the greeting voice is identical to the conversation.
 15. DB queries complete:
     - Subscription blocked → disconnect.
-    - Intake questions → injected via `session.generate_reply(instructions=...)`.
+    - Intake questions → injected into the system prompt pre-session
+      (no longer via `generate_reply`).
     - Call record → `deps["call_uuid"]` updated.
 16. Egress recording starts after DB task completes.
 17. Session close → `_on_close_async` stops egress + runs
@@ -196,16 +213,45 @@ Before `cli.run_app()` in `__main__`, `src/agent.py` calls
 
 ### Critical pin set — livekit-agents + sibling plugins
 
-Both the framework and the three plugins are pinned to `1.5.1`:
+**Current pins (prod-readiness 2026-06):** the framework and the three
+plugins are pinned to `1.5.7`, model `gemini-3.1-flash-live-preview`:
 
 ```
-livekit-agents==1.5.1
-livekit-plugins-google (git 43d3734)   — ONLY commit supporting generate_reply on gemini-3.1-flash-live-preview
-livekit-plugins-silero==1.5.1
-livekit-plugins-turn-detector==1.5.1
+livekit-agents==1.5.7
+livekit-plugins-google==1.5.7
+livekit-plugins-silero==1.5.7
+livekit-plugins-turn-detector==1.5.7
 ```
 
-**Do not bump.** The google plugin at `43d3734` constructs
+> **Gemini 3.1 Flash Live is still PREVIEW** (`gemini-3.1-flash-live-preview`).
+> On the 1.5.7 google plugin, `generate_reply`, `update_chat_ctx`, and
+> `update_instructions` are **documented-incompatible** with the 3.1 model:
+> the plugin capability-gates them closed (`mutable = "3.1" not in model`),
+> and the underlying cause is the Gemini Live server's **`send_client_content`
+> 1007 restriction** for 3.1 — that restriction is the root cause of the
+> workarounds (separate GeminiTTS `session.say()` greeting; cascade-recovery
+> replay that re-emits a `FunctionCallOutput` rather than calling
+> `generate_reply`). Do not reintroduce those agent-first/mutate APIs for 3.1.
+>
+> **`session_resumption` (prod-readiness 2026-06, config-only):** the
+> RealtimeModel is constructed with
+> `session_resumption=genai_types.SessionResumptionConfig(handle=None)`.
+> `google.genai.types.SessionResumptionConfig` exposes `handle:Optional[str]`
+> and `transparent:Optional[bool]`. The 1.5.7 google plugin stores the
+> `new_handle` from each `session_resumption_update` and re-sends it on every
+> reconnect via `_build_connect_config`, which forwards **only `.handle`**
+> (it hardcodes `SessionResumptionConfig(handle=self._session_resumption_handle)`
+> and ignores `.transparent`) — so `transparent=True` would be dropped after
+> the first connect; `handle=None` is what the plugin actually threads. This
+> hardens the ~10-min Gemini server connection reset. **`context_window_compression`
+> was deliberately NOT enabled** (interaction risk with the replay path).
+
+**Earlier pin history (HISTORICAL — superseded by 1.5.7 above):** the framework
+and plugins were previously pinned to `1.5.1`, with the google plugin at git
+`43d3734` (the only commit then supporting `generate_reply` on
+`gemini-3.1-flash-live-preview`).
+
+**Do not bump carelessly.** The google plugin at `43d3734` constructed
 `llm.RealtimeCapabilities` with 6 fields; PR #5211 (livekit-agents 1.5.2
 on Apr 8 2026) added a 7th required field `per_response_tool_choice`.
 Any mismatch → `TypeError` at `RealtimeModel.__init__` on every inbound
@@ -409,7 +455,21 @@ with `deps` captured via closure.
 
 **Always available:** `transfer_call`, `capture_lead`,
 `check_caller_history`, `check_customer_account`, `end_call`.
-**Onboarding-complete gated:** `check_availability`, `book_appointment`.
+**Onboarding-complete gated:** `check_slot`, `check_day`,
+`next_available_days`, `book_appointment`.
+
+> **Note (prod-readiness 2026-06):** the former monolithic
+> `check_availability` tool has been **split into three** availability
+> tools — `check_slot` (specific date+time), `check_day` (open slots for a
+> day), `next_available_days` (next N days with any availability). Each
+> registers a `slot_token` in a per-call registry (`deps["_slot_tokens"]`,
+> via `register_slot_token`) and returns it in its STATE line. Booking no
+> longer passes raw ISO `slot_start`/`slot_end`; instead Gemini passes the
+> opaque `slot_token` to `book_appointment`, which resolves it to the
+> authoritative UTC start/end on `deps`. This eliminated the Gemini-drift
+> timezone bug where the model reconstructed naive ISO strings from the
+> caller's wall-clock speech (8h-off bookings). Sections referring to
+> `check_availability` below are retained as historical context.
 
 ### check_caller_history — Silent Context
 
@@ -420,7 +480,33 @@ Phase 60 STATE codes:
 - `STATE:first_time_caller` — proceed with normal intake.
 - `STATE:history_lookup_failed` (3 error paths) — proceed silently.
 
-### check_availability — Slot Query
+### check_slot / check_day / next_available_days — Slot Query (split from check_availability)
+
+**Current state (prod-readiness 2026-06):** the single `check_availability`
+tool was split into three:
+- **`check_slot`** (`src/tools/check_slot.py`) — verify one (date, time).
+  raw_schema enforces `required:[date,time]` + HH:MM / YYYY-MM-DD patterns.
+  On hit, registers a `slot_token` and returns `STATE:slot_ok token=… speech=…`;
+  also stashes `deps["_last_offered_token"]` as defense-in-depth for booking.
+  On miss, returns `STATE:slot_taken … | ALTS: …token=…` with up to 3 nearby
+  alternatives (each carrying its own token).
+- **`check_day`** (`src/tools/check_day.py`) — list open slots for one date.
+- **`next_available_days`** (`src/tools/next_available_days.py`) — next N
+  days with availability.
+- All three import shared helpers from `src/tools/_availability_lib.py`
+  (`calc_slots_for_dates`, `register_slot_token`, `mute_input_during_tool`,
+  `parse_hhmm_to_utc`, `tenant_today`, …), call `mute_input_during_tool(deps)`
+  right after arg-parse, and set `deps["_last_tool_state"]` on every return
+  path for cascade-recovery replay.
+
+`slot_token` registry: `register_slot_token(deps, start, end)` stores
+`{slot_start_utc, slot_end_utc, created_at}` under an opaque key in
+`deps["_slot_tokens"]` (10-min TTL). `book_appointment` resolves the token
+to authoritative UTC times — this is what replaced raw ISO slot passing.
+
+---
+
+### check_availability — Slot Query (HISTORICAL — replaced by the split above)
 
 Parameters: `date` (YYYY-MM-DD), `time` (HH:MM 24h), `urgency`.
 
@@ -442,15 +528,35 @@ Parameters: `date` (YYYY-MM-DD), `time` (HH:MM 24h), `urgency`.
 
 ### book_appointment — Atomic Booking
 
-Parameters: `slot_start`, `slot_end`, `street_name`, `postal_code`,
-`caller_name`, `unit_number?`, `urgency` (default "routine").
+Parameters (current, prod-readiness 2026-06): `slot_token`, `street_name`,
+`postal_code`, `caller_name`, `unit_number?`, `urgency` (default "routine").
+The raw_schema **no longer exposes `slot_start`/`slot_end`** — those are
+resolved server-side from `slot_token` against `deps["_slot_tokens"]`. (The
+handler keeps empty `slot_start`/`slot_end` locals only so the legacy
+`_ensure_utc_iso` fallback branch stays syntactically intact; that branch is
+dead when a valid token resolves.)
 
+- **Input-mute (prod-readiness 2026-06):** calls `mute_input_during_tool(deps)`
+  immediately after arg-parse — book_appointment was previously the only
+  blocking tool that did NOT, and it is the longest-blocking (address-
+  validation HTTP + atomic RPC + long readback) and most exposed to the
+  Gemini-server VAD cancellation cascade. No-ops when `deps["session"]`
+  is absent (unit tests unaffected).
+- **`_last_tool_state` (prod-readiness 2026-06):** set on all main return
+  paths (BOOKED verdict returns + `booking_invalid`/`booking_failed`/
+  `slot_taken`/idempotent-duplicate). Consumed by
+  `_attempt_tool_result_replay` in `_availability_lib.py` so a post-booking
+  server cancellation can replay the verdict.
+- **slot_token resolution:** if Gemini supplies an unknown/empty token,
+  falls back to `deps["_last_offered_token"]` (single-slot path only; the
+  alternatives branch clears it). Token entry older than 600s → treated as
+  expired.
 - Urgency normalization (backlog 999.1 fix): `_normalize_urgency()` maps
   freeform `"high"` → `"urgent"`, `"low"/"normal"` → `"routine"`,
   `"critical"/"asap"` → `"emergency"`. Unknown → `"routine"`.
 - **Idempotency cache**: checks `deps["_last_booked_slot_key"]` against
-  `f"{slot_start}|{slot_end}"`. Cache hit → return cached response,
-  no re-run.
+  `f"{slot_start}|{slot_end}"` (resolved from the token). Cache hit →
+  return cached response, no re-run.
 - Calls `atomic_book_slot()` via Supabase RPC.
 - On success:
   - `booking_outcome='booked'` written IMMEDIATELY (before side effects).
@@ -1257,6 +1363,13 @@ the prior header's 10+ "Previous:" paragraphs).
   window). On `confirmed` / `confirmed_with_changes`, `service_address`
   is overwritten with Google's `formatted_address` (D-D3'). Booking
   never blocks on Google — every verdict path proceeds to the RPC.
+  **`region_code` source (prod-readiness 2026-06 fix):** both
+  `book_appointment.py` and `capture_lead.py` read
+  `region_code = (deps.get("country") or "US").upper()`. `deps["country"]`
+  is now populated in `agent.py` from `tenant.get("country", "US")`.
+  Previously the `deps` literal omitted `"country"`, so EVERY non-US
+  tenant validated against region "US" — a silent correctness bug fixed
+  by adding the one `"country": country` key to the deps dict.
 - **Pre-check in `capture_lead.py`:** symmetric validation pre-check
   (D-B4); same overwrite logic applied to inquiries via
   `record_outcome` 14-arg RPC overload.
