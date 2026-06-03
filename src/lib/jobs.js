@@ -29,7 +29,7 @@ export async function listJobs({ tenantId, status, urgency, customerId } = {}) {
     .from('jobs')
     .select(`
       id, status, urgency, revenue_amount, is_vip, created_at, updated_at,
-      customer:customers!inner(id, name, phone_e164, default_address),
+      customer:customers!inner(id, name, phone_e164, email, default_address),
       appointment:appointments!inner(id, start_time, end_time, service_address, status),
       calls:job_calls(call:calls(id, recording_url, duration_seconds, urgency_classification))
     `)
@@ -61,7 +61,7 @@ export async function getJob({ tenantId, jobId }) {
     .from('jobs')
     .select(`
       id, status, urgency, revenue_amount, is_vip, created_at, updated_at,
-      customer:customers!inner(id, name, phone_e164, default_address),
+      customer:customers!inner(id, name, phone_e164, email, default_address),
       appointment:appointments!inner(id, start_time, end_time, service_address, status),
       calls:job_calls(call:calls(id, recording_url, duration_seconds, urgency_classification))
     `)
