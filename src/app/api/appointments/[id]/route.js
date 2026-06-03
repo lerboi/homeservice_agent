@@ -34,8 +34,8 @@ export async function GET(request, { params }) {
       console.log('404: Not found');
       return Response.json({ error: 'Appointment not found' }, { status: 404 });
     }
-    console.log('500:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[api/appointments/[id]] GET error:', error.message);
+    return Response.json({ error: 'internal_error' }, { status: 500 });
   }
 
   return Response.json({ appointment });
@@ -67,8 +67,8 @@ export async function PATCH(request, { params }) {
       .single();
 
     if (eventError) {
-      console.log('500:', eventError.message);
-      return Response.json({ error: eventError.message }, { status: 500 });
+      console.error('[api/appointments/[id]] PATCH conflict-dismiss error:', eventError.message);
+      return Response.json({ error: 'internal_error' }, { status: 500 });
     }
 
     return Response.json({ calendar_event: updatedEvent });
@@ -89,8 +89,8 @@ export async function PATCH(request, { params }) {
         console.log('404: Not found');
         return Response.json({ error: 'Appointment not found' }, { status: 404 });
       }
-      console.log('500:', fetchError.message);
-      return Response.json({ error: fetchError.message }, { status: 500 });
+      console.error('[api/appointments/[id]] PATCH fetch error:', fetchError.message);
+      return Response.json({ error: 'internal_error' }, { status: 500 });
     }
 
     // Update status to cancelled
@@ -103,8 +103,8 @@ export async function PATCH(request, { params }) {
       .single();
 
     if (updateError) {
-      console.log('500:', updateError.message);
-      return Response.json({ error: updateError.message }, { status: 500 });
+      console.error('[api/appointments/[id]] PATCH cancel error:', updateError.message);
+      return Response.json({ error: 'internal_error' }, { status: 500 });
     }
 
     // Async: remove from external calendar if event exists
@@ -185,7 +185,10 @@ export async function PATCH(request, { params }) {
       .select('id, status, completed_at, notes, start_time, end_time, caller_name')
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/appointments/[id]] PATCH complete error:', error.message);
+      return Response.json({ error: 'internal_error' }, { status: 500 });
+    }
     return Response.json({ appointment: updated });
   }
 
@@ -199,7 +202,10 @@ export async function PATCH(request, { params }) {
       .select('id, status, completed_at, notes, start_time, end_time, caller_name')
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[api/appointments/[id]] PATCH undo-complete error:', error.message);
+      return Response.json({ error: 'internal_error' }, { status: 500 });
+    }
     return Response.json({ appointment: updated });
   }
 

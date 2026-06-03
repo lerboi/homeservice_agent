@@ -24,8 +24,10 @@ import { refreshTokenIfNeeded } from './adapter.js';
 
 const JOBBER_AUTH_URL = 'https://api.getjobber.com/api/oauth/authorize';
 const JOBBER_TOKEN_URL = 'https://api.getjobber.com/api/oauth/token';
-const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
-const JOBBER_API_VERSION = '2025-04-16';
+// Single source of truth for Jobber GraphQL URL + version. Consumed by the
+// webhook handler and the OAuth callback so all three stay in lockstep.
+export const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
+export const JOBBER_API_VERSION = '2025-04-16';
 const OUTSTANDING_STATUSES = new Set(['AWAITING_PAYMENT', 'BAD_DEBT', 'PARTIAL', 'PAST_DUE']);
 const DEFAULT_PHONE_REGION = 'US';
 

@@ -166,7 +166,7 @@ describe('refreshTokenIfNeeded (provider=jobber) — error_state write/clear (D-
           select: () => ({
             eq: () => ({
               maybeSingle: async () => ({
-                data: { email: 'owner@example.com' },
+                data: { owner_email: 'owner@example.com' },
                 error: null,
               }),
             }),

@@ -69,6 +69,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'self_merge_forbidden' }, { status: 400 });
     }
     console.error('[api/customers/[id]/merge] POST error:', msg);
-    return NextResponse.json({ error: 'merge_failed', detail: msg }, { status: 500 });
+    return NextResponse.json({ error: 'merge_failed' }, { status: 500 });
   }
 }

@@ -13,15 +13,16 @@
 
 import OpenAI from 'openai';
 import { getPublicKnowledge } from '@/lib/public-chatbot-knowledge/index.js';
+import { checkRateLimit } from '@/lib/rate-limit.js';
 
-// ─── Rate limiting (in-memory, per-instance) ────────────────────────────────
-const rateLimitMap = new Map();
-const RATE_LIMIT_MS = 5000; // 5 seconds per IP
-const RATE_LIMIT_CLEANUP_MS = 30000;
-
-let globalDailyCount = 0;
-let globalDailyDate = new Date().toISOString().slice(0, 10);
+// ─── Rate limiting (durable, Supabase-backed — migration 065) ───────────────
+// Preserves the previous effective limits:
+//   - per-IP: 1 request per 5-second window
+//   - global daily cap: 1000 requests per day (now shared across all instances)
+const IP_LIMIT = 1;
+const IP_WINDOW_SECONDS = 5;
 const GLOBAL_DAILY_CAP = 1000;
+const DAY_SECONDS = 86400;
 
 function getClientIp(request) {
   return (
@@ -29,35 +30,6 @@ function getClientIp(request) {
     request.headers.get('x-real-ip') ||
     'unknown'
   );
-}
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (today !== globalDailyDate) {
-    globalDailyCount = 0;
-    globalDailyDate = today;
-  }
-
-  if (globalDailyCount >= GLOBAL_DAILY_CAP) {
-    return false;
-  }
-
-  for (const [key, timestamp] of rateLimitMap.entries()) {
-    if (now - timestamp > RATE_LIMIT_CLEANUP_MS) {
-      rateLimitMap.delete(key);
-    }
-  }
-
-  const lastRequest = rateLimitMap.get(ip);
-  if (lastRequest && now - lastRequest < RATE_LIMIT_MS) {
-    return false;
-  }
-
-  rateLimitMap.set(ip, now);
-  globalDailyCount++;
-  return true;
 }
 
 // ─── Groq client (lazy singleton) ───────────────────────────────────────────
@@ -81,9 +53,30 @@ export async function POST(request) {
     );
   }
 
-  // 2. Rate limit by IP
+  // 2. Rate limit: global daily cap, then per-IP cooldown (durable, migration 065)
   const ip = getClientIp(request);
-  if (!checkRateLimit(ip)) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const globalCheck = await checkRateLimit({
+    bucket: 'public-chat-global',
+    key: today,
+    limit: GLOBAL_DAILY_CAP,
+    windowSeconds: DAY_SECONDS,
+  });
+  if (!globalCheck.allowed) {
+    return Response.json(
+      { error: 'Please wait a moment before sending another message.' },
+      { status: 429 }
+    );
+  }
+
+  const ipCheck = await checkRateLimit({
+    bucket: 'public-chat-ip',
+    key: ip,
+    limit: IP_LIMIT,
+    windowSeconds: IP_WINDOW_SECONDS,
+  });
+  if (!ipCheck.allowed) {
     return Response.json(
       { error: 'Please wait a moment before sending another message.' },
       { status: 429 }

@@ -132,11 +132,10 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
         try {
           const { data: tenant } = await supabase
             .from('tenants')
-            .select('email, personal_email, business_email')
+            .select('owner_email')
             .eq('id', credentials.tenant_id)
             .maybeSingle();
-          ownerEmail =
-            tenant?.business_email ?? tenant?.email ?? tenant?.personal_email ?? null;
+          ownerEmail = tenant?.owner_email ?? null;
         } catch {
           // Best-effort — fall through with null email.
         }

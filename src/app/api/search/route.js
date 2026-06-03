@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { escapeOrTerm } from '@/lib/search-filter';
 
 /**
  * GET /api/search?q=<query>
@@ -18,7 +19,7 @@ export async function GET(request) {
     return Response.json({ results: [] });
   }
 
-  const pattern = `%${q}%`;
+  const pattern = `%${escapeOrTerm(q)}%`;
 
   const [leadsRes, callsRes, invoicesRes, appointmentsRes, estimatesRes] = await Promise.all([
     supabase

@@ -17,12 +17,9 @@ import { supabase } from '@/lib/supabase';
 import { verifyOAuthState } from '@/app/api/google-calendar/auth/route';
 import { getIntegrationAdapter } from '@/lib/integrations/adapter';
 import { PROVIDERS } from '@/lib/integrations/types';
+import { JOBBER_GRAPHQL_URL, JOBBER_API_VERSION } from '@/lib/integrations/jobber';
 
 const PAGE_URL = '/dashboard/more/integrations';
-
-// Jobber GraphQL constants — keep in sync with src/lib/integrations/jobber.js
-const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
-const JOBBER_API_VERSION = '2025-04-16';
 
 /**
  * Post-token-exchange probe for Jobber — resolves the `accountId` the

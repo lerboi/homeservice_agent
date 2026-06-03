@@ -40,7 +40,7 @@ import { GraphQLClient, gql } from 'graphql-request';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { refreshTokenIfNeeded } from '@/lib/integrations/adapter';
 import { applyJobberVisit } from '@/lib/scheduling/jobber-schedule-mirror';
-import { fetchJobberVisitById } from '@/lib/integrations/jobber';
+import { fetchJobberVisitById, JOBBER_GRAPHQL_URL, JOBBER_API_VERSION } from '@/lib/integrations/jobber';
 
 // Phase 57 — Jobber schedule mirror topics (JOBSCHED-01).
 // Topic names per Jobber WebHookTopicEnum (verify in GraphiQL before locking
@@ -55,8 +55,9 @@ const JOBBER_VISIT_TOPICS = new Set([
   'ASSIGNMENT_DESTROY',
 ]);
 
-const JOBBER_GRAPHQL_URL = 'https://api.getjobber.com/api/graphql';
-const JOBBER_API_VERSION = '2024-04-01'; // keep in sync with src/lib/integrations/jobber.js
+// JOBBER_GRAPHQL_URL + JOBBER_API_VERSION imported from src/lib/integrations/jobber.js
+// (single source of truth). Webhook queries select only phones/nested client —
+// stable across versions.
 const DEFAULT_PHONE_REGION = 'US';
 
 const RESOLVE_CLIENT_BY_ID = gql`

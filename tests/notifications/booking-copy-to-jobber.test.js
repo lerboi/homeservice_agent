@@ -110,7 +110,7 @@ describe('notifyBookingCopyToJobber', () => {
   test('2. Jobber cred + appointment with jobber_visit_id=null → email sent with locked subject', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: APPT_OK });
-    mockTenantMaybeSingle.mockResolvedValue({ data: { email: 'owner@biz.com' } });
+    mockTenantMaybeSingle.mockResolvedValue({ data: { owner_email: 'owner@biz.com' } });
     const r = await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
     expect(r.sent).toBe(true);
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -120,27 +120,27 @@ describe('notifyBookingCopyToJobber', () => {
   test('3. Jobber cred + appointment.jobber_visit_id set → no email sent (already pushed)', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: { ...APPT_OK, jobber_visit_id: 'jv-9' } });
-    mockTenantMaybeSingle.mockResolvedValue({ data: { email: 'owner@biz.com' } });
+    mockTenantMaybeSingle.mockResolvedValue({ data: { owner_email: 'owner@biz.com' } });
     const r = await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
     expect(r.sent).toBe(false);
     expect(r.reason).toBe('already_pushed');
     expect(mockSend).not.toHaveBeenCalled();
   });
 
-  test('4. recipient = tenant business_email > email > personal_email fallback', async () => {
+  test('4. recipient = tenant owner_email (only email column on tenants)', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: APPT_OK });
     mockTenantMaybeSingle.mockResolvedValue({
-      data: { email: 'fallback@x', business_email: 'biz@x', personal_email: 'me@x' },
+      data: { owner_email: 'owner@x' },
     });
     await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
-    expect(mockSend.mock.calls[0][0].to).toBe('biz@x');
+    expect(mockSend.mock.calls[0][0].to).toBe('owner@x');
   });
 
   test('5. from header uses Voco brand and noreply@voco.live', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: APPT_OK });
-    mockTenantMaybeSingle.mockResolvedValue({ data: { email: 'owner@biz.com' } });
+    mockTenantMaybeSingle.mockResolvedValue({ data: { owner_email: 'owner@biz.com' } });
     await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
     expect(mockSend.mock.calls[0][0].from).toMatch(/Voco <noreply@voco\.live>/);
   });
@@ -148,7 +148,7 @@ describe('notifyBookingCopyToJobber', () => {
   test('6. paste block passed to email contains all 6 labelled lines', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: APPT_OK });
-    mockTenantMaybeSingle.mockResolvedValue({ data: { email: 'owner@biz.com' } });
+    mockTenantMaybeSingle.mockResolvedValue({ data: { owner_email: 'owner@biz.com' } });
     await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
     const props = mockBookingCopyEmail.mock.calls[0][0];
     expect(props.pasteBlock).toMatch(/Client: Jane Doe/);
@@ -172,7 +172,7 @@ describe('notifyBookingCopyToJobber', () => {
   test('8. send error → returns reason send_failed (does not throw)', async () => {
     mockCredMaybeSingle.mockResolvedValue({ data: { id: 'cred-1' } });
     mockApptMaybeSingle.mockResolvedValue({ data: APPT_OK });
-    mockTenantMaybeSingle.mockResolvedValue({ data: { email: 'owner@biz.com' } });
+    mockTenantMaybeSingle.mockResolvedValue({ data: { owner_email: 'owner@biz.com' } });
     mockSend.mockRejectedValueOnce(new Error('resend down'));
     const r = await notifyBookingCopyToJobber({ tenantId: 't1', appointmentId: 'appt-1' });
     expect(r.sent).toBe(false);

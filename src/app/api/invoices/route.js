@@ -3,6 +3,7 @@ import { getTenantId } from '@/lib/get-tenant-id';
 import { getTenantFeatures } from '@/lib/features';
 import { formatInvoiceNumber } from '@/lib/invoice-number';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
+import { escapeOrTerm } from '@/lib/search-filter';
 
 const VALID_STATUSES = ['draft', 'sent', 'paid', 'partially_paid', 'overdue', 'void'];
 
@@ -63,7 +64,8 @@ export async function GET(request) {
   }
 
   if (search) {
-    query = query.or(`customer_name.ilike.%${search}%,invoice_number.ilike.%${search}%`);
+    const s = escapeOrTerm(search);
+    query = query.or(`customer_name.ilike.%${s}%,invoice_number.ilike.%${s}%`);
   }
 
   if (jobId) {

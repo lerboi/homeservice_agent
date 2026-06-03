@@ -121,7 +121,7 @@ function buildFakeSupabase(initialCred) {
         select: () => ({
           eq: () => ({
             maybeSingle: async () => ({
-              data: { email: 'owner@example.com' },
+              data: { owner_email: 'owner@example.com' },
               error: null,
             }),
           }),

@@ -62,6 +62,11 @@ jest.unstable_mockModule('@/lib/integrations/adapter', () => ({
   getIntegrationAdapter: jest.fn(async () => ({
     exchangeCode: mockExchangeCode,
   })),
+  // The callback route now imports JOBBER_GRAPHQL_URL/JOBBER_API_VERSION from
+  // '@/lib/integrations/jobber' (single source of truth), and jobber.js imports
+  // refreshTokenIfNeeded from adapter.js at module load. Provide a stub so the
+  // mocked adapter module satisfies that re-export.
+  refreshTokenIfNeeded: jest.fn(async (_admin, cred) => cred),
 }));
 
 // ─── next/cache ──────────────────────────────────────────────────────────

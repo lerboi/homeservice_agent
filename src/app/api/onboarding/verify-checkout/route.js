@@ -175,6 +175,12 @@ async function syncSubscription(subscription, tenantId) {
   const planInfo = PLAN_MAP[priceId] || { plan_id: 'starter', calls_limit: 40 };
   const overageStripeItemId = overageItem?.id || null;
 
+  // Basil (2025-03-31.basil): current_period_start/_end moved from the Subscription
+  // to the subscription ITEM. Read from the flat-rate item, falling back to the
+  // subscription for pre-Basil correctness.
+  const periodStart = flatRateItem?.current_period_start ?? subscription.current_period_start;
+  const periodEnd = flatRateItem?.current_period_end ?? subscription.current_period_end;
+
   const statusMap = {
     trialing: 'trialing',
     active: 'active',
@@ -203,11 +209,11 @@ async function syncSubscription(subscription, tenantId) {
       trial_ends_at: subscription.trial_end
         ? new Date(subscription.trial_end * 1000).toISOString()
         : null,
-      current_period_start: subscription.current_period_start
-        ? new Date(subscription.current_period_start * 1000).toISOString()
+      current_period_start: periodStart
+        ? new Date(periodStart * 1000).toISOString()
         : null,
-      current_period_end: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
+      current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       stripe_updated_at: stripeUpdatedAt,

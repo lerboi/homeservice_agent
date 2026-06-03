@@ -25,6 +25,8 @@ import { NextResponse } from 'next/server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase as svc } from '@/lib/supabase';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(request) {
   const tenantId = await getTenantId();
   if (!tenantId) {
@@ -61,6 +63,9 @@ export async function GET(request) {
     }
 
     if (focus) {
+      if (!UUID_RE.test(focus)) {
+        return NextResponse.json({ error: 'invalid_focus' }, { status: 400 });
+      }
       q = q.or(`source_customer_id.eq.${focus},target_customer_id.eq.${focus}`);
     }
 

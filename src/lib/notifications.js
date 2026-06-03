@@ -503,10 +503,10 @@ export async function notifyBookingCopyToJobber({ tenantId, appointmentId }) {
 
     const { data: tenant } = await admin
       .from('tenants')
-      .select('email, personal_email, business_email')
+      .select('owner_email')
       .eq('id', tenantId)
       .maybeSingle();
-    const ownerEmail = tenant?.business_email ?? tenant?.email ?? tenant?.personal_email;
+    const ownerEmail = tenant?.owner_email ?? null;
     if (!ownerEmail) return { sent: false, reason: 'no_owner_email' };
 
     const pasteBlock = buildJobberPasteBlock(appt);

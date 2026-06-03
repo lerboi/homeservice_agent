@@ -40,7 +40,8 @@ export async function GET(request, { params }) {
     .order('sort_order', { ascending: true });
 
   if (liError) {
-    return Response.json({ error: liError.message }, { status: 500 });
+    console.error('[api/invoices/[id]] GET line-items error:', liError.message);
+    return Response.json({ error: 'internal_error' }, { status: 500 });
   }
 
   return Response.json({ invoice, line_items: lineItems || [] });
@@ -158,7 +159,8 @@ export async function PATCH(request, { params }) {
         .eq('invoice_id', id);
 
       if (deleteError) {
-        return Response.json({ error: 'Failed to update line items: ' + deleteError.message }, { status: 500 });
+        console.error('[api/invoices/[id]] PATCH line-item delete error:', deleteError.message);
+        return Response.json({ error: 'update_failed' }, { status: 500 });
       }
 
       // Fetch settings for tax rate
@@ -194,7 +196,8 @@ export async function PATCH(request, { params }) {
           .insert(lineItemRows);
 
         if (liError) {
-          return Response.json({ error: 'Failed to insert line items: ' + liError.message }, { status: 500 });
+          console.error('[api/invoices/[id]] PATCH line-item insert error:', liError.message);
+          return Response.json({ error: 'update_failed' }, { status: 500 });
         }
       }
 
@@ -214,7 +217,8 @@ export async function PATCH(request, { params }) {
     .single();
 
   if (updateError) {
-    return Response.json({ error: updateError.message }, { status: 500 });
+    console.error('[api/invoices/[id]] PATCH apply error:', updateError.message);
+    return Response.json({ error: 'update_failed' }, { status: 500 });
   }
 
   // Fetch updated line items

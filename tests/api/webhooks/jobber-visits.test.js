@@ -63,6 +63,10 @@ jest.unstable_mockModule('next/cache', () => ({
 const mockFetchVisitById = jest.fn();
 jest.unstable_mockModule('@/lib/integrations/jobber', () => ({
   fetchJobberVisitById: (...args) => mockFetchVisitById(...args),
+  // Route now imports the GraphQL URL + version from this module (single source
+  // of truth). ESM named-import strictness requires the mock to provide them.
+  JOBBER_GRAPHQL_URL: 'https://api.getjobber.com/api/graphql',
+  JOBBER_API_VERSION: '2025-04-16',
 }));
 
 let POST;

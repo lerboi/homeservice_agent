@@ -137,17 +137,38 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  // 2. Idempotency check (D-09)
+  // 2. Idempotency check (D-09) — atomic "processed flag" pattern.
+  // The pre-handler INSERT wins the concurrency race (UNIQUE on event_id).
+  // On a duplicate (23505), inspect the existing row's `processed` flag:
+  //   - processed=true  → side effects already completed → ack and stop.
+  //   - processed=false → a prior attempt inserted the id but the handler
+  //     failed (rethrow) or is mid-flight → fall through and RE-RUN. Handlers
+  //     are idempotent (stripe_updated_at out-of-order guard + calls_used=0
+  //     reset), so replay is safe. processed flips to true only after success.
   const { error: idempotencyError } = await supabase
     .from('stripe_webhook_events')
     .insert({ event_id: event.id, event_type: event.type });
 
   if (idempotencyError?.code === '23505') {
-    // Duplicate event — already processed
-    return Response.json({ received: true });
-  }
+    // Duplicate event — check whether the original attempt actually finished.
+    const { data: existing, error: selectError } = await supabase
+      .from('stripe_webhook_events')
+      .select('processed')
+      .eq('event_id', event.id)
+      .maybeSingle();
 
-  if (idempotencyError) {
+    if (selectError) {
+      console.error('[stripe/webhook] Idempotency status read error:', selectError);
+      // Couldn't determine state — return 500 so Stripe retries.
+      return Response.json({ error: 'Idempotency check failed' }, { status: 500 });
+    }
+
+    if (existing?.processed) {
+      // Already fully processed — safe to ack.
+      return Response.json({ received: true });
+    }
+    // processed=false → fall through and re-run the (idempotent) handler.
+  } else if (idempotencyError) {
     console.error('[stripe/webhook] Idempotency insert error:', idempotencyError);
     // DB error (not duplicate) — return 500 so Stripe retries after DB recovers
     return Response.json({ error: 'Idempotency check failed' }, { status: 500 });
@@ -179,8 +200,24 @@ export async function POST(request) {
     }
   } catch (err) {
     console.error(`[stripe/webhook] Error handling ${event.type}:`, err);
-    // Return 500 so Stripe retries
+    // Return 500 so Stripe retries. The event_id row stays processed=false so
+    // the retry re-runs the handler instead of short-circuiting on the dup guard.
     return Response.json({ error: 'Handler failed' }, { status: 500 });
+  }
+
+  // 3b. Handler succeeded — mark the event processed so future retries ack
+  // immediately instead of re-running side effects.
+  const { error: processedError } = await supabase
+    .from('stripe_webhook_events')
+    .update({ processed: true })
+    .eq('event_id', event.id);
+
+  if (processedError) {
+    // Side effects DID complete; only the flag write failed. Returning 500 makes
+    // Stripe retry, which safely replays the idempotent handler and re-attempts
+    // the flag write — preferable to acking with the row stuck at processed=false.
+    console.error('[stripe/webhook] Failed to mark event processed:', processedError);
+    return Response.json({ error: 'Idempotency finalize failed' }, { status: 500 });
   }
 
   // 4. Return success
@@ -345,6 +382,12 @@ async function handleSubscriptionEvent(subscription) {
   const planInfo = PLAN_MAP[priceId] || { plan_id: 'starter', calls_limit: 40 };
   const overageStripeItemId = overageItem?.id || null;
 
+  // Basil (2025-03-31.basil): current_period_start/_end moved from the Subscription
+  // to the subscription ITEM. Read from the flat-rate item, falling back to the
+  // subscription for pre-Basil correctness.
+  const periodStart = flatRateItem?.current_period_start ?? subscription.current_period_start;
+  const periodEnd = flatRateItem?.current_period_end ?? subscription.current_period_end;
+
   // Status mapping (D-14) — map Stripe status to local status
   const statusMap = {
     trialing: 'trialing',
@@ -378,11 +421,11 @@ async function handleSubscriptionEvent(subscription) {
       trial_ends_at: subscription.trial_end
         ? new Date(subscription.trial_end * 1000).toISOString()
         : null,
-      current_period_start: subscription.current_period_start
-        ? new Date(subscription.current_period_start * 1000).toISOString()
+      current_period_start: periodStart
+        ? new Date(periodStart * 1000).toISOString()
         : null,
-      current_period_end: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
+      current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
       stripe_updated_at: stripeUpdatedAt,
@@ -432,7 +475,9 @@ async function handleInvoicePaid(invoice) {
     return;
   }
 
-  const subscriptionId = invoice.subscription;
+  // Basil (2025-03-31.basil): invoice.subscription moved to
+  // invoice.parent.subscription_details.subscription.
+  const subscriptionId = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
   if (!subscriptionId) return;
 
   const { error } = await supabase
@@ -548,7 +593,9 @@ async function handleTrialWillEnd(subscription) {
  */
 async function handleInvoicePaymentFailed(invoice) {
   try {
-    const subscriptionId = invoice.subscription;
+    // Basil (2025-03-31.basil): invoice.subscription moved to
+    // invoice.parent.subscription_details.subscription.
+    const subscriptionId = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
     if (!subscriptionId) {
       console.warn('[stripe/webhook] handleInvoicePaymentFailed: no subscription on invoice');
       return;

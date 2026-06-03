@@ -13,6 +13,7 @@
 import { createSupabaseServer } from './supabase-server.js';
 import { supabase as serviceClient } from './supabase.js';
 import { getTenantFeatures } from './features.js';
+import { escapeOrTerm } from './search-filter.js';
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ export async function listCustomers({ tenantId, search }) {
     .limit(200); // T-59-04-07: bounded list
 
   if (search) {
-    const s = search.trim();
+    const s = escapeOrTerm(search.trim());
     q = q.or(`name.ilike.%${s}%,phone_e164.ilike.%${s}%`);
   }
 

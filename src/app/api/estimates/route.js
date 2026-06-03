@@ -3,6 +3,7 @@ import { getTenantId } from '@/lib/get-tenant-id';
 import { getTenantFeatures } from '@/lib/features';
 import { formatEstimateNumber } from '@/lib/estimate-number';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
+import { escapeOrTerm } from '@/lib/search-filter';
 
 const VALID_STATUSES = ['draft', 'sent', 'approved', 'declined', 'expired'];
 
@@ -50,7 +51,8 @@ export async function GET(request) {
   }
 
   if (search) {
-    query = query.or(`customer_name.ilike.%${search}%,estimate_number.ilike.%${search}%`);
+    const s = escapeOrTerm(search);
+    query = query.or(`customer_name.ilike.%${s}%,estimate_number.ilike.%${s}%`);
   }
 
   if (customerId) {

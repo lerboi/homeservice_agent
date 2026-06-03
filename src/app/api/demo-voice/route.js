@@ -1,24 +1,18 @@
 // =============================================================================
-// Rate limiting for demo voice endpoint
+// Rate limiting for demo voice endpoint (durable, Supabase-backed — migration 065)
 //
-// LIMITATION: In-memory Maps do NOT persist across serverless cold starts or
-// across multiple Vercel instances. A determined attacker can bypass this by
-// waiting for a new instance. For production hardening, replace with Redis
-// (e.g., Upstash) or a Supabase-backed rate limit table.
-//
-// Despite the limitation, this still provides:
-// 1. Burst protection within a single warm instance (60s per-IP cooldown)
-// 2. Global daily cap to limit total ElevenLabs API spend per instance
+// Replaces the previous in-memory Maps that did not survive serverless cold
+// starts or span instances. Preserves the same effective limits:
+//   1. Per-IP burst protection: 1 request per 60-second window
+//   2. Global daily cap: 500 requests/day to bound ElevenLabs spend
+//      (now shared across all instances rather than per-instance)
 // =============================================================================
-const rateLimitMap = new Map();
-const RATE_LIMIT_MS = 60000; // 60 seconds per IP (increased from 10s)
-const RATE_LIMIT_CLEANUP_MS = 120000; // Clean entries older than 2 minutes
+import { checkRateLimit } from '@/lib/rate-limit.js';
 
-// Global daily cap: limit total demo requests per server instance per day.
-// Resets on cold start or when the day changes.
-let globalDailyCount = 0;
-let globalDailyDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-const GLOBAL_DAILY_CAP = 500; // max demo requests per instance per day
+const IP_LIMIT = 1;
+const IP_WINDOW_SECONDS = 60;
+const GLOBAL_DAILY_CAP = 500;
+const DAY_SECONDS = 86400;
 
 function getClientIp(request) {
   return (
@@ -26,38 +20,6 @@ function getClientIp(request) {
     request.headers.get('x-real-ip') ||
     'unknown'
   );
-}
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Reset global counter on new day
-  if (today !== globalDailyDate) {
-    globalDailyCount = 0;
-    globalDailyDate = today;
-  }
-
-  // Check global daily cap
-  if (globalDailyCount >= GLOBAL_DAILY_CAP) {
-    return false;
-  }
-
-  // Clean entries older than cleanup window to prevent memory leak
-  for (const [key, timestamp] of rateLimitMap.entries()) {
-    if (now - timestamp > RATE_LIMIT_CLEANUP_MS) {
-      rateLimitMap.delete(key);
-    }
-  }
-
-  const lastRequest = rateLimitMap.get(ip);
-  if (lastRequest && now - lastRequest < RATE_LIMIT_MS) {
-    return false; // Rate limited
-  }
-
-  rateLimitMap.set(ip, now);
-  globalDailyCount++;
-  return true; // Allowed
 }
 
 export async function POST(request) {
@@ -71,9 +33,27 @@ export async function POST(request) {
       return Response.json({ error: 'Invalid business name' }, { status: 400 });
     }
 
-    // IP-based rate limiting
+    // Rate limiting: global daily cap, then per-IP cooldown (durable, migration 065)
     const ip = getClientIp(request);
-    if (!checkRateLimit(ip)) {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const globalCheck = await checkRateLimit({
+      bucket: 'demo-voice-global',
+      key: today,
+      limit: GLOBAL_DAILY_CAP,
+      windowSeconds: DAY_SECONDS,
+    });
+    if (!globalCheck.allowed) {
+      return Response.json({ error: 'Please wait before trying again' }, { status: 429 });
+    }
+
+    const ipCheck = await checkRateLimit({
+      bucket: 'demo-voice-ip',
+      key: ip,
+      limit: IP_LIMIT,
+      windowSeconds: IP_WINDOW_SECONDS,
+    });
+    if (!ipCheck.allowed) {
       return Response.json({ error: 'Please wait before trying again' }, { status: 429 });
     }
 

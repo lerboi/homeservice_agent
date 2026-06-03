@@ -31,8 +31,8 @@ export async function PUT(request, { params }) {
       .single();
 
     if (error) {
-      console.log('500:', error.message);
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('[api/zones/[id]] PUT error:', error.message);
+      return Response.json({ error: 'update_failed' }, { status: 500 });
     }
     if (!data) {
       console.log('404: Zone not found');
@@ -41,8 +41,8 @@ export async function PUT(request, { params }) {
 
     return Response.json({ zone: data });
   } catch (err) {
-    console.log('500:', err.message, err);
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error('[api/zones/[id]] PUT error:', String(err?.message ?? err));
+    return Response.json({ error: 'internal_error' }, { status: 500 });
   }
 }
 
@@ -63,12 +63,12 @@ export async function DELETE(request, { params }) {
       .eq('tenant_id', tenantId);
 
     if (error) {
-      console.log('500:', error.message);
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('[api/zones/[id]] DELETE error:', error.message);
+      return Response.json({ error: 'delete_failed' }, { status: 500 });
     }
     return Response.json({ deleted: true });
   } catch (err) {
-    console.log('500:', err.message, err);
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error('[api/zones/[id]] DELETE error:', String(err?.message ?? err));
+    return Response.json({ error: 'internal_error' }, { status: 500 });
   }
 }

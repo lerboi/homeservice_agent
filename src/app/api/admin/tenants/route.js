@@ -1,5 +1,6 @@
 import { verifyAdmin } from '@/lib/admin';
 import { supabase } from '@/lib/supabase';
+import { escapeOrTerm } from '@/lib/search-filter';
 
 const PAGE_SIZE = 25;
 
@@ -24,7 +25,8 @@ export async function GET(request) {
     .order('created_at', { ascending: false });
 
   if (search) {
-    query = query.or(`business_name.ilike.%${search}%,owner_name.ilike.%${search}%`);
+    const s = escapeOrTerm(search);
+    query = query.or(`business_name.ilike.%${s}%,owner_name.ilike.%${s}%`);
   }
 
   query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
