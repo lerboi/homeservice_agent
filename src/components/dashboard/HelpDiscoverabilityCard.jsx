@@ -49,7 +49,7 @@ export default function HelpDiscoverabilityCard() {
         </Link>
 
         <Link
-          href="/dashboard/ai-voice-settings"
+          href="/dashboard/more/ai-voice-settings"
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">
@@ -62,7 +62,7 @@ export default function HelpDiscoverabilityCard() {
         </Link>
 
         <Link
-          href="/dashboard/escalation-contacts"
+          href="/dashboard/more/notifications"
           className={`group ${card.base} ${card.hover} ${focus.ring} flex flex-col items-start gap-2 p-4 min-h-[88px] no-underline`}
         >
           <div className="flex items-center justify-between w-full">

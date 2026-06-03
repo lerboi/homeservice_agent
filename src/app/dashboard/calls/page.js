@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Phone, PhoneIncoming, PhoneOff, PhoneMissed, Search, X,
   Clock, Filter, ChevronDown, CalendarCheck, AlertTriangle,
@@ -35,22 +35,22 @@ import { supabase } from '@/lib/supabase-browser';
 // ─── Visual maps ──────────────────────────────────────────────────────────────
 
 const URGENCY_STYLE = {
-  emergency: { badge: 'bg-red-100 text-red-700', border: 'border-l-red-500', label: 'Emergency' },
-  routine:   { badge: 'bg-muted text-muted-foreground', border: 'border-l-stone-300', label: 'Routine' },
-  urgent: { badge: 'bg-amber-100 text-amber-700', border: 'border-l-amber-500', label: 'Urgent' },
+  emergency: { badge: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300', border: 'border-l-red-500', label: 'Emergency' },
+  routine:   { badge: 'bg-muted text-muted-foreground', border: 'border-l-stone-300 dark:border-l-stone-600', label: 'Routine' },
+  urgent: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', border: 'border-l-amber-500', label: 'Urgent' },
 };
 
 const OUTCOME_STYLE = {
-  booked:        { badge: 'bg-green-100 text-green-700', icon: CalendarCheck, label: 'Booked' },
-  attempted:     { badge: 'bg-amber-100 text-amber-700', icon: Phone, label: 'Attempted' },
+  booked:        { badge: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300', icon: CalendarCheck, label: 'Booked' },
+  attempted:     { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', icon: Phone, label: 'Attempted' },
   declined:      { badge: 'bg-muted text-muted-foreground', icon: PhoneOff, label: 'Declined' },
   not_attempted: { badge: 'bg-muted text-muted-foreground', icon: PhoneMissed, label: 'No Booking' },
 };
 
 const ROUTING_STYLE = {
-  ai:             { badge: 'bg-muted text-muted-foreground',  border: 'border-l-stone-300',  label: 'AI' },
-  owner_pickup:   { badge: 'bg-blue-100 text-blue-700',    border: 'border-l-blue-500',   label: 'You answered' },
-  fallback_to_ai: { badge: 'bg-amber-100 text-amber-700',  border: 'border-l-amber-500',  label: 'Missed \u2192 AI' },
+  ai:             { badge: 'bg-muted text-muted-foreground',  border: 'border-l-stone-300 dark:border-l-stone-600',  label: 'AI' },
+  owner_pickup:   { badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',    border: 'border-l-blue-500',   label: 'You answered' },
+  fallback_to_ai: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',  border: 'border-l-amber-500',  label: 'Missed \u2192 AI' },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -119,6 +119,7 @@ function groupByDate(calls) {
 // ─── Call Card ─────────────────────────────────────────────────────────────────
 
 function CallCard({ call }) {
+  const prefersReduced = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [recordingSrc, setRecordingSrc] = useState(null);
   const [recordingResolved, setRecordingResolved] = useState(false);
@@ -156,16 +157,16 @@ function CallCard({ call }) {
       >
         {/* Call status icon */}
         <div className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${
-          call.status === 'analyzed' ? 'bg-green-50' :
+          call.status === 'analyzed' ? 'bg-green-50 dark:bg-green-950/40' :
           call.status === 'ended' ? 'bg-muted' :
-          'bg-amber-50'
+          'bg-amber-50 dark:bg-amber-950/40'
         }`}>
           {call.status === 'analyzed' ? (
-            <PhoneIncoming className={`h-4.5 w-4.5 ${isShort ? 'text-muted-foreground' : 'text-green-600'}`} />
+            <PhoneIncoming className={`h-4.5 w-4.5 ${isShort ? 'text-muted-foreground' : 'text-green-600 dark:text-green-400'}`} />
           ) : call.status === 'ended' ? (
             <PhoneOff className="h-4.5 w-4.5 text-muted-foreground" />
           ) : (
-            <Clock className="h-4.5 w-4.5 text-amber-500" />
+            <Clock className="h-4.5 w-4.5 text-amber-500 dark:text-amber-400" />
           )}
         </div>
 
@@ -212,10 +213,10 @@ function CallCard({ call }) {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
+            initial={prefersReduced ? false : { height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
+            exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+            transition={{ duration: prefersReduced ? 0 : 0.15, ease: 'easeOut' }}
             style={{ overflow: 'hidden' }}
           >
             <div className="px-4 pb-4 pt-1 border-t border-border">
@@ -283,10 +284,10 @@ function CallCard({ call }) {
                       <span>Ended: {call.disconnection_reason.replace(/_/g, ' ')}</span>
                     )}
                     {call.notification_priority === 'high' && (
-                      <Badge className="bg-red-50 text-red-600 text-[10px]">High Priority</Badge>
+                      <Badge className="bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300 text-[10px]">High Priority</Badge>
                     )}
                     {call.recovery_sms_status === 'sent' && (
-                      <Badge className="bg-blue-50 text-blue-600 text-[10px]">Recovery SMS Sent</Badge>
+                      <Badge className="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 text-[10px]">Recovery SMS Sent</Badge>
                     )}
                     {call.exception_reason && (
                       <span>Exception: {call.exception_reason.replace(/_/g, ' ')}</span>
@@ -384,6 +385,7 @@ function CallsEmptyState({ hasFilters, onClear }) {
 const DEFAULT_FILTERS = { search: '', urgency: '', bookingOutcome: '', dateRange: '' };
 
 export default function CallLogsPage() {
+  const prefersReduced = useReducedMotion();
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -519,16 +521,16 @@ export default function CallLogsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {[
           { label: 'Total Calls', value: total, accent: false, icon: Phone, iconBg: 'bg-muted', iconColor: 'text-muted-foreground' },
-          { label: 'Booked', value: booked, accent: booked > 0, icon: CalendarCheck, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
-          { label: 'Avg Duration', value: formatDuration(avgDur), accent: false, icon: Clock, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-          { label: 'Emergencies', value: emergencies, accent: emergencies > 0, icon: AlertTriangle, iconBg: emergencies > 0 ? 'bg-red-50' : 'bg-muted', iconColor: emergencies > 0 ? 'text-red-500' : 'text-muted-foreground' },
+          { label: 'Booked', value: booked, accent: booked > 0, icon: CalendarCheck, iconBg: 'bg-emerald-50 dark:bg-emerald-950/40', iconColor: 'text-emerald-600 dark:text-emerald-400' },
+          { label: 'Avg Duration', value: formatDuration(avgDur), accent: false, icon: Clock, iconBg: 'bg-blue-50 dark:bg-blue-950/40', iconColor: 'text-blue-600 dark:text-blue-400' },
+          { label: 'Emergencies', value: emergencies, accent: emergencies > 0, icon: AlertTriangle, iconBg: emergencies > 0 ? 'bg-red-50 dark:bg-red-950/40' : 'bg-muted', iconColor: emergencies > 0 ? 'text-red-500 dark:text-red-400' : 'text-muted-foreground' },
         ].map((stat) => (
           <motion.div
             key={stat.label}
             className={`${card.base} px-4 py-3`}
-            initial={{ opacity: 0, y: 6 }}
+            initial={prefersReduced ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: prefersReduced ? 0 : 0.2 }}
           >
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center size-8 rounded-lg shrink-0 ${stat.iconBg}`}>
@@ -593,10 +595,10 @@ export default function CallLogsPage() {
         <AnimatePresence>
           {showFilters && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
+              initial={prefersReduced ? false : { height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              exit={prefersReduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
+              transition={{ duration: prefersReduced ? 0 : 0.15 }}
               style={{ overflow: 'hidden' }}
             >
               <div className="flex flex-wrap gap-2 pt-3">

@@ -3,9 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Users, Phone, FileText, Calendar, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
+// Keys match the group `type` values returned by GET /api/search
+// (customers | calls | invoices | appointments | estimates).
 const TYPE_ICONS = {
-  leads: Users,
+  customers: Users,
   calls: Phone,
   invoices: FileText,
   appointments: Calendar,
@@ -22,26 +29,22 @@ export default function CommandPalette() {
   const debounceRef = useRef(null);
   const router = useRouter();
 
-  // Keyboard shortcut: Cmd+K / Ctrl+K
+  // Keyboard shortcut: Cmd+K / Ctrl+K toggles the palette.
+  // Escape is handled by the Radix Dialog (onOpenChange), so it's not here.
   useEffect(() => {
     function handleKeyDown(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
-      if (e.key === 'Escape' && open) {
-        setOpen(false);
-      }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open]);
+  }, []);
 
-  // Focus input when dialog opens
+  // Reset transient state when the dialog closes.
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
+    if (!open) {
       setQuery('');
       setResults([]);
       setSelectedIndex(0);
@@ -105,101 +108,102 @@ export default function CommandPalette() {
     router.push(href);
   }
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60]">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        onClick={() => setOpen(false)}
-      />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+        showCloseButton={false}
+        // Anchor near the top (command-palette convention) instead of centered.
+        className="top-[15vh] translate-y-0 p-0 gap-0 overflow-hidden max-w-lg"
+        // Keep focus on the search input rather than the first result on open.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
+      >
+        {/* Visually-hidden accessible name for the dialog */}
+        <DialogTitle className="sr-only">Search</DialogTitle>
 
-      {/* Dialog */}
-      <div className="relative flex justify-center pt-[15vh] px-4">
-        <div className="w-full max-w-lg bg-popover rounded-xl shadow-2xl border border-border overflow-hidden">
-          {/* Search input */}
-          <div className="flex items-center gap-3 px-4 border-b border-border">
-            <Search className="size-4 text-muted-foreground shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Search leads, calls, invoices, estimates..."
-              className="flex-1 h-12 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
-            />
-            {loading && <Loader2 className="size-4 text-muted-foreground animate-spin shrink-0" />}
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] text-muted-foreground font-mono">
-              ESC
-            </kbd>
-          </div>
-
-          {/* Results */}
-          {results.length > 0 && (
-            <div className="max-h-80 overflow-y-auto py-2">
-              {(() => {
-                let flatIndex = 0;
-                return results.map((group) => {
-                  const Icon = TYPE_ICONS[group.type] || Search;
-                  return (
-                    <div key={group.type}>
-                      <p className="px-4 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        {group.label}
-                      </p>
-                      {group.items.map((item) => {
-                        const currentIndex = flatIndex++;
-                        const isSelected = currentIndex === selectedIndex;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => navigate(item.href)}
-                            onMouseEnter={() => setSelectedIndex(currentIndex)}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                              isSelected ? 'bg-accent' : 'hover:bg-accent/50'
-                            }`}
-                          >
-                            <Icon className="size-4 text-muted-foreground shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                              {item.subtitle && (
-                                <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!loading && query.length >= 2 && results.length === 0 && (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</p>
-            </div>
-          )}
-
-          {/* Footer hint */}
-          <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/50">
-            <span className="text-[10px] text-muted-foreground">
-              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&uarr;&darr;</kbd>
-              navigate
-              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono ml-2 mr-1">&crarr;</kbd>
-              open
-            </span>
-            <span className="text-[10px] text-muted-foreground">
-              <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&#8984;K</kbd>
-              toggle
-            </span>
-          </div>
+        {/* Search input */}
+        <div className="flex items-center gap-3 px-4 border-b border-border">
+          <Search className="size-4 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Search customers, calls, invoices, estimates..."
+            className="flex-1 h-12 text-sm text-foreground placeholder:text-muted-foreground bg-transparent outline-none"
+          />
+          {loading && <Loader2 className="size-4 text-muted-foreground animate-spin shrink-0" />}
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] text-muted-foreground font-mono">
+            ESC
+          </kbd>
         </div>
-      </div>
-    </div>
+
+        {/* Results */}
+        {results.length > 0 && (
+          <div className="max-h-80 overflow-y-auto py-2">
+            {(() => {
+              let flatIndex = 0;
+              return results.map((group) => {
+                const Icon = TYPE_ICONS[group.type] || Search;
+                return (
+                  <div key={group.type}>
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      {group.label}
+                    </p>
+                    {group.items.map((item) => {
+                      const currentIndex = flatIndex++;
+                      const isSelected = currentIndex === selectedIndex;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => navigate(item.href)}
+                          onMouseEnter={() => setSelectedIndex(currentIndex)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                            isSelected ? 'bg-accent' : 'hover:bg-accent/50'
+                          }`}
+                        >
+                          <Icon className="size-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                            {item.subtitle && (
+                              <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && query.length >= 2 && results.length === 0 && (
+          <div className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</p>
+          </div>
+        )}
+
+        {/* Footer hint */}
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/50">
+          <span className="text-[10px] text-muted-foreground">
+            <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&uarr;&darr;</kbd>
+            navigate
+            <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono ml-2 mr-1">&crarr;</kbd>
+            open
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            <kbd className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono mr-1">&#8984;K</kbd>
+            toggle
+          </span>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

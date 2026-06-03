@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import BottomTabBar from '@/components/dashboard/BottomTabBar';
 import dynamic from 'next/dynamic';
@@ -23,6 +23,7 @@ import { FeatureFlagsProvider } from '@/components/FeatureFlagsProvider';
 function DashboardLayoutInner({ children, features }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const prefersReduced = useReducedMotion();
   const [tourRunning, setTourRunning] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -70,10 +71,10 @@ function DashboardLayoutInner({ children, features }) {
                   key={pathname}
                   className="max-w-6xl mx-auto px-4 lg:px-8 py-6 pb-24 lg:pb-6"
                   data-tour="dashboard-layout"
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={prefersReduced ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  exit={prefersReduced ? { opacity: 0 } : { opacity: 0 }}
+                  transition={{ duration: prefersReduced ? 0 : 0.2, ease: 'easeOut' }}
                 >
                   {children}
                 </motion.div>
