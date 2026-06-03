@@ -91,18 +91,18 @@ export default function InvoicesPage() {
   useEffect(() => {
     async function fetchContext() {
       try {
-        const [settingsRes, leadsRes, integrationsRes] = await Promise.all([
+        const [settingsRes, jobsRes, integrationsRes] = await Promise.all([
           fetch('/api/invoice-settings'),
-          fetch('/api/leads?status=completed&limit=0'),
+          fetch('/api/jobs?status=completed'),
           fetch('/api/integrations/status'),
         ]);
         if (settingsRes.ok) {
           const { settings } = await settingsRes.json();
           setSettingsComplete(!!settings?.business_name);
         }
-        if (leadsRes.ok) {
-          const { leads } = await leadsRes.json();
-          setCompletedLeadsCount(leads?.length || 0);
+        if (jobsRes.ok) {
+          const { jobs } = await jobsRes.json();
+          setCompletedLeadsCount(jobs?.length || 0);
         }
         if (integrationsRes.ok) {
           const data = await integrationsRes.json();

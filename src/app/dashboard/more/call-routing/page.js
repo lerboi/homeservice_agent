@@ -99,7 +99,7 @@ export default function CallRoutingPage() {
   const [editVipLabel, setEditVipLabel] = useState('');
   const [editVipPhoneError, setEditVipPhoneError] = useState('');
 
-  // Lead-sourced priority callers (read-only — mutations go through PATCH /api/leads/[id])
+  // Job-sourced priority callers (is_vip on jobs; mutations go through PATCH /api/jobs/[id])
   const [vipLeads, setVipLeads] = useState([]);
   const router = useRouter();
 
@@ -317,12 +317,12 @@ export default function CallRoutingPage() {
     setEditingVipIdx(null);
   }
 
-  async function handleRemoveVipLead(leadId) {
-    // Optimistic remove
+  async function handleRemoveVipLead(jobId) {
+    // Optimistic remove. The id on a vipLeads entry is the JOB id (is_vip lives on jobs).
     const prevLeads = vipLeads;
-    setVipLeads((prev) => prev.filter((l) => l.id !== leadId));
+    setVipLeads((prev) => prev.filter((l) => l.id !== jobId));
     try {
-      const res = await fetch(`/api/leads/${leadId}`, {
+      const res = await fetch(`/api/jobs/${jobId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_vip: false }),
@@ -339,8 +339,8 @@ export default function CallRoutingPage() {
     }
   }
 
-  function handleOpenLead(leadId) {
-    router.push(`/dashboard/jobs?open=${leadId}`);
+  function handleOpenLead(jobId) {
+    router.push(`/dashboard/jobs?open=${jobId}`);
   }
 
   // ── Save / Discard handlers ───────────────────────────────────────────────

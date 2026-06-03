@@ -22,10 +22,10 @@ export async function GET(request) {
 
   const [leadsRes, callsRes, invoicesRes, appointmentsRes, estimatesRes] = await Promise.all([
     supabase
-      .from('leads')
-      .select('id, caller_name, from_number, job_type, status')
+      .from('customers')
+      .select('id, name, phone_e164')
       .eq('tenant_id', tenantId)
-      .or(`caller_name.ilike.${pattern},from_number.ilike.${pattern}`)
+      .or(`name.ilike.${pattern},phone_e164.ilike.${pattern}`)
       .order('created_at', { ascending: false })
       .limit(5),
     supabase
@@ -61,13 +61,13 @@ export async function GET(request) {
 
   if (leadsRes.data?.length) {
     results.push({
-      type: 'leads',
-      label: 'Jobs',
-      items: leadsRes.data.map((l) => ({
-        id: l.id,
-        title: l.caller_name || l.from_number || 'Unknown',
-        subtitle: l.job_type || l.status,
-        href: `/dashboard/jobs?open=${l.id}`,
+      type: 'customers',
+      label: 'Customers',
+      items: leadsRes.data.map((c) => ({
+        id: c.id,
+        title: c.name || c.phone_e164 || 'Unknown',
+        subtitle: c.phone_e164 || '',
+        href: `/dashboard/customers/${c.id}`,
       })),
     });
   }

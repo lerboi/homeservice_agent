@@ -21,17 +21,18 @@ export async function GET() {
     invoiceOverdueRes,
     invoicePaidMonthRes,
   ] = await Promise.all([
-    // Count of all new leads
+    // Count of open inquiries (Phase 59: "new" work = unbooked open inquiries)
     supabase
-      .from('leads')
+      .from('inquiries')
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-      .eq('status', 'new'),
-    // Preview: up to 5 most recent leads (any status) for dashboard tile
+      .eq('status', 'open'),
+    // Preview: up to 5 most recent open inquiries, joined to customers for name/phone
     supabase
-      .from('leads')
-      .select('id, caller_name, job_type, from_number, created_at, status')
+      .from('inquiries')
+      .select('id, job_type, created_at, status, customer:customers!inner(name, phone_e164)')
       .eq('tenant_id', tenantId)
+      .eq('status', 'open')
       .order('created_at', { ascending: false })
       .limit(5),
     // Invoice outstanding: sent + overdue
@@ -63,9 +64,19 @@ export async function GET() {
   const paidInvoices = invoicePaidMonthRes.data || [];
   const paidThisMonth = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
 
+  // Flatten the joined customer into legacy field names the dashboard tile reads.
+  const newLeadsPreview = (newLeadsPreviewRes.data || []).map((inq) => ({
+    id: inq.id,
+    caller_name: inq.customer?.name || null,
+    from_number: inq.customer?.phone_e164 || null,
+    job_type: inq.job_type,
+    created_at: inq.created_at,
+    status: inq.status,
+  }));
+
   return Response.json({
     newLeadsCount: newLeadsCountRes.count ?? 0,
-    newLeadsPreview: newLeadsPreviewRes.data || [],
+    newLeadsPreview,
     invoiceOutstandingCount,
     invoiceOutstandingAmount,
     invoiceOverdueCount,

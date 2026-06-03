@@ -44,17 +44,26 @@ export async function GET() {
     );
     const capMinutes = tenant.country === 'SG' ? 2500 : 5000;
 
-    // Fetch leads marked as priority for this tenant
-    const { data: vipLeadsRows, error: vipLeadsError } = await supabase
-      .from('leads')
-      .select('id, caller_name, from_number')
+    // Fetch jobs marked as priority (VIP) for this tenant.
+    // is_vip lives on jobs (Phase 59); caller name/phone come from the linked customer.
+    const { data: vipJobRows, error: vipJobsError } = await supabase
+      .from('jobs')
+      .select('id, is_vip, customer:customers!inner(name, phone_e164)')
       .eq('tenant_id', tenantId)
       .eq('is_vip', true);
 
-    if (vipLeadsError) {
-      console.log('500:', vipLeadsError.message);
-      return Response.json({ error: vipLeadsError.message }, { status: 500 });
+    if (vipJobsError) {
+      console.log('500:', vipJobsError.message);
+      return Response.json({ error: vipJobsError.message }, { status: 500 });
     }
+
+    // Map to the legacy { id, caller_name, from_number } shape the client expects.
+    // id is the JOB id — the client PATCHes /api/jobs/{id} to clear is_vip.
+    const vipLeadsRows = (vipJobRows || []).map((job) => ({
+      id: job.id,
+      caller_name: job.customer?.name || null,
+      from_number: job.customer?.phone_e164 || null,
+    }));
 
     return Response.json({
       call_forwarding_schedule: tenant.call_forwarding_schedule,

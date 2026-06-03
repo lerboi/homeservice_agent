@@ -1,11 +1,11 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { getTenantFeatures } from '@/lib/features';
-import { getTranscriptsForLead, generateLineItemDescriptions } from '@/lib/ai/invoice-describe';
+import { getTranscriptsForJob, generateLineItemDescriptions } from '@/lib/ai/invoice-describe';
 
 /**
  * POST /api/invoices/[id]/ai-describe
- * Generate AI line item descriptions from the linked lead's call transcript(s).
+ * Generate AI line item descriptions from the linked job's call transcript(s).
  */
 export async function POST(request, { params }) {
   const supabase = await createSupabaseServer();
@@ -33,9 +33,9 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Invoice not found' }, { status: 404 });
   }
 
-  // Validate invoice has a linked lead
-  if (!invoice.lead_id) {
-    return Response.json({ error: 'No lead linked to this invoice' }, { status: 400 });
+  // Validate invoice has a linked job
+  if (!invoice.job_id) {
+    return Response.json({ error: 'No job linked to this invoice' }, { status: 400 });
   }
 
   // Fetch line items
@@ -53,11 +53,11 @@ export async function POST(request, { params }) {
     return Response.json({ error: 'Add line items before generating descriptions' }, { status: 400 });
   }
 
-  // Fetch transcripts via lead_calls junction
-  const transcript = await getTranscriptsForLead(supabase, invoice.lead_id, tenantId);
+  // Fetch transcripts via job_calls junction
+  const transcript = await getTranscriptsForJob(supabase, invoice.job_id, tenantId);
 
   if (!transcript) {
-    return Response.json({ error: 'No call transcripts found for the linked lead' }, { status: 400 });
+    return Response.json({ error: 'No call transcripts found for the linked job' }, { status: 400 });
   }
 
   // Generate AI descriptions

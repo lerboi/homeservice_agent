@@ -10,7 +10,7 @@ import InvoiceEditor from '@/components/dashboard/InvoiceEditor';
 export default function NewInvoicePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const leadId = searchParams.get('lead_id');
+  const jobIdParam = searchParams.get('job_id');
   const editId = searchParams.get('edit');
 
   const [settings, setSettings] = useState(null);
@@ -20,7 +20,7 @@ export default function NewInvoicePage() {
 
   // Edit mode state
   const [editInvoiceId, setEditInvoiceId] = useState(null);
-  const [editLeadId, setEditLeadId] = useState(null);
+  const [editJobId, setEditJobId] = useState(null);
   const [editHasTranscript, setEditHasTranscript] = useState(false);
 
   useEffect(() => {
@@ -50,33 +50,31 @@ export default function NewInvoicePage() {
               due_date: invoice.due_date || '',
               notes: invoice.notes || '',
               payment_terms: invoice.payment_terms || '',
-              lead_id: invoice.lead_id || null,
-              lead_name: invoice.customer_name || '',
+              job_id: invoice.job_id || null,
+              job_name: invoice.customer_name || '',
               line_items: line_items || [],
             });
             setEditInvoiceId(editId);
-            setEditLeadId(invoice.lead_id || null);
-            // Use lead_id presence as proxy for transcript availability.
+            setEditJobId(invoice.job_id || null);
+            // Use job_id presence as proxy for transcript availability.
             // The ai-describe endpoint validates transcript availability and returns
             // a clear error if none found — no need for a separate check here.
-            setEditHasTranscript(!!invoice.lead_id);
+            setEditHasTranscript(!!invoice.job_id);
           } else {
             toast.error('Could not load invoice for editing');
           }
-        } else if (leadId) {
-          // Create mode: pre-fill from lead data (edit param takes precedence)
-          const leadRes = await fetch(`/api/leads/${leadId}`);
-          if (leadRes.ok) {
-            const { lead } = await leadRes.json();
+        } else if (jobIdParam) {
+          // Create mode: pre-fill from job data (edit param takes precedence)
+          const jobRes = await fetch(`/api/jobs/${jobIdParam}`);
+          if (jobRes.ok) {
+            const { job } = await jobRes.json();
             setInitialData({
-              lead_id: lead.id,
-              lead_name: lead.caller_name || '',
-              customer_name: lead.caller_name || '',
-              customer_phone: lead.from_number || '',
-              customer_email: lead.email || '',
-              customer_address: lead.service_address || '',
-              job_type: lead.job_type || '',
-              title: lead.job_type ? lead.job_type.charAt(0).toUpperCase() + lead.job_type.slice(1) : '',
+              job_id: job.id,
+              job_name: job.customer?.name || '',
+              customer_name: job.customer?.name || '',
+              customer_phone: job.customer?.phone_e164 || '',
+              customer_email: job.customer?.email || '',
+              customer_address: job.appointment?.service_address || job.customer?.default_address || '',
             });
           }
         }
@@ -89,7 +87,7 @@ export default function NewInvoicePage() {
     }
 
     loadData();
-  }, [leadId, editId]);
+  }, [jobIdParam, editId]);
 
   async function createInvoice(invoiceData) {
     const res = await fetch('/api/invoices', {
@@ -196,7 +194,7 @@ export default function NewInvoicePage() {
         onContinue={handleContinue}
         saving={saving}
         invoiceId={editInvoiceId}
-        leadId={editLeadId}
+        jobId={editJobId}
         hasTranscript={editHasTranscript}
       />
     </div>

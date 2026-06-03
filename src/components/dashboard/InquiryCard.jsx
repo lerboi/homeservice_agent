@@ -13,7 +13,7 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { Eye, Star } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -132,12 +132,6 @@ export default memo(function InquiryCard({ inquiry, onView }) {
                 <TooltipContent side="top"><p>{inquiry.job_type}</p></TooltipContent>
               </Tooltip>
             )}
-            {inquiry.is_vip && (
-              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-xs shrink-0 gap-1">
-                <Star className="h-3 w-3 fill-current" />
-                Priority
-              </Badge>
-            )}
             {urgency && (
               <Badge className={`${urgencyBadgeClass} text-xs shrink-0`}>
                 {URGENCY_LABEL[urgency] || urgency}
@@ -214,12 +208,6 @@ export default memo(function InquiryCard({ inquiry, onView }) {
               <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium truncate max-w-[100px]">
                 {inquiry.job_type}
               </span>
-            )}
-            {inquiry.is_vip && (
-              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-[10px] shrink-0 gap-0.5">
-                <Star className="h-2.5 w-2.5 fill-current" />
-                Priority
-              </Badge>
             )}
             {urgency !== 'routine' && (
               <Badge className={`${urgencyBadgeClass} text-[10px] shrink-0`}>

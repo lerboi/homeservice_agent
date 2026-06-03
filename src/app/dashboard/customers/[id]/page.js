@@ -67,8 +67,8 @@ export default function CustomerDetailPage() {
   // Integration credentials check
   const [integrationCredentials, setIntegrationCredentials] = useState({ jobber: false, xero: false });
 
-  // VIP — any job or inquiry is_vip = true
-  const hasVip = (jobs || []).some((j) => j.is_vip) || (inquiries || []).some((inq) => inq.is_vip);
+  // VIP — derived from jobs only (is_vip exists only on jobs, not inquiries)
+  const hasVip = (jobs || []).some((j) => j.is_vip);
 
   // ── Fetch customer detail ─────────────────────────────────────────────────
 

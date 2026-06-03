@@ -2,8 +2,11 @@ import { supabase } from '@/lib/supabase';
 import { getTenantId } from '@/lib/get-tenant-id';
 
 /**
- * GET /api/customer-timeline?phone=<number>&lead_id=<uuid>
+ * GET /api/customer-timeline?phone=<number>&customer_id=<uuid>&job_id=<uuid>
  * Returns chronological timeline of all interactions with a customer.
+ *
+ * Phase 59: estimates link to a customer (customer_id), invoices link to a job (job_id).
+ * phone is still used to pull calls + appointments (denormalized caller_phone).
  */
 export async function GET(request) {
   const tenantId = await getTenantId();
@@ -13,10 +16,11 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const phone = searchParams.get('phone');
-  const leadId = searchParams.get('lead_id');
+  const customerId = searchParams.get('customer_id');
+  const jobId = searchParams.get('job_id');
 
-  if (!phone && !leadId) {
-    return Response.json({ error: 'phone or lead_id required' }, { status: 400 });
+  if (!phone && !customerId && !jobId) {
+    return Response.json({ error: 'phone, customer_id, or job_id required' }, { status: 400 });
   }
 
   const events = [];
@@ -54,14 +58,14 @@ export async function GET(request) {
     queries.push(Promise.resolve({ data: [] }));
   }
 
-  // Invoices linked to this lead
-  if (leadId) {
+  // Invoices linked to this job
+  if (jobId) {
     queries.push(
       supabase
         .from('invoices')
         .select('id, invoice_number, customer_name, total, status, created_at')
         .eq('tenant_id', tenantId)
-        .eq('lead_id', leadId)
+        .eq('job_id', jobId)
         .order('created_at', { ascending: true })
         .limit(10)
     );
@@ -69,14 +73,14 @@ export async function GET(request) {
     queries.push(Promise.resolve({ data: [] }));
   }
 
-  // Estimates linked to this lead
-  if (leadId) {
+  // Estimates linked to this customer
+  if (customerId) {
     queries.push(
       supabase
         .from('estimates')
         .select('id, estimate_number, customer_name, total, status, created_at')
         .eq('tenant_id', tenantId)
-        .eq('lead_id', leadId)
+        .eq('customer_id', customerId)
         .order('created_at', { ascending: true })
         .limit(10)
     );

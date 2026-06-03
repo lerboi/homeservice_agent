@@ -25,18 +25,19 @@ function formatRelativeTime(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function CustomerTimeline({ phone, leadId }) {
+export default function CustomerTimeline({ phone, customerId, jobId }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!phone && !leadId) { setLoading(false); return; }
+    if (!phone && !customerId && !jobId) { setLoading(false); return; }
 
     async function fetchTimeline() {
       try {
         const params = new URLSearchParams();
         if (phone) params.set('phone', phone);
-        if (leadId) params.set('lead_id', leadId);
+        if (customerId) params.set('customer_id', customerId);
+        if (jobId) params.set('job_id', jobId);
         const res = await fetch(`/api/customer-timeline?${params}`);
         if (res.ok) {
           const data = await res.json();
@@ -47,7 +48,7 @@ export default function CustomerTimeline({ phone, leadId }) {
     }
 
     fetchTimeline();
-  }, [phone, leadId]);
+  }, [phone, customerId, jobId]);
 
   if (loading) {
     return (

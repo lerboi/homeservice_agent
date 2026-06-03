@@ -2,7 +2,7 @@ import { createSupabaseServer } from '@/lib/supabase-server';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { getTenantFeatures } from '@/lib/features';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
-import { shouldSyncToLead } from '@/lib/invoice-sync';
+import { shouldSyncToJob } from '@/lib/invoice-sync';
 
 /**
  * GET /api/invoices/[id]
@@ -224,13 +224,13 @@ export async function PATCH(request, { params }) {
     .eq('invoice_id', id)
     .order('sort_order', { ascending: true });
 
-  // ── Bidirectional sync: invoice Paid → lead Paid ───────────────────────────
-  // When invoice is marked Paid and has a linked lead, propagate status to lead.
-  // sync_source='invoice_paid' prevents the lead route from triggering a reverse sync.
-  if (shouldSyncToLead(body.status, current.lead_id, body.sync_source)) {
+  // ── Bidirectional sync: invoice Paid → job Paid ────────────────────────────
+  // When invoice is marked Paid and has a linked job, propagate status to the job.
+  // sync_source='invoice_paid' is carried for symmetry/circle-prevention.
+  if (shouldSyncToJob(body.status, current.job_id, body.sync_source)) {
     try {
       const { origin } = new URL(request.url);
-      await fetch(`${origin}/api/leads/${current.lead_id}`, {
+      await fetch(`${origin}/api/jobs/${current.job_id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -242,10 +242,10 @@ export async function PATCH(request, { params }) {
           sync_source: 'invoice_paid',
         }),
       });
-      console.log('[invoice-sync] Propagated paid status to lead:', current.lead_id);
+      console.log('[invoice-sync] Propagated paid status to job:', current.job_id);
     } catch (err) {
       // Sync failure must NOT fail the invoice update — invoice is already saved
-      console.error('[invoice-sync] Lead sync failed (non-fatal):', err?.message || err);
+      console.error('[invoice-sync] Job sync failed (non-fatal):', err?.message || err);
     }
   }
 

@@ -131,7 +131,7 @@ export async function GET(request) {
         .from('invoices')
         .insert({
           tenant_id: template.tenant_id,
-          lead_id: template.lead_id || null,
+          job_id: template.job_id || null,
           invoice_number: invoiceNumber,
           status: 'draft',
           customer_name: template.customer_name,

@@ -637,15 +637,15 @@ export default function EstimateDetailPage() {
                     </dd>
                   </div>
                 )}
-                {estimate.lead_id && (
+                {estimate.customer_id && (
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Linked Job</dt>
+                    <dt className="text-muted-foreground">Linked Customer</dt>
                     <dd>
                       <Link
-                        href={`/dashboard/jobs?open=${estimate.lead_id}`}
+                        href={`/dashboard/customers/${estimate.customer_id}`}
                         className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
-                        View Job
+                        View Customer
                       </Link>
                     </dd>
                   </div>

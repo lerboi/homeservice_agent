@@ -506,7 +506,7 @@ export default function JobFlyout({ jobId, open, onOpenChange, onStatusChange })
               {job.customer?.phone_e164 && (
                 <>
                   <Separator className="bg-muted" />
-                  <CustomerTimeline phone={job.customer.phone_e164} />
+                  <CustomerTimeline phone={job.customer.phone_e164} customerId={job.customer.id} jobId={job.id} />
                 </>
               )}
 

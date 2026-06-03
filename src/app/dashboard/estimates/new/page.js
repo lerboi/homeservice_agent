@@ -37,7 +37,7 @@ const DEFAULT_TIER_LABELS = ['Good', 'Better', 'Best'];
 export default function EstimateEditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const leadId = searchParams.get('lead_id');
+  const customerIdParam = searchParams.get('customer_id');
   const estimateId = searchParams.get('id');
 
   // Customer info
@@ -50,7 +50,7 @@ export default function EstimateEditorPage() {
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
   const [estimateNumber, setEstimateNumber] = useState('');
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   // Line items (single-price mode)
   const [lineItems, setLineItems] = useState([emptyLineItem(0)]);
@@ -63,7 +63,7 @@ export default function EstimateEditorPage() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Lead search
+  // Customer search
   const [leadSearchQuery, setLeadSearchQuery] = useState('');
   const [leadResults, setLeadResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -78,22 +78,22 @@ export default function EstimateEditorPage() {
       .catch(() => {});
   }, []);
 
-  // Pre-fill from lead_id
+  // Pre-fill from customer_id
   useEffect(() => {
-    if (!leadId) return;
-    fetch(`/api/leads/${leadId}`)
+    if (!customerIdParam) return;
+    fetch(`/api/customers/${customerIdParam}`)
       .then((r) => r.ok ? r.json() : null)
-      .then((lead) => {
-        if (!lead) return;
-        setCustomerName(lead.caller_name || '');
-        setCustomerPhone(lead.from_number || '');
-        setCustomerEmail(lead.caller_email || '');
-        setCustomerAddress(lead.service_address || '');
-        setJobType(lead.job_type || '');
-        setSelectedLead({ id: lead.id, caller_name: lead.caller_name });
+      .then((data) => {
+        const customer = data?.customer || data;
+        if (!customer) return;
+        setCustomerName(customer.name || '');
+        setCustomerPhone(customer.phone_e164 || '');
+        setCustomerEmail(customer.email || '');
+        setCustomerAddress(customer.default_address || '');
+        setSelectedCustomer({ id: customer.id, name: customer.name });
       })
       .catch(() => {});
-  }, [leadId]);
+  }, [customerIdParam]);
 
   // Edit mode: load existing estimate
   useEffect(() => {
@@ -112,8 +112,8 @@ export default function EstimateEditorPage() {
         setCreatedDate(est.created_date || todayIso());
         setValidUntil(est.valid_until || '');
         setNotes(est.notes || '');
-        if (est.lead_id) {
-          setSelectedLead({ id: est.lead_id, caller_name: est.customer_name });
+        if (est.customer_id) {
+          setSelectedCustomer({ id: est.customer_id, name: est.customer_name });
         }
 
         // Check if tiered
@@ -134,7 +134,7 @@ export default function EstimateEditorPage() {
       });
   }, [estimateId]);
 
-  // Lead search with debounce
+  // Customer search with debounce
   const handleLeadSearch = useCallback((query) => {
     setLeadSearchQuery(query);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -146,10 +146,10 @@ export default function EstimateEditorPage() {
     searchTimerRef.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const res = await fetch(`/api/leads?search=${encodeURIComponent(query)}&limit=10`);
+        const res = await fetch(`/api/customers?search=${encodeURIComponent(query)}`);
         if (res.ok) {
           const data = await res.json();
-          setLeadResults(data.leads || []);
+          setLeadResults(data.customers || []);
           setSearchOpen(true);
         }
       } catch {} finally {
@@ -158,20 +158,19 @@ export default function EstimateEditorPage() {
     }, 300);
   }, []);
 
-  function handleSelectLead(lead) {
-    setSelectedLead(lead);
-    setCustomerName(lead.caller_name || '');
-    setCustomerPhone(lead.from_number || '');
-    setCustomerEmail(lead.caller_email || '');
-    setCustomerAddress(lead.service_address || '');
-    setJobType(lead.job_type || '');
+  function handleSelectLead(customer) {
+    setSelectedCustomer(customer);
+    setCustomerName(customer.name || '');
+    setCustomerPhone(customer.phone_e164 || '');
+    setCustomerEmail(customer.email || '');
+    setCustomerAddress(customer.default_address || '');
     setLeadSearchQuery('');
     setLeadResults([]);
     setSearchOpen(false);
   }
 
   function handleUnlinkLead() {
-    setSelectedLead(null);
+    setSelectedCustomer(null);
   }
 
   // Line item handlers (single-price mode)
@@ -234,7 +233,7 @@ export default function EstimateEditorPage() {
   // Assemble estimate data for save
   function assembleEstimateData(status) {
     const base = {
-      lead_id: selectedLead?.id || null,
+      customer_id: selectedCustomer?.id || null,
       customer_name: customerName,
       customer_phone: customerPhone,
       customer_email: customerEmail,
@@ -341,19 +340,19 @@ export default function EstimateEditorPage() {
           <CardTitle className="text-base font-semibold text-foreground">Customer Information</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Lead search / link */}
+          {/* Customer search / link */}
           <div className="mb-4">
-            {selectedLead ? (
+            {selectedCustomer ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-foreground">
-                  Linked to: <span className="font-medium text-foreground">{selectedLead.caller_name}</span>
+                  Linked to: <span className="font-medium text-foreground">{selectedCustomer.name}</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleUnlinkLead}
                   className="ml-auto p-0.5 text-muted-foreground hover:text-muted-foreground rounded"
-                  aria-label="Unlink lead"
+                  aria-label="Unlink customer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -361,12 +360,12 @@ export default function EstimateEditorPage() {
             ) : (
               <div className="relative">
                 <Label className="text-sm font-medium text-foreground mb-1 block">
-                  Link to Lead <span className="text-muted-foreground font-normal">(optional)</span>
+                  Link to Customer <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search leads by name or phone..."
+                    placeholder="Search customers by name or phone..."
                     value={leadSearchQuery}
                     onChange={(e) => handleLeadSearch(e.target.value)}
                     onFocus={() => { if (leadResults.length) setSearchOpen(true); }}
@@ -379,28 +378,25 @@ export default function EstimateEditorPage() {
                 </div>
                 {searchOpen && leadResults.length > 0 && (
                   <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {leadResults.map((lead) => (
+                    {leadResults.map((customer) => (
                       <button
-                        key={lead.id}
+                        key={customer.id}
                         type="button"
                         className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-muted text-left"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelectLead(lead)}
+                        onClick={() => handleSelectLead(customer)}
                       >
                         <div>
-                          <span className="font-medium text-foreground">{lead.caller_name || 'Unknown'}</span>
-                          <span className="text-muted-foreground ml-2">{lead.from_number}</span>
+                          <span className="font-medium text-foreground">{customer.name || 'Unknown'}</span>
+                          <span className="text-muted-foreground ml-2">{customer.phone_e164}</span>
                         </div>
-                        {lead.job_type && (
-                          <span className="text-xs text-muted-foreground">{lead.job_type}</span>
-                        )}
                       </button>
                     ))}
                   </div>
                 )}
                 {searchOpen && leadResults.length === 0 && leadSearchQuery.length >= 2 && !searchLoading && (
                   <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground">
-                    No leads found
+                    No customers found
                   </div>
                 )}
               </div>

@@ -420,7 +420,7 @@ describe('GET /api/call-routing', () => {
           }),
         };
       }
-      if (table === 'leads') {
+      if (table === 'jobs') {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -473,7 +473,7 @@ describe('GET /api/call-routing', () => {
           }),
         };
       }
-      if (table === 'leads') {
+      if (table === 'jobs') {
         return {
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -494,7 +494,7 @@ describe('GET /api/call-routing', () => {
     expect(body.vip_numbers[0].number).toBe('+15551112222');
   });
 
-  test('GET returns vip_leads scoped to current tenant', async () => {
+  test('GET returns vip_leads (job-sourced) scoped to current tenant', async () => {
     const tenantData = {
       call_forwarding_schedule: validSchedule(),
       pickup_numbers: [],
@@ -505,14 +505,16 @@ describe('GET /api/call-routing', () => {
       country: 'US',
     };
 
-    const mockLeadsEq2 = jest.fn().mockResolvedValue({
+    // Phase 59: is_vip lives on jobs; caller name/phone come from the joined customer.
+    // The route maps job.id → id, customer.name → caller_name, customer.phone_e164 → from_number.
+    const mockJobsEq2 = jest.fn().mockResolvedValue({
       data: [
-        { id: 'lead-1', caller_name: 'Jane Best', from_number: '+15551119999' },
-        { id: 'lead-2', caller_name: null, from_number: '+15552228888' },
+        { id: 'job-1', is_vip: true, customer: { name: 'Jane Best', phone_e164: '+15551119999' } },
+        { id: 'job-2', is_vip: true, customer: { name: null, phone_e164: '+15552228888' } },
       ],
       error: null,
     });
-    const mockLeadsEq1 = jest.fn().mockReturnValue({ eq: mockLeadsEq2 });
+    const mockJobsEq1 = jest.fn().mockReturnValue({ eq: mockJobsEq2 });
 
     mockSupabase.from.mockImplementation((table) => {
       if (table === 'tenants') {
@@ -533,9 +535,9 @@ describe('GET /api/call-routing', () => {
           }),
         };
       }
-      if (table === 'leads') {
+      if (table === 'jobs') {
         return {
-          select: jest.fn().mockReturnValue({ eq: mockLeadsEq1 }),
+          select: jest.fn().mockReturnValue({ eq: mockJobsEq1 }),
         };
       }
     });
@@ -547,9 +549,9 @@ describe('GET /api/call-routing', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(body.vip_leads)).toBe(true);
     expect(body.vip_leads).toHaveLength(2);
-    expect(body.vip_leads[0]).toEqual({ id: 'lead-1', caller_name: 'Jane Best', from_number: '+15551119999' });
+    expect(body.vip_leads[0]).toEqual({ id: 'job-1', caller_name: 'Jane Best', from_number: '+15551119999' });
     // Assert tenant scoping: tenant_id filter applied first, then is_vip filter
-    expect(mockLeadsEq1).toHaveBeenCalledWith('tenant_id', 'tenant-abc');
-    expect(mockLeadsEq2).toHaveBeenCalledWith('is_vip', true);
+    expect(mockJobsEq1).toHaveBeenCalledWith('tenant_id', 'tenant-abc');
+    expect(mockJobsEq2).toHaveBeenCalledWith('is_vip', true);
   });
 });

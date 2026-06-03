@@ -75,7 +75,7 @@ function emptyLineItem(sortOrder = 0) {
  *   onContinue(invoiceData) — called when "Continue" is clicked (save + navigate to detail)
  *   saving      — boolean for button loading state
  */
-export default function InvoiceEditor({ initialData, settings, onSave, onContinue, saving, invoiceId, leadId, hasTranscript }) {
+export default function InvoiceEditor({ initialData, settings, onSave, onContinue, saving, invoiceId, jobId, hasTranscript }) {
   const defaultTerms = settings?.payment_terms || 'Net 30';
   const today = todayIso();
 
@@ -91,7 +91,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
   const [notes, setNotes] = useState(settings?.default_notes || '');
   const [lineItems, setLineItems] = useState([emptyLineItem(0)]);
 
-  // Lead search state
+  // Job search state (invoices link to a job, which carries customer + appointment)
   const [leadSearchQuery, setLeadSearchQuery] = useState('');
   const [leadResults, setLeadResults] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -120,8 +120,8 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
     if (initialData.line_items && initialData.line_items.length > 0) {
       setLineItems(initialData.line_items);
     }
-    if (initialData.lead_id && initialData.customer_name) {
-      setSelectedLead({ id: initialData.lead_id, caller_name: initialData.lead_name || initialData.customer_name });
+    if (initialData.job_id && initialData.customer_name) {
+      setSelectedLead({ id: initialData.job_id, name: initialData.job_name || initialData.customer_name });
     }
   }, [initialData]);
 
@@ -134,7 +134,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
     setPaymentTerms(terms);
   }
 
-  // Lead search with debounce
+  // Job search with debounce (invoices link to a job via job_id)
   const handleLeadSearch = useCallback((query) => {
     setLeadSearchQuery(query);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -146,10 +146,19 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
     searchTimerRef.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const res = await fetch(`/api/leads?search=${encodeURIComponent(query)}&limit=10`);
+        // /api/jobs has no server-side search param; it returns the tenant's jobs
+        // (bounded list) with customer + appointment joined. Filter client-side by
+        // customer name / phone so the owner can pick the job to link the invoice to.
+        const res = await fetch('/api/jobs');
         if (res.ok) {
           const data = await res.json();
-          setLeadResults(data.leads || []);
+          const q = query.toLowerCase();
+          const filtered = (data.jobs || []).filter((j) => {
+            const name = (j.customer?.name || '').toLowerCase();
+            const phone = (j.customer?.phone_e164 || '').toLowerCase();
+            return name.includes(q) || phone.includes(q);
+          });
+          setLeadResults(filtered.slice(0, 10));
           setSearchOpen(true);
         }
       } catch {} finally {
@@ -158,13 +167,13 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
     }, 300);
   }, []);
 
-  function handleSelectLead(lead) {
-    setSelectedLead(lead);
-    setCustomerName(lead.caller_name || '');
-    setCustomerPhone(lead.from_number || '');
-    setCustomerEmail(lead.email || '');
-    setCustomerAddress(lead.service_address || '');
-    setJobType(lead.job_type || '');
+  function handleSelectLead(job) {
+    // job carries joined customer + appointment (see /api/jobs select shape)
+    setSelectedLead({ id: job.id, name: job.customer?.name || '' });
+    setCustomerName(job.customer?.name || '');
+    setCustomerPhone(job.customer?.phone_e164 || '');
+    setCustomerEmail(job.customer?.email || '');
+    setCustomerAddress(job.appointment?.service_address || job.customer?.default_address || '');
     setLeadSearchQuery('');
     setLeadResults([]);
     setSearchOpen(false);
@@ -247,7 +256,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
 
   function assembleInvoiceData() {
     return {
-      lead_id: selectedLead?.id || initialData?.lead_id || null,
+      job_id: selectedLead?.id || initialData?.job_id || null,
       title: title || null,
       customer_name: customerName,
       customer_phone: customerPhone,
@@ -310,19 +319,19 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
           <CardTitle className="text-base font-semibold text-foreground">Customer Information</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Lead search / link */}
+          {/* Job search / link (invoices link to a job) */}
           <div className="mb-4">
             {selectedLead ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-foreground">
-                  Linked to: <span className="font-medium text-foreground">{selectedLead.caller_name}</span>
+                  Linked to: <span className="font-medium text-foreground">{selectedLead.name}</span>
                 </span>
                 <button
                   type="button"
                   onClick={handleUnlinkLead}
                   className="ml-auto p-0.5 text-muted-foreground hover:text-muted-foreground rounded"
-                  aria-label="Unlink lead"
+                  aria-label="Unlink job"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -330,12 +339,12 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
             ) : (
               <div className="relative">
                 <Label className="text-sm font-medium text-foreground mb-1 block">
-                  Link to Lead <span className="text-muted-foreground font-normal">(optional)</span>
+                  Link to Job <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search leads by name or phone..."
+                    placeholder="Search jobs by customer name or phone..."
                     value={leadSearchQuery}
                     onChange={(e) => handleLeadSearch(e.target.value)}
                     onFocus={() => { if (leadResults.length) setSearchOpen(true); }}
@@ -348,20 +357,20 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                 </div>
                 {searchOpen && leadResults.length > 0 && (
                   <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {leadResults.map((lead) => (
+                    {leadResults.map((job) => (
                       <button
-                        key={lead.id}
+                        key={job.id}
                         type="button"
                         className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-muted text-left"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelectLead(lead)}
+                        onClick={() => handleSelectLead(job)}
                       >
                         <div>
-                          <span className="font-medium text-foreground">{lead.caller_name || 'Unknown'}</span>
-                          <span className="text-muted-foreground ml-2">{lead.from_number}</span>
+                          <span className="font-medium text-foreground">{job.customer?.name || 'Unknown'}</span>
+                          <span className="text-muted-foreground ml-2">{job.customer?.phone_e164}</span>
                         </div>
-                        {lead.job_type && (
-                          <span className="text-xs text-muted-foreground">{lead.job_type}</span>
+                        {job.status && (
+                          <span className="text-xs text-muted-foreground">{job.status}</span>
                         )}
                       </button>
                     ))}
@@ -369,7 +378,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                 )}
                 {searchOpen && leadResults.length === 0 && leadSearchQuery.length >= 2 && !searchLoading && (
                   <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground">
-                    No leads found
+                    No jobs found
                   </div>
                 )}
               </div>
@@ -402,7 +411,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
               />
               {selectedLead && !customerEmail && (
                 <p className="text-xs text-amber-600 mt-1">
-                  No email on file for this lead. Add one to send the invoice.
+                  No email on file for this customer. Add one to send the invoice.
                 </p>
               )}
             </div>
@@ -501,7 +510,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                         variant="outline"
                         size="sm"
                         className="border-[var(--brand-accent)] text-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/5"
-                        disabled={!leadId || !hasTranscript || aiGenerating}
+                        disabled={!jobId || !hasTranscript || aiGenerating}
                         onClick={handleAiDescribe}
                       >
                         {aiGenerating ? (
@@ -513,7 +522,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {(!leadId || !hasTranscript) && (
+                  {(!jobId || !hasTranscript) && (
                     <TooltipContent>
                       <p>No call transcript linked to this invoice</p>
                     </TooltipContent>

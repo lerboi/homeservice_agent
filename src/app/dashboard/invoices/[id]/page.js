@@ -483,12 +483,12 @@ export default function InvoiceDetailPage() {
                     <dd className="text-foreground">{formatDate(invoice.voided_at)}</dd>
                   </div>
                 )}
-                {invoice.lead_id && (
+                {invoice.job_id && (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Linked Job</dt>
                     <dd>
                       <Link
-                        href={`/dashboard/jobs?open=${invoice.lead_id}`}
+                        href={`/dashboard/jobs?open=${invoice.job_id}`}
                         className="text-[var(--brand-accent)] hover:underline text-xs"
                       >
                         View Job

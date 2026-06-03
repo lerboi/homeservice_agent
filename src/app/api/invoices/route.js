@@ -33,7 +33,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get('status');
   const search = searchParams.get('search');
-  const leadId = searchParams.get('lead_id');
+  const jobId = searchParams.get('job_id');
 
   // Bulk-update overdue invoices (sent + past due_date → overdue)
   const today = new Date().toISOString().split('T')[0];
@@ -66,13 +66,13 @@ export async function GET(request) {
     query = query.or(`customer_name.ilike.%${search}%,invoice_number.ilike.%${search}%`);
   }
 
-  if (leadId) {
-    query = query.eq('lead_id', leadId);
+  if (jobId) {
+    query = query.eq('job_id', jobId);
   }
 
-  const leadIds = searchParams.get('lead_ids');
-  if (leadIds) {
-    query = query.in('lead_id', leadIds.split(',').filter(Boolean));
+  const jobIds = searchParams.get('job_ids');
+  if (jobIds) {
+    query = query.in('job_id', jobIds.split(',').filter(Boolean));
   }
 
   query = query.range(offset, offset + limit - 1);
@@ -133,7 +133,7 @@ export async function GET(request) {
  * Create a new invoice with atomic sequential invoice number.
  *
  * Body: {
- *   lead_id?, customer_name, customer_phone, customer_email, customer_address,
+ *   job_id?, customer_name, customer_phone, customer_email, customer_address,
  *   job_type, issued_date, due_date, notes, payment_terms,
  *   line_items: [{ item_type, description, quantity, unit_price, markup_pct, taxable, sort_order }]
  * }
@@ -158,7 +158,7 @@ export async function POST(request) {
   }
 
   const {
-    lead_id,
+    job_id,
     title,
     customer_name,
     customer_phone,
@@ -203,7 +203,7 @@ export async function POST(request) {
     .from('invoices')
     .insert({
       tenant_id: tenantId,
-      lead_id: lead_id || null,
+      job_id: job_id || null,
       title: title || null,
       invoice_number: invoiceNumber,
       status: 'draft',

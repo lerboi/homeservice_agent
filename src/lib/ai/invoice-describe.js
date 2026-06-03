@@ -3,18 +3,18 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
- * Fetch combined transcript text for a lead via lead_calls junction table.
+ * Fetch combined transcript text for a job via the job_calls junction table.
  * Returns null if no transcripts found.
  */
-export async function getTranscriptsForLead(supabase, leadId, tenantId) {
-  const { data: leadCalls } = await supabase
-    .from('lead_calls')
+export async function getTranscriptsForJob(supabase, jobId, tenantId) {
+  const { data: jobCalls } = await supabase
+    .from('job_calls')
     .select('call_id')
-    .eq('lead_id', leadId);
+    .eq('job_id', jobId);
 
-  if (!leadCalls || leadCalls.length === 0) return null;
+  if (!jobCalls || jobCalls.length === 0) return null;
 
-  const callIds = leadCalls.map((lc) => lc.call_id);
+  const callIds = jobCalls.map((jc) => jc.call_id);
 
   const { data: calls } = await supabase
     .from('calls')

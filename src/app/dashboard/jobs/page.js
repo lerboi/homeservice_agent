@@ -213,13 +213,12 @@ export default function JobsPage() {
 
   useEffect(() => {
     if (!jobIdKey) return;
-    fetch(`/api/invoices?lead_ids=${jobIdKey}`)
+    fetch(`/api/invoices?job_ids=${jobIdKey}`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!data?.invoices) return;
         const map = {};
         for (const inv of data.invoices) {
-          if (inv.lead_id) map[inv.lead_id] = inv.status;
           if (inv.job_id) map[inv.job_id] = inv.status;
         }
         setInvoiceStatusMap(map);
@@ -339,7 +338,7 @@ export default function JobsPage() {
       const res = await fetch('/api/invoices/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_ids: Array.from(selectedJobs) }),
+        body: JSON.stringify({ job_ids: Array.from(selectedJobs) }),
       });
       if (!res.ok) throw new Error('Batch creation failed');
       const data = await res.json();

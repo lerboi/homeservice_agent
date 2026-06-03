@@ -13,7 +13,7 @@ const VALID_STATUSES = ['draft', 'sent', 'approved', 'declined', 'expired'];
  * Query params:
  *   status  — filter by estimate status (one of VALID_STATUSES)
  *   search  — filter by customer_name or estimate_number (case-insensitive substring)
- *   lead_id — filter by linked lead
+ *   customer_id — filter by linked customer
  *
  * Returns: { estimates, summary: { pending_count, approved_value, conversion_rate }, status_counts }
  */
@@ -32,7 +32,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get('status');
   const search = searchParams.get('search');
-  const leadId = searchParams.get('lead_id');
+  const customerId = searchParams.get('customer_id');
 
   // Pagination
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 500);
@@ -53,8 +53,8 @@ export async function GET(request) {
     query = query.or(`customer_name.ilike.%${search}%,estimate_number.ilike.%${search}%`);
   }
 
-  if (leadId) {
-    query = query.eq('lead_id', leadId);
+  if (customerId) {
+    query = query.eq('customer_id', customerId);
   }
 
   query = query.range(offset, offset + limit - 1);
@@ -200,7 +200,7 @@ export async function GET(request) {
  * Create a new estimate with atomic sequential estimate number.
  *
  * Body: {
- *   lead_id?, customer_name, customer_phone, customer_email, customer_address,
+ *   customer_id?, customer_name, customer_phone, customer_email, customer_address,
  *   job_type, valid_until?, notes,
  *   line_items: [{ item_type, description, quantity, unit_price, markup_pct, taxable, sort_order }],
  *   tiers?: [{ tier_label, line_items: [...] }]
@@ -226,7 +226,7 @@ export async function POST(request) {
   }
 
   const {
-    lead_id,
+    customer_id,
     customer_name,
     customer_phone,
     customer_email,
@@ -268,7 +268,7 @@ export async function POST(request) {
       .from('estimates')
       .insert({
         tenant_id: tenantId,
-        lead_id: lead_id || null,
+        customer_id: customer_id || null,
         estimate_number: estimateNumber,
         status: 'draft',
         customer_name: customer_name || null,
@@ -361,7 +361,7 @@ export async function POST(request) {
       .from('estimates')
       .insert({
         tenant_id: tenantId,
-        lead_id: lead_id || null,
+        customer_id: customer_id || null,
         estimate_number: estimateNumber,
         status: 'draft',
         customer_name: customer_name || null,

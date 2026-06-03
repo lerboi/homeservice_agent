@@ -6,12 +6,13 @@ import { formatInvoiceNumber } from '@/lib/invoice-number';
 /**
  * POST /api/invoices/batch
  *
- * Create draft invoices in batch from multiple completed leads.
- * Each lead produces a separate draft invoice with pre-filled customer data.
- * No line items are created — owner adds them during review.
+ * Create draft invoices in batch from multiple completed jobs.
+ * Each job produces a separate draft invoice with pre-filled customer data
+ * (name/phone/email from the linked customer, service address from the
+ * linked appointment). No line items are created — owner adds them during review.
  *
- * Body: { lead_ids: string[] }
- * Returns: 201 { invoices: [...], errors: [{ lead_id, reason }] }
+ * Body: { job_ids: string[] }
+ * Returns: 201 { invoices: [...], errors: [{ job_id, reason }] }
  */
 export async function POST(request) {
   const supabase = await createSupabaseServer();
@@ -32,44 +33,44 @@ export async function POST(request) {
     return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { lead_ids } = body;
+  const { job_ids } = body;
 
-  // ── Validate lead_ids ──────────────────────────────────────────────────────
+  // ── Validate job_ids ──────────────────────────────────────────────────────
 
-  if (!Array.isArray(lead_ids) || lead_ids.length === 0) {
-    return Response.json({ error: 'lead_ids must be a non-empty array' }, { status: 400 });
+  if (!Array.isArray(job_ids) || job_ids.length === 0) {
+    return Response.json({ error: 'job_ids must be a non-empty array' }, { status: 400 });
   }
 
-  if (lead_ids.length > 50) {
-    return Response.json({ error: 'Maximum 50 leads per batch' }, { status: 400 });
+  if (job_ids.length > 50) {
+    return Response.json({ error: 'Maximum 50 jobs per batch' }, { status: 400 });
   }
 
-  // ── Fetch all leads ────────────────────────────────────────────────────────
+  // ── Fetch all jobs (with customer + appointment for pre-fill) ──────────────
 
-  const { data: leads, error: leadsError } = await supabase
-    .from('leads')
-    .select('*')
-    .in('id', lead_ids)
+  const { data: jobs, error: jobsError } = await supabase
+    .from('jobs')
+    .select('id, status, customer:customers!inner(name, phone_e164, email), appointment:appointments!inner(service_address)')
+    .in('id', job_ids)
     .eq('tenant_id', tenantId);
 
-  if (leadsError) {
-    return Response.json({ error: leadsError.message }, { status: 500 });
+  if (jobsError) {
+    return Response.json({ error: jobsError.message }, { status: 500 });
   }
 
-  // Validate all requested leads were found (RLS handles tenant isolation)
-  if (!leads || leads.length === 0) {
-    return Response.json({ error: 'No matching leads found' }, { status: 404 });
+  // Validate all requested jobs were found (RLS handles tenant isolation)
+  if (!jobs || jobs.length === 0) {
+    return Response.json({ error: 'No matching jobs found' }, { status: 404 });
   }
 
-  // ── Check which leads already have invoices ────────────────────────────────
+  // ── Check which jobs already have invoices ─────────────────────────────────
 
   const { data: existingInvoices } = await supabase
     .from('invoices')
-    .select('lead_id')
-    .in('lead_id', lead_ids)
+    .select('job_id')
+    .in('job_id', job_ids)
     .eq('tenant_id', tenantId);
 
-  const existingInvoiceLeadIds = new Set((existingInvoices || []).map((inv) => inv.lead_id));
+  const existingInvoiceJobIds = new Set((existingInvoices || []).map((inv) => inv.job_id));
 
   // ── Fetch invoice settings ─────────────────────────────────────────────────
 
@@ -88,16 +89,16 @@ export async function POST(request) {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().split('T')[0];
 
-  for (const lead of leads) {
-    // Skip non-completed leads
-    if (lead.status !== 'completed') {
-      errors.push({ lead_id: lead.id, reason: `Lead status is '${lead.status}', expected 'completed'` });
+  for (const job of jobs) {
+    // Skip non-completed jobs
+    if (job.status !== 'completed') {
+      errors.push({ job_id: job.id, reason: `Job status is '${job.status}', expected 'completed'` });
       continue;
     }
 
-    // Skip leads that already have an invoice
-    if (existingInvoiceLeadIds.has(lead.id)) {
-      errors.push({ lead_id: lead.id, reason: 'Lead already has an invoice' });
+    // Skip jobs that already have an invoice
+    if (existingInvoiceJobIds.has(job.id)) {
+      errors.push({ job_id: job.id, reason: 'Job already has an invoice' });
       continue;
     }
 
@@ -108,26 +109,25 @@ export async function POST(request) {
     });
 
     if (seqError) {
-      errors.push({ lead_id: lead.id, reason: 'Failed to generate invoice number: ' + seqError.message });
+      errors.push({ job_id: job.id, reason: 'Failed to generate invoice number: ' + seqError.message });
       continue;
     }
 
     const invoiceNumber = formatInvoiceNumber(settings.invoice_prefix || 'INV', currentYear, seqData);
 
-    // Insert draft invoice with customer data from lead
+    // Insert draft invoice with customer data (name/phone/email from customer,
+    // service address from the linked appointment).
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
         tenant_id: tenantId,
-        lead_id: lead.id,
+        job_id: job.id,
         invoice_number: invoiceNumber,
         status: 'draft',
-        customer_name: lead.caller_name || null,
-        customer_phone: lead.from_number || null,
-        customer_email: lead.email || null,
-        customer_address: lead.service_address || null,
-        job_type: lead.job_type || null,
-        title: lead.job_type ? lead.job_type.charAt(0).toUpperCase() + lead.job_type.slice(1) : null,
+        customer_name: job.customer?.name || null,
+        customer_phone: job.customer?.phone_e164 || null,
+        customer_email: job.customer?.email || null,
+        customer_address: job.appointment?.service_address || null,
         issued_date: today,
         due_date: null,
         payment_terms: settings.payment_terms || 'Net 30',
@@ -139,18 +139,18 @@ export async function POST(request) {
       .single();
 
     if (invoiceError) {
-      errors.push({ lead_id: lead.id, reason: invoiceError.message });
+      errors.push({ job_id: job.id, reason: invoiceError.message });
       continue;
     }
 
     invoices.push(invoice);
   }
 
-  // Also report lead_ids that were requested but not found
-  const foundLeadIds = new Set(leads.map((l) => l.id));
-  for (const requestedId of lead_ids) {
-    if (!foundLeadIds.has(requestedId)) {
-      errors.push({ lead_id: requestedId, reason: 'Lead not found' });
+  // Also report job_ids that were requested but not found
+  const foundJobIds = new Set(jobs.map((j) => j.id));
+  for (const requestedId of job_ids) {
+    if (!foundJobIds.has(requestedId)) {
+      errors.push({ job_id: requestedId, reason: 'Job not found' });
     }
   }
 

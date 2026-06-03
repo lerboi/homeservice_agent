@@ -149,7 +149,9 @@ export async function POST(request, { params }) {
     .from('invoices')
     .insert({
       tenant_id: tenantId,
-      lead_id: estimate.lead_id || null,
+      // Estimates link to a customer, not a job. The converted invoice has no
+      // job (job_id stays null); customer info is carried via denormalized fields.
+      job_id: null,
       invoice_number: invoiceNumber,
       status: 'draft',
       customer_name: estimate.customer_name,

@@ -105,9 +105,10 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   if (!appointment) return null;
 
   const urgency = URGENCY_STYLES[appointment.urgency] || URGENCY_STYLES.routine;
-  // leads is a reverse-join array (leads.appointment_id -> appointments.id).
-  // In practice at most one lead references any given appointment at a time.
-  const linkedLead = Array.isArray(appointment.leads) ? appointment.leads[0] : appointment.leads;
+  // jobs is a reverse-join array (jobs.appointment_id -> appointments.id, 1:1 per D-06).
+  // Present only when the appointment payload joins jobs; otherwise undefined and the
+  // Create Invoice shortcut stays hidden (non-fatal).
+  const linkedLead = Array.isArray(appointment.jobs) ? appointment.jobs[0] : appointment.jobs;
 
   async function handleCancel() {
     setCancelling(true);
@@ -330,11 +331,11 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
         </div>
 
         <SheetFooter className="flex-col gap-2">
-          {/* Create Invoice — shortcut for the linked lead (gated on invoice-ready statuses) */}
-          {linkedLead && ['booked', 'completed', 'paid'].includes(linkedLead.status) && !showCompletionNotes && (
+          {/* Create Invoice — shortcut for the linked job (gated on invoice-ready statuses) */}
+          {linkedLead && ['scheduled', 'completed', 'paid'].includes(linkedLead.status) && !showCompletionNotes && (
             <Button
               variant="outline"
-              onClick={() => router.push(`/dashboard/invoices/new?lead_id=${linkedLead.id}`)}
+              onClick={() => router.push(`/dashboard/invoices/new?job_id=${linkedLead.id}`)}
               className="w-full h-11 border-[var(--brand-accent)]/30 text-[var(--brand-accent)] hover:bg-accent"
             >
               <FileText className="h-4 w-4 mr-2" />
