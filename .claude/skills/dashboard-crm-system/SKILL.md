@@ -1,6 +1,6 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, inquiries tab, customers, calendar, calls, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, Inquiries tab from inquiries table, Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, design tokens, or UI polish patterns."
+description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, inquiries tab, customers list + detail, calendar, calls, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, Inquiries tab from inquiries table, Customers list page + Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), prod-readiness 2026-06 UX/IA repointing (Customers list route, More-tab three-section regroup, CommandPalette Radix Dialog a11y, dashboard/stats 'new' = open inquiries, global search customers group), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, command palette, navigation/IA, design tokens, or UI polish patterns."
 ---
 
 # Dashboard & CRM System — Complete Reference
@@ -9,7 +9,15 @@ This document is the single source of truth for the dashboard and CRM
 system. Read this before making any changes to dashboard pages or CRM
 components.
 
-**Last updated**: 2026-04-21 (Phase 59 — customer/job model separation:
+**Last updated**: 2026-06-04 (prod-readiness 2026-06 — Customers LIST page
+added at `/dashboard/customers` (closes 5 dead "Back to Customers" 404s);
+sidebar + mobile More-menu Customers entry; More-tab regrouped into three
+sections (Business / AI & Calls / Billing & Money); CommandPalette wrapped
+in Radix Dialog for a11y + "leads"→"customers" copy; Phase-59 repointing of
+dashboard/stats 'new' tile, global search customers group, and
+HelpDiscoverabilityCard links)
+
+**Prior update**: 2026-04-21 (Phase 59 — customer/job model separation:
 Jobs tab rewired to jobs table, new Inquiries tab, Customer detail page,
 Merge/Unmerge UX, Admin Merges view, D-07a owner-responsibility stance,
 chatbot corpus split into customers/jobs/inquiries)
@@ -18,6 +26,24 @@ chatbot corpus split into customers/jobs/inquiries)
 
 ## Scope Notes (read first)
 
+- **Prod-readiness 2026-06 (UX/IA repointing, branch `fix/prod-readiness-2026-06`)** —
+  Closes Phase-59 follow-up gaps. Presentational / wiring only; no DB or entity changes:
+  - **Customers LIST page** at `/dashboard/customers/page.js` — previously only the
+    `[id]` detail page existed, so the 5 "Back to Customers" links scattered across
+    the customer-detail surfaces all 404'd. The route now resolves. See Section 5e.
+  - **Customers nav entry** added to `DashboardSidebar.jsx` (desktop, after Inquiries,
+    `Contact` icon) and to the `/dashboard/more` mobile More menu under **Business**.
+  - **More-tab regroup** — `/dashboard/more/page.js` flat 11-item list → THREE labeled
+    sections (Business / AI & Calls / Billing & Money). All routes preserved 1:1; the
+    `invoicing` flag still gates Invoice Settings + the Invoices/Estimates quick-access.
+    See Section 14.
+  - **CommandPalette a11y** — `CommandPalette.jsx` now renders inside the shared Radix
+    `Dialog` (`src/components/ui/dialog.jsx`) for focus trap / focus restore / Escape /
+    `role=dialog aria-modal`, replacing the hand-rolled overlay. Stale "leads" copy +
+    icon updated to "customers". See Section 21.
+  - **Phase-59 repointing** — `GET /api/dashboard/stats` "new" tile now counts **open
+    inquiries** (was leads); `GET /api/search` returns a `type:'customers'` group;
+    `HelpDiscoverabilityCard` quick-links point at live `/dashboard/*` routes.
 - **Phase 59 (Customer/Job model separation, 2026-04-21)** — Full entity split.
   `leads` DB table **dropped** (migration 061). All prior Lead* component files
   **deleted**: `LeadStatusPills.jsx`, `LeadCard.jsx`, `LeadFlyout.jsx`,
@@ -112,6 +138,7 @@ layout.js                          DashboardSidebar (desktop) + BottomTabBar (mo
   ├── page.js (/)                  Daily Ops hub (bento tiles: TodayAppointments, Calls, HotJobsTile, Usage)
   ├── jobs/page.js                 Status pill strip + filter bar + job list + JobFlyout
   ├── inquiries/page.js            Status pill strip (Open/Converted/Lost) + filter bar + inquiry list + InquiryFlyout
+  ├── customers/page.js            Customers LIST (prod-readiness 2026-06): search + customer rows → detail
   ├── customers/[id]/page.js       Customer detail: sticky header + 3 tabs (Activity / Jobs / Invoices) + Edit modal + Merge/Unmerge
   ├── calendar/page.js             CalendarView + ConflictAlertBanner + agenda + TimeBlocks + Jobber overlays
   ├── calls/page.js                Date-grouped expandable call cards + filters + summary stats
@@ -168,10 +195,17 @@ request without losing client-side interactivity.
 
 ### Navigation
 
-**`DashboardSidebar`** — desktop-only (lg+). 7 nav items:
-Home, Jobs, Inquiries, Calendar, Calls, Invoices, More. Sidebar stays navy in
-both light/dark modes (`bg-[var(--sidebar-bg)]`). Between Ask Voco AI
-button and Log Out: theme toggle (sun/moon) via `next-themes.setTheme`.
+**`DashboardSidebar`** — desktop-only (lg+). 8 nav items:
+Home, Jobs, Inquiries, **Customers** (prod-readiness 2026-06, `Contact`
+icon, inserted after Inquiries), Calendar, Calls, Invoices, More. The
+Invoices entry is filtered out when `invoicing=false`
+(`NAV_ITEMS.filter(...)`). Sidebar stays navy in both light/dark modes
+(`bg-[var(--sidebar-bg)]`). Between Ask Voco AI button and Log Out: theme
+toggle (sun/moon) via `next-themes.setTheme`.
+
+> **Note**: Customers is NOT a `BottomTabBar` tab (still 5 tabs on mobile).
+> Mobile reaches Customers via the `/dashboard/more` Business section
+> (see Section 14) — same parity treatment as Calendar.
 
 **`BottomTabBar`** — mobile-only (`lg:hidden`). 5 tabs: Home, Calls,
 Jobs, Inquiries, More. **Calendar demoted to More overflow** (Phase 59 —
@@ -477,6 +511,54 @@ Surfaces:
 **Retention semantics**: `customer_merge_audit` rows are retained forever.
 `unmerged_at` marks a successful undo but does NOT delete the row. The view
 shows the complete history of all consolidations for audit/legal purposes.
+
+---
+
+## 5e. Customers List Page (prod-readiness 2026-06 — new)
+
+**File**: `src/app/dashboard/customers/page.js`
+
+Client component, modeled on the Jobs / Inquiries pages. **Added to close
+5 dead "Back to Customers" 404s** — previously only `customers/[id]` existed,
+so every "back to list" affordance pointed at a non-existent route.
+
+### Data flow
+
+- Fetches `GET /api/customers?search=<term>` (route → `listCustomers` in
+  `src/lib/customers.js`). No Realtime subscription here (unlike Jobs/Inquiries);
+  refetch is driven by the committed `?search=` URL param.
+- Search input is debounced 300ms → `router.replace('/dashboard/customers?search=')`;
+  the committed `searchParams.get('search')` is the single fetch trigger.
+- States: loading (4× `<Skeleton>` rows), `<ErrorState onRetry>`,
+  filtered-empty (Clear-search affordance), zero-data `<EmptyState icon={Contact}
+  headline="No customers yet">`, and the row list.
+
+### Row shape (`CustomerRow`)
+
+Each row is a `<Link href={/dashboard/customers/${id}}>` card (`card`-token
+styling, hover lift) showing:
+- `Contact` avatar + `name || phone_e164 || 'Unknown'`
+- phone (`phone_e164`, `Phone` icon)
+- **jobs count** — `readCount(customer.jobs)` from the `jobs:jobs(count)` embed
+- **inquiries count** — `readCount(customer.open_inquiries)`, brand-accent
+  pill, only rendered when `> 0`
+
+`readCount()` handles the Supabase `relation:relation(count)` embed shape
+(`[{ count: N }]`).
+
+### Two accuracy caveats (DO NOT silently "fix" — they are known)
+
+1. **Inquiries count is TOTAL, not open.** The `listCustomers` select aliases
+   the embed `open_inquiries:inquiries(count)`, but the embed has **no
+   `.eq('status','open')` filter**, so the badge counts ALL inquiries for the
+   customer regardless of status. The alias name is aspirational. (Contrast:
+   the customer-detail `computeStatsInline` *does* filter `status='open'`.)
+   To make the badge truly "open", add a filtered embed/aggregate to
+   `listCustomers`.
+2. **VIP star is inert.** `CustomerRow` reads `customer.is_vip ||
+   customer.has_vip_job`, but the `listCustomers` select returns **neither**
+   field, so the `<Star>` never renders today. It lights up only once the list
+   endpoint starts returning an `is_vip` (or `has_vip_job`) flag.
 
 ---
 
@@ -837,9 +919,31 @@ Cleanup via `channel.unsubscribe()` in effect return.
 
 ---
 
-## 14. Settings Panels — /dashboard/more/*
+## 14. More Hub + Settings Panels — /dashboard/more/*
 
-### Quick list
+### More hub page (`/dashboard/more/page.js`) — three-section regroup (prod-readiness 2026-06)
+
+The flat 11-item `MORE_ITEMS` list was regrouped into THREE labeled
+sections (`MORE_SECTIONS`). **Presentational only — every route is preserved
+1:1.** Each section renders a `card.base` group with a uppercase
+section-label heading. Empty sections are dropped after flag filtering.
+
+| Section | Items (in order) |
+|---------|------------------|
+| **Business** | Services & Pricing, Working Hours, Service Zones & Travel, Account, **Customers** (`/dashboard/customers`), **Calendar** (`/dashboard/calendar`) |
+| **AI & Calls** | AI & Voice Settings, Call Routing, Notifications & Escalation, Features |
+| **Billing & Money** | Billing, Invoice Settings, Integrations |
+
+- **Customers + Calendar** were added to **Business** specifically for
+  **mobile parity** — neither has a `BottomTabBar` slot (Customers has no
+  tab; Calendar was demoted to overflow in Phase 59), so the More hub is the
+  only mobile path to them. Both still appear in the desktop sidebar.
+- **`invoicing` flag gating is intact**: `Invoice Settings` is filtered out
+  of Billing & Money when `invoicing=false`; the mobile quick-access
+  `Invoices`/`Estimates` block is likewise hidden. A section that ends up
+  empty after filtering is not rendered.
+
+### Settings route quick list
 
 - `/more/services-pricing` — full service table (DnD, urgency tags,
   bulk select).
@@ -849,10 +953,11 @@ Cleanup via `channel.unsubscribe()` in effect return.
 - `/more/notifications` — per-outcome SMS/email Switch grid
   (booked/declined/not_attempted/attempted × SMS/email).
 - `/more/ai-voice-settings` — `SettingsAISection` (phone number + test call).
+- `/more/features` — feature-flag toggles (Phase 53).
 - `/more/billing` — plan card, usage ring gauge, invoices. Phase 58
   `ErrorState onRetry={refetchBilling}` (mutates both SWR caches).
 - `/more/invoice-settings` — business identity, tax, late fees, defaults,
-  numbering.
+  numbering. **Gated by `invoicing` flag.**
 - `/more/integrations` — Business Integrations (see Section 9).
 - `/more/call-routing` — schedule, pickup numbers, **Priority Callers**
   unified list merging `tenants.vip_numbers` (standalone) +
@@ -864,7 +969,7 @@ Cleanup via `channel.unsubscribe()` in effect return.
 
 `Ask Voco AI` button (fires `window.dispatchEvent(new Event('open-voco-chat'))`)
 + `Invoices` / `Estimates` quick-access links (desktop sidebar entries
-but not mobile bottom-bar tabs).
+but not mobile bottom-bar tabs). Hidden entirely when `invoicing=false`.
 
 ---
 
@@ -913,6 +1018,8 @@ persistence. Opened via `open-voco-chat` window event.
 | `GET/PATCH /api/inquiries/[id]` | `src/app/api/inquiries/[id]/route.js` | Inquiry detail + status update |
 | `POST /api/inquiries/[id]/convert` | same dir | Convert inquiry to job (manual offline flow) |
 | `GET /api/admin/merges` | `src/app/api/admin/merges/route.js` | Tenant-scoped customer_merge_audit rows (admin-only) |
+| `GET /api/search` | `src/app/api/search/route.js` | Command-palette grouped search (customers/calls/invoices/appointments/estimates) |
+| `GET /api/dashboard/stats` | `src/app/api/dashboard/stats/route.js` | Home tiles: "new" = open inquiries count+preview, invoice snapshot |
 | `GET /api/calls` | `src/app/api/calls/route.js` | Filtered (date, urgency, outcome, search) |
 | `GET/PATCH /api/escalation-contacts` | `src/app/api/escalation-contacts/route.js` | CRUD + reorder |
 | `GET/PATCH /api/setup-checklist` | `src/app/api/setup-checklist/route.js` | Derived items + dismiss/mark-done |
@@ -1011,6 +1118,12 @@ Full migration catalog lives in `auth-database-multitenancy`.
 | Invoices/estimates batch-review 404 | Missing `?ids=` query param | Expected — route requires ID list |
 | Recurring setup dialog for appointment | Not supported — invoice-only | Disambiguate user intent before implementation |
 | Dashboard dark-mode regression | Hardcoded `bg-white`/`bg-stone-*` without `dark:` variant | Swap to `bg-card`/`bg-muted` semantic tokens |
+| "Back to Customers" 404 | `/dashboard/customers` list route missing | Fixed prod-readiness 2026-06 (`customers/page.js`); ensure route exists |
+| Customers list inquiry badge looks too high | Embed `open_inquiries` is NOT filtered to open — counts ALL inquiries | Known caveat (Section 5e); add `status='open'` filter to `listCustomers` embed to fix |
+| VIP star never shows on customers list | `listCustomers` returns no `is_vip`/`has_vip_job` | Known caveat (Section 5e); list endpoint must return the flag |
+| Customer not reachable on mobile | Customers has no `BottomTabBar` tab | Expected — reach via `/dashboard/more` Business section |
+| Command palette doesn't trap focus / Esc not closing | Reverted to hand-rolled overlay | Must wrap in Radix `Dialog` (Section 21) |
+| Search shows "leads" group/copy | Stale pre-repointing copy | Group `type` is `customers`; update icon/placeholder to match |
 
 ---
 
@@ -1027,6 +1140,73 @@ Phase 59 replaced `leads.md` with three separate files:
 | `inquiries.md` | Inquiry lifecycle (open→converted/lost), D-07a stale-inquiry owner-responsibility policy, conversion flow |
 
 `ROUTE_DOC_MAP` updated: `/dashboard/jobs` → `jobs.md`, `/dashboard/inquiries` → `inquiries.md`, `/dashboard/customers/*` → `customers.md`. `KEYWORD_DOC_MAP` updated with new entity keywords.
+
+---
+
+## 21. Command Palette + Global Search
+
+**File**: `src/components/dashboard/CommandPalette.jsx`
+
+⌘K / Ctrl+K spotlight search. Debounced 250ms → `GET /api/search?q=`
+(`src/app/api/search/route.js`). Results are grouped by `type` and rendered
+with `TYPE_ICONS` keyed on the group type.
+
+### Radix Dialog wrapping (prod-readiness 2026-06)
+
+The palette now renders inside the shared Radix `Dialog`
+(`src/components/ui/dialog.jsx`) instead of a hand-rolled fixed overlay. The
+Dialog provides **focus trap, focus restore on close, Escape-to-close
+(`onOpenChange`), and `role=dialog` / `aria-modal`** for free. Implementation
+notes:
+
+- `<DialogContent showCloseButton={false}>` anchored near the top
+  (`top-[15vh] translate-y-0`) to keep command-palette convention.
+- `onOpenAutoFocus` is `preventDefault()`-ed so focus lands on the search
+  `<input>` (via `inputRef`), not the first result.
+- A visually-hidden `<DialogTitle className="sr-only">Search</DialogTitle>`
+  supplies the accessible name.
+- ⌘K toggle is still a global `keydown` listener; Escape is handled by the
+  Dialog (so it is intentionally NOT in the local `handleKeyDown`).
+- ArrowUp/Down + Enter still drive the `selectedIndex` keyboard nav over the
+  flattened result list.
+
+### Search groups (`/api/search`)
+
+Returns up to 5 rows per group; `type` values match `CommandPalette`'s
+`TYPE_ICONS`:
+
+| Group `type` | Source table | Item href |
+|--------------|--------------|-----------|
+| `customers` | `customers` (name/phone ILIKE) | `/dashboard/customers/${id}` |
+| `calls` | `calls` (from_number ILIKE) | `/dashboard/calls` |
+| `invoices` | `invoices` | `/dashboard/invoices/${id}` |
+| `appointments` | `appointments` | `/dashboard/calendar` |
+| `estimates` | `estimates` | `/dashboard/estimates/${id}` |
+
+**Prod-readiness 2026-06**: the customers group replaced the prior stale
+`leads` group/copy — the route already queried the `customers` table (it
+still uses an internal `leadsRes` variable name), and `CommandPalette`'s
+icon/placeholder/empty copy were updated from "leads" → "customers" to match
+the `type:'customers'` payload.
+
+---
+
+## 22. Phase-59 Repointing (prod-readiness 2026-06)
+
+Three smaller wiring fixes that finished the Phase-59 entity migration:
+
+- **`GET /api/dashboard/stats`** (`src/app/api/dashboard/stats/route.js`) —
+  the "new" tile (`newLeadsCount` / `newLeadsPreview`) now counts/previews
+  **open `inquiries`** (`status='open'`, joined to `customers` for
+  name/phone), not the dropped `leads` table. Response keys keep their legacy
+  `newLeads*` names; the preview is flattened to `caller_name` / `from_number`
+  so the existing home tile renders unchanged.
+- **Global search customers group** — see Section 21.
+- **`HelpDiscoverabilityCard`** (`src/components/dashboard/HelpDiscoverabilityCard.jsx`)
+  — the 4 "Where do I…" quick-link tiles now point at live routes:
+  `/dashboard/services`, `/dashboard/more/ai-voice-settings`,
+  `/dashboard/more/notifications`, `/dashboard/more/billing` (no stale
+  `/dashboard/analytics` or `leads` links).
 
 ---
 

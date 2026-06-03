@@ -1,13 +1,13 @@
 ---
 name: payment-architecture
-description: Complete architectural reference for the payment, billing, and subscription system — Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table pattern, idempotency), Billing Meters overage system, subscription lifecycle (trialing/active/past_due/canceled/paused), usage tracking (increment_calls_used RPC), subscription enforcement gate, billing notifications (trial_will_end, payment_failed), billing dashboard (plan card, UsageRingGauge, invoices, Stripe Customer Portal), pricing page (3 plans with monthly/annual/overage), all 4 billing DB tables with RLS policies. Phase 59: invoices.job_id attribution (lead_id removed — customer derivable via job.customer_id; ad-hoc invoices without a job remain possible per D-11). Use this skill whenever making changes to Stripe integration, checkout sessions, subscription handling, usage tracking, overage billing, billing notifications, billing dashboard, pricing page, or any payment-related API route. Also use when the user asks about how billing works, wants to modify subscription logic, or needs to debug payment/webhook issues.
+description: Complete architectural reference for the payment, billing, and subscription system — Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table pattern, atomic idempotency via stripe_webhook_events.processed flag / migration 064), Basil API version pin (2025-03-31.basil) with subscription-item period reads + invoice.parent.subscription_details, Billing Meters overage system (Python agent is sole reporter via stripe.billing.meter_events.create), subscription lifecycle (trialing/active/past_due/canceled/paused), usage tracking (increment_calls_used RPC), subscription enforcement gate, billing notifications (trial_will_end, payment_failed), billing dashboard (plan card, UsageRingGauge, invoices, Stripe Customer Portal), pricing page (3 plans with monthly/annual/overage), all 4 billing DB tables with RLS policies. Phase 59: invoices.job_id attribution (lead_id removed — customer derivable via job.customer_id; ad-hoc invoices without a job remain possible per D-11). Use this skill whenever making changes to Stripe integration, checkout sessions, subscription handling, usage tracking, overage billing, billing notifications, billing dashboard, pricing page, or any payment-related API route. Also use when the user asks about how billing works, wants to modify subscription logic, or needs to debug payment/webhook issues.
 ---
 
 # Payment Architecture — Complete Reference
 
 This document is the single source of truth for the entire payment, billing, and subscription system. Read this before making any changes to Stripe integration, checkout flows, subscription handling, usage tracking, overage billing, or the billing dashboard.
 
-**Last updated**: 2026-04-21 (Phase 59 — invoices.job_id attribution: lead_id column dropped by migration 061; job_id added by 059; NOT NULL conditional per D-11 — ad-hoc invoices without a job remain NULLABLE; customer derivable via job.customer_id. Customer detail Invoices tab added. increment_calls_used RPC unchanged.)
+**Last updated**: 2026-06-04 (Prod-readiness 2026-06 — (1) Atomic webhook idempotency: migration 064 adds `stripe_webhook_events.processed boolean`; the handler now re-runs on a duplicate event whose prior attempt never finished (`processed=false`), closing the "marked processed before processing" drop hole. (2) `apiVersion` pinned to `2025-03-31.basil` in `src/lib/stripe.js`; webhook + verify-checkout now read period fields from the subscription ITEM and `invoice.subscription` from `invoice.parent.subscription_details` (Basil field moves). (3) Python agent overage path fixed: post-call now reports via `stripe.billing.meter_events.create` instead of the removed `subscription_items.create_usage_record` that silently failed on Basil. Phase 59 invoices.job_id attribution unchanged.)
 
 ---
 
@@ -26,7 +26,8 @@ This document is the single source of truth for the entire payment, billing, and
 | **Banners** | `BillingWarningBanner.js`, `TrialCountdownBanner.js` | Dashboard warnings for past_due and trial countdown |
 | **Notifications** | `src/emails/PaymentFailedEmail.jsx`, `TrialReminderEmail.jsx` | Email templates for billing events |
 | **Stripe SDK** | `src/lib/stripe.js` | Lazy-init Stripe singleton via Proxy |
-| **DB Schema** | Migrations 010, 013, 016, 017, 020, 021, 037 | 4 billing tables + RPC + RLS |
+| **DB Schema** | Migrations 010, 013, 016, 017, 020, 021, 037, 064 | 4 billing tables + RPC + RLS (064 adds `stripe_webhook_events.processed`) |
+| **Stripe SDK config** | `src/lib/stripe.js` | `apiVersion` pinned to `2025-03-31.basil` (Basil — required for Billing Meters + period-field moves) |
 
 ```
 Pricing Page (/pricing)
@@ -75,7 +76,7 @@ Pricing Page (/pricing)
 | `src/app/api/billing/invoices/route.js` | GET: 5 most recent invoices via Stripe API |
 | `src/app/api/billing/portal/route.js` | GET: generates Stripe Customer Portal session, 303 redirect |
 | `src/app/api/stripe/webhook/route.js` | POST: Stripe webhook handler — 9 event types |
-| `src/lib/stripe.js` | Stripe SDK lazy singleton via Proxy pattern |
+| `src/lib/stripe.js` | Stripe SDK lazy singleton via Proxy pattern; pins `apiVersion: '2025-03-31.basil'` |
 | `src/lib/subscription-gate.js` | checkSubscriptionGate() — blocks calls for inactive subscriptions |
 | `src/app/dashboard/more/billing/page.js` | Billing page: plan card, usage ring, details, invoices |
 | `src/components/dashboard/UsageRingGauge.js` | SVG donut ring gauge for call usage visualization |
@@ -90,6 +91,7 @@ Pricing Page (/pricing)
 | `supabase/migrations/020_billing_notifications_unique.sql` | UNIQUE constraint on billing_notifications |
 | `supabase/migrations/021_fix_subscriptions_rls.sql` | Fix subscriptions RLS policy role restriction |
 | `supabase/migrations/037_fix_overage_off_by_one.sql` | Fix `>=` to `>` in increment_calls_used RPC (off-by-one overage bug) |
+| `supabase/migrations/064_webhook_event_status.sql` | Adds `processed boolean NOT NULL DEFAULT false` to `stripe_webhook_events` — gates atomic-idempotency re-run (prod-readiness 2026-06) |
 
 ---
 
@@ -184,18 +186,69 @@ Three phases:
 | `invoice.paid` | `handleInvoicePaid` | Reset calls_used on billing cycle renewal |
 | `invoice.payment_failed` | `handleInvoicePaymentFailed` | SMS + email with Stripe portal URL |
 
-### Idempotency (D-09)
+### Idempotency (D-09) — atomic "processed flag" pattern (migration 064)
 
-Global idempotency via `stripe_webhook_events` table:
+Global idempotency via `stripe_webhook_events` table, made **atomic** by the `processed` boolean (migration 064). The pre-handler INSERT wins the concurrency race (UNIQUE on `event_id`), but acking is gated on `processed=true` — which is set only AFTER the handler block succeeds.
+
+**The bug this closes**: the old code marked the event "processed" by simply inserting the `event_id` BEFORE running the handler, then short-circuited every duplicate with `received: true`. If a handler then rethrew (e.g. `handleSubscriptionEvent` / `handleInvoicePaid` DB error), the committed `event_id` row caused Stripe's retry to hit the 23505 guard and ack WITHOUT ever completing the side effects — the event was permanently dropped.
+
+**The new flow** (`POST` in `route.js`):
 ```js
-const { error } = await supabase.from('stripe_webhook_events')
+// 1. INSERT event_id (processed defaults to false)
+const { error: idempotencyError } = await supabase
+  .from('stripe_webhook_events')
   .insert({ event_id: event.id, event_type: event.type });
-if (error?.code === '23505') return Response.json({ received: true }); // duplicate
+
+if (idempotencyError?.code === '23505') {
+  // Duplicate — inspect the existing row's processed flag
+  const { data: existing, error: selectError } = await supabase
+    .from('stripe_webhook_events')
+    .select('processed').eq('event_id', event.id).maybeSingle();
+  if (selectError) return Response.json({ error: ... }, { status: 500 }); // Stripe retries
+  if (existing?.processed) return Response.json({ received: true });       // already done → ack
+  // processed=false → a prior attempt died mid-handler → FALL THROUGH and re-run
+} else if (idempotencyError) {
+  return Response.json({ error: ... }, { status: 500 }); // DB error → Stripe retries
+}
+
+// 2. Run the (idempotent) handler in try/catch
+try { /* route event.type → handler */ }
+catch (err) { return Response.json({ error: 'Handler failed' }, { status: 500 }); }
+// ↑ row stays processed=false, so the retry re-runs instead of short-circuiting
+
+// 3. Handler succeeded → flip processed=true
+const { error: processedError } = await supabase
+  .from('stripe_webhook_events').update({ processed: true }).eq('event_id', event.id);
+if (processedError) return Response.json({ error: ... }, { status: 500 });
+// ↑ side effects done but flag write failed → 500 → Stripe replays idempotent
+//   handler + re-attempts the flag write (preferable to acking stuck at false)
+
+return Response.json({ received: true });
 ```
+
+**Why re-run is safe**: handlers are idempotent — `handleSubscriptionEvent` has the `stripe_updated_at` out-of-order/duplicate guard (skips stale or same-timestamp events), and `handleInvoicePaid` is a deterministic `calls_used = 0` reset. Replaying them produces no extra side effects.
+
+**No backfill** (per migration 064 header): existing rows default `processed=false`, but Stripe's delivery windows for them have closed, so they're never retried — the flag only governs in-flight/future deliveries.
 
 ### Out-of-Order Protection (D-10)
 
 `handleSubscriptionEvent` compares `stripe_updated_at` timestamps — skips stale events.
+
+### Basil (`2025-03-31.basil`) Field Moves
+
+The API version is pinned in `src/lib/stripe.js` (`apiVersion: '2025-03-31.basil'`). Under Basil, two fields the webhook + `verify-checkout` depend on moved location, so both files read them defensively with a fallback to the pre-Basil position:
+
+- **Period fields moved to the subscription ITEM**: `current_period_start` / `current_period_end` are now on each subscription item, not the Subscription object. Both `handleSubscriptionEvent` and `verify-checkout`'s `syncSubscription` read them from the `flatRateItem`:
+  ```js
+  const periodStart = flatRateItem?.current_period_start ?? subscription.current_period_start;
+  const periodEnd   = flatRateItem?.current_period_end   ?? subscription.current_period_end;
+  ```
+- **`invoice.subscription` moved under `invoice.parent`**: `handleInvoicePaid` and `handleInvoicePaymentFailed` resolve the subscription id as:
+  ```js
+  const subscriptionId = invoice.subscription ?? invoice.parent?.subscription_details?.subscription;
+  ```
+
+These read from the flat-rate item specifically (the item matched against `PLAN_MAP`), not the metered overage item.
 
 ### History Table Pattern (D-13)
 
@@ -259,6 +312,20 @@ Call completes → Python agent post-call pipeline
 - **Calls never blocked**: Over-quota calls add charges to next invoice, never rejected
 - **Trial handling**: Stripe accepts meter events during trial but bills at $0 until trial ends
 - **Stripe SDK version**: Requires `stripe@^17.0.0` or later (API version `2025-03-31.basil`)
+
+### Who Reports Overage: the Python Agent is the Sole Path
+
+Overage reporting happens **only** in the Python LiveKit agent's post-call pipeline (`livekit-agent/src/post_call.py`, a separate Railway-deployed repo — see `voice-call-architecture` skill). The Next.js side never reports meter events; it only *creates the overage subscription item* once, at onboarding (`handleCheckoutCompleted` / `verify-checkout` `fulfillSubscription`, via `stripe.subscriptionItems.create` with idempotency key `add_overage_{subscription_id}`).
+
+**Prod-readiness 2026-06 fix (Python side)**: the agent previously reported overage via `stripe.billing.subscription_items.create_usage_record(...)` — an endpoint **removed in Basil** (`2025-03-31.basil`). On Basil it silently failed, so overage was never billed. It now reports through the Billing Meters API:
+```python
+stripe.billing.meter_events.create(
+    event_name="voco_calls",
+    payload={"value": "1", "stripe_customer_id": <cus_id>},
+    identifier=f"overage_{call_id}",   # idempotency — dedupes retries
+)
+```
+Routing is by `stripe_customer_id` (no subscription-item id needed), and the per-event `identifier=overage_{call_id}` makes Stripe-side reporting idempotent on top of the DB-side `usage_events` PK dedup.
 
 ---
 
@@ -395,7 +462,7 @@ Both use React Email components with inline styles matching design tokens.
 
 **RLS**: SELECT-own for all roles (via tenants.owner_id — fixed in migration 021 to remove TO authenticated restriction), service_role ALL
 
-### `stripe_webhook_events` (Migration 010)
+### `stripe_webhook_events` (Migration 010 + 064)
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -403,6 +470,7 @@ Both use React Email components with inline styles matching design tokens.
 | `event_id` | text UNIQUE | Idempotency key |
 | `event_type` | text | NOT NULL |
 | `processed_at` | timestamptz | DEFAULT now() |
+| `processed` | boolean | NOT NULL DEFAULT false — added by migration 064. Gates atomic idempotency: set to `true` only AFTER the handler succeeds; a duplicate event whose row is still `false` is re-run (see Idempotency D-09). No backfill — existing rows stay `false` but are never retried. |
 
 **RLS**: Service role only (no authenticated access)
 
@@ -459,7 +527,11 @@ Both use React Email components with inline styles matching design tokens.
 
 - **Two line items per subscription**: Every subscription has a flat-rate price + metered overage price. The Checkout Session only includes the flat-rate item — the metered overage item is added post-checkout by the webhook handler (and verify-checkout fallback) using a Stripe idempotency key (`add_overage_{subscription_id}`) to prevent duplicate items from concurrent processing.
 
-- **Billing Meters (not legacy usage_records)**: The old `POST /v1/subscription_items/{id}/usage_records` endpoint was removed in Stripe API version `2025-03-31.basil`. The new `stripe.billing.meterEvents.create()` uses customer_id + event_name, not subscription item ID.
+- **Billing Meters (not legacy usage_records)**: The old `POST /v1/subscription_items/{id}/usage_records` endpoint (`subscription_items.create_usage_record` in the SDK) was removed in Stripe API version `2025-03-31.basil`. The new `stripe.billing.meterEvents.create()` (JS) / `stripe.billing.meter_events.create()` (Python) uses customer_id + event_name, not subscription item ID. Prod-readiness 2026-06 caught that the Python agent was still calling the removed endpoint — it failed silently on Basil, so overage went unbilled until the Python path was migrated to the Meters API.
+
+- **Atomic webhook idempotency via `processed` flag (migration 064)**: The webhook no longer treats "row inserted" as "event handled." It inserts `event_id` first, runs the handler, and flips `processed=true` only on success; any failure leaves `processed=false` so Stripe's retry re-runs the (idempotent) handler instead of short-circuiting on the dup guard. Closes the prior hole where a transient handler failure permanently dropped the event. See Idempotency (D-09).
+
+- **API version pinned to Basil**: `src/lib/stripe.js` pins `apiVersion: '2025-03-31.basil'` so SDK upgrades can't silently shift field shapes. Basil moved `current_period_start/_end` onto the subscription item and `invoice.subscription` under `invoice.parent.subscription_details` — the webhook + verify-checkout read both with `?? <pre-Basil location>` fallbacks.
 
 - **One meter, three prices**: All three plans share the `voco_calls` Billing Meter. Stripe resolves the per-unit rate from whichever overage price is on the customer's subscription.
 
@@ -500,7 +572,7 @@ Both use React Email components with inline styles matching design tokens.
 - **Onboarding wizard checkout flow**: See `onboarding-flow` skill for how the checkout step fits into the 5-step wizard, plan param capture from pricing page, and `useWizardSession` session management.
 - **Phone provisioning post-checkout**: See `onboarding-flow` skill for country-aware provisioning in the `handleCheckoutCompleted` webhook handler.
 - **Auth + Supabase clients**: See `auth-database-multitenancy` skill for `createSupabaseServer()` vs service role patterns, and why the webhook handler uses service role for all writes.
-- **Voice call post-call pipeline**: See `voice-call-architecture` skill for how the Python agent calls `increment_calls_used` and reports Stripe meter events.
+- **Voice call post-call pipeline (sole overage-reporting path)**: See `voice-call-architecture` skill for how the Python agent (`livekit-agent/src/post_call.py`, separate Railway repo) calls `increment_calls_used` and reports Stripe meter events via `stripe.billing.meter_events.create` (`event_name='voco_calls'`, `identifier=overage_{call_id}`). The Next.js side only creates the overage subscription item at onboarding; it never reports usage.
 - **Dashboard billing page**: See `dashboard-crm-system` skill for how the billing page fits into the More menu structure and the BillingWarningBanner/TrialCountdownBanner in the dashboard layout.
 - **Phase 59 invoice attribution (Voco internal invoices — NOT Stripe invoices)**: The Voco `invoices` table (migrations 029 + Phase 59) had `lead_id` replaced by `job_id` (NULLABLE). Customer is now derivable via `invoices.job_id → jobs.customer_id`. Ad-hoc invoices without a job remain valid (D-11 — NOT NULL enforcement deferred). The Customer detail page's Invoices tab (Phase 59 Plan 07) queries `invoices JOIN jobs ON jobs.id = invoices.job_id WHERE jobs.customer_id = :id`, gated by `features_enabled.invoicing`. Full schema in `auth-database-multitenancy` skill.
 

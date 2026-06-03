@@ -1,13 +1,13 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 62 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), Phase 61 validated-address columns on appointments + inquiries + gmaps_validate_events sibling table + extended RPC overloads, and activity_event_type strict enum with 16 values. Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 66 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), Phase 61 validated-address columns on appointments + inquiries + gmaps_validate_events sibling table + extended RPC overloads, activity_event_type strict enum with 16 values, and prod-readiness 2026-06 migrations (estimates.customer_id, stripe_webhook_events.processed flag, rate_limit_hits table + increment_rate_limit RPC, calls.call_sid UNIQUE constraint). Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-**Last updated**: 2026-05-03 (Phase 61 Plan 04 — migration 062: validated-address columns on appointments + inquiries (6 nullable columns + verdict CHECK), new `gmaps_validate_events` sibling telemetry table with tenant-scoped RLS, `book_appointment_atomic` RPC overload extended from 11 to 17 args, `record_call_outcome` RPC overload extended from 8 to 14 args. Backward-compat preserved — all new RPC params DEFAULT NULL.)
+**Last updated**: 2026-06-04 (Prod-readiness 2026-06 — migrations 063–066: `estimates.customer_id` nullable FK → customers (re-link after 061 dropped `leads`), `stripe_webhook_events.processed` boolean flag (atomic webhook idempotency), new `rate_limit_hits` table + `increment_rate_limit` SECURITY DEFINER RPC (durable instance-independent fixed-window rate limiting for `/api/public-chat` + `/api/demo-voice`), and `calls.call_sid` UNIQUE constraint replacing the non-unique partial index from 045 (de-dupes owner-pickup rows from Twilio webhook retries). All additive / forward-fix-only.)
 
 ---
 
@@ -21,7 +21,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 62 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 66 sequential migrations building full schema |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -127,6 +127,10 @@ Realtime subscriptions (browser):
 | `supabase/migrations/060_phase59_rpcs.sql` | Phase 59 — record_call_outcome, merge_customer, unmerge_customer RPCs (SECURITY DEFINER, service_role only) |
 | `supabase/migrations/061_drop_legacy_leads.sql` | Phase 59 — DROP TABLE leads + lead_calls, activity_event_type enum (16 values), DROP COLUMN lead_id from activity_log + invoices + estimates |
 | `supabase/migrations/062_phase61_address_validation.sql` | Phase 61 — Google Maps Address Validation + structured address storage. **appointments**: 6 new nullable columns — `formatted_address text`, `place_id text`, `latitude numeric(10,7)`, `longitude numeric(10,7)`, `address_components jsonb`, `address_validation_verdict text` with CHECK constraint enforcing 6-state enum (`confirmed | confirmed_with_changes | unconfirmed | error | skipped | unsupported_region`). Backward-compat columns preserved (`service_address`, `postal_code`, `street_name`). **inquiries**: identical 6 columns + identical CHECK constraint (D-F1' override of CONTEXT D-F1 — Phase 59 dropped legacy `leads`; capture_lead now writes to inquiries via record_call_outcome RPC). **gmaps_validate_events**: new sibling telemetry table (D-C2' override of CONTEXT D-C2 — `usage_events` schema `(call_id PK, tenant_id, created_at)` cannot hold per-validate rows). Columns: `id uuid PK`, `tenant_id`, `call_id` (uuid FK calls(id) ON DELETE SET NULL), `verdict`, `latency_ms`, `cost_micro_cents`, `region_code`, `created_at`. RLS enabled with SELECT-own policy (`tenants WHERE owner_id = auth.uid()`); INSERT only via service-role. Index `(tenant_id, created_at DESC)`. **book_appointment_atomic RPC**: signature extended from 11 args to 17 args (drop-loop pg_proc overload eviction + CREATE OR REPLACE; new GRANT references the new 17-arg signature because Postgres treats different arities as different functions). All new params DEFAULT NULL — existing 11-arg callers unchanged. **record_call_outcome RPC**: signature extended from 8 args to 14 args (same overload pattern; ground-truth signature was 8-arg per migration 060, not the 5-arg in the original CONTEXT). All new params DEFAULT NULL. **Indexes added**: `idx_appointments_place_id WHERE place_id IS NOT NULL`, `idx_inquiries_place_id WHERE place_id IS NOT NULL`, `idx_gmaps_validate_events_tenant_created`. |
+| `supabase/migrations/063_estimates_customer_id.sql` | Prod-readiness 2026-06 — `ALTER TABLE estimates ADD COLUMN customer_id uuid REFERENCES customers(id) ON DELETE SET NULL` + `CREATE INDEX idx_estimates_tenant_customer ON estimates(tenant_id, customer_id)`. Re-links estimates to customers after migration 061 dropped the legacy `leads` table (and `estimates.lead_id`). Nullable, NO backfill (dropped leads is gone; existing rows keep their denormalized customer_name/phone/email/address snapshot). ON DELETE SET NULL mirrors old lead_id semantics. No RLS change (existing estimates tenant-child policy covers the new column). |
+| `supabase/migrations/064_webhook_event_status.sql` | Prod-readiness 2026-06 — `ALTER TABLE stripe_webhook_events ADD COLUMN processed boolean NOT NULL DEFAULT false`. Makes Stripe webhook idempotency atomic: the pre-handler INSERT still wins the concurrency race, but completion is gated on `processed=true` (handler sets it only AFTER the side-effecting block succeeds). A mid-handler failure now re-runs on Stripe retry instead of being silently swallowed by the UNIQUE(event_id) 23505. NO backfill — existing rows default false (inert; their delivery windows are closed). No RLS change. |
+| `supabase/migrations/065_rate_limit.sql` | Prod-readiness 2026-06 — durable, instance-independent fixed-window rate limiting. New `rate_limit_hits` table (PK `(bucket, key, window_start)`, `count integer DEFAULT 0`) + index `idx_rate_limit_hits_window_start`; RLS enabled with service-role-only policy `service_role_all_rate_limit_hits` (no anon/authenticated access); SECURITY DEFINER RPC `increment_rate_limit(p_bucket text, p_key text, p_window_start timestamptz) RETURNS integer` (atomic upsert-and-increment returning new count), REVOKE EXECUTE FROM public + GRANT to service_role. Replaces the in-memory per-instance Maps in `/api/public-chat` + `/api/demo-voice`; daily cron `/api/cron/cleanup-rate-limits` prunes old rows via the window_start index. |
+| `supabase/migrations/066_calls_call_sid_unique.sql` | Prod-readiness 2026-06 — enforce one `calls` row per Twilio CallSid. De-dupes existing rows (keep highest `outbound_dial_duration_sec` NULLS LAST, tie-break earliest `created_at`/`id`; delete rest — does NOT sum durations), then `DROP INDEX IF EXISTS idx_calls_call_sid` (the non-unique partial index from 045) + `ALTER TABLE calls ADD CONSTRAINT calls_call_sid_unique UNIQUE (call_sid)`. Prevents duplicate owner-pickup rows from Twilio webhook retries double-counting the monthly cap. NULLs are DISTINCT in Postgres, so AI/LiveKit rows (call_sid NULL) are unaffected. Full UNIQUE constraint (not partial index) is required so the livekit-agent's `upsert(on_conflict="call_sid")` ON CONFLICT inference can match it. Deploy BEFORE the agent upsert. |
 
 ---
 
@@ -392,7 +396,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 36 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 and 019 documented in detail below; 018, 020–036 documented in the file map above with key migrations also detailed below.
+All 66 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 and 019 documented in detail below; 018, 020–036 documented in the file map above with key migrations also detailed below; 052/058–066 documented in the file map above (Phase 54+, Phase 59, Phase 61, and prod-readiness 2026-06) with Phase 59 RPCs/enums detailed in their dedicated sections.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -1106,6 +1110,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `invoice_payments` | 031 | Payment log entries per invoice (partial payment support) | Tenant child |
 | `invoice_reminders` | 032 | Idempotent reminder tracking per invoice (UNIQUE invoice_id + reminder_type) | Tenant child |
 | `sms_messages` | 045 | Audit log of inbound SMS + forwarded copies to tenant's `pickup_numbers` with `sms_forward=true`. Columns: id, tenant_id, from_number, to_number, body, direction (CHECK IN 'inbound','forwarded'), created_at. Index on (tenant_id, created_at). RLS: SELECT-own only via tenants.owner_id. | Tenant child (SELECT-own only) |
+| `rate_limit_hits` | 065 | Durable fixed-window rate-limit counters for `/api/public-chat` + `/api/demo-voice` (replaces in-memory Maps). Columns: bucket, key, window_start, count (PK `(bucket, key, window_start)`). Index on (window_start) for cleanup cron. Incremented via `increment_rate_limit` RPC; pruned daily by `/api/cron/cleanup-rate-limits`. NOT tenant-scoped (no tenant_id). | Service role only (`service_role_all_rate_limit_hits`) |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
@@ -1133,6 +1138,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 036: `urgency_classification` CHECK updated: 'high_ticket'→'urgent'
 - 042: `routing_mode` (TEXT, nullable, CHECK IN 'ai'|'owner_pickup'|'fallback_to_ai'), `outbound_dial_duration_sec` (INTEGER) — set by the Twilio dial-status webhook
 - 045: `call_sid` (TEXT, nullable) — Twilio CallSid. Populated by webhook routing to link owner-pickup call records to dial-status callbacks. Sparse index `idx_calls_call_sid WHERE call_sid IS NOT NULL`.
+- 066: `call_sid` UNIQUE constraint `calls_call_sid_unique` — replaces the 045 non-unique partial index (`DROP INDEX idx_calls_call_sid`). Only owner-pickup rows carry a non-NULL call_sid; NULLs are DISTINCT so AI/LiveKit rows are unconstrained. Migration de-dupes existing duplicate-call_sid rows first. Pairs with the livekit-agent owner-pickup `upsert(on_conflict="call_sid")` (full UNIQUE constraint is required for ON CONFLICT inference; a partial unique index would not match).
 
 **Leads columns added across migrations** (all on `leads` table — TABLE DROPPED IN 061):
 - 026: `postal_code`, `street_name`
@@ -1157,6 +1163,13 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 
 **Invoice_line_items columns added across migrations**:
 - 031: `item_type` CHECK expanded to add 'late_fee'
+
+**Estimates columns added across migrations** (all on `estimates` table):
+- 061: `lead_id` column **DROPPED** (legacy `leads` table dropped in 061).
+- 063: `customer_id` (uuid FK → customers ON DELETE SET NULL, NULLABLE) — re-links estimates to customers after 061 dropped `leads`/`estimates.lead_id`. No backfill (dropped leads gone; existing rows keep their denormalized customer_name/phone/email/address snapshot). Composite index `idx_estimates_tenant_customer (tenant_id, customer_id)`.
+
+**Stripe_webhook_events columns added across migrations**:
+- 064: `processed` (boolean NOT NULL DEFAULT false) — atomic webhook idempotency. Handler sets `processed=true` only AFTER the side-effecting block succeeds; a duplicate delivery with `processed=false` re-runs (handlers are idempotent), instead of being silently swallowed by the UNIQUE(event_id) 23505. No backfill (existing rows default false; their delivery windows are closed).
 
 ---
 
@@ -1540,6 +1553,47 @@ invoice_created     invoice_paid        invoice_voided      other
 - **D-13a Orphan leads** (no appointment_id) → inquiries with status preserved verbatim
 - **D-13b Duplicate-phone leads** → collapse to ONE customer per (tenant_id, phone_e164); latest name/address wins
 - **D-13c Test/spam data** → backfilled as-is; no quality filtering; owner cleans up post-cutover
+
+---
+
+## Prod-Readiness 2026-06: Migrations (063 / 064 / 065 / 066)
+
+Four additive, forward-fix-only migrations landed on branch `fix/prod-readiness-2026-06`. Full file-map entries above; the new table + RPC are detailed here in the same style as the Phase 59 RPC section.
+
+| Migration | Purpose |
+|-----------|---------|
+| `063_estimates_customer_id.sql` | ADD `estimates.customer_id` nullable FK → customers ON DELETE SET NULL + `idx_estimates_tenant_customer (tenant_id, customer_id)`. Re-links estimates after 061 dropped `leads`. No backfill. |
+| `064_webhook_event_status.sql` | ADD `stripe_webhook_events.processed boolean NOT NULL DEFAULT false`. Atomic webhook idempotency — completion gated on `processed=true`. No backfill. |
+| `065_rate_limit.sql` | CREATE `rate_limit_hits` table + `idx_rate_limit_hits_window_start` + service-role-only RLS + `increment_rate_limit` SECURITY DEFINER RPC. Durable fixed-window rate limiting. |
+| `066_calls_call_sid_unique.sql` | De-dupe call_sid rows → `DROP INDEX idx_calls_call_sid` (045) → `ADD CONSTRAINT calls_call_sid_unique UNIQUE (call_sid)`. One row per Twilio CallSid. |
+
+### `rate_limit_hits` table + `increment_rate_limit` RPC (Migration 065)
+
+Replaces the in-memory per-instance `Map` rate limiters in `/api/public-chat` and `/api/demo-voice` with a shared, Supabase-backed fixed-window counter that survives serverless cold starts and works across multiple Vercel instances.
+
+**`rate_limit_hits` columns**:
+| Column | Type | Notes |
+|--------|------|-------|
+| `bucket` | text | NOT NULL — limiter namespace (e.g. `public-chat`, `demo-voice`) |
+| `key` | text | NOT NULL — caller identity within the bucket (e.g. IP) |
+| `window_start` | timestamptz | NOT NULL — `now()` floored to the window size |
+| `count` | integer | NOT NULL DEFAULT 0 — incremented atomically by the RPC |
+
+PK: `(bucket, key, window_start)`. Index: `idx_rate_limit_hits_window_start` on `(window_start)` — powers the cleanup cron's range delete. **NOT tenant-scoped** (no `tenant_id`) — this is platform-level abuse protection on public endpoints, not tenant data.
+
+**RLS**: enabled. Single policy `service_role_all_rate_limit_hits` — `FOR ALL USING (auth.role() = 'service_role')`. No anon/authenticated policy → all non-service-role access is blocked. The Next.js routes call the RPC via the service-role client (`src/lib/supabase.js`).
+
+**`increment_rate_limit(p_bucket text, p_key text, p_window_start timestamptz) RETURNS integer` RPC** (SECURITY DEFINER):
+```sql
+INSERT INTO rate_limit_hits (bucket, key, window_start, count)
+VALUES (p_bucket, p_key, p_window_start, 1)
+ON CONFLICT (bucket, key, window_start)
+DO UPDATE SET count = rate_limit_hits.count + 1
+RETURNING count;
+```
+- Atomic upsert-and-increment — returns the new count for the current window in one round-trip.
+- Lockdown follows `027_lock_rpc_functions.sql`: `REVOKE EXECUTE ... FROM public; GRANT EXECUTE ... TO service_role`.
+- **Cleanup**: a daily cron `/api/cron/cleanup-rate-limits` prunes rows older than the retention window via the `window_start` index. Rows are disposable.
 
 ---
 
