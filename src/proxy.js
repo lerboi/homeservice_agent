@@ -128,8 +128,6 @@ export async function proxy(request) {
         .limit(1)
         .maybeSingle();
 
-      console.log(`[proxy] dashboard gate: ${user.email} | sub=${sub?.status ?? 'none'}`);
-
       // Subscription status is checked but no longer blocks dashboard access.
       // The BillingWarningBanner component shows warnings directly on the dashboard.
     }
