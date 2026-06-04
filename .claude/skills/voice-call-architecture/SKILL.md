@@ -8,7 +8,7 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-**Last updated**: 2026-05-03 (Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added) + Phase 61.1 — address-validation rule deadlock fix; WR-01/02 google_maps.py defects closed
+**Last updated**: 2026-06-04 (prod-readiness 2026-06 — documented that Layer-3 owner per-service urgency escalation now actually fires: `apply_owner_rules` derives the service via word-boundary matching `services.name` against the transcript (`MIN_SERVICE_NAME_LEN=4` guard), `classify_call` threads the transcript through, `triage_layer_used` can now legitimately be `layer3`; the prior single-service auto-escalation is NOT reintroduced. See §7 Triage System.) + Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added) + Phase 61.1 — address-validation rule deadlock fix; WR-01/02 google_maps.py defects closed
 
 ---
 
@@ -132,7 +132,7 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 | `src/lib/triage/classifier.py` | Three-layer triage orchestrator |
 | `src/lib/triage/layer1_keywords.py` | Regex urgency detection |
 | `src/lib/triage/layer2_llm.py` | LLM urgency classification (Groq/Llama 4 Scout) |
-| `src/lib/triage/layer3_rules.py` | Owner service-tag override |
+| `src/lib/triage/layer3_rules.py` | Owner service-tag escalation — transcript word-boundary matches `services.name` to find the call's service, raises urgency to its `urgency_tag` only on a genuine match (prod-readiness 2026-06: now actually wired; previously inert) |
 | `src/messages/en.json`, `src/messages/es.json` | Agent utterances + notification templates |
 | `pyproject.toml`, `Dockerfile`, `livekit.toml`, `sip-*.json` | Build + deploy config |
 
@@ -1072,8 +1072,40 @@ Valid urgencies: `{emergency, routine, urgent}`.
   Routine patterns checked FIRST (prevents "not urgent" matching emergency).
 - **Layer 2 — LLM** (`layer2_llm.py`): only when Layer 1 not confident.
   Groq + Llama 4 Scout via AsyncOpenAI, JSON mode, temp 0, 5s timeout.
-- **Layer 3 — Owner Rules** (`layer3_rules.py`): always runs. Queries
-  tenant's services for urgency_tag; escalates if higher severity.
+- **Layer 3 — Owner Rules** (`layer3_rules.py`): always runs. Queries the
+  tenant's active `services` (name + `urgency_tag`); escalates the call's
+  urgency to a matched service's tag **only when its severity is higher**.
+
+### Layer 3 service detection — now actually fires (prod-readiness 2026-06)
+
+**Prior bug (fixed 2026-06-04).** `classify_call` (`classifier.py`) never
+passed `detected_service` into `apply_owner_rules`, so Layer 3 could never
+identify which service the call was about — the owner's per-service
+`services.urgency_tag` config was **inert** and Layer 3 never escalated.
+
+**Fix.** `apply_owner_rules` now derives the service itself by
+**word-boundary matching each active `services.name` against the call
+transcript** (`re.search(rf"\b{re.escape(name)}\b", transcript_lower)`), with a
+`MIN_SERVICE_NAME_LEN=4` guard that skips short/generic names (e.g. "AC",
+"gas", "tap") to prevent spurious over-matching. First match wins.
+`classify_call` now threads the `transcript` through to `apply_owner_rules`
+on both the layer1-confident and layer2 paths.
+
+Constraints (the escalation stays conservative):
+
+- Layer 3 can only **raise** urgency, and only on a **genuine service-name
+  match** — no match leaves `base_urgency` untouched.
+- Layer 1 keywords + Layer 2 LLM remain the **emergency floor**; Layer 3
+  cannot downgrade below them.
+- The previously-removed **single-service auto-escalation is NOT
+  reintroduced** — a single-service tenant no longer adopts its one service's
+  tag on every call; the tag applies only when the transcript names it.
+- `triage_layer_used` (the calls-row column written from `triage_result["layer"]`
+  in `post_call.py`) can now legitimately be **`layer3`** — `classifier.py`
+  returns `layer="layer3"` whenever `apply_owner_rules` reports `escalated`.
+
+(`apply_owner_rules` still accepts an explicit `detected_service` arg, checked
+before the transcript fallback, for any future caller that supplies one.)
 
 ---
 

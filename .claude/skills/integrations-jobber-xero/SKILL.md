@@ -9,7 +9,7 @@ This document is the single source of truth for the Jobber and Xero read-side
 integrations — OAuth, caching, webhooks, Python agent injection, dashboard UI,
 and telemetry. **Read this before making any changes to either provider.**
 
-**Last updated**: 2026-05-03 (Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read.) + Phase 61.1 WR-03 — corrected tool-return shape claim (success uses label form `BOOKED [verdict=...]:`, only failure path uses STATE+DIRECTIVE)
+**Last updated**: 2026-06-04 (prod-readiness 2026-06 — documented the `accounting_credentials.expiry_date` BIGINT epoch-MILLISECONDS storage contract + the Python ISO-string write bug fix, and the Python agent's new participation in the migration-058 OAuth refresh lock via `livekit-agent/src/integrations/_refresh_lock.py`; corrected the `oauth_refresh_locks` table columns and `expiry_date`/migration-030 row in the DB-surface table.) + Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read. + Phase 61.1 WR-03 — corrected tool-return shape claim (success uses label form `BOOKED [verdict=...]:`, only failure path uses STATE+DIRECTIVE)
 
 ---
 
@@ -46,7 +46,8 @@ The Python livekit-agent has its own mirror of the read path — see
 | `id` | PK | 052 |
 | `tenant_id` | FK tenants(id), RLS scope | 052 |
 | `provider` | `'xero'` or `'jobber'` | 052 |
-| `access_token`, `refresh_token`, `expires_at`, `scopes`, `tenant_name` | OAuth state | 052 |
+| `access_token`, `refresh_token`, `scopes`, `tenant_name` | OAuth state | 052 |
+| `expiry_date` | **BIGINT epoch-MILLISECONDS** (`Date.now() + expires_in*1000`) — see "Token-expiry storage contract" below | 030 |
 | `error_state` | `null` when healthy; `'token_refresh_failed'` surfaces Reconnect banner | 053 |
 | `external_account_id` | Provider-side account/org ID for webhook tenant resolution | 054 |
 | `last_context_fetch_at` | Set by Python adapter on successful fetch (owner-facing Last-synced) | 055 |
@@ -57,11 +58,73 @@ The Python livekit-agent has its own mirror of the read path — see
 
 | Column | Purpose |
 |--------|---------|
-| `credential_id` | FK accounting_credentials(id), PK |
-| `locked_at` | Timestamp; advisory lock TTL |
+| `tenant_id` + `provider` | Lock identity (one in-flight refresh per pair) |
+| `holder_id` | UUID returned to the winning caller; required to release |
+| `expires_at` | Lease TTL (30s default) — stale leases are reclaimable |
+
+Acquired via `try_acquire_oauth_refresh_lock(p_tenant_id, p_provider, p_ttl_ms DEFAULT 30000)` → holder UUID (won) or NULL (contested); released via `release_oauth_refresh_lock(p_tenant_id, p_provider, p_holder_id)` (no-op unless `holder_id` matches). **Both runtimes now participate** — see "OAuth refresh-lock — cross-runtime participation" below.
 
 `calendar_events` (since migration 055 — provider='jobber'): schedule-mirror
 rows populated by Phase 57's poll + webhook pipeline.
+
+### Token-expiry storage contract (prod-readiness 2026-06)
+
+`accounting_credentials.expiry_date` is a **BIGINT holding epoch-MILLISECONDS**
+(`Date.now() + expires_in*1000`; migration 030). This is a hard cross-runtime
+contract — **every writer must store an integer of epoch-ms**:
+
+- **Next.js adapters** (`src/lib/integrations/*.js`): `adapter.js` and
+  `jobber.js` write `expiry_date` ms directly; `xero.js` converts the Xero
+  SDK's epoch-**seconds** `expires_at` via `expires_at * 1000`.
+- **Python agent** (`livekit-agent/src/integrations/{xero,jobber}.py`): both
+  refresh paths persist `int(epoch_ms)` — Xero computes
+  `int((now + expires_in).timestamp() * 1000)`; Jobber decodes the access-token
+  JWT `exp` claim and stores `exp * 1000` (`_decode_jwt_exp_ms`).
+
+**Readers tolerate legacy ISO rows.** `_expiry_to_epoch(value)` (defined
+identically in both Python adapters) returns **epoch SECONDS**: a numeric/
+numeric-string value is divided by 1000 (ms→s); an ISO-8601 string is parsed
+with `datetime.fromisoformat(...).timestamp()` (already seconds, no division);
+`None`/unparseable → `0.0` which forces a refresh.
+
+> **Prior bug (fixed 2026-06-04).** The Python side previously wrote an **ISO
+> string** into the BIGINT column. Postgres rejected the text→bigint cast, the
+> error was swallowed in the fail-soft wrapper, and so **agent-side token
+> refreshes never persisted** — every call re-refreshed from a stale row. The
+> fix makes both Python adapters write `int(epoch_ms)`, matching the Next.js
+> writers. Do not "normalize" the column to a timestamptz — the BIGINT-ms shape
+> is the contract.
+
+### OAuth refresh-lock — cross-runtime participation (prod-readiness 2026-06)
+
+Previously **only the Next.js adapter** honored the migration-058 refresh lock;
+the Python agent refreshed unconditionally, racing the dashboard. The agent now
+participates via a new module
+`livekit-agent/src/integrations/_refresh_lock.py`, a port of the lease guard in
+`src/lib/integrations/adapter.js`. Timing constants mirror the JS adapter
+exactly: `REFRESH_LOCK_TTL_MS=30_000`, `WAIT_MS=3_000`, `POLL_MS=200`;
+refresh-buffer `REFRESH_BUFFER_SECONDS=300` (refresh when the token expires in
+< 5 min).
+
+Flow inside each adapter's `_refresh_if_needed`:
+
+1. `_expiry_to_epoch(expiry_date) - now > 300s` → token still valid, return as-is.
+2. `acquire_refresh_lock(tenant_id, provider)` →
+   `try_acquire_oauth_refresh_lock(...)` RPC returns a **holder UUID** (winner)
+   or `None` (contested / RPC error).
+3. **Winner**: refreshes via the provider HTTP endpoint, persists the fresh
+   row (epoch-ms), then `release_refresh_lock(...)` in a `finally`.
+4. **Loser**: `poll_for_fresh_credential(cred_id, ...)` re-reads
+   `accounting_credentials` every 200ms for up to 3s, returning the winner's
+   freshly-persisted row once `expiry_date` is comfortably in the future
+   (`> now + 300s`).
+5. **Fail-soft**: on poll timeout (or any lock RPC error) the loser logs and
+   falls back to the un-serialized refresh path — availability beats perfect
+   dedup, and nothing here ever raises into the live-call hot path.
+
+This closes the agent-vs-dashboard refresh race. It is **critical for Jobber**,
+whose refresh-token rotation is **single-use**: a second concurrent refresh
+either 401s or orphans the first caller's rotated token.
 
 ### Data flow (dashboard vs call path)
 
@@ -234,6 +297,16 @@ preceding tool return contained the validating verdict — see
    `fetchCustomerByPhone`; `src/app/api/webhooks/xero/route.js` invoice
    contact resolution. `findOrCreateCustomer` (email-search, ID-only read)
    does not need the flag.
+10. **`accounting_credentials.expiry_date` is BIGINT epoch-MILLISECONDS, not a
+   timestamp.** Every writer (both runtimes) must store `int(epoch_ms)`. Writing
+   an ISO string is silently rejected by the text→bigint cast and swallowed by
+   the fail-soft wrapper — the Python side had exactly this bug (refreshes never
+   persisted) until 2026-06-04. Readers (`_expiry_to_epoch`) return epoch
+   SECONDS and tolerate legacy ISO rows. See "Token-expiry storage contract".
+11. **The Python agent now holds the OAuth refresh lock too.** Don't assume the
+   agent refreshes unconditionally — it acquires `try_acquire_oauth_refresh_lock`
+   and a loser polls for the winner's row. Critical for Jobber's single-use
+   refresh-token rotation. See "OAuth refresh-lock — cross-runtime participation".
 
 ---
 
@@ -266,4 +339,7 @@ preceding tool return contained the validating verdict — see
 | 58 | Plan 04/05 | `<AsyncButton>` migration on `BusinessIntegrationsClient` Connect/Disconnect/Reconnect |
 
 Migration 058 (`oauth_refresh_locks`) shipped in Phase 55 to eliminate
-refresh-token race between concurrent calls.
+refresh-token race between concurrent calls. **Prod-readiness 2026-06** extended
+participation to the Python agent (`_refresh_lock.py`) and fixed the Python-side
+`expiry_date` write (ISO string → `int(epoch_ms)`) — see "Token-expiry storage
+contract" and "OAuth refresh-lock — cross-runtime participation" above.
