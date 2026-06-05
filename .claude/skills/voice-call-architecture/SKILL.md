@@ -8,6 +8,16 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
+> ⚠️ **Phase 65 migration in flight (implemented, NOT yet deployed).** The voice brain is
+> being swapped **Gemini 3.1 Flash Live → OpenAI gpt-realtime-2** on agent branch
+> `phase-65-openai-realtime-2`: `openai.realtime.RealtimeModel` (semantic_vad/medium + typed
+> `AudioTranscription` for caller transcripts), the opening greeting now via native
+> `session.generate_reply(...)`, and removal of every Gemini cascade workaround
+> (`mute_input_during_tool`, the `update_chat_ctx` replay, `_ServerCancelHandler`, the
+> separate-TTS greeting hack). **Until the Railway cutover + UAT pass, production is still
+> Gemini and the sections below describe the live (Gemini) system.** Full execution record,
+> §14 API resolutions, and deploy hazards: `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+
 **Last updated**: 2026-06-04 (prod-readiness 2026-06 — documented that Layer-3 owner per-service urgency escalation now actually fires: `apply_owner_rules` derives the service via word-boundary matching `services.name` against the transcript (`MIN_SERVICE_NAME_LEN=4` guard), `classify_call` threads the transcript through, `triage_layer_used` can now legitimately be `layer3`; the prior single-service auto-escalation is NOT reintroduced. See §7 Triage System.) + Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added) + Phase 61.1 — address-validation rule deadlock fix; WR-01/02 google_maps.py defects closed
 
 ---
@@ -333,19 +343,19 @@ entirely; callers must be able to interrupt for emergencies.
 
 ```python
 ai_voice = tenant.get("ai_voice") if tenant else None
-voice_name = ai_voice if ai_voice else VOICE_MAP.get(tone_preset, "Kore")
+voice_name = ai_voice if ai_voice else VOICE_MAP.get(tone_preset, "marin")
 ```
 
-`VOICE_MAP`:
+`VOICE_MAP` (Phase 65 — OpenAI gpt-realtime voices; was Zephyr/Aoede/Achird under Gemini):
 | tone_preset | Voice | Character |
 |-------------|-------|-----------|
-| `professional` | Zephyr | Clear and measured |
-| `friendly` | Aoede | Upbeat and warm |
-| `local_expert` | Achird | Relaxed and neighborly |
+| `professional` | marin | Clear and professional |
+| `friendly` | cedar | Warm and friendly |
+| `local_expert` | alloy | Relaxed and neutral |
 
-6 curated voices available in dashboard AI Voice Settings: Aoede,
-Erinome, Sulafat, Zephyr, Achird, Charon. `tenants.ai_voice` has a CHECK
-constraint enforcing only these 6 values or NULL.
+10 voices available in dashboard AI Voice Settings: alloy, ash, ballad,
+coral, echo, sage, shimmer, verse, marin, cedar. `tenants.ai_voice` has a
+CHECK constraint (migration 067) enforcing only these values or NULL.
 
 ### Non-blocking I/O pattern
 

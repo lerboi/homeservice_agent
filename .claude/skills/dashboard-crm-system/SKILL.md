@@ -9,6 +9,14 @@ This document is the single source of truth for the dashboard and CRM
 system. Read this before making any changes to dashboard pages or CRM
 components.
 
+> ⚠️ **Phase 65 (in flight, not yet deployed):** the AI Voice picker
+> (`VoicePickerSection.jsx`, `ai-voice-settings/page.js`, `src/lib/ai-voice-validation.js`)
+> now offers **OpenAI gpt-realtime voices** (marin/cedar/alloy + 7 more) instead of the 6
+> Gemini voices, paired with migration `067`. Do **not** deploy the picker to prod before the
+> Railway agent is cut over to OpenAI — a tenant picking an OpenAI voice while the live agent
+> is still Gemini feeds it an invalid voice. Preview-play `.mp3` samples for the new voices
+> don't exist yet (not call-blocking). See `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+
 **Last updated**: 2026-06-04 (prod-readiness 2026-06 — Customers LIST page
 added at `/dashboard/customers` (closes 5 dead "Back to Customers" 404s);
 sidebar + mobile More-menu Customers entry; More-tab regrouped into three

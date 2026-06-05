@@ -34,7 +34,7 @@ Go to [Notifications](/dashboard/more/notifications). In the Escalation Contacts
 Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Click "Make Test Call" — your business number will call you so you can hear how the AI sounds to your callers.
 
 ### How do I change the AI's voice?
-Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Pick from six voices: **Aoede**, **Erinome**, **Sulafat** (warmer / female-sounding), or **Zephyr**, **Achird**, **Charon** (deeper / male-sounding). Click any to preview. Save to apply — new calls use the new voice immediately.
+Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Pick from the available voices — **marin** (clear, professional), **cedar** (warm, friendly), **alloy** (relaxed, neutral), and several more. Save to apply — new calls use the new voice immediately.
 
 ### How do I change the AI's tone?
 Go to [AI Voice Settings](/dashboard/more/ai-voice-settings). Pick a tone preset (Professional, Friendly, Local Expert). The tone also affects which default voice is used if you haven't explicitly picked one.

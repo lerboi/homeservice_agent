@@ -22,7 +22,7 @@ Inbound texts to your Voco number can be forwarded to your personal phone automa
 Block off lunch, vacation, errands, or personal appointments so the AI never books a job over your downtime. Multi-day blocks can be deleted together, and blocks sync to your connected Google or Outlook calendar.
 
 ## Pick Your AI Voice
-Choose from six natural-sounding voices — Aoede, Erinome, Sulafat (warmer, female-sounding) and Zephyr, Achird, Charon (deeper, male-sounding). Match your brand's personality, or stick with the default tuned to your selected tone (Professional, Friendly, Local Expert).
+Choose from a range of natural-sounding voices — including marin (clear, professional), cedar (warm, friendly), and alloy (relaxed, neutral). Match your brand's personality, or stick with the default tuned to your selected tone (Professional, Friendly, Local Expert).
 
 ## Post-Call SMS & Notifications
 You get a text in seconds with caller details, urgency level, and job type — so you can dispatch before competitors even call back.

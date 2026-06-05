@@ -21,9 +21,11 @@ export default function AIVoiceSettingsPage() {
           .single();
         if (error) throw error;
         setPhoneNumber(data?.phone_number ?? null);
-        // Resolve effective voice: explicit ai_voice > tone-based mapping > fallback
-        const VOICE_MAP = { professional: 'Zephyr', friendly: 'Aoede', local_expert: 'Achird' };
-        const effective = data?.ai_voice ?? VOICE_MAP[data?.tone_preset] ?? 'Zephyr';
+        // Resolve effective voice: explicit ai_voice > tone-based mapping > fallback.
+        // Phase 65: OpenAI gpt-realtime voices (kept in sync with the agent repo
+        // VOICE_MAP and src/components/dashboard/VoicePickerSection.jsx).
+        const VOICE_MAP = { professional: 'marin', friendly: 'cedar', local_expert: 'alloy' };
+        const effective = data?.ai_voice ?? VOICE_MAP[data?.tone_preset] ?? 'marin';
         setCurrentVoice(effective);
       } catch (err) {
         console.error('[ai-voice-settings] Failed to load tenant:', err?.message || err);

@@ -15,22 +15,26 @@ import { VALID_VOICES, isValidVoice } from '../../src/lib/ai-voice-validation.js
 // --- Pure validation logic tests ---
 
 describe('VALID_VOICES', () => {
-  // Test 1: All 6 curated voices are present
-  it('contains all 6 curated Gemini voices', () => {
-    expect(VALID_VOICES).toHaveLength(6);
-    expect(VALID_VOICES).toContain('Aoede');
-    expect(VALID_VOICES).toContain('Erinome');
-    expect(VALID_VOICES).toContain('Sulafat');
-    expect(VALID_VOICES).toContain('Zephyr');
-    expect(VALID_VOICES).toContain('Achird');
-    expect(VALID_VOICES).toContain('Charon');
+  // Test 1: All 10 OpenAI realtime voices are present (Phase 65 migration)
+  it('contains all 10 curated OpenAI gpt-realtime voices', () => {
+    expect(VALID_VOICES).toHaveLength(10);
+    ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'].forEach(
+      (v) => expect(VALID_VOICES).toContain(v),
+    );
+  });
+
+  // Test 1b: The retired Gemini voices are no longer valid
+  it('no longer contains the old Gemini voices', () => {
+    ['Aoede', 'Erinome', 'Sulafat', 'Zephyr', 'Achird', 'Charon'].forEach(
+      (v) => expect(VALID_VOICES).not.toContain(v),
+    );
   });
 });
 
 describe('isValidVoice (allowlist validation)', () => {
   // Test 2: Valid voice name returns true
-  it('returns true for a valid voice name (Aoede)', () => {
-    expect(isValidVoice('Aoede')).toBe(true);
+  it('returns true for a valid voice name (marin)', () => {
+    expect(isValidVoice('marin')).toBe(true);
   });
 
   // Test 3: Invalid voice name returns false
@@ -38,15 +42,20 @@ describe('isValidVoice (allowlist validation)', () => {
     expect(isValidVoice('InvalidVoice')).toBe(false);
   });
 
-  // Test 4: All 6 valid voices pass (parameterized)
-  const validVoices = ['Aoede', 'Erinome', 'Sulafat', 'Zephyr', 'Achird', 'Charon'];
+  // Test 3b: A retired Gemini voice is now rejected
+  it('returns false for a retired Gemini voice (Zephyr)', () => {
+    expect(isValidVoice('Zephyr')).toBe(false);
+  });
+
+  // Test 4: All 10 valid voices pass (parameterized)
+  const validVoices = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
   it.each(validVoices)('returns true for valid voice: %s', (voice) => {
     expect(isValidVoice(voice)).toBe(true);
   });
 
-  // Test 5: Lowercase voice name is rejected (case-sensitive)
-  it('returns false for lowercase voice name (aoede) — case-sensitive', () => {
-    expect(isValidVoice('aoede')).toBe(false);
+  // Test 5: Uppercase voice name is rejected (case-sensitive)
+  it('returns false for uppercase voice name (MARIN) — case-sensitive', () => {
+    expect(isValidVoice('MARIN')).toBe(false);
   });
 
   // Additional: empty string, null-like inputs

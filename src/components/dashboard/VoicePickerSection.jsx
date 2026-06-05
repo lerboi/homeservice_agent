@@ -4,13 +4,21 @@ import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Phase 65: OpenAI gpt-realtime voices. marin (professional/default), cedar
+// (friendly), and alloy (local_expert) are the tone-mapped defaults; the rest
+// are selectable. Names must be a subset of VALID_VOICES in
+// src/lib/ai-voice-validation.js.
 const VOICES = [
-  { name: 'Aoede', description: 'Warm and upbeat' },
-  { name: 'Erinome', description: 'Bright and expressive' },
-  { name: 'Sulafat', description: 'Warm and gentle' },
-  { name: 'Zephyr', description: 'Bright and clear' },
-  { name: 'Achird', description: 'Relaxed, neighborly' },
-  { name: 'Charon', description: 'Deep and authoritative' },
+  { name: 'marin', description: 'Clear and professional' },
+  { name: 'cedar', description: 'Warm and friendly' },
+  { name: 'alloy', description: 'Relaxed and neutral' },
+  { name: 'coral', description: 'Bright and friendly' },
+  { name: 'ash', description: 'Calm and measured' },
+  { name: 'sage', description: 'Soft and thoughtful' },
+  { name: 'verse', description: 'Expressive and dynamic' },
+  { name: 'shimmer', description: 'Gentle and warm' },
+  { name: 'echo', description: 'Smooth and even' },
+  { name: 'ballad', description: 'Soothing and mellow' },
 ];
 
 export default function VoicePickerSection({ initialVoice, loading }) {
@@ -58,7 +66,18 @@ export default function VoicePickerSection({ initialVoice, loading }) {
     }
     const audio = new Audio(`/audio/voices/${voiceName.toLowerCase()}.mp3`);
     audio.addEventListener('ended', () => setPlayingVoice(null));
-    audio.play();
+    // Preview samples may not exist for every voice (e.g. newly added OpenAI
+    // voices) — fail gracefully instead of leaving the button stuck in the
+    // "playing" state if the file 404s or playback is rejected.
+    audio.addEventListener('error', () => {
+      setPlayingVoice(null);
+      audioRef.current = null;
+      toast.error('Voice preview unavailable.');
+    });
+    audio.play().catch(() => {
+      setPlayingVoice(null);
+      audioRef.current = null;
+    });
     audioRef.current = audio;
     setPlayingVoice(voiceName);
   }

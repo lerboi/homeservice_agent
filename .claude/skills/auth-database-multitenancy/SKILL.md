@@ -7,6 +7,8 @@ description: "Complete architectural reference for authentication, database sche
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
+> ⚠️ **Phase 65 (in flight):** migration `067_ai_voice_openai.sql` drops the migration-044 Gemini-voice CHECK on `tenants.ai_voice`, sets every tenant's `ai_voice` to NULL, and adds a new CHECK allowing NULL or the OpenAI gpt-realtime voice set (`alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar`). Forward-only and safe under both the Gemini and OpenAI voice agents (NULL → tone-based fallback). See `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+
 **Last updated**: 2026-06-04 (Prod-readiness 2026-06 — migrations 063–066: `estimates.customer_id` nullable FK → customers (re-link after 061 dropped `leads`), `stripe_webhook_events.processed` boolean flag (atomic webhook idempotency), new `rate_limit_hits` table + `increment_rate_limit` SECURITY DEFINER RPC (durable instance-independent fixed-window rate limiting for `/api/public-chat` + `/api/demo-voice`), and `calls.call_sid` UNIQUE constraint replacing the non-unique partial index from 045 (de-dupes owner-pickup rows from Twilio webhook retries). All additive / forward-fix-only.)
 
 ---
@@ -918,7 +920,9 @@ No new tables. No RLS changes.
 
 ### 044_ai_voice_column.sql — AI Voice Selection (Phase 44)
 
-**Extends tenants**: `ai_voice` (TEXT, nullable) — The chosen Gemini voice for the AI receptionist. NULL means fall back to `VOICE_MAP[tone_preset]` in the LiveKit agent.
+> **Superseded by migration 067 (Phase 65):** the CHECK below was dropped and replaced with the OpenAI gpt-realtime voice set (`alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar`), and every tenant's `ai_voice` was cleared to NULL. The text below documents the original Phase 44 state.
+
+**Extends tenants**: `ai_voice` (TEXT, nullable) — The chosen voice for the AI receptionist. NULL means fall back to `VOICE_MAP[tone_preset]` in the LiveKit agent.
 
 ```sql
 ALTER TABLE tenants
@@ -1120,7 +1124,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 015: `notification_preferences` (JSONB, per-outcome SMS/email toggles)
 - 023: `phone_number` (renamed from `retell_phone_number`)
 - 039: `call_forwarding_schedule` (JSONB), `pickup_numbers` (JSONB), `dial_timeout_seconds` (INTEGER)
-- 044: `ai_voice` (TEXT, nullable) — curated Gemini voice override; NULL = VOICE_MAP[tone_preset] fallback; CHECK (IN 'Aoede','Erinome','Sulafat','Zephyr','Achird','Charon')
+- 044: `ai_voice` (TEXT, nullable) — voice override; NULL = VOICE_MAP[tone_preset] fallback. **Phase 65 / migration 067** replaced the CHECK with the OpenAI voice set (IN 'alloy','ash','ballad','coral','echo','sage','shimmer','verse','marin','cedar') and cleared all values to NULL.
 - 049: `vip_numbers` (JSONB NOT NULL DEFAULT '[]') — standalone Priority-caller phone numbers (unlimited, no CHECK). Webhook reads this for direct-routing check before evaluating schedule/caps.
 - 050: `checklist_overrides` (JSONB NOT NULL DEFAULT '{}') — per-item user actions (dismiss, mark-done) on the dashboard setup checklist. Keyed by checklist item id; values carry `status` + timestamp. Consumed by `/api/setup-checklist` GET/PATCH. Auto-detected completions are NOT stored here (they're derived live).
 - 051: `features_enabled` (JSONB NOT NULL DEFAULT `'{"invoicing": false}'::jsonb`) — per-tenant feature flags (shape `{ invoicing: boolean, ... }`). Default ships invoicing OFF for v6.0; owners opt in at `/dashboard/more/features`. Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; extended in `src/proxy.js` tenant SELECT alongside `onboarding_complete`. JSONB filter for crons: `.eq('features_enabled->>invoicing', 'true')` — value is the string `'true'`, not the boolean.
