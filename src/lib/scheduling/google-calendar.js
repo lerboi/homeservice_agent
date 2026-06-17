@@ -196,6 +196,8 @@ export async function syncCalendarEvents(tenantId) {
 
   let items = [];
   let nextSyncToken = null;
+  let didFullSync = false;
+  const runStartISO = new Date().toISOString();
 
   // Google returns nextSyncToken only on the LAST page of results, so both
   // branches must follow nextPageToken to the end or the token never advances.
@@ -241,6 +243,7 @@ export async function syncCalendarEvents(tenantId) {
 
   // Full sync: no sync token yet (initial connect) or 410 invalidated it
   if (!nextSyncToken && items.length === 0) {
+    didFullSync = true;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
     const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
     console.log(`[calendar-sync] Full sync for tenant ${tenantId} (${thirtyDaysAgo} → ${sixMonthsAhead})`);
@@ -294,6 +297,39 @@ export async function syncCalendarEvents(tenantId) {
       .update({ external_event_id: null })
       .eq('tenant_id', tenantId)
       .in('external_event_id', toDelete);
+  }
+
+  // A full resync returns the COMPLETE current window, so any mirror row this
+  // run did NOT refresh was deleted externally while the sync token was dead —
+  // purge it so it doesn't linger as phantom busy time (2026-06-12 audit M14).
+  // Done AFTER the upsert above (blank-mirror-safe) and only on a full sync;
+  // incremental syncs learn deletions via status==='cancelled' instead.
+  if (didFullSync) {
+    const { data: staleRows } = await supabase
+      .from('calendar_events')
+      .select('external_id')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'google')
+      .lt('synced_at', runStartISO);
+    const staleIds = (staleRows || []).map((r) => r.external_id);
+    if (staleIds.length > 0) {
+      await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'google')
+        .in('external_id', staleIds);
+      await supabase
+        .from('calendar_blocks')
+        .update({ external_event_id: null })
+        .eq('tenant_id', tenantId)
+        .in('external_event_id', staleIds);
+      await supabase
+        .from('appointments')
+        .update({ external_event_id: null })
+        .eq('tenant_id', tenantId)
+        .in('external_event_id', staleIds);
+    }
   }
 
   // Persist new sync token and update last_synced_at
