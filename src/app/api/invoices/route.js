@@ -15,7 +15,9 @@ const VALID_STATUSES = ['draft', 'sent', 'paid', 'partially_paid', 'overdue', 'v
  *   status  — filter by invoice status (one of VALID_STATUSES)
  *   search  — filter by customer_name or invoice_number (case-insensitive substring)
  *
- * Before listing, bulk-updates sent invoices past their due_date to 'overdue'.
+ * Read-only: the sent→overdue transition is handled by the daily
+ * invoice-reminders cron (2026-06-12 audit M19 — was a side-effectful write on
+ * every SWR revalidate). The list reflects whatever the cron last flipped.
  *
  * Returns: { invoices, summary: { total_outstanding, overdue_amount, paid_this_month }, status_counts }
  */
@@ -35,15 +37,6 @@ export async function GET(request) {
   const statusFilter = searchParams.get('status');
   const search = searchParams.get('search');
   const jobId = searchParams.get('job_id');
-
-  // Bulk-update overdue invoices (sent + past due_date → overdue)
-  const today = new Date().toISOString().split('T')[0];
-  await supabase
-    .from('invoices')
-    .update({ status: 'overdue', updated_at: new Date().toISOString() })
-    .eq('tenant_id', tenantId)
-    .eq('status', 'sent')
-    .lt('due_date', today);
 
   // Pagination
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 500);

@@ -53,6 +53,24 @@ export async function GET(request) {
     return Response.json({ reminders_sent: 0, late_fees_applied: 0 });
   }
 
+  // ─── PART 0: Overdue status transition (moved off the GET read path) ─────────
+  // 2026-06-12 audit M19: sent invoices past due_date flip to 'overdue' here,
+  // once per day, instead of on every /api/invoices read (a side-effectful GET).
+  let overdueFlipped = 0;
+  try {
+    const { data: flipped, error: flipErr } = await supabase
+      .from('invoices')
+      .update({ status: 'overdue', updated_at: new Date().toISOString() })
+      .in('tenant_id', enabledTenantIds)
+      .eq('status', 'sent')
+      .lt('due_date', today)
+      .select('id');
+    if (flipErr) console.error('[invoice-reminders] overdue flip failed:', flipErr.message);
+    else overdueFlipped = flipped?.length || 0;
+  } catch (err) {
+    console.error('[invoice-reminders] overdue flip error:', err);
+  }
+
   // ─── PART 1: Reminder Dispatch ──────────────────────────────────────────────
 
   try {
@@ -307,5 +325,5 @@ export async function GET(request) {
     console.error('[invoice-reminders] Late fee application error:', err);
   }
 
-  return Response.json({ reminders_sent: remindersSent, late_fees_applied: lateFeesApplied });
+  return Response.json({ reminders_sent: remindersSent, late_fees_applied: lateFeesApplied, overdue_flipped: overdueFlipped });
 }

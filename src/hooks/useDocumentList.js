@@ -47,9 +47,13 @@ export function useDocumentList(apiBase, { itemsKey, extraParams = {} }) {
     setLimit((prev) => Math.min(prev + PAGE_SIZE, MAX_LIMIT));
   }, []);
 
-  // Cache summary from first successful load (represents overall metrics)
+  // Keep the latest summary (whole-tenant metrics, returned on every load).
+  // Refresh on each successful fetch — previously cached only once, so headline
+  // money figures froze after first load until remount (2026-06-12 audit M20).
+  // The ref persists the last value across SWR revalidation gaps (data briefly
+  // undefined) so the UI doesn't flash empty.
   useEffect(() => {
-    if (data?.summary && !summaryRef.current) {
+    if (data?.summary) {
       summaryRef.current = data.summary;
     }
   }, [data?.summary]);

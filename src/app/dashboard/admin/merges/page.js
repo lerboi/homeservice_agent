@@ -33,10 +33,12 @@ async function fetchMerges({ focus, active }) {
         cookie: cookieStore.toString(),
       },
     });
-    if (!res.ok) return { merges: [], count: 0 };
+    // Distinguish a real failure from a genuinely empty history (2026-06-12
+    // audit M20) — both previously collapsed into the "No merges yet" state.
+    if (!res.ok) return { merges: [], count: 0, error: `Failed to load merge history (${res.status})` };
     return res.json();
   } catch {
-    return { merges: [], count: 0 };
+    return { merges: [], count: 0, error: 'Failed to load merge history. Please try again.' };
   }
 }
 
@@ -100,11 +102,17 @@ export default async function AdminMergesPage({ searchParams }) {
         </div>
       )}
 
-      {/* Merges table (client component) */}
-      <MergesTable merges={data.merges || []} focus={focus} />
+      {/* Error state — a load failure is no longer indistinguishable from empty */}
+      {data.error ? (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {data.error}
+        </div>
+      ) : (
+        <MergesTable merges={data.merges || []} focus={focus} />
+      )}
 
       {/* Count footer */}
-      {data.count > 0 && (
+      {!data.error && data.count > 0 && (
         <p className="text-xs text-muted-foreground mt-4">
           {data.count} {data.count === 1 ? 'merge' : 'merges'} total
           {focus ? ' (filtered)' : ''}

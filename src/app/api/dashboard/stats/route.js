@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getTenantId } from '@/lib/get-tenant-id';
+import { tenantDayBoundaries } from '@/lib/tenant-time';
 
 /**
  * GET /api/dashboard/stats
@@ -12,8 +13,14 @@ export async function GET() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const today = new Date().toISOString().split('T')[0];
-  const firstOfMonth = today.slice(0, 8) + '01';
+  // Compute "today" / "first of month" in the TENANT's timezone, not UTC, so
+  // late-afternoon US tenants aren't counted against tomorrow (2026-06-12 audit M18).
+  const { data: tenantRow } = await supabase
+    .from('tenants')
+    .select('tenant_timezone')
+    .eq('id', tenantId)
+    .maybeSingle();
+  const { todayStartISO, monthStartISO } = tenantDayBoundaries(tenantRow?.tenant_timezone);
 
   const [
     newLeadsCountRes,
@@ -55,7 +62,7 @@ export async function GET() {
       .select('total')
       .eq('tenant_id', tenantId)
       .eq('status', 'paid')
-      .gte('paid_at', firstOfMonth),
+      .gte('paid_at', monthStartISO),
     // Missed calls today: no booking attempt, 15s+ duration (same triage as
     // CallsTile — shorter calls are usually hangups/misdials, not losses)
     supabase
@@ -64,7 +71,7 @@ export async function GET() {
       .eq('tenant_id', tenantId)
       .eq('booking_outcome', 'not_attempted')
       .gte('duration_seconds', 15)
-      .gte('created_at', today),
+      .gte('created_at', todayStartISO),
   ]);
 
   const outstandingInvoices = invoiceOutstandingRes.data || [];
