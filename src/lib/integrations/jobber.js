@@ -129,9 +129,13 @@ export async function fetchJobberCustomerByPhone(tenantId, phoneE164) {
   }
 
   const candidates = data?.clients?.nodes ?? [];
+  // Parse Jobber's stored LOCAL-format numbers in the CALLER's country (derived
+  // from the E.164), not a hardcoded US (2026-06-12 audit M21 — SG/UK tenants
+  // previously never matched). Falls back to US if the region can't be derived.
+  const callerRegion = parsePhoneNumberFromString(phoneE164 || '')?.country || DEFAULT_PHONE_REGION;
   const clientNode = candidates.find((c) =>
     (c.phones || []).some((p) => {
-      const parsed = parsePhoneNumberFromString(p?.number || '', DEFAULT_PHONE_REGION);
+      const parsed = parsePhoneNumberFromString(p?.number || '', callerRegion);
       // Use isPossible() rather than isValid() — the latter rejects NXX=555
       // fictional numbers and any number whose area code isn't in libphonenumber's
       // assigned-range metadata. For real-world Jobber data the possibility check

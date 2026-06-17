@@ -110,12 +110,15 @@ export async function POST(request) {
       }
     }
 
-    if (phones.length === 0) {
-      revalidateTag(`xero-context-${vocoTenantId}`);
-    } else {
-      for (const p of phones) {
-        revalidateTag(`xero-context-${vocoTenantId}-${p}`);
-      }
+    // Always invalidate the broad tenant tag. The read side tags both the broad
+    // `xero-context-${tenantId}` and per-phone `...-${phoneE164}` surfaces, but
+    // these per-phone tags are built from Xero's RAW (non-E.164) phone strings
+    // and rarely match the E.164 read key — so the broad tag is what reliably
+    // clears the cache (2026-06-12 audit M21). Per-phone tags fire too, in case
+    // a stored value is already E.164.
+    revalidateTag(`xero-context-${vocoTenantId}`);
+    for (const p of phones) {
+      revalidateTag(`xero-context-${vocoTenantId}-${p}`);
     }
   }
 
