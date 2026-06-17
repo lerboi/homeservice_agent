@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { checkRateLimit } from '@/lib/rate-limit.js';
 
 const INQUIRY_ADDRESSES = {
   sales: process.env.CONTACT_EMAIL_SALES,
@@ -6,8 +7,34 @@ const INQUIRY_ADDRESSES = {
   partnerships: process.env.CONTACT_EMAIL_PARTNERSHIPS,
 };
 
+// Per-IP rate limit (durable, Supabase-backed — migration 065): 5 submissions/hour
+const IP_LIMIT = 5;
+const IP_WINDOW_SECONDS = 3600;
+
+function getClientIp(request) {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    request.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
 export async function POST(request) {
   try {
+    // Rate limit by IP before doing any work (fails open on limiter outage)
+    const ipCheck = await checkRateLimit({
+      bucket: 'contact-ip',
+      key: getClientIp(request),
+      limit: IP_LIMIT,
+      windowSeconds: IP_WINDOW_SECONDS,
+    });
+    if (!ipCheck.allowed) {
+      return Response.json(
+        { error: 'Too many messages. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { name, email, inquiryType, message, _honeypot } = body;
 

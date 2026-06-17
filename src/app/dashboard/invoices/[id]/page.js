@@ -641,7 +641,7 @@ export default function InvoiceDetailPage() {
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-800/60 dark:hover:bg-red-950/40"
                       disabled={actionLoading}
                     >
                       <Ban className="h-4 w-4" />

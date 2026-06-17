@@ -428,7 +428,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
                         <Button
                           variant="ghost"
                           disabled={saving}
-                          className="h-10 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                          className="h-10 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
                         >
                           Remove this day
                         </Button>
@@ -451,7 +451,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
                         <Button
                           variant="ghost"
                           disabled={saving}
-                          className="h-10 text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-10 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
                         >
                           Delete all {groupCount} days
                         </Button>
@@ -476,7 +476,7 @@ export default function TimeBlockSheet({ open, onOpenChange, selectedBlock, onSa
                       <Button
                         variant="ghost"
                         disabled={saving}
-                        className="w-full h-10 text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="w-full h-10 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
                       >
                         Delete Block
                       </Button>

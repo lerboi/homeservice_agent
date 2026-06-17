@@ -142,7 +142,7 @@ export function ContactCard({
           <AlertDialogTrigger asChild>
             <button
               type="button"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors"
               aria-label={`Remove ${contact.name}`}
             >
               <Trash2 className="h-4 w-4" />

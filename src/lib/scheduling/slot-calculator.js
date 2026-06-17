@@ -33,6 +33,43 @@ function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
 
+const MS_PER_DAY = 86400000;
+
+/**
+ * Expand an all-day busy row to tenant-local day bounds.
+ *
+ * All-day events are stored with date-only payloads that Postgres widens to
+ * UTC-midnight timestamptz, so the nominal calendar date is the UTC date
+ * portion of the stored timestamp — comparing the raw timestamps blocks the
+ * wrong local hours for any non-UTC tenant.
+ *
+ * Returns [00:00 tenant-local of the first day, 00:00 tenant-local of the
+ * day after the last day). Ends that land exactly on a UTC midnight (after
+ * the start) follow the Google/Outlook exclusive-end convention — that
+ * midnight already IS the day-after boundary; any other end time means the
+ * event runs into that day, so the boundary is the following day.
+ *
+ * @param {Date} start - stored start_time
+ * @param {Date} end   - stored end_time
+ * @param {string} timezone - tenant IANA timezone
+ * @returns {{ start: Date, end: Date }} UTC bounds of the tenant-local days
+ */
+function expandAllDayInterval(start, end, timezone) {
+  const startDateStr = start.toISOString().slice(0, 10);
+
+  const endsAtUtcMidnight = end.getTime() % MS_PER_DAY === 0;
+  const exclusiveEnd =
+    endsAtUtcMidnight && end > start
+      ? end
+      : new Date(Math.floor(end.getTime() / MS_PER_DAY) * MS_PER_DAY + MS_PER_DAY);
+  const endDateStr = exclusiveEnd.toISOString().slice(0, 10);
+
+  return {
+    start: fromZonedTime(`${startDateStr}T00:00:00`, timezone),
+    end: fromZonedTime(`${endDateStr}T00:00:00`, timezone),
+  };
+}
+
 /**
  * Resolve the travel buffer in minutes between the last booking and a candidate slot.
  *
@@ -87,7 +124,7 @@ function getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePair
  * @param {object} config.workingHours      - Day-keyed working hours config
  * @param {number} config.slotDurationMins  - Slot length in minutes (e.g., 60)
  * @param {Array}  config.existingBookings  - Array of { start_time, end_time, zone_id? } (ISO strings)
- * @param {Array}  config.externalBlocks    - Array of { start_time, end_time } (ISO strings)
+ * @param {Array}  config.externalBlocks    - Array of { start_time, end_time, is_all_day? } (ISO strings)
  * @param {Array}  config.zones             - Array of { id, name } zone objects
  * @param {Array}  config.zonePairBuffers   - Array of { zone_a_id, zone_b_id, buffer_mins }
  * @param {string} config.targetDate        - "YYYY-MM-DD" date string
@@ -130,6 +167,13 @@ export function calculateAvailableSlots({
   const windowStart = localTimeToUTC(targetDate, open, tenantTimezone);
   const windowEnd = localTimeToUTC(targetDate, close, tenantTimezone);
 
+  // If the entire working window is in the past, no slots are possible
+  // (mirrors the Python twin in livekit-agent slot_calculator.py)
+  const now = new Date();
+  if (windowEnd <= now) {
+    return [];
+  }
+
   // Lunch block in UTC (if configured)
   const lunchStartUTC = lunchStart ? localTimeToUTC(targetDate, lunchStart, tenantTimezone) : null;
   const lunchEndUTC = lunchEnd ? localTimeToUTC(targetDate, lunchEnd, tenantTimezone) : null;
@@ -141,17 +185,22 @@ export function calculateAvailableSlots({
     zone_id: b.zone_id || null,
   }));
 
-  // Parse external blocks to Date objects
-  const parsedBlocks = externalBlocks.map((b) => ({
-    start: new Date(b.start_time),
-    end: new Date(b.end_time),
-  }));
+  // Parse external blocks to Date objects.
+  // All-day rows are stored as UTC-midnight timestamps — expand them to
+  // tenant-local day bounds so they block the correct local hours.
+  const parsedBlocks = externalBlocks.map((b) => {
+    const start = new Date(b.start_time);
+    const end = new Date(b.end_time);
+    if (b.is_all_day) {
+      return expandAllDayInterval(start, end, tenantTimezone);
+    }
+    return { start, end };
+  });
 
   const available = [];
   let cursor = new Date(windowStart);
 
   // Skip past slots when calculating for today — don't offer times that have already passed
-  const now = new Date();
   if (cursor < now && now < windowEnd) {
     // Only advance if we're within today's working window
     // Check if targetDate is actually today in the tenant timezone

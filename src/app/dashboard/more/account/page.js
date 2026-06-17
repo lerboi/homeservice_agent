@@ -34,7 +34,7 @@ export default function AccountPage() {
     owner_phone: '',
   });
   const [original, setOriginal] = useState(null);
-  const [meta, setMeta] = useState({ email: '', phone_number: '', trade_type: '', country: '', created_at: '' });
+  const [meta, setMeta] = useState({ email: '', phone_number: '', provisioning_failed: false, trade_type: '', country: '', created_at: '' });
 
   useEffect(() => {
     async function load() {
@@ -53,6 +53,7 @@ export default function AccountPage() {
           setMeta({
             email: data.email || '',
             phone_number: data.phone_number || '',
+            provisioning_failed: data.provisioning_failed === true,
             trade_type: data.trade_type || '',
             country: data.country || '',
             created_at: data.created_at || '',
@@ -135,9 +136,17 @@ export default function AccountPage() {
         </p>
         {aiNumberDisplay ? (
           <p className="font-mono text-xl tabular-nums text-foreground select-all">{aiNumberDisplay}</p>
+        ) : meta.provisioning_failed ? (
+          <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+            We hit a snag assigning your number. Our team has been notified and
+            is on it — you don&apos;t need to do anything. Questions?{' '}
+            <a href="/contact?type=support" className="underline">Contact support</a>.
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            Your number is being provisioned. It usually appears within a minute of completing checkout — refresh shortly.
+            Your number is being assigned — it usually appears within a couple of
+            minutes of completing checkout. If it hasn&apos;t after that,{' '}
+            <a href="/contact?type=support" className="underline not-italic">contact support</a>.
           </p>
         )}
       </div>

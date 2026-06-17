@@ -55,14 +55,15 @@ export async function GET(request) {
   }
 
   try {
-    // Exchange authorization code for tokens
-    const tokenResponse = await exchangeCodeForTokens(code);
+    // Exchange authorization code for tokens (direct token-endpoint POST —
+    // returns snake_case fields: access_token, refresh_token, expires_in)
+    const tokenData = await exchangeCodeForTokens(code);
 
     // Fetch user profile for calendar display name
     let calendarName = 'Outlook Calendar';
     try {
       const profileRes = await fetch('https://graph.microsoft.com/v1.0/me', {
-        headers: { Authorization: `Bearer ${tokenResponse.accessToken}` },
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
       if (profileRes.ok) {
         const profile = await profileRes.json();
@@ -85,9 +86,9 @@ export async function GET(request) {
       {
         tenant_id: tenantId,
         provider: 'outlook',
-        access_token: tokenResponse.accessToken,
-        refresh_token: tokenResponse.refreshToken,
-        expiry_date: new Date(tokenResponse.expiresOn).getTime(),
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expiry_date: Date.now() + tokenData.expires_in * 1000,
         calendar_id: 'primary',
         calendar_name: calendarName,
         is_primary: isPrimary,
@@ -100,7 +101,7 @@ export async function GET(request) {
     }
 
     // Register Graph subscription for push notifications
-    await createOutlookSubscription(tenantId, tokenResponse.accessToken);
+    await createOutlookSubscription(tenantId, tokenData.access_token);
 
     // Perform initial full sync
     await syncOutlookCalendarEvents(tenantId);

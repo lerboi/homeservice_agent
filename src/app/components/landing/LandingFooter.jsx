@@ -54,8 +54,8 @@ export function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
-                  How it works
+                <Link href="/#audio-demo" className="text-sm text-white/40 hover:text-[#F97316] transition-colors duration-200">
+                  Hear a demo
                 </Link>
               </li>
             </ul>
@@ -142,34 +142,6 @@ export function LandingFooter() {
                 style={{ width: 'auto', height: 'auto' }}
               />
               <span className="text-base text-[#71717A]">Every call answered. Every job booked.</span>
-            </div>
-
-            {/* Social links */}
-            <div className="flex items-center gap-6">
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-[#71717A] hover:text-[#F97316] transition-colors"
-              >
-                Twitter / X
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-[#71717A] hover:text-[#F97316] transition-colors"
-              >
-                LinkedIn
-              </a>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-[#71717A] hover:text-[#F97316] transition-colors"
-              >
-                GitHub
-              </a>
             </div>
 
             {/* Copyright + back to top */}

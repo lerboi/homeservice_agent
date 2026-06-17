@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 
 const GRACE_PERIOD_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
@@ -37,7 +37,6 @@ export function calculateGraceDaysRemaining(currentPeriodEnd) {
 export default function BillingWarningBanner() {
   const [daysRemaining, setDaysRemaining] = useState(null);
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     async function checkSubscriptionStatus() {
@@ -66,8 +65,10 @@ export default function BillingWarningBanner() {
 
       const days = calculateGraceDaysRemaining(sub.current_period_end);
 
-      if (days <= 0) return; // Grace expired — middleware will redirect on next nav
-
+      // days <= 0: grace expired. The banner used to hide here expecting a
+      // middleware redirect that never existed — a past-grace tenant saw NO
+      // warning at all while the agent gate (2026-06-12 audit H1) now stops
+      // answering their calls. Show the suspended variant instead.
       setDaysRemaining(days);
       setVisible(true);
     }
@@ -75,7 +76,30 @@ export default function BillingWarningBanner() {
     checkSubscriptionStatus();
   }, []);
 
-  if (!visible || daysRemaining === null || dismissed) return null;
+  if (!visible || daysRemaining === null) return null;
+
+  // Grace expired — the agent gate has stopped answering this tenant's calls.
+  // Red, persistent, no dismiss (D-01/D-02/D-03: persistent, not dismissible).
+  if (daysRemaining <= 0) {
+    return (
+      <div
+        role="alert"
+        className="relative z-39 h-10 bg-gradient-to-r from-red-50 to-rose-50 dark:bg-red-950/40 dark:from-red-950/40 dark:to-red-950/40 border-b border-red-200/60 dark:border-red-800/60 flex items-center justify-center gap-3 px-10"
+      >
+        <AlertCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" aria-hidden="true" />
+        <p className="text-xs text-red-900 dark:text-red-200 truncate">
+          Payment failed — <strong>your AI receptionist is paused</strong> and is no longer answering calls
+          <span className="mx-1.5 text-stone-300 dark:text-stone-600">·</span>
+          <a
+            href="/api/billing/portal"
+            className="font-medium text-red-800 dark:text-red-300 hover:text-red-950 dark:hover:text-red-100 underline underline-offset-2 transition-colors"
+          >
+            Update payment method to restore service
+          </a>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -97,13 +121,6 @@ export default function BillingWarningBanner() {
           Update payment method
         </a>
       </p>
-      <button
-        onClick={() => setDismissed(true)}
-        className="absolute right-3 p-1 rounded-md text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/40 transition-colors"
-        aria-label="Dismiss banner"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
     </div>
   );
 }

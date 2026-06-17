@@ -7,7 +7,7 @@ export const GLOSSARY_TERMS = [
     faqItems: [
       {
         q: 'How does an AI receptionist work?',
-        a: "An AI receptionist uses speech recognition to understand what a caller says, natural language processing to determine their intent, and text-to-speech to respond conversationally. Modern AI receptionists like Voco can book appointments, detect emergencies, and speak 70+ languages — all in real time during the call.",
+        a: "An AI receptionist uses speech recognition to understand what a caller says, natural language processing to determine their intent, and text-to-speech to respond conversationally. Modern AI receptionists like Voco can book appointments, detect emergencies, and converse fluently in English and Spanish — all in real time during the call.",
       },
       {
         q: 'Can an AI receptionist replace a human receptionist?',

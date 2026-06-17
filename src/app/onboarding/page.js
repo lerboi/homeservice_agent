@@ -32,6 +32,31 @@ export default function OnboardingProfile() {
     // No redirect if plan is missing — user may have come directly
   }, [searchParams, setSelectedPlan, setSelectedInterval]);
 
+  // Rehydrate from the DB when sessionStorage is empty (return visit or new
+  // device) — steps already saved server-side shouldn't be re-typed.
+  useEffect(() => {
+    if (trade || businessName) return;
+    let cancelled = false;
+    fetch('/api/onboarding/state')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.exists) return;
+        if (data.trade_type && TRADE_TEMPLATES[data.trade_type]) {
+          setTrade((prev) => prev ?? data.trade_type);
+        }
+        if (data.business_name) {
+          setBusinessName((prev) => prev || data.business_name);
+        }
+      })
+      .catch(() => {
+        // Hydration is best-effort — a fresh wizard is the fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

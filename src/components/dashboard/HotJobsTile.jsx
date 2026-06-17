@@ -1,18 +1,20 @@
 'use client';
 
 /**
- * HotJobsTile — medium tile in the DailyOpsHub bento grid.
- * Phase 59 Plan 06: clone of HotLeadsTile; query source shifts to jobs table
- * with urgency=emergency + status=scheduled (D-15).
- * This tile reads from /api/dashboard/stats which the dashboard stats route
- * will be updated to include hotJobsCount + hotJobsPreview (scheduled+emergency).
- * Until that backend update ships, falls back to newLeadsCount/newLeadsPreview
- * from the existing stats shape.
+ * HotJobsTile — medium "Needs follow-up" tile in the DailyOpsHub bento grid.
+ *
+ * Reads newLeadsCount/newLeadsPreview from GET /api/dashboard/stats, which
+ * (post-Phase-59 repointing) counts OPEN INQUIRIES — callers waiting for a
+ * callback. Since the Inquiries → Calls merge (2026-06-10) that work queue
+ * lives inside the Calls tab as the "Callbacks" view, so the CTA points
+ * at /dashboard/calls?view=callbacks. (Originally planned as a
+ * scheduled-emergency-jobs tile; the hotJobsCount/hotJobsPreview backend
+ * fields never shipped.)
  */
 
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { Flame, AlertTriangle } from 'lucide-react';
+import { PhoneIncoming, AlertTriangle } from 'lucide-react';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { card, btn, focus } from '@/lib/design-tokens';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,8 +40,8 @@ export default function HotJobsTile() {
     return (
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Scheduled jobs</h2>
+          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <h2 className={titleClass}>Needs follow-up</h2>
         </div>
         <Skeleton className="h-9 w-20" />
         <div className="flex flex-col gap-3">
@@ -55,8 +57,8 @@ export default function HotJobsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Scheduled jobs</h2>
+          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <h2 className={titleClass}>Needs follow-up</h2>
         </div>
         <div
           role="alert"
@@ -65,7 +67,7 @@ export default function HotJobsTile() {
           <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5" />
           <div className="flex flex-col gap-1">
             <p className="font-semibold text-sm text-foreground leading-[1.4]">
-              Couldn&apos;t load jobs.
+              Couldn&apos;t load callbacks.
             </p>
             <p className="font-normal text-sm text-muted-foreground leading-normal">
               Check your connection and try again.
@@ -76,30 +78,30 @@ export default function HotJobsTile() {
     );
   }
 
-  // Prefer new hotJobs shape; fall back to legacy newLeads shape during transition
-  const count = data?.hotJobsCount ?? data?.newLeadsCount ?? 0;
-  const preview = data?.hotJobsPreview ?? data?.newLeadsPreview ?? [];
+  // Stats "new" fields = open inquiries (Phase 59 repointing of /api/dashboard/stats)
+  const count = data?.newLeadsCount ?? 0;
+  const preview = data?.newLeadsPreview ?? [];
 
-  // ── Empty state — only when there are no scheduled emergency jobs at all ───
+  // ── Empty state — no open inquiries waiting for a callback ────────────────
   if (preview.length === 0) {
     return (
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-muted-foreground" />
-            <h2 className={titleClass}>Scheduled jobs</h2>
+            <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+            <h2 className={titleClass}>Needs follow-up</h2>
           </div>
-          <Link href="/dashboard/jobs" className={ctaClass}>
-            View all jobs
+          <Link href="/dashboard/calls?view=callbacks" className={ctaClass}>
+            View callbacks
           </Link>
         </div>
         <div className="flex flex-col gap-2 py-2">
           <p className="font-semibold text-base text-foreground leading-[1.4]">
-            No urgent jobs scheduled.
+            No callers waiting for a callback.
           </p>
           <p className="font-normal text-sm text-muted-foreground leading-normal">
-            Emergency jobs that are scheduled will appear here. Check back
-            after your next call.
+            When a caller needs a callback, they&apos;ll appear here. Check
+            back after your next call.
           </p>
         </div>
       </div>
@@ -111,11 +113,11 @@ export default function HotJobsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Flame className="h-5 w-5 text-muted-foreground" />
-          <h2 className={titleClass}>Scheduled jobs</h2>
+          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <h2 className={titleClass}>Needs follow-up</h2>
         </div>
-        <Link href="/dashboard/jobs" className={ctaClass}>
-          View all jobs
+        <Link href="/dashboard/calls?view=callbacks" className={ctaClass}>
+          View callbacks
         </Link>
       </div>
 
@@ -123,24 +125,24 @@ export default function HotJobsTile() {
         <p className="font-semibold text-2xl text-foreground leading-tight tabular-nums">
           {count.toLocaleString('en-US')}
           <span className="font-normal text-sm text-muted-foreground ml-2">
-            {count === 1 ? 'scheduled job' : 'scheduled jobs'}
+            {count === 1 ? 'caller waiting for a callback' : 'callers waiting for a callback'}
           </span>
         </p>
       )}
 
       <ul className="flex flex-col divide-y divide-border">
-        {preview.slice(0, 5).map((job) => (
+        {preview.slice(0, 5).map((inquiry) => (
           <li
-            key={job.id}
+            key={inquiry.id}
             className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
           >
             <div className="min-w-0 flex flex-col">
               <p className="font-normal text-sm text-foreground leading-normal truncate">
-                {job.caller_name || job.customer?.name || job.from_number || 'Unknown caller'}
+                {inquiry.caller_name || inquiry.customer?.name || inquiry.from_number || 'Unknown caller'}
               </p>
               <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
-                {job.job_type || 'No job type'} &bull;{' '}
-                {relativeTime(job.created_at)}
+                {inquiry.job_type || 'No job type'} &bull;{' '}
+                {relativeTime(inquiry.created_at)}
               </p>
             </div>
           </li>

@@ -86,7 +86,7 @@ export async function GET(request) {
       .gte('end_time', now.toISOString()),
     supabase
       .from('calendar_events')
-      .select('start_time, end_time')
+      .select('start_time, end_time, is_all_day')
       .eq('tenant_id', tenant.id)
       .gte('end_time', now.toISOString()),
     supabase
@@ -99,7 +99,7 @@ export async function GET(request) {
       .eq('tenant_id', tenant.id),
     supabase
       .from('calendar_blocks')
-      .select('start_time, end_time')
+      .select('start_time, end_time, is_all_day')
       .eq('tenant_id', tenant.id)
       .gte('end_time', now.toISOString()),
   ]);

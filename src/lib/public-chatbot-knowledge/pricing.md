@@ -59,7 +59,7 @@ No lock-in contracts. Cancel from your dashboard settings at any time. Service s
 - Lead capture & CRM
 - Invoicing & estimate management
 - Google & Outlook Calendar sync
-- Multi-language support (70+)
+- English & Spanish support, auto-detected
 - Recovery SMS fallback
 - Short-call protection (calls under 20s don't count)
 

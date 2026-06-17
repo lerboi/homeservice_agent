@@ -80,17 +80,32 @@ export async function POST(request) {
       return Response.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    // 5. Look up existing Stripe customer ID from subscription
+    // 5. Look up existing Stripe customer ID + status from subscription
     const { data: existingSub } = await adminSupabase
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, status')
       .eq('tenant_id', tenant.id)
       .eq('is_current', true)
       .maybeSingle();
 
+    // 5b. Guard: never create a second subscription while one is live.
+    // Checkout would double-bill — plan changes go through the Billing Portal.
+    if (existingSub && ['active', 'trialing', 'past_due'].includes(existingSub.status)) {
+      return Response.json(
+        {
+          error:
+            'You already have an active subscription. To change plans, use "Manage Subscription" on the billing page (Stripe Billing Portal).',
+        },
+        { status: 409 },
+      );
+    }
+
     // 6. Build line items — flat-rate plan only.
     // Metered overage price is added post-checkout in the webhook handler
-    // because Checkout doesn't support mixing different billing intervals.
+    // because Checkout doesn't support mixing different billing intervals in
+    // its line_items. Annual subscriptions must be created in flexible billing
+    // mode (2025-06-30.basil+) or the webhook's monthly-overage attach is
+    // rejected — verified in test mode 2026-06-12.
     const lineItems = [{ price: priceId, quantity: 1 }];
 
     // 7. Create Stripe Checkout Session — no trial period (upgrade/reactivation context)
@@ -101,6 +116,7 @@ export async function POST(request) {
       subscription_data: {
         metadata: { tenant_id: tenant.id },
         // NO trial_period_days — immediate billing per Pitfall 4
+        ...(interval === 'annual' ? { billing_mode: { type: 'flexible' } } : {}),
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?upgraded=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/upgrade`,

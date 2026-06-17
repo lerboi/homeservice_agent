@@ -87,6 +87,10 @@ export default function CustomerMergeDialog({
 
   const debouncedQuery = useDebounce(query, 300);
 
+  // In-flight typeahead fetch — aborted when a newer query supersedes it so a
+  // slow earlier response can't paint stale results over the current ones.
+  const abortRef = useRef(null);
+
   // Reset on open/close
   useEffect(() => {
     if (!open) {
@@ -103,11 +107,17 @@ export default function CustomerMergeDialog({
   // Search customers when query changes (min 2 chars)
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
+      // Abort any in-flight search so a late response can't repaint results
+      // after the query dropped below the search threshold.
+      abortRef.current?.abort();
       setResults([]);
       return;
     }
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setSearching(true);
-    fetch(`/api/customers?search=${encodeURIComponent(debouncedQuery)}`)
+    fetch(`/api/customers?search=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then((data) => {
         // Exclude self + already-merged customers
@@ -116,8 +126,15 @@ export default function CustomerMergeDialog({
           .slice(0, 8);
         setResults(filtered);
       })
-      .catch(() => setResults([]))
-      .finally(() => setSearching(false));
+      .catch((err) => {
+        if (err?.name === 'AbortError') return; // superseded by a newer search
+        setResults([]);
+      })
+      .finally(() => {
+        // Only the owning fetch may clear the flag — a superseded fetch's
+        // finally must not stomp the newer fetch's in-progress state.
+        if (abortRef.current === controller) setSearching(false);
+      });
   }, [debouncedQuery, sourceCustomer?.id]);
 
   // Fetch merge preview when target selected

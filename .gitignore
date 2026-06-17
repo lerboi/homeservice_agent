@@ -44,6 +44,7 @@ messages/*.log
 next-env.d.ts
 node_modules
 .claude/settings.local.json
+.mcp.json
 
 # python (Phase 58 dual-located livekit-agent/src/ tests)
 __pycache__/

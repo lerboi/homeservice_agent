@@ -41,6 +41,20 @@ Each skill below is a complete architectural reference for one part of the codeb
 
 All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The 62 migrations are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `customers`, `jobs`, `inquiries`, `customer_calls`, `job_calls`, `customer_merge_audit`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `calendar_blocks`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `gmaps_validate_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
 
+## Supabase MCP
+
+A Supabase MCP server (`supabase-voco`) is configured for this project via `.mcp.json` (gitignored). After restarting Claude Code, MCP tools are available with the prefix `mcp__supabase-voco__`.
+
+**Project**: `exbzhmparzjlpkryeiso` → `https://exbzhmparzjlpkryeiso.supabase.co`
+
+Key tools:
+- `mcp__supabase-voco__execute_sql` — run arbitrary SQL against the live DB
+- `mcp__supabase-voco__list_tables` — list all tables in a schema
+- `mcp__supabase-voco__apply_migration` — apply a SQL migration
+- `mcp__supabase-voco__get_logs` — fetch project logs (api, postgres, edge functions, etc.)
+
+Use these tools to inspect live data, verify migrations, and debug schema issues instead of reading migration files alone.
+
 ## Rules
 
 - **Keep skills in sync**: When making changes to any system covered by a skill, read the skill first, make the code changes, then update the skill to reflect the new state.

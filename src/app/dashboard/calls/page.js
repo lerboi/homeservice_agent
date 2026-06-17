@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Phone, PhoneIncoming, PhoneOff, PhoneMissed, Search, X,
   Clock, Filter, ChevronDown, CalendarCheck, AlertTriangle,
-  Globe, Mic, PhoneOutgoing, Users, ExternalLink,
+  Globe, Mic, PhoneOutgoing, Users, ExternalLink, CheckCircle2,
+  ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,10 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { card } from '@/lib/design-tokens';
+import { card, focus } from '@/lib/design-tokens';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import AudioPlayer from '@/components/dashboard/AudioPlayer';
+import TranscriptViewer from '@/components/dashboard/TranscriptViewer';
+import InquiryCard from '@/components/dashboard/InquiryCard';
+import InquiryStatusPills from '@/components/dashboard/InquiryStatusPills';
+import InquiryFlyout from '@/components/dashboard/InquiryFlyout';
 import { supabase } from '@/lib/supabase-browser';
 
 // Phase 58 Plan 58-05 (POLISH-01 / POLISH-04):
@@ -31,6 +37,47 @@ import { supabase } from '@/lib/supabase-browser';
 //     CTA "Make a test call" → /dashboard/more/ai-voice-settings.
 //   - The filtered-empty state stays as the local secondary variant.
 //   - <ErrorState onRetry={fetchCalls} /> replaces the ad-hoc AlertTriangle block.
+//
+// Inquiries → Calls merge (2026-06-10): the Inquiries tab is gone; its work
+// queue lives here as the "Callbacks" view. The CLASSIC calls layout (stat
+// cards, search, filters, date-grouped expandable call cards) is the one
+// default landing view — there is NO smart default and no view-resolution
+// skeleton; calls render immediately without waiting on the inquiries fetch.
+//   - Callbacks — open inquiries (callers waiting for a callback). Reuses
+//     InquiryCard + InquiryFlyout (Convert-to-Job via QuickBookSheet, Mark as
+//     Lost with 5s sonner undo) and the inquiries Realtime subscription,
+//     ported from the old /dashboard/inquiries page. Open/Booked/Lost
+//     sub-pills keep converted/lost history reachable. Reached via the
+//     CallbacksStrip above the stat cards (shown only when open count > 0)
+//     or an explicit ?view= deep link; "← All calls" goes back.
+// URL matrix: ?view=callbacks → Callbacks view; ?view=needs-reply is a legacy
+// alias (old deep links + the /dashboard/inquiries redirect) → Callbacks;
+// no param or ?view=all (or anything else) → classic calls view.
+//
+// D-07a INVARIANT (carried over from the old inquiries page) — this file MUST
+// NOT contain any age-based mutation of inquiry rows, staleness flags, or
+// auto-lost scheduling. Open inquiries stay open until the owner acts.
+
+// ─── Realtime animation keyframe (ported from the old inquiries page) ─────────
+
+const SLIDE_IN_STYLE_ID = 'inquiry-slide-in-keyframe';
+
+function ensureSlideInKeyframe() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(SLIDE_IN_STYLE_ID)) return;
+  const style = document.createElement('style');
+  style.id = SLIDE_IN_STYLE_ID;
+  style.textContent = `
+    @keyframes inquiry-slide-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-inquiry-slide-in {
+      animation: inquiry-slide-in 200ms ease-out;
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 // ─── Visual maps ──────────────────────────────────────────────────────────────
 
@@ -42,9 +89,15 @@ const URGENCY_STYLE = {
 
 const OUTCOME_STYLE = {
   booked:        { badge: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300', icon: CalendarCheck, label: 'Booked' },
-  attempted:     { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', icon: Phone, label: 'Attempted' },
+  attempted:     { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', icon: Phone, label: 'Reached out' },
   declined:      { badge: 'bg-muted text-muted-foreground', icon: PhoneOff, label: 'Declined' },
   not_attempted: { badge: 'bg-muted text-muted-foreground', icon: PhoneMissed, label: 'No Booking' },
+};
+
+// Plain-language mapping for calls.exception_reason (migration 008 enum).
+const EXCEPTION_LABEL = {
+  clarification_limit: "The AI couldn't get enough details",
+  caller_requested: 'Caller asked to speak with a person',
 };
 
 const ROUTING_STYLE = {
@@ -287,10 +340,10 @@ function CallCard({ call }) {
                       <Badge className="bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300 text-[10px]">High Priority</Badge>
                     )}
                     {call.recovery_sms_status === 'sent' && (
-                      <Badge className="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 text-[10px]">Recovery SMS Sent</Badge>
+                      <Badge className="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 text-[10px]">We texted them back</Badge>
                     )}
                     {call.exception_reason && (
-                      <span>Exception: {call.exception_reason.replace(/_/g, ' ')}</span>
+                      <span>{EXCEPTION_LABEL[call.exception_reason] || 'Call ended unexpectedly'}</span>
                     )}
                     {hasRecording && (
                       <span className="inline-flex items-center gap-1 text-[var(--brand-accent)]">
@@ -327,6 +380,15 @@ function CallCard({ call }) {
                       <AudioPlayer src={recordingSrc} />
                     </div>
                   )}
+
+                  {/* Transcript — collapsible, capped height with scroll.
+                      TranscriptViewer degrades gracefully when both are null. */}
+                  <div className="mt-3">
+                    <TranscriptViewer
+                      transcriptStructured={call.transcript_structured}
+                      transcriptText={call.transcript_text}
+                    />
+                  </div>
                 </>
               )}
             </div>
@@ -380,12 +442,54 @@ function CallsEmptyState({ hasFilters, onClear }) {
   );
 }
 
+// ─── Callbacks strip ──────────────────────────────────────────────────────────
+// Compact one-line nudge above the stat cards — rendered only when callers are
+// waiting for a callback (open count > 0). Brand-accent tint follows the
+// AiNumberBanner pattern (`var(--brand-accent)` flips for dark mode, so the
+// /10 tint is dark-paired by the token itself). Clicking switches to the
+// Callbacks view.
+
+function CallbacksStrip({ count, onView }) {
+  const noun = count === 1 ? 'caller' : 'callers';
+  return (
+    <button
+      type="button"
+      onClick={onView}
+      aria-label={`${count} ${noun} waiting for a callback — view callbacks`}
+      className={`w-full flex items-center gap-2.5 mb-4 px-4 py-2.5 min-h-[44px] rounded-lg border
+                  border-[var(--brand-accent)]/25 bg-[var(--brand-accent)]/10 text-sm
+                  text-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/15
+                  transition-colors text-left ${focus.ring}`}
+    >
+      <PhoneIncoming className="size-4 shrink-0" aria-hidden="true" />
+      <span className="font-semibold truncate">
+        {count} {noun} waiting for a callback
+      </span>
+      <span className="ml-auto inline-flex items-center gap-1 shrink-0 font-medium">
+        View
+        <ArrowRight className="size-3.5" aria-hidden="true" />
+      </span>
+    </button>
+  );
+}
+
+// ─── View resolution ──────────────────────────────────────────────────────────
+// 'callbacks' | 'all'. Explicit ?view=callbacks (or the legacy needs-reply
+// alias) opens the Callbacks view; everything else — no param, ?view=all, or
+// an unknown value — lands on the classic calls view. No smart default.
+
+function resolveViewParam(v) {
+  return v === 'callbacks' || v === 'needs-reply' ? 'callbacks' : 'all';
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS = { search: '', urgency: '', bookingOutcome: '', dateRange: '' };
 
 export default function CallLogsPage() {
   const prefersReduced = useReducedMotion();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -395,9 +499,32 @@ export default function CallLogsPage() {
   const searchTimerRef = useRef(null);
   const [tenantId, setTenantId] = useState(null);
 
+  // ── Callbacks (inquiries) state — Inquiries tab merged into Calls ────────
+  const [inquiries, setInquiries] = useState([]);
+  const [inquiriesLoading, setInquiriesLoading] = useState(true);
+  const [inquiriesError, setInquiriesError] = useState(null);
+  // Sub-filter inside the Callbacks view: Open by default (inbox model —
+  // D-07a); Booked/Lost pills keep converted/lost history reachable.
+  const [inquiryStatusFilter, setInquiryStatusFilter] = useState('open');
+  const [selectedInquiryId, setSelectedInquiryId] = useState(null);
+  const [flyoutOpen, setFlyoutOpen] = useState(false);
+
+  // ── View resolution ───────────────────────────────────────────────────────
+  // 'callbacks' | 'all' — resolved synchronously from the URL (legacy
+  // ?view=needs-reply aliases to callbacks). Classic calls view is the
+  // default; it never waits on the inquiries fetch.
+  const [view, setView] = useState(() => resolveViewParam(searchParams.get('view')));
+
   const hasFilters = filters.search || filters.urgency || filters.bookingOutcome || filters.dateRange;
 
+  // In-flight calls fetch — aborted when a newer fetch supersedes it so rapid
+  // filter changes can't resolve out of order and paint a stale list.
+  const abortRef = useRef(null);
+
   const fetchCalls = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
     try {
@@ -422,17 +549,24 @@ export default function CallLogsPage() {
       }
 
       const qs = params.toString();
-      const res = await fetch(`/api/calls${qs ? `?${qs}` : ''}`);
+      const res = await fetch(`/api/calls${qs ? `?${qs}` : ''}`, { signal: controller.signal });
       if (!res.ok) throw new Error('Failed to load calls');
       const data = await res.json();
       setCalls(data.calls ?? []);
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer fetch
       setError("Couldn't load calls. Check your connection and refresh the page.");
+    } finally {
+      // Only the owning fetch may clear the flag — a superseded fetch's
+      // finally must not stomp the newer fetch's in-progress state.
+      if (abortRef.current === controller) setLoading(false);
     }
-    setLoading(false);
   }, [filters]);
 
   useEffect(() => { fetchCalls(); }, [fetchCalls]);
+
+  // Abort the in-flight fetch on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Cleanup debounce timer on unmount
   useEffect(() => {
@@ -451,6 +585,15 @@ export default function CallLogsPage() {
         .then(({ data }) => setTenantId(data?.id ?? null));
     }).catch(() => {});
   }, []);
+
+  // ── Realtime reconnect tracking ──────────────────────────────────────────
+  // Shared across both channels. Both ride the same socket, so after a drop
+  // the first successful resubscribe refetches BOTH datasets (events for
+  // either table may have been missed while disconnected). Channel callbacks
+  // read the latest fetchers through a ref so the channels don't get torn
+  // down whenever the fetcher identities change.
+  const wasDisconnectedRef = useRef(false);
+  const refetchAllRef = useRef(() => {});
 
   // ── Supabase Realtime subscription for new calls ────────────────────────
   useEffect(() => {
@@ -484,12 +627,157 @@ export default function CallLogsPage() {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          wasDisconnectedRef.current = true;
+        } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+          wasDisconnectedRef.current = false;
+          refetchAllRef.current();
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [tenantId]);
+
+  // ── Inject Realtime slide-in keyframe once ──────────────────────────────
+  useEffect(() => { ensureSlideInKeyframe(); }, []);
+
+  // ── Fetch inquiries (callbacks work queue + strip count) ────────────────
+  // Same unfiltered fetch the old inquiries page used: all statuses (API
+  // limit 200) so the Open/Booked/Lost sub-pills carry live counts; status
+  // filtering happens client-side. This fetch never blocks the classic calls
+  // view — the CallbacksStrip simply appears once the count resolves.
+  const fetchInquiries = useCallback(async () => {
+    setInquiriesLoading(true);
+    setInquiriesError(null);
+    try {
+      const res = await fetch('/api/inquiries');
+      if (!res.ok) throw new Error('Failed to load inquiries');
+      const data = await res.json();
+      const sorted = (data.inquiries || []).sort((a, b) => {
+        const wa = URGENCY_WEIGHT[a.urgency] || 0;
+        const wb = URGENCY_WEIGHT[b.urgency] || 0;
+        if (wa !== wb) return wb - wa;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      setInquiries(sorted);
+    } catch {
+      setInquiriesError("We couldn't load your callbacks. Check your connection and try again.");
+    } finally {
+      setInquiriesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchInquiries(); }, [fetchInquiries]);
+
+  // Keep the reconnect refetch pointed at the latest fetchers (fetchCalls
+  // changes identity with filters) without recreating the channels.
+  useEffect(() => {
+    refetchAllRef.current = () => {
+      fetchCalls();
+      fetchInquiries();
+    };
+  }, [fetchCalls, fetchInquiries]);
+
+  // ── Keep view in sync with the URL (?view= deep links, back/forward) ────
+  // No param (or an unknown value) resolves to the classic calls view, so
+  // back/forward between /dashboard/calls and ?view=callbacks stays correct.
+  useEffect(() => {
+    const next = resolveViewParam(searchParams.get('view'));
+    if (next !== view) setView(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // ── Supabase Realtime subscription for inquiries (D-15) ─────────────────
+  // Ported from the old inquiries page: INSERT prepends with the slide-in
+  // flag; UPDATE replaces the row. Keeps the Callbacks list AND the strip
+  // count live. Cleaned up via removeChannel on unmount / tenant change.
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel('inquiries-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'inquiries',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        () => {
+          // The realtime payload lacks the joins the API rows carry, so
+          // refetch instead of prepending a bare row.
+          fetchInquiries();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'inquiries',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          setInquiries((prev) =>
+            prev.map((inq) =>
+              inq.id === payload.new.id ? { ...payload.new, _isNew: false } : inq
+            )
+          );
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          wasDisconnectedRef.current = true;
+        } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+          wasDisconnectedRef.current = false;
+          refetchAllRef.current();
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, fetchInquiries]);
+
+  // ── Inquiry counts + client-side status filtering ───────────────────────
+  const inquiryStatusCounts = useMemo(() => {
+    const counts = { open: 0, converted: 0, lost: 0 };
+    for (const inq of inquiries) {
+      if (counts[inq.status] !== undefined) counts[inq.status] += 1;
+    }
+    return counts;
+  }, [inquiries]);
+
+  const openCallbacksCount = inquiryStatusCounts.open;
+
+  const displayedInquiries = useMemo(
+    () => (inquiryStatusFilter ? inquiries.filter((inq) => inq.status === inquiryStatusFilter) : inquiries),
+    [inquiries, inquiryStatusFilter]
+  );
+
+  // ── View + inquiry handlers ─────────────────────────────────────────────
+
+  function handleViewChange(next) {
+    if (next === view) return;
+    setView(next);
+    // Keep deep links working — replace (not push), no scroll reset.
+    router.replace(`/dashboard/calls?view=${next}`, { scroll: false });
+  }
+
+  function handleViewInquiry(inquiryId) {
+    setSelectedInquiryId(inquiryId);
+    setFlyoutOpen(true);
+  }
+
+  function handleInquiryStatusChange(updatedInquiry) {
+    setInquiries((prev) =>
+      prev.map((inq) => (inq.id === updatedInquiry.id ? { ...inq, ...updatedInquiry } : inq))
+    );
+  }
 
   function handleSearchChange(e) {
     const value = e.target.value;
@@ -515,8 +803,105 @@ export default function CallLogsPage() {
   // Group by date
   const groups = groupByDate(calls);
 
+  // ── Callbacks view content ────────────────────────────────────────────────
+  let callbacksContent;
+  if (inquiriesError) {
+    callbacksContent = <ErrorState message={inquiriesError} onRetry={fetchInquiries} />;
+  } else if (inquiriesLoading) {
+    callbacksContent = (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[72px] w-full rounded-xl" />
+        ))}
+      </div>
+    );
+  } else if (displayedInquiries.length === 0) {
+    callbacksContent =
+      !inquiryStatusFilter || inquiryStatusFilter === 'open' ? (
+        // "All caught up" — stays for when the queue is empty but the user
+        // navigates here explicitly. Same visual structure as the shared
+        // <EmptyState>, with a subtle link back to All calls.
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <CheckCircle2 className="h-10 w-10 text-muted-foreground/30 mb-4" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-foreground mb-2">All caught up</h2>
+          <p className="text-sm text-muted-foreground max-w-sm mb-4">
+            No callers waiting for a callback right now.
+          </p>
+          <button
+            type="button"
+            onClick={() => handleViewChange('all')}
+            className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium"
+          >
+            View all calls
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-sm text-muted-foreground">
+            {/* Display label only — 'converted' shows as "booked" */}
+            No {inquiryStatusFilter === 'converted' ? 'booked' : inquiryStatusFilter} callbacks right now.
+          </p>
+        </div>
+      );
+  } else {
+    callbacksContent = (
+      <div className="space-y-3">
+        {displayedInquiries.map((inquiry) => (
+          <div
+            key={inquiry.id}
+            className={inquiry._isNew ? 'animate-inquiry-slide-in' : ''}
+          >
+            <InquiryCard inquiry={inquiry} onView={handleViewInquiry} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div data-tour="calls-page">
+      {view === 'callbacks' ? (
+        /* ── Callbacks view — open-inquiries work queue ───────────────────── */
+        <>
+          {/* Back control + title — back pattern matches admin/merges */}
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => handleViewChange('all')}
+              aria-label="Back to all calls"
+              className={`inline-flex items-center gap-1 min-h-[44px] -ml-1 px-1 rounded-md text-sm
+                          text-muted-foreground hover:text-foreground transition-colors ${focus.ring}`}
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              All calls
+            </button>
+            <h1 className="text-lg font-semibold tracking-tight text-foreground">Callbacks</h1>
+          </div>
+
+          <div className={`${card.base} p-0`} data-view="callbacks">
+            <div className="pt-3">
+              <InquiryStatusPills
+                counts={inquiryStatusCounts}
+                activeStatus={inquiryStatusFilter}
+                onStatusChange={setInquiryStatusFilter}
+              />
+            </div>
+            <div className="px-6 py-4">
+              {callbacksContent}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* ── Classic calls view — the default landing experience ──────────── */
+        <>
+      {/* Callbacks strip — only when callers are waiting (hidden at 0) */}
+      {openCallbacksCount > 0 && (
+        <CallbacksStrip
+          count={openCallbacksCount}
+          onView={() => handleViewChange('callbacks')}
+        />
+      )}
+
       {/* Summary bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         {[
@@ -557,7 +942,7 @@ export default function CallLogsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by phone number..."
+              placeholder="Search by name or phone..."
               value={searchInput}
               onChange={handleSearchChange}
               className="pl-9 h-9 text-sm"
@@ -630,7 +1015,7 @@ export default function CallLogsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="booked">Booked</SelectItem>
-                    <SelectItem value="attempted">Attempted</SelectItem>
+                    <SelectItem value="attempted">Reached out</SelectItem>
                     <SelectItem value="declined">Declined</SelectItem>
                     <SelectItem value="not_attempted">No Booking</SelectItem>
                   </SelectContent>
@@ -679,6 +1064,17 @@ export default function CallLogsPage() {
           ))}
         </div>
       )}
+        </>
+      )}
+
+      {/* InquiryFlyout — Convert to Job (QuickBookSheet) + Mark as Lost (5s sonner undo),
+          ported unchanged from the old inquiries page */}
+      <InquiryFlyout
+        inquiryId={selectedInquiryId}
+        open={flyoutOpen}
+        onOpenChange={setFlyoutOpen}
+        onStatusChange={handleInquiryStatusChange}
+      />
     </div>
   );
 }

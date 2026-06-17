@@ -30,9 +30,9 @@ import { toast } from 'sonner';
 import { CopyToJobberSection } from '@/components/dashboard/CopyToJobberSection';
 
 const URGENCY_STYLES = {
-  emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
+  emergency: { badge: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300', label: 'Emergency' },
   routine: { badge: 'bg-foreground/[0.06] text-foreground/70', label: 'Routine' },
-  urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
+  urgent: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', label: 'Urgent' },
 };
 
 function formatDateTime(iso) {
@@ -195,7 +195,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className={urgency.badge}>{urgency.label}</Badge>
             {appointment.status === 'completed' && (
-              <Badge className="bg-green-100 text-green-700">Completed</Badge>
+              <Badge className="bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300">Completed</Badge>
             )}
             {/* Phase 57 — "Not in Jobber yet" header pill (JOBSCHED-06).
                 Switches off automatically once Phase 999.3 populates jobber_visit_id. */}
@@ -304,19 +304,19 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
 
           {/* Conflict */}
           {conflict && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-amber-800">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/40 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
                 <AlertTriangle className="h-4 w-4" />
                 Calendar Conflict
               </div>
-              <p className="text-sm text-amber-700">
+              <p className="text-sm text-amber-700 dark:text-amber-300">
                 Overlaps with &ldquo;{conflict.calendar_event.title}&rdquo;
                 ({formatDateTime(conflict.calendar_event.start_time)} &ndash; {formatDateTime(conflict.calendar_event.end_time)})
               </p>
               <Button
                 variant="outline"
                 size="sm"
-                className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                className="border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-800/60 dark:text-amber-200 dark:hover:bg-amber-900/40"
                 onClick={handleDismissConflict}
                 disabled={dismissingConflict}
               >
@@ -431,7 +431,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
           {appointment.status !== 'completed' && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full">
+                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 w-full">
                   Cancel Appointment
                 </Button>
               </AlertDialogTrigger>

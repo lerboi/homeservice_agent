@@ -279,11 +279,11 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
     <div className="space-y-6 pb-24 md:pb-6">
       {/* Settings nudge — shown when business identity is not configured */}
       {settings && !settings.business_name && (
-        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 text-sm">
-          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/40 text-sm">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1">
-            <p className="font-medium text-amber-900">Set up your business info</p>
-            <p className="text-amber-700 text-xs mt-0.5">
+            <p className="font-medium text-amber-900 dark:text-amber-200">Set up your business info</p>
+            <p className="text-amber-700 dark:text-amber-300 text-xs mt-0.5">
               Add your business name, logo, and contact details so invoices look professional.
             </p>
           </div>
@@ -322,7 +322,7 @@ export default function InvoiceEditor({ initialData, settings, onSave, onContinu
           {/* Job search / link (invoices link to a job) */}
           <div className="mb-4">
             {selectedLead ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800/60 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-foreground">
                   Linked to: <span className="font-medium text-foreground">{selectedLead.name}</span>

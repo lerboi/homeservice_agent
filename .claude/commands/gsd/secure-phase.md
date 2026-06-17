@@ -9,8 +9,9 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
+requires: [phase]
 ---
 <objective>
 Verify threat mitigations for a completed phase. Three states:
@@ -22,7 +23,7 @@ Output: updated SECURITY.md.
 </objective>
 
 <execution_context>
-@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/secure-phase.md
+@C:/Users/leheh/.Projects/homeservice_agent/.claude/get-shit-done/workflows/secure-phase.md
 </execution_context>
 
 <context>
@@ -30,6 +31,6 @@ Phase: $ARGUMENTS — optional, defaults to last completed phase.
 </context>
 
 <process>
-Execute @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/secure-phase.md.
+Execute end-to-end.
 Preserve all workflow gates.
 </process>

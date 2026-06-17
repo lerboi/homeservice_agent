@@ -36,7 +36,6 @@ const URGENCY_OPTIONS = [
 // (and from the active-filter pills row below).
 const PILL_LABELS = {
   urgency: (v) => `Urgency: ${URGENCY_OPTIONS.find((o) => o.value === v)?.label || v}`,
-  jobType: (v) => `Job: ${v}`,
   dateFrom: (v) => `From: ${v}`,
   dateTo: (v) => `To: ${v}`,
   search: (v) => `"${v}"`,
@@ -65,7 +64,6 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
   // Determine active filters for pills — status deliberately excluded (pills strip).
   const activePills = [];
   if (filters.urgency) activePills.push({ key: 'urgency', label: PILL_LABELS.urgency(filters.urgency) });
-  if (filters.jobType) activePills.push({ key: 'jobType', label: PILL_LABELS.jobType(filters.jobType) });
   if (filters.dateFrom) activePills.push({ key: 'dateFrom', label: PILL_LABELS.dateFrom(filters.dateFrom) });
   if (filters.dateTo) activePills.push({ key: 'dateTo', label: PILL_LABELS.dateTo(filters.dateTo) });
   if (filters.search) activePills.push({ key: 'search', label: PILL_LABELS.search(filters.search) });
@@ -76,7 +74,6 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
   // mobile, so it isn't counted on the Filters-button badge).
   const sheetFilterCount =
     (filters.urgency ? 1 : 0) +
-    (filters.jobType ? 1 : 0) +
     (filters.dateFrom ? 1 : 0) +
     (filters.dateTo ? 1 : 0);
 
@@ -99,17 +96,6 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
         ))}
       </SelectContent>
     </Select>
-  );
-
-  const jobTypeInput = (
-    <Input
-      type="text"
-      placeholder="Job type..."
-      value={filters.jobType || ''}
-      onChange={(e) => onFilterChange({ jobType: e.target.value })}
-      className="h-9 text-sm border-border bg-muted focus:bg-card"
-      aria-label="Filter by job type"
-    />
   );
 
   const dateRange = (
@@ -152,7 +138,6 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
         {/* Desktop: inline filter controls */}
         <div className="hidden sm:flex items-center gap-3 flex-wrap">
           <div className="w-36">{urgencySelect}</div>
-          <div className="w-32">{jobTypeInput}</div>
           {dateRange}
           {hasActiveFilters && (
             <button
@@ -190,10 +175,6 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Urgency</label>
                 {urgencySelect}
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job type</label>
-                {jobTypeInput}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date range</label>

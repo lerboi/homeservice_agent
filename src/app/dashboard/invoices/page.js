@@ -76,6 +76,8 @@ export default function InvoicesPage() {
     error,
     activeStatus,
     setActiveStatus,
+    hasMore,
+    loadMore,
     mutate,
   } = useDocumentList('/api/invoices', {
     itemsKey: 'invoices',
@@ -273,7 +275,7 @@ export default function InvoicesPage() {
               </div>
               <ArrowRight className="size-4 text-muted-foreground/50 mt-[-18px]" />
               <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center justify-center size-10 rounded-full bg-orange-50">
+                <div className="flex items-center justify-center size-10 rounded-full bg-orange-50 dark:bg-orange-950/40">
                   <FileText className="size-5 text-[var(--brand-accent)]" />
                 </div>
                 <span className="text-xs text-muted-foreground">Create invoice</span>
@@ -291,7 +293,7 @@ export default function InvoicesPage() {
             {!settingsComplete && (
               <Link
                 href="/dashboard/more/invoice-settings"
-                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-800 hover:bg-amber-100 transition-colors"
+                className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-lg border border-amber-200 bg-amber-50 text-sm text-amber-800 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-900/40 transition-colors"
               >
                 <Settings className="size-4" />
                 Set up your business info first
@@ -413,14 +415,27 @@ export default function InvoicesPage() {
                 </div>
               ))}
             </div>
+
+            {/* Load more */}
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  className="px-4 py-2 rounded-md border border-border bg-card hover:bg-muted text-sm font-medium text-muted-foreground transition-colors"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* Mobile floating action button */}
+      {/* Mobile floating action button — bottom-20 clears the 64px BottomTabBar below lg */}
       <button
         onClick={handleCreateInvoice}
-        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white shadow-lg flex items-center justify-center transition-colors"
+        className="sm:hidden fixed bottom-20 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent-hover)] text-white shadow-lg flex items-center justify-center transition-colors"
         aria-label="Create Invoice"
       >
         <Plus className="w-6 h-6" />

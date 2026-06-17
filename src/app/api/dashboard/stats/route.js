@@ -3,7 +3,8 @@ import { getTenantId } from '@/lib/get-tenant-id';
 
 /**
  * GET /api/dashboard/stats
- * Returns dashboard stats: new lead count + preview, invoice snapshot, and overall totals.
+ * Returns dashboard stats: open-inquiry count + preview, invoice money snapshot
+ * (outstanding / overdue / paid this month), and missed-calls-today count.
  */
 export async function GET() {
   const tenantId = await getTenantId();
@@ -20,6 +21,7 @@ export async function GET() {
     invoiceOutstandingRes,
     invoiceOverdueRes,
     invoicePaidMonthRes,
+    missedCallsTodayRes,
   ] = await Promise.all([
     // Count of open inquiries (Phase 59: "new" work = unbooked open inquiries)
     supabase
@@ -41,10 +43,10 @@ export async function GET() {
       .select('total')
       .eq('tenant_id', tenantId)
       .in('status', ['sent', 'overdue']),
-    // Invoice overdue count
+    // Invoice overdue: totals so both count and amount can be derived
     supabase
       .from('invoices')
-      .select('id', { count: 'exact', head: true })
+      .select('total')
       .eq('tenant_id', tenantId)
       .eq('status', 'overdue'),
     // Paid this month
@@ -54,12 +56,24 @@ export async function GET() {
       .eq('tenant_id', tenantId)
       .eq('status', 'paid')
       .gte('paid_at', firstOfMonth),
+    // Missed calls today: no booking attempt, 15s+ duration (same triage as
+    // CallsTile — shorter calls are usually hangups/misdials, not losses)
+    supabase
+      .from('calls')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('booking_outcome', 'not_attempted')
+      .gte('duration_seconds', 15)
+      .gte('created_at', today),
   ]);
 
   const outstandingInvoices = invoiceOutstandingRes.data || [];
   const invoiceOutstandingCount = outstandingInvoices.length;
   const invoiceOutstandingAmount = outstandingInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
-  const invoiceOverdueCount = invoiceOverdueRes.count ?? 0;
+
+  const overdueInvoices = invoiceOverdueRes.data || [];
+  const invoiceOverdueCount = overdueInvoices.length;
+  const invoiceOverdueAmount = overdueInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
 
   const paidInvoices = invoicePaidMonthRes.data || [];
   const paidThisMonth = paidInvoices.reduce((sum, inv) => sum + (parseFloat(inv.total) || 0), 0);
@@ -80,6 +94,8 @@ export async function GET() {
     invoiceOutstandingCount,
     invoiceOutstandingAmount,
     invoiceOverdueCount,
+    invoiceOverdueAmount,
     paidThisMonth,
+    missedCallsToday: missedCallsTodayRes.count ?? 0,
   });
 }

@@ -114,7 +114,7 @@ export function HeroSection() {
 
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 md:mt-10">
             <Link
-              href="/auth/signin"
+              href="/pricing"
               className="inline-flex items-center justify-center gap-2 h-[54px] px-[26px] rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[15px] font-semibold text-white transition-colors"
               style={{
                 boxShadow:

@@ -284,7 +284,14 @@ export class JobberAdapter {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
       body,
     });
-    if (!resp.ok) throw new Error(`Jobber refreshToken failed: ${resp.status}`);
+    if (!resp.ok) {
+      // Attach the HTTP status so refreshTokenIfNeeded can distinguish a dead
+      // grant (400/401 → flag error_state + notify owner) from a transient
+      // provider hiccup (5xx/429 → retry silently on the next cycle).
+      const err = new Error(`Jobber refreshToken failed: ${resp.status}`);
+      err.status = resp.status;
+      throw err;
+    }
     const json = await resp.json();
     if (!json.access_token) throw new Error('Jobber refresh missing access_token');
     if (!json.refresh_token) throw new Error('Jobber refresh missing refresh_token (rotation mandatory)');

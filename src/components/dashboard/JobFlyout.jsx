@@ -19,7 +19,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Phone, MapPin, Calendar, Briefcase, FileText, ExternalLink,
+  Phone, MapPin, Calendar, FileText, ExternalLink,
   ClipboardList, Pencil, Check, X, UserCheck, AlertCircle
 } from 'lucide-react';
 import InvoiceStatusBadge from '@/components/dashboard/InvoiceStatusBadge';
@@ -65,9 +65,9 @@ import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const URGENCY_STYLES = {
-  emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
+  emergency: { badge: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300', label: 'Emergency' },
   routine: { badge: 'bg-foreground/[0.06] text-foreground/70', label: 'Routine' },
-  urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
+  urgent: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', label: 'Urgent' },
 };
 
 // Job status options (Phase 59 schema: D-09)
@@ -387,13 +387,6 @@ export default function JobFlyout({ jobId, open, onOpenChange, onStatusChange })
                   Job Details
                 </h3>
 
-                {job.job_type && (
-                  <div className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Briefcase className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <span className="capitalize">{job.job_type}</span>
-                  </div>
-                )}
-
                 {(job.appointment?.service_address || job.customer?.default_address) && (
                   <div className="flex items-start gap-2 text-sm text-foreground/80">
                     <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
@@ -608,7 +601,7 @@ export default function JobFlyout({ jobId, open, onOpenChange, onStatusChange })
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
                     disabled={markingLost || job.status === 'lost'}
                   >
                     {markingLost ? 'Moving to Lost...' : 'Mark as Lost'}

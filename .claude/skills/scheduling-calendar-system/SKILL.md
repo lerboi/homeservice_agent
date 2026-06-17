@@ -7,7 +7,7 @@ description: "Complete architectural reference for the scheduling and calendar s
 
 This document is the single source of truth for the entire scheduling and calendar system. Read this before making any changes to slot calculation, booking, calendar sync, OAuth flows, working hours, zones, or appointment management.
 
-**Last updated**: 2026-04-15 (Added full cron inventory (6 endpoints, not just renew-calendar-channels); documented that recurring appointments and maintenance contracts are NOT implemented for appointments — recurring exists only for invoices under the payment-architecture skill; clarified calendar_blocks POST/PATCH/DELETE sync nuances incl. all-day date format and group cascade. Previous: 2026-03-25 — Phase 8 Outlook Calendar Sync, dual-provider support)
+**Last updated**: 2026-06-12 (audit wave 1, calendar-sync durability + webhook hardening — (1) **Outlook 410 recovery**: `graphFetch` now attaches `err.status` + `err.graphErrorCode`; `syncOutlookCalendarEvents` recovers from 410 Gone by clearing `last_sync_token`, wiping the outlook mirror rows, and restarting as a full sync with a freshly-anchored now−30d → now+180d window — previously one expired deltaLink froze the mirror forever. (2) **`renewOutlookSubscription` 404 recovery**: Graph deletes subscriptions the moment they expire, so the PATCH 404s — it now creates a fresh subscription instead of retrying the dead PATCH daily forever. (3) **Monthly window re-anchor**: on the 1st of each month the `renew-calendar-channels` cron force re-anchors EVERY connected credential (clears sync token, wipes that provider's mirror rows, full resync) — both providers' now−30d→now+180d windows were otherwise frozen at connect time, so mirrors stopped seeing new events ~6 months in. (4) **Google webhook hardening**: the legacy fallback that trusted the spoofable `X-Goog-Channel-Token` header as a tenant_id was REMOVED — tenants are resolved only via `watch_channel_id` DB lookup; notifications without a resolvable channel id are dropped with 200. `src/lib/webhooks/google-calendar-push.js` and its test were DELETED — the logic lives in the route `src/app/api/webhooks/google-calendar/route.js` Cron inventory is now **11 endpoints** — 2026-06-12 added `/api/cron/release-churned-numbers` + `/api/cron/retry-meter-events`, both covered by payment-architecture.) Previous: 2026-06-10 (b: cron inventory grew to 9 endpoints — added `/api/cron/refresh-integration-tokens` (`*/10 * * * *`), the Jobber/Xero token keep-fresh sweep; see cron table + integrations-jobber-xero skill. Calendar dashboard page UI/perf rework same day — covered by dashboard-crm-system.) (a: Calendar/scheduling fixes from the 2026-06 audit — (1) Outlook OAuth code exchange now POSTs directly to the Microsoft token endpoint (MSAL's `acquireTokenByCode` never exposed the refresh token, so refresh tokens were never persisted and Outlook connections died after ~1h); callback persists `refresh_token` + `expiry_date` from `expires_in`. (2) Google `syncCalendarEvents` paginates via `nextPageToken` in BOTH incremental and full sync (max 20 pages); sync token persisted from the LAST page, including initial sync. (3) Slot calculator: past-window guard (`windowEnd <= now` → `[]`) + all-day busy rows (`is_all_day=true`) expand to tenant-local day bounds; available-slots route selects `is_all_day` from both mirror tables. (4) Appointment cancel deletes the external event via the credential matching `appointments.external_event_provider`, falling back to current primary only when the column is null. Also corrected: secondary booking defense is the GiST exclusion constraint `appointments_no_overlap` (migration 019), `book_appointment_atomic` is 17-arg since migration 062, cron inventory is 8 endpoints. Previous: 2026-04-15 — cron inventory, recurring-not-implemented note, calendar_blocks sync nuances)
 
 ---
 
@@ -21,9 +21,9 @@ The scheduling system spans slot generation, atomic booking, and bidirectional c
 | **Atomic Booking Engine** | `booking.js` + Postgres RPC | Non-blocking advisory lock + tsrange overlap check for race-free slot reservation |
 | **Google Calendar** | `google-calendar.js` | OAuth, event push, incremental sync, watch registration, disconnect |
 | **Outlook Calendar** | `outlook-calendar.js` | MSAL OAuth, event push, delta sync, subscription management, disconnect |
-| **Google Webhook Handler** | `webhooks/google-calendar-push.js` | Receives push notifications from Google, triggers incremental sync |
+| **Google Webhook Handler** | `api/webhooks/google-calendar/route.js` | Receives push notifications from Google, resolves tenant via `watch_channel_id` DB lookup (header token never trusted), triggers incremental sync. (`src/lib/webhooks/google-calendar-push.js` DELETED 2026-06-12) |
 | **Outlook Webhook Handler** | `webhooks/outlook-calendar-push.js` | Receives Microsoft Graph notifications, validates clientState, triggers delta sync |
-| **Cron: renew-calendar-channels** | `cron/renew-calendar-channels/route.js` | Dual-provider renewal of Google watch channels + Outlook subscriptions before TTL expiry |
+| **Cron: renew-calendar-channels** | `cron/renew-calendar-channels/route.js` | Dual-provider renewal of Google watch channels + Outlook subscriptions before TTL expiry; monthly (1st) full window re-anchor of every connected credential |
 | **Appointments API** | `api/appointments/route.js`, `api/appointments/[id]/route.js` | Calendar view fetch, travel buffer + conflict detection, cancel, dismiss conflict |
 | **Working Hours API** | `api/working-hours/route.js` | GET/PUT tenant working hours, slot duration, timezone |
 | **Zones API** | `api/zones/route.js` | GET/POST zones, PUT travel buffers between zones |
@@ -49,7 +49,7 @@ On success → pushBookingToCalendar(tenantId, appointmentId) (async, non-blocki
        ↓
 pushBookingToCalendar writes external_event_id + external_event_provider on appointment
        ↓
-Google/Outlook push webhooks → handleGoogleCalendarPush / handleOutlookCalendarPush
+Google/Outlook push webhooks → google-calendar route handler / handleOutlookCalendarPush
        ↓                          trigger syncCalendarEvents / syncOutlookCalendarEvents
        ↓
 calendar_events local mirror kept in sync (slot calculator reads from this, never live-queries)
@@ -65,19 +65,22 @@ calendar_events local mirror kept in sync (slot calculator reads from this, neve
 | `src/lib/scheduling/booking.js` | Calls `book_appointment_atomic` Supabase RPC |
 | `src/lib/scheduling/google-calendar.js` | Google Calendar: OAuth, push, sync, watch, revoke |
 | `src/lib/scheduling/outlook-calendar.js` | Outlook Calendar: MSAL, Graph, delta sync, subscription, revoke |
-| `src/lib/webhooks/google-calendar-push.js` | Google push notification handler (triggers sync) |
+| `src/app/api/webhooks/google-calendar/route.js` | Google push notification route — handshake ack, `watch_channel_id` → tenant lookup (DB-trusted), sync via `after()`. The old `src/lib/webhooks/google-calendar-push.js` + its test were DELETED (2026-06-12) when the spoofable header fallback was removed |
 | `src/lib/webhooks/outlook-calendar-push.js` | Outlook Graph notification handler (validates + triggers sync) |
 | `src/app/api/google-calendar/auth/route.js` | GET — returns Google OAuth consent URL |
 | `src/app/api/google-calendar/callback/route.js` | GET — handles Google OAuth callback, stores creds, registers watch, initial sync |
 | `src/app/api/outlook-calendar/auth/route.js` | GET — returns Microsoft OAuth consent URL |
 | `src/app/api/outlook-calendar/callback/route.js` | GET — handles Microsoft OAuth callback, stores creds, creates Graph subscription, initial sync |
 | `src/app/api/appointments/route.js` | GET — returns appointments + external events + travel buffers + conflicts for a date range |
-| `src/app/api/appointments/[id]/route.js` | GET — single appointment with call data; PATCH — cancel or dismiss conflict |
+| `src/app/api/appointments/[id]/route.js` | GET — single appointment with call data; PATCH — cancel (deletes external event via the owning provider's credential) or dismiss conflict |
+| `src/app/api/appointments/available-slots/route.js` | GET — dashboard slot lookup; fetches bookings + calendar_events/calendar_blocks mirrors (selecting `is_all_day`) and runs `calculateAvailableSlots` |
 | `src/app/api/cron/renew-calendar-channels/route.js` | POST — dual-provider channel/subscription renewal (run daily) |
 | `src/app/api/working-hours/route.js` | GET/PUT — tenant working_hours JSONB, slot_duration_mins, tenant_timezone |
 | `src/app/api/zones/route.js` | GET/POST/PUT — service zones and zone pair travel buffers |
-| `supabase/migrations/003_scheduling.sql` | Appointments, zones, credentials, events tables + `book_appointment_atomic` function |
+| `supabase/migrations/003_scheduling.sql` | Appointments, zones, credentials, events tables + `book_appointment_atomic` function (since extended — 17-arg as of 062) |
 | `supabase/migrations/007_outlook_calendar.sql` | Adds is_primary to calendar_credentials; renames google_event_id → external_event_id on appointments |
+| `supabase/migrations/019_appointments_exclusion_constraint.sql` | Replaces `UNIQUE(tenant_id, start_time)` with GiST exclusion constraint `appointments_no_overlap` (no overlapping non-cancelled ranges per tenant) |
+| `supabase/migrations/062_phase61_address_validation.sql` | Extends `book_appointment_atomic` to its current 17-arg signature (6 validated-address params, all DEFAULT NULL) — see auth-database-multitenancy skill |
 | `supabase/migrations/038_schema_hardening_2.sql` | `set_primary_calendar(p_tenant_id, p_provider)` RPC — atomic primary-calendar swap (single-statement UPDATE that flips is_primary across all of a tenant's calendar_credentials rows in one transaction). SECURITY DEFINER, service_role only. |
 
 ---
@@ -95,7 +98,7 @@ export function calculateAvailableSlots({
   workingHours,        // object  — day-keyed config e.g. { monday: { enabled, open, close, lunchStart, lunchEnd } }
   slotDurationMins,    // number  — slot length in minutes (e.g. 60)
   existingBookings,    // Array   — [{ start_time, end_time, zone_id? }] ISO strings
-  externalBlocks,      // Array   — [{ start_time, end_time }] ISO strings (from calendar_events)
+  externalBlocks,      // Array   — [{ start_time, end_time, is_all_day? }] ISO strings (from calendar_events + calendar_blocks)
   zones,               // Array   — [{ id, name }] configured service zones
   zonePairBuffers,     // Array   — [{ zone_a_id, zone_b_id, buffer_mins }]
   targetDate,          // string  — "YYYY-MM-DD"
@@ -122,6 +125,14 @@ export function calculateAvailableSlots({
    - Overlaps any `externalBlocks` interval (Google/Outlook calendar events)
    - Violates travel buffer from the most recent prior booking (see travel buffer rules)
 9. Accepted slots are returned as `{ start, end }` ISO strings
+
+### All-Day Block Expansion (`expandAllDayInterval`)
+
+External blocks with `is_all_day: true` are stored as date-only payloads that Postgres widens to **UTC-midnight timestamptz** — compared raw, they block the wrong local hours for any non-UTC tenant (e.g. 08:00→08:00-next-day for Asia/Singapore). Before overlap checks, `expandAllDayInterval(start, end, timezone)` rewrites them to `[00:00 tenant-local of the first day, 00:00 tenant-local of the day after the last day)`:
+
+- The covered days come from the **UTC date portion** of the stored timestamps (the pure-date encoding).
+- An end that lands exactly on a UTC midnight (after the start) follows the Google/Outlook **exclusive-end convention** — that midnight already IS the day-after boundary; any other end time means the event runs into that day, so the boundary becomes the following day.
+- The Python twin (`livekit-agent/src/lib/slot_calculator.py` `_all_day_busy_bounds`) implements the same semantics (it steps the exclusive end back 1µs instead). Both the JS available-slots route and every Python calendar fetch site now SELECT `is_all_day` from `calendar_events` and `calendar_blocks`.
 
 ### Travel Buffer Rules
 
@@ -163,11 +174,14 @@ export async function atomicBookSlot({
 
 `atomicBookSlot` is a thin JS wrapper — all conflict logic lives inside the `book_appointment_atomic` Postgres function.
 
-### `book_appointment_atomic` RPC Flow (`supabase/migrations/003_scheduling.sql`)
+### `book_appointment_atomic` RPC Flow (created in `003_scheduling.sql`; **current definition: migration 062, 17 args**)
+
+The signature was extended twice — to 11 args, then to **17 args in migration 062** (Phase 61 address validation: `p_formatted_address`, `p_place_id`, `p_latitude`, `p_longitude`, `p_address_components`, `p_address_validation_verdict`, all `DEFAULT NULL` so older callers keep working). The core lock/overlap/insert flow below is unchanged:
 
 ```sql
--- Parameters: p_tenant_id, p_call_id, p_start_time, p_end_time,
+-- Core parameters (003): p_tenant_id, p_call_id, p_start_time, p_end_time,
 --             p_service_address, p_caller_name, p_caller_phone, p_urgency, p_zone_id
+-- + later additions through migration 062 (17 total)
 
 -- Step 1: Derive advisory lock key
 v_lock_key := abs(hashtext(p_tenant_id::text || extract(epoch FROM p_start_time)::text));
@@ -206,7 +220,15 @@ RETURN { success: true, appointment_id: v_new_id };
 
 ### Secondary Defense
 
-`UNIQUE (tenant_id, start_time)` constraint on the `appointments` table acts as a final guard — even if two concurrent transactions somehow pass both the advisory lock and the tsrange check, the DB insert will fail for the second one, keeping data clean.
+The GiST exclusion constraint `appointments_no_overlap` (migration 019) acts as the final guard:
+
+```sql
+ALTER TABLE appointments ADD CONSTRAINT appointments_no_overlap
+  EXCLUDE USING gist (tenant_id WITH =, tstzrange(start_time, end_time, '[)') WITH &&)
+  WHERE (status <> 'cancelled');
+```
+
+Even if two concurrent transactions somehow pass both the advisory lock and the range check, the DB insert fails for the second one. (Migration 019 **replaced** the original `UNIQUE (tenant_id, start_time)` — that constraint only blocked identical start times, not overlapping ranges.)
 
 ---
 
@@ -231,10 +253,11 @@ RETURN { success: true, appointment_id: v_new_id };
 
 1. Load `calendar_credentials` for tenant + provider `google`
 2. Attempt incremental sync using stored `last_sync_token`
-3. On 410 Gone (invalid sync token): perform full re-sync with `timeMin: now`, `singleEvents: true`
-4. Upsert non-cancelled events to `calendar_events` (conflict: `tenant_id,provider,external_id`)
-5. Delete events with `status === 'cancelled'` from local mirror
-6. Persist new `nextSyncToken` as `last_sync_token` (Note: Google uses a bare token string, not a URL)
+3. On 410 Gone (invalid sync token): perform full re-sync (`timeMin: now − 30d`, `timeMax: now + 180d`, `singleEvents: true`, `maxResults: 2500`)
+4. **Pagination (both branches)**: a shared `listAllPages` helper follows `nextPageToken` to the end of the result set (cap: `MAX_SYNC_PAGES = 20`, ~20 × 250 events). Google only returns `nextSyncToken` on the LAST page — the pre-fix code read only the first page, so the sync token never advanced on multi-page results and initial syncs silently truncated.
+5. Upsert non-cancelled events to `calendar_events` (conflict: `tenant_id,provider,external_id`)
+6. Delete events with `status === 'cancelled'` from local mirror
+7. Persist new `nextSyncToken` as `last_sync_token` — captured from the last page, **including on initial/full sync**. If the 20-page cap is hit with pages remaining, a warning logs and the sync token does not advance that run.
 
 #### `registerWatch(tenantId, credentials)`
 
@@ -265,13 +288,15 @@ RETURN { success: true, appointment_id: v_new_id };
 
 ### Key Patterns
 
-**MSAL lazy singleton** (`getMsalClient()`): `ConfidentialClientApplication` instantiated once and cached in module-level `_msalClient`. Matches the `getClient()` pattern used in `layer2-llm.js`. Authority: `https://login.microsoftonline.com/common`.
+**MSAL lazy singleton** (`getMsalClient()`): `ConfidentialClientApplication` instantiated once and cached in module-level `_msalClient`. Matches the `getClient()` pattern used in `layer2-llm.js`. Authority: `https://login.microsoftonline.com/common`. **MSAL is now used only for `getAuthCodeUrl`** — both the code exchange and token refresh hit the token endpoint directly (see below).
+
+**Code exchange via direct fetch** (`exchangeCodeForTokens(code)`): POSTs `grant_type=authorization_code` directly to `https://login.microsoftonline.com/common/oauth2/v2.0/token` (scope `https://graph.microsoft.com/Calendars.ReadWrite offline_access`) and returns the raw snake_case payload `{ access_token, refresh_token, expires_in }`. **Why**: MSAL's `acquireTokenByCode` never exposes the refresh token on its `AuthenticationResult` — the old code read `tokenResponse.refreshToken` which was always `undefined`, so Outlook credentials were stored without a refresh token and the connection silently died when the access token expired (~1h).
 
 **`graphFetch(urlOrPath, accessToken, options)`**: Central fetch wrapper for Graph API.
 - Handles full URLs (e.g., deltaLink starting with `https://`) and relative paths (e.g., `'/me/events'`)
 - Sets `Authorization: Bearer {accessToken}` and `Content-Type: application/json` on every request
 - Returns `null` for 204 responses
-- Throws formatted error on non-OK responses
+- Throws formatted error on non-OK responses; the error carries **structured `err.status` (HTTP status) and `err.graphErrorCode`** (2026-06-12) so callers can branch on 410 (expired delta token → full resync) and 404 (dead subscription → recreate) without parsing the message string
 
 **Token refresh via direct fetch** (`refreshOutlookAccessToken(refreshToken)`): Posts directly to `https://login.microsoftonline.com/common/oauth2/v2.0/token` — does NOT use MSAL in-memory cache. This is intentional for serverless environments where memory is not persistent between requests (Pitfall 3 from RESEARCH.md).
 
@@ -287,16 +312,19 @@ Called by the same `pushBookingToCalendar` in `google-calendar.js` — but the r
 
 1. Load `calendar_credentials` for `provider: 'outlook'`
 2. If `creds.last_sync_token` exists: use it directly as the URL (it is the full deltaLink URL)
-3. If no `last_sync_token`: initial full sync using `/me/calendarView/delta?startDateTime=now&endDateTime=now+180days`
-4. Page through results following `@odata.nextLink`
-5. Capture `@odata.deltaLink` at end of page chain
-6. Upsert events where `!evt['@removed']` to `calendar_events`
-7. Delete events where `evt['@removed']` is present
-8. Persist `deltaLink` as `last_sync_token` (stores full URL — see Key Design Decisions)
+3. If no `last_sync_token`: full sync via `buildFullSyncUrl()` — `/me/calendarView/delta?startDateTime={now−30d}&endDateTime={now+180d}`, built **lazily** so a 410 recovery re-anchors the window to "now" (same window shape as Google's 410 fallback)
+4. **410 Gone recovery (2026-06-12)**: if the delta fetch throws `err.status === 410` (Graph delta tokens expire/invalidate), clear `last_sync_token`, **wipe the tenant's outlook rows from `calendar_events`** (the delta baseline is lost — deletions that happened while the token was dead would otherwise leave phantom busy rows), and restart the loop as a full sync with a freshly-anchored window. Before this recovery existed, one expired deltaLink froze the Outlook mirror FOREVER — every subsequent webhook/manual sync re-threw on the same dead token
+5. Page through results following `@odata.nextLink`
+6. Capture `@odata.deltaLink` at end of page chain
+7. Upsert events where `!evt['@removed']` to `calendar_events`
+8. Delete events where `evt['@removed']` is present
+9. Persist `deltaLink` as `last_sync_token` (stores full URL — see Key Design Decisions)
 
 #### `renewOutlookSubscription(cred)`
 
 PATCH to `/subscriptions/{cred.watch_channel_id}` with new `expirationDateTime` (7 days from now). Updates `watch_expiration` in DB.
+
+**404 recovery (2026-06-12)**: Graph deletes subscriptions the moment they expire, so PATCHing a dead one 404s. On `err.status === 404` the function now creates a brand-new subscription via `createOutlookSubscription(cred.tenant_id, accessToken)` (which persists the new id + expiration itself) instead of throwing — the renewal cron used to retry the same dead PATCH daily forever, permanently killing push for that tenant. This mirrors Google's renewal, which is resilient because it re-registers a fresh channel.
 
 #### `revokeAndDisconnectOutlook(tenantId)`
 
@@ -308,7 +336,7 @@ PATCH to `/subscriptions/{cred.watch_channel_id}` with new `expirationDateTime` 
 
 **`GET /api/outlook-calendar/auth`** — Requires authenticated user. Calls `getOutlookAuthUrl(tenant.id)` which uses MSAL `getAuthCodeUrl` with `state: tenantId`. Returns `{ url }`.
 
-**`GET /api/outlook-calendar/callback`** — Accepts `?code=&state=tenantId`. Admin consent error detection: checks for `consent_required`, `interaction_required`, AADSTS65001, AADSTS90094 — redirects to `?calendar=admin_consent`. On success: exchanges code via `exchangeCodeForTokens(code)`, fetches display name via direct fetch to `https://graph.microsoft.com/v1.0/me` (NOT via `graphFetch` — simpler), determines `is_primary` (first connected calendar = true), upserts credentials, calls `createOutlookSubscription`, calls `syncOutlookCalendarEvents`, redirects to `?calendar=outlook_connected`.
+**`GET /api/outlook-calendar/callback`** — Accepts `?code=&state=tenantId`. Admin consent error detection: checks for `consent_required`, `interaction_required`, AADSTS65001, AADSTS90094 — redirects to `?calendar=admin_consent`. On success: exchanges code via `exchangeCodeForTokens(code)` (direct token-endpoint POST returning snake_case `access_token`/`refresh_token`/`expires_in`), fetches display name via direct fetch to `https://graph.microsoft.com/v1.0/me` (NOT via `graphFetch` — simpler), determines `is_primary` (first connected calendar = true), upserts credentials with `refresh_token: tokenData.refresh_token` and `expiry_date: Date.now() + tokenData.expires_in * 1000` (the refresh token is now actually captured — see Key Patterns), calls `createOutlookSubscription`, calls `syncOutlookCalendarEvents`, redirects to `?calendar=outlook_connected`.
 
 **`is_primary` determination**: Counts existing `calendar_credentials` rows for the tenant before upsert. If `count === 0`, new calendar gets `is_primary: true`.
 
@@ -328,18 +356,15 @@ Single-statement swap that flips `is_primary` across all of a tenant's `calendar
 
 ### Google Push Handler
 
-**File**: `src/lib/webhooks/google-calendar-push.js`
-
-```js
-export async function handleGoogleCalendarPush(request)
-```
+**File**: `src/app/api/webhooks/google-calendar/route.js` (the logic lives directly in the route — `src/lib/webhooks/google-calendar-push.js` and its test were DELETED in the 2026-06-12 audit)
 
 Google sends POST to `/api/webhooks/google-calendar` after any calendar state change.
 
 - `X-Goog-Resource-State: sync` — handshake confirmation, return immediately
-- `X-Goog-Resource-State: exists` — calendar changed, extract `X-Goog-Channel-Token` (= tenantId), call `syncCalendarEvents(tenantId)`
+- `X-Goog-Resource-State: exists` — calendar changed. The tenant is resolved by looking up `calendar_credentials.watch_channel_id === X-Goog-Channel-ID` and using the **DB-sourced `tenant_id`** — the `X-Goog-Channel-Token` header is logged but never trusted
+- **No resolvable channel id → dropped with 200** (stops Google retrying). The legacy fallback that trusted the spoofable `X-Goog-Channel-Token` header as a tenant_id was REMOVED: Google push has no HMAC, so that path let anyone trigger arbitrary tenants' calendar syncs. Every channel registered by `registerWatch` writes `watch_channel_id` to `calendar_credentials`, so a legitimate notification always carries a resolvable channel id
 
-The route handler wraps this in `after()` so Google receives a fast 200 response while sync runs post-response.
+The sync runs inside `after()` so Google receives a fast 200 response while `syncCalendarEvents(verifiedTenantId)` runs post-response.
 
 ### Outlook Change Handler
 
@@ -362,7 +387,7 @@ For each notification:
 
 ## 6. Cron Jobs
 
-The app declares **6 Vercel Cron endpoints** in `vercel.json`. Only `renew-calendar-channels` is strictly "scheduling/calendar" — the others touch adjacent systems (recovery SMS, trial/invoice reminders, orphan cleanup, recurring invoice generation) and are listed here for completeness so readers know the full cron surface:
+The app declares **11 Vercel Cron endpoints** in `vercel.json`. Only `renew-calendar-channels` is strictly "scheduling/calendar" — the others touch adjacent systems (recovery SMS, trial/invoice reminders, orphan cleanup, recurring invoice generation, Jobber schedule mirror, integration token keep-fresh, rate-limit cleanup, churned-number release, meter-event retry) and are listed here for completeness so readers know the full cron surface:
 
 | # | Route | Schedule | Purpose |
 |---|-------|----------|---------|
@@ -372,6 +397,11 @@ The app declares **6 Vercel Cron endpoints** in `vercel.json`. Only `renew-calen
 | 4 | `GET /api/cron/invoice-reminders` | `0 9 * * *` (daily 9:00 UTC) | Sends invoice payment reminders at −3, 0, +3, +7 days relative to due date. Applies late fees to overdue invoices when `invoice_settings.late_fee_enabled = true`. Covered in depth by the payment-architecture skill. |
 | 5 | `GET /api/cron/recurring-invoices` | `0 8 * * *` (daily 8:00 UTC) | Generates draft invoices from active recurring invoice templates where `recurring_next_date <= today`. Advances `recurring_next_date` by the configured frequency without drift. Covered by payment-architecture. |
 | 6 | `GET /api/cron/cleanup-orphaned-calls` | `0 */4 * * *` (every 4 hours) | Finds calls stuck in `status='started'` for more than 2 hours, marks them `failed` with reason `'orphaned'`. Covered by voice-call-architecture. |
+| 7 | `GET /api/cron/poll-jobber-visits` | `*/15 * * * *` (every 15 min) | Phase 57 Jobber schedule-mirror poll fallback (webhooks are primary). Re-fetches the P90/F180 visit window per Jobber tenant; idempotent via the `calendar_events` UNIQUE upsert. Covered by integrations-jobber-xero. |
+| 8 | `GET /api/cron/cleanup-rate-limits` | `0 3 * * *` (daily 3:00 UTC) | Prunes stale `rate_limit_hits` rows (prod-readiness 2026-06). Covered by auth-database-multitenancy. |
+| 9 | `GET /api/cron/refresh-integration-tokens` | `*/10 * * * *` (every 10 min) | **Added 2026-06-10.** Keep-fresh sweep for Jobber/Xero OAuth tokens: refreshes healthy `accounting_credentials` rows expiring within 15 min via `refreshTokenIfNeeded(admin, cred, { bufferMs })`, so the LiveKit agent's sub-second call path never has to perform a rotation-bearing refresh. Skips rows with `error_state` set. Covered by integrations-jobber-xero. |
+| 10 | `GET /api/cron/release-churned-numbers` | `0 4 * * *` (daily 4:00 UTC) | **Added 2026-06-12.** Releases phone numbers of tenants whose current subscription is canceled >30 days (SG → phone_inventory, US/CA → Twilio release). Covered by payment-architecture. |
+| 11 | `GET /api/cron/retry-meter-events` | `0 */6 * * *` (every 6 hours) | **Added 2026-06-12.** Drains the `stripe_meter_failures` outbox (migration 071) — re-posts failed Stripe Billing Meter overage events with the idempotent `overage_{call_id}` identifier. Covered by payment-architecture. |
 
 All cron endpoints require `Authorization: Bearer {CRON_SECRET}` and return 401 without it (Vercel Cron provides this header automatically from the deployment secret).
 
@@ -387,8 +417,9 @@ All cron endpoints require `Authorization: Bearer {CRON_SECRET}` and return 401 
 1. Query `calendar_credentials` where `watch_channel_id IS NOT NULL AND watch_expiration < now() + 24h`
 2. For each expiring credential:
    - `provider = 'google'` → call `registerWatch(tenant_id, { access_token, refresh_token, expiry_date })` — creates a new 7-day watch channel
-   - `provider = 'outlook'` → call `renewOutlookSubscription(cred)` — PATCHes existing subscription for +7 days
-3. Returns `{ ok: true, renewed: N, failed: M, results: [...] }`
+   - `provider = 'outlook'` → call `renewOutlookSubscription(cred)` — PATCHes existing subscription for +7 days (404 → creates a fresh subscription, see §4)
+3. **Monthly window re-anchor (2026-06-12, runs when `new Date().getDate() === 1`)**: for EVERY connected credential (google + outlook, capped at 100): clear `last_sync_token`, delete that tenant+provider's `calendar_events` mirror rows, and run a full `syncCalendarEvents` / `syncOutlookCalendarEvents`. **Why**: both providers' sync windows (now−30d → now+180d) are otherwise fixed at whatever moment the LAST full sync ran — sync tokens only report changes inside the original window, so ~6 months after connect the mirror stopped seeing new events entirely unless a fortuitous 410 forced a resync. Per-credential failures are logged and don't abort the loop
+4. Returns `{ ok: true, renewed: N, failed: M, reanchored: R, results: [...] }`
 
 **Why run daily**: Both Google watch channels and Outlook subscriptions have 7-day TTLs. Running daily with a 24h lookahead ensures channels are renewed before they expire even if a cron execution is missed.
 
@@ -634,6 +665,10 @@ Personal/unavailable time blocks (lunch, vacation, errands). Respected by the sl
 - **Admin consent detection in Outlook callback** — Microsoft 365 Business accounts with admin-controlled app permissions trigger `consent_required` or `AADSTS65001` error codes. The callback detects these and redirects to `?calendar=admin_consent` for a specific error message, distinct from generic OAuth failures.
 
 - **Google OAuth state = HMAC-signed tenant_id** — The `state` parameter is a `tenantId:hmac` string signed via HMAC-SHA256 (keyed on `SUPABASE_SERVICE_ROLE_KEY`). The callback calls `verifyOAuthState()` to validate the signature before extracting the tenant_id. Outlook auth imports `signOAuthState` from the Google auth route rather than having its own implementation.
+
+- **Webhook tenant identity comes from the DB, never headers (2026-06-12)** — Google push has no HMAC, so the `X-Goog-Channel-Token` header is spoofable. The Google webhook resolves the tenant exclusively via `watch_channel_id` lookup in `calendar_credentials`; unresolvable notifications are dropped with 200. (Outlook's equivalent is the `clientState` shared-secret check.)
+
+- **Sync windows must be re-anchored, not just renewed (2026-06-12)** — Sync tokens (Google `nextSyncToken`, Outlook deltaLink) only report changes inside the window of the last FULL sync. The monthly re-anchor in `renew-calendar-channels` (clear token → wipe mirror → full resync) keeps the now−30d→now+180d window rolling; the 410 recovery paths re-anchor lazily on token expiry.
 
 ---
 

@@ -39,8 +39,8 @@ Two-way sync keeps your existing Google or Outlook calendar in perfect sync. Boo
 ## Invoicing & Estimates
 Create, send, and track invoices and estimates from your dashboard. PDF generation and email delivery included.
 
-## 70+ Languages
-Your AI receptionist detects the caller's language instantly — English, Spanish, Chinese, Malay, and 70+ more. No frustrated hang-ups. No lost leads.
+## English & Spanish, Auto-Detected
+Your AI receptionist detects the caller's language instantly and converses fluently in English and Spanish. No frustrated hang-ups. No lost leads. More languages are on the roadmap.
 
 ## Recovery SMS Fallback
 If a call drops or goes to voicemail for any reason, Voco sends an automatic recovery SMS to the caller with your business details.

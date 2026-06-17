@@ -11,15 +11,16 @@ const config = {
   // the experimental VM-modules runtime. Declare `.jsx` explicitly so the same
   // ESM loader path applies to the new component tests.
   extensionsToTreatAsEsm: ['.jsx'],
-  setupFiles: ['<rootDir>/jest.setup.js'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.jsx.js'],
+  setupFiles: ['<rootDir>/tests/setup/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/jest.setup.jsx.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
     // JSX files use babel-jest with the Jest-only babel config so Next.js's SWC
-    // pipeline is not perturbed (the repo has no root babel config).
-    '^.+\\.jsx$': ['babel-jest', { configFile: './babel.jest.config.cjs' }],
+    // pipeline is not perturbed (the repo has no root babel config). Path is
+    // cwd-relative — npm scripts always run from the repo root.
+    '^.+\\.jsx$': ['babel-jest', { configFile: './tests/setup/babel.jest.config.cjs' }],
   },
   transformIgnorePatterns: [
     // Allow lucide-react (ESM-only) to be transformed by babel-jest when imported

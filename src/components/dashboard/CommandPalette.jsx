@@ -27,6 +27,9 @@ export default function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
+  // In-flight search fetch — aborted when a newer query supersedes it so a
+  // slow earlier response can't paint stale results over the current ones.
+  const abortRef = useRef(null);
   const router = useRouter();
 
   // Keyboard shortcut: Cmd+K / Ctrl+K toggles the palette.
@@ -58,17 +61,21 @@ export default function CommandPalette() {
       setLoading(false);
       return;
     }
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
       if (res.ok) {
         const data = await res.json();
         setResults(data.results || []);
       }
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer search
       setResults([]);
     }
-    setLoading(false);
+    if (abortRef.current === controller) setLoading(false);
   }, []);
 
   function handleInputChange(e) {
@@ -80,6 +87,9 @@ export default function CommandPalette() {
       setLoading(true);
       debounceRef.current = setTimeout(() => search(value), 250);
     } else {
+      // Abort any in-flight search so a late response can't repaint results
+      // after the query dropped below the search threshold.
+      abortRef.current?.abort();
       setResults([]);
       setLoading(false);
     }

@@ -67,13 +67,14 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
         height="120"
         className="overflow-visible"
       >
-        {/* Background track — full circle in stone-200 */}
+        {/* Background track — full circle using the theme border token
+            (light: ~stone-200 equivalent, dark: subtle white alpha) */}
         <circle
           cx="60"
           cy="60"
           r={radius}
           fill="none"
-          stroke="#E7E5E4"
+          stroke="var(--border)"
           strokeWidth="10"
         />
 
@@ -145,7 +146,7 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
           {callsUsed} of {callsLimit} included calls used
         </p>
         {isOverage && (
-          <p className="text-xs text-[#F59E0B]">
+          <p className="text-xs text-amber-600 dark:text-amber-400">
             {overageCount} overage {overageCount === 1 ? 'call' : 'calls'} at ${overageRate}/call
           </p>
         )}

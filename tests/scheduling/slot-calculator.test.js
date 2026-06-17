@@ -1,10 +1,25 @@
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect, jest, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import { calculateAvailableSlots } from '@/lib/scheduling/slot-calculator.js';
 
 // A Monday at 08:00 in America/Chicago (UTC-5 in standard time)
 // 2026-03-23 is a Monday
 const MONDAY = '2026-03-23';
 const CHICAGO_TZ = 'America/Chicago';
+
+// Pin "now" before the fixture dates — the calculator returns [] for any
+// working window that has fully elapsed, so these tests must run from a
+// fixed point in time (Friday 2026-03-20) rather than the real clock.
+beforeAll(() => {
+  jest.useFakeTimers();
+});
+
+beforeEach(() => {
+  jest.setSystemTime(new Date('2026-03-20T12:00:00Z'));
+});
+
+afterAll(() => {
+  jest.useRealTimers();
+});
 
 // Working hours config — 8AM to 5PM Monday through Friday, lunch 12-1
 const STANDARD_HOURS = {
@@ -287,5 +302,123 @@ describe('calculateAvailableSlots', () => {
     // 12PM CDT = 17:00 UTC during CDT
     const noon = startTimes.find((t) => new Date(t).getUTCHours() === 17 && new Date(t).getUTCMinutes() === 0);
     expect(noon).toBeUndefined();
+  });
+
+  describe('past-window guard', () => {
+    test('returns empty array when the target date is entirely in the past', () => {
+      // System time is Friday 2026-03-20 — 2026-03-16 is the previous Monday
+      const slots = calculateAvailableSlots({
+        workingHours: STANDARD_HOURS,
+        slotDurationMins: 60,
+        existingBookings: [],
+        externalBlocks: [],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: '2026-03-16',
+        tenantTimezone: CHICAGO_TZ,
+        maxSlots: 20,
+      });
+
+      expect(slots).toHaveLength(0);
+    });
+
+    test('returns empty array for today once the working window has closed', () => {
+      // 2026-03-23T23:30:00Z = 18:30 CDT — after the 17:00 close
+      jest.setSystemTime(new Date('2026-03-23T23:30:00Z'));
+
+      const slots = calculateAvailableSlots({
+        workingHours: STANDARD_HOURS,
+        slotDurationMins: 60,
+        existingBookings: [],
+        externalBlocks: [],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: MONDAY,
+        tenantTimezone: CHICAGO_TZ,
+        maxSlots: 20,
+      });
+
+      expect(slots).toHaveLength(0);
+    });
+  });
+
+  describe('all-day external blocks', () => {
+    const SG_TZ = 'Asia/Singapore'; // UTC+8 — exposes the UTC-midnight literal-comparison bug
+    const SG_HOURS = {
+      ...STANDARD_HOURS,
+      monday:  { open: '07:00', close: '17:00', enabled: true, lunchStart: null, lunchEnd: null },
+      tuesday: { open: '07:00', close: '17:00', enabled: true, lunchStart: null, lunchEnd: null },
+    };
+    // Provider-style all-day row (Google/Outlook): date-only payload stored as
+    // UTC midnights with an exclusive end — one-day vacation on 2026-03-23.
+    const providerAllDayBlock = {
+      start_time: '2026-03-23T00:00:00.000Z',
+      end_time:   '2026-03-24T00:00:00.000Z',
+      is_all_day: true,
+    };
+
+    test('blocks the entire tenant-local day for a UTC+8 tenant', () => {
+      // Literal comparison would leave the 07:00 SGT slot (22T23:00Z) open
+      const slots = calculateAvailableSlots({
+        workingHours: SG_HOURS,
+        slotDurationMins: 60,
+        existingBookings: [],
+        externalBlocks: [providerAllDayBlock],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: MONDAY,
+        tenantTimezone: SG_TZ,
+        maxSlots: 20,
+      });
+
+      expect(slots).toHaveLength(0);
+    });
+
+    test('does not bleed into the next tenant-local day (exclusive end honored)', () => {
+      // Literal comparison would block Tuesday 07:00 SGT (23T23:00Z) too
+      const slots = calculateAvailableSlots({
+        workingHours: SG_HOURS,
+        slotDurationMins: 60,
+        existingBookings: [],
+        externalBlocks: [providerAllDayBlock],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: '2026-03-24',
+        tenantTimezone: SG_TZ,
+        maxSlots: 20,
+      });
+
+      const startTimes = slots.map((s) => new Date(s.start).toISOString());
+      // Tuesday 07:00 SGT = 2026-03-23T23:00:00Z — must be free again
+      expect(startTimes).toContain('2026-03-23T23:00:00.000Z');
+    });
+
+    test('expands dashboard-style all-day rows (timed 07:00–20:00 storage) to the full local day', () => {
+      const HOURS_NO_LUNCH = {
+        ...STANDARD_HOURS,
+        monday: { open: '08:00', close: '17:00', enabled: true, lunchStart: null, lunchEnd: null },
+      };
+      // calendar_blocks all-day rows are stored as ${date}T07:00 → ${date}T20:00
+      const dashboardAllDayBlock = {
+        start_time: '2026-03-23T07:00:00.000Z',
+        end_time:   '2026-03-23T20:00:00.000Z',
+        is_all_day: true,
+      };
+
+      // Literal comparison leaves the 3PM and 4PM CDT slots open (20:00Z = 3PM CDT)
+      const slots = calculateAvailableSlots({
+        workingHours: HOURS_NO_LUNCH,
+        slotDurationMins: 60,
+        existingBookings: [],
+        externalBlocks: [dashboardAllDayBlock],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: MONDAY,
+        tenantTimezone: CHICAGO_TZ,
+        maxSlots: 20,
+      });
+
+      expect(slots).toHaveLength(0);
+    });
   });
 });

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { supabase as adminSupabase } from '@/lib/supabase';
 import { stripe } from '@/lib/stripe';
@@ -134,7 +135,14 @@ async function fulfillSubscription(session, tenantId) {
       );
       console.log(`[verify-checkout] Added overage item (${overagePriceId}) to subscription ${subscription.id}`);
     } catch (overageErr) {
+      // Never silent: a missing overage item means over-quota calls are
+      // metered but never rated — unbilled revenue (annual subs require
+      // flexible billing mode; see the checkout routes).
       console.error(`[verify-checkout] Failed to add overage item:`, overageErr.message);
+      Sentry.captureMessage(
+        `Stripe overage attach FAILED (verify-checkout) for subscription ${subscription.id}: ${overageErr.message}`,
+        'error',
+      );
     }
   }
 
@@ -172,6 +180,17 @@ async function syncSubscription(subscription, tenantId) {
   const flatRateItem = subscriptionItems.find((item) => PLAN_MAP[item.price?.id]);
   const overageItem = subscriptionItems.find((item) => OVERAGE_PRICE_IDS.has(item.price?.id));
   const priceId = flatRateItem?.price?.id;
+  // No PLAN_MAP match → unrecognized price (env drift / new plan / malformed sub).
+  // Fall back to starter/40 so fulfillment still completes, but alert: a mis-mapped
+  // plan means wrong quota and wrong overage rating. Mirrors the webhook handler.
+  if (!flatRateItem) {
+    const seenPrices = subscriptionItems.map((i) => i.price?.id).filter(Boolean).join(', ') || 'none';
+    console.error(`[verify-checkout] No PLAN_MAP price on subscription ${subscription.id} (items: ${seenPrices}) — defaulting to starter/40`);
+    Sentry.captureMessage(
+      `Stripe subscription ${subscription.id} has no PLAN_MAP price (items: ${seenPrices}) — defaulted to starter/40 (verify-checkout fallback); quota and overage will be wrong`,
+      'error',
+    );
+  }
   const planInfo = PLAN_MAP[priceId] || { plan_id: 'starter', calls_limit: 40 };
   const overageStripeItemId = overageItem?.id || null;
 
@@ -194,8 +213,24 @@ async function syncSubscription(subscription, tenantId) {
   const localStatus = statusMap[subscription.status] || 'incomplete';
   const callsUsed = currentRow?.calls_used ?? 0;
 
-  // Insert new row, then mark old rows inactive (history table pattern)
-  const { data: newRow, error: insertError } = await adminSupabase
+  // History table pattern, updated for migration 068: unmark ALL of the
+  // tenant's current rows FIRST (the partial unique index
+  // idx_subscriptions_one_current allows only one is_current row per tenant,
+  // so insert-first would be rejected), then insert the new current row.
+  // Unmarking by tenant_id (not stripe_subscription_id) prevents
+  // cancel→re-subscribe from leaving two current rows.
+  const { error: unmarkError } = await adminSupabase
+    .from('subscriptions')
+    .update({ is_current: false })
+    .eq('tenant_id', tenantId)
+    .eq('is_current', true);
+
+  if (unmarkError) {
+    console.error('[verify-checkout] Failed to unmark prior subscription rows:', unmarkError);
+    return;
+  }
+
+  const { error: insertError } = await adminSupabase
     .from('subscriptions')
     .insert({
       tenant_id: tenantId,
@@ -219,22 +254,14 @@ async function syncSubscription(subscription, tenantId) {
       stripe_updated_at: stripeUpdatedAt,
       overage_stripe_item_id: overageStripeItemId,
       is_current: true,
-    })
-    .select('id')
-    .single();
+    });
 
   if (insertError) {
+    // Includes 23505 from idx_subscriptions_one_current if the webhook inserted
+    // concurrently — its row stands, and the client re-polls verified status.
     console.error('[verify-checkout] Failed to insert subscription row:', insertError);
     return;
   }
-
-  // Mark prior rows inactive
-  await adminSupabase
-    .from('subscriptions')
-    .update({ is_current: false })
-    .eq('stripe_subscription_id', subscription.id)
-    .eq('is_current', true)
-    .neq('id', newRow.id);
 
   console.log(`[verify-checkout] Synced subscription ${subscription.id} status=${localStatus} plan=${planInfo.plan_id}`);
 }

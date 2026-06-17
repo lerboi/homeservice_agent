@@ -4,13 +4,14 @@
  * Extracted to a separate module for testability (no Supabase dependencies).
  */
 
-// Phase 65: OpenAI gpt-realtime voice set (migrated from the 6 Gemini voices).
-// Kept in sync with supabase/migrations/067_ai_voice_openai.sql CHECK and the
-// agent repo VOICE_MAP (professional=marin, friendly=cedar, local_expert=alloy).
-export const VALID_VOICES = [
-  'alloy', 'ash', 'ballad', 'coral', 'echo',
-  'sage', 'shimmer', 'verse', 'marin', 'cedar',
-];
+// Phase 66 (cascade pipeline): ai_voice stores a stable voice LABEL, not a
+// provider voice name. The agent repo's ELEVENLABS_VOICE_MAP resolves each
+// label to an ElevenLabs voice_id, so swapping the actual voice is a one-line
+// agent change and never needs a DB migration. Kept in sync with
+// supabase/migrations/070_ai_voice_labels.sql CHECK and livekit-agent
+// src/agent.py ELEVENLABS_VOICE_MAP. (The Phase 65 OpenAI names this replaced
+// were silently ignored by the agent — selection was a no-op.)
+export const VALID_VOICES = ['professional', 'friendly', 'local_expert'];
 
 /**
  * Validates a voice name against the curated allowlist.

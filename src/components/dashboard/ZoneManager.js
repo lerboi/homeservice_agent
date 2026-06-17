@@ -171,7 +171,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
               type="button"
               onClick={saveName}
               disabled={saving}
-              className="h-7 w-7 flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors"
+              className="h-7 w-7 flex items-center justify-center rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
               aria-label="Save zone name"
             >
               <Check className="h-4 w-4" />
@@ -206,7 +206,7 @@ function ZoneCard({ zone, onUpdate, onDelete }) {
           <button
             type="button"
             onClick={() => setDeleteDialogOpen(true)}
-            className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors ml-auto"
+            className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors ml-auto"
             aria-label={`Delete ${zone.name}`}
           >
             <Trash2 className="h-4 w-4" />

@@ -77,6 +77,9 @@ export function AudioDemoSection() {
 
     const onLoaded = () => setDuration(audio.duration || 0);
     const onTime = () => {
+      // load()/reset fires timeupdate at currentTime=0 — without this guard the
+      // first transcript line activates on mount and scrolls the page on load.
+      if (audio.paused) return;
       const ct = audio.currentTime;
       setCurrentTime(ct);
       const idx = DEMO_TRACKS[activeTab].transcript.findIndex(
@@ -107,10 +110,10 @@ export function AudioDemoSection() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeLineIndex >= 0 && activeLineRef.current) {
+    if (isPlaying && activeLineIndex >= 0 && activeLineRef.current) {
       activeLineRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [activeLineIndex]);
+  }, [activeLineIndex, isPlaying]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -144,7 +147,7 @@ export function AudioDemoSection() {
           </div>
 
           <div className="mt-14 flex items-center gap-6">
-            <div className="flex items-center gap-1 border-b border-stone-200">
+            <div className="flex items-center gap-7 border-b border-stone-200">
               {Object.entries(DEMO_TRACKS).map(([key, { label }]) => {
                 const active = key === activeTab;
                 return (
@@ -160,7 +163,6 @@ export function AudioDemoSection() {
                     aria-pressed={active}
                   >
                     {label}
-                    {active ? <span className="mx-3 text-stone-300">·</span> : <span className="ml-6" />}
                   </button>
                 );
               })}
@@ -183,7 +185,7 @@ export function AudioDemoSection() {
             </button>
             <div className="flex-1 flex items-center gap-[3px] h-16" aria-hidden="true">
               {Array.from({ length: BAR_COUNT }).map((_, i) => {
-                const barActive = i / BAR_COUNT <= progress;
+                const barActive = progress > 0 && i / BAR_COUNT <= progress;
                 return (
                   <div
                     key={i}

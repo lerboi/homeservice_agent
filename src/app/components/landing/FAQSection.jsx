@@ -53,7 +53,7 @@ const FAQS = [
   {
     value: 'q8',
     q: 'What languages does Voco support?',
-    a: 'Voco answers calls in English, Spanish, Mandarin, Malay, Tagalog, Vietnamese, and 70+ more. It handles Singlish fluently and can code-switch mid-call — so a caller who starts in English and switches to Hokkien stays understood. No setup required; language is auto-detected per call.',
+    a: 'Voco answers calls fluently in English and Spanish today, and a caller who switches between the two mid-call stays understood. No setup required — language is auto-detected on every call. More languages are on the roadmap.',
   },
   {
     value: 'q9',

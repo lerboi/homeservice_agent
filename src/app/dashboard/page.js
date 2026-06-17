@@ -23,23 +23,77 @@
  *   - required / recommended ID arrays (completion logic lives server-side now)
  *   - Inline missed-calls alert block (absorbed into CallsTile)
  *   - Today's schedule inline list (subsumed into TodayAppointmentsTile)
- *   - Invoice snapshot card (dropped — /dashboard/more/billing owns that data)
+ *
+ * Money snapshot: compact strip (Outstanding · Overdue · Paid this month) fed
+ * by GET /api/dashboard/stats invoice aggregates, linking to /dashboard/invoices.
+ * Gated by the invoicing feature flag (Phase 53 FeatureFlagsProvider).
  */
 
 import { useEffect, useState } from 'react';
-import { HelpCircle } from 'lucide-react';
+import Link from 'next/link';
+import { HelpCircle, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 import DailyOpsHub from '@/components/dashboard/DailyOpsHub';
 import HelpDiscoverabilityCard from '@/components/dashboard/HelpDiscoverabilityCard';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
 import AiNumberBanner from '@/components/dashboard/AiNumberBanner';
-import { card } from '@/lib/design-tokens';
+import { card, focus } from '@/lib/design-tokens';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
+import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function formatMoney(value) {
+  return '$' + Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/**
+ * MoneySnapshot — compact invoice-money strip linking to /dashboard/invoices.
+ * Renders nothing while the invoicing flag is off or stats haven't loaded
+ * (SWR key is shared with the bento tiles, so this adds no extra request).
+ */
+function MoneySnapshot() {
+  const { invoicing } = useFeatureFlags();
+  const { data } = useSWRFetch(invoicing ? '/api/dashboard/stats' : null);
+
+  if (!invoicing || !data) return null;
+
+  const overdue = data.invoiceOverdueAmount ?? 0;
+
+  return (
+    <Link
+      href="/dashboard/invoices"
+      className={`${card.base} ${card.hover} ${focus.ring} flex min-h-[44px] flex-wrap items-center gap-x-2 gap-y-1 px-5 py-3`}
+    >
+      <span className="font-normal text-sm text-muted-foreground">Outstanding</span>
+      <span className="font-semibold text-sm text-foreground tabular-nums">
+        {formatMoney(data.invoiceOutstandingAmount)}
+      </span>
+      <span className="text-muted-foreground" aria-hidden="true">·</span>
+      <span className="font-normal text-sm text-muted-foreground">Overdue</span>
+      <span
+        className={`font-semibold text-sm tabular-nums ${
+          overdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
+        }`}
+      >
+        {formatMoney(overdue)}
+      </span>
+      <span className="text-muted-foreground" aria-hidden="true">·</span>
+      <span className="font-normal text-sm text-muted-foreground">Paid this month</span>
+      <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums">
+        {formatMoney(data.paidThisMonth)}
+      </span>
+      <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+    </Link>
+  );
 }
 
 export default function DashboardHomePage() {
@@ -107,6 +161,9 @@ export default function DashboardHomePage() {
 
       {/* Daily ops bento */}
       <DailyOpsHub />
+
+      {/* Invoice money snapshot — gated by the invoicing feature flag */}
+      <MoneySnapshot />
 
       {/* Help & Discoverability quick links */}
       <HelpDiscoverabilityCard />

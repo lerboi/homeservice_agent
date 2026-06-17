@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, UserPlus, Link2, Plus, Loader2, RefreshCw, Clock, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarOff, CalendarPlus, UserPlus, Plus, RefreshCw, Clock, Pencil } from 'lucide-react';
 import { useReducedMotion, motion, useAnimation } from 'framer-motion';
 import { EmptyStateCalendar } from '@/components/dashboard/EmptyStateCalendar';
 import { ErrorState } from '@/components/ui/error-state';
@@ -26,10 +26,9 @@ import QuickBookSheet from '@/components/dashboard/QuickBookSheet';
 import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
 import ExternalEventSheet from '@/components/dashboard/ExternalEventSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
-import { JobberCopyBanner } from '@/components/dashboard/JobberCopyBanner';
-import { IntegrationReconnectBanner } from '@/components/dashboard/IntegrationReconnectBanner';
-import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
+import CalendarConnectionsCard from '@/components/dashboard/CalendarConnectionsCard';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
+import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { card } from '@/lib/design-tokens';
 import { supabase } from '@/lib/supabase-browser';
 
@@ -122,9 +121,12 @@ function summarizeWorkingHours(wh) {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('month');
-  const [loading, setLoading] = useState(true);
+  // initialLoading drives the one-time skeleton; fetching covers background
+  // refetches (navigation, Realtime) where the previous grid stays visible
+  // and just dims — no skeleton flash on every month/day change.
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [fading, setFading] = useState(false);
   // Phase 58 Plan 58-05 (POLISH-04): surface fetchData failures so the calendar
   // can render <ErrorState onRetry={fetchData} /> instead of the silent empty
   // fallback the prior catch swallowed into.
@@ -142,12 +144,22 @@ export default function CalendarPage() {
   const prefersReduced = useReducedMotion();
   const [workingHoursData, setWorkingHoursData] = useState(null);
   const [tenantId, setTenantId] = useState(null);
-  // Phase 57 — Jobber connection flag drives "Not in Jobber" pills, banner,
-  // and the AppointmentFlyout Copy-to-Jobber section.
-  const [jobberConnected, setJobberConnected] = useState(false);
+  // Phase 57 — Jobber connection flag drives "Not in Jobber" pills and the
+  // AppointmentFlyout Copy-to-Jobber section. Shares the SWR key with
+  // CalendarConnectionsCard, so this adds no extra network request.
+  const { data: integrationStatus } = useSWRFetch('/api/integrations/status');
+  const jobberConnected = !!integrationStatus?.jobber;
   // Holds the most recent fetch range so the Realtime callback can range-filter
   // INSERT events against whatever view the user is currently looking at.
   const currentRangeRef = useRef({ start: null, end: null });
+  // In-flight calendar fetch — aborted when a newer fetch supersedes it so a
+  // fast prev/next burst can't resolve out of order and paint a stale range.
+  const abortRef = useRef(null);
+  // Realtime reconnect tracking — shared across both channels. The
+  // appointments channel persists across date navigations (deps exclude
+  // fetchData), so it reads the latest fetchData through a ref.
+  const wasDisconnectedRef = useRef(false);
+  const fetchDataRef = useRef(null);
 
   // Swipe gesture controls for mobile day navigation
   const dragControls = useAnimation();
@@ -194,14 +206,6 @@ export default function CalendarPage() {
     fetchWorkingHours();
   }, []);
 
-  // Phase 57 — fetch jobber connection state once on mount.
-  useEffect(() => {
-    fetch('/api/integrations/jobber/connection-status')
-      .then((res) => (res.ok ? res.json() : { connected: false }))
-      .then((d) => setJobberConnected(!!d?.connected))
-      .catch(() => setJobberConnected(false));
-  }, []);
-
   // Fetch tenant ID once for the Realtime subscription (user.id !== tenant.id).
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -228,7 +232,12 @@ export default function CalendarPage() {
   const effectiveViewMode = viewMode;
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    // Supersede any in-flight fetch — without this, rapid prev/next clicks
+    // can resolve out of order and paint a stale range over the current one.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setFetching(true);
     setFetchError(null);
     try {
       let start, end;
@@ -254,29 +263,49 @@ export default function CalendarPage() {
       currentRangeRef.current = { start, end };
 
       const [json, blocksResult] = await Promise.all([
-        fetch(`/api/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&view=${effectiveViewMode}`)
+        fetch(`/api/appointments?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&view=${effectiveViewMode}`, { signal: controller.signal })
           .then((r) => { if (!r.ok) throw new Error('Failed to fetch'); return r.json(); }),
-        fetch(`/api/calendar-blocks?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`)
+        fetch(`/api/calendar-blocks?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { signal: controller.signal })
           .then((r) => r.json())
           .then((d) => d.blocks || [])
-          .catch(() => []),
+          .catch((err) => {
+            // Blocks are non-critical (empty fallback), but an abort must
+            // win — swallowing it would paint stale data with no blocks.
+            if (err?.name === 'AbortError') throw err;
+            return [];
+          }),
       ]);
 
       setData({ ...json, timeBlocks: blocksResult });
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer fetch
       // Phase 58 Plan 58-05 (POLISH-04): capture the failure so <ErrorState
       // onRetry={fetchData} /> can render a retry affordance. Keep the safe
       // empty-data fallback so inner components stay crash-free.
       setFetchError("Couldn't load your calendar. Check your connection and try again.");
       setData({ appointments: [], externalEvents: [], travelBuffers: [], conflicts: [], timeBlocks: [] });
     } finally {
-      setLoading(false);
+      // Only the owning fetch may clear the flags — a superseded fetch's
+      // finally must not stomp the newer fetch's in-progress state.
+      if (abortRef.current === controller) {
+        setFetching(false);
+        setInitialLoading(false);
+      }
     }
   }, [currentDate, effectiveViewMode]);
+
+  // Keep the reconnect refetch pointed at the latest fetchData (its identity
+  // changes with date/view) without recreating the appointments channel.
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Abort the in-flight fetch on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // ── Supabase Realtime subscription for appointments ────────────────────
   // Keeps the calendar view in sync with AI-booked appointments from the
@@ -371,7 +400,14 @@ export default function CalendarPage() {
           }));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          wasDisconnectedRef.current = true;
+        } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+          wasDisconnectedRef.current = false;
+          fetchDataRef.current?.();
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -400,7 +436,14 @@ export default function CalendarPage() {
           fetchData();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          wasDisconnectedRef.current = true;
+        } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+          wasDisconnectedRef.current = false;
+          fetchDataRef.current?.();
+        }
+      });
     return () => {
       supabase.removeChannel(channel);
     };
@@ -417,37 +460,28 @@ export default function CalendarPage() {
     setRefreshing(false);
   }
 
+  // Navigation updates state immediately — the previous range stays on
+  // screen (dimmed via the `fetching` opacity transition) until fresh data
+  // lands, instead of the old fade-out → 100ms delay → skeleton choreography.
   function handleDayClick(date) {
-    setFading(true);
-    setTimeout(() => {
-      setCurrentDate(date);
-      setViewMode('day');
-      setTimeout(() => setFading(false), 150);
-    }, 100);
+    setCurrentDate(date);
+    setViewMode('day');
   }
 
   function navigate(direction) {
-    setFading(true);
-    setTimeout(() => {
-      setCurrentDate((prev) => {
-        const d = new Date(prev);
-        if (effectiveViewMode === 'month') {
-          d.setMonth(d.getMonth() + (direction === 'next' ? 1 : -1));
-        } else {
-          d.setDate(d.getDate() + (direction === 'next' ? 1 : -1));
-        }
-        return d;
-      });
-      setTimeout(() => setFading(false), 150);
-    }, 100);
+    setCurrentDate((prev) => {
+      const d = new Date(prev);
+      if (effectiveViewMode === 'month') {
+        d.setMonth(d.getMonth() + (direction === 'next' ? 1 : -1));
+      } else {
+        d.setDate(d.getDate() + (direction === 'next' ? 1 : -1));
+      }
+      return d;
+    });
   }
 
   function goToday() {
-    setFading(true);
-    setTimeout(() => {
-      setCurrentDate(new Date());
-      setTimeout(() => setFading(false), 150);
-    }, 100);
+    setCurrentDate(new Date());
   }
 
   const handleSwipeEnd = useCallback((event, info) => {
@@ -456,15 +490,11 @@ export default function CalendarPage() {
     const velocity = info.velocity.x;
     if (Math.abs(offset) > threshold || Math.abs(velocity) > 300) {
       const direction = (offset > 0 || velocity > 300) ? -1 : 1;
-      setFading(true);
-      setTimeout(() => {
-        setCurrentDate((prev) => {
-          const d = new Date(prev);
-          d.setDate(d.getDate() + direction);
-          return d;
-        });
-        setTimeout(() => setFading(false), 150);
-      }, 100);
+      setCurrentDate((prev) => {
+        const d = new Date(prev);
+        d.setDate(d.getDate() + direction);
+        return d;
+      });
     }
     dragControls.start({ x: 0, transition: { duration: 0.15 } });
   }, [dragControls]);
@@ -701,7 +731,7 @@ export default function CalendarPage() {
 
   const urgencyTimeColor = {
     emergency: 'text-red-500',
-    routine: 'text-[#4F6BED]',
+    routine: 'text-[#4F6BED] dark:text-[#8FA5F2]',
     urgent: 'text-amber-600',
   };
 
@@ -709,7 +739,7 @@ export default function CalendarPage() {
   // render a top-level ErrorState with Retry instead of the (now-empty)
   // calendar chrome. The fetchError is cleared on every fetchData() call, so
   // pressing retry re-enters the loading state naturally.
-  if (fetchError && !loading) {
+  if (fetchError && !fetching) {
     return (
       <div className="space-y-4" data-tour="calendar-page">
         <div className={`${card.base} p-4`}>
@@ -728,14 +758,8 @@ export default function CalendarPage() {
         onReviewConflicts={handleReviewConflicts}
       />
 
-      {/* Integration token health — shows if Jobber/Xero refresh has failed so
-          the owner can reconnect without hunting through settings. Polls every
-          30s so the banner appears shortly after a silent webhook failure. */}
-      <IntegrationReconnectBanner />
-
-      {/* Phase 57 — dismissible "Jobber push coming soon" banner. Only renders
-          when Jobber is connected and the user has not yet dismissed it. */}
-      <JobberCopyBanner jobberConnected={jobberConnected} />
+      {/* Integration health (Jobber/Xero reconnect) now lives inside the
+          Connections card below — see CalendarConnectionsCard. */}
 
       {/* Mobile Agenda Strip — "Up Next" above calendar */}
       {isMobile && todayAppts.length > 0 && effectiveViewMode === 'day' && (
@@ -743,7 +767,7 @@ export default function CalendarPage() {
           <div className="flex items-center gap-2 mb-2">
             <CalendarDays className="size-3.5 text-[var(--brand-accent)]" />
             <h2 className="text-xs font-semibold text-foreground">Up Next</h2>
-            <span className="ml-auto text-[10px] font-medium text-[#94A3B8]">
+            <span className="ml-auto text-[10px] font-medium text-muted-foreground/70">
               {todayAppts.length} today
             </span>
           </div>
@@ -770,48 +794,40 @@ export default function CalendarPage() {
 
       {/* ── Calendar Card (full width) ───────────────────────────── */}
       <div className={`${card.base} p-0 overflow-hidden`}>
-        {/* Calendar toolbar — row 1: navigation + view toggle */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/60 bg-muted">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous">
+        {/* Calendar toolbar — single row on desktop, wraps to two on mobile */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2 px-3 md:px-4 py-2.5 border-b border-border/60 bg-muted">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Button variant="outline" size="icon" onClick={() => navigate('prev')} aria-label="Previous" className="h-8 w-8 shrink-0">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => navigate('next')} aria-label="Next">
+            <Button variant="outline" size="icon" onClick={() => navigate('next')} aria-label="Next" className="h-8 w-8 shrink-0">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-base font-semibold text-foreground ml-1 tabular-nums">{dateLabel}</span>
-          </div>
-
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            <button
-              type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setViewMode('month')}
-            >
-              Month
-            </button>
-            <button
-              type="button"
-              className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-border ${effectiveViewMode === 'day' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
-              onClick={() => setViewMode('day')}
-            >
-              Day
-            </button>
-          </div>
-        </div>
-
-        {/* Calendar toolbar — row 2: actions */}
-        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-border bg-card">
-          <div className="flex items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
               onClick={goToday}
               disabled={isToday}
-              className="h-8 text-xs md:text-sm"
+              className="h-8 text-xs md:text-sm shrink-0"
             >
               Today
             </Button>
+            <span className="text-sm md:text-base font-semibold text-foreground ml-1 tabular-nums truncate">{dateLabel}</span>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-1.5">
+              <Switch
+                id="show-completed"
+                checked={showCompleted}
+                onCheckedChange={setShowCompleted}
+                aria-label="Show completed jobs on calendar"
+              />
+              <Label htmlFor="show-completed" className="text-xs md:text-sm text-muted-foreground whitespace-nowrap cursor-pointer hidden lg:inline">
+                Show completed
+              </Label>
+            </div>
+
             <Button
               variant="outline"
               size="icon"
@@ -822,19 +838,22 @@ export default function CalendarPage() {
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
-          </div>
 
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-1.5">
-              <Switch
-                id="show-completed"
-                checked={showCompleted}
-                onCheckedChange={setShowCompleted}
-                aria-label="Show completed jobs on calendar"
-              />
-              <Label htmlFor="show-completed" className="text-xs md:text-sm text-muted-foreground whitespace-nowrap cursor-pointer hidden sm:inline">
-                Show completed
-              </Label>
+            <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors ${effectiveViewMode === 'month' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+                onClick={() => setViewMode('month')}
+              >
+                Month
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-xs md:text-sm font-medium transition-colors border-l border-border ${effectiveViewMode === 'day' ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:bg-muted'}`}
+                onClick={() => setViewMode('day')}
+              >
+                Day
+              </button>
             </div>
 
             <Popover open={createPopoverOpen} onOpenChange={setCreatePopoverOpen}>
@@ -862,7 +881,7 @@ export default function CalendarPage() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-foreground">Book appointment</div>
-                    <div className="text-xs text-[#64748B] mt-0.5">Add a customer job</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Add a customer job</div>
                   </div>
                 </button>
                 <button
@@ -879,7 +898,7 @@ export default function CalendarPage() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-foreground">Block time</div>
-                    <div className="text-xs text-[#64748B] mt-0.5">Lunch, personal, vacation</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Lunch, personal, vacation</div>
                   </div>
                 </button>
               </PopoverContent>
@@ -887,8 +906,9 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Calendar grid — swipeable on mobile day view */}
-        <div className={`transition-opacity overflow-hidden ${fading ? 'opacity-0 duration-100' : 'opacity-100 duration-150'}`}>
+        {/* Calendar grid — swipeable on mobile day view. Background refetches
+            dim the existing grid instead of swapping in a skeleton. */}
+        <div className={`transition-opacity duration-150 overflow-hidden ${fetching && !initialLoading ? 'opacity-60' : 'opacity-100'}`}>
           {isMobile && effectiveViewMode === 'day' && !prefersReduced ? (
             <motion.div
               drag="x"
@@ -905,7 +925,7 @@ export default function CalendarPage() {
                 timeBlocks={data.timeBlocks}
                 currentDate={currentDate}
                 viewMode={effectiveViewMode}
-                loading={loading}
+                loading={initialLoading}
                 onAppointmentClick={handleAppointmentClick}
                 onDayClick={handleDayClick}
                 onEmptySlotClick={handleEmptySlotClick}
@@ -924,7 +944,7 @@ export default function CalendarPage() {
               timeBlocks={data.timeBlocks}
               currentDate={currentDate}
               viewMode={effectiveViewMode}
-              loading={loading}
+              loading={initialLoading}
               onAppointmentClick={handleAppointmentClick}
               onDayClick={handleDayClick}
               onEmptySlotClick={handleEmptySlotClick}
@@ -938,11 +958,14 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* ── Bottom row: Agenda + Connections + Working Hours ────── */}
-      <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${isMobile ? 'hidden' : ''}`}>
+      {/* ── Bottom row: Agenda + Connections + Working Hours ──────
+          One responsive grid for both breakpoints (was duplicated desktop +
+          mobile markup). The agenda card is desktop-only — mobile gets the
+          "Up Next" strip above the calendar instead. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
         {/* Today's Agenda */}
-        <div className={`${card.base} p-5`}>
+        <div className={`${card.base} p-5 hidden md:block`}>
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className="size-4 text-[var(--brand-accent)]" />
             <h2 className="text-sm font-semibold text-foreground">Today&apos;s Agenda</h2>
@@ -960,7 +983,7 @@ export default function CalendarPage() {
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <CalendarOff className="h-8 w-8 text-muted-foreground/50 mb-2" />
                 <p className="text-sm font-medium text-foreground">No appointments today</p>
-                <p className="text-xs text-[#94A3B8] mt-0.5">Enjoy the day off.</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">Enjoy the day off.</p>
               </div>
             )
           ) : (
@@ -986,10 +1009,10 @@ export default function CalendarPage() {
                         <p className={`text-xs font-semibold ${timeColor} mb-0.5`}>{startTime} – {endTime}</p>
                         <p className="text-sm font-semibold text-foreground">{appt.caller_name}</p>
                         {addressLine && (
-                          <p className="text-xs text-[#64748B] truncate mt-0.5">{addressLine}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">{addressLine}</p>
                         )}
                       </div>
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8] group-hover:text-muted-foreground transition-colors shrink-0 mt-0.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70 group-hover:text-muted-foreground transition-colors shrink-0 mt-0.5">
                         View →
                       </span>
                     </div>
@@ -1000,14 +1023,9 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {/* Calendar Connections */}
-        <div className={`${card.base} p-5`}>
-          <div className="flex items-center gap-2 mb-4">
-            <Link2 className="size-4 text-[var(--brand-accent)]" />
-            <h2 className="text-sm font-semibold text-foreground">Calendar Connections</h2>
-          </div>
-          <CalendarSyncCard />
-        </div>
+        {/* Connections — calendars + business apps, including reconnect state
+            (replaces the old page-top IntegrationReconnectBanner) */}
+        <CalendarConnectionsCard />
 
         {/* Working Hours */}
         <div className={`${card.base} p-5`}>
@@ -1038,56 +1056,11 @@ export default function CalendarPage() {
             >
               <Clock className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
               <p className="text-sm font-medium text-foreground">Not configured</p>
-              <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">Tap to set your availability</p>
             </button>
           )}
         </div>
       </div>
-
-      {/* Mobile cards — stacked below calendar */}
-      {isMobile && (
-        <>
-          <div className={`${card.base} p-5`}>
-            <div className="flex items-center gap-2 mb-4">
-              <Link2 className="size-4 text-[var(--brand-accent)]" />
-              <h2 className="text-sm font-semibold text-foreground">Calendar Connections</h2>
-            </div>
-            <CalendarSyncCard />
-          </div>
-          <div className={`${card.base} p-5`}>
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="size-4 text-[var(--brand-accent)]" />
-              <h2 className="text-sm font-semibold text-foreground">Working Hours</h2>
-              <button
-                onClick={() => setWhSheetOpen(true)}
-                className="ml-auto text-[11px] text-[var(--brand-accent)] hover:underline flex items-center gap-1"
-              >
-                <Pencil className="size-3" />
-                Edit
-              </button>
-            </div>
-            {workingHoursData?.working_hours ? (
-              <div className="space-y-1.5">
-                {summarizeWorkingHours(workingHoursData.working_hours).map((row) => (
-                  <div key={row.label} className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-foreground">{row.label}</span>
-                    <span className={row.closed ? 'text-muted-foreground' : 'text-muted-foreground'}>{row.hours}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <button
-                onClick={() => setWhSheetOpen(true)}
-                className="w-full py-6 text-center"
-              >
-                <Clock className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                <p className="text-sm font-medium text-foreground">Not configured</p>
-                <p className="text-xs text-[#94A3B8] mt-0.5">Tap to set your availability</p>
-              </button>
-            )}
-          </div>
-        </>
-      )}
 
       {/* Appointment Flyout */}
       <AppointmentFlyout

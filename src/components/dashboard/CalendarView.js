@@ -324,8 +324,8 @@ function AppointmentBlock({ appointment, onClick, isOffHours, isMobile, getPosit
 
       {/* Completed checkmark badge */}
       {isCompleted && (
-        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
-          <Check className="w-[10px] h-[10px] text-green-700" />
+        <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center">
+          <Check className="w-[10px] h-[10px] text-green-700 dark:text-green-300" />
         </div>
       )}
 
@@ -384,7 +384,7 @@ function TimeBlockEvent({ block, onBlockClick, isMobile, getPositionStyle }) {
   return (
     <button
       type="button"
-      className="absolute rounded-md overflow-hidden cursor-pointer bg-amber-50/70 border border-amber-200/80 border-l-[3px] border-l-amber-400 hover:bg-amber-100/80 transition-colors"
+      className="absolute rounded-md overflow-hidden cursor-pointer bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 border-l-[3px] border-l-amber-400 dark:border-l-amber-500 hover:bg-amber-100/80 dark:hover:bg-amber-900/40 transition-colors"
       style={{
         top: style.top,
         height: style.height,
@@ -397,7 +397,7 @@ function TimeBlockEvent({ block, onBlockClick, isMobile, getPositionStyle }) {
       <div className="h-full px-2 py-1 flex flex-col justify-center">
         <div className="flex items-center gap-1">
           <CalendarOff className="w-3 h-3 text-amber-400 shrink-0" />
-          <span className="text-xs font-medium text-amber-800 truncate">{block.title}</span>
+          <span className="text-xs font-medium text-amber-800 dark:text-amber-200 truncate">{block.title}</span>
         </div>
         {heightPx >= 44 && (
           <span className="text-[10px] text-amber-500 mt-0.5 ml-4">{timeLabel}</span>
@@ -450,7 +450,7 @@ const PROVIDER_ALL_DAY_CLASSES = {
 function AllDayExternalEventChip({ event, position, onExternalEventClick }) {
   const provider = event.provider ?? 'other';
   const providerLabel = PROVIDER_LABELS[provider] ?? `From ${provider}`;
-  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600';
+  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300';
   const surfaceClass = PROVIDER_ALL_DAY_CLASSES[provider]
     ?? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-slate-400';
 
@@ -513,7 +513,7 @@ function ExternalEventBlock({ event, getPositionStyle, laneIndex = 0, laneCount 
   const laneStyle = getLaneLayout(laneIndex, laneCount, isMobile);
 
   const providerLabel = PROVIDER_LABELS[event.provider] ?? `From ${event.provider}`;
-  const providerPillClass = PROVIDER_PILL_CLASSES[event.provider] ?? 'bg-slate-100 text-slate-600';
+  const providerPillClass = PROVIDER_PILL_CLASSES[event.provider] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300';
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -579,7 +579,7 @@ function AllDayEvents({ events }) {
   return (
     <div className="flex flex-wrap gap-1 px-1.5 py-1 min-h-[26px]">
       {visible.map((e) => (
-        <div key={e.id} className="bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 text-[10px] text-violet-600 font-medium truncate max-w-full">
+        <div key={e.id} className="bg-violet-50 border border-violet-200 dark:bg-violet-950/30 dark:border-violet-800/60 rounded px-1.5 py-0.5 text-[10px] text-violet-600 dark:text-violet-300 font-medium truncate max-w-full">
           {e.title}
         </div>
       ))}
@@ -934,7 +934,7 @@ export default function CalendarView({
                                 className={`text-[9px] leading-tight truncate px-1 py-0.5 rounded font-medium flex items-center gap-0.5 ${
                                   extClass ??
                                   (isCompleted
-                                    ? 'bg-emerald-100 text-emerald-700 line-through decoration-emerald-400/60'
+                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 line-through decoration-emerald-400/60'
                                     : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]')
                                 }`}
                               >
@@ -956,7 +956,7 @@ export default function CalendarView({
                 {bars.map((bar, bi) => {
                   const provider = bar.event.provider ?? 'other';
                   const providerLabel = PROVIDER_LABELS[provider] ?? `From ${provider}`;
-                  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600';
+                  const providerPillClass = PROVIDER_PILL_CLASSES[provider] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800/40 dark:text-slate-300';
                   const surfaceClass = PROVIDER_ALL_DAY_CLASSES[provider]
                     ?? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 border-l-[3px] border-l-slate-400';
                   const leftPct = (bar.startCol / 7) * 100;
@@ -1109,7 +1109,7 @@ export default function CalendarView({
                             key={`tb-${block.id}`}
                             type="button"
                             onClick={(e) => { e.stopPropagation(); onTimeBlockClick?.(block); }}
-                            className="bg-amber-100 border border-amber-300 rounded-md px-2 py-1 text-xs text-amber-800 font-medium truncate max-w-full hover:bg-amber-200 hover:border-amber-400 active:scale-95 transition-all cursor-pointer"
+                            className="bg-amber-100 border border-amber-300 dark:bg-amber-950/40 dark:border-amber-800/60 rounded-md px-2 py-1 text-xs text-amber-800 dark:text-amber-200 font-medium truncate max-w-full hover:bg-amber-200 hover:border-amber-400 dark:hover:bg-amber-900/40 dark:hover:border-amber-700 active:scale-95 transition-all cursor-pointer"
                           >
                             {block.title}
                           </button>

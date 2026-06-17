@@ -41,6 +41,8 @@ export default function EstimatesPage() {
     error,
     activeStatus,
     setActiveStatus,
+    hasMore,
+    loadMore,
     mutate,
   } = useDocumentList('/api/estimates', { itemsKey: 'estimates' });
 
@@ -181,14 +183,27 @@ export default function EstimatesPage() {
                 </div>
               ))}
             </div>
+
+            {/* Load more */}
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  className="px-4 py-2 rounded-md border border-border bg-card hover:bg-muted text-sm font-medium text-muted-foreground transition-colors"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
 
-      {/* Mobile floating action button */}
+      {/* Mobile floating action button — bottom-20 clears the 64px BottomTabBar below lg */}
       <Link
         href="/dashboard/estimates/new"
-        className="sm:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white shadow-lg flex items-center justify-center transition-colors"
+        className="sm:hidden fixed bottom-20 right-6 z-50 w-14 h-14 rounded-full bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white shadow-lg flex items-center justify-center transition-colors"
         aria-label="Create Estimate"
       >
         <Plus className="w-6 h-6" />

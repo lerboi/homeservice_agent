@@ -549,7 +549,7 @@ export default function CallRoutingPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenLead(entry.id)}
-                          className="min-h-[44px] px-2 flex items-center justify-center rounded-lg text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                          className="min-h-[44px] px-2 flex items-center justify-center rounded-lg text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/40 transition-colors"
                           title="View lead"
                           aria-label="View lead"
                         >
@@ -573,7 +573,7 @@ export default function CallRoutingPage() {
                             ? handleRemoveVipLead(entry.id)
                             : handleDeleteVipNumber(entry.idx)
                         }
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                         aria-label={entry.source === 'lead' ? 'Remove priority status from lead' : 'Remove priority number'}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -764,7 +764,7 @@ export default function CallRoutingPage() {
                               <span className="text-xs text-muted-foreground">{pn.label}</span>
                             </div>
                             {pn.sms_forward && (
-                              <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
+                              <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60 shrink-0">
                                 SMS
                               </span>
                             )}
@@ -781,7 +781,7 @@ export default function CallRoutingPage() {
                             <button
                               type="button"
                               onClick={() => handleDeletePickupNumber(idx)}
-                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors"
+                              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                               aria-label="Remove pickup number"
                             >
                               <Trash2 className="h-4 w-4" />

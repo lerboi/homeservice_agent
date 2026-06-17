@@ -25,6 +25,10 @@ describe('calculateLineTotal', () => {
     expect(calculateLineTotal('discount', { unit_price: -50 })).toBe(-50);
   });
 
+  test('late_fee: unit_price only (quantity ignored) — guards the silent $0 regression', () => {
+    expect(calculateLineTotal('late_fee', { quantity: 1, unit_price: 25 })).toBe(25);
+  });
+
   test('labor: uses default quantity of 1 when not provided', () => {
     expect(calculateLineTotal('labor', { unit_price: 100 })).toBe(100);
   });
@@ -78,5 +82,16 @@ describe('calculateInvoiceTotals', () => {
     expect(result.subtotal).toBe(60);
     expect(result.tax_amount).toBe(6);
     expect(result.total).toBe(66);
+  });
+
+  test('late_fee line item is included in subtotal and total (regression: was silently $0)', () => {
+    const lineItems = [
+      { item_type: 'labor', quantity: 1, unit_price: 100, markup_pct: 0, taxable: true },
+      { item_type: 'late_fee', quantity: 1, unit_price: 25, markup_pct: 0, taxable: false },
+    ];
+    const result = calculateInvoiceTotals(lineItems, 0.10);
+    expect(result.subtotal).toBe(125); // 100 labor + 25 late fee
+    expect(result.tax_amount).toBe(10); // tax on the $100 taxable labor only
+    expect(result.total).toBe(135);
   });
 });

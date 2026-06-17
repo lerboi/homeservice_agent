@@ -9,7 +9,7 @@ This document is the single source of truth for the Jobber and Xero read-side
 integrations — OAuth, caching, webhooks, Python agent injection, dashboard UI,
 and telemetry. **Read this before making any changes to either provider.**
 
-**Last updated**: 2026-06-04 (prod-readiness 2026-06 — documented the `accounting_credentials.expiry_date` BIGINT epoch-MILLISECONDS storage contract + the Python ISO-string write bug fix, and the Python agent's new participation in the migration-058 OAuth refresh lock via `livekit-agent/src/integrations/_refresh_lock.py`; corrected the `oauth_refresh_locks` table columns and `expiry_date`/migration-030 row in the DB-surface table.) + Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read. + Phase 61.1 WR-03 — corrected tool-return shape claim (success uses label form `BOOKED [verdict=...]:`, only failure path uses STATE+DIRECTIVE)
+**Last updated**: 2026-06-12 (audit wave 1 — (1) **Refresh-lock loser GIVES UP on poll timeout (H7)**: `xero.py _refresh_locked` + `jobber.py _refresh_token_locked` now return None when the loser's 3s poll times out, mirroring `adapter.js` (which throws) — the old refresh-anyway fallback re-fired the wire refresh with a single-use token the winner had usually already consumed (the winner's token POST can take up to its 10s read timeout), got a 400, persisted `error_state='token_refresh_failed'`, and bricked the connection behind a false Reconnect banner that the keep-fresh cron then skipped. The 30s lease TTL releases a genuinely stuck slot on its own. (2) **`accounting_credentials` client-role privileges REVOKED (migration 069)**: plaintext OAuth tokens are no longer browser-readable via PostgREST; all reads were already service-role, so nothing broke. (3) **Telemetry actually persists now (migration 071)**: the `activity_event_type` enum gained `integration_fetch` + `integration_fetch_fanout` — every Phase 58 telemetry INSERT had been failing the enum cast silently since Phase 58 (verified live: 0 rows ever written).) Previous: 2026-06-10 (token-refresh reliability overhaul — see "Refresh reliability (2026-06-10)" section below: shielded cancellation-safe refresh in both Python adapters, fatal-only `error_state` flagging in both runtimes, new keep-fresh cron `/api/cron/refresh-integration-tokens` every 10 min, `refreshTokenIfNeeded` gained `options.bufferMs`, one-shot reconnect email guard. Calendar-page UI: `IntegrationReconnectBanner` + `JobberCopyBanner` DELETED — replaced by `CalendarConnectionsCard` business-apps rows.) Previous: 2026-06-04 (prod-readiness 2026-06 — documented the `accounting_credentials.expiry_date` BIGINT epoch-MILLISECONDS storage contract + the Python ISO-string write bug fix, and the Python agent's new participation in the migration-058 OAuth refresh lock via `livekit-agent/src/integrations/_refresh_lock.py`; corrected the `oauth_refresh_locks` table columns and `expiry_date`/migration-030 row in the DB-surface table.) + Phase 61 — Voco-normalized `address_components` JSONB shape (D-D1) added to `appointments` + `inquiries` via migration 062; `livekit-agent/src/integrations/google_maps.py::map_components` is the source of truth for the named-key mapper that Phase 62 Jobber write-side will read. + Phase 61.1 WR-03 — corrected tool-return shape claim (success uses label form `BOOKED [verdict=...]:`, only failure path uses STATE+DIRECTIVE)
 
 ---
 
@@ -39,7 +39,12 @@ The Python livekit-agent has its own mirror of the read path — see
 
 ### Database surface
 
-`accounting_credentials` table (migration 052):
+`accounting_credentials` table (migration 052). **Migration 069 (2026-06-12,
+pending application) REVOKEs ALL client-role (anon/authenticated) table
+privileges** — the plaintext `access_token`/`refresh_token` were
+owner-browser-readable via PostgREST under the tenant-own RLS policies. All
+reads in both runtimes were already service-role, so nothing breaks; the
+tenant-own policies remain but are unreachable for client roles.
 
 | Column | Purpose | Introduced |
 |--------|---------|-----------|
@@ -95,6 +100,69 @@ with `datetime.fromisoformat(...).timestamp()` (already seconds, no division);
 > writers. Do not "normalize" the column to a timestamptz — the BIGINT-ms shape
 > is the contract.
 
+### Refresh reliability (2026-06-10) — why "tokens expired" kept recurring, and the fix
+
+**Root cause found and fixed.** The LiveKit agent's pre-session context fetch
+runs under `asyncio.wait_for(0.8s)` (`customer_context.py`) and previously
+performed OAuth refreshes inline on that budget with the sub-second data
+httpx client (Jobber read=0.7s). Two failure modes resulted:
+
+1. **Lost rotation → bricked connection.** Jobber refresh tokens are
+   single-use; Xero rotates with only a ~30-min grace. If the token POST was
+   read-timed-out or the outer 0.8s deadline CANCELLED the coroutine
+   mid-POST, the provider had already consumed the old refresh token but the
+   rotated replacement was never read/persisted → every later refresh 401s →
+   owner must reconnect. This is the "connect once but it keeps dying" bug.
+2. **False banners.** Both runtimes flagged
+   `error_state='token_refresh_failed'` on ANY failure — including timeouts,
+   network errors, and 5xx — so transient hiccups raised "Reconnect
+   Jobber/Xero" banners + emails even when the stored token was fine.
+
+**Fixes (all shipped 2026-06-10):**
+
+- **Python adapters** (`livekit-agent/src/integrations/{jobber,xero}.py`):
+  - The wire refresh + persist now runs as an `asyncio.ensure_future` task
+    awaited through `asyncio.shield(...)`, with strong refs kept in a
+    module-level `_REFRESH_TASKS` set. Outer cancellation lets the fetch
+    give up while the rotation completes + persists in the background.
+  - The refresh POST uses a DEDICATED client with `REFRESH_HTTP_TIMEOUT`
+    (connect=3s, read=10s) — never the sub-second data-fetch client.
+  - `_persist_refresh_failure` fires ONLY on token-endpoint HTTP 400/401
+    (dead grant). Timeouts/5xx/network errors log and leave `error_state`
+    untouched. Missing env vars no longer flag (config issue, reconnect
+    can't fix it).
+  - Jobber: `_refresh_token(cred)` (shield wrapper) → `_refresh_token_locked`
+    (lock + poll) → `_do_wire_refresh(cred)`. Xero: `_refresh_if_needed(cred)`
+    (buffer check + shield) → `_refresh_locked` → `_do_wire_refresh(cred)`.
+    None of them take an httpx client param anymore.
+- **Next.js adapter** (`src/lib/integrations/adapter.js`):
+  - `refreshTokenIfNeeded(supabase, credentials, options?)` — new
+    `options.bufferMs` (default 5 min) so the keep-fresh cron can force a
+    wider lookahead.
+  - Fatal-vs-transient classification: only `status 400/401`,
+    `err.error === 'invalid_grant'`, or an invalid-grant-shaped message sets
+    `error_state` + notifies. Transient errors rethrow un-flagged.
+    `jobber.js refreshToken` attaches `err.status` for this.
+  - One-shot email: the notify path is skipped when
+    `credentials.error_state === 'token_refresh_failed'` already (webhook
+    bursts / cron retries no longer re-email the owner every cycle).
+- **Keep-fresh cron** — `GET /api/cron/refresh-integration-tokens`
+  (vercel.json, `*/10 * * * *`): sweeps `accounting_credentials` where
+  `error_state IS NULL AND expiry_date < now + 15min` and calls
+  `refreshTokenIfNeeded(admin, cred, { bufferMs: 15min })`. Guarantees a
+  healthy row always has ≥ ~10 min validity when a call arrives, so the
+  agent's in-call refresh is a rarely-hit fallback (and now a safe one).
+  Rows already flagged are skipped — only a reconnect heals them.
+
+**UI surface change:** `IntegrationReconnectBanner.jsx` and
+`JobberCopyBanner.jsx` were DELETED. The calendar page's
+`CalendarConnectionsCard` (`src/components/dashboard/CalendarConnectionsCard.jsx`)
+now renders Jobber/Xero rows from `/api/integrations/status` (SWR, 60s poll)
+with an inline amber "Reconnect" affordance + "Action needed" header pill,
+and a quiet "Push to Jobber is coming soon" hint replacing the dismissible
+banner. `BusinessIntegrationsClient` on /dashboard/more/integrations is
+unchanged and remains the actual reconnect destination.
+
 ### OAuth refresh-lock — cross-runtime participation (prod-readiness 2026-06)
 
 Previously **only the Next.js adapter** honored the migration-058 refresh lock;
@@ -118,9 +186,18 @@ Flow inside each adapter's `_refresh_if_needed`:
    `accounting_credentials` every 200ms for up to 3s, returning the winner's
    freshly-persisted row once `expiry_date` is comfortably in the future
    (`> now + 300s`).
-5. **Fail-soft**: on poll timeout (or any lock RPC error) the loser logs and
-   falls back to the un-serialized refresh path — availability beats perfect
-   dedup, and nothing here ever raises into the live-call hot path.
+5. **Loser gives up on poll timeout (2026-06-12 audit H7)**: when the 3s poll
+   times out (or a lock RPC error leaves the loser without the lock), the
+   loser returns **None** — the fetch proceeds without context, exactly
+   mirroring `adapter.js` (which throws here). The previous "fail-soft"
+   fallback re-fired the wire refresh with the possibly-consumed single-use
+   token: the winner's token POST can take up to its 10s read timeout, so the
+   loser's retry usually hit a 400 → persisted
+   `error_state='token_refresh_failed'` → false Reconnect banner that the
+   keep-fresh cron then skipped — a transient slow refresh became a
+   permanently bricked Jobber connection until the owner re-authed. The 30s
+   lease TTL still releases a genuinely stuck slot on its own; the next caller
+   refreshes cleanly. Nothing here ever raises into the live-call hot path.
 
 This closes the agent-vs-dashboard refresh race. It is **critical for Jobber**,
 whose refresh-token rotation is **single-use**: a second concurrent refresh
@@ -197,6 +274,12 @@ red-dot + "Reconnect needed" subtitle + "Reconnect" CTA swap.
 and `event_type='integration_fetch_fanout'` per-call (Phase 58). Owner-facing
 Last-synced timestamp on the BusinessIntegrationsClient card. Column-name
 reconciliation (Option A: `event_type` + `metadata`, NOT `action` + `meta`).
+**Migration 071 (2026-06-12, pending application) adds both values to the
+`activity_event_type` enum** — `activity_log.event_type` is a strict enum
+(migration 061), so every Phase 58 telemetry INSERT failed the cast and was
+silently swallowed by the helpers' try/except (verified live: 0 rows ever
+written). The inserts persist only once 071 is applied; any p95 latency
+queries before then return empty.
 
 ---
 
@@ -305,8 +388,17 @@ preceding tool return contained the validating verdict — see
    SECONDS and tolerate legacy ISO rows. See "Token-expiry storage contract".
 11. **The Python agent now holds the OAuth refresh lock too.** Don't assume the
    agent refreshes unconditionally — it acquires `try_acquire_oauth_refresh_lock`
-   and a loser polls for the winner's row. Critical for Jobber's single-use
-   refresh-token rotation. See "OAuth refresh-lock — cross-runtime participation".
+   and a loser polls for the winner's row; **on poll timeout the loser returns
+   None (2026-06-12) — never re-fire the wire refresh as a "fallback"**, the
+   winner has usually already consumed the single-use token and the retry's 400
+   bricks the connection behind a false Reconnect banner. Critical for Jobber's
+   single-use refresh-token rotation. See "OAuth refresh-lock — cross-runtime
+   participation".
+12. **Phase 58 telemetry rows only persist once migration 071 is applied.**
+   The `activity_event_type` enum lacked `integration_fetch`/
+   `integration_fetch_fanout` until 071 — inserts before that failed the cast
+   silently (the emit helpers never raise). Zero rows is a migration gap, not
+   an agent bug.
 
 ---
 

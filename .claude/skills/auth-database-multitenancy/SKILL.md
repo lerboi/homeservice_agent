@@ -1,15 +1,17 @@
 ---
 name: auth-database-multitenancy
-description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 66 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), Phase 61 validated-address columns on appointments + inquiries + gmaps_validate_events sibling table + extended RPC overloads, activity_event_type strict enum with 16 values, and prod-readiness 2026-06 migrations (estimates.customer_id, stripe_webhook_events.processed flag, rate_limit_hits table + increment_rate_limit RPC, calls.call_sid UNIQUE constraint). Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
+description: "Complete architectural reference for authentication, database schema, and multi-tenant isolation — Supabase Auth, proxy auth guards, three Supabase client types, RLS policies, all 71 migrations with table definitions, getTenantId pattern, tenant data isolation, Phase 59 new tables (customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit), Phase 59 RPCs (record_call_outcome, merge_customer, unmerge_customer), Phase 61 validated-address columns on appointments + inquiries + gmaps_validate_events sibling table + extended RPC overloads, activity_event_type strict enum with 18 values (071 added integration_fetch + integration_fetch_fanout), prod-readiness 2026-06 migrations (estimates.customer_id, stripe_webhook_events.processed flag, rate_limit_hits table + increment_rate_limit RPC, calls.call_sid UNIQUE constraint), migration 068 billing/security hardening (subscriptions one-current partial unique index + dedupe, oauth_refresh_locks RLS lockdown + lock-RPC EXECUTE revoke, hot-path indexes, stripe_webhook_events.processing_started_at), and 2026-06-12 audit migrations 069–071 (SECURITY DEFINER RPC anon/authenticated EXECUTE revoke + search_path pinning, accounting_credentials/calendar_credentials client-role privilege revoke, ai_voice label CHECK, stripe_meter_failures outbox). Use this skill whenever making changes to auth proxy, RLS policies, database migrations, Supabase client usage, tenant isolation, or adding new tables. Also use when the user asks about how auth works, wants to add a new migration, or needs to debug RLS or tenant access issues."
 ---
 
 # Auth, Database & Multi-Tenancy — Complete Reference
 
 This document is the single source of truth for authentication, Supabase client patterns, row-level security, and the full database schema. Read this before making any changes to auth, RLS policies, migrations, or adding new tables.
 
-> ⚠️ **Phase 65 (in flight):** migration `067_ai_voice_openai.sql` drops the migration-044 Gemini-voice CHECK on `tenants.ai_voice`, sets every tenant's `ai_voice` to NULL, and adds a new CHECK allowing NULL or the OpenAI gpt-realtime voice set (`alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar`). Forward-only and safe under both the Gemini and OpenAI voice agents (NULL → tone-based fallback). See `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+> ⚠️ **Pending manual application:** migrations `068`–`071` await manual application to the live DB (apply in order: 068, 069, 070, 071). Migration `067`'s OpenAI voice CHECK on `tenants.ai_voice` is **superseded by `070_ai_voice_labels.sql`** — the CHECK now allows NULL or the 3 stable labels (`professional`, `friendly`, `local_expert`); the agent maps labels → ElevenLabs voice ids.
 
-**Last updated**: 2026-06-04 (Prod-readiness 2026-06 — migrations 063–066: `estimates.customer_id` nullable FK → customers (re-link after 061 dropped `leads`), `stripe_webhook_events.processed` boolean flag (atomic webhook idempotency), new `rate_limit_hits` table + `increment_rate_limit` SECURITY DEFINER RPC (durable instance-independent fixed-window rate limiting for `/api/public-chat` + `/api/demo-voice`), and `calls.call_sid` UNIQUE constraint replacing the non-unique partial index from 045 (de-dupes owner-pickup rows from Twilio webhook retries). All additive / forward-fix-only.)
+**Last updated**: 2026-06-12 (audit wave 1, migrations 069–071 — all PENDING manual application along with 068. **069 `069_rpc_and_token_lockdown.sql`**: catalog-driven DO block REVOKEs anon/authenticated EXECUTE on ALL SECURITY DEFINER functions (they were all anon-callable — earlier migrations 027/033/062/065 only revoked from PUBLIC, which doesn't touch Supabase's explicit per-role grants; verified live) + pins `search_path = public, pg_temp` on them and on the advisor-flagged SECURITY INVOKER functions; also revokes `increment_calls_used` from client roles, and REVOKEs ALL on `accounting_credentials` + `calendar_credentials` from anon/authenticated (plaintext OAuth tokens were owner-browser-readable via PostgREST). **070 `070_ai_voice_labels.sql`**: `tenants.ai_voice` CHECK now the 3 labels `professional`/`friendly`/`local_expert` (replaces 067's OpenAI names; the agent maps labels → ElevenLabs voice ids). **071 `071_meter_event_outbox.sql`**: new service-role-only `stripe_meter_failures` outbox table + `activity_event_type` enum gains `integration_fetch` and `integration_fetch_fanout` (now 18 values; previously every integration-telemetry INSERT failed the enum cast silently — 0 rows ever wrote). Migration count is now 71 (72 files on disk — duplicate version 030 still exists).)
+
+**Previous update**: 2026-06-10 (Migration 068 `068_billing_and_security_hardening.sql` — subscriptions `is_current` dedupe + partial unique index `idx_subscriptions_one_current`; `oauth_refresh_locks` ENABLE RLS (no policies — service-role only) + REVOKE EXECUTE on both lock RPCs from PUBLIC/anon/authenticated; hot-path indexes on activity_log(customer_id), invoices(job_id), appointments(external_event_id), calendar_blocks(external_event_id); `stripe_webhook_events.processing_started_at` atomic claim column. Also: `/api/contact` now per-IP rate-limited via `checkRateLimit` (bucket `contact-ip`, 5/hr) and `/api/onboarding/sms-verify` now validates E.164 + per-user rate limit (bucket `sms-verify-user`, 5/hr) — both on the migration-065 `rate_limit_hits` infrastructure. Earlier prod-readiness 2026-06 items (migrations 063–066) unchanged.)
 
 ---
 
@@ -23,7 +25,7 @@ This document is the single source of truth for authentication, Supabase client 
 | **Browser Client** | `src/lib/supabase-browser.js` | `createBrowserClient()` — anon key, for client components and Realtime subscriptions |
 | **Tenant Resolver** | `src/lib/get-tenant-id.js` | `getTenantId()` — resolves authenticated user to their tenant_id |
 | **RLS Policies** | All migration files | Two-pattern tenant isolation enforced at DB level |
-| **Migrations** | `supabase/migrations/` | 66 sequential migrations building full schema |
+| **Migrations** | `supabase/migrations/` | 71 sequential migrations building full schema (72 files on disk — duplicate version 030) |
 | **Admin Helper** | `src/lib/admin.js` | `verifyAdmin()` — session auth + admin_users check for API routes |
 
 ```
@@ -98,14 +100,14 @@ Realtime subscriptions (browser):
 | `supabase/migrations/024_schema_hardening.sql` | set_updated_at() trigger on leads, admin_users.role CHECK constraint, indexes on waitlist email + zone_travel_buffers tenant_id |
 | `supabase/migrations/025_fix_book_appointment_atomic.sql` | Re-create book_appointment_atomic RPC — fix "column scheduled does not exist" error from manual DB edit |
 | `supabase/migrations/026_address_fields.sql` | postal_code + street_name columns on appointments and leads, update book_appointment_atomic with new address params |
-| `supabase/migrations/027_lock_rpc_functions.sql` | REVOKE EXECUTE FROM PUBLIC on book_appointment_atomic + assign_sg_number, GRANT to service_role only |
+| `supabase/migrations/027_lock_rpc_functions.sql` | REVOKE EXECUTE FROM PUBLIC on book_appointment_atomic + assign_sg_number, GRANT to service_role only. **Ineffective until 069**: Supabase grants EXECUTE to anon/authenticated explicitly, so PUBLIC-only revokes left both RPCs anon-callable |
 | `supabase/migrations/028_calls_tenant_cascade.sql` | Add ON DELETE CASCADE to calls.tenant_id FK (was RESTRICT, blocked tenant deletion) |
 | `supabase/migrations/029_invoice_schema.sql` | invoice_settings, invoice_sequences, invoices, invoice_line_items tables + get_next_invoice_number RPC + invoice-logos storage bucket + RLS |
 | `supabase/migrations/030_accounting_integrations.sql` | accounting_credentials, accounting_sync_log tables + RLS (QuickBooks/Xero/FreshBooks integration) |
 | `supabase/migrations/030_estimates_schema.sql` | estimate_sequences, estimates, estimate_tiers, estimate_line_items tables + get_next_estimate_number RPC + estimate_prefix on invoice_settings + RLS |
 | `supabase/migrations/031_payment_log_schema.sql` | invoice_payments table + expand invoices.status CHECK (add partially_paid) + expand invoice_line_items.item_type CHECK (add late_fee) + RLS |
 | `supabase/migrations/032_reminders_recurring.sql` | invoice_reminders table + late fee settings on invoice_settings + recurring invoice columns on invoices + RLS |
-| `supabase/migrations/033_lock_counter_functions.sql` | REVOKE EXECUTE FROM PUBLIC on get_next_invoice_number + get_next_estimate_number, GRANT to service_role + authenticated |
+| `supabase/migrations/033_lock_counter_functions.sql` | REVOKE EXECUTE FROM PUBLIC on get_next_invoice_number + get_next_estimate_number, GRANT to service_role + authenticated (069 later pins their search_path) |
 | `supabase/migrations/034_add_skipped_sms_status.sql` | Expand calls.recovery_sms_status CHECK to add 'skipped' (for short calls and booked callers) |
 | `supabase/migrations/035_lead_email_and_invoice_title.sql` | email column on leads + title column on invoices |
 | `supabase/migrations/036_rename_high_ticket_to_urgent.sql` | Rename urgency tier 'high_ticket'→'urgent' across calls, leads, appointments, services CHECK constraints + data migration |
@@ -122,7 +124,7 @@ Realtime subscriptions (browser):
 | `supabase/migrations/049_vip_caller_routing.sql` | Phase 46 — VIP/Priority caller direct routing: tenants gains `vip_numbers` JSONB (standalone priority numbers); leads gains `is_vip` BOOLEAN NOT NULL DEFAULT false; sparse index `idx_leads_vip_lookup` on (tenant_id, from_number) WHERE is_vip = true powers the webhook's lead-based priority lookup. |
 | `supabase/migrations/050_checklist_overrides.sql` | Phase 48 — Setup checklist per-item override persistence: tenants gains `checklist_overrides` JSONB NOT NULL DEFAULT '{}'. Consumed by `src/app/api/setup-checklist/route.js` to persist user dismissals and custom mark-done actions without adding row-per-item state. |
 | `supabase/migrations/051_features_enabled.sql` | Phase 53 — Feature flag infrastructure: tenants gains `features_enabled JSONB NOT NULL DEFAULT '{"invoicing": false}'::jsonb` (shape: `{ invoicing: boolean, ... }`). No backfill needed — DEFAULT applies to existing rows on column add. No RLS policy change (existing `tenants_update_own` direct-owner policy covers SELECT/UPDATE on every column including this one). Foundation for the v6.0 invoicing toggle and future per-tenant feature flags (xero, jobber, …). Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; consumed by `FeatureFlagsProvider` at dashboard layout and by `/api/invoices/**`, `/api/estimates/**`, `/api/accounting/**` API gates. |
-| `supabase/migrations/058_oauth_refresh_locks.sql` | Phase 999.5 — OAuth concurrent-refresh guard. Creates `oauth_refresh_locks` table (PK `(tenant_id, provider)`, holder_id + TTL expires_at) and two RPCs: `try_acquire_oauth_refresh_lock` (returns holder UUID or NULL) and `release_oauth_refresh_lock`. Wraps `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` so bursts of webhooks/crons can't fire duplicate Jobber/Xero refreshes (Jobber rotates refresh_token — duplicates orphan tokens). No RLS (service-role only). See Migration 058 section below for full contract. |
+| `supabase/migrations/058_oauth_refresh_locks.sql` | Phase 999.5 — OAuth concurrent-refresh guard. Creates `oauth_refresh_locks` table (PK `(tenant_id, provider)`, holder_id + TTL expires_at) and two RPCs: `try_acquire_oauth_refresh_lock` (returns holder UUID or NULL) and `release_oauth_refresh_lock`. Wraps `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js` so bursts of webhooks/crons can't fire duplicate Jobber/Xero refreshes (Jobber rotates refresh_token — duplicates orphan tokens). Shipped with RLS off + default RPC grants; locked down by migration 068 (RLS enabled with no policies, RPC EXECUTE revoked from PUBLIC/anon/authenticated). See Migration 058 section below for full contract. |
 | `supabase/migrations/052_integrations_schema.sql` | Phase 54 — **Integration credentials foundation** (originally planned as `051_integrations_schema` before Phase 53 renumber collision; file ships as 052 on disk). Sequenced transactional migration on `accounting_credentials`: (1) `DELETE FROM accounting_credentials WHERE provider IN ('quickbooks','freshbooks')` — purge pre-v6.0 rows before CHECK swap; (2) `DROP CONSTRAINT accounting_credentials_provider_check`; (3) `ADD CONSTRAINT accounting_credentials_provider_check CHECK (provider IN ('xero','jobber'))` — QB + FB values permanently invalid; (4) `ADD COLUMN scopes TEXT[] NOT NULL DEFAULT '{}'::text[]` — populated by `/api/integrations/[provider]/callback` with granular OAuth scopes (Xero post-2026-03-02 scope set; Jobber equivalents); (5) `ADD COLUMN last_context_fetch_at TIMESTAMPTZ` NULL — populated by Phase 55+ `fetchCustomerByPhone` for telemetry. **No new indexes** — existing `UNIQUE (tenant_id, provider)` covers tenant-scoped reads. **Python compatibility:** `TEXT[]` → `list[str]`, `TIMESTAMPTZ` → `datetime` (for livekit-agent service-role reads in Phase 55+). **Forward-compat:** adding a future provider requires another DROP + ADD constraint cycle (same pattern). |
 | `src/lib/stripe.js` | Stripe SDK singleton — server-side, reads STRIPE_SECRET_KEY |
 | `supabase/migrations/059_customers_jobs_inquiries.sql` | Phase 59 — CREATE customers, jobs, inquiries, customer_calls, job_calls, customer_merge_audit + RLS + Realtime + backfill from legacy leads |
@@ -133,6 +135,11 @@ Realtime subscriptions (browser):
 | `supabase/migrations/064_webhook_event_status.sql` | Prod-readiness 2026-06 — `ALTER TABLE stripe_webhook_events ADD COLUMN processed boolean NOT NULL DEFAULT false`. Makes Stripe webhook idempotency atomic: the pre-handler INSERT still wins the concurrency race, but completion is gated on `processed=true` (handler sets it only AFTER the side-effecting block succeeds). A mid-handler failure now re-runs on Stripe retry instead of being silently swallowed by the UNIQUE(event_id) 23505. NO backfill — existing rows default false (inert; their delivery windows are closed). No RLS change. |
 | `supabase/migrations/065_rate_limit.sql` | Prod-readiness 2026-06 — durable, instance-independent fixed-window rate limiting. New `rate_limit_hits` table (PK `(bucket, key, window_start)`, `count integer DEFAULT 0`) + index `idx_rate_limit_hits_window_start`; RLS enabled with service-role-only policy `service_role_all_rate_limit_hits` (no anon/authenticated access); SECURITY DEFINER RPC `increment_rate_limit(p_bucket text, p_key text, p_window_start timestamptz) RETURNS integer` (atomic upsert-and-increment returning new count), REVOKE EXECUTE FROM public + GRANT to service_role. Replaces the in-memory per-instance Maps in `/api/public-chat` + `/api/demo-voice`; daily cron `/api/cron/cleanup-rate-limits` prunes old rows via the window_start index. |
 | `supabase/migrations/066_calls_call_sid_unique.sql` | Prod-readiness 2026-06 — enforce one `calls` row per Twilio CallSid. De-dupes existing rows (keep highest `outbound_dial_duration_sec` NULLS LAST, tie-break earliest `created_at`/`id`; delete rest — does NOT sum durations), then `DROP INDEX IF EXISTS idx_calls_call_sid` (the non-unique partial index from 045) + `ALTER TABLE calls ADD CONSTRAINT calls_call_sid_unique UNIQUE (call_sid)`. Prevents duplicate owner-pickup rows from Twilio webhook retries double-counting the monthly cap. NULLs are DISTINCT in Postgres, so AI/LiveKit rows (call_sid NULL) are unaffected. Full UNIQUE constraint (not partial index) is required so the livekit-agent's `upsert(on_conflict="call_sid")` ON CONFLICT inference can match it. Deploy BEFORE the agent upsert. |
+| `supabase/migrations/067_ai_voice_openai.sql` | Phase 65 — drops the migration-044 Gemini-voice CHECK on `tenants.ai_voice`, clears every tenant's `ai_voice` to NULL, adds a new CHECK allowing NULL or the OpenAI gpt-realtime voice set (`alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar`). NULL → tone-based fallback. **Superseded by 070** (label CHECK). |
+| `supabase/migrations/068_billing_and_security_hardening.sql` | Billing/security hardening (2026-06 audit follow-up), 5 sections in one transaction: (1) **Dedupe** duplicate `is_current=true` subscription rows per tenant (keep most recently created, tiebreak id DESC) — the old webhook unmarked by `stripe_subscription_id`, so cancel→re-subscribe left two current rows; (2) **`idx_subscriptions_one_current`** — partial UNIQUE index `ON subscriptions(tenant_id) WHERE is_current` (delivers what migration 038's DB-2 header promised but never shipped; webhook + verify-checkout now unmark-before-insert to satisfy it); (3) **`oauth_refresh_locks` lockdown** — `ENABLE ROW LEVEL SECURITY` with NO policies (service_role bypasses RLS; anon/authenticated fully blocked) + REVOKE EXECUTE on `try_acquire_oauth_refresh_lock(uuid,text,int)` and `release_oauth_refresh_lock(uuid,text,uuid)` FROM PUBLIC/anon/authenticated, GRANT to service_role (closes the migration-058 Postgres-default-EXECUTE gap); (4) **Hot-path indexes**: `idx_activity_log_customer ON activity_log(customer_id) WHERE customer_id IS NOT NULL`, `idx_invoices_job_id ON invoices(job_id)`, `idx_appointments_external_event_id` (partial, NOT NULL), `idx_calendar_blocks_external_event_id` (partial, NOT NULL); (5) **`stripe_webhook_events.processing_started_at timestamptz`** — atomic processing claim for the Stripe webhook (duplicate deliveries must claim via conditional UPDATE: processed=false AND claim NULL/stale >10min). Idempotent/re-runnable. |
+| `supabase/migrations/069_rpc_and_token_lockdown.sql` | 2026-06-12 audit, PENDING application — 3 sections: (1) catalog-driven DO block over `pg_proc WHERE prosecdef` REVOKEs EXECUTE on **ALL SECURITY DEFINER functions** from PUBLIC/anon/authenticated, GRANTs to service_role, and pins `search_path = public, pg_temp` on each — all 7 (book_appointment_atomic, record_call_outcome, merge_customer, unmerge_customer, set_primary_calendar, assign_sg_number, increment_rate_limit) were anon-callable via `/rest/v1/rpc/*` because 027/033/062/065 only revoked from PUBLIC, which does NOT touch Supabase's explicit anon/authenticated grants (verified live); (2) `search_path` pinning on the advisor-flagged SECURITY INVOKER functions (set_updated_at, increment_calls_used, get_next_invoice_number, get_next_estimate_number, both oauth lock RPCs) + REVOKE on `increment_calls_used` from client roles (sole caller is the Python agent's service-role client); (3) `REVOKE ALL ON accounting_credentials + calendar_credentials FROM anon, authenticated` — both store plaintext OAuth tokens and were owner-browser-readable via PostgREST; all reads were already service-role, so nothing breaks. Idempotent. |
+| `supabase/migrations/070_ai_voice_labels.sql` | 2026-06-12 audit, PENDING application — `tenants.ai_voice` CHECK swapped to NULL or the 3 stable labels (`professional`, `friendly`, `local_expert`), replacing 067's OpenAI names. The agent (livekit-agent `ELEVENLABS_VOICE_MAP`) maps labels → ElevenLabs voice ids; OpenAI-era values are cleared to NULL (live DB already all NULL). Realizes the "migration 068 stores labels" the agent comments referenced (068 turned out to be billing hardening). Deploy BEFORE the main-repo picker change (`VALID_VOICES` → labels). |
+| `supabase/migrations/071_meter_event_outbox.sql` | 2026-06-12 audit, PENDING application — (1) new `stripe_meter_failures` table (service-role only: RLS enabled, no policies, client-role privileges revoked): durable outbox for failed Stripe Billing Meter overage posts, written by the Python agent, drained by `/api/cron/retry-meter-events`; columns id, tenant_id FK, call_id UNIQUE, stripe_customer_id, failure_reason, attempts, last_attempt_at, created_at + index on created_at; (2) outside the transaction: `ALTER TYPE activity_event_type ADD VALUE IF NOT EXISTS` for `integration_fetch` + `integration_fetch_fanout` — the Phase 58 telemetry values the Python agent has been writing since Phase 58; every such INSERT failed the enum cast silently (verified live: 0 rows ever written). Enum now 18 values. |
 
 ---
 
@@ -398,7 +405,7 @@ This allows webhook handlers (using the service role client) to read/write any t
 
 ## 5. Migration Trail
 
-All 66 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 and 019 documented in detail below; 018, 020–036 documented in the file map above with key migrations also detailed below; 052/058–066 documented in the file map above (Phase 54+, Phase 59, Phase 61, and prod-readiness 2026-06) with Phase 59 RPCs/enums detailed in their dedicated sections.
+All 71 migrations are applied sequentially. FK dependencies require this order. Migrations 001–017 and 019 documented in detail below; 018, 020–036 documented in the file map above with key migrations also detailed below; 052/058–071 documented in the file map above (Phase 54+, Phase 59, Phase 61, prod-readiness 2026-06, Phase 65 voice CHECK swap, 068 billing/security hardening, and 069–071 2026-06-12 audit: RPC/token lockdown, ai_voice labels, meter-event outbox) with Phase 59 RPCs/enums detailed in their dedicated sections.
 
 ### 001_initial_schema.sql — Foundation
 
@@ -912,7 +919,7 @@ WHERE tenant_id = p_tenant_id;
 
 Single-statement atomic swap so two providers cannot both be marked primary during a race window. Called by the calendar OAuth callback when the user (re)connects a provider and elects it as primary.
 
-**Lockdown:** `REVOKE ALL ON FUNCTION set_primary_calendar FROM PUBLIC; GRANT EXECUTE ... TO service_role;` — only service-role clients (server routes via `src/lib/supabase.js`) can invoke. Browser/SSR clients cannot.
+**Lockdown:** `REVOKE ALL ON FUNCTION set_primary_calendar FROM PUBLIC; GRANT EXECUTE ... TO service_role;` — intent: only service-role clients (server routes via `src/lib/supabase.js`) can invoke. **In practice this was ineffective until migration 069**: Supabase grants EXECUTE to anon/authenticated explicitly, so the PUBLIC-only revoke left the function anon-callable; 069's catalog-driven lockdown revoked those grants and pinned its `search_path`.
 
 No new tables. No RLS changes.
 
@@ -920,7 +927,7 @@ No new tables. No RLS changes.
 
 ### 044_ai_voice_column.sql — AI Voice Selection (Phase 44)
 
-> **Superseded by migration 067 (Phase 65):** the CHECK below was dropped and replaced with the OpenAI gpt-realtime voice set (`alloy, ash, ballad, coral, echo, sage, shimmer, verse, marin, cedar`), and every tenant's `ai_voice` was cleared to NULL. The text below documents the original Phase 44 state.
+> **Superseded twice:** migration 067 (Phase 65) replaced the CHECK below with the OpenAI gpt-realtime voice set and cleared all values to NULL; migration **070** (2026-06-12) then replaced 067's CHECK with the 3 stable **labels** — `professional`, `friendly`, `local_expert` (NULL allowed). The agent maps labels → ElevenLabs voice ids; the dashboard picker (`VALID_VOICES` in `src/lib/ai-voice-validation.js`) now validates against the labels. The text below documents the original Phase 44 state.
 
 **Extends tenants**: `ai_voice` (TEXT, nullable) — The chosen voice for the AI receptionist. NULL means fall back to `VOICE_MAP[tone_preset]` in the LiveKit agent.
 
@@ -1081,12 +1088,12 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `appointments` | 003 | Bookings with calendar event references | Tenant child |
 | `service_zones` | 003 | Geographic zones for travel buffers | Tenant child |
 | `zone_travel_buffers` | 003 | Travel time between zone pairs | Tenant child |
-| `calendar_credentials` | 003 | Google + Outlook OAuth tokens and sync state | Tenant child |
+| `calendar_credentials` | 003 | Google + Outlook OAuth tokens and sync state. 069: client-role table privileges REVOKED (plaintext tokens were owner-browser-readable) — effectively service-role only; tenant-own RLS policies remain but are unreachable for client roles | Tenant child (069: client privileges revoked) |
 | `calendar_events` | 003 | Local mirror of Google/Outlook events | Tenant child |
 | `calendar_blocks` | 046 | Personal time blocks (lunch, vacation, errands). Columns: id, tenant_id, title, start_time, end_time, is_all_day, note, external_event_id (047), group_id (048), created_at. 4 RLS policies. Syncs to Google/Outlook. Multi-day blocks share a group_id for bulk delete. | Tenant child |
 | `leads` | 004 | **DROPPED in 061** — CRM records (superseded by customers/jobs/inquiries) | — |
 | `lead_calls` | 004 | **DROPPED in 061** — Junction: many calls → one lead (superseded by customer_calls/job_calls) | — |
-| `activity_log` | 004 | Dashboard event feed — event_type now `activity_event_type` enum; customer_id/job_id/inquiry_id FKs; lead_id dropped | Tenant child |
+| `activity_log` | 004 | Dashboard event feed — event_type now `activity_event_type` enum; customer_id/job_id/inquiry_id FKs; lead_id dropped. 068: partial index `idx_activity_log_customer (customer_id) WHERE customer_id IS NOT NULL` (customer Activity tab + merge/unmerge repointing). | Tenant child |
 | `customers` | 059 | One row per (tenant_id, phone_e164). UNIQUE(tenant_id, phone_e164). Soft-delete via merged_into. Realtime FULL. | Tenant child |
 | `jobs` | 059 | One row per booked appointment. appointment_id NOT NULL UNIQUE (1:1 with appointments). Realtime FULL. | Tenant child |
 | `inquiries` | 059 | Unbooked calls. status: open/converted/lost. No cron/auto-timeout (D-07a). Realtime FULL. | Tenant child |
@@ -1094,8 +1101,8 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `job_calls` | 059 | Junction: call → job (only on job path). Composite PK (job_id, call_id). NOT in Realtime publication. | Via jobs.tenant_id |
 | `customer_merge_audit` | 059 | Permanent audit of all merges/unmerges. Retained forever. row_counts JSONB per-table. unmerged_at marks reversal without deleting row. | Tenant child |
 | `escalation_contacts` | 006 | Owner-configured escalation chain | Tenant child |
-| `subscriptions` | 010 | Stripe subscription state per tenant | Tenant child (SELECT-own only) |
-| `stripe_webhook_events` | 010 | Webhook idempotency (UNIQUE event_id) | Service role only |
+| `subscriptions` | 010 | Stripe subscription state per tenant. 068: partial UNIQUE `idx_subscriptions_one_current (tenant_id) WHERE is_current` — at most one current row per tenant (after dedupe). | Tenant child (SELECT-own only) |
+| `stripe_webhook_events` | 010 | Webhook idempotency (UNIQUE event_id) + `processed` flag (064) + `processing_started_at` atomic claim (068) | Service role only |
 | `phone_inventory` | 011 | Singapore phone number pool for tenant assignment | Service role only (no authenticated policies) |
 | `phone_inventory_waitlist` | 011 | Email waitlist for SG number availability | INSERT for anon+authenticated |
 | `admin_users` | 012 | Platform admin users — gates /admin/* routes | Authenticated SELECT-own only (user_id = auth.uid()) |
@@ -1103,9 +1110,9 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `billing_notifications` | 016 | Idempotent billing notification tracking (trial_will_end, payment_failed) | Service role only |
 | `invoice_settings` | 029 | Per-tenant invoice/estimate config: business info, tax rate, payment terms, late fees, prefixes | Tenant child |
 | `invoice_sequences` | 029 | Atomic invoice number counter (composite PK: tenant_id + year) | Tenant child |
-| `invoices` | 029 | Invoice records with status lifecycle, recurring support, and reminder tracking | Tenant child |
+| `invoices` | 029 | Invoice records with status lifecycle, recurring support, and reminder tracking. 068: `idx_invoices_job_id (job_id)` (customer Invoices tab JOIN). | Tenant child |
 | `invoice_line_items` | 029 | Line items per invoice: labor, materials, travel, flat_rate, discount, late_fee | Tenant child |
-| `accounting_credentials` | 030 | OAuth tokens for QuickBooks/Xero/FreshBooks per tenant | Tenant child |
+| `accounting_credentials` | 030 | OAuth tokens per tenant (provider CHECK narrowed to xero/jobber by 052). 069: client-role table privileges REVOKED (plaintext tokens were owner-browser-readable) — effectively service-role only | Tenant child (069: client privileges revoked) |
 | `accounting_sync_log` | 030 | Per-invoice sync status to accounting providers | Tenant child |
 | `estimate_sequences` | 030 | Atomic estimate number counter (composite PK: tenant_id + year) | Tenant child |
 | `estimates` | 030 | Estimate records with Good/Better/Best tiering and convert-to-invoice support | Tenant child |
@@ -1114,7 +1121,8 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 | `invoice_payments` | 031 | Payment log entries per invoice (partial payment support) | Tenant child |
 | `invoice_reminders` | 032 | Idempotent reminder tracking per invoice (UNIQUE invoice_id + reminder_type) | Tenant child |
 | `sms_messages` | 045 | Audit log of inbound SMS + forwarded copies to tenant's `pickup_numbers` with `sms_forward=true`. Columns: id, tenant_id, from_number, to_number, body, direction (CHECK IN 'inbound','forwarded'), created_at. Index on (tenant_id, created_at). RLS: SELECT-own only via tenants.owner_id. | Tenant child (SELECT-own only) |
-| `rate_limit_hits` | 065 | Durable fixed-window rate-limit counters for `/api/public-chat` + `/api/demo-voice` (replaces in-memory Maps). Columns: bucket, key, window_start, count (PK `(bucket, key, window_start)`). Index on (window_start) for cleanup cron. Incremented via `increment_rate_limit` RPC; pruned daily by `/api/cron/cleanup-rate-limits`. NOT tenant-scoped (no tenant_id). | Service role only (`service_role_all_rate_limit_hits`) |
+| `rate_limit_hits` | 065 | Durable fixed-window rate-limit counters (replaces in-memory Maps). Buckets in use: `/api/public-chat`, `/api/demo-voice`, `contact-ip` (`/api/contact`, per-IP 5/hr), `sms-verify-user` (`/api/onboarding/sms-verify`, per-user 5/hr). Columns: bucket, key, window_start, count (PK `(bucket, key, window_start)`). Index on (window_start) for cleanup cron. Incremented via `increment_rate_limit` RPC; pruned daily by `/api/cron/cleanup-rate-limits`. NOT tenant-scoped (no tenant_id). | Service role only (`service_role_all_rate_limit_hits`) |
+| `stripe_meter_failures` | 071 | Durable outbox for failed Stripe Billing Meter overage posts. Written by the Python agent (upsert on call_id), drained by `/api/cron/retry-meter-events` (re-post with `overage_{call_id}` identifier, delete on success, Sentry alert at 10 attempts). Columns: id, tenant_id FK, call_id UNIQUE, stripe_customer_id, failure_reason, attempts, last_attempt_at, created_at. | Service role only (RLS on, no policies, client privileges revoked) |
 
 **Tenant columns added across migrations** (all on `tenants` table):
 - 002: `tone_preset`, `trade_type`, `test_call_completed`, `working_hours`
@@ -1124,7 +1132,7 @@ Auto-detected completions (test-call succeeded, calendar connected, etc.) are NO
 - 015: `notification_preferences` (JSONB, per-outcome SMS/email toggles)
 - 023: `phone_number` (renamed from `retell_phone_number`)
 - 039: `call_forwarding_schedule` (JSONB), `pickup_numbers` (JSONB), `dial_timeout_seconds` (INTEGER)
-- 044: `ai_voice` (TEXT, nullable) — voice override; NULL = VOICE_MAP[tone_preset] fallback. **Phase 65 / migration 067** replaced the CHECK with the OpenAI voice set (IN 'alloy','ash','ballad','coral','echo','sage','shimmer','verse','marin','cedar') and cleared all values to NULL.
+- 044: `ai_voice` (TEXT, nullable) — voice override; NULL = tone-based fallback. **Phase 65 / migration 067** replaced the CHECK with the OpenAI voice set and cleared all values to NULL; **migration 070 (2026-06-12)** replaced that with the 3 stable labels (IN 'professional','friendly','local_expert') — the agent maps labels → ElevenLabs voice ids.
 - 049: `vip_numbers` (JSONB NOT NULL DEFAULT '[]') — standalone Priority-caller phone numbers (unlimited, no CHECK). Webhook reads this for direct-routing check before evaluating schedule/caps.
 - 050: `checklist_overrides` (JSONB NOT NULL DEFAULT '{}') — per-item user actions (dismiss, mark-done) on the dashboard setup checklist. Keyed by checklist item id; values carry `status` + timestamp. Consumed by `/api/setup-checklist` GET/PATCH. Auto-detected completions are NOT stored here (they're derived live).
 - 051: `features_enabled` (JSONB NOT NULL DEFAULT `'{"invoicing": false}'::jsonb`) — per-tenant feature flags (shape `{ invoicing: boolean, ... }`). Default ships invoicing OFF for v6.0; owners opt in at `/dashboard/more/features`. Read via `getTenantFeatures(tenantId)` in `src/lib/features.js`; extended in `src/proxy.js` tenant SELECT alongside `onboarding_complete`. JSONB filter for crons: `.eq('features_enabled->>invoicing', 'true')` — value is the string `'true'`, not the boolean.
@@ -1303,7 +1311,7 @@ Fixes the OAuth concurrent-refresh race documented in backlog Phase 999.5. Witho
 
 PRIMARY KEY `(tenant_id, provider)` — exactly one active lease per (tenant, provider) pair.
 
-**RLS:** Not enabled. Only the service-role client (via `refreshTokenIfNeeded` in `src/lib/integrations/adapter.js`) ever touches this table. Intentionally left off so a future tightening doesn't accidentally block service-role writes.
+**RLS:** Enabled by migration 068 with **no policies** — service_role bypasses RLS, so the only legitimate caller (`refreshTokenIfNeeded` in `src/lib/integrations/adapter.js`, service-role client) is unaffected, while anon/authenticated are fully blocked. (Migration 058 originally shipped with RLS off.) 068 also REVOKEs EXECUTE on both RPCs below from PUBLIC/anon/authenticated and GRANTs to service_role — Postgres's default grants had left them executable by any role. Migration 069 additionally pins `search_path = public, pg_temp` on both lock RPCs (advisor-flagged).
 
 **RPC: `try_acquire_oauth_refresh_lock(p_tenant_id uuid, p_provider text, p_ttl_ms int DEFAULT 30000) → UUID`**
 
@@ -1537,6 +1545,8 @@ customer_created    customer_updated    customer_merged     customer_unmerged
 invoice_created     invoice_paid        invoice_voided      other
 ```
 
+**+2 values added by migration 071 (2026-06-12) — now 18 total**: `integration_fetch` and `integration_fetch_fanout`. The Python agent's Phase 58 integration telemetry had been INSERTing these since Phase 58, but every insert failed the enum cast silently (verified live: 0 rows ever written). `ALTER TYPE ... ADD VALUE IF NOT EXISTS` sits outside 071's transaction (Postgres restriction).
+
 **Usage**: Insert via `'event_name'::activity_event_type`. Postgres enforces at the TYPE level — invalid values raise an error. Event-specific payload in `activity_log.metadata` JSONB.
 
 ---
@@ -1560,9 +1570,9 @@ invoice_created     invoice_paid        invoice_voided      other
 
 ---
 
-## Prod-Readiness 2026-06: Migrations (063 / 064 / 065 / 066)
+## Prod-Readiness 2026-06: Migrations (063 / 064 / 065 / 066 / 068)
 
-Four additive, forward-fix-only migrations landed on branch `fix/prod-readiness-2026-06`. Full file-map entries above; the new table + RPC are detailed here in the same style as the Phase 59 RPC section.
+Four additive, forward-fix-only migrations landed on branch `fix/prod-readiness-2026-06`; migration 068 followed as the 2026-06 audit's billing/security hardening pass. Full file-map entries above; the new table + RPC are detailed here in the same style as the Phase 59 RPC section.
 
 | Migration | Purpose |
 |-----------|---------|
@@ -1570,6 +1580,12 @@ Four additive, forward-fix-only migrations landed on branch `fix/prod-readiness-
 | `064_webhook_event_status.sql` | ADD `stripe_webhook_events.processed boolean NOT NULL DEFAULT false`. Atomic webhook idempotency — completion gated on `processed=true`. No backfill. |
 | `065_rate_limit.sql` | CREATE `rate_limit_hits` table + `idx_rate_limit_hits_window_start` + service-role-only RLS + `increment_rate_limit` SECURITY DEFINER RPC. Durable fixed-window rate limiting. |
 | `066_calls_call_sid_unique.sql` | De-dupe call_sid rows → `DROP INDEX idx_calls_call_sid` (045) → `ADD CONSTRAINT calls_call_sid_unique UNIQUE (call_sid)`. One row per Twilio CallSid. |
+| `068_billing_and_security_hardening.sql` | (1) Dedupe duplicate `is_current` subscription rows per tenant; (2) partial UNIQUE `idx_subscriptions_one_current ON subscriptions(tenant_id) WHERE is_current`; (3) `oauth_refresh_locks` ENABLE RLS (no policies) + REVOKE EXECUTE on both lock RPCs from PUBLIC/anon/authenticated; (4) hot-path indexes: `idx_activity_log_customer` (partial), `idx_invoices_job_id`, `idx_appointments_external_event_id` (partial), `idx_calendar_blocks_external_event_id` (partial); (5) ADD `stripe_webhook_events.processing_started_at timestamptz` — atomic webhook processing claim. See `payment-architecture` skill for the webhook claim flow + unmark-before-insert ordering it requires. |
+
+### Rate-limited routes added 2026-06-10 (on the 065 infrastructure)
+
+- **`/api/contact`** — per-IP `checkRateLimit({ bucket: 'contact-ip', key: <x-forwarded-for first hop / x-real-ip / 'unknown'>, limit: 5, windowSeconds: 3600 })` before any work; 429 on exceed; fails open on limiter outage.
+- **`/api/onboarding/sms-verify`** — per-user `checkRateLimit({ bucket: 'sms-verify-user', key: user.id, limit: 5, windowSeconds: 3600 })` (anti SMS-pumping), then validates/normalizes the phone via `normalizeE164` (`src/lib/phone/normalize.js`) — invalid numbers get 400 before `signInWithOtp` is ever called.
 
 ### `rate_limit_hits` table + `increment_rate_limit` RPC (Migration 065)
 
@@ -1598,6 +1614,28 @@ RETURNING count;
 - Atomic upsert-and-increment — returns the new count for the current window in one round-trip.
 - Lockdown follows `027_lock_rpc_functions.sql`: `REVOKE EXECUTE ... FROM public; GRANT EXECUTE ... TO service_role`.
 - **Cleanup**: a daily cron `/api/cron/cleanup-rate-limits` prunes rows older than the retention window via the `window_start` index. Rows are disposable.
+
+---
+
+## 2026-06-12 Audit: Migrations (069 / 070 / 071)
+
+Three forward-fix-only migrations from the 2026-06-12 audit wave 1. **PENDING manual application along with 068** — apply in order. Full file-map entries above.
+
+### 069_rpc_and_token_lockdown.sql — RPC + OAuth-token lockdown
+
+**Section 1 — SECURITY DEFINER RPC lockdown.** Supabase grants EXECUTE on every new public function to `anon` and `authenticated` EXPLICITLY, so the `REVOKE ... FROM PUBLIC` in migrations 027/033/062/065 was a no-op against those grants. Verified live (2026-06-12): all 7 SECURITY DEFINER functions — `book_appointment_atomic`, `record_call_outcome`, `merge_customer`, `unmerge_customer`, `set_primary_calendar`, `assign_sg_number`, `increment_rate_limit` — were executable by the anon role via `/rest/v1/rpc/*` with the public anon key (cross-tenant appointment injection, SG inventory drain, CRM corruption, rate-limiter poisoning). A **catalog-driven DO block** (`pg_proc WHERE prosecdef` in schema public) REVOKEs from PUBLIC/anon/authenticated, GRANTs to service_role, and pins `search_path = public, pg_temp` on each — exact signatures always correct, idempotent, and future SECURITY DEFINER functions get covered on re-run. Every caller in both repos uses the service-role client, so nothing breaks.
+
+**Section 2 — search_path pinning for advisor-flagged SECURITY INVOKER functions**: `set_updated_at`, `increment_calls_used`, `get_next_invoice_number`, `get_next_estimate_number`, `try_acquire_oauth_refresh_lock`, `release_oauth_refresh_lock`. No privilege changes except `increment_calls_used`, which additionally gets the anon/authenticated EXECUTE revoke (sole caller is the Python agent's service-role client).
+
+**Section 3 — OAuth token tables locked to service_role**: `REVOKE ALL ON accounting_credentials, calendar_credentials FROM anon, authenticated`. Both store `access_token`/`refresh_token` as plaintext and had tenant-own RLS policies + authenticated table grants — a logged-in owner's browser session (or any XSS in it) could SELECT live OAuth tokens via PostgREST. No browser-side code reads either table (verified), so revoking client-role privileges breaks nothing. The tenant-own RLS policies remain but are unreachable for client roles.
+
+### 070_ai_voice_labels.sql — ai_voice label CHECK
+
+Drops 067's OpenAI-name CHECK on `tenants.ai_voice`, clears any non-label values to NULL (live DB already all NULL), and adds `CHECK (ai_voice IS NULL OR ai_voice IN ('professional', 'friendly', 'local_expert'))`. The Phase 66 cascade agent resolves `ai_voice` as a stable label via `ELEVENLABS_VOICE_MAP` and silently falls back to the tone-preset voice for anything else — under 067's CHECK the picker wrote OpenAI names the agent ignored (silent no-op) and a label-writing picker would have 500'd on the CHECK. This migration realizes the "migration 068 stores labels" that agent code comments referenced (068 turned out to be billing hardening). **Deploy before the main-repo picker change** (`src/lib/ai-voice-validation.js` `VALID_VOICES` → labels); the agent needs no coordination.
+
+### 071_meter_event_outbox.sql — meter-failure outbox + enum values
+
+Creates `stripe_meter_failures` (see Complete Table Reference) — the durable outbox that makes failed Stripe Billing Meter overage posts recoverable (`increment_calls_used` has already consumed the call_id, so the post-call pipeline could never retry; see `payment-architecture` skill for the outbox/cron flow). Service-role only: RLS enabled with no policies + client-role privileges revoked. Outside the transaction (Postgres can't `ALTER TYPE ... ADD VALUE` in the same transaction that uses it): adds `integration_fetch` + `integration_fetch_fanout` to `activity_event_type` (both `IF NOT EXISTS` — file re-runnable), unblocking the Phase 58 integration telemetry inserts that had silently failed the enum cast since Phase 58.
 
 ---
 

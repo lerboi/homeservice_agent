@@ -123,6 +123,81 @@ describe('Google Calendar provider filter (D-08)', () => {
       expect(credChain.eq).toHaveBeenCalledWith('provider', 'google');
       expect(credChain.eq).toHaveBeenCalledWith('tenant_id', 'tenant-1');
     });
+
+    test('follows nextPageToken until nextSyncToken arrives and persists the final token', async () => {
+      const credChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            access_token: 'acc',
+            refresh_token: 'ref',
+            expiry_date: 9999999999999,
+            calendar_id: 'primary',
+            last_sync_token: 'stored-tok',
+          },
+          error: null,
+        }),
+      };
+
+      const updateChain = {
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+      };
+
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
+
+      let callCount = 0;
+      mockFromImpl = (table) => {
+        if (table === 'calendar_credentials') {
+          callCount++;
+          if (callCount === 1) return credChain;
+          return updateChain;
+        }
+        if (table === 'calendar_events') {
+          return { upsert: upsertMock };
+        }
+        return createTrackedChain(table);
+      };
+
+      // Google returns nextSyncToken only on the LAST page — page 1 carries
+      // only a nextPageToken, page 2 carries the sync token.
+      mockEventsList
+        .mockResolvedValueOnce({
+          data: {
+            items: [
+              { id: 'evt-1', summary: 'Page 1', start: { dateTime: '2026-03-23T10:00:00Z' }, end: { dateTime: '2026-03-23T11:00:00Z' } },
+            ],
+            nextPageToken: 'page-2',
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            items: [
+              { id: 'evt-2', summary: 'Page 2', start: { dateTime: '2026-03-24T10:00:00Z' }, end: { dateTime: '2026-03-24T11:00:00Z' } },
+            ],
+            nextSyncToken: 'final-sync-token',
+          },
+        });
+
+      await syncCalendarEvents('tenant-pg');
+
+      // Both pages requested, second one with the page token
+      expect(mockEventsList).toHaveBeenCalledTimes(2);
+      expect(mockEventsList.mock.calls[1][0]).toEqual(
+        expect.objectContaining({ syncToken: 'stored-tok', pageToken: 'page-2' })
+      );
+
+      // Items from BOTH pages upserted to the mirror
+      const upserted = upsertMock.mock.calls[0][0];
+      expect(upserted).toHaveLength(2);
+      expect(upserted.map((e) => e.external_id)).toEqual(['evt-1', 'evt-2']);
+
+      // Final-page sync token persisted
+      expect(updateChain.update).toHaveBeenCalledWith(
+        expect.objectContaining({ last_sync_token: 'final-sync-token' })
+      );
+    });
   });
 
   describe('revokeAndDisconnect', () => {

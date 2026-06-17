@@ -64,9 +64,29 @@ export async function POST(request) {
       );
     }
 
+    // 4b. Guard: never create a second subscription while one is live.
+    // A replayed/duplicated checkout step would double-bill the tenant.
+    const { data: existingSub } = await adminSupabase
+      .from('subscriptions')
+      .select('status')
+      .eq('tenant_id', tenant.id)
+      .eq('is_current', true)
+      .maybeSingle();
+
+    if (existingSub && ['active', 'trialing', 'past_due'].includes(existingSub.status)) {
+      return NextResponse.json(
+        { error: 'An active subscription already exists for this account.' },
+        { status: 409 }
+      );
+    }
+
     // 5. Build line items — flat-rate plan only.
     // Metered overage price is added post-checkout in the webhook handler
-    // because Checkout doesn't support mixing different billing intervals.
+    // because Checkout doesn't support mixing different billing intervals in
+    // its line_items. Annual subscriptions must be created in flexible billing
+    // mode (2025-06-30.basil+) or the webhook's monthly-overage attach is
+    // rejected ("All prices on a subscription must have the same
+    // recurring.interval") — verified in test mode 2026-06-12.
     const lineItems = [{ price: priceId, quantity: 1 }];
 
     // 6. Create Stripe Checkout Session
@@ -77,14 +97,18 @@ export async function POST(request) {
       subscription_data: {
         trial_period_days: 14,
         metadata: { tenant_id: tenant.id }, // Critical: webhook uses this to find tenant
+        ...(interval === 'annual' ? { billing_mode: { type: 'flexible' } } : {}),
       },
       customer_email: tenant.owner_email,
       metadata: { tenant_id: tenant.id }, // On session too for checkout.session.completed
     };
 
     if (embedded) {
-      // Embedded checkout — returns client_secret, uses return_url
-      sessionConfig.ui_mode = 'embedded_page';
+      // Embedded checkout — returns client_secret, uses return_url.
+      // 'embedded' is the Basil enum; 'embedded_page' exists only on
+      // 2026-03-25.dahlia and is rejected under our Basil pin (verified in
+      // test mode 2026-06-12 — the prior value broke session creation).
+      sessionConfig.ui_mode = 'embedded';
       sessionConfig.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/onboarding/checkout?session_id={CHECKOUT_SESSION_ID}`;
     } else {
       // Hosted checkout — returns url, uses success_url/cancel_url

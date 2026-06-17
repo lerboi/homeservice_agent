@@ -214,6 +214,10 @@
   --color-landing-light-text: #F5F5F5;
   --color-landing-muted-text: #71717A;
   --sidebar-bg: #0F172A;
+  /* Hairline between the desktop sidebar and page content. Transparent in
+     light mode (the navy panel needs no border on white); visible in dark
+     mode where sidebar and content share the neutral dark family. */
+  --sidebar-bg-border: transparent;
   --brand-accent: #C2410C;
   --brand-accent-hover: #B53B0A;
   --brand-accent-fg: #FFFFFF;
@@ -256,7 +260,12 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0.268 264.531);
-  --sidebar-bg: #0F172A;
+  /* Dark mode: the sidebar joins the neutral zero-chroma family of the
+     content — one elevation step above --background (0.145) and below
+     --card (0.205) — instead of the light-mode navy (#0F172A), which
+     clashed with the neutral dark surfaces. */
+  --sidebar-bg: oklch(0.185 0 0);
+  --sidebar-bg-border: oklch(1 0 0 / 8%);
   --brand-accent: #FB923C;
   --brand-accent-hover: #F97316;
   --brand-accent-fg: #0F172A;
@@ -285,5 +294,12 @@
         background-color 150ms ease,
         color 150ms ease;
     }
+  }
+  /* Desktop sidebar hairline — scoped to the aside's stable data-tour
+     attribute so DashboardSidebar.jsx needs no border class. Transparent in
+     light mode, oklch(1 0 0 / 8%) in dark (see --sidebar-bg-border tokens).
+     border-box sizing keeps the 240px sidebar width unchanged. */
+  aside[data-tour="sidebar-nav"] {
+    border-right: 1px solid var(--sidebar-bg-border);
   }
 }

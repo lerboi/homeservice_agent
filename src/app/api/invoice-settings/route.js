@@ -74,7 +74,8 @@ export async function GET() {
  * Updates invoice_settings for the current tenant.
  *
  * Allowed fields: business_name, address, phone, email, logo_url,
- *   license_number, tax_rate, payment_terms, default_notes, invoice_prefix
+ *   license_number, tax_rate, payment_terms, default_notes, invoice_prefix,
+ *   late_fee_enabled, late_fee_type, late_fee_amount
  *
  * Validations:
  *   - tax_rate: number 0–1 (e.g. 0.0825 = 8.25%)
@@ -111,6 +112,11 @@ export async function PATCH(request) {
     'payment_terms',
     'default_notes',
     'invoice_prefix',
+    // Late-fee settings (migration 032). Previously omitted from the allowlist,
+    // so the Late Fees section of the settings page saved silently to nothing.
+    'late_fee_enabled',
+    'late_fee_type',
+    'late_fee_amount',
   ];
 
   const VALID_PAYMENT_TERMS = ['Net 15', 'Net 30', 'Net 45', 'Net 60'];
@@ -141,6 +147,27 @@ export async function PATCH(request) {
     if (!/^[a-zA-Z0-9]{1,10}$/.test(body.invoice_prefix)) {
       return Response.json(
         { error: 'invoice_prefix must be 1–10 alphanumeric characters' },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate late_fee_type (DB CHECK allows only these two)
+  if (body.late_fee_type !== undefined) {
+    if (!['flat', 'percentage'].includes(body.late_fee_type)) {
+      return Response.json(
+        { error: "late_fee_type must be 'flat' or 'percentage'" },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate late_fee_amount
+  if (body.late_fee_amount !== undefined) {
+    const amount = Number(body.late_fee_amount);
+    if (isNaN(amount) || amount < 0) {
+      return Response.json(
+        { error: 'late_fee_amount must be a number greater than or equal to 0' },
         { status: 400 }
       );
     }

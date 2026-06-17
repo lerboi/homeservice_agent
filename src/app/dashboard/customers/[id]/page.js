@@ -57,7 +57,6 @@ export default function CustomerDetailPage() {
   const [tenantId, setTenantId] = useState(null);
 
   // UnmergeBanner
-  const recentlyMerged = searchParams.get('recently_merged') === '1';
   const auditId = searchParams.get('audit_id');
 
   // JobFlyout state
@@ -72,13 +71,20 @@ export default function CustomerDetailPage() {
 
   // ── Fetch customer detail ─────────────────────────────────────────────────
 
+  // In-flight detail fetch — aborted when a newer fetch supersedes it so a
+  // fast customer-to-customer navigation can't paint a stale record.
+  const abortRef = useRef(null);
+
   const fetchCustomer = useCallback(async () => {
     if (!customerId) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setFetchError(false);
     setNotFound(false);
     try {
-      const res = await fetch(`/api/customers/${customerId}?include_activity=1`);
+      const res = await fetch(`/api/customers/${customerId}?include_activity=1`, { signal: controller.signal });
       if (res.status === 404) {
         setNotFound(true);
         return;
@@ -88,12 +94,18 @@ export default function CustomerDetailPage() {
       setCustomer(data.customer);
       setStats(data.stats);
       setActivity(data.activity || []);
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer fetch
       setFetchError(true);
     } finally {
-      setLoading(false);
+      // Only the owning fetch may clear the flag — a superseded fetch's
+      // finally must not stomp the newer fetch's in-progress state.
+      if (abortRef.current === controller) setLoading(false);
     }
   }, [customerId]);
+
+  // Abort the in-flight fetch on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // ── Fetch scoped jobs ─────────────────────────────────────────────────────
 
@@ -169,8 +181,24 @@ export default function CustomerDetailPage() {
   // ── Realtime subscriptions (D-15) ─────────────────────────────────────────
   // 3 subscriptions: customers (single row), jobs by customer_id, inquiries by customer_id
 
+  // Shared across the page's channels — they ride the same socket, so after a
+  // drop the first successful resubscribe refetches everything (events for any
+  // of the three tables may have been missed while disconnected).
+  const wasDisconnectedRef = useRef(false);
+
   useEffect(() => {
     if (!tenantId || !customerId) return;
+
+    const handleChannelStatus = (status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        wasDisconnectedRef.current = true;
+      } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+        wasDisconnectedRef.current = false;
+        fetchCustomer();
+        fetchJobs();
+        fetchInquiries();
+      }
+    };
 
     // Subscription 1: customers — single row update
     const customerChannel = supabase
@@ -183,7 +211,7 @@ export default function CustomerDetailPage() {
       }, (payload) => {
         setCustomer((prev) => prev ? { ...prev, ...payload.new } : payload.new);
       })
-      .subscribe();
+      .subscribe(handleChannelStatus);
 
     // Subscription 2: jobs by customer_id
     const jobsChannel = supabase
@@ -193,8 +221,10 @@ export default function CustomerDetailPage() {
         schema: 'public',
         table: 'jobs',
         filter: `customer_id=eq.${customerId}`,
-      }, (payload) => {
-        setJobs((prev) => [payload.new, ...(prev || [])]);
+      }, () => {
+        // The realtime payload lacks the joins the API rows carry, so refetch
+        // instead of prepending a bare row.
+        fetchJobs();
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -206,7 +236,7 @@ export default function CustomerDetailPage() {
           (prev || []).map((j) => j.id === payload.new.id ? { ...j, ...payload.new } : j)
         );
       })
-      .subscribe();
+      .subscribe(handleChannelStatus);
 
     // Subscription 3: inquiries by customer_id
     const inquiriesChannel = supabase
@@ -216,8 +246,9 @@ export default function CustomerDetailPage() {
         schema: 'public',
         table: 'inquiries',
         filter: `customer_id=eq.${customerId}`,
-      }, (payload) => {
-        setInquiries((prev) => [payload.new, ...(prev || [])]);
+      }, () => {
+        // Same join gap as jobs — refetch for fully-hydrated rows.
+        fetchInquiries();
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -229,14 +260,14 @@ export default function CustomerDetailPage() {
           (prev || []).map((inq) => inq.id === payload.new.id ? { ...inq, ...payload.new } : inq)
         );
       })
-      .subscribe();
+      .subscribe(handleChannelStatus);
 
     return () => {
       supabase.removeChannel(customerChannel);
       supabase.removeChannel(jobsChannel);
       supabase.removeChannel(inquiriesChannel);
     };
-  }, [tenantId, customerId]);
+  }, [tenantId, customerId, fetchCustomer, fetchJobs, fetchInquiries]);
 
   // ── Tab change handler ────────────────────────────────────────────────────
 
@@ -328,14 +359,14 @@ export default function CustomerDetailPage() {
         integrationCredentials={integrationCredentials}
       />
 
-      {/* UnmergeBanner — appears when navigating from merge flow */}
-      {(recentlyMerged || customer?.merged_source_info) && (
-        <UnmergeBanner
-          customerId={customerId}
-          customer={customer}
-          auditId={auditId}
-        />
-      )}
+      {/* UnmergeBanner — self-detects active merges via /api/admin/merges and
+          renders nothing when there is no recent merge to surface */}
+      <UnmergeBanner
+        customerId={customerId}
+        customer={customer}
+        auditId={auditId}
+      />
+
 
       {/* Tab content */}
       <div className={`${card.base} mt-4`}>

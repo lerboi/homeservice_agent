@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Wrench, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -62,7 +63,6 @@ const DEFAULT_FILTERS = {
   dateFrom: '',
   dateTo: '',
   search: '',
-  jobType: '',
 };
 
 // Status is applied client-side so we can show accurate per-status counts
@@ -73,7 +73,6 @@ function buildQueryString(filters) {
   if (filters.dateFrom) params.set('date_from', filters.dateFrom);
   if (filters.dateTo) params.set('date_to', filters.dateTo);
   if (filters.search) params.set('search', filters.search);
-  if (filters.jobType) params.set('job_type', filters.jobType);
   return params.toString();
 }
 
@@ -116,7 +115,6 @@ export default function JobsPage() {
     dateFrom: searchParams.get('date_from') || '',
     dateTo: searchParams.get('date_to') || '',
     search: searchParams.get('search') || '',
-    jobType: searchParams.get('job_type') || '',
   }));
 
   // Sync filters to URL search params (skip initial mount)
@@ -132,7 +130,6 @@ export default function JobsPage() {
     if (filters.dateFrom) params.set('date_from', filters.dateFrom);
     if (filters.dateTo) params.set('date_to', filters.dateTo);
     if (filters.search) params.set('search', filters.search);
-    if (filters.jobType) params.set('job_type', filters.jobType);
     // Preserve the 'open' param if present
     const openParam = searchParams.get('open');
     if (openParam) params.set('open', openParam);
@@ -172,12 +169,19 @@ export default function JobsPage() {
 
   // ── Fetch jobs from /api/jobs ─────────────────────────────────────────────
 
+  // In-flight jobs fetch — aborted when a newer fetch supersedes it so rapid
+  // filter changes can't resolve out of order and paint a stale list.
+  const abortRef = useRef(null);
+
   const fetchJobs = useCallback(async (activeFilters) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
     try {
       const qs = buildQueryString(activeFilters);
-      const res = await fetch(`/api/jobs${qs ? `?${qs}` : ''}`);
+      const res = await fetch(`/api/jobs${qs ? `?${qs}` : ''}`, { signal: controller.signal });
       if (!res.ok) throw new Error('Failed to load jobs');
       const data = await res.json();
       // Sort by urgency: emergency first, then urgent, then routine
@@ -189,18 +193,26 @@ export default function JobsPage() {
         return new Date(b.created_at) - new Date(a.created_at);
       });
       setJobs(sorted);
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer fetch
       setError("We couldn't load your jobs. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      // Only the owning fetch may clear the flag — a superseded fetch's
+      // finally must not stomp the newer fetch's in-progress state.
+      if (abortRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, []);
+
+  // Abort the in-flight fetch on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Only refetch when server-side filters change. Status is applied client-side,
   // so toggling status pills doesn't trigger a network round-trip / loading flash.
   const serverQueryKey = useMemo(
     () => buildQueryString(filters),
-    [filters.urgency, filters.dateFrom, filters.dateTo, filters.search, filters.jobType] // eslint-disable-line react-hooks/exhaustive-deps
+    [filters.urgency, filters.dateFrom, filters.dateTo, filters.search] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -227,11 +239,15 @@ export default function JobsPage() {
   }, [jobIdKey]);
 
   // ── Supabase Realtime subscription — subscribed to `jobs` table (D-15) ──
-  // Use a ref for filters so the INSERT callback reads the latest values
+  // Use a ref for filters so the channel callbacks read the latest values
   // without including filters in the effect deps (which would destroy and
   // recreate the WebSocket channel on every filter change).
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
+
+  // Tracks disconnects so a successful resubscribe triggers a refetch of
+  // whatever was missed while the channel was down.
+  const wasDisconnectedRef = useRef(false);
 
   useEffect(() => {
     if (!tenantId) return;
@@ -246,18 +262,10 @@ export default function JobsPage() {
           table: 'jobs',
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {
-          const newJob = { ...payload.new, _isNew: true };
-          const f = filtersRef.current;
-          // Status is applied client-side (via pill strip), so don't filter INSERTs by status here.
-          const matchesServerFilters = (
-            (!f.urgency || f.urgency === newJob.urgency) &&
-            (!f.jobType || f.jobType === newJob.job_type) &&
-            (!f.search || (newJob.caller_name || '').toLowerCase().includes(f.search.toLowerCase()))
-          );
-          if (matchesServerFilters) {
-            setJobs((prev) => [newJob, ...prev]);
-          }
+        () => {
+          // The realtime payload lacks the customer/appointment/calls joins
+          // the API rows carry, so refetch instead of prepending a bare row.
+          fetchJobs(filtersRef.current);
         }
       )
       .on(
@@ -276,12 +284,19 @@ export default function JobsPage() {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          wasDisconnectedRef.current = true;
+        } else if (status === 'SUBSCRIBED' && wasDisconnectedRef.current) {
+          wasDisconnectedRef.current = false;
+          fetchJobs(filtersRef.current);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tenantId]);
+  }, [tenantId, fetchJobs]);
 
   // ── Client-side status filtering + pipeline counts ─────────────────────
   const pipelineCounts = useMemo(() => {
@@ -348,8 +363,9 @@ export default function JobsPage() {
         router.push(`/dashboard/invoices/batch-review?ids=${invoiceIds.join(',')}`);
       }
     } catch {
-      setError("Couldn't create batch invoices. Try again.");
-      setTimeout(() => setError(null), 5000);
+      // Batch failure must NOT replace the whole list with the page-level
+      // ErrorState — surface it as a toast instead (selection is preserved).
+      toast.error("Couldn't create batch invoices. Try again.");
     } finally {
       setBatchCreating(false);
     }
@@ -523,8 +539,8 @@ export default function JobsPage() {
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {selectedJobDetails.map((job) => (
                     <div key={job.id} className="flex items-center justify-between text-sm px-3 py-2 rounded-lg bg-muted">
-                      <span className="font-medium text-foreground truncate">{job.customer?.name || job.caller_name || job.from_number || 'Unknown'}</span>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{job.job_type || '—'}</span>
+                      <span className="font-medium text-foreground truncate">{job.customer?.name || 'Unknown'}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-2 truncate max-w-[180px]">{job.appointment?.service_address || '—'}</span>
                     </div>
                   ))}
                 </div>

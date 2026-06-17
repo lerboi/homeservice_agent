@@ -172,11 +172,11 @@ export default function NotificationPreferences() {
       )}
 
       {/* Emergency override notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
-        <ShieldAlert className="size-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 dark:border-amber-800/60 dark:bg-amber-950/40 px-4 py-3">
+        <ShieldAlert className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-amber-900">Emergency override</p>
-          <p className="text-xs text-amber-700 mt-0.5">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Emergency override</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
             Emergency calls always trigger both SMS and email notifications regardless of these settings.
           </p>
         </div>

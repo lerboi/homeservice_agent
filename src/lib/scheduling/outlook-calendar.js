@@ -55,7 +55,13 @@ async function graphFetch(urlOrPath, accessToken, options = {}) {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
-    throw new Error(`Graph API ${res.status}: ${error.error?.message || res.statusText}`);
+    const err = new Error(`Graph API ${res.status}: ${error.error?.message || res.statusText}`);
+    // Structured status so callers can branch on 410 (expired delta token →
+    // full resync) and 404 (dead subscription → recreate) without parsing the
+    // message string.
+    err.status = res.status;
+    err.graphErrorCode = error.error?.code || null;
+    throw err;
   }
 
   return res.json();
@@ -80,23 +86,35 @@ export async function getOutlookAuthUrl(state) {
 }
 
 /**
- * Exchange authorization code for tokens via MSAL.
+ * Exchange authorization code for tokens via direct HTTP POST.
+ * MSAL's acquireTokenByCode never exposes the refresh token on its
+ * AuthenticationResult, so we hit the token endpoint directly — same
+ * endpoint/credentials/scope pattern as refreshOutlookAccessToken below.
  * @param {string} code - Authorization code from OAuth callback
- * @returns {Promise<{ accessToken: string, account: object }>}
+ * @returns {Promise<{ access_token: string, refresh_token: string, expires_in: number }>}
  */
 export async function exchangeCodeForTokens(code) {
-  const msalClient = getMsalClient();
-  const tokenResponse = await msalClient.acquireTokenByCode({
+  const params = new URLSearchParams({
+    client_id: process.env.MICROSOFT_CLIENT_ID,
+    client_secret: process.env.MICROSOFT_CLIENT_SECRET,
     code,
-    scopes: SCOPES,
-    redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/outlook-calendar/callback`,
+    grant_type: 'authorization_code',
+    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/outlook-calendar/callback`,
+    scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access',
   });
 
-  return {
-    accessToken: tokenResponse.accessToken,
-    refreshToken: tokenResponse.refreshToken,
-    account: tokenResponse.account,
-  };
+  const res = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`Token exchange failed: ${error.error_description || error.error}`);
+  }
+
+  return res.json();
 }
 
 /**
@@ -264,16 +282,25 @@ export async function syncOutlookCalendarEvents(tenantId) {
 
   const accessToken = await getValidAccessToken(creds);
 
+  // Initial/full sync URL — calendarView/delta with date range (Pitfall 2).
+  // Built lazily so a 410 recovery re-anchors the window to "now", the same
+  // way Google's 410 fallback re-anchors its timeMin/timeMax.
+  const buildFullSyncUrl = () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+    const sixMonths = new Date(Date.now() + 180 * 86400000).toISOString();
+    return `${GRAPH_BASE}/me/calendarView/delta?startDateTime=${thirtyDaysAgo}&endDateTime=${sixMonths}`;
+  };
+
   // Determine sync URL
   let url;
+  let isFullSync;
   if (creds.last_sync_token) {
     // Incremental sync using stored deltaLink (store FULL URL per anti-pattern warning)
     url = creds.last_sync_token;
+    isFullSync = false;
   } else {
-    // Initial full sync — use calendarView/delta with date range (Pitfall 2)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-    const sixMonths = new Date(Date.now() + 180 * 86400000).toISOString();
-    url = `${GRAPH_BASE}/me/calendarView/delta?startDateTime=${thirtyDaysAgo}&endDateTime=${sixMonths}`;
+    url = buildFullSyncUrl();
+    isFullSync = true;
   }
 
   let allEvents = [];
@@ -281,7 +308,37 @@ export async function syncOutlookCalendarEvents(tenantId) {
 
   // Page through results
   while (url) {
-    const data = await graphFetch(url, accessToken);
+    let data;
+    try {
+      data = await graphFetch(url, accessToken);
+    } catch (err) {
+      // Graph delta tokens expire/invalidate (410 Gone). Before this recovery
+      // existed, one expired deltaLink froze the Outlook mirror FOREVER —
+      // every subsequent webhook/manual sync re-threw on the same dead token
+      // (2026-06-12 audit H6). Mirror Google's 410 handling: drop the token,
+      // wipe the provider mirror (the delta baseline is lost, so deletions
+      // that happened while the token was invalid would otherwise leave
+      // phantom busy rows), and restart as a full sync with a fresh window.
+      if (err.status === 410 && !isFullSync) {
+        console.warn(`[outlook-sync] 410 Gone for tenant ${tenantId} — clearing delta token, full resync`);
+        await supabase
+          .from('calendar_credentials')
+          .update({ last_sync_token: null })
+          .eq('tenant_id', tenantId)
+          .eq('provider', 'outlook');
+        await supabase
+          .from('calendar_events')
+          .delete()
+          .eq('tenant_id', tenantId)
+          .eq('provider', 'outlook');
+        url = buildFullSyncUrl();
+        isFullSync = true;
+        allEvents = [];
+        deltaLink = null;
+        continue;
+      }
+      throw err;
+    }
     allEvents.push(...(data.value || []));
     url = data['@odata.nextLink'] || null;
     if (data['@odata.deltaLink']) {
@@ -359,12 +416,27 @@ export async function renewOutlookSubscription(cred) {
   const accessToken = await getValidAccessToken(cred);
   const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  await graphFetch(`/subscriptions/${cred.watch_channel_id}`, accessToken, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      expirationDateTime: newExpiry.toISOString(),
-    }),
-  });
+  try {
+    await graphFetch(`/subscriptions/${cred.watch_channel_id}`, accessToken, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        expirationDateTime: newExpiry.toISOString(),
+      }),
+    });
+  } catch (err) {
+    // Graph deletes subscriptions the moment they expire; PATCHing a dead one
+    // 404s. The renewal cron used to retry the same dead PATCH daily forever,
+    // permanently killing push for that tenant (2026-06-12 audit H6). Google's
+    // renewal is resilient because it re-registers a fresh channel — do the
+    // same here: create a brand-new subscription (it persists the new id +
+    // expiration itself).
+    if (err.status === 404) {
+      console.warn(`[outlook-renew] Subscription ${cred.watch_channel_id} gone for tenant ${cred.tenant_id} — creating a fresh one`);
+      await createOutlookSubscription(cred.tenant_id, accessToken);
+      return;
+    }
+    throw err;
+  }
 
   await supabase
     .from('calendar_credentials')

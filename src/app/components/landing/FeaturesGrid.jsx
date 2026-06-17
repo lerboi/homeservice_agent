@@ -3,15 +3,15 @@ import { Globe, PhoneIncoming, CalendarCheck, MessageSquare, BarChart3, UserChec
 import { AnimatedSection, AnimatedStagger, AnimatedItem } from './AnimatedSection';
 
 /* ─────────────────────────────────────────
-   Micro Visual: 70+ Languages (hero card)
+   Micro Visual: Languages (hero card)
 ───────────────────────────────────────── */
 function LanguageHeroVisual() {
   const bubbles = [
     { label: 'EN', x: '10%',  y: '15%', delay: '0s',   size: 40, accent: false },
     { label: 'ES', x: '55%',  y: '5%',  delay: '0.5s', size: 40, accent: false },
-    { label: 'ZH', x: '75%',  y: '45%', delay: '1s',   size: 36, accent: false },
-    { label: 'MS', x: '20%',  y: '60%', delay: '1.5s', size: 36, accent: false },
-    { label: '70+', x: '48%', y: '52%', delay: '2s',   size: 48, accent: true  },
+    { label: 'Hi', x: '75%',  y: '45%', delay: '1s',   size: 36, accent: false },
+    { label: 'Hola', x: '18%', y: '60%', delay: '1.5s', size: 38, accent: false },
+    { label: '24/7', x: '48%', y: '52%', delay: '2s',   size: 48, accent: true  },
   ];
 
   return (
@@ -378,11 +378,11 @@ export function FeaturesGrid() {
                   <div className="inline-flex items-center justify-center rounded-xl size-11 bg-[#F97316]/[0.08] border border-[#F97316]/[0.12] mb-4">
                     <Globe className="size-5 text-[#F97316]" strokeWidth={1.75} />
                   </div>
-                  <h3 className="text-sm font-semibold text-[#0F172A] mb-2">70+ Languages. Zero Frustration.</h3>
+                  <h3 className="text-sm font-semibold text-[#0F172A] mb-2">Fluent English &amp; Spanish. Zero Frustration.</h3>
                   <p className="text-base text-[#475569] leading-relaxed mb-3 max-w-md">
-                    Your AI receptionist speaks their language — English, Spanish, Chinese, Malay, and 70+ more. It detects the caller&apos;s language instantly. No frustrated hang-ups. No lost leads.
+                    Your AI receptionist speaks their language — fluent English and Spanish, detected instantly on every call. No frustrated hang-ups. No lost leads. More languages on the way.
                   </p>
-                  <p className="text-xs text-[#64748B]">Powered by Gemini 3.1 Flash Live</p>
+                  <p className="text-xs text-[#64748B]">Language auto-detected on every call</p>
                 </div>
                 {/* Right side: animated language bubbles */}
                 <div className="shrink-0 flex justify-center">

@@ -13,7 +13,7 @@
  *   flat_rate: unit_price (quantity ignored)
  *   discount:  -Math.abs(unit_price) (always negative)
  *
- * @param {string} type - Item type: 'labor' | 'materials' | 'travel' | 'flat_rate' | 'discount'
+ * @param {string} type - Item type: 'labor' | 'materials' | 'travel' | 'flat_rate' | 'discount' | 'late_fee'
  * @param {{ quantity?: number, unit_price?: number, markup_pct?: number }} params
  * @returns {number} Rounded to 2 decimal places
  */
@@ -34,6 +34,13 @@ export function calculateLineTotal(type, { quantity = 1, unit_price = 0, markup_
       break;
     case 'discount':
       total = -Math.abs(unit_price);
+      break;
+    case 'late_fee':
+      // Applied by the invoice-reminders cron (item_type='late_fee', quantity=1).
+      // Like flat_rate/travel, the fee is the unit_price; quantity is ignored.
+      // Without this case it fell through to default:0, so late fees were stored
+      // as a line item but silently excluded from the invoice total.
+      total = unit_price;
       break;
     default:
       total = 0;

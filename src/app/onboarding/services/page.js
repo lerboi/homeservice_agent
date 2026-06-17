@@ -27,18 +27,50 @@ export default function OnboardingStep3Services() {
   const t = useTranslations('onboarding');
   const router = useRouter();
 
-  const [trade] = useWizardSession('trade', null);
+  const [trade, setTrade] = useWizardSession('trade', null);
   const [services, setServices] = useWizardSession('services', []);
+  // Already hydrated when sessionStorage had data (initializers above run first)
+  const [hydrated, setHydrated] = useState(() => !!(trade && services.length > 0));
 
-  // Auto-fill services from trade template when trade is loaded but services are empty
+  // Rehydrate from the DB when sessionStorage is empty (return visit or new
+  // device). Saved services take priority over the trade template — a user
+  // who customized their list must not get it silently reset to defaults.
   useEffect(() => {
-    if (trade && services.length === 0) {
+    if (hydrated) return;
+    let cancelled = false;
+    fetch('/api/onboarding/state')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.exists) {
+          if (!trade && data.trade_type && TRADE_TEMPLATES[data.trade_type]) {
+            setTrade(data.trade_type);
+          }
+          if (services.length === 0 && Array.isArray(data.services) && data.services.length > 0) {
+            setServices(data.services.map((svc, idx) => ({ id: idx, name: svc.name, urgency_tag: svc.urgency_tag })));
+          }
+        }
+        setHydrated(true);
+      })
+      .catch(() => {
+        if (!cancelled) setHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-fill services from trade template when trade is loaded but services
+  // are empty — only after DB hydration found nothing to restore.
+  useEffect(() => {
+    if (hydrated && trade && services.length === 0) {
       const template = TRADE_TEMPLATES[trade]?.services || [];
       if (template.length > 0) {
         setServices(template.map((svc, idx) => ({ ...svc, id: idx })));
       }
     }
-  }, [trade, services.length, setServices]);
+  }, [hydrated, trade, services.length, setServices]);
   const [submitError, setSubmitError] = useState('');
   const [addingService, setAddingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
@@ -62,6 +94,10 @@ export default function OnboardingStep3Services() {
 
   async function handleSubmit() {
     setSubmitError('');
+    if (services.length === 0) {
+      setSubmitError('Add at least one service so your AI knows what you offer.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/onboarding/start', {
@@ -193,9 +229,9 @@ export default function OnboardingStep3Services() {
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || services.length === 0}
             className="w-full sm:w-40 bg-[#C2410C] hover:bg-[#C2410C]/90 active:bg-[#9A3412] active:scale-95
-                       text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+                       text-white min-h-11 transition-all duration-150 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] disabled:opacity-60"
           >
             {t('cta_step2')}
           </Button>

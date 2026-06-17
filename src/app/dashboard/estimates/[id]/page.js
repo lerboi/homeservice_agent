@@ -364,7 +364,7 @@ function ConvertToInvoiceDialog({ open, onOpenChange, tiers, estimateId, onConve
               key={tier.id}
               className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                 selectedTierId === tier.id
-                  ? 'border-[var(--brand-accent)] bg-orange-50/50'
+                  ? 'border-[var(--brand-accent)] bg-orange-50/50 dark:bg-orange-950/20'
                   : 'border-border hover:bg-muted'
               }`}
             >
@@ -709,7 +709,7 @@ export default function EstimateDetailPage() {
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                      className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-800/60 dark:hover:bg-red-950/40"
                       disabled={actionLoading}
                     >
                       <XCircle className="h-4 w-4" />

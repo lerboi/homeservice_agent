@@ -38,14 +38,14 @@ function BigStat() {
             letterSpacing: '-0.04em',
           }}
         >
-          260,400
+          260,520
         </span>
       </div>
       <div className="mt-4 text-[14px] font-medium text-[#94A3B8] uppercase tracking-[0.14em]">
-        The average trade business loses this much per year to missed calls
+        What 3 missed calls a week adds up to over a year
       </div>
       <div className="mt-2 text-[13px] text-[#94A3B8]">
-        Based on 3 missed calls/week × $1,670 avg ticket
+        3 missed calls/week × $1,670 avg ticket × 52 weeks
       </div>
     </div>
   );

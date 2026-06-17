@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Order matters — more specific routes first.
  */
 const ROUTE_DOC_MAP = {
-  '/dashboard/jobs': 'leads.md',
+  '/dashboard/jobs': 'jobs.md',
   '/dashboard/calendar': 'calendar.md',
   '/dashboard/calls': 'calls.md',
   '/dashboard/invoices': 'invoices.md',
@@ -43,9 +43,11 @@ const ROUTE_DOC_MAP = {
  * Checked in order — first match wins (breaks after 1 additional doc).
  */
 const KEYWORD_DOC_MAP = [
-  { keywords: ['job', 'jobs', 'lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'leads.md' },
+  { keywords: ['job', 'jobs', 'lead', 'leads', 'crm', 'customer', 'caller', 'pipeline'], doc: 'jobs.md' },
   { keywords: ['routing', 'route', 'forward', 'pickup', 'priority', 'vip', 'sms forward', 'forwarding'], doc: 'call-routing.md' },
   { keywords: ['calendar', 'appointment', 'booking', 'schedule', 'slot', 'time block', 'vacation', 'lunch'], doc: 'calendar.md' },
+  // before calls so 'callback' matches here, not the 'call' keyword in calls
+  { keywords: ['inquiry', 'inquiries', 'needs reply', 'callback', 'call back'], doc: 'inquiries.md' },
   { keywords: ['call', 'calls', 'transcript', 'recording', 'voicemail'], doc: 'calls.md' },
   // billing before invoices so 'billing' matches here, not the 'bill' keyword in invoices
   { keywords: ['billing', 'subscription', 'plan', 'upgrade', 'usage', 'trial'], doc: 'billing.md' },

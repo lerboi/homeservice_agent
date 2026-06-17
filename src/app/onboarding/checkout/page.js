@@ -10,6 +10,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { CelebrationOverlay } from '@/components/onboarding/CelebrationOverlay';
 import { clearWizardSession, useWizardSession } from '@/hooks/useWizardSession';
+import { formatInternational } from '@/lib/phone/normalize';
 import { useOnboarding } from '../OnboardingContext';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -29,7 +30,8 @@ export default function CheckoutPage() {
   const [checkoutError, setCheckoutError] = useState(null);
   const checkoutSessionIdRef = useRef(null);
   const [trialInfo, setTrialInfo] = useState(null);
-  const [countdown, setCountdown] = useState(5);
+  const [aiNumber, setAiNumber] = useState(null);
+  const [countdown, setCountdown] = useState(10);
 
   // Wait for client hydration
   useEffect(() => setMounted(true), []);
@@ -97,34 +99,44 @@ export default function CheckoutPage() {
     // Poll verify-checkout until webhook has created the subscription row.
     // Passes session_id so the endpoint can fall back to Stripe API if webhook is delayed.
     // First few attempts use fast path only (DB check), then include session_id for Stripe fallback.
-    // 30 attempts * 2s = 60s max wait.
+    // Two-stage plan: 30×2s fast window (webhook normally lands here), then a
+    // 12×10s slow tail (~3 min total) for webhook outages — timing out at 60s
+    // stranded customers who had already paid.
     const sid = sessionId || searchParams.get('session_id') || checkoutSessionIdRef.current || '';
     const baseUrl = '/api/onboarding/verify-checkout';
     const fallbackUrl = sid
       ? `${baseUrl}?session_id=${encodeURIComponent(sid)}`
       : baseUrl;
 
-    for (let attempt = 0; attempt < 30; attempt++) {
-      try {
-        // First 3 attempts: DB-only (give webhook a chance). After that: include Stripe fallback.
-        const url = attempt < 3 ? baseUrl : fallbackUrl;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.verified) {
-          setTrialInfo({ planName: data.planName, trialEndDate: data.trialEndDate });
-          setPhase('success');
-          markComplete();
-          clearWizardSession();
-          return;
+    const POLL_PLAN = [
+      { attempts: 30, delayMs: 2000 },
+      { attempts: 12, delayMs: 10000 },
+    ];
+
+    let attempt = 0;
+    for (const stage of POLL_PLAN) {
+      for (let i = 0; i < stage.attempts; i++, attempt++) {
+        try {
+          // First 3 attempts: DB-only (give webhook a chance). After that: include Stripe fallback.
+          const url = attempt < 3 ? baseUrl : fallbackUrl;
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.verified) {
+            setTrialInfo({ planName: data.planName, trialEndDate: data.trialEndDate });
+            setPhase('success');
+            markComplete();
+            clearWizardSession();
+            return;
+          }
+        } catch {
+          // Retry on network error
         }
-      } catch {
-        // Retry on network error
+        await new Promise((r) => setTimeout(r, stage.delayMs));
       }
-      await new Promise((r) => setTimeout(r, 2000));
     }
 
     setPhase('error');
-  }, [markComplete]);
+  }, [markComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-redirect countdown on success
   useEffect(() => {
@@ -140,13 +152,44 @@ export default function CheckoutPage() {
       });
     }, 1000);
 
-    const timer = setTimeout(() => router.push('/dashboard'), 5000);
+    const timer = setTimeout(() => router.push('/dashboard'), 10000);
 
     return () => {
       clearInterval(interval);
       clearTimeout(timer);
     };
   }, [phase, router]);
+
+  // Fetch the provisioned AI number once verified — the webhook assigns it in
+  // the same handler that flips verification, so it's usually ready on the
+  // first try. A short poll covers slow provisioning; the dashboard banner and
+  // welcome email are the fallbacks if it never lands here.
+  useEffect(() => {
+    if (phase !== 'success') return;
+    let cancelled = false;
+    let tries = 0;
+
+    async function fetchNumber() {
+      try {
+        const res = await fetch('/api/onboarding/test-call-status');
+        const data = await res.json();
+        if (cancelled) return;
+        if (data?.phone_number) {
+          setAiNumber(data.phone_number);
+          return;
+        }
+      } catch {
+        // Fall through to retry
+      }
+      tries += 1;
+      if (!cancelled && tries < 4) setTimeout(fetchNumber, 2000);
+    }
+
+    fetchNumber();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
 
   const handleGoToDashboard = useCallback(() => {
     router.push('/dashboard');
@@ -251,11 +294,26 @@ export default function CheckoutPage() {
   if (phase === 'error') {
     return (
       <div className="text-center py-6">
-        <p className="text-sm text-[#475569]">
-          We couldn&apos;t confirm your subscription. If you were charged, please{' '}
+        <h1 className="text-xl font-semibold text-[#0F172A]">
+          Still confirming your subscription
+        </h1>
+        <p className="mt-2 text-sm text-[#475569] max-w-sm mx-auto">
+          Payment confirmation is taking longer than usual. If your payment went
+          through, your account will activate automatically —{' '}
+          <strong>do not pay again</strong>.
+        </p>
+        <button
+          onClick={handleComplete}
+          className="mt-5 w-full max-w-xs inline-flex items-center justify-center bg-[#C2410C] text-white hover:bg-[#C2410C]/90 min-h-[44px] rounded-lg font-medium text-sm transition-colors duration-150"
+        >
+          Check again
+        </button>
+        <p className="mt-4 text-xs text-[#475569]/80">
+          Still stuck after a few minutes?{' '}
           <a href="/contact?type=support" className="underline text-[#C2410C]">
-            contact support
-          </a>.
+            Contact support
+          </a>{' '}
+          — include the email you signed up with.
         </p>
       </div>
     );
@@ -289,6 +347,28 @@ export default function CheckoutPage() {
         <span className="text-sm text-[#166534]">
           Free until {formattedDate}
         </span>
+      </div>
+
+      {/* The AI receptionist number — the single most important deliverable */}
+      <div className="mt-3 p-4 rounded-lg bg-[#FFF7ED] border border-[#FDBA74]/40 w-full">
+        <p className="text-xs font-semibold text-[#9A3412] tracking-wide uppercase">
+          Your AI receptionist number
+        </p>
+        {aiNumber ? (
+          <>
+            <p className="mt-1 font-mono text-xl tabular-nums text-[#0F172A] select-all">
+              {formatInternational(aiNumber)}
+            </p>
+            <p className="mt-1 text-xs text-[#475569]">
+              Call it from your cell right now and hear your AI answer.
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-[#475569]">
+            Being assigned — it will appear on your dashboard in a moment, and
+            we&apos;ve emailed it to you.
+          </p>
+        )}
       </div>
 
       <button

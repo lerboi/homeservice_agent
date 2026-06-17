@@ -29,9 +29,9 @@ const URGENCY_BORDER = {
 };
 
 const URGENCY_BADGE = {
-  emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
+  emergency: 'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40',
   routine: 'bg-muted text-muted-foreground hover:bg-muted',
-  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/40',
 };
 
 const URGENCY_LABEL = {
@@ -42,13 +42,13 @@ const URGENCY_LABEL = {
 
 const STATUS_BADGE = {
   open:      'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/10',
-  converted: 'bg-green-100 text-green-700 hover:bg-green-100',
-  lost:      'bg-red-100 text-red-700 hover:bg-red-100',
+  converted: 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/40',
+  lost:      'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40',
 };
 
 const STATUS_LABEL = {
   open:      'Open',
-  converted: 'Converted',
+  converted: 'Booked', // display label only — stored value stays 'converted'
   lost:      'Lost',
 };
 

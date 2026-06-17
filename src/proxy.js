@@ -99,38 +99,50 @@ export async function proxy(request) {
       }
     }
 
-    // Haven't onboarded yet → can't access dashboard
+    // Haven't onboarded yet → can't access dashboard.
+    // Rescue path (2026-06-12 onboarding audit C5): a customer whose
+    // checkout.session.completed webhook was delayed past the checkout page's
+    // polling window has PAID (subscription row exists) but still has
+    // onboarding_complete=false — bouncing them to wizard step 1 strands a
+    // paying customer. If a current subscription exists, repair the flag and
+    // let them through. This branch only runs for non-onboarded users hitting
+    // /dashboard (a rare, already-broken cohort), so the extra service-role
+    // query is off the hot path.
     if (pathname.startsWith('/dashboard') && !onboarded) {
+      if (tenant?.id && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const serviceClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          { auth: { persistSession: false } }
+        );
+        const { data: liveSub } = await serviceClient
+          .from('subscriptions')
+          .select('id')
+          .eq('tenant_id', tenant.id)
+          .eq('is_current', true)
+          .in('status', ['active', 'trialing', 'past_due'])
+          .maybeSingle();
+
+        if (liveSub) {
+          await serviceClient
+            .from('tenants')
+            .update({ onboarding_complete: true })
+            .eq('id', tenant.id);
+          console.warn(`[proxy] Repaired onboarding_complete for paid tenant ${tenant.id} (webhook lag rescue)`);
+          return response;
+        }
+      }
       return NextResponse.redirect(new URL('/onboarding', request.url));
     }
 
     // ── Subscription gate (ENFORCE-04, D-09, D-10) ────────────────────────────
-    // Check subscription status for dashboard routes. /billing/* is NOT in the
-    // matcher config, so those paths are automatically exempt per D-10.
-    const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
-
-    if (isDashboardPath && tenant) {
-      // Use service role for subscription check — the anon-key client's
-      // PostgREST queries can fail RLS even for authenticated users because
-      // the proxy's cookie-based auth context doesn't always resolve the
-      // Postgres role correctly. Tenant ownership is already validated above.
-      const admin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-
-      const { data: sub, error: subError } = await admin
-        .from('subscriptions')
-        .select('status, stripe_updated_at')
-        .eq('tenant_id', tenant.id)
-        .eq('is_current', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      // Subscription status is checked but no longer blocks dashboard access.
-      // The BillingWarningBanner component shows warnings directly on the dashboard.
-    }
+    // Deliberate: subscription status does NOT block dashboard access. The
+    // BillingWarningBanner shows persistent warnings, and call-side enforcement
+    // (the part that costs money) lives in the LiveKit agent's gate, which
+    // blocks canceled/paused/incomplete and past_due beyond the 3-day grace.
+    // The previous status query here was dead code — it fetched the row and
+    // ignored it, costing a service-role round trip on every dashboard
+    // navigation — so it was removed (2026-06-12 audit H1).
 
     // ── Feature flag gate (TOGGLE-02 pages, D-01) ────────────────────────────
     // Redirect to /dashboard when a tenant tries to visit an invoicing page with

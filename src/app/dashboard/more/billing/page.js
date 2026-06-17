@@ -145,13 +145,13 @@ export default function BillingPage() {
 
   // Status badge config
   const statusBadgeConfig = {
-    active: { className: 'bg-green-100 text-green-800 hover:bg-green-100', label: 'Active' },
-    trialing: { className: 'bg-blue-100 text-blue-800 hover:bg-blue-100', label: 'Trialing' },
-    past_due: { className: 'bg-amber-100 text-amber-800 hover:bg-amber-100', label: 'Past Due' },
-    cancelled: { className: 'bg-red-100 text-red-800 hover:bg-red-100', label: 'Cancelled' },
-    canceled: { className: 'bg-red-100 text-red-800 hover:bg-red-100', label: 'Cancelled' },
+    active: { className: 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/40', label: 'Active' },
+    trialing: { className: 'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/40', label: 'Trialing' },
+    past_due: { className: 'bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/40', label: 'Past Due' },
+    cancelled: { className: 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40', label: 'Cancelled' },
+    canceled: { className: 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40', label: 'Cancelled' },
     paused: { className: 'bg-muted text-muted-foreground hover:bg-muted', label: 'Paused' },
-    incomplete: { className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100', label: 'Incomplete' },
+    incomplete: { className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-300 dark:hover:bg-yellow-950/40', label: 'Incomplete' },
   };
   const statusBadge = statusBadgeConfig[subscription.status] || {
     className: 'bg-muted text-muted-foreground hover:bg-muted',
@@ -193,7 +193,7 @@ export default function BillingPage() {
 
         {/* Cancel at period end warning */}
         {subscription.cancel_at_period_end && subscription.current_period_end && (
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/60 dark:text-amber-200 rounded-lg text-sm text-amber-800">
             Your subscription will end on{' '}
             {format(new Date(subscription.current_period_end), 'MMM d, yyyy')}. You&apos;ll lose
             access to call answering.
@@ -260,10 +260,10 @@ export default function BillingPage() {
                 {invoices.slice(0, 5).map((inv) => {
                   const invoiceBadge =
                     inv.status === 'paid'
-                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                      ? 'bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/40'
                       : inv.status === 'open'
-                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-100'
-                      : 'bg-red-100 text-red-800 hover:bg-red-100';
+                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/40'
+                      : 'bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40';
 
                   return (
                     <TableRow key={inv.id}>

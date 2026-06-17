@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, AlertCircle, X } from 'lucide-react';
+import { Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
 
 /**
@@ -41,7 +41,6 @@ export function getTrialBannerState(daysRemaining) {
 export default function TrialCountdownBanner() {
   const [daysRemaining, setDaysRemaining] = useState(null);
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     async function checkTrialStatus() {
@@ -80,7 +79,7 @@ export default function TrialCountdownBanner() {
     checkTrialStatus();
   }, []);
 
-  if (!visible || daysRemaining === null || dismissed) return null;
+  if (!visible || daysRemaining === null) return null;
 
   const state = getTrialBannerState(daysRemaining);
   const isUrgent = state === 'urgent';
@@ -116,13 +115,6 @@ export default function TrialCountdownBanner() {
           View Billing
         </a>
       </p>
-      <button
-        onClick={() => setDismissed(true)}
-        className={`absolute right-3 p-1 rounded-md ${isUrgent ? 'text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 hover:bg-amber-100/60 dark:hover:bg-amber-900/40' : 'text-blue-400 dark:text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100/60 dark:hover:bg-blue-900/40'} transition-colors`}
-        aria-label="Dismiss banner"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
     </div>
   );
 }

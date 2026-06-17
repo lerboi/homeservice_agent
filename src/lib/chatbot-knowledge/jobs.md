@@ -57,7 +57,7 @@ On the Jobs page, click **Select** (visible when there are completed jobs with n
 ## Related
 
 - Jobs ← Customers (see customers.md)
-- [Inquiries](/dashboard/inquiries) (see inquiries.md — unbooked calls)
+- [Callbacks](/dashboard/calls?view=callbacks) (see inquiries.md — unbooked calls waiting on a callback)
 - [Calendar](/dashboard/calendar)
 - [Invoices](/dashboard/invoices)
 - [Calls](/dashboard/calls)

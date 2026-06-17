@@ -204,7 +204,7 @@ export async function POST(request) {
 
   const {
     caller_name, caller_phone, start_time, end_time, notes, status, job_type,
-    sync_to_calendar,
+    sync_to_calendar, create_job,
     service_address, postal_code, street_name, email,
   } = await request.json();
 
@@ -246,21 +246,29 @@ export async function POST(request) {
 
   // Phase 59 Plan 08 (D-14): upsert customer + create job via record_call_outcome RPC.
   // Replaces createOrAttachLeadForManualAppointment. Non-blocking — appointment is already saved.
-  try {
-    const { normalizePhone } = await import('@/lib/phone/normalize.js');
-    const normalizedPhone = normalizePhone(caller_phone);
-    await supabase.rpc('record_call_outcome', {
-      p_tenant_id: tenantId,
-      p_phone_e164: normalizedPhone,
-      p_caller_name: caller_name || null,
-      p_service_address: composedAddress === 'TBD' ? null : composedAddress,
-      p_appointment_id: result.appointment_id,
-      p_urgency: 'routine',
-      p_call_id: null,
-      p_job_type: job_type || null,
-    });
-  } catch (err) {
-    console.error('[appointments] record_call_outcome failed, appointment still saved:', err.message);
+  //
+  // create_job defaults to true (manual calendar bookings create a job). The
+  // inquiry-conversion flow (InquiryFlyout → /api/inquiries/[id]/convert) passes
+  // create_job:false so it can create the single job itself. jobs.appointment_id
+  // is UNIQUE, so creating a job here too would collide with the convert route's
+  // job insert (it would fail with a unique violation → 500).
+  if (create_job !== false) {
+    try {
+      const { normalizePhone } = await import('@/lib/phone/normalize.js');
+      const normalizedPhone = normalizePhone(caller_phone);
+      await supabase.rpc('record_call_outcome', {
+        p_tenant_id: tenantId,
+        p_phone_e164: normalizedPhone,
+        p_caller_name: caller_name || null,
+        p_service_address: composedAddress === 'TBD' ? null : composedAddress,
+        p_appointment_id: result.appointment_id,
+        p_urgency: 'routine',
+        p_call_id: null,
+        p_job_type: job_type || null,
+      });
+    } catch (err) {
+      console.error('[appointments] record_call_outcome failed, appointment still saved:', err.message);
+    }
   }
 
   const { data } = await supabase

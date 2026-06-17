@@ -165,14 +165,14 @@ export default function BatchReviewPage() {
                 key={r.invoice_id}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
                   r.status === 'sent'
-                    ? 'bg-emerald-50 border-emerald-200'
-                    : 'bg-red-50 border-red-200'
+                    ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800/60'
+                    : 'bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800/60'
                 }`}
               >
                 {r.status === 'sent' ? (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-red-600 shrink-0" />
+                  <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">
@@ -180,10 +180,10 @@ export default function BatchReviewPage() {
                     {inv?.customer_name ? ` — ${inv.customer_name}` : ''}
                   </p>
                   {r.error && (
-                    <p className="text-xs text-red-600 mt-0.5">{r.error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{r.error}</p>
                   )}
                 </div>
-                <span className={`text-xs font-medium ${r.status === 'sent' ? 'text-emerald-700' : 'text-red-700'}`}>
+                <span className={`text-xs font-medium ${r.status === 'sent' ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
                   {r.status === 'sent' ? 'Sent' : 'Failed'}
                 </span>
               </div>

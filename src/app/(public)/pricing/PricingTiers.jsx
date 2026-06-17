@@ -77,16 +77,16 @@ export default function PricingTiers() {
                     : 'bg-[#1A1816] border border-white/[0.06] hover:border-[rgba(249,115,22,0.3)] hover:shadow-[0_0_20px_rgba(249,115,22,0.1)]'
                 }`}
               >
-                <CardHeader className="pb-0">
-                  {/* Badge */}
-                  {tier.badge && (
-                    <div className="mb-2">
-                      <Badge className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                        {tier.badge}
-                      </Badge>
-                    </div>
-                  )}
+                {/* Badge — floats on the card's top border so header heights stay aligned */}
+                {tier.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-[0_2px_12px_rgba(249,115,22,0.4)] whitespace-nowrap">
+                      {tier.badge}
+                    </Badge>
+                  </div>
+                )}
 
+                <CardHeader className="pb-0">
                   {/* Tier name */}
                   <div className="text-base font-semibold text-white">{tier.name}</div>
 
@@ -128,16 +128,20 @@ export default function PricingTiers() {
                 </CardHeader>
 
                 <CardContent className="flex flex-col flex-1 pt-4">
-                  {/* Additive feature pattern */}
-                  {tier.inheritsFrom && (
-                    <p className="text-xs font-medium text-[#F97316]/70 mb-2">
+                  {/* List header — every card gets one so the lists start at the same line */}
+                  {tier.inheritsFrom ? (
+                    <p className="text-xs font-semibold text-[#F97316]/80 mb-2.5">
                       Everything in {tier.inheritsFrom}, plus:
+                    </p>
+                  ) : (
+                    <p className="text-xs font-semibold text-white/40 uppercase tracking-wide mb-2.5">
+                      What&apos;s included:
                     </p>
                   )}
 
-                  <ul className="space-y-2 flex-1">
+                  <ul className="space-y-2.5 flex-1">
                     {tier.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-white/65">
+                      <li key={feature} className="flex items-start gap-2.5 text-sm leading-snug text-white/65">
                         <Check className="size-3.5 text-[#F97316] shrink-0 mt-0.5" />
                         {feature}
                       </li>

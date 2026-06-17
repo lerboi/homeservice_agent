@@ -1,6 +1,5 @@
 import { after } from 'next/server';
 import { supabase } from '@/lib/supabase.js';
-import { handleGoogleCalendarPush } from '@/lib/webhooks/google-calendar-push.js';
 import { syncCalendarEvents } from '@/lib/scheduling/google-calendar.js';
 
 /**
@@ -54,13 +53,11 @@ export async function POST(request) {
     return Response.json({ ok: true });
   }
 
-  // Fallback: no channelId — use header tenant_id (legacy compatibility)
-  if (state === 'exists' && tenantId) {
-    after(async () => {
-      await handleGoogleCalendarPush(request);
-    });
-  }
-
-  // Always return 200 immediately — Google requires fast acknowledgment
+  // No channelId → drop. The legacy fallback that trusted the spoofable
+  // X-Goog-Channel-Token header as a tenant_id was removed (2026-06-12 audit):
+  // Google push has no HMAC, so that path let anyone trigger arbitrary
+  // tenants' calendar syncs. Every channel registered by registerWatch writes
+  // watch_channel_id to calendar_credentials, so a legitimate notification
+  // always carries a resolvable channel id. 200 keeps Google from retrying.
   return Response.json({ ok: true });
 }

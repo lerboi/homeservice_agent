@@ -35,9 +35,16 @@ import { btn } from '@/lib/design-tokens';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const URGENCY_STYLES = {
-  emergency: { badge: 'bg-red-100 text-red-700', label: 'Emergency' },
-  urgent: { badge: 'bg-amber-100 text-amber-700', label: 'Urgent' },
+  emergency: { badge: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300', label: 'Emergency' },
+  urgent: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300', label: 'Urgent' },
   routine: { badge: 'bg-foreground/[0.06] text-foreground/70', label: 'Routine' },
+};
+
+// Display labels only — stored value / API filter stays 'converted'.
+const STATUS_LABELS = {
+  open: 'Open',
+  converted: 'Booked',
+  lost: 'Lost',
 };
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
@@ -261,11 +268,11 @@ export default function InquiryFlyout({ inquiryId, open, onOpenChange, onStatusC
                   </Badge>
                   <Badge
                     variant="secondary"
-                    className={`text-xs capitalize ${
-                      inquiry.status === 'lost' ? 'bg-red-100 text-red-700' : ''
+                    className={`text-xs ${
+                      inquiry.status === 'lost' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300' : ''
                     }`}
                   >
-                    {inquiry.status}
+                    {STATUS_LABELS[inquiry.status] || inquiry.status}
                   </Badge>
                 </div>
                 <SheetTitle className="text-xl font-semibold text-foreground leading-snug mt-1">
@@ -342,7 +349,7 @@ export default function InquiryFlyout({ inquiryId, open, onOpenChange, onStatusC
                 <SheetFooter className="px-6">
                   <Button
                     variant="ghost"
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
                     disabled={markingLost}
                     onClick={handleMarkLost}
                   >
@@ -362,16 +369,28 @@ export default function InquiryFlyout({ inquiryId, open, onOpenChange, onStatusC
           onOpenChange={setQuickBookOpen}
           slotDate={null}
           onSave={async (bookingData) => {
-            // QuickBookSheet calls its onSave with appointment data including appointment_id
-            if (bookingData?.appointment_id) {
-              await handleBookingSuccess({ appointment_id: bookingData.appointment_id });
-            } else {
-              // QuickBookSheet creates the appointment via /api/book-appointment
-              // The returned appointment_id is what we pass to /convert
-              setQuickBookOpen(false);
-              toast.success('Appointment booked. Converting inquiry…');
-              // appointment_id comes back from QuickBookSheet.onSave result
+            // QuickBookSheet is a "dumb" form — it delegates booking to this
+            // onSave (it never calls an API itself). Create the appointment here
+            // with create_job:false so /api/inquiries/[id]/convert can create the
+            // single job (jobs.appointment_id is UNIQUE — letting /api/appointments
+            // create a job too would make convert fail with a unique violation).
+            // Then convert the inquiry to that appointment.
+            const res = await fetch('/api/appointments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...bookingData, create_job: false }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              toast.error(err.error || "We couldn't book the appointment. No changes were saved.");
+              return;
             }
+            const { appointment } = await res.json();
+            if (!appointment?.id) {
+              toast.error("We couldn't book the appointment. No changes were saved.");
+              return;
+            }
+            await handleBookingSuccess({ appointment_id: appointment.id });
           }}
         />
       )}

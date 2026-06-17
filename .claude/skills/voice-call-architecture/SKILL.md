@@ -1,6 +1,6 @@
 ---
 name: voice-call-architecture
-description: "Complete architectural reference for the Voco voice call system — Twilio SIP + LiveKit + Gemini 3.1 Flash Live Python agent deployed on Railway. Covers the FastAPI webhook service (incoming-call routing, dial-status, dial-fallback, incoming-sms, priority-caller check), LiveKit agent entrypoint (tenant lookup, _run_db_queries background tasks, pre-session Xero/Jobber customer context fetch, Gemini server VAD tuning with silence_duration_ms, session lifecycle), system-prompt building (STATE+DIRECTIVE tool returns, name-once policy, single-question address intake, booking readback), 6 in-process tools (check_availability, book_appointment, capture_lead, check_caller_history, check_customer_account, transfer_call, end_call), post-call pipeline (recording, transcript, triage, notifications, booking reconciliation), recovery SMS cron, usage tracking, Phase 58 integration telemetry (integration_fetch + integration_fetch_fanout activity_log rows). Use this skill whenever making changes to call handling, modifying agent prompts, updating triage logic, debugging the LiveKit agent, touching Twilio/LiveKit/Gemini integration, or adjusting pre-session customer-context injection."
+description: "Complete architectural reference for the Voco voice call system — Twilio SIP + LiveKit + cascaded-pipeline Python agent (Phase 66: Deepgram nova-3 STT with language=multi, gpt-4.1-mini LLM, ElevenLabs eleven_flash_v2_5 TTS) deployed on Railway. Covers the FastAPI webhook service (incoming-call routing, dial-status, dial-fallback, incoming-sms, priority-caller check), LiveKit agent entrypoint (tenant lookup, _run_db_queries background tasks, pre-session Xero/Jobber customer context fetch, Silero VAD + MultilingualModel turn detection, gpt-4.1-mini LLM with parallel_tool_calls=False, deterministic session.say() greeting with input-mute, session lifecycle), system-prompt building (STATE+DIRECTIVE tool returns, name-once policy, single-question address intake, booking readback), in-process tools (check_slot, check_day, next_available_days, book_appointment, capture_lead, validate_address, check_caller_history, check_customer_account, transfer_call, end_call), post-call pipeline (recording, transcript, triage, notifications, booking reconciliation), recovery SMS cron, usage tracking (3s-capped Stripe meter post + stripe_meter_failures outbox), shared subscription gate (src/lib/subscription_gate.py — past_due blocked after 3-day grace), __main__ boot preflight for cascade keys, fail-closed Twilio signature verification, Phase 58 integration telemetry (integration_fetch + integration_fetch_fanout activity_log rows). Use this skill whenever making changes to call handling, modifying agent prompts, updating triage logic, debugging the LiveKit agent, touching Twilio/LiveKit/OpenAI integration, or adjusting pre-session customer-context injection."
 ---
 
 # Voice Call Architecture — Complete Reference
@@ -8,17 +8,31 @@ description: "Complete architectural reference for the Voco voice call system �
 This document is the single source of truth for the Voco voice call system.
 Read this before making any changes to call-related code.
 
-> ⚠️ **Phase 65 migration in flight (implemented, NOT yet deployed).** The voice brain is
-> being swapped **Gemini 3.1 Flash Live → OpenAI gpt-realtime-2** on agent branch
-> `phase-65-openai-realtime-2`: `openai.realtime.RealtimeModel` (semantic_vad/medium + typed
-> `AudioTranscription` for caller transcripts), the opening greeting now via native
-> `session.generate_reply(...)`, and removal of every Gemini cascade workaround
-> (`mute_input_during_tool`, the `update_chat_ctx` replay, `_ServerCancelHandler`, the
-> separate-TTS greeting hack). **Until the Railway cutover + UAT pass, production is still
-> Gemini and the sections below describe the live (Gemini) system.** Full execution record,
-> §14 API resolutions, and deploy hazards: `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+> ✅ **Phase 66 MERGED to agent `main`** (merge commit `9773f11`). The voice brain is
+> now a **cascaded STT → LLM → TTS pipeline** (replacing the Phase 65 gpt-realtime-2
+> speech-to-speech model — migration rationale: a strong text LLM is a more reliable,
+> debuggable tool-caller). Construction in `src/agent.py` (~L510-551):
+> `deepgram.STT(model="nova-3", language="multi")` (EN+ES code-switching) +
+> `MultilingualModel()` semantic end-of-turn detection +
+> `openai.LLM(model=LLM_MODEL, parallel_tool_calls=False)` (`LLM_MODEL="gpt-4.1-mini"`;
+> sequential tool calls preserve the slot_token contract) +
+> `elevenlabs.TTS(model=ELEVENLABS_TTS_MODEL, voice_id=voice_id)`
+> (`"eleven_flash_v2_5"`, ~75ms first byte) + `silero.VAD.load()` (defaults — do NOT
+> port the realtime 2.5s silence value) → `AgentSession(stt=, llm=, tts=, vad=,
+> turn_detection=, allow_interruptions=True)`. The greeting is **deterministic**:
+> `session.say()` of fixed text from `src/messages/{en,es}.json`
+> (`agent.greeting_onboarding` / `agent.greeting_default`), non-interruptible via
+> caller input mute (`session.input.set_audio_enabled(False)`) +
+> `allow_interruptions=False`, force-unmute after 10s `GREETING_UNMUTE_TIMEOUT_S`.
+> Voice resolution maps `tenants.ai_voice` LABELS (professional/friendly/local_expert,
+> main-repo migration 070) → ElevenLabs voice_ids via `ELEVENLABS_VOICE_MAP`.
+> ⚠️ Sections below that still describe gpt-realtime-2 specifics
+> (`openai.realtime.RealtimeModel` construction, native `generate_reply` greeting,
+> `SemanticVad`, OpenAI voice names) are **historical** — trust `agent.py`.
+> Deploy state: pending Railway `DEEPGRAM_API_KEY`/`ELEVEN_API_KEY` keys,
+> ElevenLabs "My Voices" entries, and live UAT.
 
-**Last updated**: 2026-06-04 (prod-readiness 2026-06 — documented that Layer-3 owner per-service urgency escalation now actually fires: `apply_owner_rules` derives the service via word-boundary matching `services.name` against the transcript (`MIN_SERVICE_NAME_LEN=4` guard), `classify_call` threads the transcript through, `triage_layer_used` can now legitimately be `layer3`; the prior single-service auto-escalation is NOT reintroduced. See §7 Triage System.) + Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added) + Phase 61.1 — address-validation rule deadlock fix; WR-01/02 google_maps.py defects closed
+**Last updated**: 2026-06-12 (audit wave 1, BOTH repos — (1) **`__main__` boot preflight (S4)**: `agent.py` refuses to start when `OPENAI_API_KEY` / `DEEPGRAM_API_KEY` / `ELEVEN_API_KEY` are missing (the STT/LLM/TTS plugins are constructed per call, so a missing key previously made every inbound call connect then die silently with no audio while the liveness healthcheck stayed green). (2) **NEW shared `src/lib/subscription_gate.py` (H1)**: `is_subscription_blocked(status, current_period_end)` — canceled/paused/incomplete always blocked; **past_due blocked after the 3-day grace** anchored to `current_period_end` (the grace's END was never enforced anywhere before — a payment-failed tenant kept the AI answering forever). Used by `agent.py` (`_run_db_queries` subscription select now includes `current_period_end`) and `twilio_routes.py`, whose tenants query now filters the subscriptions embed with `.eq("subscriptions.is_current", True)` — it previously read an arbitrary history row (M3), so a canceled tenant whose random row read 'active' kept free owner-pickup forwarding. (3) **`webhook/security.py` fail-closed (M9)**: empty/missing `TWILIO_AUTH_TOKEN` → 503 (RequestValidator("") computes HMACs with an empty key — forgeable); `ALLOW_UNSIGNED_WEBHOOKS` is ignored when `PYTHON_ENV` is production OR unset. (4) **Timeouts (H8)**: triage layer-2 `TIMEOUT_S` 5.0 → **2.5s** (a slow Groq call starved the post-call 8s envelope); the Stripe meter post is capped at **3s** via `asyncio.wait_for` (stripe-python's default read timeout is ~80s). (5) **Meter outbox (H4)**: meter-post failures now upsert (on `call_id`) into the main repo's `stripe_meter_failures` table (migration 071) for the `/api/cron/retry-meter-events` retry cron — overage is no longer silently lost (replay was structurally impossible: `increment_calls_used` had already consumed the call_id). (6) **ai_voice labels are real**: main-repo migration **070** stores the 3 labels (professional/friendly/local_expert) the agent's `ELEVENLABS_VOICE_MAP` resolves — the phantom "migration 068 stores labels" comments now have a real migration; dashboard `VALID_VOICES` + picker use the 3 labels.) + 2026-06-12 (voice-naturalness pass P1–P8, uncommitted on the agent repo — full proposal + production-call evidence in `docs/findings.md` (main repo). **P1 guided-choice availability — REVERSES the "never speak slot times" / "AI never offers times first" design:** `check_day` now returns up to 3 spread windows with registered slot_tokens (`STATE:day_has_slots … | OPTIONS: 1.<speech> token=…; …`, via new `pick_spread()` in `_availability_lib.py`), `check_slot`'s `too_soon` branch moved BELOW the schedule fetch and pairs the rejection with the earliest viable time today (else the first opening in the next 2 days via new `_find_next_opening()`), `day_empty` also carries `next_open=… token=…`, `next_available_days` returns actual open-day labels (`days=Thursday, July 6th (5 open); …`); each alternative registers a token and sets `_last_offered_token`; the prompt's AVAILABILITY RULES now license offering at most 2–3 TOOL-RETURNED times and require every rejection to arrive with an alternative "in the same breath" — the anti-hallucination invariant is unchanged (every spoken time must come from a tool return), and a caller-picked offered time books directly with its token (NO DOUBLE-BOOKING wording now says "an availability tool (check_slot or check_day)"). **P2 caller-authority address flow:** new CALLER AUTHORITY block in `_build_address_validation_section` (the caller outranks the lookup — incident call 31559053 argued for Google's inferred postal code and leaked "from the address validation" on-air; internals-leak phrases added to the prohibited list), new `STATE:address_ok_confirm_postal` branch in `validate_address` (postal present in the result but never spoken by the caller → asked as a question, digit by digit, never asserted; `get_cached_validation` now matches when the cached input postal was empty and the requested postal equals the result's postal), new `_apply_country_guard` in `google_maps.validate_address_with_region_fallback` (a confirmed* result whose `country_code` contradicts the trusted region — caller-ID region when supported, else tenant country — is downgraded to `unconfirmed` with Google fields stripped, BEFORE the retry decision, so the caller-region retry self-heals the Utah-booking incident eef9f785; no DB change — 'unconfirmed' is already in the verdict CHECK constraints), `book_appointment`/`capture_lead` fallback-validated directives no longer re-read the address (the pre-booking readback already covered it; `confirmed_with_changes` still reads its corrected form), prompt AFTER BOOKING = day + time only, BEFORE BOOKING readback IS the single confirmation (offer folded in — no separate pre-confirm, no post-yes re-confirm). **P3:** `_build_intake_questions_section` reframed — technician-prep nice-to-haves, at most ONE before the slot is locked, rest after booking confirmation, skip-if-answered-in-substance, skip-all-if-rushed, rephrase never read verbatim. **P4:** `_build_voice_behavior_section` register contract (banned stock-phrase list, contractions required, hard never-two-questions rule with Call-B example) + SAYING NUMBERS AND DATES OUT LOUD (postal/phone/unit digits spelled out grouped, times as speech, dates without year, never announce today's date — the LLM text feeds TTS verbatim). **P5:** HEARING THROUGH THE PHONE block in `_build_corrections_section` (near-soundalike of confirmed data = mishearing — never adopt/parrot garbled strings, max 2 repeats then best-guess yes/no, spell names); TOOL NARRATION rule 5 cites the Call-D "review the situation" filler-without-tool lie. **P8:** `AgentSession(preemptive_generation=…)` gated by `VOCO_PREEMPTIVE_GENERATION` (default ON; verified in livekit-agents 1.5.7), Deepgram nova-3 `keyterm` prompting (business name + active service names, services fetch now selects `name`) gated by `VOCO_STT_KEYTERMS` (default OFF — keyterm + language="multi" unverified against Deepgram's API; flip on a UAT deploy first). Tests: 441 passed / same 1 pre-existing VIP failure; new `tests/test_availability_alternatives.py`; country-guard + confirm-postal + cache-tolerance tests added to `test_validate_address_tool.py`; `_bounded_result` fixture grew country params; fallback/directive pins updated in `test_book_appointment_validation.py` / `test_capture_lead_validation.py` / `test_slot_token_handoff.py`. Tenant-data fix SQL (tenants.country US→SG for Make It AI + audit query) staged in `My Prompts/text2` for MANUAL application — not yet run.) + 2026-06-11 (single-English-prompt collapse, uncommitted on the agent repo: `src/prompt.py`'s dual EN/ES section branches are GONE — the prompt is now ONE English prompt for every call (prompt.py 1607 → 1009 lines). `locale` drives exactly ONE thing: the tenant-default-language line in the LANGUAGE section ("Default to English on every call." vs "This business operates in Spanish — open in Spanish and default to Spanish on every call."). The LANGUAGE section now states the supported set is exactly English + Spanish (matches the Deepgram nova-3 `language="multi"` EN+ES pin; the 6-language list was a Gemini-era leftover), carries a new SPEAKING SPANISH — DELIVERY GUIDE (usted register, Spanish times/dates/addresses, "código postal" with the caller regardless of market, digit-by-digit phone readback, Spanish fillers, and any-language applicability of the reserved/prohibited-word rules incl. "validado/validada", "verificado/verificada", "coincide con nuestros registros"), and preserves the Phase 62 ANTI-HALLUCINATION block (now "English or Spanish audio", supported set "(English, Spanish)", explicit-switch examples in both directions). OUTCOME WORDS gained an "in any language, including Spanish: 'disponible', 'no disponible', 'confirmado', 'reservado'…" clause. ALL other EN section text is byte-identical to before; es-locale output is byte-identical to en-locale output except that one line (locked by new `tests/test_prompt_locale_collapse.py` structural-equivalence test); the assembled prompt for BOTH locales ends with the pinned "Don't interrogate the caller about the situation." `messages/{en,es}.json` (deterministic greeting + max_duration_goodbye) and post-call language detection are untouched. The D7 locale-parity tests were reworked to single-prompt invariants (each rework commented in the test files). Suite: 421 passed / same 1 pre-existing VIP failure. **Policy: do NOT reintroduce `if locale == "es"` branches in prompt section builders — see §4 Single-English-prompt policy.**) + 2026-06-11 (caller-region validation fallback, uncommitted on the agent repo: `derive_caller_region` in `src/lib/phone.py` parses caller-ID with `phonenumbers` → `deps["caller_region"]` (splits +1 US/CA by area code; None on anonymous/garbage, never raises); new `validate_address_with_region_fallback` orchestrator in `google_maps.py` — attempt 1 = tenant country, attempt 2 = caller region only when attempt 1 is unconfirmed/unsupported and caller region is supported + different; better verdict wins; per-attempt telemetry; used by all three validation sites. Tests extended in `test_validate_address_tool.py`; old book/lead validation fixtures repointed to the wrapper. Suite: 418 passed / 1 pre-existing failure.) + 2026-06-10 (early address validation + conciseness pass, uncommitted on the agent repo: NEW always-on `src/tools/validate_address.py` tool — validates the address the moment the caller says it via the unchanged `validate_address_bounded`, returns `STATE:address_ok|address_corrected|address_unclear|address_noted`, caches the full result on `deps["_validated_address"]`; `book_appointment`/`capture_lead` reuse the cache via `get_cached_validation` (normalized street+postal match, unit-tolerant, `error` never reused) with live validation as fallback — booking still never blocks on Google; their post-commit verdict directives SHORTENED (cached path = one short day+time sentence, no address re-read; verdict tokens unchanged); `_build_address_validation_section` rewritten EN+ES for the early flow (address spoken once, ≤1 correction loop, ≤2 readbacks/call, booking readback covers name+day/time with address only if never validated; no-silence + prohibited-phrase + verdict-token invariants preserved); `_build_voice_behavior_section` rewritten EN+ES to lead with the one-or-two-short-sentences/one-question-per-turn rule; FINAL — NON-NEGOTIABLES gains brevity item 4 (still ends with the pinned line); TOOL NARRATION filler target ~3s → ONE warm sentence ~2s + validate_address filler example; `openai.LLM(..., max_completion_tokens=500)` runaway backstop in agent.py. Tests: new `test_validate_address_tool.py`; 7 stale `check_availability` pins fixed; `test_check_availability_slot_cache.py` ported to `test_slot_cache.py`; `test_slot_token_handoff.py` ported to `register_slot_token`/check_slot.) + 2026-06-10 (Phase 66 — voice brain migrated gpt-realtime-2 → cascaded Deepgram nova-3 STT (language="multi") + Silero VAD + MultilingualModel turn detection + gpt-4.1-mini LLM (`parallel_tool_calls=False`) + ElevenLabs eleven_flash_v2_5 TTS, merged to agent `main` (`9773f11`); greeting now deterministic `session.say()` from `messages/{en,es}.json` with input-mute. PLUS this session's fixes (uncommitted on the agent repo at time of writing): Layer-1 triage now evaluates EMERGENCY patterns first and classifies on caller-only turns via `extract_caller_text()` (layer2 LLM also gets caller-only text; layer3 unchanged); post-call owner notifications decoupled from the `record_call_outcome` RPC (fire whenever tenant info exists, degrade to caller-ID + transcript-derived fields, `degraded=true` logging) and reordered to run before suggested-slots/hallucination detection; notify dict now carries `urgency` (emergency emails previously rendered "routine"); call-duration watchdog in `agent.py` (`VOCO_WRAP_UP_CALL_SECONDS`=540 wrap-up nudge, `VOCO_MAX_CALL_SECONDS`=600 localized goodbye + disconnect, `disconnection_reason='max_duration'`); `capture_lead` persists `notes` (folded into job_type) and prefers an explicitly captured callback phone over caller-ID when it parses to E.164; `record_outcome`'s RPC call moved to `asyncio.to_thread`; Python Outlook push sends naive tenant-local ISO (fixes UTC-offset double-shift); all-day calendar rows (`is_all_day`) expand to tenant-local day bounds in `slot_calculator` (all fetch sites updated); `transfer_call` failure restores prior `disconnection_reason` + nulls `exception_reason`.) + 2026-06-05 (Phase 65 — voice brain migrated Gemini 3.1 Flash Live → OpenAI gpt-realtime-2, merged to `main` on both repos; §1/§3/§11/§12/§13 rewritten for the OpenAI Realtime construction (SemanticVad, native `generate_reply` greeting, no TTS), Gemini cascade workarounds removed, §61.2/§61.3/§63.1 annotated as superseded; Railway deploy unverified.) + 2026-06-04 (prod-readiness 2026-06 — documented that Layer-3 owner per-service urgency escalation now actually fires: `apply_owner_rules` derives the service via word-boundary matching `services.name` against the transcript (`MIN_SERVICE_NAME_LEN=4` guard), `classify_call` threads the transcript through, `triage_layer_used` can now legitimately be `layer3`; the prior single-service auto-escalation is NOT reintroduced. See §7 Triage System.) + Phase 61 — Google Maps Address Validation API integrated as pre-check inside `book_appointment` + `capture_lead`; new `ADDRESS VALIDATION — CRITICAL RULE` block in `prompt.py` top-attention zone EN+ES via `_build_address_validation_section(locale)`; D-E2 STATE+DIRECTIVE tool returns with `verdict=validated|validated_with_corrections|unvalidated` tokens; D-D3' `service_address` overwrite on `confirmed`/`confirmed_with_changes`; new `src/integrations/google_maps.py` follows xero/jobber per-call `httpx.AsyncClient` pattern with 1.5s hard timeout, never-raises wrapper, Sentry-on-error-only gate, and per-validate telemetry to new `gmaps_validate_events` table. See `references/phase-history.md` for incremental phase-by-phase history.) + Phase 61.1 WR-03 — clarified success-path return shape (label-form, not STATE+DIRECTIVE; brittleness watch added) + Phase 61.1 — address-validation rule deadlock fix; WR-01/02 google_maps.py defects closed
 
 ---
 
@@ -29,12 +43,12 @@ Two separate services, one call:
 | Service | Runtime | Deployment | Purpose |
 |---------|---------|------------|---------|
 | **Next.js App** | Node | Vercel | Dashboard, API routes, cron, Stripe webhooks, phone provisioning |
-| **LiveKit Voice Agent** | Python 3.12 | Railway | Real-time AI voice via Gemini 3.1 Flash Live + FastAPI webhook service |
+| **LiveKit Voice Agent** | Python 3.12 | Railway | Real-time AI voice via cascade (Deepgram STT → gpt-4.1-mini → ElevenLabs TTS) + FastAPI webhook service |
 
 The agent is a **separate repo** (`lerboi/livekit_agent`) cloned locally at
-`C:/Users/leheh/.Projects/livekit-agent/`. This Voco monorepo contains a
-mirror at `livekit-agent/` used for plan-authoritative changes + local
-pytest; user syncs worktree → sibling repo → GitHub → Railway on redeploy.
+`C:/Users/leheh/.Projects/livekit-agent/` — this sibling repo is
+authoritative for the agent. (There is no `livekit-agent/` mirror inside this
+monorepo; the user syncs the sibling repo → GitHub → Railway on redeploy.)
 
 ### End-to-end call flow
 
@@ -43,8 +57,11 @@ Caller dials Twilio number
   │
   ▼
 Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
-  │   1. Tenant lookup by To-number (_normalize_phone → tenants.phone_number)
-  │   2. Subscription check (fail-open: blocked/unknown → AI)
+  │   1. Tenant lookup by To-number (_normalize_phone → tenants.phone_number;
+  │        subscriptions embed filtered to .eq("subscriptions.is_current", True))
+  │   2. Subscription check via shared is_subscription_blocked() — blocked
+  │        (incl. past_due beyond 3-day grace) → AI route (never owner-pickup);
+  │        the agent-side gate then disconnects. Errors fail open → AI
   │   3. Priority (VIP) caller check (Phase 46): tenants.vip_numbers OR leads.is_vip
   │        match → direct owner-pickup, bypasses steps 4–5
   │   4. evaluate_schedule(call_forwarding_schedule, tz, now_utc)
@@ -61,10 +78,12 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
   │             - Tenant lookup by to_number
   │             - Pre-session Xero + Jobber customer context fetch (Phase 55/56)
   │             - build_system_prompt(locale, customer_context, ...)
-  │             - AgentSession(llm=RealtimeModel) starts
+  │             - AgentSession(stt=deepgram, llm=gpt-4.1-mini, tts=elevenlabs,
+  │               vad=silero, turn_detection=MultilingualModel) starts
+  │             - Deterministic session.say() greeting (input-muted)
   │             - _run_db_queries background tasks (subscription + intake + call insert)
   │             - Egress recording starts after DB task completes
-  │             - Gemini 3.1 Flash Live handles audio-to-audio turn
+  │             - Cascade handles each turn: Deepgram STT → gpt-4.1-mini → ElevenLabs TTS
   │             - 6 in-process tools execute during the call
   │             - Session close → run_post_call_pipeline()
   │
@@ -106,27 +125,28 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 
 | File | Role |
 |------|------|
-| `src/agent.py` | Entrypoint: tenant lookup, Gemini session, Egress, post-call trigger. Phase 58: `fetch_customer_context_with_fanout_telemetry` wrapper. Phase 59: `_persist_call_outcome()` calls `record_call_outcome` RPC (D-14) |
-| `src/prompt.py` | System prompt builder — modular section builders, Phase 60 STATE+DIRECTIVE format, locale-conditional blocks |
+| `src/agent.py` | Entrypoint: tenant lookup, Phase 66 cascade session (Deepgram STT + Silero VAD + MultilingualModel + gpt-4.1-mini + ElevenLabs TTS), deterministic `session.say()` greeting, call-duration watchdog (2026-06-10), Egress, post-call trigger. Phase 58: `fetch_customer_context_with_fanout_telemetry` wrapper. Phase 59: `_persist_call_outcome()` calls `record_call_outcome` RPC (D-14) |
+| `src/prompt.py` | System prompt builder — modular section builders, Phase 60 STATE+DIRECTIVE format. **Single-language ENGLISH prompt (2026-06-11 collapse)** — `locale` selects only the LANGUAGE section's tenant-default-language line |
 | `src/post_call.py` | Post-call pipeline — triage, notifications, booking reconciliation. **Phase 59:** step 9 replaced `create_or_merge_lead()` with `record_outcome()` RPC call |
-| `src/post_call/__init__.py` | Phase 59: post_call package marker |
-| `src/post_call/write_outcome.py` | Phase 59 D-14: `record_outcome()` async helper — normalizes phone, calls `record_call_outcome` RPC, raises `RecordOutcomeError`; D-02a (no dual-write), D-02b (forward-fix only) |
+| `src/lib/write_outcome.py` | Phase 59 D-14: `record_outcome()` async helper — normalizes phone, calls `record_call_outcome` RPC, raises `RecordOutcomeError`; D-02a (no dual-write), D-02b (forward-fix only). 2026-06-10: the RPC `.execute()` now runs via `asyncio.to_thread` (was the only sync DB call — blocked the audio loop when invoked mid-call from capture_lead). (Path corrected — `src/post_call/` package never landed; post_call is the single module `src/post_call.py`) |
 | `src/supabase_client.py` | Singleton service-role Supabase client |
 | `src/utils.py` | Date formatting, initial slot calculation |
 | `src/webhook/__init__.py` | Webhook subpackage + `start_webhook_server` daemon thread |
 | `src/webhook/app.py` | FastAPI app — `GET /health`, `GET /health/db`, mounts `/twilio/*` router |
-| `src/webhook/twilio_routes.py` | 4 signature-gated POST endpoints + `_is_vip_caller` priority caller check |
-| `src/webhook/security.py` | `verify_twilio_signature` FastAPI dep + URL reconstruction from proxy headers |
+| `src/webhook/twilio_routes.py` | 4 signature-gated POST endpoints + `_is_vip_caller` priority caller check. 2026-06-12: tenants query filters the subscriptions embed with `.eq("subscriptions.is_current", True)` (previously read an arbitrary history row) and gates via shared `is_subscription_blocked` |
+| `src/webhook/security.py` | `verify_twilio_signature` FastAPI dep + URL reconstruction from proxy headers. 2026-06-12 fail-closed: empty `TWILIO_AUTH_TOKEN` → 503; `ALLOW_UNSIGNED_WEBHOOKS` ignored when `PYTHON_ENV` is production or unset |
+| `src/lib/subscription_gate.py` | NEW 2026-06-12 (audit H1): shared `is_subscription_blocked(status, current_period_end)` + `BLOCKED_STATUSES` — single source of truth for call blocking (canceled/paused/incomplete always; past_due after 3-day grace anchored to `current_period_end`). Used by `agent.py` + `twilio_routes.py`; mirrors the main repo's `subscription-gate.js` semantics |
 | `src/webhook/schedule.py` | Pure-function `evaluate_schedule()` + frozen `ScheduleDecision` dataclass |
 | `src/webhook/caps.py` | Async `check_outbound_cap()` — monthly outbound-minute cap |
 | `src/lib/phone.py` | `_normalize_phone()` module-level helper |
 | `src/lib/telemetry.py` | Phase 58: `emit_integration_fetch` + `emit_integration_fetch_fanout` helpers (see `integrations-jobber-xero` skill) |
 | `src/tools/__init__.py` | Tool registry — conditional registration based on onboarding |
-| `src/tools/book_appointment.py` | Atomic slot booking (slot_token-resolved) + address validation + calendar sync + SMS. Phase prod-readiness 2026-06: now also calls `mute_input_during_tool(deps)` after arg-parse and sets `deps["_last_tool_state"]` on all main return paths (cascade-recovery replay parity). |
+| `src/tools/book_appointment.py` | Atomic slot booking (slot_token-resolved) + address validation + calendar sync + SMS. (Phase 65: the Gemini-era `mute_input_during_tool` / `_last_tool_state` cascade-recovery plumbing was removed — gpt-realtime-2 async function calling makes it unnecessary.) |
 | `src/tools/check_slot.py` | Verify a specific (date, time) is bookable; registers a `slot_token`. (Replaces the date+time branch of the former monolithic `check_availability`.) |
 | `src/tools/check_day.py` | List open slots for a whole day; registers `slot_token`s. (Former day-listing branch of `check_availability`.) |
 | `src/tools/next_available_days.py` | Find the next N days with any availability; registers `slot_token`s. (Former next-available branch of `check_availability`.) |
 | `src/tools/capture_lead.py` | Mid-call lead capture on decline |
+| `src/tools/validate_address.py` | Early mid-call address validation (2026-06-10) — wraps `validate_address_bounded`, caches result on `deps["_validated_address"]`, exports `get_cached_validation` reused by book_appointment/capture_lead. Always-on |
 | `src/tools/check_caller_history.py` | Silent context repeat-caller lookup |
 | `src/tools/check_customer_account.py` | Re-serve pre-session Xero/Jobber context |
 | `src/tools/transfer_call.py` | SIP REFER transfer to owner phone |
@@ -134,10 +154,11 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 | `src/integrations/xero.py` | Xero adapter (Python) — see `integrations-jobber-xero` skill |
 | `src/integrations/jobber.py` | Jobber adapter (Python) — see `integrations-jobber-xero` skill |
 | `src/lib/booking.py` | Atomic slot booking via Supabase RPC |
-| `src/lib/slot_calculator.py` | Available slot calculation |
+| `src/lib/slot_calculator.py` | Available slot calculation — 2026-06-10: `_all_day_busy_bounds()` expands `is_all_day` busy rows to tenant-local day bounds |
 | `src/lib/leads.py` | Lead creation/merge logic — **Phase 59:** `create_or_merge_lead()` replaced by `record_outcome()` in post-call step 9; file retained until Plan 08 drops legacy `leads` table |
 | `src/lib/notifications.py` | SMS (Twilio) + Email (Resend) dispatch |
-| `src/lib/google_calendar.py` | Google Calendar push |
+| `src/lib/google_calendar.py` | Google Calendar push (`_to_naive_local_iso` helper shared with the Outlook push) |
+| `src/lib/outlook_calendar.py` | Outlook Calendar push — 2026-06-10: start/end sent as **naive tenant-local ISO** via `google_calendar._to_naive_local_iso` with `timeZone` authoritative; Graph ignores the UTC offset in `dateTime` when `timeZone` is set, so the raw offset-suffixed ISO double-shifted events (e.g. +8h for SG) |
 | `src/lib/whisper_message.py` | Whisper message for warm transfers |
 | `src/lib/triage/classifier.py` | Three-layer triage orchestrator |
 | `src/lib/triage/layer1_keywords.py` | Regex urgency detection |
@@ -153,13 +174,13 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 | `src/app/api/stripe/webhook/route.js` | Phone provisioning (Twilio purchase) + SIP trunk + webhook URL config |
 | `scripts/cutover-existing-numbers.js` | One-time migration of existing tenant numbers to webhook routing |
 | `src/app/api/onboarding/test-call/route.js` | LiveKit SIP outbound test call trigger |
-| `src/lib/subscription-gate.js` | Subscription enforcement for the agent |
+| `src/lib/subscription-gate.js` | JS reference gate — live enforcement moved to the agent repo's shared `src/lib/subscription_gate.py` (2026-06-12), which also blocks past_due after the 3-day grace |
 | `src/app/api/cron/send-recovery-sms/route.js` | Recovery SMS cron |
 | `src/app/api/notification-settings/route.js` | GET/PATCH `notification_preferences` JSONB |
 
 ---
 
-## 1. Agent Service (LiveKit + Gemini)
+## 1. Agent Service (LiveKit + Phase 66 cascade pipeline)
 
 ### Connection lifecycle
 
@@ -187,25 +208,67 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
     `book_appointment.py`/`capture_lead.py` as the address-validation
     `region_code` (prod-readiness 2026-06 fix; previously absent, so
     non-US tenants always validated against region "US").
-11. `RealtimeModel` + `VocoAgent` + `AgentSession(llm=model, tts=GeminiTTS)`
-    — register event handlers BEFORE `session.start()`. The RealtimeModel
-    is now constructed with `session_resumption=SessionResumptionConfig(handle=None)`
-    (prod-readiness 2026-06) so the ~10-min Gemini server connection reset
-    reconnects against a resumption handle the SDK maintains, instead of
-    cold-starting. (See §"Greeting" + §"session_resumption" below.)
+11. **Phase 66 cascade construction** (`src/agent.py` ~L510-551):
+    - `stt = deepgram.STT(model="nova-3", language="multi")` — preserves EN+ES
+      code-switching; deliberately isolated to one line so the STT is
+      one-line-swappable (AssemblyAI Universal-3 Pro / Deepgram Flux-multi are
+      the UAT A/B candidates).
+    - `turn_detection = MultilingualModel()` — semantic end-of-turn detection
+      (more robust to brief SIP echo than raw Silero endpointing); model files
+      pre-downloaded in the Dockerfile.
+    - `llm = openai.LLM(model=LLM_MODEL, parallel_tool_calls=False,
+      max_completion_tokens=500)` — `LLM_MODEL = "gpt-4.1-mini"`
+      (non-reasoning, low TTFT, strong tool calling);
+      `parallel_tool_calls=False` keeps the booking flow strictly
+      sequential (never fires `check_slot` + `book_appointment` in one turn —
+      the slot_token contract assumes one tool call resolves before the next).
+      `max_completion_tokens=500` (2026-06-10) is a RUNAWAY BACKSTOP only —
+      conciseness is enforced by the prompt; 500 tokens never truncates a
+      legitimate turn (even the booking readback), it just caps pathological
+      generation loops before minutes of runaway TTS. Verified against the
+      installed livekit-plugins-openai 1.5.7 `LLM.__init__` signature.
+    - `tts = elevenlabs.TTS(model=ELEVENLABS_TTS_MODEL, voice_id=voice_id)` —
+      `"eleven_flash_v2_5"` (~75ms first byte; the sub-500ms TTS that makes the
+      cascade viable where Phase 64's GeminiTTS ~1.3s did not). `voice_id` from
+      `_resolve_voice` over `ELEVENLABS_VOICE_MAP` (labels
+      professional/friendly/local_expert; main-repo migration 070).
+    - `vad = silero.VAD.load()` — defaults for barge-in. Do NOT port the
+      realtime model's 2.5s silence value (Phase 64 did and added ~2s/turn).
+    - `VocoAgent(instructions=system_prompt, tools=tools)` +
+      `AgentSession(stt=stt, llm=llm, tts=tts, vad=vad,
+      turn_detection=turn_detection, allow_interruptions=True)`; register
+      event handlers BEFORE `session.start()`.
 12. `_run_db_queries` background tasks: subscription check + intake
-    questions + calls row insert, as `asyncio.create_task()`.
+    questions + calls row insert, as `asyncio.create_task()`. The
+    subscription select now includes `current_period_end` alongside `status`
+    (2026-06-12 — feeds the past_due grace check in the shared gate).
 13. `await session.start(agent=agent, room=ctx.room, room_options=...)` —
     runs in parallel with DB queries.
-14. Greeting: spoken via a **separate Gemini TTS `session.say()` path**, NOT
-    a Gemini agent-first reply. Gemini 3.1 Flash Live does not support
-    agent-first turns via `generate_reply`/`say-via-realtime`/`update_chat_ctx`
-    (all capability-gated closed for "3.1"; see §Phase 63.1). A separate
-    GeminiTTS pipeline is attached to the session, and `session.say(...)`
-    routes through `_tts_task`. The Gemini TTS voice set matches the Live
-    voice set 1:1, so the greeting voice is identical to the conversation.
+14. Greeting (Phase 66): **deterministic** via
+    `session.say(greeting_text, allow_interruptions=False)` right after
+    `session.start()` — the cascade has a TTS, so `say()` works again. The text
+    is fixed, byte-identical per locale from `src/messages/{en,es}.json`:
+    `agent.greeting_onboarding` (with `{business_name}`) when
+    `onboarding_complete`, else `agent.greeting_default`. No LLM turn consumed,
+    no per-call wording drift. `_build_greeting_section` in `prompt.py` tells
+    the model the greeting was already delivered so it does not re-greet on
+    turn 1. (The Phase 65 `generate_reply` greeting is historical.)
+    - **Non-interruptible**: caller input is muted via
+      `session.input.set_audio_enabled(False)` before the `say()` and unmuted
+      once `SpeechHandle.wait_for_playout()` returns (10s
+      `GREETING_UNMUTE_TIMEOUT_S` safety cap, force-unmute on timeout; if the
+      `say()` dispatch failed, `greeting_handle` is None and input unmutes
+      immediately). Unlike the realtime model (where it was ignored), the
+      cascade AgentSession HONORS `allow_interruptions=False` on `say()` — it
+      is a second echo defense behind the input mute (BVCTelephony is layer 1;
+      the Phase-64 revert showed SIP self-echo can trip the VAD and cut the
+      opening line in half). Barge-in resumes the moment the greeting finishes.
 15. DB queries complete:
-    - Subscription blocked → disconnect.
+    - Subscription blocked → disconnect. Blocking is decided by the shared
+      `is_subscription_blocked(status, current_period_end)`
+      (`src/lib/subscription_gate.py`, 2026-06-12): canceled/paused/incomplete
+      always; **past_due once the 3-day grace after `current_period_end` has
+      elapsed** (fail-open on missing/unparseable period end).
     - Intake questions → injected into the system prompt pre-session
       (no longer via `generate_reply`).
     - Call record → `deps["call_uuid"]` updated.
@@ -215,64 +278,92 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 18. `entrypoint()` awaits a `close_complete` asyncio.Event so the LiveKit
     worker keeps the process alive through the post-call pipeline.
 
-### Webhook server boot (Phase 39)
+### Call-duration watchdog (2026-06-10)
 
-Before `cli.run_app()` in `__main__`, `src/agent.py` calls
+The prompt's "wrap up at 9 / hard max 10 minutes" is prose, not enforcement —
+`_call_duration_watchdog()` in `agent.py` (an `asyncio.create_task` started
+right after the greeting-unmute task) is the server-side cap. Sleeps are
+computed relative to `start_timestamp` so session-start latency doesn't extend
+the cap. Both thresholds are env-overridable:
+
+- **`VOCO_WRAP_UP_CALL_SECONDS` (default 540)** — appends a system-message
+  wrap-up nudge via `agent.update_chat_ctx(nudge_ctx)` ("TIME LIMIT: ... Begin
+  wrapping up now ..."). The LLM sees it on its next turn — cheap and
+  non-disruptive (no forced speech mid-conversation).
+- **`VOCO_MAX_CALL_SECONDS` (default 600)** — sets
+  `call_end_reason[0] = 'max_duration'` (recorded as the call's
+  `disconnection_reason` by post_call) BEFORE teardown, speaks a localized
+  goodbye via `session.say(_msg(locale, "agent.max_duration_goodbye"),
+  allow_interruptions=False)` with a 20s `wait_for_playout()` cap, then reuses
+  end_call's `_delayed_disconnect(deps)` path (imported from
+  `src/tools/end_call.py`): remove SIP participant → `ctx.shutdown()` → the
+  post-call pipeline still runs.
+
+The watchdog task is cancelled as the FIRST statement of `_on_close_async` on
+normal close, so the max-duration goodbye/disconnect can never fire
+mid-teardown.
+
+### Webhook server boot (Phase 39) + boot preflight (2026-06-12)
+
+`__main__` in `src/agent.py` first runs a **boot preflight** (audit S4): it
+raises `RuntimeError` and refuses to start when any of `OPENAI_API_KEY`,
+`DEEPGRAM_API_KEY`, `ELEVEN_API_KEY` is missing. The STT/LLM/TTS plugins are
+constructed PER CALL inside `entrypoint()`, so a missing key previously failed
+at call time — every inbound call connected and died silently with no audio
+while the liveness healthcheck stayed green. Failing the deploy visibly is the
+fix.
+
+Then, before `cli.run_app()`, it calls
 `start_webhook_server()` — spawns a daemon thread running uvicorn on port
 8080. Serves `/health`, `/health/db`, and `/twilio/*`.
 
 ### Critical pin set — livekit-agents + sibling plugins
 
-**Current pins (prod-readiness 2026-06):** the framework and the three
-plugins are pinned to `1.5.7`, model `gemini-3.1-flash-live-preview`:
+**Current pins (Phase 66):** everything livekit-* stays on the `1.5.7` line;
+`livekit-plugins-openai` now provides the **LLM** (`openai.LLM`), not a
+realtime model, and the cascade adds the Deepgram + ElevenLabs plugins:
 
 ```
 livekit-agents==1.5.7
-livekit-plugins-google==1.5.7
+livekit-plugins-openai==1.5.7
+livekit-plugins-deepgram==1.5.7
+livekit-plugins-elevenlabs==1.5.7
 livekit-plugins-silero==1.5.7
 livekit-plugins-turn-detector==1.5.7
+livekit-plugins-noise-cancellation>=0.2,<1
 ```
 
-> **Gemini 3.1 Flash Live is still PREVIEW** (`gemini-3.1-flash-live-preview`).
-> On the 1.5.7 google plugin, `generate_reply`, `update_chat_ctx`, and
-> `update_instructions` are **documented-incompatible** with the 3.1 model:
-> the plugin capability-gates them closed (`mutable = "3.1" not in model`),
-> and the underlying cause is the Gemini Live server's **`send_client_content`
-> 1007 restriction** for 3.1 — that restriction is the root cause of the
-> workarounds (separate GeminiTTS `session.say()` greeting; cascade-recovery
-> replay that re-emits a `FunctionCallOutput` rather than calling
-> `generate_reply`). Do not reintroduce those agent-first/mutate APIs for 3.1.
->
-> **`session_resumption` (prod-readiness 2026-06, config-only):** the
-> RealtimeModel is constructed with
-> `session_resumption=genai_types.SessionResumptionConfig(handle=None)`.
-> `google.genai.types.SessionResumptionConfig` exposes `handle:Optional[str]`
-> and `transparent:Optional[bool]`. The 1.5.7 google plugin stores the
-> `new_handle` from each `session_resumption_update` and re-sends it on every
-> reconnect via `_build_connect_config`, which forwards **only `.handle`**
-> (it hardcodes `SessionResumptionConfig(handle=self._session_resumption_handle)`
-> and ignores `.transparent`) — so `transparent=True` would be dropped after
-> the first connect; `handle=None` is what the plugin actually threads. This
-> hardens the ~10-min Gemini server connection reset. **`context_window_compression`
-> was deliberately NOT enabled** (interaction risk with the replay path).
+> (stale — superseded by the Phase 66 cascade, see agent.py; the RealtimeModel
+> notes below are gpt-realtime-2 history.)
+> **Verified against the installed `livekit-plugins-openai==1.5.7`
+> (migration §17.1):**
+> - **Model id `"gpt-realtime-2"` is NOT in the plugin's `RealtimeModels`
+>   literal** (which knows `gpt-realtime` / `gpt-realtime-1.5` /
+>   `gpt-realtime-2025-08-28`). The constructor accepts any `str`, so it
+>   builds fine but is **verified only at the live OpenAI handshake (first
+>   call)** — isolated as the single constant `OPENAI_REALTIME_MODEL` at the
+>   top of `agent.py`. **← #1 UAT risk; change there if it 404s.**
+> - **No `reasoning` kwarg** in the 1.5.7 constructor (would be silently
+>   swallowed by `**kwargs`); omitted — gpt-realtime-2 defaults to `low`
+>   effort, the desired low-latency setting.
+> - **`input_audio_transcription` must be a typed
+>   `openai.types.realtime.AudioTranscription`**, NOT a dict (the plugin's
+>   `to_audio_transcription` only converts typed objects). Set to
+>   `AudioTranscription(model="gpt-4o-mini-transcribe")` — caller-side
+>   transcription feeds post-call triage + lead extraction.
+> - **`TurnDetection` is NOT exported** from `livekit.plugins.openai.realtime`;
+>   use `SemanticVad` from
+>   `openai.types.realtime.realtime_audio_input_turn_detection` directly.
+>   `semantic_vad`/`medium` is the plugin default. ServerVad fallback: swap to
+>   `ServerVad(threshold=..., silence_duration_ms=...)`.
+> - The Gemini-only config (`session_resumption`, `thinking_config`, the
+>   `realtime_input_config` VAD, the `language=` STT pin) was removed.
 
-**Earlier pin history (HISTORICAL — superseded by 1.5.7 above):** the framework
-and plugins were previously pinned to `1.5.1`, with the google plugin at git
-`43d3734` (the only commit then supporting `generate_reply` on
-`gemini-3.1-flash-live-preview`).
-
-**Do not bump carelessly.** The google plugin at `43d3734` constructed
-`llm.RealtimeCapabilities` with 6 fields; PR #5211 (livekit-agents 1.5.2
-on Apr 8 2026) added a 7th required field `per_response_tool_choice`.
-Any mismatch → `TypeError` at `RealtimeModel.__init__` on every inbound
-call. The rationale is duplicated in `pyproject.toml` comments.
-
-**Phase 60.2 Fix J — accepted limitation.** Upstream issue #4486
-(`_SegmentSynchronizerImpl.playback_finished` warnings) has no fix.
-Commit `3e51d8e` (2026-04-11) on the google plugin was investigated as
-an upgrade candidate but ambiguously changes `generate_reply()`
-compatibility for `gemini-3.1-flash-live-preview` — declined. Revisit
-when #4486 closes.
+**Do not bump carelessly.** Pin-version drift across `livekit-agents` and the
+plugins has historically caused `RealtimeModel.__init__` signature mismatches
+(see the Gemini-era 1.5.1→1.5.2 `RealtimeCapabilities` break, preserved in
+`references/phase-history.md`). The rationale is duplicated in
+`pyproject.toml` comments.
 
 ---
 
@@ -291,60 +382,82 @@ primary routing lever since Phase 40; SIP trunk preserved as rollback.
 
 ---
 
-## 3. Gemini Live Session
+## 3. OpenAI Realtime Session
+
+> ⚠️ **(stale — superseded by the Phase 66 cascade, see agent.py.)** The whole
+> section (RealtimeModel construction, SemanticVad turn detection, OpenAI voice
+> resolution / `VOICE_MAP` / migration-067 CHECK) describes the Phase 65
+> gpt-realtime-2 code. The live construction is the cascade in §1 step 11;
+> voices are now ElevenLabs voice_ids resolved from LABELS
+> (professional/friendly/local_expert) via `ELEVENLABS_VOICE_MAP` (main-repo
+> migration 070 stores labels, clears stale OpenAI values — the "migration 068"
+> the agent comments originally referenced was never the label migration (068 is
+> billing hardening); 070 realized it. Every voice_id must
+> exist in the ElevenLabs account's "My Voices"). Retained as historical record.
 
 ```python
-realtime_input_config = genai_types.RealtimeInputConfig(
-    automatic_activity_detection=genai_types.AutomaticActivityDetection(
-        start_of_speech_sensitivity=genai_types.StartSensitivity.START_SENSITIVITY_LOW,
-        end_of_speech_sensitivity=genai_types.EndSensitivity.END_SENSITIVITY_LOW,
-        prefix_padding_ms=400,
-        silence_duration_ms=1500,  # Phase 60.2 Fix G (was 1000 in Phase 55 999.2)
+from openai.types.realtime import AudioTranscription
+from openai.types.realtime.realtime_audio_input_turn_detection import SemanticVad
+
+OPENAI_REALTIME_MODEL = "gpt-realtime-2"  # isolated constant — see §1 UAT risk
+
+model = openai.realtime.RealtimeModel(
+    model=OPENAI_REALTIME_MODEL,
+    voice=voice_name,
+    turn_detection=SemanticVad(
+        type="semantic_vad",
+        eagerness="medium",
+        create_response=True,
+        interrupt_response=True,
+    ),
+    input_audio_transcription=AudioTranscription(
+        model="gpt-4o-mini-transcribe",
     ),
 )
 
-model = google.realtime.RealtimeModel(
-    model="gemini-3.1-flash-live-preview",
-    voice=voice_name,
-    temperature=0.3,
-    instructions=system_prompt,
-    realtime_input_config=realtime_input_config,
-    thinking_config=genai_types.ThinkingConfig(
-        thinking_level="minimal",
-        include_thoughts=False,
-    ),
-)
+agent = VocoAgent(instructions=system_prompt, tools=tools)
+session = AgentSession(llm=model)  # no tts= — the realtime model emits audio itself
 ```
 
-### VAD tuning — backlog 999.2 + Phase 60.2 Fix G
+### Turn detection — SemanticVad (Phase 65)
 
-The default (`START_SENSITIVITY_HIGH` / `END_SENSITIVITY_HIGH`, ~20ms
-prefix padding) fires on breaths + minor overlap and cancels in-flight
-responses. Symptoms: `server cancelled tool calls` warnings, mid-sentence
-audio cuts, `_SegmentSynchronizerImpl.playback_finished` warning (upstream
-`livekit/agents#4441`).
+gpt-realtime-2 uses OpenAI server-side turn detection. The agent constructs
+`SemanticVad(eagerness="medium", create_response=True, interrupt_response=True)`
+— the plugin default and the recommended starting point for this SIP topology.
+Semantic VAD decides end-of-turn from the *content* of the caller's speech
+rather than a fixed silence timer.
 
-Current config:
+- `create_response=True` — the model responds automatically at end-of-turn.
+- `interrupt_response=True` — caller speech can barge in (keep this on;
+  callers must be able to interrupt for emergencies).
 
-- `START_SENSITIVITY_LOW` + `prefix_padding_ms=400` — ~400ms of sustained
-  audio required for barge-in.
-- `END_SENSITIVITY_LOW` + `silence_duration_ms=1500` — the server waits
-  1.5s of silence before treating the caller's turn as finished.
+If live UAT shows over- or under-eager turn-taking, switch to
+`ServerVad(threshold=..., prefix_padding_ms=..., silence_duration_ms=...)`
+(the fixed-timer fallback). See `docs/OPENAI-REALTIME-2-MIGRATION.md` §7.5.
 
-Phase 60.2 Fix G raised `silence_duration_ms` from 1000 → 1500 after the
-2026-04-19 UAT captured 2 cancellations per call at 1000ms. 1500ms
-cleared that to 0 on the 226s post-fix call. Tradeoff: deliberate
-barge-in needs ~1.5s sustained speech.
-
-**Do not switch to `activity_handling=NO_INTERRUPTION`** — kills barge-in
-entirely; callers must be able to interrupt for emergencies.
+> **Why the Gemini VAD-tuning history is gone:** the old
+> `START_SENSITIVITY_LOW` / `silence_duration_ms=1500` config and the
+> `server cancelled tool calls` / `_SegmentSynchronizerImpl` cancellation
+> cascade it fought were specific to Gemini 3.1's server-side VAD + blocking
+> function calling. gpt-realtime-2 has native async function calling — an
+> in-flight tool call is NOT cancelled when the caller speaks — so that
+> failure class is gone at the source. The historical tuning is preserved in
+> `references/phase-history.md`.
 
 ### Voice resolution (Phase 44 AI Voice Selection)
 
 ```python
 ai_voice = tenant.get("ai_voice") if tenant else None
-voice_name = ai_voice if ai_voice else VOICE_MAP.get(tone_preset, "marin")
+# Validate against the OpenAI voice set; an unsupported value (e.g. a stale
+# Gemini voice like "Zephyr") errors the whole session at the OpenAI handshake.
+voice_name = _resolve_voice(ai_voice, tone_preset)  # invalid -> VOICE_MAP[tone]
 ```
+
+`_resolve_voice()` + the `OPENAI_VOICES` allowlist (agent commit `35238f7`)
+guard against stale/drifted `ai_voice`. Incident 2026-06: tenant "Make It AI"
+held the Gemini voice "Zephyr" — gpt-realtime-2 rejected it (`invalid_value`),
+erroring the session on every call, because **migration 067 (NULL ai_voice +
+OpenAI CHECK) had not been applied to prod**. Fix = apply 067 + redeploy.
 
 `VOICE_MAP` (Phase 65 — OpenAI gpt-realtime voices; was Zephyr/Aoede/Achird under Gemini):
 | tone_preset | Voice | Character |
@@ -356,6 +469,12 @@ voice_name = ai_voice if ai_voice else VOICE_MAP.get(tone_preset, "marin")
 10 voices available in dashboard AI Voice Settings: alloy, ash, ballad,
 coral, echo, sage, shimmer, verse, marin, cedar. `tenants.ai_voice` has a
 CHECK constraint (migration 067) enforcing only these values or NULL.
+
+> **Superseded (2026-06-12):** migration **070** replaced 067's OpenAI-name
+> CHECK with the 3 stable labels (`professional`, `friendly`, `local_expert`);
+> the dashboard `VALID_VOICES` allowlist + voice picker now use the 3 labels,
+> and the agent resolves them via `ELEVENLABS_VOICE_MAP` (invalid/NULL → tone
+> default). The 10-voice OpenAI picker above is historical.
 
 ### Non-blocking I/O pattern
 
@@ -375,25 +494,64 @@ customer_context=None)`.
 Sections (order):
 
 1. **Identity** — role, tone, conciseness.
-2. **Voice Behavior** — match energy, slow on readbacks, one focused
-   question at a time, announce before tool calls.
+2. **Voice Behavior** — **conciseness-first since 2026-06-10**: leads with
+   "Speak in one or two short sentences per turn, then stop and let the
+   caller talk. Ask exactly one question per turn. The booking confirmation
+   readback is the only turn that may run longer." The old "natural
+   back-and-forth matters more than efficiency" opener was REMOVED (it
+   licensed long turns); acknowledgments bounded to "a few words at most";
+   the slow-on-readbacks guidance preserved ("slower there, never wordier"
+   — pace, not length). English-only since the 2026-06-11 single-prompt
+   collapse. A matching one-line brevity recap is item 4
+   of FINAL — NON-NEGOTIABLES (recency position; the prompt still ends
+   with the test-pinned "Don't interrogate the caller about the
+   situation." line). TOOL NARRATION's filler target also tightened from
+   "~3 seconds … longer, warmer filler" to ONE warm sentence (~2s) — the
+   filler remains MANDATORY (covers tool latency; silence is never
+   licensed), and `validate_address` has its own filler example ("Let me
+   just check that address real quick."). **2026-06-12 (P4):** carries the
+   register contract — banned stock phrases ("Thank you for that
+   information", "How may I assist you", announced transitions, etc.),
+   contractions required, hard never-two-questions rule with the Call-B
+   counter-example — and a SAYING NUMBERS AND DATES OUT LOUD block
+   (postal/phone/unit digits spelled out in groups, times as people say
+   them, dates without the year, never announce today's date; the LLM's
+   text feeds ElevenLabs verbatim, so these rules directly control TTS
+   rendering).
 3. **Corrections** — top-level section: caller correction ALWAYS replaces
    old value; never read back incorrect data. Concrete example included.
+   **2026-06-12 (P5):** ends with a HEARING THROUGH THE PHONE block — a
+   near-soundalike of already-confirmed data is a mishearing (never adopt
+   or parrot it back, e.g. Call D's "Lucky Kenberg Drive"); never read back
+   implausible strings; after two unclear repeats switch to a best-guess
+   yes/no question; names get spelled.
 4. **Business Hours** — computed from `working_hours` JSON, grouped
    (e.g., "Mon-Fri: 9:00 AM - 5:00 PM"). Includes lunch breaks. Empty if
    `working_hours` is None.
 5. **Opening Line** — greeting + recording disclosure.
-6. **Language** — default English. Switch only on explicit caller request
-   to English / Spanish / Chinese / Malay / Tamil / Vietnamese. Unclear
-   speech treated as connection issue, not language barrier. Phase 62
-   reframed ANTI-HALLUCINATION: when transcription appears in an
-   unsupported language (German / French / Italian / etc.), treat it as
-   an STT error of English audio — do NOT respond in the perceived
-   language and do NOT tell the caller "I only speak English" (both
-   reveal the STT failure). Substitute a connection-issue framing:
-   "Sorry, the audio cut out for a moment — could you say that again?"
-   Real language switches require an explicit caller phrase like
-   "Can we speak in Spanish?" — foreign text in transcript is NOT
+6. **Language** (2026-06-11 single-prompt collapse — the ONE place
+   `locale` changes the prompt) — supported languages are exactly
+   English and Spanish (matches the Deepgram nova-3 `language="multi"`
+   EN+ES pin). The tenant-default-language line flips on `locale`:
+   "Default to English on every call." vs "This business operates in
+   Spanish — open in Spanish and default to Spanish on every call."
+   Switch only on explicit caller request, switch back the same way,
+   continue from where you left off. Carries a SPEAKING SPANISH —
+   DELIVERY GUIDE in English (usted register; Spanish times/dates;
+   "código postal" with the caller regardless of market; digit-by-digit
+   phone readback; Spanish fillers; any-language applicability of the
+   reserved/prohibited-word rules — incl. the Spanish address-validation
+   forms "validado/validada", "verificado/verificada", "coincide con
+   nuestros registros"). Unclear speech treated as connection issue,
+   not language barrier. Phase 62 ANTI-HALLUCINATION preserved: when
+   transcription appears in an unsupported language (German / French /
+   Italian / etc.), treat it as an STT error of English or Spanish
+   audio — do NOT respond in the perceived language and do NOT tell the
+   caller "I only speak English" (both reveal the STT failure).
+   Substitute a connection-issue framing: "Sorry, the audio cut out for
+   a moment — could you say that again?" Real language switches require
+   an explicit caller phrase like "Can we speak in Spanish?" /
+   "¿Podemos hablar en inglés?" — foreign text in transcript is NOT
    consent. Call AJ_gpRzniyNoJBd (2026-05-07) is the regression source.
 7. **Repeat Caller** — empty (never reveal prior history; silent context).
 8. **Customer Context (Phase 55/56)** — `_build_customer_account_section`
@@ -417,16 +575,31 @@ Sections (order):
      One targeted follow-up per missing piece; never enumerate fields.
    - URGENCY: silent classification; never ask caller to rate; never use
      "emergency/urgent/routine" out loud.
-10. **Intake Questions** — trade-specific, injected via
-    `session.generate_reply(instructions=...)` after DB query completes.
-11. **Booking Protocol (Phase 60 D-02/D-09/D-10)**:
+10. **Intake Questions** — trade-specific, fetched pre-session and injected
+    into the system prompt (Phase 63.1 moved this off `generate_reply`; the
+    text arrives in the initial `build_system_prompt(intake_questions=...)`).
+    **2026-06-12 (P3):** reframed as technician-prep nice-to-haves that must
+    never delay scheduling — at most ONE asked before the slot is locked,
+    the rest after booking confirmation; skip any answered in substance;
+    skip all if the caller is rushed; rephrased, never read like a form
+    (evidence: Call D's "Let me just skip the whatever", Call A re-asking
+    an answered question). The services fetch in agent.py now also selects
+    `name` (feeds P8.2 STT keyterms).
+11. **Booking Protocol (Phase 60 D-02/D-09/D-10; AVAILABILITY rewritten 2026-06-12 P1)**:
     - SCHEDULING: only after name + issue + confirmed address.
-    - AVAILABILITY RULES: every new date/time requires fresh
-      `check_availability`; never list slot times.
-    - READBACK (mandatory): read name + full address in ONE utterance.
+    - AVAILABILITY RULES: every caller-named new date/time requires a fresh
+      `check_slot` (or `check_day` / `next_available_days`). **2026-06-12:**
+      the agent may OFFER at most 2–3 times taken from a tool return in this
+      turn (never recite lists, never invent); every rejection pairs with a
+      tool-returned alternative "in the same breath"; a caller-picked offered
+      time books directly with its token.
+    - READBACK (mandatory, and the ONLY confirmation): name + address-if-
+      never-validated in ONE utterance, offer folded in ("…shall I lock that
+      in?"); no separate pre-confirm question, no post-yes re-confirm.
       Accept-and-re-read correction loop until caller stops correcting.
       Address-only if no name captured.
-    - AFTER BOOKING: confirm full details, ask if anything else.
+    - AFTER BOOKING: confirm day + time ONLY (never re-read the address),
+      ask if anything else.
 12. **Decline Handling** — only when `onboarding_complete=True`. Judgment-
     based, not a two-strike counter. Silence/topic changes/thinking NOT declines.
 13. **Transfer Rules** — 2 triggers only: caller asks for human, or 3
@@ -437,34 +610,54 @@ Sections (order):
 
 ### Tool return format (Phase 60 D-16)
 
-All 5 tool returns (book_appointment, capture_lead, transfer_call,
-check_availability, check_caller_history) use the strict
-`STATE:<code>|DIRECTIVE:<imperative>` format — machine-facing, not
-speakable. Every DIRECTIVE ends with "Do not repeat this message text
-on-air." `end_call` is untouched (returns a space character).
+Tool returns use the strict `STATE:<code>|DIRECTIVE:<imperative>` format —
+machine-facing, not speakable — across `check_slot`/`check_day`/
+`next_available_days`, `capture_lead`, `transfer_call`, and
+`check_caller_history`. Every DIRECTIVE ends with "Do not repeat this message
+text on-air." `end_call` is untouched (returns a space character). **Exception
+(Phase 61):** the `book_appointment` / `capture_lead` *success* path uses a
+label form `BOOKED [verdict=...]:` / `LEAD CAPTURED [verdict=...]:` instead of
+`STATE:` (see the Phase 61 address-validation section + its brittleness watch).
 
-### Locale-conditional blocks
+### Single-English-prompt policy (2026-06-11 — replaces the dual-prompt/D7 locale-parity policy)
 
-The three Phase 60 blocks (NAME, SERVICE ADDRESS, READBACK) live as
-inline literals in `_build_info_gathering_section` and
-`_build_booking_section` with `if locale == "es"` conditionals — NOT
-from `messages/*.json`. Spanish uses usted register (D-13/D-14).
+The prompt is **one English prompt for every call**. The Phase 60.3 D7
+"EN+ES parity" era (every section builder carrying an `if locale == "es"`
+branch) is OVER — all ES branches were removed on 2026-06-11 with the
+English text preserved byte-identically. The model speaks Spanish at
+runtime when the call is in Spanish; it is *instructed* in English.
 
-Pre-existing Phase 30 structural gap: intro paragraphs, URGENCY,
-SCHEDULING, AVAILABILITY RULES remain English-only regardless of locale.
-Intentional pre-existing (Pitfall 4) — Phase 60 did NOT retroactively
-fix.
+- `build_system_prompt(locale, ...)` keeps its signature; `locale` drives
+  exactly ONE thing — the tenant-default-language line in the LANGUAGE
+  section. `tests/test_prompt_locale_collapse.py` locks this structurally:
+  en/es assembled prompts must differ in exactly that one line.
+- Spanish delivery conventions (usted register, "código postal", Spanish
+  reserved/prohibited word forms, Spanish fillers, times/dates/phones)
+  live in the LANGUAGE section's SPEAKING SPANISH — DELIVERY GUIDE, in
+  English. OUTCOME WORDS carries the Spanish reserved words in its
+  "in any language, including Spanish" clause.
+- **Do NOT reintroduce `if locale == "es"` branches in section builders.**
+  New behavioral rules are written once, in English; if a rule has a
+  Spanish-delivery implication, extend the LANGUAGE delivery guide.
+- Out of scope for the collapse (still per-locale): the deterministic
+  `session.say()` greeting + `max_duration_goodbye` in
+  `src/messages/{en,es}.json`, post-call language detection,
+  notifications, whisper_message.
+- The old "Phase 30 structural gap" note (some blocks English-only under
+  the dual-prompt era) is obsolete — everything is English by design now.
 
 ---
 
-## 5. Tools (6 in-process)
+## 5. Tools (10 in-process)
 
 Registry: `src/tools/__init__.py`. All tools run in-process with direct
 Supabase access. Factories return `@function_tool`-decorated callables
 with `deps` captured via closure.
 
-**Always available:** `transfer_call`, `capture_lead`,
+**Always available:** `transfer_call`, `capture_lead`, `validate_address`,
 `check_caller_history`, `check_customer_account`, `end_call`.
+(`validate_address` is always-on — 2026-06-10 — because `capture_lead`
+needs addresses too and is itself always registered.)
 **Onboarding-complete gated:** `check_slot`, `check_day`,
 `next_available_days`, `book_appointment`.
 
@@ -499,20 +692,57 @@ tool was split into three:
   On hit, registers a `slot_token` and returns `STATE:slot_ok token=… speech=…`;
   also stashes `deps["_last_offered_token"]` as defense-in-depth for booking.
   On miss, returns `STATE:slot_taken … | ALTS: …token=…` with up to 3 nearby
-  alternatives (each carrying its own token).
-- **`check_day`** (`src/tools/check_day.py`) — list open slots for one date.
-- **`next_available_days`** (`src/tools/next_available_days.py`) — next N
-  days with availability.
+  alternatives (each carrying its own token). **2026-06-12 (P1):** the
+  `too_soon` branch now runs AFTER the schedule fetch and returns
+  `earliest_today=<speech> token=…` (or, when today is done,
+  `nothing_left_today=true next_open=<speech> token=…` from
+  `_find_next_opening()` scanning the next 2 days); `day_empty` likewise
+  carries `next_open=… token=…` when a later day has slots — every rejection
+  ships with a tool-licensed alternative.
+- **`check_day`** (`src/tools/check_day.py`) — **2026-06-12 (P1):** no longer
+  yes/no; returns up to 3 representative windows spread across the day
+  (`STATE:day_has_slots date_label=… count=N | OPTIONS: 1.<speech> token=…; …`
+  via `pick_spread()`), each token registered in the shared registry so a
+  caller-picked option books directly without a second check_slot.
+- **`next_available_days`** (`src/tools/next_available_days.py`) —
+  **2026-06-12 (P1):** returns the actual open-day labels
+  (`STATE:has_near_availability days=Thursday, July 6th (5 open); …`)
+  instead of yes/no; the agent offers the days, then check_day supplies
+  times for the chosen day.
 - All three import shared helpers from `src/tools/_availability_lib.py`
-  (`calc_slots_for_dates`, `register_slot_token`, `mute_input_during_tool`,
-  `parse_hhmm_to_utc`, `tenant_today`, …), call `mute_input_during_tool(deps)`
-  right after arg-parse, and set `deps["_last_tool_state"]` on every return
-  path for cascade-recovery replay.
+  (`calc_slots_for_dates`, `register_slot_token`, `parse_hhmm_to_utc`,
+  `tenant_today`, …). (Phase 65: the Gemini-era `mute_input_during_tool`
+  call + `deps["_last_tool_state"]` cascade-recovery replay were **removed** —
+  gpt-realtime-2's async function calling makes them unnecessary.)
 
 `slot_token` registry: `register_slot_token(deps, start, end)` stores
 `{slot_start_utc, slot_end_utc, created_at}` under an opaque key in
 `deps["_slot_tokens"]` (10-min TTL). `book_appointment` resolves the token
 to authoritative UTC times — this is what replaced raw ISO slot passing.
+
+### All-day busy expansion (2026-06-10)
+
+All-day mirror rows on `calendar_events` / `calendar_blocks` store pure dates
+as UTC-midnight timestamps (e.g. Google's exclusive end.date `2026-06-11`
+lands as `2026-06-11T00:00:00Z`). Compared literally they blocked the wrong
+local hours (08:00 → 08:00-next-day for an Asia/Singapore tenant).
+
+- `src/lib/slot_calculator.py` — new `_all_day_busy_bounds(start, end,
+  tenant_timezone)`: derives the covered calendar days from the UTC date
+  components (the pure-date encoding — NOT the local conversion, which would
+  shift the day for negative-offset tenants) and expands to
+  **[00:00 local of first day, 00:00 local of day-after-last-day)**. The
+  exclusive end is stepped back 1µs so a provider-style next-day-midnight end
+  doesn't over-block an extra day; degenerate end ≤ start still blocks the
+  start day. Same semantics as the JS twin in the main repo.
+  `calculate_available_slots` applies it to any external block with
+  `is_all_day=true`.
+- **All calendar fetch sites now select `is_all_day`:**
+  `_availability_lib.fetch_scheduling_data` (events + blocks),
+  `book_appointment.py` slot-taken recalculation (events),
+  `utils.calculate_initial_slots` (events), the `agent.py` prefetch
+  (events + blocks), and `post_call._calculate_suggested_slots` (events).
+- Tests: `tests/test_slot_calculator_all_day.py` (new).
 
 ---
 
@@ -536,6 +766,80 @@ Parameters: `date` (YYYY-MM-DD), `time` (HH:MM 24h), `urgency`.
 - Directives reinforce "do not read the full slots list out loud" and
   "do not fabricate times."
 
+### validate_address — Early Mid-Call Address Validation (2026-06-10)
+
+`src/tools/validate_address.py`, factory-over-deps, raw_schema. Params:
+`street` (required), `unit`, `postal_code`, `city`. Called the MOMENT the
+caller finishes giving their address (after a one-sentence filler) — no
+longer deferred to the booking/lead commit. Internally calls
+`validate_address_with_region_fallback` (google_maps.py), which orchestrates
+the unchanged Phase 61 `validate_address_bounded` (1.5s timeout, never
+raises, `gmaps_validate_events` telemetry per attempt, Sentry on
+`verdict=error` only) and is itself wrapped in a belt-and-braces try/except
+(returns `address_noted` if the wrapper somehow raises).
+
+**Caller-region fallback (2026-06-11):** `derive_caller_region`
+(`src/lib/phone.py`, `phonenumbers.region_code_for_number`, never raises,
+None for anonymous/unparseable caller-ID) sets `deps["caller_region"]` at
+session setup — it correctly splits +1 into US vs CA by area code.
+`validate_address_with_region_fallback(…, primary_region=tenant country,
+caller_region=…)` contract: attempt 1 uses the tenant's country (unless that
+region is unsupported while caller_region IS supported — then caller_region
+goes first); attempt 2 fires ONLY when attempt 1 returns
+`unconfirmed`/`unsupported_region` AND caller_region is truthy, differs from
+the region attempt 1 used, and is in SUPPORTED_REGION_CODES (US/CA/SG). The
+better verdict wins (confirmed > confirmed_with_changes > unconfirmed >
+unsupported_region/skipped/error); ties go to attempt 1. Worst case adds one
+extra 1.5s-bounded call on the rare unconfirmed path. Both attempts write
+their own telemetry rows. All three validation sites use this wrapper
+(validate_address tool + the book_appointment/capture_lead cache-miss
+fallbacks); the winning result is what gets cached.
+
+Returns (STATE+DIRECTIVE, never spoken verbatim):
+- `confirmed` → `STATE:address_ok speech={formatted} | DIRECTIVE:confirm
+  the address back in ONE short sentence and continue…`
+- `confirmed` + caller gave NO postal but the result has one (2026-06-12 P2)
+  → `STATE:address_ok_confirm_postal speech={formatted} postal={postal} |
+  DIRECTIVE:…ask whether the postal code is right as a QUESTION, digit by
+  digit — never state it as a fact…` (incident call 31559053: a
+  Google-inferred postal was asserted, then defended against the caller)
+- `confirmed_with_changes` → `STATE:address_corrected speech={formatted} |
+  DIRECTIVE:read the corrected address once, ask briefly if that's right…`
+  (at most one correction loop, then re-call validate_address)
+- `unconfirmed` → `STATE:address_unclear missing={hint} | DIRECTIVE:ask ONE
+  targeted follow-up… After one retry, proceed with what the caller said.`
+- `skipped`/`unsupported_region`/`error` → `STATE:address_noted
+  speech={as caller said it} | DIRECTIVE:read it back once and continue.
+  Never mention validation.` (never blocks, never exposes internals)
+
+**Country guard (2026-06-12 P2):** `_apply_country_guard` inside
+`validate_address_with_region_fallback` downgrades any confirmed*
+result whose `address_components.country_code` contradicts the trusted
+region (caller-ID region when in SUPPORTED_REGION_CODES, else tenant
+country) to `unconfirmed` with all Google-derived fields stripped —
+applied to BOTH attempts, before the retry decision, so a wrong-country
+attempt-1 confirmation triggers the caller-region retry (self-heals the
+Utah-booking incident eef9f785 even with a misconfigured tenant.country).
+
+Caches the full bounded result on `deps["_validated_address"] =
+{"input": {street,unit,postal_code,city}, "result": <bounded dict>,
+"ts": …}` and sets `deps["_last_tool_state"]`.
+
+**Cache reuse:** `book_appointment` / `capture_lead` call
+`get_cached_validation(deps, street, postal_code)` (exported from
+`validate_address.py`) before their own validation. On a match
+(casefold/strip street + postal compare; **unit differences tolerated**;
+cached `verdict=error` never reused — transient failures get a fresh
+attempt; **2026-06-12 P2: an empty cached postal also matches when the
+requested postal equals the result's looked-up postal** — the
+address_ok_confirm_postal flow where the caller confirmed the suggested
+postal) they reuse the cached result with NO second Google call; on a
+miss they validate live exactly as before (safety fallback — booking
+never gates on validate_address having run). The reused
+verdict/formatted_address/place_id/lat/lng flow into `atomic_book_slot` /
+`record_outcome` identically to a live validation; the D-D3' overwrite
+rule is unchanged. Tests: `tests/test_validate_address_tool.py`.
+
 ### book_appointment — Atomic Booking
 
 Parameters (current, prod-readiness 2026-06): `slot_token`, `street_name`,
@@ -546,17 +850,12 @@ handler keeps empty `slot_start`/`slot_end` locals only so the legacy
 `_ensure_utc_iso` fallback branch stays syntactically intact; that branch is
 dead when a valid token resolves.)
 
-- **Input-mute (prod-readiness 2026-06):** calls `mute_input_during_tool(deps)`
-  immediately after arg-parse — book_appointment was previously the only
-  blocking tool that did NOT, and it is the longest-blocking (address-
-  validation HTTP + atomic RPC + long readback) and most exposed to the
-  Gemini-server VAD cancellation cascade. No-ops when `deps["session"]`
-  is absent (unit tests unaffected).
-- **`_last_tool_state` (prod-readiness 2026-06):** set on all main return
-  paths (BOOKED verdict returns + `booking_invalid`/`booking_failed`/
-  `slot_taken`/idempotent-duplicate). Consumed by
-  `_attempt_tool_result_replay` in `_availability_lib.py` so a post-booking
-  server cancellation can replay the verdict.
+- **Phase 65 — input-mute / cascade-recovery removed:** the Gemini-era
+  `mute_input_during_tool(deps)` call and the `deps["_last_tool_state"]`
+  replay plumbing (consumed by the now-deleted `_attempt_tool_result_replay`)
+  were removed. They existed only to survive Gemini 3.1's server-VAD
+  cancellation cascade; gpt-realtime-2's async function calling does not
+  cancel in-flight tool calls when the caller speaks, so they are obsolete.
 - **slot_token resolution:** if Gemini supplies an unknown/empty token,
   falls back to `deps["_last_offered_token"]` (single-slot path only; the
   alternatives branch clears it). Token entry older than 600s → treated as
@@ -592,6 +891,19 @@ Parameters: `caller_name`, `phone`, `street_name`, `unit_number`,
 
 - Computes mid-call duration from `start_timestamp`.
 - Calls `create_or_merge_lead()`, writes `booking_outcome='declined'`.
+- **`notes` persisted (2026-06-10):** the `record_call_outcome` RPC
+  (migration 062, 14-arg) has no notes-like parameter and `inquiries` has no
+  notes column, so `notes` is folded into the job_type free-text passed to
+  the RPC — `"{job_type} — {notes}"` (or just `notes` when job_type is
+  empty). Previously the captured notes were silently dropped.
+- **Explicit callback phone preferred (2026-06-10):** when the model passes a
+  `phone` AND it parses to a plausible E.164 via `_normalize_free_form`
+  (imported from `src/integrations/jobber.py`; phonenumbers with the tenant's
+  country as default region — handles spoken/free-form shapes the SIP-attr
+  normalizer does not), that number is used as `raw_phone` for
+  `record_outcome` instead of caller-ID. On parse failure, falls back to
+  caller-ID (`deps["from_number"]`) as before. Callers who said "reach me on
+  my other number" were previously losing it.
 - STATE codes: `lead_captured lead_id=...`, `lead_invalid`, `lead_failed`.
 - Phase 60 D-11 parity: same single-question address + readback rules as
   book_appointment.
@@ -622,9 +934,16 @@ STATE codes preserved (Phase 30 names): `transfer_initiated`,
 `transfer_failed reason=sip_error`, `transfer_unavailable` — now
 wrapped in canonical `STATE|DIRECTIVE` envelope.
 
+**Failed-transfer revert (2026-06-10):** the handler snapshots the prior
+`deps["call_end_reason"][0]` before optimistically setting `"transferred"`;
+on REFER failure it restores the prior reason AND nulls the calls row's
+`exception_reason` (best-effort, non-fatal on revert error). The call
+continues after a failed REFER — leaving "transferred"/exception_reason in
+place poisoned the `disconnection_reason` recorded by the post-call pipeline.
+
 ### end_call — Graceful Termination
 
-Returns a `STATE:call_ending | DIRECTIVE:...` envelope that tells Gemini
+Returns a `STATE:call_ending | DIRECTIVE:...` envelope that tells the model
 not to start a new turn after its current sentence completes.
 
 Schedules a detached `_delayed_disconnect` task that:
@@ -637,7 +956,7 @@ Schedules a detached `_delayed_disconnect` task that:
 
 **Why not a fixed `asyncio.sleep(12)` (the legacy approach)?** A fixed
 timer cut off long farewells when speech exceeded the budget and fired
-too early on short ones. Worse, when Gemini called `end_call` mid-farewell,
+too early on short ones. Worse, when the model called `end_call` mid-farewell,
 the old return string `"[Call disconnected — do not produce any further
 speech.]"` caused Gemini to abort its own in-flight audio, producing the
 "speech cuts off halfway" symptom. The new return lets the current
@@ -654,11 +973,14 @@ Plan 03 implemented deterministic runtime filler in 4 scoped tools via
 `context.session.say()`. Plan 05 UAT (2026-04-20, 226s call) revealed
 `session.say()` raises `RuntimeError: trying to generate speech from
 text without a TTS model` on `AgentSession(llm=RealtimeModel)` in
-livekit-agents 1.5.1 — the session has no TTS because Gemini Live emits
-audio directly. Fix H reverted (commit `cbe1bb9` in livekit-agent repo).
-Do not reintroduce `session.say()` on a RealtimeModel-only session
-without attaching a separate TTS. Pre-tool filler is now prompt-driven
-prose again (`_build_tool_narration_section` in `prompt.py`).
+livekit-agents 1.5.1 — the session has no TTS because the realtime model
+emits audio directly. Fix H reverted (commit `cbe1bb9` in livekit-agent repo).
+**(stale — superseded by the Phase 66 cascade, see agent.py:** the cascade
+session HAS a TTS, so `session.say()` works again and is used for the
+deterministic greeting and the max-duration goodbye. The "no `session.say()`"
+constraint applied only to `AgentSession(llm=RealtimeModel)`.) Pre-tool
+preambles remain prompt-driven prose (`_build_tool_narration_section` in
+`prompt.py`).
 
 ### Phase 60.3 — Goodbye cut-off diagnosis + prompt audit
 
@@ -824,6 +1146,14 @@ against Spanish prose will be verified in Phase 60.4.
 (context, research, audit, analysis, HUMAN-UAT, phase rollup).
 
 ### Phase 63.1 — generate_reply regression fix (Gemini 3.1 + plugins-google 1.5.6)
+
+> ⚠️ **SUPERSEDED by Phase 65 (gpt-realtime-2 migration).** This worked around
+> Gemini 3.1 capability-gating `generate_reply` closed (which forced the
+> separate-TTS greeting + pre-session intake injection). gpt-realtime-2
+> supports `generate_reply`, so the greeting is native again. The **pre-session
+> intake-injection pattern still holds** (intake text goes into the initial
+> `build_system_prompt(...)`), but the `test_no_generate_reply_in_src` guard was
+> deleted in the migration. Retained as debugging history.
 
 **What broke.** On the Phase 63 upgrade to `livekit-agents==1.5.6` +
 `livekit-plugins-google==1.5.6`, `RealtimeModel` for
@@ -1043,24 +1373,54 @@ Runs in-process immediately on AgentSession close.
 3. Test-call auto-cancel — cancel appointment + reset lead if
    `is_test_call` (benefits from the backfill too).
 4. Usage tracking — `increment_calls_used` RPC; Stripe overage if limit.
+   2026-06-12: the meter post (`billing.meter_events.create`,
+   `identifier=overage_{call_id}`) is capped at **3s** via `asyncio.wait_for`
+   (stripe-python's default read timeout is ~80s — would starve the 8s
+   post-call envelope). On failure it **upserts an outbox row** (on `call_id`)
+   into the main repo's `stripe_meter_failures` table (migration 071) so
+   `/api/cron/retry-meter-events` re-posts with the same idempotent identifier
+   — previously a transient failure was print-and-drop = permanently unbilled
+   overage (replay was structurally impossible: the RPC had already consumed
+   the call_id). No resolved `stripe_customer_id` → logged, no outbox row.
 5. Language detection — multi-language regex: CJK→zh, Tamil→ta,
    Vietnamese→vi, Spanish→es (keyword ≥2), Malay→ms (≥2), default en.
 6. Triage classification — `classify_call()` three-layer pipeline.
-7. Suggested slots — unbooked calls get up to 3 slots across next 3 days.
-8. Update call with triage + NULL fallback → `booking_outcome='not_attempted'`
-   only where still NULL.
-9. **Phase 59 — Record call outcome via RPC** — if duration ≥ 15s, calls
-   `record_outcome()` from `src/post_call/write_outcome.py`. Single
-   `record_call_outcome` RPC call that atomically upserts customer +
-   creates job (booked) or inquiry (unbooked) + links call junctions
-   (D-14/D-16). Replaces prior `create_or_merge_lead()` + `lead_calls`
-   insert. D-02a: NO fallback to legacy `leads`/`lead_calls`. D-02b:
-   on `RecordOutcomeError`, log call_id + tenant_id and continue — do
-   NOT re-raise or insert into legacy schema.
-10. Owner notifications — SMS/email per outcome preferences. Emergency
-    always sends both. `send_owner_sms(from_number=to_number)` (Phase 46
-    per-tenant from-number fix; `TWILIO_FROM_NUMBER` retained only as
-    dev fallback).
+6.5. **Phase 59 — Record call outcome via RPC** — if duration ≥ 15s and
+   `call_uuid` exists, calls `record_outcome()` from
+   `src/lib/write_outcome.py`. Single `record_call_outcome` RPC call that
+   atomically upserts customer + creates job (booked) or inquiry (unbooked)
+   + links call junctions (D-14/D-16). Replaces prior
+   `create_or_merge_lead()` + `lead_calls` insert. D-02a: NO fallback to
+   legacy `leads`/`lead_calls`. D-02b: on `RecordOutcomeError`, log call_id
+   + tenant_id and continue — do NOT re-raise or insert into legacy schema.
+   2026-06-10: the RPC `.execute()` inside `record_outcome()` now runs via
+   `asyncio.to_thread` — it was the only synchronous DB call left, and when
+   `capture_lead` invoked it mid-call it blocked the audio loop.
+   `caller_name`/`job_type` extraction now happens OUTSIDE the `call_uuid`
+   gate (booked_caller_name preferred over the regex fallback) so step 7 can
+   use them even when the calls-row insert or the RPC failed.
+7. **Owner notifications (moved up + decoupled, 2026-06-10)** — run
+   IMMEDIATELY after triage + the record_outcome attempt, BEFORE the slower
+   optional steps (suggested slots, hallucination detection), so the 8s
+   post-call budget can never starve the owner alert. Notifications **no
+   longer require the `record_call_outcome` RPC to have succeeded** — they
+   fire whenever tenant info exists. The `lead` dict only enriches the
+   message; when it is None the notify dict degrades to call metadata
+   (caller-ID + transcript-derived name/job, no CRM ids/address) and the
+   log line carries `degraded=true` — a transient DB error can never
+   silently drop an EMERGENCY alert. The notify dict now also carries
+   `urgency` (`send_owner_email` reads urgency off the lead dict —
+   previously absent, so emergency emails rendered "routine"). Uses the
+   in-memory `booking_outcome` instead of re-querying the calls row.
+   SMS/email per outcome preferences; emergency always sends both.
+   `send_owner_sms(from_number=to_number)` (Phase 46 per-tenant from-number
+   fix; `TWILIO_FROM_NUMBER` retained only as dev fallback).
+8. Suggested slots — unbooked calls get up to 3 slots across next 3 days.
+   2026-06-10: the `calendar_events` fetch in
+   `_calculate_suggested_slots` now selects `is_all_day` (feeds the
+   all-day busy expansion in `slot_calculator`).
+9. Update call with triage + NULL fallback → `booking_outcome='not_attempted'`
+   only where still NULL. (9b: silent hallucination detection follows.)
 
 ### Transcript field extraction fallback
 
@@ -1079,12 +1439,42 @@ Three-layer pipeline. Layer 3 can only ESCALATE, never downgrade.
 Valid urgencies: `{emergency, routine, urgent}`.
 
 - **Layer 1 — Keywords** (`layer1_keywords.py`): synchronous regex.
-  Routine patterns checked FIRST (prevents "not urgent" matching emergency).
+  2026-06-10: EMERGENCY patterns checked FIRST (emergency beats routine —
+  "gas leak, but no rush" is still an emergency; previously routine-first),
+  and classification runs on **caller-only turns** via `extract_caller_text()`.
 - **Layer 2 — LLM** (`layer2_llm.py`): only when Layer 1 not confident.
-  Groq + Llama 4 Scout via AsyncOpenAI, JSON mode, temp 0, 5s timeout.
+  Groq + Llama 4 Scout via AsyncOpenAI, JSON mode, temp 0, **2.5s timeout**
+  (`TIMEOUT_S` 5.0 → 2.5, 2026-06-12 audit H8: a slow Groq call inside the
+  post-call 8s envelope starved the outcome + notification writes; a layer-2
+  timeout falls back to the Layer-1 verdict, so the trade is marginal triage
+  precision for guaranteed delivery).
+  2026-06-10: receives caller-only text (`caller_text or transcript`).
 - **Layer 3 — Owner Rules** (`layer3_rules.py`): always runs. Queries the
   tenant's active `services` (name + `urgency_tag`); escalates the call's
   urgency to a matched service's tag **only when its severity is higher**.
+  Unchanged 2026-06-10 — still matches against the **full transcript**.
+
+### Caller-only classification + emergency-first ordering (2026-06-10)
+
+The agent's own speech must never drive urgency — the prompt makes the agent
+say things like "let me take a look at the schedule", which confidently
+matched `ROUTINE_PATTERNS` and downgraded real emergencies. Two changes:
+
+- `extract_caller_text(transcript)` (new, `layer1_keywords.py`): returns only
+  the `"Caller:"`-prefixed lines from the transcript (post_call builds it as
+  `"Caller:"` / `"AI:"` prefixed lines). Falls back to the full text when the
+  input has no speaker prefixes (raw text), and to `""` when only `AI:` lines
+  are present. `run_keyword_classifier` filters internally via this helper;
+  `classify_call` (`classifier.py`) extracts it once and hands the caller-only
+  text to the layer-2 LLM too (defense in depth).
+- `run_keyword_classifier` now evaluates **EMERGENCY_PATTERNS before
+  ROUTINE_PATTERNS** — an emergency match always wins over any routine match.
+  The old routine-first order (built to stop "not urgent" matching emergency)
+  let a routine phrase mask a genuine emergency in the same transcript.
+
+Layer 3 is deliberately untouched: service-name matching needs the full
+transcript (the agent often names the service back to the caller).
+Tests: `tests/test_triage_layer1_keywords.py` (new).
 
 ### Layer 3 service detection — now actually fires (prod-readiness 2026-06)
 
@@ -1186,8 +1576,15 @@ The dep reads `await request.form()` ONCE and stashes on
 `request.state.form_data`. Tests that override must replicate this
 side effect (Plan 39-06 conftest pattern).
 
-`ALLOW_UNSIGNED_WEBHOOKS=true` bypasses verification (dev/staging only).
-Fail-closed default.
+**Fail-closed hardening (2026-06-12 audit M9):**
+- **Empty/missing `TWILIO_AUTH_TOKEN` → 503** ("Webhook validation
+  unavailable"). `RequestValidator("")` computes HMACs with an EMPTY key, so a
+  misconfigured deploy would otherwise accept forged signatures.
+- **`ALLOW_UNSIGNED_WEBHOOKS=true` is IGNORED when `PYTHON_ENV` is
+  `production` OR unset** (unset defaults to production, matching the Sentry
+  init default) — one stray env var can no longer disable signature checks in
+  prod. In non-production it still bypasses with a warning (and still stashes
+  `request.state.form_data` so handlers behave uniformly).
 
 ### Schedule evaluator
 
@@ -1266,7 +1663,12 @@ queries and deployment handoff.
 | Variable | Purpose |
 |---|---|
 | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit Cloud auth |
-| `GOOGLE_API_KEY` | Gemini 3.1 Flash Live |
+| `OPENAI_API_KEY` | gpt-4.1-mini LLM (Phase 66 cascade; was gpt-realtime-2). **Required at boot** — the `__main__` preflight refuses to start without it |
+| `DEEPGRAM_API_KEY` | Deepgram nova-3 STT (Phase 66) — pending on Railway at time of writing. **Required at boot** (preflight) |
+| `ELEVEN_API_KEY` | ElevenLabs eleven_flash_v2_5 TTS (Phase 66) — pending on Railway at time of writing. **Required at boot** (preflight) |
+| `VOCO_WRAP_UP_CALL_SECONDS`, `VOCO_MAX_CALL_SECONDS` | Call-duration watchdog overrides (defaults 540 / 600 — see §1) |
+| `VOCO_PREEMPTIVE_GENERATION` | P8.1 (2026-06-12): `AgentSession(preemptive_generation=…)` — speculative LLM+TTS on interim transcripts. Default ON; set `false` to revert |
+| `VOCO_STT_KEYTERMS` | P8.2 (2026-06-12): Deepgram nova-3 `keyterm` prompting with business + service names. Default OFF (keyterm + `language="multi"` unverified against Deepgram's API — enable on a UAT deploy first) |
 | `SUPABASE_S3_*` (4 vars) | Supabase Storage S3 |
 | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | SMS auth (FROM is dev-fallback only) |
@@ -1276,7 +1678,8 @@ queries and deployment handoff.
 | `STRIPE_SECRET_KEY` | Overage billing |
 | `NEXT_PUBLIC_APP_URL` | Dashboard links in notifications |
 | `SENTRY_DSN` | Error tracking |
-| `ALLOW_UNSIGNED_WEBHOOKS` | Dev-only signature bypass |
+| `ALLOW_UNSIGNED_WEBHOOKS` | Dev-only signature bypass — IGNORED when `PYTHON_ENV` is production or unset (2026-06-12) |
+| `PYTHON_ENV` | Environment name; unset defaults to `production` (fail closed — gates the unsigned-webhook bypass + Sentry init) |
 | `LIVEKIT_SIP_URI` | SIP URI in AI TwiML |
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET` | Xero OAuth (see integrations-jobber-xero) |
 | `JOBBER_CLIENT_ID`, `JOBBER_CLIENT_SECRET` | Jobber OAuth + webhook HMAC key |
@@ -1293,10 +1696,15 @@ queries and deployment handoff.
 ## 12. Key Design Decisions
 
 - **Python 3.12 + LiveKit Agents SDK** — replaced Node.js; primary SDK with
-  native Gemini 3.1 support.
-- **Gemini 3.1 Flash Live** — native audio-to-audio; no separate STT/TTS.
-- **Server VAD only** — client-side Silero caused commit_audio errors and
-  self-interruption on SIP calls.
+  native OpenAI Realtime support.
+- **Cascaded pipeline (Phase 66)** — Deepgram nova-3 STT → gpt-4.1-mini LLM →
+  ElevenLabs Flash v2.5 TTS. Migration rationale: a strong text LLM is a more
+  reliable, debuggable tool-caller than a realtime speech model, on LiveKit's
+  mature pipeline plugin APIs. (The prior gpt-realtime-2 speech-to-speech
+  bullets are historical.)
+- **Silero VAD + MultilingualModel turn detection (Phase 66)** — semantic
+  end-of-turn; Silero defaults for barge-in (do NOT port the realtime 2.5s
+  silence value — Phase 64 did and added ~2s/turn).
 - **asyncio.to_thread() everywhere** — all sync Supabase/Twilio/Resend
   calls wrapped to prevent blocking audio.
 - **In-process tool execution** — all 6 tools run directly in the agent
@@ -1305,7 +1713,16 @@ queries and deployment handoff.
   `processCallAnalyzed` into one function.
 - **Silent repeat caller context** — `check_caller_history` instructs AI
   never to mention it.
-- **Caller-led booking** — AI never offers times first.
+- **Caller-preference-first booking; agent offers only tool-returned times
+  (2026-06-12 — replaces "Caller-led booking — AI never offers times
+  first")** — the agent asks the caller's preference first, but when the
+  caller is vague, asks what's available, or their time is rejected, it
+  offers at most 2–3 times/days taken VERBATIM from the availability tool
+  return (check_day OPTIONS, check_slot ALTS/earliest_today/next_open,
+  next_available_days days). The old absolute ban was a Gemini-era
+  anti-fabrication guard that forced callers into a guess-reject loop
+  (hang-up evidence: call 31559053). Anti-hallucination invariant
+  unchanged: a time never present in a tool return is never speakable.
 - **Event handlers before `session.start()`** — prevents race.
 - **`close_complete` event keeps entrypoint alive** — without this, the
   LiveKit worker exits immediately after entrypoint returns, killing
@@ -1316,18 +1733,33 @@ queries and deployment handoff.
   caller hangs up during calendar push / SMS.
 - **`end_call` triggers `ctx.shutdown()`** — cascades into session
   close → post-call pipeline.
-- **Past-date validation** — check_availability rejects past dates;
+- **Past-date validation** — check_slot rejects past dates;
   1-hour buffer for today.
 - **`recording_storage_path` at egress start** — safety net for post-call
   failure.
 - **Triage never downgrades** — Layer 3 only escalates.
-- **Fail-open design** — missing tenant, slots, subscription errors all
-  route to AI; no call ever rejected.
+- **Fail-open on ERRORS, fail-closed on known-bad status (2026-06-12)** —
+  missing tenant, slot failures, and subscription QUERY errors all route to
+  AI; but a successfully-read blocked status (canceled/paused/incomplete, or
+  past_due beyond the 3-day grace) disconnects via the shared
+  `subscription_gate.py`. The grace's end was previously banner copy only —
+  no code ever enforced it.
+- **Shared subscription gate module** — `BLOCKED_STATUSES` was hand-copied in
+  `agent.py` + `twilio_routes.py` (and mirrored in the main repo's JS), which
+  is how the past_due gap survived. `src/lib/subscription_gate.py` is now the
+  single source of truth on the call path.
+- **Boot preflight for cascade keys** — missing `OPENAI_API_KEY` /
+  `DEEPGRAM_API_KEY` / `ELEVEN_API_KEY` fails the deploy at startup instead
+  of silently killing every call behind a green healthcheck.
+- **Meter failures go to a durable outbox** — `stripe_meter_failures` upsert
+  on `call_id` (migration 071, main repo) + retry cron; the meter post itself
+  is capped at 3s so Stripe latency can't starve the post-call envelope.
 - **Webhook routing replaces SIP-only routing (Phase 40)** — `voice_url`
   takes priority; SIP trunk preserved as rollback.
 - **Fail-open at every webhook stage** — blocked tenants, unknown
   numbers, subscription errors, schedule evaluation errors, cap errors
-  → AI.
+  → AI. (Blocked tenants get the AI route — never paid owner-pickup
+  forwarding — and the agent-side gate then disconnects them.)
 - **Pre-TwiML calls row insert for owner-pickup** — ensures row exists
   before dial-status callback.
 - **Owner-pickup calls are lightweight** — no transcript, no recording,
@@ -1355,15 +1787,24 @@ queries and deployment handoff.
 
 ## 13. Debugging playbook
 
+> (rows referencing `generate_reply`, SemanticVad, `AudioTranscription`, or
+> OpenAI voices/migration 067 are stale — superseded by the Phase 66 cascade,
+> see agent.py. Greeting issues now trace to `session.say()` + the input-mute
+> block; voice issues to `ELEVENLABS_VOICE_MAP` / ElevenLabs "My Voices".)
+
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| `server cancelled tool calls` warnings | VAD too sensitive | Confirm `silence_duration_ms=1500` (Phase 60.2 Fix G) |
-| Mid-sentence audio cuts at tool boundaries | Same | Same |
-| `TypeError: RealtimeCapabilities.__init__() missing argument 'per_response_tool_choice'` | Plugin pin drift | Restore `livekit-agents==1.5.1` pin trio |
+| Greeting never plays / agent silent until caller speaks | `generate_reply` greeting failed, or model id rejected at handshake | Check `[agent] greeting generate_reply failed` log; verify `OPENAI_REALTIME_MODEL` + `OPENAI_API_KEY` (model 404s on the first call if invalid) |
+| Greeting cuts off mid-sentence | SIP echo/noise tripping server VAD during the opening | Confirm the greeting input-mute is intact: `set_audio_enabled(False)` before `generate_reply` + `wait_for_playout()` unmute (agent `1a300d2`) |
+| `Invalid value: 'Zephyr'` / session error on every call for a tenant | stale Gemini `ai_voice` + migration 067 not applied to prod | Apply migrations 067 + **070** (070 is the current label CHECK — professional/friendly/local_expert); the `_resolve_voice` guard (agent `35238f7`) already falls back to the tone default |
+| Empty/garbled post-call transcript or degraded triage | `input_audio_transcription` not a typed `AudioTranscription` | Confirm `AudioTranscription(model="gpt-4o-mini-transcribe")` is passed (a plain dict is silently dropped) |
+| Over- or under-eager turn-taking on SIP | `SemanticVad` eagerness mismatch | Try the `ServerVad(...)` fixed-timer fallback (migration §7.5) |
 | Post-call pipeline never runs | `close_complete` event missing | Check `entrypoint` awaits event + `done_callback` sets it |
 | Recording missing | `recording_storage_path` not written at egress start | Check egress start awaits `db_task` |
 | Test call not auto-cancelled | Booking-reconciliation backfill missed | Verify `booked_appointment_id` forwarded from `deps` |
 | Webhook 403 on every request | Signature verification failing | Check `TWILIO_AUTH_TOKEN` env; confirm `proxy_headers=True` on uvicorn |
+| Webhook 503 on every request | `TWILIO_AUTH_TOKEN` empty/missing (2026-06-12 fail-closed) | Set the token on Railway — empty-key HMAC validation would accept forgeries, so the dep rejects instead |
+| Agent container exits at boot with `Missing required env vars` | Boot preflight (2026-06-12) — `OPENAI_API_KEY` / `DEEPGRAM_API_KEY` / `ELEVEN_API_KEY` unset | Set the missing keys on Railway; this is intentional (previously every call connected then died silently) |
 | VIP caller routing to AI | Missing `pickup_numbers` OR `is_vip=false` | Check `tenants.vip_numbers` JSONB + `leads.is_vip` + `pickup_numbers` populated |
 | `customer_context` empty despite connected Xero | `error_state` set on row OR 2.5s timeout | Check `accounting_credentials.error_state`; query `activity_log WHERE event_type='integration_fetch'` |
 | No `integration_fetch_fanout` rows in activity_log | Railway not redeployed after Phase 58 | Sync Voco worktree → sibling repo → GitHub → Railway |
@@ -1433,13 +1874,27 @@ the prior header's 10+ "Previous:" paragraphs).
   that keys on the `STATE:` prefix or the `|` separator would silently
   drop the success paths. If you change how the prompt parses these
   returns, audit `book_appointment.py` and `capture_lead.py` success
-  branches for symmetric updates. Verbatim success-path samples:
-    - `BOOKED [verdict=validated]: relay normalized address [...] and time [...] as confirmed; ask if anything else is needed`
-    - `BOOKED [verdict=validated_with_corrections]: relay normalized address [...] as the final form, explicitly invite caller confirmation...`
-    - `BOOKED [verdict=unvalidated]: relay address as caller spoke it; do NOT claim "validated"...`
-    - `LEAD CAPTURED [verdict=validated]: relay normalized address [...] as confirmed; ask if anything else is needed`
-    - `LEAD CAPTURED [verdict=validated_with_corrections]: relay normalized address [...] as the final form, explicitly invite caller confirmation...`
-    - `LEAD CAPTURED [verdict=unvalidated]: relay address as caller spoke it; do NOT claim "validated"...`
+  branches for symmetric updates.
+
+  **Directives SHORTENED (2026-06-10 early-validation pass; fallback
+  `validated` variants trimmed again 2026-06-12 P2):** each
+  verdict has TWO variants keyed on whether the mid-call
+  `validate_address` cache was reused (`used_cached_validation`). On the
+  cached path the address was already confirmed mid-call, so the
+  post-commit directive is ONE short sentence — day + time only, with an
+  explicit "do not re-read it" for the address. **2026-06-12:** the
+  fallback `validated` variants ALSO no longer re-read the address — the
+  caller already heard it in the mandatory pre-booking readback (Call B
+  40b13227 spoke one address ~5 times under the old directive); only
+  `validated_with_corrections` still reads its corrected form (Google
+  materially changed something the caller hasn't heard). Verdict tokens
+  are unchanged (tests + the
+  prompt rule key on them). Representative samples:
+    - cached: `BOOKED [verdict=validated]: confirm day and time [...] in ONE short sentence; the address was already confirmed — do not re-read it; ask if anything else is needed`
+    - fallback: `BOOKED [verdict=validated]: confirm day and time [...] in ONE short sentence; do not re-read the address — the caller already heard it in the readback; ask if anything else is needed`
+    - fallback: `BOOKED [verdict=validated_with_corrections]: confirm day and time [...]; read corrected address [...] once and explicitly invite caller confirmation; ...`
+    - `BOOKED [verdict=unvalidated]: confirm day and time [...] in ONE short sentence; relay address as caller spoke it only if it was never read back; do NOT claim "validated"...`
+    - `LEAD CAPTURED` equivalents mirror the same cached/fallback split.
 - **New CRITICAL RULE (D-E3):** `_build_address_validation_section(locale)`
   in `prompt.py` sits in the top-attention zone between
   `_build_corrections_section` and `_build_outcome_words_section` —
@@ -1451,6 +1906,35 @@ the prior header's 10+ "Previous:" paragraphs).
   `verdict=validated_with_corrections`. Spanish mirror present per
   Phase 60.3 D-B-03 locale-parity pattern (`VALIDACIÓN DE DIRECCIÓN —
   REGLA CRÍTICA`).
+
+  **REWRITTEN 2026-06-10 for the early-validation flow:** the rule now
+  teaches — caller finishes the address → ONE short filler → call
+  `validate_address` in the same turn → speak the result ONCE in its
+  final form per the four `STATE:address_*` branches → at most one
+  correction loop → the address is never read aloud more than twice per
+  call → booking does NOT re-read a validated address (the booking
+  readback covers name + day/time; address included only if never
+  validated mid-call — `_build_booking_section`'s BEFORE BOOKING —
+  READBACK block was updated to match in both locales). Preserved
+  invariants: 6 prohibited phrases, untranslated verdict tokens, section
+  before tool_narration, NO silence license anywhere (Phase 61.1
+  deadlock class), explicit caller-words readback license
+  (the `address_noted` branch). Gating sentence now reads "After
+  validate_address, book_appointment, or capture_lead returns…".
+
+  **EXTENDED 2026-06-12 (findings.md P2):** the rule now also carries —
+  (a) the `STATE:address_ok_confirm_postal` branch teaching (lookup-
+  supplied postal asked as a QUESTION, digit by digit, never asserted;
+  caller's answer wins); (b) a CALLER AUTHORITY block — the caller
+  outranks the lookup, always: accept their correction immediately, never
+  defend the old value or say where it came from, re-validate once with
+  their pieces, and if validation still disagrees keep the caller's
+  version as noted-not-validated (incident: call 31559053 defended a
+  Google-inferred postal against the caller); (c) an unconditional
+  never-speak list for internal-machinery phrases ("the address
+  validation", "from the validation", "our system shows"). All prior
+  invariants preserved; `tests/test_prompt_address_validation_rule.py`
+  still green unmodified.
 - **Tool descriptions rewritten (D-E1):** `book_appointment` +
   `capture_lead` descriptions encode the validation precondition as
   outcome-framed prompt-surface language. Gemini 3.1 Flash Live reads
@@ -1580,6 +2064,14 @@ remedy. See user memory `feedback_directive_prompt_silence_deadlock.md`.
 ---
 
 ## Phase 61.2 — Gemini-Server Cancellation Cascade Mitigation (2026-05-06)
+
+> ⚠️ **SUPERSEDED by Phase 65 (gpt-realtime-2 migration).** Everything below
+> mitigated Gemini 3.1 Flash Live's server-side VAD cancellation cascade.
+> gpt-realtime-2 has native async function calling — in-flight tool calls are
+> NOT cancelled on caller speech — so the root cause is gone. The mechanisms
+> described here (`mute_input_during_tool`, the robust-unmute lifecycle,
+> `_ServerCancelHandler`) were **removed from the code** in the migration.
+> Retained as debugging history only.
 
 The first Phase 61 production regression after 61.1 shipped (call
 `AJ_vV4DM5AG9t7W`, 2026-05-05 11:04 UTC, tenant "make it ai", caller
@@ -1813,6 +2305,12 @@ recovery deadlock). Post-fix verification call: `AJ_5NcSoiaZGZTJ`
 ---
 
 ## Phase 61.3 — Cascade-Recovery via Tool-Result Replay (2026-05-07)
+
+> ⚠️ **SUPERSEDED by Phase 65 (gpt-realtime-2 migration).** The
+> `_attempt_tool_result_replay` / `update_chat_ctx` cascade-recovery mechanism
+> below existed only to repair Gemini 3.1's cancel-and-discard behavior. It was
+> **removed from the code** in the migration (gpt-realtime-2 does not drop the
+> tool result on caller speech). Retained as debugging history only.
 
 Phase 61.2 contained the cascade (cancellation rate -80%) but did not
 close the slot-hallucination failure mode. UAT call `AJ_5NcSoiaZGZTJ`

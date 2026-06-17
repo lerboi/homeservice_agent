@@ -31,7 +31,7 @@ Recordings are stored on encrypted servers in the US. Only your account can acce
 Plumbing, HVAC, electrical, roofing, handyman, and more. Voco is trained on trade-specific call patterns and understands job types like "burst pipe", "no heat", and "sparking outlet".
 
 ## What languages does Voco support?
-70+ languages. The AI detects the caller's language instantly — English, Spanish, Chinese, Malay, and many more.
+English and Spanish, fluently. The AI detects the caller's language automatically on every call — no setup needed. More languages are on the roadmap.
 
 ## Links
 

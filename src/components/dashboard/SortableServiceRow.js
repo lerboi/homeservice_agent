@@ -107,7 +107,7 @@ export function SortableServiceRow({
       <button
         type="button"
         onClick={() => onRemove(service)}
-        className="w-10 flex items-center justify-center h-10 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+        className="w-10 flex items-center justify-center h-10 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
         aria-label={`Remove ${service.name}`}
       >
         <X className="h-4 w-4" />

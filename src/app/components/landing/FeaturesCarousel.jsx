@@ -122,7 +122,7 @@ function BookingVisual({ active }) {
    Micro Visual: Speaks Your Trade
 ───────────────────────────────────────── */
 function TradeVisual({ active }) {
-  const langs = ['Hello — HVAC tech?', '¿Mi calefacción no funciona?', '请问能安排师傅吗?', 'Aircon tak sejuk la'];
+  const langs = ['Hello — HVAC tech?', '¿Mi calefacción no funciona?', 'My AC just quit on me', '¿Pueden venir hoy mismo?'];
   const [i, setI] = useState(0);
   useEffect(() => {
     if (!active) return;
@@ -157,7 +157,7 @@ function TradeVisual({ active }) {
           <span key={i} style={{ animation: 'fc-fade-slide 0.4s ease-out' }}>{langs[i]}</span>
         </div>
         <div className="mt-3.5 text-[12px] text-[#475569]">
-          Voco responds fluently in <b className="text-[#0F172A]">70+ languages</b> · auto-detected
+          Voco responds fluently in <b className="text-[#0F172A]">English and Spanish</b> · auto-detected
         </div>
       </div>
     </div>
@@ -252,7 +252,7 @@ const FEATURES = [
     title: 'Speaks Your Trade',
     tagline: 'Knows the vocabulary — and speaks the language.',
     description:
-      'Plumbing, HVAC, electrical, handyman — Voco knows the vocabulary. Also fluent in English, Spanish, Mandarin, Malay, and 70+ more, including Singlish and mid-call code-switching.',
+      'Plumbing, HVAC, electrical, handyman — Voco knows the vocabulary. Fluent in English and Spanish, detected automatically on every call, with more languages on the way.',
     Visual: TradeVisual,
   },
   {

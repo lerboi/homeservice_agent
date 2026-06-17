@@ -79,10 +79,23 @@ When constructing/editing the prompt in livekit_agent, ensure that the prompts f
 
 Do proper research and find out the issue with 100% certainty and identify a 100% fix that is correct before implementing anything.
 
-Before
 
 Which option/design provides the best UI/UX that is usable in the real world and that provides the best possible user experience for the home service business owner using this feature?
 
 Which option provides the best UX that is usable in the real world and that provides the best possible user experience for the caller that is calling the home service business owner?
 
 
+Deeply read and understand the dashboard and call architecture — all frontend pages and components (dashboard + livekit_agent), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready. Additionally, i want to improve the UI and UX experience, and make everything in the dashboard feel connected and easy to understand and use. You can also give me some suggestions to improve the UI/UX. Overall, im aiming for a UI and UX feel where the dashboard and every tab feels connected, and has a seamless UI UX. Put yourself in the shoes of a home service business owner using my dashboard, and how you would want the dashabord to feel, what accessibility options you would like for each tab, and wether the overall experience is great and provides a great user experience. Go in depth into each tab and just give recommendations on what would make sense to add/improve to purely from a User experience perspective. Write your report in the /My Prompts/text1.md file. 
+
+You have to have a deep understanding of what exactly i am building here, and let me know a brief summary at the end as well if i am going in the right direction, and if home service business owners will actually find my tool useful and wether im adding too many features etc. Ground all your findings based on how useful it is for the home service business owner and whether it will provide value to them.
+
+Once you are done with the full report, carry out making all the improvements/fixes/changes you deem are the highest impact in terms of overall improvement in quality for any specific area. Utilise subagents to complete tasks however you see fit.
+
+Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+
+
+
+
+Can you look at my live kit agent repo in the sibling directory which is basically responsible for the code for the actual AI voice receptionist? Currently, when the AI responds to the caller, it kind of responds too long sometimes. I wanna keep it a bit more concise and not have the AI spout out too many words in one go. Additionally, for the address validation, can you streamline that a bit? because currently the address validation process is not very good. How I want it to be is that when the caller calls and mentions the address, the AI should confirm the address with the Google API and do address validation and confirm back whether the address is correct. All of this should be done in a very streamlined concise manner.
+
+You also have to understand deeply what my app is doing, what the website is doing, what the AI receptionist is doing for home service businesses. This is a AI receptionist to help home service businesses pick up calls and book slots based on availability and it has to be reliable all in all. So you have to fully understand what this app is supposed to do to make the best changes for it. Ask me if you're unsure about any anything.

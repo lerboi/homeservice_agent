@@ -1,15 +1,16 @@
 /**
- * Tests for subscription status gate in middleware.
- * Phase 24: ENFORCE-04 — blocked statuses redirect to /billing/upgrade
+ * Tests for the subscription gate in the proxy (middleware).
  *
- * Test 1: status='canceled' on /dashboard -> redirect to /billing/upgrade
- * Test 2: status='paused' on /dashboard -> redirect to /billing/upgrade
- * Test 3: status='incomplete' on /dashboard -> redirect to /billing/upgrade
- * Test 4: status='active' on /dashboard -> no redirect
- * Test 5: status='trialing' on /dashboard -> no redirect
- * Test 6: status='past_due' on /dashboard -> no redirect (grace period, banner handles it)
- * Test 7: No subscription row on /dashboard -> redirect to /billing/upgrade
- * Test 8: User on /billing/upgrade -> no subscription check (exempt path)
+ * CURRENT CONTRACT (2026-06-12): subscription status NEVER blocks dashboard
+ * access. The Phase 24 redirect-to-/billing/upgrade behavior was deliberately
+ * retired — warnings surface via BillingWarningBanner, and the enforcement
+ * that costs money (answering calls) lives in the LiveKit agent's gate
+ * (livekit-agent src/lib/subscription_gate.py: canceled/paused/incomplete
+ * always blocked, past_due blocked after the 3-day grace). The proxy no
+ * longer queries subscriptions at all.
+ *
+ * Tests 1-7: every status (and a missing row) passes through with no redirect.
+ * Test 8: /billing/upgrade is outside the matcher (exempt path).
  */
 
 import { jest } from '@jest/globals';
@@ -149,8 +150,8 @@ beforeEach(() => {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('Subscription gate — blocked statuses redirect to /billing/upgrade', () => {
-  it('Test 1: status=canceled on /dashboard redirects to /billing/upgrade', async () => {
+describe('Subscription gate — no status blocks the dashboard (call-side enforcement)', () => {
+  it('Test 1: status=canceled on /dashboard does NOT redirect', async () => {
     const user = { id: 'user-001' };
     const tenant = { id: 'tenant-001', onboarding_complete: true };
     const sub = { status: 'canceled' };
@@ -160,10 +161,10 @@ describe('Subscription gate — blocked statuses redirect to /billing/upgrade', 
     const req = makeRequest('/dashboard');
     const result = await middleware(req);
 
-    expect(mockRedirectUrl).toContain('/billing/upgrade');
+    expect(mockRedirectUrl).toBeNull();
   });
 
-  it('Test 2: status=paused on /dashboard redirects to /billing/upgrade', async () => {
+  it('Test 2: status=paused on /dashboard does NOT redirect', async () => {
     const user = { id: 'user-002' };
     const tenant = { id: 'tenant-002', onboarding_complete: true };
     const sub = { status: 'paused' };
@@ -173,10 +174,10 @@ describe('Subscription gate — blocked statuses redirect to /billing/upgrade', 
     const req = makeRequest('/dashboard');
     const result = await middleware(req);
 
-    expect(mockRedirectUrl).toContain('/billing/upgrade');
+    expect(mockRedirectUrl).toBeNull();
   });
 
-  it('Test 3: status=incomplete on /dashboard redirects to /billing/upgrade', async () => {
+  it('Test 3: status=incomplete on /dashboard does NOT redirect', async () => {
     const user = { id: 'user-003' };
     const tenant = { id: 'tenant-003', onboarding_complete: true };
     const sub = { status: 'incomplete' };
@@ -186,7 +187,7 @@ describe('Subscription gate — blocked statuses redirect to /billing/upgrade', 
     const req = makeRequest('/dashboard');
     const result = await middleware(req);
 
-    expect(mockRedirectUrl).toContain('/billing/upgrade');
+    expect(mockRedirectUrl).toBeNull();
   });
 });
 
@@ -230,7 +231,7 @@ describe('Subscription gate — allowed statuses pass through without redirect',
     expect(mockRedirectUrl).toBeNull();
   });
 
-  it('Test 7: No subscription row (sub=null) on /dashboard redirects to /billing/upgrade', async () => {
+  it('Test 7: No subscription row (sub=null) on /dashboard does NOT redirect', async () => {
     const user = { id: 'user-007' };
     const tenant = { id: 'tenant-007', onboarding_complete: true };
     const sub = null;
@@ -240,7 +241,7 @@ describe('Subscription gate — allowed statuses pass through without redirect',
     const req = makeRequest('/dashboard');
     const result = await middleware(req);
 
-    expect(mockRedirectUrl).toContain('/billing/upgrade');
+    expect(mockRedirectUrl).toBeNull();
   });
 });
 

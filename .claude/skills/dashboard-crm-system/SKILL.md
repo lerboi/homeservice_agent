@@ -1,6 +1,6 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, inquiries tab, customers list + detail, calendar, calls, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, Inquiries tab from inquiries table, Customers list page + Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), prod-readiness 2026-06 UX/IA repointing (Customers list route, More-tab three-section regroup, CommandPalette Radix Dialog a11y, dashboard/stats 'new' = open inquiries, global search customers group), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, command palette, navigation/IA, design tokens, or UI polish patterns."
+description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, customers list + detail, calendar, calls with its Callbacks inquiries view, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, inquiries surfaced as the Callbacks view inside Calls since the 2026-06-10 merge, Customers list page + Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), prod-readiness 2026-06 UX/IA repointing (Customers list route, More-tab three-section regroup, CommandPalette Radix Dialog a11y, dashboard/stats 'new' = open inquiries, global search customers group), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, command palette, navigation/IA, design tokens, or UI polish patterns."
 ---
 
 # Dashboard & CRM System — Complete Reference
@@ -9,15 +9,54 @@ This document is the single source of truth for the dashboard and CRM
 system. Read this before making any changes to dashboard pages or CRM
 components.
 
-> ⚠️ **Phase 65 (in flight, not yet deployed):** the AI Voice picker
+> ⚠️ **AI Voice picker (2026-06-12):** the picker
 > (`VoicePickerSection.jsx`, `ai-voice-settings/page.js`, `src/lib/ai-voice-validation.js`)
-> now offers **OpenAI gpt-realtime voices** (marin/cedar/alloy + 7 more) instead of the 6
-> Gemini voices, paired with migration `067`. Do **not** deploy the picker to prod before the
-> Railway agent is cut over to OpenAI — a tenant picking an OpenAI voice while the live agent
-> is still Gemini feeds it an invalid voice. Preview-play `.mp3` samples for the new voices
-> don't exist yet (not call-blocking). See `docs/OPENAI-REALTIME-2-MIGRATION.md` §17.
+> now offers the **3 stable labels** — `professional` / `friendly` / `local_expert` — with
+> display names; the **stored value is the label**, paired with migration `070` (which
+> replaced 067's OpenAI-name CHECK; apply 070 BEFORE deploying the picker). The Phase 66
+> cascade agent maps labels → ElevenLabs voice ids via `ELEVENLABS_VOICE_MAP`. Preview-play
+> files are `/audio/voices/{label}.mp3` — **assets pending** (not call-blocking). The earlier
+> Phase 65 10-voice OpenAI picker is historical.
 
-**Last updated**: 2026-06-04 (prod-readiness 2026-06 — Customers LIST page
+**Last updated**: 2026-06-12 (audit wave 1 dashboard fixes — (1) **Invoices/estimates pagination**: `useDocumentList` now paginates — `limit` grows 50 → 500 via a "Load more" button, `hasMore` derived from the API's `total_count`; a status-tab change resets the limit. The silent 50-row hard cap is gone. (2) **JobFlyout transcript + recordings work**: `getJob`'s detail select now includes `recording_storage_path`, `transcript_text`, `transcript_structured` (it previously selected none of them, so the flyout's TranscriptViewer was always empty and storage-path recordings never resolved). (3) **`job_type` UI removed everywhere** — the column never existed (migration 059): JobFilterBar input gone, JobCard/JobFlyout chips gone, jobs page param gone; the batch-invoice dialog now shows `service_address` instead. (4) **Realtime resilience**: ALL dashboard channels (calls ×2, jobs, customer-detail ×3, calendar ×2) now pass a status callback to `.subscribe()` and refetch on reconnect after `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`; INSERT events now trigger the page's fetch function instead of prepending the join-less Realtime payload — no more "Unknown" rows, and the phantom-field filter that silently dropped inserts is gone. (5) **AbortController everywhere**: the calendar page's abort pattern replicated in calls/jobs/customers/customer-detail fetches + CommandPalette search + CustomerMergeDialog typeahead. (6) **Mobile create-FABs** on invoices/estimates moved `bottom-6` → `bottom-20` (no longer cover the BottomTabBar). (7) **UnmergeBanner is ALWAYS mounted** on the customer detail page — it self-detects undoable merges via `/api/admin/merges` and renders null when inactive; the `merged_source_info` gate that could never be true is gone. (8) **Billing/Trial banners**: dismiss buttons removed; `BillingWarningBanner` gains a RED "AI receptionist is paused" suspended variant post-grace (see payment-architecture). (9) Voice picker → 3 labels (see banner above). (10) The stale untracked `src/app/dashboard/leads/` page (broken imports, pre-Phase-59 leftover) was deleted.)
+
+**Previous update**: 2026-06-10 (b: calendar page rework — see §7 "2026-06-10
+rework": `IntegrationReconnectBanner` + `JobberCopyBanner` DELETED, replaced
+by the new `CalendarConnectionsCard` (calendars + Jobber/Xero rows with
+inline Reconnect state, "Action needed" pill); single-row toolbar;
+`initialLoading`/`fetching` state split kills the skeleton flash on
+navigation; AbortController on fetchData; bottom cards now one responsive
+grid; `jobberConnected` from `/api/integrations/status` SWR. Token-refresh
+backend fixes same day → integrations-jobber-xero skill.)
+
+**Same-day prior**: 2026-06-10 (Inquiries → Calls merge + same-day rework
+after user feedback + dark-mode pass + dashboard UX wave — Inquiries tab
+removed: `/dashboard/inquiries` is now a server redirect to
+`/dashboard/calls?view=callbacks`; the queue is the **Callbacks** view
+(renamed from "Needs reply") inside Calls. The classic calls layout is the
+ONE default landing view — the smart default and the two-pill ViewSwitcher
+were removed same-day; a compact brand-accent **CallbacksStrip** above the
+stat cards (only when open count > 0) opens the Callbacks view, which has a
+"← All calls" back control. URL: `?view=callbacks` explicit (legacy
+`?view=needs-reply` accepted as alias), no param / `?view=all` → classic;
+`InquiryFilterBar` + `EmptyStateInquiries` deleted; nav: sidebar drops
+Inquiries, BottomTabBar re-promotes Calendar, Calls badge = combined
+`callsAttention`; HotJobsTile CTAs + activity-feed inquiry events →
+`?view=callbacks`; chatbot calls/inquiries/jobs docs rewritten +
+ROUTE_DOC_MAP fix. Dark mode: neutral dark `--sidebar-bg`, new
+`--sidebar-bg-border` token, calendar/UsageRingGauge hex→token sweep,
+system-wide `dark:` badge pass (~107 spots / 26 files). Plus the same-day
+UX wave: Home tiles repointed, TodayAppointmentsTile CTA+rows →
+`/dashboard/calendar`, HotJobsTile retitled "Needs follow-up" (open
+inquiries), CallsTile friendly copy + linked rows; RecentActivityFeed full
+16-event map + deep links; new MoneySnapshot strip; nav attention badges
+via `useAttentionCounts`; `/api/dashboard/stats` adds `missedCallsToday` +
+`invoiceOverdueAmount`; jobs/inquiries `search` + date-range filters wired
+server-side; calls transcript viewer + name-or-phone search +
+plain-language copy; inquiry `converted` displayed as "Booked"; customer
+tel: Call button; jobs batch-invoice failure → sonner toast)
+
+**Prior update**: 2026-06-04 (prod-readiness 2026-06 — Customers LIST page
 added at `/dashboard/customers` (closes 5 dead "Back to Customers" 404s);
 sidebar + mobile More-menu Customers entry; More-tab regrouped into three
 sections (Business / AI & Calls / Billing & Money); CommandPalette wrapped
@@ -25,7 +64,7 @@ in Radix Dialog for a11y + "leads"→"customers" copy; Phase-59 repointing of
 dashboard/stats 'new' tile, global search customers group, and
 HelpDiscoverabilityCard links)
 
-**Prior update**: 2026-04-21 (Phase 59 — customer/job model separation:
+**Earlier**: 2026-04-21 (Phase 59 — customer/job model separation:
 Jobs tab rewired to jobs table, new Inquiries tab, Customer detail page,
 Merge/Unmerge UX, Admin Merges view, D-07a owner-responsibility stance,
 chatbot corpus split into customers/jobs/inquiries)
@@ -34,6 +73,18 @@ chatbot corpus split into customers/jobs/inquiries)
 
 ## Scope Notes (read first)
 
+- **Inquiries → Calls merge (2026-06-10)** — the Inquiries TAB no longer
+  exists; its work queue lives inside the Calls page as the **"Callbacks"
+  view** (`/dashboard/calls?view=callbacks`; legacy `?view=needs-reply` is
+  accepted as an alias). The classic calls layout is the one default landing
+  view — a same-day rework after user feedback REMOVED the original smart
+  default + two-pill ViewSwitcher in favor of a compact CallbacksStrip.
+  `/dashboard/inquiries/page.js` is a one-line server `redirect()` kept for
+  old deep links / bookmarks / notification links. **Frontend surface merge
+  only** — the inquiries data model, `/api/inquiries*` routes, voice-agent
+  writes, dashboard stats, and customer-page inquiry surfaces are unchanged.
+  `InquiryFilterBar.jsx` and `EmptyStateInquiries.jsx` deleted (only the old
+  page used them). See Sections 5b and 6.
 - **Prod-readiness 2026-06 (UX/IA repointing, branch `fix/prod-readiness-2026-06`)** —
   Closes Phase-59 follow-up gaps. Presentational / wiring only; no DB or entity changes:
   - **Customers LIST page** at `/dashboard/customers/page.js` — previously only the
@@ -60,7 +111,9 @@ chatbot corpus split into customers/jobs/inquiries)
   - **Jobs tab** (`/dashboard/jobs`) — queries `jobs` table; uses `JobCard`,
     `JobFilterBar`, `JobStatusPills`, `EmptyStateJobs`, `HotJobsTile`
   - **Inquiries tab** (`/dashboard/inquiries`) — queries `inquiries` table; own pill
-    strip + flyout; D-07a: stays open indefinitely (owner responsibility)
+    strip + flyout; D-07a: stays open indefinitely (owner responsibility).
+    **Merged into Calls as the Callbacks view on 2026-06-10** (see Scope
+    Note above)
   - **Customer detail page** (`/dashboard/customers/[id]`) — sticky header + 3 tabs
     (Activity / Jobs / Invoices) + Edit modal + Merge/Unmerge UX
   - **Admin Merges view** (`/dashboard/admin/merges`) — `customer_merge_audit` rows
@@ -132,7 +185,7 @@ Call ends → Python LiveKit agent post-call pipeline → record_call_outcome RP
   │
   ▼  Supabase Realtime broadcasts INSERT/UPDATE on customers/jobs/inquiries
   │
-  ▼  Dashboard /dashboard/jobs OR /dashboard/inquiries subscribes → animates row
+  ▼  Dashboard /dashboard/jobs OR /dashboard/calls (Callbacks view) subscribes → animates row
   │
   ▼  Customer detail page triple-subscribes: customers, jobs, inquiries filtered by customer_id
 ```
@@ -145,11 +198,11 @@ layout.js                          DashboardSidebar (desktop) + BottomTabBar (mo
   │
   ├── page.js (/)                  Daily Ops hub (bento tiles: TodayAppointments, Calls, HotJobsTile, Usage)
   ├── jobs/page.js                 Status pill strip + filter bar + job list + JobFlyout
-  ├── inquiries/page.js            Status pill strip (Open/Converted/Lost) + filter bar + inquiry list + InquiryFlyout
+  ├── inquiries/page.js            Server redirect() → /dashboard/calls?view=callbacks (tab merged 2026-06-10)
   ├── customers/page.js            Customers LIST (prod-readiness 2026-06): search + customer rows → detail
   ├── customers/[id]/page.js       Customer detail: sticky header + 3 tabs (Activity / Jobs / Invoices) + Edit modal + Merge/Unmerge
   ├── calendar/page.js             CalendarView + ConflictAlertBanner + agenda + TimeBlocks + Jobber overlays
-  ├── calls/page.js                Date-grouped expandable call cards + filters + summary stats
+  ├── calls/page.js                Classic call log (default) + CallbacksStrip → Callbacks view (open-inquiries queue + InquiryFlyout)
   ├── invoices/                    List + new + detail + batch-review
   ├── estimates/                   List + new + detail (single-price or tiered)
   ├── services/page.js             Phase 58: first-class polished page (was redirect stub)
@@ -196,31 +249,57 @@ request without losing client-side interactivity.
 - `ImpersonationBanner` (z-40, amber) — rendered when `?impersonate=` query
   param is present; admin impersonation mode wraps layout in
   `pointer-events-none opacity-60`.
-- `BillingWarningBanner` (z-39, amber) — `past_due` subscriptions, 3-day
-  grace countdown + Stripe portal link.
+- `BillingWarningBanner` (z-39) — amber during the `past_due` 3-day grace
+  countdown + Stripe portal link; once grace expires it switches to a **RED
+  "Payment failed — your AI receptionist is paused" suspended variant**
+  (2026-06-12 — the agent gate has stopped answering; the banner used to hide
+  post-grace expecting a middleware redirect that never existed). **Not
+  dismissible** (dismiss button removed 2026-06-12).
 - `TrialCountdownBanner` (z-39, blue >3d / amber ≤3d) — trial days +
-  upgrade CTA.
+  upgrade CTA. **Not dismissible** (2026-06-12).
 
 ### Navigation
 
-**`DashboardSidebar`** — desktop-only (lg+). 8 nav items:
-Home, Jobs, Inquiries, **Customers** (prod-readiness 2026-06, `Contact`
-icon, inserted after Inquiries), Calendar, Calls, Invoices, More. The
+**`DashboardSidebar`** — desktop-only (lg+). 7 nav items (Inquiries
+removed in the 2026-06-10 merge): Home, Jobs, **Customers** (prod-readiness
+2026-06, `Contact` icon), Calendar, Calls, Invoices, More. The
 Invoices entry is filtered out when `invoicing=false`
-(`NAV_ITEMS.filter(...)`). Sidebar stays navy in both light/dark modes
-(`bg-[var(--sidebar-bg)]`). Between Ask Voco AI button and Log Out: theme
-toggle (sun/moon) via `next-themes.setTheme`.
+(`NAV_ITEMS.filter(...)`). Sidebar uses `bg-[var(--sidebar-bg)]` — navy in
+light mode, neutral dark in dark mode (see Section 12). Between Ask Voco AI
+button and Log Out: theme toggle (sun/moon) via `next-themes.setTheme`.
 
 > **Note**: Customers is NOT a `BottomTabBar` tab (still 5 tabs on mobile).
 > Mobile reaches Customers via the `/dashboard/more` Business section
-> (see Section 14) — same parity treatment as Calendar.
+> (see Section 14).
 
 **`BottomTabBar`** — mobile-only (`lg:hidden`). 5 tabs: Home, Calls,
-Jobs, Inquiries, More. **Calendar demoted to More overflow** (Phase 59 —
-added Inquiries tab to BottomTabBar, Calendar moved to More menu to stay
-at 5 tabs). Animated orange indicator (framer-motion spring).
+Jobs, **Calendar**, More. The Inquiries tab (Phase 59 / D-08) was removed
+in the 2026-06-10 merge — its queue lives in Calls — and the freed slot
+**re-promoted Calendar** (which Phase 59 had demoted to the More menu to
+stay at the 5-tab mobile safe limit; it also remains in More → Business).
+Animated orange indicator (framer-motion spring).
 Uses `bg-card border-t border-border` for dark-mode compatibility.
 `data-tour="bottom-nav"`.
+
+### Attention badges (2026-06-10)
+
+Both `DashboardSidebar` and `BottomTabBar` render ONE numeric attention
+badge — on **Calls** — fed by **`src/hooks/useAttentionCounts.js`**, which
+exports a combined **`callsAttention` = `openInquiries` (stats
+`newLeadsCount` = open inquiries) + `missedCallsToday`** alongside the two
+raw counts. (Pre-merge there were two badges: Inquiries=openInquiries,
+Calls=missedCallsToday — the Inquiries nav item is gone, so Calls carries
+the combined "needs you" count.)
+
+Hook mechanics: `useSWRFetch('/api/dashboard/stats', { refreshInterval:
+60_000, revalidateOnFocus: true })` — **same SWR key as the Home tiles**, so
+sidebar + tab bar + tiles share one in-flight request. `formatBadgeCount()`
+caps display at **"9+"**. Badge is brand-accent pill (`bg-[var(--brand-accent)]`,
+`tabular-nums`), `aria-hidden`, **hidden entirely at 0**; the count is
+surfaced to AT via the nav `Link`'s `aria-label` instead —
+`"Calls, N need(s) attention"` (no `aria-label` when the count is 0).
+Sidebar badge sits `ml-auto` in the row; tab-bar badge is absolutely
+positioned on the icon.
 
 ### FeatureFlagsProvider (Phase 53)
 
@@ -264,13 +343,70 @@ Post-Phase-48 single-column daily ops hub. No setup/active mode branching
 Structure:
 ```
 Greeting (time-of-day + AI status pulse + optional tour button)
-DailyOpsHub (bento: TodayAppointmentsTile, CallsTile, HotLeadsTile, UsageTile)
+AiNumberBanner (AI number + copy button / provisioning-failed alert)
+DailyOpsHub (bento: TodayAppointmentsTile, CallsTile, HotJobsTile, UsageTile)
+MoneySnapshot (invoice money strip — gated by invoicing flag)
 HelpDiscoverabilityCard (4 quick-link tiles)
 RecentActivityFeed (wrapped in card.base)
 ```
 
-- **CallsTile** (Phase 49): last 5 calls (no 24h window).
-- **HotLeadsTile** (Phase 49): last 5 leads of any status (no `status=new` filter).
+### AiNumberBanner (2026-06-13 onboarding-audit fix wave)
+
+**File**: `src/components/dashboard/AiNumberBanner.jsx` — fetches `/api/account`
+(which now returns `provisioning_failed`). Three states:
+- **Number assigned** — Link card to `/dashboard/more/account` with the
+  formatted number, forwarding nudge, and a **copy-to-clipboard button**
+  (`e.preventDefault()` so the click doesn't navigate; Check icon for 2s).
+- **No number + `provisioning_failed=true`** — amber `role="alert"` card:
+  "We hit a snag assigning your AI number… team has been notified", support
+  link. Previously a paying customer with failed provisioning saw NOTHING.
+- **No number, not failed** — renders null (account page carries the
+  "being assigned" copy, which now also has a failed-state variant and a
+  support link instead of the old indefinite "within a minute" promise).
+
+### Tile behavior (2026-06-10 UX wave)
+
+- **TodayAppointmentsTile** — "View full schedule" CTA now links to
+  `/dashboard/calendar` (was the dead `/dashboard/appointments` route).
+  Each appointment row is a tappable `<Link href="/dashboard/calendar">`
+  (`min-h-[44px]`, hover `bg-muted/50`, `focus.ring`).
+- **CallsTile** — last 5 calls (no 24h window, Phase 49). The missed-calls
+  block no longer leaks the raw `not_attempted` enum: copy is now
+  `"needs callback"` / `"need callback"`. Missed + recent rows are tappable
+  `<Link href="/dashboard/calls">` (`min-h-[44px]`). Outcome/Missed badges
+  gained dark-mode variants (`dark:border-*-800/60 dark:bg-*-950/40
+  dark:text-*-300`).
+- **HotJobsTile** — retitled **"Needs follow-up"** (see Section 5; it shows
+  open inquiries, not scheduled jobs).
+- **MoneySnapshot** — local component in `page.js`. Compact `card.base` strip:
+  **Outstanding · Overdue · Paid this month** (`invoiceOutstandingAmount`,
+  `invoiceOverdueAmount` — red when > 0, `paidThisMonth` — emerald), wrapped
+  in a single `<Link href="/dashboard/invoices">`. **Gated by the `invoicing`
+  feature flag** (renders `null` when off or stats unloaded) and reads the
+  shared `/api/dashboard/stats` SWR key — no extra request.
+
+### RecentActivityFeed (2026-06-10 rewrite)
+
+**File**: `src/components/dashboard/RecentActivityFeed.jsx`
+
+- `EVENT_CONFIG` now covers **all 16 values of the `activity_event_type`
+  strict enum** (migration 061): `call_received`, `inquiry_opened/converted/lost`,
+  `job_booked/completed/paid/cancelled`, `customer_created/updated/merged/unmerged`,
+  `invoice_created/paid/voided`, `other`. **Labels mirror
+  `CustomerActivityTimeline.jsx`** so both surfaces speak the same language;
+  icon tones come from a shared `TONES` map (accent/blue/emerald/amber/red/muted,
+  all with dark variants).
+- Each row shows the **caller/customer name from `metadata`**
+  (`caller_name || customer_name || name`), joined with
+  `metadata.job_type || metadata.invoice_number` as a `— detail` suffix.
+- Rows are **deep links by event family** (`getHref`): `call_received` →
+  `/dashboard/calls`, `inquiry_*` → `/dashboard/calls?view=callbacks`
+  (Inquiries → Calls merge), `job_*` →
+  `/dashboard/jobs`, `customer_*` → `/dashboard/customers/<customer_id>`
+  (only when the row carries `customer_id`), `invoice_*` →
+  `/dashboard/invoices` **gated on the `invoicing` flag** (unlinked when
+  off). Rows without a resolvable href render as plain (non-link) items.
+  Linked rows are `min-h-[44px]` with hover + `focus.ring`.
 
 No sidebar, no grid. Responsive for free — children stack vertically.
 
@@ -362,20 +498,59 @@ clears filter. Counts derived client-side from parent's `jobs` array.
 
 **File**: `src/components/dashboard/JobFilterBar.jsx`
 
-Desktop (≥640px): inline flex-wrap (search, urgency Select, job type
-Input, date range, Clear all). Mobile (<640px): search + Filters button
+Desktop (≥640px): inline flex-wrap (search, urgency Select, date range,
+Clear all). Mobile (<640px): search + Filters button
 that opens a bottom Sheet. Status filter in `JobStatusPills`.
+The job-type Input was REMOVED 2026-06-12 (no backing column — see below).
+
+**Server-side filters wired (2026-06-10)** — `listJobs` (`src/lib/jobs.js`)
++ `GET /api/jobs` now honor:
+
+- `search` — customer **name OR phone** via an escaped `.or(
+  'name.ilike.%s%,phone_e164.ilike.%s%', { referencedTable: 'customer' })`
+  on the `customers!inner` join (parent-row filter, same pattern as
+  `listCustomers`; term escaped with `escapeOrTerm` from
+  `src/lib/search-filter.js`, capped at 100 chars). This makes the
+  Calls-page → Jobs `?search=<phone>` cross-link actually filter.
+- `date_from` / `date_to` — `created_at` range; route validates strict
+  `YYYY-MM-DD` (invalid values silently ignored, not 400); `date_to` is
+  inclusive of the whole day (`T23:59:59.999Z` UTC).
+
+**RESOLVED (2026-06-12) — jobs `job_type` UI removed everywhere**:
+`jobs.job_type` has **no backing column** (migration 059; the API documents
+`job_type` as NOT supported and `listJobs` cannot apply it). The dead UI was
+removed rather than wired to nothing: the JobFilterBar job-type Input, the
+JobCard and JobFlyout job-type chips, and the jobs page's `job_type` param
+are all gone; the batch-invoice dialog now shows **`service_address`**
+instead of the always-empty job type. (Inquiries DO have a `job_type`
+column — that surface is unchanged.) Do not reintroduce job_type UI without
+first adding the column.
+
+### Batch invoicing failure UX (2026-06-10)
+
+`handleBatchCreate` (jobs page → `POST /api/invoices/batch` →
+`/dashboard/invoices/batch-review?ids=`) on failure now shows a **sonner
+`toast.error("Couldn't create batch invoices. Try again.")`** and preserves
+the selection. It previously set the page-level `error` state — swapping the
+entire list for `ErrorState` — with an uncleared 5s `setTimeout`; both the
+page-swap and the timer are gone.
 
 ### JobFlyout (formerly LeadFlyout)
 
 **File**: `src/components/dashboard/JobFlyout.jsx`
 
 Right Sheet. On open: fetches `/api/jobs/${jobId}` (with transcript)
-AND `/api/invoices?job_id=${jobId}` for linked-invoice check. Renders:
+AND `/api/invoices?job_id=${jobId}` for linked-invoice check.
+**2026-06-12 fix**: `getJob`'s detail select now actually includes
+`recording_storage_path`, `transcript_text`, `transcript_structured` — it
+previously selected none of them, so the TranscriptViewer was always empty
+and storage-path recordings never resolved (the "with transcript" claim was
+aspirational until this fix). Renders:
 
 - Urgency badge + relative time
 - Customer info (phone, timestamp) — links to `/dashboard/customers/[customerId]`
-- Job details (job_type, service_address, triage layer/confidence)
+- Job details (service_address, triage layer/confidence — the job_type chip
+  was removed 2026-06-12, no backing column)
 - `AudioPlayer` recording URL
 - `TranscriptViewer` (structured + text)
 - Status `Select` + `RevenueInput` (for completed/paid)
@@ -385,12 +560,20 @@ AND `/api/invoices?job_id=${jobId}` for linked-invoice check. Renders:
 
 `URGENCY_STYLES`, `STATUS_LABELS`, `STATUS_OPTIONS`. `formatRelativeTime(iso)` helper.
 
-### HotJobsTile
+### HotJobsTile — "Needs follow-up" (2026-06-10 retitle)
 
 **File**: `src/components/dashboard/HotJobsTile.jsx`
 
-Replaces `HotLeadsTile` (deleted in Phase 59). Queries `jobs` table —
-last 5 jobs of any status. Wired in `DailyOpsHub`.
+Replaces `HotLeadsTile` (deleted in Phase 59). Wired in `DailyOpsHub`.
+**Despite the filename, this tile shows OPEN INQUIRIES, not jobs.** It reads
+`newLeadsCount` / `newLeadsPreview` from `GET /api/dashboard/stats`, which
+(post-Phase-59 repointing) count open inquiries. The 2026-06-10 wave fixed
+the mislabel: title is **"Needs follow-up"** (was "Scheduled jobs"), icon is
+`PhoneIncoming` (was `Flame`), CTA is **"View callbacks"** →
+`/dashboard/calls?view=callbacks` (the Callbacks view — repointed in
+the Inquiries → Calls merge), count copy is "N caller(s) waiting for a
+callback". The originally planned `hotJobsCount`/`hotJobsPreview` backend
+fields never shipped — the legacy-shape fallback was removed.
 
 ### EmptyStateJobs
 
@@ -401,19 +584,46 @@ Thin wrapper delegating to shared `<EmptyState icon={Users} headline="No jobs ye
 
 ---
 
-## 5b. Inquiries Tab (Phase 59 — new)
+## 5b. Inquiries — Callbacks view (merged into Calls, 2026-06-10)
 
-**File**: `src/app/dashboard/inquiries/page.js`
+**Files**: `src/app/dashboard/calls/page.js` (the view lives here — see
+Section 6) + `src/app/dashboard/inquiries/page.js` (now a one-line server
+component calling `redirect('/dashboard/calls?view=callbacks')`, kept
+only so old deep links / bookmarks / notification links keep working).
 
-Client component. Status pill strip + filter bar + inquiry list + Realtime
-subscription on `inquiries` table (filtered by `tenant_id`).
+The Phase 59 Inquiries TAB no longer exists. Its work queue is the
+**"Callbacks" view** inside the Calls page (renamed same-day from "Needs
+reply" after user feedback), which reuses the surviving inquiry components:
+`InquiryCard` + `InquiryStatusPills` (Open/Booked/Lost sub-pills) +
+`InquiryFlyout` (Convert-to-Job via QuickBookSheet + Mark-as-Lost with 5s
+sonner undo), plus the `inquiries` Realtime subscription — all ported from
+the old page. The view is headed by an `<h1>Callbacks</h1>` and a
+**"← All calls" back control** (ArrowLeft + muted-foreground text button,
+same pattern as the admin/merges breadcrumb) that switches back to the
+classic view. **The inquiries data model, `/api/inquiries*` routes,
+voice-agent writes, stats, and customer-page inquiry surfaces are
+unchanged.**
+
+**Known consequences (deliberate, not bugs):**
+- The Callbacks view has **NO search / urgency / date filters** —
+  `InquiryFilterBar.jsx` was deleted with the old page. The API still
+  supports those filters (see below); only the UI consumer is gone.
+- Old `?status=` deep links to `/dashboard/inquiries` land on the **Open**
+  sub-pill (the redirect drops the param; default sub-filter is `open`).
+
+**Deleted components (2026-06-10)**: `InquiryFilterBar.jsx`,
+`EmptyStateInquiries.jsx` — only the old inquiries page used them. The
+empty state is now an inline "All caught up" block in the calls page.
 
 ### D-07a Owner Responsibility Stance
 
 Open inquiries stay `open` indefinitely. **No cron, no auto-timeout, no
 visual staleness flag in V1.** Matches "inbox" mental model — owner converts
-or marks lost when ready. The Inquiries tab is the owner's responsibility to
-triage. Revisit if owners report cognitive load from inbox filling up.
+or marks lost when ready. The Callbacks queue is the owner's
+responsibility to triage. Revisit if owners report cognitive load from the
+inbox filling up. The D-07a MUST-NOT invariant comment (no age-based
+mutation / staleness flags / auto-lost) was carried from the old inquiries
+page into `calls/page.js`.
 
 The chatbot knowledge doc `inquiries.md` includes a "Stale inquiries" section
 explaining this D-07a policy.
@@ -422,21 +632,36 @@ explaining this D-07a policy.
 
 **File**: `src/components/dashboard/InquiryStatusPills.jsx`
 
-Horizontal pill strip. Status enum: `open/converted/lost`. Display labels:
-**Open · Converted · (gap) · Lost** with `ml-2` gap before Lost.
+Horizontal pill strip. Status enum: `open/converted/lost`. Display labels
+(2026-06-10): **Open · Booked · (gap) · Lost** with `ml-2` gap before Lost.
 
-### InquiryFilterBar
+**`converted` renders as "Booked" everywhere** — display label only, via
+status-label maps in `InquiryStatusPills`, `InquiryCard` (`STATUS_LABEL`),
+and `InquiryFlyout` (`STATUS_LABELS`); the Callbacks filtered-empty
+copy also says "No booked callbacks right now." **Stored DB values and API
+filters are unchanged** (`status=converted`) — never send "booked" to the
+API.
 
-**File**: `src/components/dashboard/InquiryFilterBar.jsx`
+### API filters (UI consumer deleted)
 
-Search + urgency filter + date range. Default filter: `status=open`.
+`InquiryFilterBar.jsx` was **deleted** in the 2026-06-10 merge, but the
+server-side filters it drove remain live: `listInquiries`
+(`src/lib/inquiries.js`) + `GET /api/inquiries` honor `urgency` (exact),
+`job_type` (partial `ilike`, inquiries DO have a `job_type` column — unlike
+jobs), `search` (customer name OR phone via the same escaped `.or` on the
+`customers!inner` join as `listJobs`), and `date_from`/`date_to`
+(`YYYY-MM-DD` validated in the route, invalid ignored; `date_to` inclusive
+end-of-day UTC). The Callbacks view currently calls `GET /api/inquiries`
+unfiltered (all statuses, API limit 200) and filters by status client-side
+so the sub-pills (and the CallbacksStrip count) carry live counts.
 
 ### InquiryFlyout
 
 **File**: `src/components/dashboard/InquiryFlyout.jsx`
 
 Right Sheet. Shows inquiry details, customer link, urgency badge,
-transcript (if call linked), status Select. Actions:
+transcript (if call linked), status Select (status rendered via
+`STATUS_LABELS` — `converted` → "Booked"). Actions:
 - "Convert to Job" button → `POST /api/inquiries/${id}/convert` (creates Job + marks inquiry `converted`)
 - "Mark as Lost" → `PATCH /api/inquiries/${id}` with `{status: 'lost'}`
 - Links to customer detail page (`/dashboard/customers/[customerId]`)
@@ -454,9 +679,14 @@ Sticky header + 3 tabs:
 ```
 CustomerDetailHeader (sticky)
   name, phone, default_address, lifetime_value, outstanding_balance
+  tel: Call button (2026-06-10) — brand-accent <a href="tel:{phone_e164}">
+    next to the copy-phone button; PhoneOutgoing icon,
+    aria-label "Call <name>" (falls back to formatted phone / "customer");
+    rendered only when phone_e164 is present
   Jobber/Xero context badges (gracefully absent when not connected)
   Overflow menu: Edit, Merge into another, View merge history → /dashboard/admin/merges
-  UnmergeBanner (shown when customer.merged_into is set on the TARGET — 7-day undo)
+  UnmergeBanner (ALWAYS mounted since 2026-06-12 — self-detects an undoable merge
+    via /api/admin/merges and renders null when inactive; 7-day undo)
 
 Tabs:
   Activity    Unified chronological timeline (calls + booking events + invoice events + notes)
@@ -472,6 +702,10 @@ supabase.channel(`customer-${id}`).on('postgres_changes', { table: 'customers', 
 supabase.channel(`jobs-${id}`).on('postgres_changes', { table: 'jobs', filter: `customer_id=eq.${id}` }, ...)
 supabase.channel(`inquiries-${id}`).on('postgres_changes', { table: 'inquiries', filter: `customer_id=eq.${id}` }, ...)
 ```
+
+All three pass a status callback to `.subscribe()` and refetch on reconnect
+after `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`; INSERTs trigger a refetch rather
+than prepending the join-less payload (2026-06-12 — see Section 13).
 
 ### Edit Modal (D-18)
 
@@ -496,6 +730,15 @@ Shown on the **target** customer's detail page when a merge has been
 performed within the last 7 days. Surfaces undo button → `POST /api/customers/[id]/unmerge`
 → `unmerge_customer` RPC. After 7 days the banner disappears
 (window expired — forward-fix only).
+
+**2026-06-12 fix — always mounted, self-detecting**: the banner is now
+unconditionally rendered by the customer detail page and decides for itself
+whether to show: it queries `GET /api/admin/merges`, looks for an active
+(un-expired, not-yet-unmerged) merge targeting this customer, and renders
+null otherwise. The previous mount condition gated on a
+`merged_source_info` field **that no API ever returned** — the condition
+could never be true, so the banner never appeared and the 7-day undo was
+unreachable from the UI.
 
 ---
 
@@ -574,7 +817,46 @@ styling, hover lift) showing:
 
 **File**: `src/app/dashboard/calls/page.js`
 
-Date-grouped expandable call cards, search, filters, summary stats.
+Since the 2026-06-10 Inquiries → Calls merge (reworked same-day after user
+feedback) the page has **one default landing view — the classic calls
+layout** — plus an opt-in **"Callbacks"** view:
+
+- **Classic calls view (default)** — the pre-merge calls page **unchanged**:
+  summary stat cards, search, filters, date-grouped expandable call cards.
+  Renders immediately; it never waits on the inquiries fetch.
+- **CallbacksStrip** — compact one-line nudge rendered ABOVE the stat cards,
+  **only when open inquiries > 0** (hidden at 0 and while the count is still
+  loading — it appears when the fetch resolves). Brand-accent tint
+  (`border-[var(--brand-accent)]/25 bg-[var(--brand-accent)]/10
+  text-[var(--brand-accent)]`, AiNumberBanner pattern — the token flips for
+  dark mode), `min-h-[44px]`, PhoneIncoming icon, copy
+  **"N caller(s) waiting for a callback"** + a "View →" affordance,
+  `aria-label="N caller(s) waiting for a callback — view callbacks"`.
+  Clicking switches to the Callbacks view.
+- **Callbacks** — the open-inquiries work queue (see Section 5b), headed by
+  a **"← All calls" back control** + `<h1>Callbacks</h1>`. `InquiryCard`
+  list + `InquiryStatusPills` Open/Booked/Lost sub-pills (default `open`;
+  `converted` displays "Booked") + `InquiryFlyout` (Convert-to-Job via
+  QuickBookSheet, Mark-as-Lost with 5s sonner undo). Own Supabase channel
+  **`inquiries-realtime`** (tenant-filtered; since 2026-06-12 INSERT triggers
+  a refetch instead of prepending the join-less payload — no "Unknown" rows;
+  UPDATE replaces the row — keeps list AND strip count live; status callback
+  refetches on reconnect).
+  Empty state: inline **"All caught up"** block (CheckCircle2 + "No callers
+  waiting for a callback right now." + a link-style "View all calls"
+  affordance) — kept for when the queue is empty but the user navigates
+  here explicitly.
+
+**View resolution (NO smart default — removed same-day)**: resolved
+synchronously from the URL via `resolveViewParam()` —
+`?view=callbacks` OR the **legacy alias `?view=needs-reply`** (old deep
+links + the inquiries redirect) → Callbacks; **no param, `?view=all`, or
+any unknown value → classic calls view**. There is no view-resolution
+skeleton and no auto-landing on the queue. View switches
+`router.replace('/dashboard/calls?view=…', { scroll: false })` (no history
+push, no scroll reset), and a `searchParams` effect keeps `view` in sync
+for back/forward + deep links (no-param resolves back to classic).
+
 Calls table in Supabase Realtime publication (migration 041) with
 `REPLICA IDENTITY FULL` so the page receives live INSERT/UPDATE events.
 
@@ -582,6 +864,29 @@ Calls table in Supabase Realtime publication (migration 041) with
 wired to zero-data branch. Local helper renamed `CallsEmptyState` to
 avoid shadowing the shared primitive. Filtered-empty branch keeps its
 Clear-filters Button.
+
+### 2026-06-10 UX wave
+
+- **Transcript in expanded card** — `GET /api/calls` now selects
+  `transcript_text` + `transcript_structured`; the expanded `CallCard`
+  renders a collapsible `<TranscriptViewer transcriptStructured
+  transcriptText>` below the `AudioPlayer`. `TranscriptViewer` degrades
+  gracefully ("No transcript available for this call.") when both are null.
+- **Search matches caller name OR phone** — placeholder is now "Search by
+  name or phone...". `/api/calls` has no caller-name column, so it first
+  does a tenant-scoped `customers` name lookup (`ilike` on `name`, capped at
+  **50 rows**), then ORs the matched `phone_e164` values into the
+  `from_number` filter (`from_number.ilike.%s% , from_number.in.(...)`);
+  the term is escaped via `escapeOrTerm` + phones stripped of
+  PostgREST-reserved chars.
+- **Plain-language copy** — `EXCEPTION_LABEL` maps `exception_reason` to
+  friendly text (`clarification_limit` → "The AI couldn't get enough
+  details", `caller_requested` → "Caller asked to speak with a person",
+  anything else → "Call ended unexpectedly" — no more raw
+  `replace(/_/g,' ')`). Badge "Recovery SMS Sent" → **"We texted them
+  back"**. Outcome `attempted` label "Attempted" → **"Reached out"** (badge
+  + outcome filter `SelectItem`; the `not_attempted` label stays
+  "No Booking").
 
 ---
 
@@ -591,6 +896,46 @@ Clear-filters Button.
 
 CalendarView + AppointmentFlyout + ConflictAlertBanner + agenda.
 Month/Day toggle uses `bg-foreground text-background` (dark-mode safe).
+
+### 2026-06-10 rework — connections card + perf
+
+- **Banners removed**: `IntegrationReconnectBanner.jsx` and
+  `JobberCopyBanner.jsx` are DELETED (files + test). All Jobber/Xero
+  notices now live in `CalendarConnectionsCard.jsx`
+  (`src/components/dashboard/CalendarConnectionsCard.jsx`) — the bottom
+  "Connections" card: CALENDARS section (existing `CalendarSyncCard`
+  rows for Google/Outlook) + BUSINESS APPS section (Jobber/Xero rows
+  from `/api/integrations/status` via `useSWRFetch`, 60s poll). A row
+  with `error_state='token_refresh_failed'` shows an amber "Connection
+  expired — not syncing" subtitle + Reconnect link to
+  `/dashboard/more/integrations`, and the card header gets an
+  "Action needed" amber pill. The old dismissible Jobber banner copy is
+  now a quiet one-line hint under the connected Jobber row. Covered by
+  `tests/components/CalendarConnectionsCard.test.jsx` (4 tests).
+- **`jobberConnected`** is now derived from the same
+  `useSWRFetch('/api/integrations/status')` key (SWR dedupes with the
+  card) — the separate `/api/integrations/jobber/connection-status`
+  fetch was removed from this page (the route still exists for other
+  consumers).
+- **Toolbar merged to ONE row** (was two): ‹ › Today + date label left;
+  Show-completed switch (label hidden < lg), Refresh, Month/Day toggle,
+  + New right. `flex-wrap` lets it break into two clean lines on mobile.
+- **No skeleton flash on navigation**: `loading` state split into
+  `initialLoading` (one-time skeleton) + `fetching` (background). During
+  navigation/Realtime refetches the existing grid stays mounted and dims
+  to `opacity-60`. The old fade choreography (100ms setTimeout →
+  swap → 150ms fade-in) was deleted — date changes apply immediately.
+- **AbortController** in `fetchData` (`abortRef`): rapid prev/next can't
+  resolve out of order; the blocks fetch rethrows `AbortError` instead
+  of swallowing it into `[]`; only the owning fetch clears flags.
+  **2026-06-12: this pattern was replicated across the dashboard** — the
+  calls, jobs, customers, and customer-detail page fetches, the
+  CommandPalette search, and the CustomerMergeDialog typeahead all abort
+  the in-flight request before firing the next one.
+- **Bottom cards are ONE responsive grid** (`grid-cols-1 md:grid-cols-3`):
+  Today's Agenda (`hidden md:block` — mobile keeps the "Up Next" strip
+  instead), `<CalendarConnectionsCard />`, Working Hours. The duplicated
+  `isMobile`-conditional mobile card markup was deleted.
 
 ### Components orchestrated
 
@@ -604,16 +949,15 @@ Month/Day toggle uses `bg-foreground text-background` (dark-mode safe).
   pre-filled) and toolbar (editable).
 - `ExternalEventSheet` — view Google/Outlook/Jobber events. "Open in
   {provider}" button.
-- `ConflictAlertBanner`, `CalendarSyncCard`, `WorkingHoursEditor`.
+- `ConflictAlertBanner`, `CalendarConnectionsCard` (wraps
+  `CalendarSyncCard`), `WorkingHoursEditor`.
 
 ### Phase 57 — Jobber overlays
 
-- `JobberCopyBanner.jsx` — when tenant has Jobber connected +
-  `jobber_bookable_user_ids` populated, banner explains read-only
-  nature of Jobber visits on calendar.
 - Jobber visits rendered as `calendar_events` with `provider='jobber'`
   (migration 055). AppointmentFlyout shows "From Jobber" overlay pill
-  for these.
+  for these. (The former `JobberCopyBanner` is gone — see 2026-06-10
+  rework above.)
 
 ### Visual hierarchy
 
@@ -624,8 +968,9 @@ dedicated row above hourly grid.
 ### Phase 58 error state
 
 Top-level early-return renders `<ErrorState onRetry={fetchData}/>` when
-`fetchError && !loading`. Top-level (not inline) because fetchData's
-catch sets empty data — inline would show misleading empty grids.
+`fetchError && !fetching` (was `!loading` before the 2026-06-10 state
+split). Top-level (not inline) because fetchData's catch sets empty
+data — inline would show misleading empty grids.
 
 ### EmptyStateCalendar wrapper
 
@@ -645,6 +990,17 @@ tiny deferred wrapper update.
 
 Status tabs, summary metrics, search. Uses shared `useDocumentList`
 hook + `DocumentListShell` primitives.
+
+**Pagination (2026-06-12)**: `useDocumentList` now paginates — `limit`
+starts at 50 and grows in 50-row steps via a **"Load more"** button up to
+500; `hasMore` is derived from the API's `total_count`; switching status
+tabs resets the limit back to 50. Previously the hook hard-capped at 50
+rows with no affordance — invoices/estimates beyond the first 50 were
+silently invisible. Applies to both invoices and estimates lists.
+
+**Mobile create-FABs (2026-06-12)**: the floating create buttons on the
+invoices and estimates pages moved `bottom-6` → `bottom-20` so they no
+longer cover the `BottomTabBar` on mobile.
 
 ### Invoice detail — `src/app/dashboard/invoices/[id]/page.js`
 
@@ -858,7 +1214,7 @@ CSS variables defined in `globals.css`, flip between light/dark via
 export const colors = {
   brandOrange: 'var(--brand-accent)',          // #C2410C light / brighter dark
   brandOrangeDark: 'var(--brand-accent-hover)',
-  navy: 'var(--sidebar-bg)',                    // #0F172A both modes
+  navy: 'var(--sidebar-bg)',                    // #0F172A light / oklch(0.185 0 0) dark
   warmSurface: 'var(--warm-surface)',
   bodyText: 'var(--muted-foreground)',
 };
@@ -868,15 +1224,49 @@ Other tokens: `btn`, `card`, `glass`, `gridTexture`, `focus` (Phase 58
 focus-visible), `selected`. Consumers read via named import only — do
 not inline hex codes in dashboard components.
 
+### Sidebar tokens (2026-06-10 dark pass)
+
+- **`--sidebar-bg`** — light mode keeps the navy `#0F172A`; dark mode is
+  now **neutral `oklch(0.185 0 0)`** — one elevation step between
+  `--background` (`0.145`) and `--card` (`0.205`), joining the
+  zero-chroma dark family instead of clashing navy.
+- **`--sidebar-bg-border`** (NEW) — hairline between the desktop sidebar
+  and page content: `transparent` light / `oklch(1 0 0 / 8%)` dark.
+  Applied via a scoped rule in `globals.css` —
+  `aside[data-tour="sidebar-nav"] { border-right: 1px solid
+  var(--sidebar-bg-border); }` — so `DashboardSidebar.jsx` needs no border
+  class (border-box keeps the 240px width unchanged).
+
 ### Dark mode rules
 
 - NO hardcoded `bg-white` / `bg-stone-*` / `text-stone-*` without `dark:`
   variants. Use semantic tokens: `bg-card`, `bg-muted`, `bg-background`,
   `text-foreground`, `text-muted-foreground`, `border-border`.
-- Sidebar stays navy in both modes (`bg-[var(--sidebar-bg)]`).
+- Sidebar: navy in light, neutral `oklch(0.185 0 0)` in dark
+  (`bg-[var(--sidebar-bg)]` — see Sidebar tokens above).
 - `URGENCY_STYLES` in CalendarView has full dark variants.
 - `@custom-variant dark :where(.dark, .dark *)` in `globals.css`.
 - 150ms body crossfade on theme change.
+
+### Badge/chip dark pairing — CANONICAL pattern for new badges
+
+2026-06-10 system-wide pass: **~107 className locations across 26
+dashboard files** gained additive `dark:` variants for light-only pastel
+badges/chips/banners, following the **BookingStatusBadge convention**:
+
+```
+bg-{hue}-100 text-{hue}-700  +  dark:bg-{hue}-950/40 dark:text-{hue}-300
+borders:                        dark:border-{hue}-800/60
+```
+
+Applied to status badges, amber banners, icon tiles, ghost destructive
+hovers, and stone→muted swaps. Raw slate/stone hexes in
+`calendar/page.js`, `CalendarView.js`, and `UsageRingGauge.js` were
+replaced with tokens (`text-muted-foreground`, `var(--border)` for the
+usage ring track) + dark pairs. **Deliberate exclusion**:
+`src/components/billing/UpgradeCheckoutCards.js` is an intentionally
+light-fixed pricing card — do not add `dark:` variants there. Any NEW
+light-pastel badge MUST ship with this dark pairing.
 
 ---
 
@@ -891,14 +1281,30 @@ not inline hex codes in dashboard components.
 | `leads` | 004 | **DROPPED** (migration 061) — superseded by customers/jobs/inquiries |
 | `customers` | 059 | Live customer updates (`REPLICA IDENTITY FULL`) |
 | `jobs` | 059 | Live job updates on jobs tab (`REPLICA IDENTITY FULL`) |
-| `inquiries` | 059 | Live inquiry updates on inquiries tab (`REPLICA IDENTITY FULL`) |
+| `inquiries` | 059 | Live inquiry updates on the Calls Callbacks view (`REPLICA IDENTITY FULL`) |
 | `calls` | 041 | Live call updates on calls page (`REPLICA IDENTITY FULL`) |
 | `appointments` | (standard) | Calendar live updates |
 | `calendar_events` | 057 | Provider='jobber' schedule-mirror live updates |
 
 **NOT published** (derived/audit-only): `customer_calls`, `job_calls`, `customer_merge_audit`.
 
-### Client subscription pattern
+### Client subscription pattern (2026-06-12 resilience rework)
+
+Two rules now apply to **every** dashboard channel (calls page ×2, jobs,
+customer-detail ×3, calendar ×2):
+
+1. **Status callback + refetch-on-reconnect**: `.subscribe()` is passed a
+   status callback; after a `CHANNEL_ERROR`, `TIMED_OUT`, or `CLOSED` status
+   the page refetches its data when the channel re-establishes — events
+   missed while the WebSocket was down are no longer silently lost (the old
+   bare `.subscribe()` meant a dropped channel froze the page until manual
+   refresh).
+2. **INSERT → refetch, never prepend the raw payload**: Realtime INSERT
+   payloads have **no joins** (no customer name, no embeds), so prepending
+   `payload.new` rendered "Unknown" rows — and a phantom-field filter
+   (checking fields the payload never carried) silently dropped many inserts
+   entirely. INSERT events now trigger the page's existing fetch function;
+   UPDATE events may still patch rows in place.
 
 ```js
 // Jobs tab — src/app/dashboard/jobs/page.js
@@ -907,23 +1313,21 @@ const channel = supabase
   .on('postgres_changes',
       { event: '*', schema: 'public', table: 'jobs',
         filter: `tenant_id=eq.${tenantId}` },
-      (payload) => handleRealtimeEvent(payload))
-  .subscribe();
+      (payload) => handleRealtimeEvent(payload))   // INSERT → fetchJobs()
+  .subscribe((status) => {                         // 2026-06-12
+    // CHANNEL_ERROR / TIMED_OUT / CLOSED → refetch on reconnect
+  });
 
-// Inquiries tab — src/app/dashboard/inquiries/page.js
-const channel = supabase
-  .channel(`inquiries-${tenantId}`)
-  .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'inquiries',
-        filter: `tenant_id=eq.${tenantId}` },
-      (payload) => handleRealtimeEvent(payload))
-  .subscribe();
+// Callbacks view — src/app/dashboard/calls/page.js (Inquiries → Calls merge)
+// INSERT → refetch (was prependWithSlideIn(payload.new)); UPDATE replaces row.
 
 // Customer detail — triple-subscribe (customers + jobs + inquiries by customer_id)
-// See Section 5c for subscription details.
+// See Section 5c for subscription details. All three carry the status callback.
 ```
 
-Cleanup via `channel.unsubscribe()` in effect return.
+Cleanup in the effect return — `channel.unsubscribe()` on older pages,
+`supabase.removeChannel(channel)` for the calls-page `inquiries-realtime`
+channel (on unmount / tenant change).
 
 ---
 
@@ -942,10 +1346,12 @@ section-label heading. Empty sections are dropped after flag filtering.
 | **AI & Calls** | AI & Voice Settings, Call Routing, Notifications & Escalation, Features |
 | **Billing & Money** | Billing, Invoice Settings, Integrations |
 
-- **Customers + Calendar** were added to **Business** specifically for
-  **mobile parity** — neither has a `BottomTabBar` slot (Customers has no
-  tab; Calendar was demoted to overflow in Phase 59), so the More hub is the
-  only mobile path to them. Both still appear in the desktop sidebar.
+- **Customers + Calendar** were added to **Business** for **mobile
+  parity** when neither had a `BottomTabBar` slot. Since the 2026-06-10
+  Inquiries → Calls merge, **Calendar has a tab again** (it took the freed
+  Inquiries slot), so its Business entry is now a redundant-but-harmless
+  second path; Customers still has no tab, so the More hub remains the only
+  mobile path to it. Both appear in the desktop sidebar.
 - **`invoicing` flag gating is intact**: `Invoice Settings` is filtered out
   of Billing & Money when `invoicing=false`; the mobile quick-access
   `Invoices`/`Estimates` block is likewise hidden. A section that ends up
@@ -960,7 +1366,11 @@ section-label heading. Empty sections are dropped after flag filtering.
 - `/more/escalation-contacts` — `EscalationChainSection`.
 - `/more/notifications` — per-outcome SMS/email Switch grid
   (booked/declined/not_attempted/attempted × SMS/email).
-- `/more/ai-voice-settings` — `SettingsAISection` (phone number + test call).
+- `/more/ai-voice-settings` — `SettingsAISection` (phone number + test call)
+  + `VoicePickerSection` — 3 voice labels (`professional`/`friendly`/
+  `local_expert`, 2026-06-12) with display names; stored value IS the label
+  (validated by `VALID_VOICES` in `src/lib/ai-voice-validation.js`, CHECK in
+  migration 070); preview files `/audio/voices/{label}.mp3` (assets pending).
 - `/more/features` — feature-flag toggles (Phase 53).
 - `/more/billing` — plan card, usage ring gauge, invoices. Phase 58
   `ErrorState onRetry={refetchBilling}` (mutates both SWR caches).
@@ -1020,15 +1430,15 @@ persistence. Opened via `open-voco-chat` window event.
 | `GET/PATCH /api/customers/[id]` | `src/app/api/customers/[id]/route.js` | Customer detail + update |
 | `POST /api/customers/[id]/merge` | same dir | Calls merge_customer RPC; returns audit_id |
 | `POST /api/customers/[id]/unmerge` | same dir | Calls unmerge_customer RPC (7-day window) |
-| `GET /api/jobs` | `src/app/api/jobs/route.js` | Filtered + paginated; NO transcript_text |
-| `GET/PATCH /api/jobs/[id]` | `src/app/api/jobs/[id]/route.js` | Full job WITH transcript; status/revenue update |
-| `GET /api/inquiries` | `src/app/api/inquiries/route.js` | Filtered + paginated; default status=open |
+| `GET /api/jobs` | `src/app/api/jobs/route.js` | Filtered + paginated; NO transcript_text. Filters: status, urgency, customer_id, search (customer name\|phone), date_from/date_to (YYYY-MM-DD). job_type NOT supported — no column (UI removed 2026-06-12, see Section 5) |
+| `GET/PATCH /api/jobs/[id]` | `src/app/api/jobs/[id]/route.js` | Full job WITH transcript — `getJob` selects `recording_storage_path` + `transcript_text` + `transcript_structured` since 2026-06-12 (previously omitted, so the flyout transcript was always empty); status/revenue update |
+| `GET /api/inquiries` | `src/app/api/inquiries/route.js` | Filtered + paginated; default status=open. Filters: status, urgency, job_type (partial), search (customer name\|phone), date_from/date_to (YYYY-MM-DD) |
 | `GET/PATCH /api/inquiries/[id]` | `src/app/api/inquiries/[id]/route.js` | Inquiry detail + status update |
 | `POST /api/inquiries/[id]/convert` | same dir | Convert inquiry to job (manual offline flow) |
 | `GET /api/admin/merges` | `src/app/api/admin/merges/route.js` | Tenant-scoped customer_merge_audit rows (admin-only) |
 | `GET /api/search` | `src/app/api/search/route.js` | Command-palette grouped search (customers/calls/invoices/appointments/estimates) |
-| `GET /api/dashboard/stats` | `src/app/api/dashboard/stats/route.js` | Home tiles: "new" = open inquiries count+preview, invoice snapshot |
-| `GET /api/calls` | `src/app/api/calls/route.js` | Filtered (date, urgency, outcome, search) |
+| `GET /api/dashboard/stats` | `src/app/api/dashboard/stats/route.js` | Home tiles + nav badges: "new" = open inquiries count+preview, invoice money snapshot (`invoiceOutstandingAmount`, `invoiceOverdueCount`+`invoiceOverdueAmount`, `paidThisMonth`), `missedCallsToday` (calls with `booking_outcome='not_attempted'` AND `duration_seconds>=15` created today — <15s = hangups/misdials) |
+| `GET /api/calls` | `src/app/api/calls/route.js` | Filtered (date, urgency, outcome, search by caller name OR phone — tenant-scoped customers name lookup, 50-name cap); selects `transcript_text` + `transcript_structured` |
 | `GET/PATCH /api/escalation-contacts` | `src/app/api/escalation-contacts/route.js` | CRUD + reorder |
 | `GET/PATCH /api/setup-checklist` | `src/app/api/setup-checklist/route.js` | Derived items + dismiss/mark-done |
 | `GET/POST /api/estimates` | `src/app/api/estimates/route.js` | List + create (single/tiered) |
@@ -1112,9 +1522,13 @@ Full migration catalog lives in `auth-database-multitenancy`.
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Jobs tab shows no data | Realtime subscription on wrong table (old `leads`) | Check subscription uses `table: 'jobs'` not `table: 'leads'` |
-| Inquiries tab always empty | Default filter may be excluding non-open | Check `status=open` default filter; verify `inquiries` Realtime subscription |
+| Callbacks view always empty | Default sub-filter excludes non-open OR Realtime channel dropped | Check the `open` default sub-pill; verify the `inquiries-realtime` channel in `calls/page.js` |
+| `/dashboard/inquiries` "doesn't render" | It's a server redirect since 2026-06-10 | Expected — lands on `/dashboard/calls?view=callbacks`; old `?status=` params are dropped (Open sub-pill) |
+| No search/urgency/date filters on Callbacks | `InquiryFilterBar` deleted with the old page | Expected (known consequence) — API still supports the filters; re-adding needs a UI consumer |
+| Calls page lands on the queue instead of the call log | Smart default re-introduced | There is NO smart default (removed same-day, 2026-06-10) — classic view is always the default; only explicit `?view=callbacks` / legacy `?view=needs-reply` opens Callbacks |
+| CallbacksStrip not showing | Open count is 0, inquiries fetch still loading, or fetch errored | Expected — strip renders only when `openCallbacksCount > 0`; it appears once `/api/inquiries` resolves and never blocks the classic view |
 | Customer detail page flickers on activity | Only one of 3 Realtime channels subscribed | Ensure triple-subscribe: customers + jobs + inquiries filtered by customer_id |
-| UnmergeBanner not showing | Checking `source.merged_into` instead of target's perspective | Banner should appear on TARGET customer page, not source |
+| UnmergeBanner not showing | Pre-2026-06-12: gated on `merged_source_info` (never returned by any API) | Banner is now ALWAYS mounted and self-detects via `/api/admin/merges`; it appears on the TARGET customer page within the 7-day window |
 | Merge throws "source_invalid" | Source already merged OR wrong tenant | Check `customers.merged_into IS NULL` before initiating merge |
 | Admin merges page 404 | Not admin user OR navigating without admin gate | Route is `/dashboard/admin/merges`; ensure verifyAdmin() passes |
 | HotJobsTile shows "No jobs" after Phase 59 deploy | DailyOpsHub still importing deleted HotLeadsTile | Fix import to `HotJobsTile` |
@@ -1132,6 +1546,10 @@ Full migration catalog lives in `auth-database-multitenancy`.
 | Customer not reachable on mobile | Customers has no `BottomTabBar` tab | Expected — reach via `/dashboard/more` Business section |
 | Command palette doesn't trap focus / Esc not closing | Reverted to hand-rolled overlay | Must wrap in Radix `Dialog` (Section 21) |
 | Search shows "leads" group/copy | Stale pre-repointing copy | Group `type` is `customers`; update icon/placeholder to match |
+| Jobs job-type filter/chips reappear in a diff | `jobs.job_type` column doesn't exist (059) — all job_type UI was REMOVED 2026-06-12 | Don't reintroduce without adding the column (Section 5); inquiries DO support `job_type` |
+| Calls nav badge missing/stale | `useAttentionCounts` reads `/api/dashboard/stats`; badge = `callsAttention` (openInquiries + missedCallsToday) | Check stats response; 60s SWR refresh + focus revalidate; badge hidden at 0, caps at "9+" |
+| Activity feed row not clickable | `customer_*` event without `customer_id`, or `invoice_*` with invoicing flag off | Expected — `getHref` returns null and the row renders unlinked |
+| MoneySnapshot strip not rendering | `invoicing` flag off or stats not loaded | Expected — component returns null in both cases |
 
 ---
 
@@ -1145,9 +1563,26 @@ Phase 59 replaced `leads.md` with three separate files:
 |------|--------|
 | `customers.md` | Customer dedup, merge/unmerge, customer detail page, phone immutability |
 | `jobs.md` | Job lifecycle (scheduled→completed→paid), job cards, invoice link |
-| `inquiries.md` | Inquiry lifecycle (open→converted/lost), D-07a stale-inquiry owner-responsibility policy, conversion flow |
+| `inquiries.md` | Callbacks (internally inquiries): lifecycle (open→Booked/Lost), D-07a stale-inquiry owner-responsibility policy, conversion flow |
 
-`ROUTE_DOC_MAP` updated: `/dashboard/jobs` → `jobs.md`, `/dashboard/inquiries` → `inquiries.md`, `/dashboard/customers/*` → `customers.md`. `KEYWORD_DOC_MAP` updated with new entity keywords.
+**2026-06-10 (Inquiries → Calls merge + same-day Callbacks rename)** —
+`calls.md`, `inquiries.md`, and `jobs.md` rewritten for the new IA:
+`calls.md` describes the classic call log as the landing view, the
+callbacks banner ("N callers waiting for a callback" → View), the
+Callbacks view with its "← All calls" control, and keeps the "Where did
+the Inquiries tab go?" answer; `inquiries.md` retitled "Callbacks", points
+all links at `/dashboard/calls?view=callbacks`, uses "Booked" display
+language; `jobs.md` repointed its cross-link to
+`[Callbacks](/dashboard/calls?view=callbacks)`.
+
+`ROUTE_DOC_MAP`: `/dashboard/jobs` → `jobs.md` (**fixed 2026-06-10 — it
+had pointed at the deleted `leads.md` since Phase 59**),
+`/dashboard/inquiries` → `inquiries.md` (kept for the redirect route),
+`/dashboard/customers/*` → `customers.md`. `KEYWORD_DOC_MAP`: the
+job/lead/crm group now maps to `jobs.md` (same stale-`leads.md` fix), and
+a NEW keyword group `['inquiry', 'inquiries', 'needs reply', 'callback',
+'call back']` → `inquiries.md` is ordered BEFORE the calls group so
+"callback" matches inquiries, not the `call` keyword.
 
 ---
 
@@ -1208,7 +1643,9 @@ Three smaller wiring fixes that finished the Phase-59 entity migration:
   **open `inquiries`** (`status='open'`, joined to `customers` for
   name/phone), not the dropped `leads` table. Response keys keep their legacy
   `newLeads*` names; the preview is flattened to `caller_name` / `from_number`
-  so the existing home tile renders unchanged.
+  so the existing home tile renders unchanged. (2026-06-10 added
+  `missedCallsToday` + `invoiceOverdueAmount` to the same route — see
+  Section 16 — consumed by the nav attention badges and MoneySnapshot.)
 - **Global search customers group** — see Section 21.
 - **`HelpDiscoverabilityCard`** (`src/components/dashboard/HelpDiscoverabilityCard.jsx`)
   — the 4 "Where do I…" quick-link tiles now point at live routes:

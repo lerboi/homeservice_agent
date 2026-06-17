@@ -26,9 +26,9 @@ const URGENCY_BORDER = {
 };
 
 const URGENCY_BADGE = {
-  emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
+  emergency: 'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40',
   routine: 'bg-muted text-muted-foreground hover:bg-muted',
-  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/40',
 };
 
 const URGENCY_LABEL = {
@@ -38,11 +38,11 @@ const URGENCY_LABEL = {
 };
 
 const STATUS_BADGE = {
-  scheduled:  'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  completed:  'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
-  paid:       'bg-green-100 text-green-700 hover:bg-green-100',
-  lost:       'bg-red-100 text-red-700 hover:bg-red-100',
-  cancelled:  'bg-stone-100 text-stone-600 hover:bg-stone-100',
+  scheduled:  'bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/40',
+  completed:  'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/40',
+  paid:       'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/40',
+  lost:       'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40',
+  cancelled:  'bg-stone-100 text-stone-600 hover:bg-stone-100 dark:bg-muted dark:text-muted-foreground dark:hover:bg-muted',
 };
 
 const STATUS_LABEL = {
@@ -55,11 +55,11 @@ const STATUS_LABEL = {
 
 const INVOICE_BADGE_STYLE = {
   draft:          'bg-muted text-muted-foreground border-border',
-  sent:           'bg-blue-50 text-blue-700 border-blue-200',
-  paid:           'bg-green-50 text-green-700 border-green-200',
-  overdue:        'bg-red-50 text-red-700 border-red-200',
+  sent:           'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60',
+  paid:           'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/60',
+  overdue:        'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/60',
   void:           'bg-muted text-muted-foreground/60 border-border',
-  partially_paid: 'bg-violet-50 text-violet-700 border-violet-200',
+  partially_paid: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800/60',
 };
 
 const INVOICE_LABEL = {
@@ -168,18 +168,8 @@ export default memo(function JobCard({ job, onView, invoiceStatus, selectable = 
         {/* Center: job info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            {job.job_type && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-xs font-medium shrink-0 max-w-[140px] truncate">
-                    {job.job_type}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="top"><p>{job.job_type}</p></TooltipContent>
-              </Tooltip>
-            )}
             {job.is_vip && (
-              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-xs shrink-0 gap-1">
+              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:hover:bg-violet-950/40 text-xs shrink-0 gap-1">
                 <Star className="h-3 w-3 fill-current" />
                 Priority
               </Badge>
@@ -277,13 +267,8 @@ export default memo(function JobCard({ job, onView, invoiceStatus, selectable = 
                 {phone}
               </a>
             )}
-            {job.job_type && (
-              <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium truncate max-w-[100px]">
-                {job.job_type}
-              </span>
-            )}
             {job.is_vip && (
-              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 text-[10px] shrink-0 gap-0.5">
+              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/40 dark:text-violet-300 dark:hover:bg-violet-950/40 text-[10px] shrink-0 gap-0.5">
                 <Star className="h-2.5 w-2.5 fill-current" />
                 Priority
               </Badge>

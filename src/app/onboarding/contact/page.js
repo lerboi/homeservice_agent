@@ -21,6 +21,9 @@ function buildE164(country, localNumber) {
   const config = COUNTRY_CONFIG[country];
   if (!config) return localNumber;
   const digits = localNumber.replace(/\D/g, '');
+  // Empty input must yield empty output — a bare prefix ('+65') would be
+  // saved as owner_phone and silently break SMS notifications + test calls.
+  if (!digits) return '';
   return `${config.prefix}${digits}`;
 }
 
@@ -34,6 +37,38 @@ export default function OnboardingStep3Contact() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // Rehydrate from the DB when sessionStorage is empty (return visit or new
+  // device). Country goes through handleCountryChange so the SG availability
+  // check still runs; phone is stored E.164 server-side, so strip the prefix
+  // back off for the local-digits input.
+  useEffect(() => {
+    if (ownerName || country || phone) return;
+    let cancelled = false;
+    fetch('/api/onboarding/state')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.exists) return;
+        if (data.owner_name) setOwnerName((prev) => prev || data.owner_name);
+        if (data.country && COUNTRY_CONFIG[data.country]) {
+          handleCountryChange(data.country);
+          if (data.owner_phone) {
+            const prefix = COUNTRY_CONFIG[data.country].prefix;
+            const local = data.owner_phone.startsWith(prefix)
+              ? data.owner_phone.slice(prefix.length)
+              : data.owner_phone;
+            setPhone((prev) => prev || local);
+          }
+        }
+      })
+      .catch(() => {
+        // Hydration is best-effort — a fresh form is the fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [sgAvailable, setSgAvailable] = useState(null);
   const [sgLoading, setSgLoading] = useState(false);
   const [sgFull, setSgFull] = useState(false);
@@ -45,7 +80,8 @@ export default function OnboardingStep3Contact() {
 
   async function handleCountryChange(val) {
     setCountry(val);
-    setPhone('');
+    // Deliberately keep any typed phone digits — wiping them punished users
+    // who filled the form top-to-bottom before this field moved above phone.
     setSgFull(false);
     setSgAvailable(null);
     setWaitlistSubmitted(false);
@@ -96,10 +132,19 @@ export default function OnboardingStep3Contact() {
     setLoading(true);
     try {
       const e164Phone = buildE164(country, phone);
+      // Browser timezone — used server-side for US/CA tenants (SG is pinned
+      // to Asia/Singapore). Without this every tenant keeps the DB default
+      // America/Chicago and all booking math runs in the wrong timezone.
+      let timezone = null;
+      try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+      } catch {
+        // Older browsers — server falls back per-country.
+      }
       const res = await fetch('/api/onboarding/sms-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: e164Phone, owner_name: ownerName.trim(), country }),
+        body: JSON.stringify({ phone: e164Phone, owner_name: ownerName.trim(), country, timezone }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -165,32 +210,7 @@ export default function OnboardingStep3Contact() {
           )}
         </div>
 
-        {/* Phone number */}
-        <div className="space-y-1">
-          <Label htmlFor="owner_phone" className="text-base font-normal text-[#0F172A]">
-            Phone number <span className="text-[#475569]/60 text-sm">(optional)</span>
-          </Label>
-          <div className="flex items-center min-h-11 border border-stone-200 rounded-md focus-within:border-[#C2410C] overflow-hidden">
-            {mounted && country && (
-              <span className="pl-3 text-base text-[#0F172A] select-none whitespace-nowrap">
-                {COUNTRY_CONFIG[country]?.prefix}
-              </span>
-            )}
-            <input
-              id="owner_phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={COUNTRY_CONFIG[country]?.placeholder || ''}
-              className="flex-1 min-h-11 px-3 text-base bg-transparent outline-none border-none"
-            />
-          </div>
-          {fieldErrors.phone && (
-            <p className="text-xs text-destructive mt-1">{fieldErrors.phone}</p>
-          )}
-        </div>
-
-        {/* Country */}
+        {/* Country — placed above phone so the prefix is known before typing */}
         <div className="space-y-1">
           <Label htmlFor="country" className="text-base font-normal text-[#0F172A]">
             Country
@@ -221,6 +241,34 @@ export default function OnboardingStep3Contact() {
                 <p className="text-xs text-[#C2410C]">{sgAvailable} Singapore numbers available</p>
               ) : null}
             </div>
+          )}
+        </div>
+
+        {/* Phone number */}
+        <div className="space-y-1">
+          <Label htmlFor="owner_phone" className="text-base font-normal text-[#0F172A]">
+            Phone number <span className="text-[#475569]/60 text-sm">(optional)</span>
+          </Label>
+          <div className="flex items-center min-h-11 border border-stone-200 rounded-md focus-within:border-[#C2410C] overflow-hidden">
+            {mounted && country && (
+              <span className="pl-3 text-base text-[#0F172A] select-none whitespace-nowrap">
+                {COUNTRY_CONFIG[country]?.prefix}
+              </span>
+            )}
+            <input
+              id="owner_phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={COUNTRY_CONFIG[country]?.placeholder || ''}
+              className="flex-1 min-h-11 px-3 text-base bg-transparent outline-none border-none"
+            />
+          </div>
+          <p className="text-xs text-[#475569]/70">
+            We text you here when your AI books a job or needs you.
+          </p>
+          {fieldErrors.phone && (
+            <p className="text-xs text-destructive mt-1">{fieldErrors.phone}</p>
           )}
         </div>
 

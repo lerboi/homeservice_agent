@@ -1,34 +1,51 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
+
+// API page size (default) and hard cap (both routes clamp limit to 500).
+const PAGE_SIZE = 50;
+const MAX_LIMIT = 500;
 
 /**
  * Shared hook for invoice/estimate list pages.
- * Handles status filtering, SWR-based fetching, and summary caching.
+ * Handles status filtering, SWR-based fetching, pagination, and summary caching.
  *
  * @param {string} apiBase — e.g. '/api/invoices' or '/api/estimates'
  * @param {object} options
  * @param {string} options.itemsKey — response key for the list, e.g. 'invoices' or 'estimates'
  */
 export function useDocumentList(apiBase, { itemsKey, extraParams = {} }) {
-  const [activeStatus, setActiveStatus] = useState('all');
+  const [activeStatus, setActiveStatusState] = useState('all');
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const summaryRef = useRef(null);
+
+  // Changing status resets pagination back to the first page size.
+  const setActiveStatus = useCallback((status) => {
+    setLimit(PAGE_SIZE);
+    setActiveStatusState(status);
+  }, []);
 
   const url = (() => {
     const params = new URLSearchParams();
     if (activeStatus !== 'all') params.set('status', activeStatus);
+    params.set('limit', String(limit));
     Object.entries(extraParams).forEach(([key, value]) => {
       if (value) params.set(key, value);
     });
-    const qs = params.toString();
-    return qs ? `${apiBase}?${qs}` : apiBase;
+    return `${apiBase}?${params.toString()}`;
   })();
 
   const { data, error, isLoading, mutate } = useSWRFetch(url);
 
   const items = data?.[itemsKey] || [];
   const statusCounts = data?.status_counts || {};
+  const totalCount = data?.total_count ?? null;
+  const hasMore = totalCount != null && items.length < totalCount && limit < MAX_LIMIT;
+
+  const loadMore = useCallback(() => {
+    setLimit((prev) => Math.min(prev + PAGE_SIZE, MAX_LIMIT));
+  }, []);
 
   // Cache summary from first successful load (represents overall metrics)
   useEffect(() => {
@@ -45,6 +62,9 @@ export function useDocumentList(apiBase, { itemsKey, extraParams = {} }) {
     error: error?.message || null,
     activeStatus,
     setActiveStatus,
+    hasMore,
+    loadMore,
+    totalCount,
     mutate,
   };
 }

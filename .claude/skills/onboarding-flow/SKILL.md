@@ -7,7 +7,7 @@ description: "Complete architectural reference for the onboarding wizard — 4-s
 
 This document is the single source of truth for the onboarding wizard system. Read this before making any changes to onboarding pages, wizard session management, or provisioning routes.
 
-**Last updated**: 2026-05-06 (Removed Test Call step from the wizard — wizard is now 4 steps. Test call functionality (TestCallPanel + `/api/onboarding/test-call` + `/api/onboarding/test-call-status`) remains live for post-payment use in dashboard settings, but is no longer exposed during onboarding. Step numbering shifted: Checkout is now Step 4.)
+**Last updated**: 2026-06-13 (Onboarding-audit fix wave: DB rehydration via new `GET /api/onboarding/state` + page hydration effects; contact step reordered country→phone, phone no longer wiped on country change, empty phone no longer saved as bare prefix; `sms-confirm` validates E.164, sets `tenant_timezone` (SG pinned to Asia/Singapore, US/CA from browser-detected IANA zone), distinguishes 503 count-errors from 409 sold-out, and 400s when no tenant row exists; `/start` validates business_name/trade_type/services (min 1, max 50, urgency enum); checkout verify polling extended to ~3 min two-stage with a retry button on the error phase, success screen shows the provisioned number (10s countdown); checkout webhook seeds default working_hours + timezone backstop, provisioning is idempotent (SG inventory reuse + Twilio friendlyName tag `voco-tenant-{id}` reuse), sends an idempotent WelcomeEmail with the number, and dedupes the provisioning-failure email via billing_notifications. proxy.js rescues paid-but-unflagged users hitting /dashboard.)
 
 ---
 
@@ -93,8 +93,10 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 | `src/app/api/onboarding/checkout-session/route.js` | POST: create Stripe Checkout Session with 14-day trial + CC required |
 | `src/app/api/onboarding/sg-availability/route.js` | GET: returns { available_count } for SG phone numbers from phone_inventory |
 | `src/app/api/onboarding/sg-waitlist/route.js` | POST: accepts { email }, adds to phone_inventory_waitlist |
+| `src/app/api/onboarding/state/route.js` | GET: saved wizard progress (tenant fields + services) for DB rehydration (2026-06-13) |
+| `src/emails/WelcomeEmail.jsx` | React Email template: post-checkout welcome with the AI number (2026-06-13) |
 | `src/lib/trade-templates.js` | TRADE_TEMPLATES map (4 trades × ~10 services each) |
-| `src/middleware.js` | Auth guards, onboarding_complete redirect logic |
+| `src/proxy.js` | Auth guards, onboarding_complete redirect logic, paid-user rescue (2026-06-13) |
 
 ---
 
@@ -156,23 +158,24 @@ On submit: POST `/api/onboarding/start` with `{ trade_type, services }` (replace
 
 **File**: `src/app/onboarding/contact/page.js`
 
-Collects `owner_name` (required), `owner_phone` (required), and `country` (required — SG, US, CA). Country selector is a shadcn `Select` dropdown. Phone input auto-prefixes the country code based on selection (+65 for SG, +1 for US/CA).
+Collects `owner_name` (required), `country` (required — SG, US, CA), and `owner_phone` (**optional**, with helper copy "We text you here when your AI books a job or needs you"). Field order is **country above phone** (2026-06-13) so the prefix is known before typing; selecting a country no longer wipes typed phone digits. `buildE164` returns `''` for empty input — an empty optional phone must NOT be saved as a bare prefix (`'+65'`), which used to break SMS notifications and test calls.
 
 On country=SG select: fires `GET /api/onboarding/sg-availability` immediately (D-07) to show remaining count ("3 Singapore numbers available"). If available_count === 0: shows waitlist UI → user enters email → `POST /api/onboarding/sg-waitlist` → blocks proceed.
 
-On submit: `POST /api/onboarding/sms-confirm` with `{ phone, owner_name, country }`. Saves `owner_name`, `owner_phone`, `owner_email`, and `country` to tenants in one round-trip. Navigates to `/onboarding/checkout`.
+On submit: `POST /api/onboarding/sms-confirm` with `{ phone, owner_name, country, timezone }` where `timezone` is the browser-detected IANA zone (`Intl.DateTimeFormat().resolvedOptions().timeZone`). Saves `owner_name`, `owner_phone`, `owner_email`, `country`, and `tenant_timezone` to tenants in one round-trip. Navigates to `/onboarding/checkout`.
 
-Session state via `useWizardSession`: `owner_name`, `country`, `phone`.
+Session state via `useWizardSession`: `owner_name`, `country`, `phone`. On mount with empty session state, hydrates from `GET /api/onboarding/state` (country goes through `handleCountryChange` so the SG check still runs; the E.164 owner_phone has its prefix stripped back off for the local-digits input).
 
 ### Step 4: Checkout (`/onboarding/checkout/page.js`)
 
 **File**: `src/app/onboarding/checkout/page.js`
 
-Embedded Stripe Checkout with 3 phases:
+Embedded Stripe Checkout with 4 phases:
 
 1. **Checkout form**: Renders embedded Stripe Checkout via `EmbeddedCheckoutProvider` with a client secret from `POST /api/onboarding/checkout-session` (embedded mode). User enters payment details inline without leaving the wizard.
-2. **Verifying**: After Stripe form completes, polls `GET /api/onboarding/verify-checkout` up to 30 times waiting for the `checkout.session.completed` webhook to fire and set `onboarding_complete = true`. The webhook handler also provisions the phone number and creates the subscription record.
-3. **Success**: Shows `CelebrationOverlay` with animated checkmark. Calls `markComplete()` and `clearWizardSession()`. Auto-redirects to `/dashboard` after 5 seconds.
+2. **Verifying**: After Stripe form completes, polls `GET /api/onboarding/verify-checkout` on a two-stage plan (2026-06-13): 30×2s fast window, then 12×10s slow tail (~3 min total) — the old 60s cutoff stranded paid customers during webhook lag. Polls 4+ pass `session_id` so the endpoint can fall back to the Stripe API.
+3. **Error** (polling exhausted): "Still confirming your subscription" with an explicit **"Check again" retry button** (re-runs `handleComplete`) and **do-not-pay-again** copy, plus a support link. Not a dead end anymore.
+4. **Success**: Shows `CelebrationOverlay`, **the provisioned AI number** (fetched from `/api/onboarding/test-call-status`, short poll up to 4 tries, `formatInternational` display, "call it from your cell right now" nudge; falls back to "being assigned" copy). Calls `markComplete()` and `clearWizardSession()`. Auto-redirects to `/dashboard` after **10 seconds** (extended so the owner can read their number).
 
 ### Deprecated: Plan Selection (`/onboarding/plan/page.js`)
 
@@ -297,6 +300,11 @@ Handles two shapes:
 
 Returns `{ tenant_id }`.
 
+**Validation (2026-06-13)** — these fields feed the AI prompt, so the server enforces:
+- `business_name`: non-empty string, ≤120 chars (trimmed before save)
+- `trade_type`: must be a TRADE_TEMPLATES key
+- `services` (when present): non-empty array (an empty array would silently leave the tenant with zero services since replace = delete+insert), max 50, each `{name: non-empty ≤80 chars, urgency_tag?: emergency|urgent|routine}`. Delete now runs AFTER row construction and is error-checked, so a malformed payload can't wipe services and then fail the insert. The services page also disables Continue at zero services.
+
 **Error**: If the trade+services shape is sent before the business profile shape (tenant not found) → `400: "Tenant not found. Complete step 1 first."`
 
 ### `POST /api/onboarding/provision-number` — DEPRECATED
@@ -309,18 +317,21 @@ Returns `{ tenant_id }`.
 
 **File**: `src/app/api/onboarding/sms-confirm/route.js`
 
-Saves `owner_name` (if provided) + `owner_phone` (if provided) + `owner_email` (from `user.email`) + `country` (if provided) in one round-trip:
-```js
-const { phone, owner_name, country } = await request.json();
-const updateFields = { owner_email: user.email };
-if (phone?.trim()) updateFields.owner_phone = phone.trim();
-if (owner_name?.trim()) updateFields.owner_name = owner_name.trim();
-if (country) updateFields.country = country; // 'SG' | 'US' | 'CA'
-await adminSupabase.from('tenants').update(updateFields).eq('owner_id', user.id);
-```
+Saves `owner_name` (if provided) + `owner_phone` (if provided, validated against `/^\+\d{7,15}$/` → 400 on bad format) + `owner_email` (from `user.email`) + `country` (if provided) + `tenant_timezone` in one round-trip. Timezone resolution (2026-06-13): SG is pinned to `Asia/Singapore`; US/CA use the browser-sent `timezone` body field when it's a valid IANA zone (validated via `Intl.DateTimeFormat`). Without this, every tenant kept the DB default `America/Chicago` and all slot math ran in the wrong timezone.
+
+Error semantics:
+- SG availability `countError` → **503** ("couldn't check availability") — distinct from genuine zero → **409** (waitlist). A DB hiccup must not block SG signups as "sold out".
+- Tenant update is checked: DB error → 500; **0 rows matched → 400** "Tenant not found. Complete step 1 first." (previously returned `saved:true` while saving nothing, and the webhook later failed provisioning on `country=NULL`).
+
 Returns `{ saved: true }`.
 
 **Note**: `country` must be saved here (before plan selection) so the Stripe webhook can read `tenant.country` to determine provisioning strategy at checkout time (Pitfall 6 from RESEARCH.md).
+
+### `GET /api/onboarding/state` (2026-06-13)
+
+**File**: `src/app/api/onboarding/state/route.js`
+
+Returns saved wizard progress for the signed-in user: `{ exists, business_name, trade_type, owner_name, owner_phone, country, services: [{name, urgency_tag}] }` (`{ exists: false }` when no tenant row). Wizard pages call this on mount when sessionStorage is empty (return visit / new device) and rehydrate instead of forcing re-entry. Saved services take priority over the trade template on the services page — a customized list must not be silently reset to defaults.
 
 ### `POST /api/onboarding/sms-verify`
 
@@ -390,25 +401,28 @@ Phone number provisioning happens **after checkout success** (D-10) — never du
 
 ### Webhook Handler Flow (`src/app/api/stripe/webhook/route.js`)
 
-```js
-// In handleCheckoutCompleted, after onboarding_complete is set:
-const { data: tenantRow } = await supabase
-  .from('tenants').select('country, phone_number').eq('id', tenantId).single();
-
-if (tenantRow && !tenantRow.phone_number) {
-  const provisionedNumber = await provisionPhoneNumber(tenantId, tenantRow.country);
-  if (provisionedNumber) {
-    await supabase.from('tenants').update({ phone_number: provisionedNumber }).eq('id', tenantId);
-  } else {
-    await supabase.from('tenants').update({ provisioning_failed: true }).eq('id', tenantId);
-  }
-}
+```
+// In handleCheckoutCompleted, after onboarding_complete is set (2026-06-13 flow):
+// 1. ACTIVATION SEEDING: if working_hours is NULL → seed trade-typical defaults
+//    (plumber/hvac/electrician get Mon–Sat longer days; handyman Mon–Fri 8–5;
+//    shape mirrors WorkingHoursEditor: day-keyed {open, close, enabled, lunchStart, lunchEnd}).
+//    Without this the slot calculator returns ZERO slots and the AI cannot book.
+//    Timezone backstop: SG tenants still on the DB default get Asia/Singapore.
+//    Seed failures are non-fatal but Sentry-alerted.
+// 2. PROVISIONING (idempotent — see below). On success the tenant update also
+//    clears provisioning_failed; a failed write THROWS so Stripe retries (the
+//    idempotency pre-checks make the retry reuse the same number).
+// 3. WELCOME EMAIL (success path): React Email WelcomeEmail with the formatted
+//    number, test-call + forwarding guidance, trial end date (event.created +
+//    14d), dashboard link. Idempotent via billing_notifications type 'welcome'.
+// 4. FAILURE EMAIL (failure path): provisioning_failed=true + Sentry alert +
+//    owner email, deduped via billing_notifications type 'provisioning_failed'.
 // THEN subscription sync runs
 ```
 
-**Idempotency:** Skip provisioning if `phone_number` already set (prevents double-provisioning on webhook retries).
+**Idempotency (2026-06-13):** Three layers — (a) skip provisioning if `phone_number` already set; (b) SG: reuse any `phone_inventory` row already `assigned` to this tenant before calling the (non-idempotent) `assign_sg_number` RPC; (c) US/CA: numbers are purchased with `friendlyName: voco-tenant-{tenantId}` and the webhook lists-by-friendlyName to reuse an existing purchase. Protects against the crash-after-provision-before-tenant-update retry buying/burning a second number.
 
-**Failure handling:** If provisioning fails (SG inventory exhausted, Twilio API error), `provisioning_failed = true` is set on the tenant. The subscription is still created — the tenant paid and deserves their subscription. Admin must follow up manually.
+**Failure handling:** If provisioning fails (SG inventory exhausted, Twilio API error), `provisioning_failed = true` is set on the tenant and Sentry is alerted. The subscription is still created — the tenant paid and deserves their subscription. Admin must follow up manually. The flag is user-visible: `/api/account` returns it, `AiNumberBanner` renders an amber "we hit a snag" alert state, and the account page replaces the "being assigned" copy with the same message.
 
 **SG availability at wizard step (D-06/D-07):** The `GET /api/onboarding/sg-availability` route fires on country dropdown change (not step submit) for immediate feedback. This is a real-time count from `phone_inventory`. Note: availability can change between the step check and actual checkout — the `assign_sg_number` RPC handles the definitive race-safe assignment.
 
@@ -454,9 +468,9 @@ Services list is editable in Step 3 — user can add/remove before saving.
 
 ---
 
-## 9. Middleware Auth Guards
+## 9. Proxy Auth Guards
 
-**File**: `src/middleware.js`
+**File**: `src/proxy.js` (Next 16 proxy convention — NOT `src/middleware.js`; see auth-database-multitenancy skill)
 
 ```js
 const AUTH_REQUIRED_PATHS = [
@@ -471,7 +485,7 @@ const AUTH_REQUIRED_PATHS = [
 1. Unauthenticated on auth-required path → redirect to `/auth/signin`
 2. Authenticated on `/auth/signin` → redirect to `/onboarding` (not onboarded) or `/dashboard` (onboarded)
 3. Authenticated on `/onboarding*` paths + `onboarding_complete === true` → redirect to `/dashboard`
-4. Authenticated on `/dashboard*` paths + `onboarding_complete !== true` → redirect to `/onboarding`
+4. Authenticated on `/dashboard*` paths + `onboarding_complete !== true` → **paid-user rescue first (2026-06-13)**: a service-role query checks for an `is_current` subscription with status active/trialing/past_due; if found, the proxy repairs `onboarding_complete = true` and lets the request through (a delayed `checkout.session.completed` webhook must not bounce a paying customer back to wizard Step 1). Otherwise → redirect to `/onboarding`
 
 **Onboarding check is ONLY run for `/onboarding*` paths** — not `/dashboard`. This avoids an unnecessary DB query on every dashboard page load.
 

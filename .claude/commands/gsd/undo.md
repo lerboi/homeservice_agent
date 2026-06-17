@@ -8,6 +8,7 @@ allowed-tools:
   - Glob
   - Grep
   - AskUserQuestion
+requires: [phase]
 ---
 
 <objective>
@@ -20,9 +21,9 @@ Three modes:
 </objective>
 
 <execution_context>
-@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/undo.md
-@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
-@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/references/gate-prompts.md
+@C:/Users/leheh/.Projects/homeservice_agent/.claude/get-shit-done/workflows/undo.md
+@C:/Users/leheh/.Projects/homeservice_agent/.claude/get-shit-done/references/ui-brand.md
+@C:/Users/leheh/.Projects/homeservice_agent/.claude/get-shit-done/references/gate-prompts.md
 </execution_context>
 
 <context>
@@ -30,5 +31,5 @@ $ARGUMENTS
 </context>
 
 <process>
-Execute the undo workflow from @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/undo.md end-to-end.
+Execute end-to-end.
 </process>

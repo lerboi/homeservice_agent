@@ -30,8 +30,8 @@ import { ErrorState } from '@/components/ui/error-state';
 import { AsyncButton } from '@/components/ui/async-button';
 
 const URGENCY_BADGE_CLASSES = {
-  emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
-  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+  emergency: 'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/40',
+  urgent: 'bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/40',
   routine: 'bg-foreground/[0.06] text-foreground/70 hover:bg-foreground/[0.06]',
 };
 

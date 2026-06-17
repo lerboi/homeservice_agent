@@ -106,21 +106,35 @@ export default function CustomersPage() {
   const searchTimerRef = useRef(null);
 
   // ── Fetch customers from /api/customers ──────────────────────────────────
+
+  // In-flight fetch — aborted when a newer fetch supersedes it so rapid
+  // search changes can't resolve out of order and paint a stale list.
+  const abortRef = useRef(null);
+
   const fetchCustomers = useCallback(async (term) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
     try {
       const qs = term ? `?search=${encodeURIComponent(term)}` : '';
-      const res = await fetch(`/api/customers${qs}`);
+      const res = await fetch(`/api/customers${qs}`, { signal: controller.signal });
       if (!res.ok) throw new Error('Failed to load customers');
       const data = await res.json();
       setCustomers(data.customers || []);
-    } catch {
+    } catch (err) {
+      if (err?.name === 'AbortError') return; // superseded by a newer fetch
       setError("We couldn't load your customers. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      // Only the owning fetch may clear the flag — a superseded fetch's
+      // finally must not stomp the newer fetch's in-progress state.
+      if (abortRef.current === controller) setLoading(false);
     }
   }, []);
+
+  // Abort the in-flight fetch on unmount.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Refetch whenever the committed search term changes
   const committedSearch = searchParams.get('search') || '';

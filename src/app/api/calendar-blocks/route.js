@@ -110,7 +110,13 @@ export async function POST(request) {
           .eq('is_primary', true)
           .single();
 
-        if (!creds) return;
+        if (!creds) {
+          // No connected calendar to sync to. The block row is already saved
+          // above, so return success here — a bare `return` would resolve the
+          // handler with `undefined`, which makes Next.js emit a 500 and break
+          // time-block creation for every tenant without a connected calendar.
+          return Response.json({ block: data }, { status: 201 });
+        }
 
         const isAllDay = !!data.is_all_day;
         // Extract date string (YYYY-MM-DD) for all-day events

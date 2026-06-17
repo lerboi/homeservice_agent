@@ -46,13 +46,18 @@ export async function getIntegrationAdapter(provider) {
  *
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase - Service-role client
  * @param {Object} credentials - Row from accounting_credentials
+ * @param {Object} [options]
+ * @param {number} [options.bufferMs] - Refresh when the token expires within
+ *   this window (default 5 min). The keep-fresh cron passes a wider window so
+ *   tokens are rotated server-side before any call-path consumer needs them.
  * @returns {Promise<Object>} Updated credentials
  */
-export async function refreshTokenIfNeeded(supabase, credentials) {
+export async function refreshTokenIfNeeded(supabase, credentials, options = {}) {
   const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  const bufferMs = options.bufferMs ?? FIVE_MINUTES_MS;
   const now = Date.now();
 
-  if (!credentials.expiry_date || credentials.expiry_date > now + FIVE_MINUTES_MS) {
+  if (!credentials.expiry_date || credentials.expiry_date > now + bufferMs) {
     return credentials;
   }
 
@@ -114,37 +119,66 @@ export async function refreshTokenIfNeeded(supabase, credentials) {
         xero_tenant_id: credentials.xero_tenant_id,
       });
     } catch (refreshErr) {
-      // Refresh failed — token is revoked, expired, or the OAuth app changed.
-      // Persist error_state so the dashboard banner + calendar banner can
-      // prompt a reconnect, then rethrow so callers keep their existing
-      // fallback behavior (webhook silent-ignore, context fetch → broad
-      // revalidation). Best-effort, never throws from the notifier.
-      try {
-        const notifications = await import('../notifications.js');
-        const notify =
-          credentials.provider === 'jobber'
-            ? notifications.notifyJobberRefreshFailure
-            : notifications.notifyXeroRefreshFailure;
-        // Resolve the tenant's owner email so the notifier can send the
-        // one-shot Reconnect email (notify tolerates null — error_state is
-        // still persisted even when email resolution fails).
-        let ownerEmail = null;
-        try {
-          const { data: tenant } = await supabase
-            .from('tenants')
-            .select('owner_email')
-            .eq('id', credentials.tenant_id)
-            .maybeSingle();
-          ownerEmail = tenant?.owner_email ?? null;
-        } catch {
-          // Best-effort — fall through with null email.
-        }
-        await notify?.(credentials.tenant_id, ownerEmail);
-      } catch (notifyErr) {
+      // Classify before flagging. Only a definitive grant rejection from the
+      // token endpoint (400/401 — revoked, expired, or already-consumed
+      // refresh token; openid-client surfaces these as invalid_grant) means
+      // the connection is actually dead and the owner must reconnect.
+      // Timeouts, network errors, 429s, and 5xx are transient: the stored
+      // refresh token is still good, and flagging them would raise a false
+      // "Reconnect" banner + email for a failure the next cycle absorbs.
+      const status =
+        refreshErr?.status ??
+        refreshErr?.statusCode ??
+        refreshErr?.response?.statusCode ??
+        refreshErr?.response?.status;
+      const isFatal =
+        status === 400 ||
+        status === 401 ||
+        refreshErr?.error === 'invalid_grant' ||
+        /invalid_grant|invalid.token|unauthorized/i.test(String(refreshErr?.message || ''));
+
+      if (!isFatal) {
         console.warn(
-          '[refreshTokenIfNeeded] notify failure',
-          notifyErr?.message || notifyErr,
+          `[refreshTokenIfNeeded] transient refresh failure for provider=${credentials.provider} tenant=${credentials.tenant_id}:`,
+          refreshErr?.message || refreshErr,
         );
+        throw refreshErr;
+      }
+
+      // Fatal — persist error_state so the dashboard + calendar connection
+      // cards can prompt a reconnect, then rethrow so callers keep their
+      // existing fallback behavior (webhook silent-ignore, context fetch →
+      // broad revalidation). Skip when the row is already flagged so repeat
+      // failures (webhook bursts, the keep-fresh cron) don't re-email the
+      // owner every cycle. Best-effort, never throws from the notifier.
+      if (credentials.error_state !== 'token_refresh_failed') {
+        try {
+          const notifications = await import('../notifications.js');
+          const notify =
+            credentials.provider === 'jobber'
+              ? notifications.notifyJobberRefreshFailure
+              : notifications.notifyXeroRefreshFailure;
+          // Resolve the tenant's owner email so the notifier can send the
+          // one-shot Reconnect email (notify tolerates null — error_state is
+          // still persisted even when email resolution fails).
+          let ownerEmail = null;
+          try {
+            const { data: tenant } = await supabase
+              .from('tenants')
+              .select('owner_email')
+              .eq('id', credentials.tenant_id)
+              .maybeSingle();
+            ownerEmail = tenant?.owner_email ?? null;
+          } catch {
+            // Best-effort — fall through with null email.
+          }
+          await notify?.(credentials.tenant_id, ownerEmail);
+        } catch (notifyErr) {
+          console.warn(
+            '[refreshTokenIfNeeded] notify failure',
+            notifyErr?.message || notifyErr,
+          );
+        }
       }
       throw refreshErr;
     }

@@ -270,31 +270,67 @@ export default function EstimateEditorPage() {
     }
   }
 
-  async function handleSave(status) {
+  // Persist the estimate (create or update) and return its id. Throws on failure.
+  async function saveEstimate(status) {
+    const data = assembleEstimateData(status);
+    const method = estimateId ? 'PATCH' : 'POST';
+    const url = estimateId ? `/api/estimates/${estimateId}` : '/api/estimates';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to save estimate');
+    }
+    const result = await res.json();
+    return result.id || result.estimate?.id || estimateId;
+  }
+
+  async function handleSaveDraft() {
     if (!customerName.trim()) {
       toast.error('Customer name is required');
       return;
     }
     setSaving(true);
     try {
-      const data = assembleEstimateData(status);
-      const method = estimateId ? 'PATCH' : 'POST';
-      const url = estimateId ? `/api/estimates/${estimateId}` : '/api/estimates';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to save estimate');
-      }
-      const result = await res.json();
-      const id = result.id || result.estimate?.id || estimateId;
-      toast.success(status === 'sent' ? 'Estimate sent' : 'Estimate saved');
+      const id = await saveEstimate('draft');
+      toast.success('Estimate saved');
       router.push(`/dashboard/estimates/${id}`);
     } catch (err) {
       toast.error(err.message || "Estimate couldn't be saved. Check your connection and try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // "Send Estimate" must actually deliver the estimate. Save it first (as a
+  // draft so it exists), then call /api/estimates/[id]/send — the ONLY path that
+  // emails/SMSes the customer and flips status to 'sent'. Previously this only
+  // set status='sent' (or, for new estimates, silently saved a draft) and never
+  // sent anything, while toasting "Estimate sent".
+  async function handleSend() {
+    if (!customerName.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
+    setSaving(true);
+    try {
+      const id = await saveEstimate('draft');
+      const sendRes = await fetch(`/api/estimates/${id}/send`, { method: 'POST' });
+      if (!sendRes.ok) {
+        const err = await sendRes.json().catch(() => ({}));
+        // The draft was saved — surface the send error (e.g. missing customer
+        // email) and still take the owner to the saved estimate.
+        toast.error(err.error || "Saved as draft, but the estimate couldn't be sent.");
+        router.push(`/dashboard/estimates/${id}`);
+        return;
+      }
+      toast.success('Estimate sent');
+      router.push(`/dashboard/estimates/${id}`);
+    } catch (err) {
+      toast.error(err.message || "Estimate couldn't be sent. Check your connection and try again.");
     } finally {
       setSaving(false);
     }
@@ -317,11 +353,11 @@ export default function EstimateEditorPage() {
 
       {/* Settings nudge */}
       {settings && !settings.business_name && (
-        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 text-sm">
-          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/40 text-sm">
+          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
           <div className="flex-1">
-            <p className="font-medium text-amber-900">Set up your business info</p>
-            <p className="text-amber-700 text-xs mt-0.5">
+            <p className="font-medium text-amber-900 dark:text-amber-200">Set up your business info</p>
+            <p className="text-amber-700 dark:text-amber-300 text-xs mt-0.5">
               Add your business name, logo, and contact details so estimates look professional.
             </p>
           </div>
@@ -343,7 +379,7 @@ export default function EstimateEditorPage() {
           {/* Customer search / link */}
           <div className="mb-4">
             {selectedCustomer ? (
-              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-sm">
+              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800/60 rounded-lg text-sm">
                 <Search className="h-4 w-4 text-[var(--brand-accent)]" />
                 <span className="text-foreground">
                   Linked to: <span className="font-medium text-foreground">{selectedCustomer.name}</span>
@@ -639,7 +675,7 @@ export default function EstimateEditorPage() {
           type="button"
           variant="outline"
           disabled={saving}
-          onClick={() => handleSave('draft')}
+          onClick={handleSaveDraft}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Save as Draft
@@ -648,7 +684,7 @@ export default function EstimateEditorPage() {
           type="button"
           disabled={saving}
           className="bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
-          onClick={() => handleSave('sent')}
+          onClick={handleSend}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Send Estimate
@@ -662,7 +698,7 @@ export default function EstimateEditorPage() {
           variant="outline"
           disabled={saving}
           className="flex-1"
-          onClick={() => handleSave('draft')}
+          onClick={handleSaveDraft}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Save as Draft
@@ -671,7 +707,7 @@ export default function EstimateEditorPage() {
           type="button"
           disabled={saving}
           className="flex-1 bg-[var(--brand-accent)] hover:bg-[var(--brand-accent)]/90 text-white"
-          onClick={() => handleSave('sent')}
+          onClick={handleSend}
         >
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Send Estimate

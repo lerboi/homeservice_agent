@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Phone, Copy, MapPin, Star, Wrench, FileSpreadsheet,
+  Phone, PhoneOutgoing, Copy, MapPin, Star, Wrench, FileSpreadsheet,
   ChevronDown, MoreHorizontal, History
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -181,6 +181,16 @@ export default function CustomerDetailHeader({
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
+              )}
+              {customer.phone_e164 && (
+                <a
+                  href={`tel:${customer.phone_e164}`}
+                  aria-label={`Call ${customer.name || formattedPhone || 'customer'}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[var(--brand-accent)] text-white hover:bg-[var(--brand-accent)]/90 active:scale-95 transition-all ${focus.ring}`}
+                >
+                  <PhoneOutgoing className="h-3 w-3" />
+                  Call
+                </a>
               )}
             </div>
 

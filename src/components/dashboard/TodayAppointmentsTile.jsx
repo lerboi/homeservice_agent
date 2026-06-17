@@ -135,7 +135,7 @@ export default function TodayAppointmentsTile() {
             <CalendarDays className="h-6 w-6 text-muted-foreground" />
             <h2 className={titleClass}>Today&apos;s appointments</h2>
           </div>
-          <Link href="/dashboard/appointments" className={ctaClass}>
+          <Link href="/dashboard/calendar" className={ctaClass}>
             View full schedule
           </Link>
         </div>
@@ -163,7 +163,7 @@ export default function TodayAppointmentsTile() {
           <CalendarDays className="h-6 w-6 text-muted-foreground" />
           <h2 className={titleClass}>Today&apos;s appointments</h2>
         </div>
-        <Link href="/dashboard/appointments" className={ctaClass}>
+        <Link href="/dashboard/calendar" className={ctaClass}>
           View full schedule
         </Link>
       </div>
@@ -190,27 +190,29 @@ export default function TodayAppointmentsTile() {
               : appt.service_address || null;
 
           return (
-            <li
-              key={appt.id}
-              className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <div className="w-20 shrink-0 text-right font-normal text-sm text-muted-foreground leading-normal tabular-nums">
-                {formatTime(appt.start_time)}
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <p className="font-semibold text-sm text-foreground leading-[1.4] truncate">
-                  {appt.caller_name || 'Customer'}
-                </p>
-                <div className="flex items-center gap-2 font-normal text-xs text-muted-foreground leading-[1.4]">
-                  {appt.job_type && <span>{appt.job_type}</span>}
-                  {locationText && (
-                    <span className="flex items-center gap-1 truncate">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{locationText}</span>
-                    </span>
-                  )}
+            <li key={appt.id} className="group">
+              <Link
+                href="/dashboard/calendar"
+                className={`flex min-h-[44px] items-center gap-3 py-3 group-first:pt-0 group-last:pb-0 rounded-md transition-colors hover:bg-muted/50 ${focus.ring}`}
+              >
+                <div className="w-20 shrink-0 text-right font-normal text-sm text-muted-foreground leading-normal tabular-nums">
+                  {formatTime(appt.start_time)}
                 </div>
-              </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                  <p className="font-semibold text-sm text-foreground leading-[1.4] truncate">
+                    {appt.caller_name || 'Customer'}
+                  </p>
+                  <div className="flex items-center gap-2 font-normal text-xs text-muted-foreground leading-[1.4]">
+                    {appt.job_type && <span>{appt.job_type}</span>}
+                    {locationText && (
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{locationText}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
             </li>
           );
         })}

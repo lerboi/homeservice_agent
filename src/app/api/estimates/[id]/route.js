@@ -130,8 +130,12 @@ export async function PATCH(request, { params }) {
     .maybeSingle();
   const taxRate = Number(settingsRow?.tax_rate) || 0;
 
-  // Handle tiers replacement
-  if (Array.isArray(body.tiers)) {
+  // Handle tiers replacement. NOTE: require length > 0 — an empty array means
+  // "single-price" (the editor always sends tiers:[] for single-price), which
+  // must fall through to the line_items branch below. Matches the POST route's
+  // isTiered = Array.isArray(tiers) && tiers.length > 0. Without the length check,
+  // editing a single-price estimate wiped all its line items and nulled totals.
+  if (Array.isArray(body.tiers) && body.tiers.length > 0) {
     // Delete existing tiers and line items (cascade deletes line items via FK)
     await supabase.from('estimate_tiers').delete().eq('estimate_id', id);
     // Also delete any orphaned line items (with null tier_id)

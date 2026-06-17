@@ -7,7 +7,8 @@
 
 const INQUIRY_STATUSES = [
   { value: 'open',      label: 'Open',      activeClass: 'bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] border-[var(--brand-accent)]' },
-  { value: 'converted', label: 'Converted', activeClass: 'bg-[#166534] dark:bg-emerald-600 text-white border-[#166534] dark:border-emerald-600' },
+  // Display label only — stored value / API filter stays 'converted'.
+  { value: 'converted', label: 'Booked', activeClass: 'bg-[#166534] dark:bg-emerald-600 text-white border-[#166534] dark:border-emerald-600' },
   { value: 'lost',      label: 'Lost',      activeClass: 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500', extraClass: 'ml-2' },
 ];
 

@@ -1,14 +1,22 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
 // --- Mock @azure/msal-node ---
+// Only getAuthCodeUrl goes through MSAL — the code exchange POSTs to the
+// token endpoint directly because AuthenticationResult never exposes the
+// refresh token (the old acquireTokenByCode path silently dropped it).
 const mockGetAuthCodeUrl = jest.fn();
-const mockAcquireTokenByCode = jest.fn();
 
 jest.unstable_mockModule('@azure/msal-node', () => ({
   ConfidentialClientApplication: jest.fn().mockImplementation(() => ({
     getAuthCodeUrl: mockGetAuthCodeUrl,
-    acquireTokenByCode: mockAcquireTokenByCode,
   })),
+}));
+
+// --- Mock the Google auth route (verifyOAuthState) used by the Outlook callback ---
+const mockVerifyOAuthState = jest.fn();
+
+jest.unstable_mockModule('@/app/api/google-calendar/auth/route.js', () => ({
+  verifyOAuthState: mockVerifyOAuthState,
 }));
 
 // --- Mock supabase ---
@@ -50,6 +58,8 @@ const {
   revokeAndDisconnectOutlook,
 } = await import('@/lib/scheduling/outlook-calendar.js');
 
+const { GET: outlookCallbackGET } = await import('@/app/api/outlook-calendar/callback/route.js');
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockFromImpl = null;
@@ -80,22 +90,48 @@ describe('Outlook Calendar Module', () => {
   });
 
   describe('exchangeCodeForTokens', () => {
-    test('calls MSAL acquireTokenByCode and returns token data', async () => {
-      mockAcquireTokenByCode.mockResolvedValue({
-        accessToken: 'access-tok',
-        account: { homeAccountId: 'acct-123' },
+    test('POSTs the authorization code to the token endpoint and returns raw token fields', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          access_token: 'access-tok',
+          refresh_token: 'refresh-tok',
+          expires_in: 3600,
+        }),
       });
 
       const result = await exchangeCodeForTokens('auth-code-123');
 
-      expect(mockAcquireTokenByCode).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: 'auth-code-123',
-          scopes: expect.arrayContaining(['https://graph.microsoft.com/Calendars.ReadWrite']),
-        })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        expect.objectContaining({ method: 'POST' })
       );
-      expect(result).toHaveProperty('accessToken', 'access-tok');
-      expect(result).toHaveProperty('account');
+      const body = mockFetch.mock.calls[0][1].body;
+      expect(body).toContain('grant_type=authorization_code');
+      expect(body).toContain('code=auth-code-123');
+      expect(body).toContain(
+        `redirect_uri=${encodeURIComponent('https://example.com/api/outlook-calendar/callback')}`
+      );
+      // The real token endpoint returns snake_case — refresh_token MUST be present
+      expect(result).toEqual({
+        access_token: 'access-tok',
+        refresh_token: 'refresh-tok',
+        expires_in: 3600,
+      });
+    });
+
+    test('throws a formatted error when the token endpoint rejects the code', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        json: () => Promise.resolve({
+          error: 'invalid_grant',
+          error_description: 'AADSTS70008: The provided authorization code has expired.',
+        }),
+      });
+
+      await expect(exchangeCodeForTokens('stale-code')).rejects.toThrow(
+        'Token exchange failed: AADSTS70008: The provided authorization code has expired.'
+      );
     });
   });
 
@@ -362,5 +398,119 @@ describe('Outlook Calendar Module', () => {
       // Verify events delete with provider filter
       expect(eventsDeleteChain.eq).toHaveBeenCalledWith('provider', 'outlook');
     });
+  });
+});
+
+describe('Outlook OAuth callback route', () => {
+  // Chain where every builder method returns itself and awaiting it (or
+  // calling .single()) resolves the configured result — covers the count
+  // query, upsert, update, and select().single() shapes in one helper.
+  function flexChain(result = { data: null, error: null, count: 0 }) {
+    const chain = {
+      select: jest.fn(() => chain),
+      eq: jest.fn(() => chain),
+      update: jest.fn(() => chain),
+      upsert: jest.fn(() => chain),
+      delete: jest.fn(() => chain),
+      in: jest.fn(() => chain),
+      single: jest.fn(() => Promise.resolve(result)),
+      then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
+    };
+    return chain;
+  }
+
+  test('persists refresh_token and a real expiry_date from the token endpoint response', async () => {
+    mockVerifyOAuthState.mockReturnValue('tenant-1');
+
+    // Route fetch traffic in call order: token exchange → /me profile →
+    // subscription create → initial delta sync.
+    mockFetch.mockImplementation((url) => {
+      if (url.includes('/oauth2/v2.0/token')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            access_token: 'access-tok',
+            refresh_token: 'refresh-tok',
+            expires_in: 3600,
+          }),
+        });
+      }
+      if (url === 'https://graph.microsoft.com/v1.0/me') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ mail: 'owner@example.com' }),
+        });
+      }
+      if (url.includes('/subscriptions')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ id: 'sub-1' }),
+        });
+      }
+      if (url.includes('/calendarView/delta')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            value: [],
+            '@odata.deltaLink': 'https://graph.microsoft.com/v1.0/me/calendarView/delta?$deltatoken=init',
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    });
+
+    // calendar_credentials access order in the callback flow:
+    // 1. is_primary count query  2. credentials upsert
+    // 3. subscription update     4. sync creds select  5. sync token update
+    const credChains = [];
+    mockFromImpl = (table) => {
+      if (table === 'calendar_credentials') {
+        const idx = credChains.length;
+        let chain;
+        if (idx === 0) {
+          chain = flexChain({ count: 0, data: null, error: null });
+        } else if (idx === 3) {
+          chain = flexChain({
+            data: {
+              tenant_id: 'tenant-1',
+              access_token: 'access-tok',
+              refresh_token: 'refresh-tok',
+              expiry_date: Date.now() + 3600000,
+              last_sync_token: null,
+            },
+            error: null,
+          });
+        } else {
+          chain = flexChain({ data: null, error: null });
+        }
+        credChains.push(chain);
+        return chain;
+      }
+      return flexChain({ data: [], error: null });
+    };
+
+    const before = Date.now();
+    const res = await outlookCallbackGET({
+      url: 'https://example.com/api/outlook-calendar/callback?code=auth-code-123&state=signed-state',
+    });
+    const after = Date.now();
+
+    // The credential upsert must persist the real refresh token and a
+    // numeric expiry derived from expires_in (the msal path produced
+    // refresh_token: undefined and expiry_date: NaN).
+    const upsertChain = credChains[1];
+    expect(upsertChain.upsert).toHaveBeenCalledTimes(1);
+    const payload = upsertChain.upsert.mock.calls[0][0];
+    expect(payload.refresh_token).toBe('refresh-tok');
+    expect(payload.access_token).toBe('access-tok');
+    expect(payload.is_primary).toBe(true);
+    expect(Number.isFinite(payload.expiry_date)).toBe(true);
+    expect(payload.expiry_date).toBeGreaterThanOrEqual(before + 3600 * 1000);
+    expect(payload.expiry_date).toBeLessThanOrEqual(after + 3600 * 1000);
+
+    // Success redirect — no error=true
+    expect(res.headers.get('location')).toBe(
+      'https://example.com/auth/calendar-connected?provider=outlook'
+    );
   });
 });

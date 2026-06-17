@@ -68,7 +68,7 @@ export default function TierEditor({ tier, onUpdate, onRemove, taxRate = 0, canR
             <button
               type="button"
               onClick={onRemove}
-              className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+              className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors shrink-0"
               aria-label="Remove tier"
               title="Remove tier"
             >

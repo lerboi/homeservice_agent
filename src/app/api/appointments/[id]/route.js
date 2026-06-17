@@ -76,10 +76,10 @@ export async function PATCH(request, { params }) {
 
   // Handle appointment status update (cancel)
   if (body.status === 'cancelled') {
-    // Fetch the appointment to get external_event_id
+    // Fetch the appointment to get external_event_id + owning provider
     const { data: appt, error: fetchError } = await supabase
       .from('appointments')
-      .select('id, tenant_id, external_event_id, status')
+      .select('id, tenant_id, external_event_id, external_event_provider, status')
       .eq('id', id)
       .eq('tenant_id', tenantId)
       .single();
@@ -111,13 +111,17 @@ export async function PATCH(request, { params }) {
     if (appt.external_event_id) {
       after(async () => {
         try {
-          // Determine provider from the appointment's external_event_provider or credentials
-          const { data: creds } = await supabase
+          // Delete via the provider that OWNS the event (external_event_provider).
+          // Falling back to the current primary is only safe when the column is
+          // null — the primary may have changed since the event was pushed.
+          let credsQuery = supabase
             .from('calendar_credentials')
             .select('*')
-            .eq('tenant_id', tenantId)
-            .eq('is_primary', true)
-            .single();
+            .eq('tenant_id', tenantId);
+          credsQuery = appt.external_event_provider
+            ? credsQuery.eq('provider', appt.external_event_provider)
+            : credsQuery.eq('is_primary', true);
+          const { data: creds } = await credsQuery.single();
 
           if (!creds) return;
 

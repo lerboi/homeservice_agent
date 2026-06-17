@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase.js';
-import { registerWatch } from '@/lib/scheduling/google-calendar.js';
-import { renewOutlookSubscription } from '@/lib/scheduling/outlook-calendar.js';
+import { registerWatch, syncCalendarEvents } from '@/lib/scheduling/google-calendar.js';
+import { renewOutlookSubscription, syncOutlookCalendarEvents } from '@/lib/scheduling/outlook-calendar.js';
 
 /**
  * POST /api/cron/renew-calendar-channels
@@ -68,10 +68,50 @@ export async function GET(request) {
   const renewed = results.filter((r) => r.status === 'renewed').length;
   const failed = results.filter((r) => r.status === 'error').length;
 
+  // ── Monthly window re-anchor (2026-06-12 audit H6) ───────────────────────
+  // Both providers' sync windows (now−30d → now+180d) are otherwise fixed at
+  // whatever moment the LAST full sync ran: sync tokens only report changes
+  // inside the original window, so ~6 months after connect the mirror would
+  // stop seeing new events entirely unless a fortuitous 410 forced a resync.
+  // On the 1st of each month, drop every credential's sync token, wipe its
+  // mirror rows, and run a fresh full sync — re-anchoring the window to now.
+  let reanchored = 0;
+  if (new Date().getDate() === 1) {
+    const { data: allCreds } = await supabase
+      .from('calendar_credentials')
+      .select('tenant_id, provider')
+      .in('provider', ['google', 'outlook'])
+      .limit(100);
+
+    for (const cred of allCreds || []) {
+      try {
+        await supabase
+          .from('calendar_credentials')
+          .update({ last_sync_token: null })
+          .eq('tenant_id', cred.tenant_id)
+          .eq('provider', cred.provider);
+        await supabase
+          .from('calendar_events')
+          .delete()
+          .eq('tenant_id', cred.tenant_id)
+          .eq('provider', cred.provider);
+        if (cred.provider === 'google') {
+          await syncCalendarEvents(cred.tenant_id);
+        } else {
+          await syncOutlookCalendarEvents(cred.tenant_id);
+        }
+        reanchored += 1;
+      } catch (err) {
+        console.error(`[cron-renew] Re-anchor failed for ${cred.provider} tenant ${cred.tenant_id}:`, err.message);
+      }
+    }
+  }
+
   return Response.json({
     ok: true,
     renewed,
     failed,
+    reanchored,
     results,
   });
 }

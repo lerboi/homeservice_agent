@@ -22,11 +22,11 @@ const ITEM_TYPES = [
 ];
 
 const TYPE_COLORS = {
-  labor: 'border-l-blue-400 bg-blue-50/30',
-  materials: 'border-l-amber-400 bg-amber-50/30',
-  travel: 'border-l-emerald-400 bg-emerald-50/30',
-  flat_rate: 'border-l-purple-400 bg-purple-50/30',
-  discount: 'border-l-red-400 bg-red-50/30',
+  labor: 'border-l-blue-400 bg-blue-50/30 dark:bg-blue-950/20',
+  materials: 'border-l-amber-400 bg-amber-50/30 dark:bg-amber-950/20',
+  travel: 'border-l-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20',
+  flat_rate: 'border-l-purple-400 bg-purple-50/30 dark:bg-purple-950/20',
+  discount: 'border-l-red-400 bg-red-50/30 dark:bg-red-950/20',
 };
 
 /**
@@ -188,7 +188,7 @@ export default function LineItemRow({ item, onChange, onRemove, index }) {
         <button
           type="button"
           onClick={onRemove}
-          className="p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0"
+          className="p-1.5 text-muted-foreground/50 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors shrink-0"
           aria-label="Remove line item"
         >
           <Trash2 className="h-4 w-4" />

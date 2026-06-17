@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, MessageSquare, Sun, Moon, PhoneIncoming, Contact } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Calendar, Phone, MoreHorizontal, LogOut, MessageSquare, Sun, Moon, Contact } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { Separator } from '@/components/ui/separator';
@@ -13,11 +13,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/lib/supabase-browser';
 import { getNextTheme, getToggleLabel, getToggleAriaLabel } from '@/lib/theme-toggle-logic';
 import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
+import { useAttentionCounts, formatBadgeCount } from '@/hooks/useAttentionCounts';
 
+// Inquiries → Calls merge (2026-06-10): the Inquiries nav item is gone — its
+// work queue lives inside Calls as the "Needs reply" view.
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/jobs', label: 'Jobs', icon: Users },
-  { href: '/dashboard/inquiries', label: 'Inquiries', icon: PhoneIncoming },
   { href: '/dashboard/customers', label: 'Customers', icon: Contact },
   { href: '/dashboard/calendar', label: 'Calendar', icon: Calendar },
   { href: '/dashboard/calls', label: 'Calls', icon: Phone },
@@ -25,15 +27,17 @@ const NAV_ITEMS = [
   { href: '/dashboard/more', label: 'More', icon: MoreHorizontal },
 ];
 
-function NavLink({ item, pathname }) {
+function NavLink({ item, pathname, badge }) {
   const Icon = item.icon;
   const active = item.exact
     ? pathname === item.href
     : pathname.startsWith(item.href);
+  const badgeCount = badge?.count ?? 0;
 
   return (
     <Link
       href={item.href}
+      aria-label={badgeCount > 0 ? badge.ariaLabel(badgeCount) : undefined}
       className={`
         flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative
         ${active
@@ -44,6 +48,14 @@ function NavLink({ item, pathname }) {
     >
       <Icon className="h-4 w-4 shrink-0" />
       {item.label}
+      {badgeCount > 0 && (
+        <span
+          aria-hidden="true"
+          className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--brand-accent)] px-1 text-[10px] font-semibold leading-none text-[var(--brand-accent-fg)] tabular-nums"
+        >
+          {formatBadgeCount(badgeCount)}
+        </span>
+      )}
     </Link>
   );
 }
@@ -91,6 +103,17 @@ export default function DashboardSidebar() {
   const { invoicing } = useFeatureFlags();
   const pathname = usePathname();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const { callsAttention } = useAttentionCounts();
+
+  // Attention badge: combined "needs you" count on Calls — open inquiries
+  // waiting on a reply (Needs reply view) + calls missed today.
+  // Hidden at 0; count capped at "9+"; surfaced to AT via the Link aria-label.
+  const badges = {
+    '/dashboard/calls': {
+      count: callsAttention,
+      ariaLabel: (n) => `Calls, ${n} need${n === 1 ? 's' : ''} attention`,
+    },
+  };
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -120,6 +143,7 @@ export default function DashboardSidebar() {
               key={item.href}
               item={item}
               pathname={pathname}
+              badge={badges[item.href]}
             />
           ))}
         </div>

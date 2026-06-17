@@ -143,7 +143,19 @@ rotate).
 | Value | Set when | Cleared when |
 |-------|----------|--------------|
 | `null` | Healthy | — |
-| `'token_refresh_failed'` | `refreshTokenIfNeeded` catches non-recoverable error from provider (typically: refresh token revoked, user removed access in Xero/Jobber admin, scope revoked) | Next successful `exchangeCode` (Reconnect clicked) |
+| `'token_refresh_failed'` | `refreshTokenIfNeeded` (or the Python adapters) gets a DEFINITIVE grant rejection from the token endpoint — HTTP 400/401 / `invalid_grant` (refresh token revoked, expired, or already consumed). **Since 2026-06-10 transient failures (timeout, network, 429, 5xx) do NOT set this flag** — they rethrow/log and retry next cycle. | Next successful refresh (`error_state: null` written with the rotated tokens) or next successful `exchangeCode` (Reconnect clicked) |
+
+**One-shot notification (2026-06-10):** the owner email + flag write in
+`refreshTokenIfNeeded` is skipped when the row is already flagged, so repeat
+fatal failures don't re-email every webhook/cron cycle.
+
+**Keep-fresh cron (2026-06-10):** `GET /api/cron/refresh-integration-tokens`
+runs every 10 min (vercel.json) and calls
+`refreshTokenIfNeeded(admin, cred, { bufferMs: 15 * 60 * 1000 })` for every
+healthy row expiring within 15 min. This keeps Xero (~30-min TTL) and Jobber
+(~60-min TTL) tokens permanently fresh server-side so the LiveKit agent's
+in-call refresh path (0.8s context budget) is almost never exercised.
+`refreshTokenIfNeeded` accepts `options.bufferMs` (default 5 min) for this.
 
 ### Downstream consumers
 

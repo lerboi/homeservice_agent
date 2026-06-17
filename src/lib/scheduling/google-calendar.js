@@ -1,6 +1,10 @@
 import { google } from 'googleapis';
 import { supabase } from '@/lib/supabase.js';
 
+// Safety cap on events.list pagination — 20 pages × 250 default page size
+// covers any realistic sync batch while guarding against runaway loops.
+const MAX_SYNC_PAGES = 20;
+
 /**
  * Create a Google OAuth2 client using environment variables.
  * @returns {import('googleapis').Auth.OAuth2Client}
@@ -193,19 +197,42 @@ export async function syncCalendarEvents(tenantId) {
   let items = [];
   let nextSyncToken = null;
 
+  // Google returns nextSyncToken only on the LAST page of results, so both
+  // branches must follow nextPageToken to the end or the token never advances.
+  const listAllPages = async (baseParams) => {
+    let pageToken = null;
+    let pages = 0;
+    do {
+      const response = await calendar.events.list({
+        ...baseParams,
+        ...(pageToken ? { pageToken } : {}),
+      });
+      items.push(...(response.data.items || []));
+      pageToken = response.data.nextPageToken || null;
+      nextSyncToken = response.data.nextSyncToken || nextSyncToken;
+      pages++;
+      if (pages >= MAX_SYNC_PAGES && pageToken) {
+        console.warn(
+          `[calendar-sync] Hit max page cap (${MAX_SYNC_PAGES}) for tenant ${tenantId} — sync token will not advance this run`
+        );
+        break;
+      }
+    } while (pageToken);
+  };
+
   if (creds.last_sync_token) {
     // Incremental sync using stored sync token
     try {
-      const response = await calendar.events.list({
+      await listAllPages({
         calendarId: creds.calendar_id || 'primary',
         syncToken: creds.last_sync_token,
       });
-      items = response.data.items || [];
-      nextSyncToken = response.data.nextSyncToken;
     } catch (err) {
       // 410 Gone: sync token is invalid, fall through to full re-sync
       if (err.code === 410) {
         console.log(`[calendar-sync] 410 Gone for tenant ${tenantId} — falling back to full sync`);
+        items = [];
+        nextSyncToken = null;
       } else {
         throw err;
       }
@@ -217,15 +244,13 @@ export async function syncCalendarEvents(tenantId) {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
     const sixMonthsAhead = new Date(Date.now() + 180 * 86400000).toISOString();
     console.log(`[calendar-sync] Full sync for tenant ${tenantId} (${thirtyDaysAgo} → ${sixMonthsAhead})`);
-    const response = await calendar.events.list({
+    await listAllPages({
       calendarId: creds.calendar_id || 'primary',
       timeMin: thirtyDaysAgo,
       timeMax: sixMonthsAhead,
       singleEvents: true,
       maxResults: 2500,
     });
-    items = response.data.items || [];
-    nextSyncToken = response.data.nextSyncToken;
   }
 
   // Upsert synced events into local mirror

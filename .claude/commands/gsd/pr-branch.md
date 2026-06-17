@@ -6,6 +6,7 @@ allowed-tools:
   - Bash
   - Read
   - AskUserQuestion
+requires: [review]
 ---
 
 <objective>
@@ -17,9 +18,9 @@ changes that are irrelevant to code review.
 </objective>
 
 <execution_context>
-@/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/pr-branch.md
+@C:/Users/leheh/.Projects/homeservice_agent/.claude/get-shit-done/workflows/pr-branch.md
 </execution_context>
 
 <process>
-Execute the pr-branch workflow from @/Users/leroyngzz/Projects/homeservice_agent/.claude/get-shit-done/workflows/pr-branch.md end-to-end.
+Execute end-to-end.
 </process>

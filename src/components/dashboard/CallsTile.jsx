@@ -157,27 +157,30 @@ export default function CallsTile() {
       {missed.length > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 font-normal text-xs tracking-wide uppercase text-red-700 leading-[1.4]">
+            <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 font-normal text-xs tracking-wide uppercase text-red-700 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300 leading-[1.4]">
               Missed
             </span>
             <span className="font-normal text-xs text-muted-foreground leading-[1.4]">
-              {missed.length} &bull; not_attempted
+              {missed.length} &bull;{' '}
+              {missed.length === 1 ? 'needs callback' : 'need callback'}
             </span>
           </div>
           <ul className="flex flex-col divide-y divide-border">
             {missed.slice(0, 3).map((mc) => (
-              <li
-                key={mc.id}
-                className="flex items-center justify-between gap-3 py-2"
-              >
-                <div className="min-w-0 flex flex-col">
-                  <p className="font-normal text-sm text-foreground leading-normal truncate">
-                    {formatPhone(mc.from_number)}
-                  </p>
-                  <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
-                    {relativeTime(mc.created_at)}
-                  </p>
-                </div>
+              <li key={mc.id}>
+                <Link
+                  href="/dashboard/calls"
+                  className={`flex min-h-[44px] items-center justify-between gap-3 py-2 rounded-md transition-colors hover:bg-muted/50 ${focus.ring}`}
+                >
+                  <div className="min-w-0 flex flex-col">
+                    <p className="font-normal text-sm text-foreground leading-normal truncate">
+                      {formatPhone(mc.from_number)}
+                    </p>
+                    <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
+                      {relativeTime(mc.created_at)}
+                    </p>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -200,30 +203,32 @@ export default function CallsTile() {
                     : null;
           const outcomeClass =
             outcome === 'booked'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300'
               : outcome === 'not_attempted' || outcome === 'failed'
-                ? 'border-red-200 bg-red-50 text-red-700'
+                ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-300'
                 : 'border-border bg-muted text-muted-foreground';
           return (
-            <li
-              key={call.id}
-              className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <div className="min-w-0 flex flex-col">
-                <p className="font-normal text-sm text-foreground leading-normal truncate">
-                  {formatPhone(call.from_number)}
-                </p>
-                <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
-                  {relativeTime(call.created_at)}
-                </p>
-              </div>
-              {outcomeLabel && (
-                <span
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 font-normal text-xs tracking-wide uppercase leading-[1.4] shrink-0 ${outcomeClass}`}
-                >
-                  {outcomeLabel}
-                </span>
-              )}
+            <li key={call.id} className="group">
+              <Link
+                href="/dashboard/calls"
+                className={`flex min-h-[44px] items-center justify-between gap-3 py-3 group-first:pt-0 group-last:pb-0 rounded-md transition-colors hover:bg-muted/50 ${focus.ring}`}
+              >
+                <div className="min-w-0 flex flex-col">
+                  <p className="font-normal text-sm text-foreground leading-normal truncate">
+                    {formatPhone(call.from_number)}
+                  </p>
+                  <p className="font-normal text-xs text-muted-foreground leading-[1.4]">
+                    {relativeTime(call.created_at)}
+                  </p>
+                </div>
+                {outcomeLabel && (
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 font-normal text-xs tracking-wide uppercase leading-[1.4] shrink-0 ${outcomeClass}`}
+                  >
+                    {outcomeLabel}
+                  </span>
+                )}
+              </Link>
             </li>
           );
         })}
