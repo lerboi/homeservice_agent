@@ -5,6 +5,20 @@ import { ContactForm } from './ContactForm';
 export const metadata = {
   title: 'Contact - Voco',
   description: 'Get in touch with the Voco team.',
+  openGraph: {
+    title: 'Contact — Voco',
+    description: 'Get in touch with the Voco team.',
+    type: 'website',
+    siteName: 'Voco AI',
+    url: '/contact',
+    images: [{ url: '/og?title=Get%20in%20touch%20with%20Voco&type=CONTACT', width: 1200, height: 630, alt: 'Contact Voco' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact — Voco',
+    description: 'Get in touch with the Voco team.',
+    images: ['/og?title=Get%20in%20touch%20with%20Voco&type=CONTACT'],
+  },
 };
 
 export default function ContactPage() {

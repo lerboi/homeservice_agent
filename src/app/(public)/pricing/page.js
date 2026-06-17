@@ -9,6 +9,20 @@ import FAQSection from './FAQSection';
 export const metadata = {
   title: 'Pricing — Voco AI Receptionist',
   description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
+  openGraph: {
+    title: 'Pricing — Voco AI Receptionist',
+    description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
+    type: 'website',
+    siteName: 'Voco AI',
+    url: '/pricing',
+    images: [{ url: '/og?title=Simple%2C%20transparent%20pricing&type=PRICING', width: 1200, height: 630, alt: 'Voco AI pricing' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pricing — Voco AI Receptionist',
+    description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
+    images: ['/og?title=Simple%2C%20transparent%20pricing&type=PRICING'],
+  },
 };
 
 export default function PricingPage() {

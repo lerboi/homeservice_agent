@@ -7,7 +7,10 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
+// metadataBase makes relative OG/Twitter image URLs resolve to absolute URLs
+// on link previews (2026-06-12 audit M24). Defaults to prod; override via env.
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://voco.live'),
   title: 'Voco AI — AI Receptionist for Home Service Businesses',
   description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring — for plumbers, HVAC, electricians, and handymen.',
   openGraph: {
@@ -15,11 +18,21 @@ export const metadata = {
     description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
     type: 'website',
     siteName: 'Voco AI',
+    url: '/',
+    images: [
+      {
+        url: '/og?title=AI%20Receptionist%20for%20Home%20Service%20Businesses&type=HOME',
+        width: 1200,
+        height: 630,
+        alt: 'Voco AI — AI Receptionist for Home Service Businesses',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Voco AI — AI Receptionist for Home Service Businesses',
     description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
+    images: ['/og?title=AI%20Receptionist%20for%20Home%20Service%20Businesses&type=HOME'],
   },
 };
 

@@ -6,6 +6,20 @@ import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
 export const metadata = {
   title: 'About — Voco',
   description: 'Voco is an AI receptionist built specifically for home service businesses. Here\'s why we exist.',
+  openGraph: {
+    title: 'About — Voco',
+    description: 'Voco is an AI receptionist built specifically for home service businesses. Here\'s why we exist.',
+    type: 'website',
+    siteName: 'Voco AI',
+    url: '/about',
+    images: [{ url: '/og?title=Built%20for%20home%20service%20businesses&type=ABOUT', width: 1200, height: 630, alt: 'About Voco' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About — Voco',
+    description: 'Voco is an AI receptionist built specifically for home service businesses.',
+    images: ['/og?title=Built%20for%20home%20service%20businesses&type=ABOUT'],
+  },
 };
 
 const STATS = [
