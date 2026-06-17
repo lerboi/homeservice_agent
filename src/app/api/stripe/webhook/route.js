@@ -577,9 +577,28 @@ async function handleCheckoutCompleted(session, eventCreated) {
  * Implements out-of-order protection (D-10) and history table pattern (D-13).
  */
 async function handleSubscriptionEvent(subscription, eventCreated) {
-  const tenantId = subscription.metadata?.tenant_id;
+  let tenantId = subscription.metadata?.tenant_id;
   if (!tenantId) {
-    console.warn('[stripe/webhook] Subscription missing tenant_id in metadata:', subscription.id);
+    // Dashboard-created (or otherwise metadata-less) subscriptions: resolve the
+    // tenant from the Stripe customer id via a prior subscription row instead of
+    // silently dropping the event (2026-06-12 audit M4).
+    const customerId =
+      typeof subscription.customer === 'string'
+        ? subscription.customer
+        : subscription.customer?.id;
+    if (customerId) {
+      const { data: byCustomer } = await supabase
+        .from('subscriptions')
+        .select('tenant_id')
+        .eq('stripe_customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      tenantId = byCustomer?.tenant_id || null;
+    }
+  }
+  if (!tenantId) {
+    console.warn('[stripe/webhook] Subscription has no resolvable tenant (no metadata, no customer match):', subscription.id);
     return;
   }
 

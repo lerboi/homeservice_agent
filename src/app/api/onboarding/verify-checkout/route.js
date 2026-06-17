@@ -156,23 +156,32 @@ async function fulfillSubscription(session, tenantId) {
  * Uses out-of-order protection so it's safe even if the webhook fires concurrently.
  */
 async function syncSubscription(subscription, tenantId) {
-  const rawTimestamp = subscription.updated || subscription.created;
-  const stripeUpdatedAt = new Date(rawTimestamp * 1000).toISOString();
+  // 2026-06-12 audit M5 — mirror the webhook's corrected ordering:
+  // (1) subscription.updated does NOT exist on the Stripe object; this fallback
+  //     has no event envelope, so order by subscription.created (epoch seconds).
+  //     It is <= any later webhook event time, so a real webhook event still
+  //     applies (and isn't wrongly skipped) while this stamps the initial state.
+  // (2) compare with Date.parse (numeric), not string >= (which broke on the
+  //     PostgREST `+00:00` vs toISOString `Z` formats).
+  // (3) look up the tenant's CURRENT row by tenant_id (not stripe_subscription_id)
+  //     so the authoritative webhook row is never clobbered by this fallback.
+  const versionMs = (subscription.created || Math.floor(Date.now() / 1000)) * 1000;
+  const stripeUpdatedAt = new Date(versionMs).toISOString();
 
-  // Out-of-order protection
   const { data: currentRow } = await adminSupabase
     .from('subscriptions')
-    .select('stripe_updated_at, calls_used')
-    .eq('stripe_subscription_id', subscription.id)
+    .select('stripe_subscription_id, stripe_updated_at, calls_used')
+    .eq('tenant_id', tenantId)
     .eq('is_current', true)
     .maybeSingle();
 
-  if (currentRow?.stripe_updated_at) {
-    if (currentRow.stripe_updated_at >= stripeUpdatedAt) {
-      // Already have this or newer data — skip
-      console.log('[verify-checkout] Subscription already synced, skipping');
-      return;
-    }
+  if (
+    currentRow?.stripe_updated_at &&
+    Date.parse(currentRow.stripe_updated_at) >= versionMs
+  ) {
+    // Webhook (or a newer write) already recorded this — skip
+    console.log('[verify-checkout] Subscription already synced, skipping');
+    return;
   }
 
   // Resolve plan info
@@ -211,7 +220,12 @@ async function syncSubscription(subscription, tenantId) {
     unpaid: 'past_due',
   };
   const localStatus = statusMap[subscription.status] || 'incomplete';
-  const callsUsed = currentRow?.calls_used ?? 0;
+  // Carry usage forward only within the SAME subscription id (plan changes keep
+  // the id); a replacement subscription starts a fresh cycle at 0 — matches the webhook.
+  const callsUsed =
+    currentRow?.stripe_subscription_id === subscription.id
+      ? currentRow.calls_used ?? 0
+      : 0;
 
   // History table pattern, updated for migration 068: unmark ALL of the
   // tenant's current rows FIRST (the partial unique index

@@ -68,7 +68,7 @@ export async function POST(request) {
     // A replayed/duplicated checkout step would double-bill the tenant.
     const { data: existingSub } = await adminSupabase
       .from('subscriptions')
-      .select('status')
+      .select('status, stripe_customer_id')
       .eq('tenant_id', tenant.id)
       .eq('is_current', true)
       .maybeSingle();
@@ -79,6 +79,13 @@ export async function POST(request) {
         { status: 409 }
       );
     }
+
+    // Trial-abuse guard (2026-06-12 audit M1): a tenant that has EVER had a
+    // subscription (incl. canceled) gets no second free 14-day trial, and we
+    // reuse its Stripe customer so Stripe's own repeat-trial detection applies —
+    // a fresh customer each time previously defeated it. First-timers still trial.
+    const hasPriorSubscription = Boolean(existingSub);
+    const reuseCustomerId = existingSub?.stripe_customer_id || null;
 
     // 5. Build line items — flat-rate plan only.
     // Metered overage price is added post-checkout in the webhook handler
@@ -95,11 +102,13 @@ export async function POST(request) {
       payment_method_collection: 'always', // D-03: CC required
       line_items: lineItems,
       subscription_data: {
-        trial_period_days: 14,
+        ...(hasPriorSubscription ? {} : { trial_period_days: 14 }),
         metadata: { tenant_id: tenant.id }, // Critical: webhook uses this to find tenant
         ...(interval === 'annual' ? { billing_mode: { type: 'flexible' } } : {}),
       },
-      customer_email: tenant.owner_email,
+      // customer and customer_email are mutually exclusive — reuse the existing
+      // Stripe customer when re-subscribing (M1), else create one from email.
+      ...(reuseCustomerId ? { customer: reuseCustomerId } : { customer_email: tenant.owner_email }),
       metadata: { tenant_id: tenant.id }, // On session too for checkout.session.completed
     };
 
@@ -116,7 +125,12 @@ export async function POST(request) {
       sessionConfig.cancel_url = `${process.env.NEXT_PUBLIC_APP_URL}/pricing`;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // Idempotency guard (2026-06-12 audit M6): two parallel tabs with the same
+    // plan/interval collapse to ONE Stripe session instead of two subscriptions
+    // double-billing the tenant.
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      idempotencyKey: `onboarding_checkout_${tenant.id}_${plan}_${interval}_${embedded ? 'emb' : 'hosted'}`,
+    });
 
     // 6. Return appropriate response
     if (embedded) {

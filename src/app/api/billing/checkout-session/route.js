@@ -130,7 +130,11 @@ export async function POST(request) {
       sessionConfig.customer_email = tenant.owner_email;
     }
 
-    const session = await stripe.checkout.sessions.create(sessionConfig);
+    // Idempotency guard (2026-06-12 audit M6): collapse duplicate parallel-tab
+    // upgrade checkouts to a single Stripe session.
+    const session = await stripe.checkout.sessions.create(sessionConfig, {
+      idempotencyKey: `upgrade_checkout_${tenant.id}_${plan}_${interval}`,
+    });
 
     return Response.json({ url: session.url });
   } catch (error) {
