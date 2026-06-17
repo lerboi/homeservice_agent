@@ -124,8 +124,11 @@ export async function GET(request) {
     `)
     .eq('tenant_id', tenantId)
     .neq('status', 'cancelled')
-    .gte('start_time', start)
+    // Overlap test, not start-only: an appointment that starts before the window
+    // but ends inside it must still render (2026-06-12 audit LOW-28). Matches the
+    // calendar_events query's overlap filter below.
     .lte('start_time', end)
+    .gte('end_time', start)
     .order('start_time', { ascending: true });
 
   if (apptError) {

@@ -76,6 +76,13 @@ export async function GET(request) {
 
   // Load scheduling data in parallel
   const now = new Date();
+  // All-day rows are stored as UTC-midnight date encodings, so an all-day row for
+  // the tenant's CURRENT local day (end = next UTC midnight) gets filtered out by
+  // `end_time >= now` during the tenant's evening in west-of-UTC zones — dropping a
+  // fully-blocked day from the busy set (2026-06-12 audit M12). Widen the floor 24h
+  // so today's all-day rows reach the expansion logic; the calculator's overlap
+  // checks still reject genuinely-past intervals.
+  const allDayFloor = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const [appointmentsResult, eventsResult, zonesResult, buffersResult, blocksResult] = await Promise.all([
     supabase
       .from('appointments')
@@ -88,7 +95,7 @@ export async function GET(request) {
       .from('calendar_events')
       .select('start_time, end_time, is_all_day')
       .eq('tenant_id', tenant.id)
-      .gte('end_time', now.toISOString()),
+      .gte('end_time', allDayFloor),
     supabase
       .from('service_zones')
       .select('id, name, postal_codes')
@@ -101,7 +108,7 @@ export async function GET(request) {
       .from('calendar_blocks')
       .select('start_time, end_time, is_all_day')
       .eq('tenant_id', tenant.id)
-      .gte('end_time', now.toISOString()),
+      .gte('end_time', allDayFloor),
   ]);
 
   // Calculate slots for each day in range

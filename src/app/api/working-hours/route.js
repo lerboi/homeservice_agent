@@ -1,6 +1,15 @@
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
 
+function isValidTimeZone(tz) {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   try {
     const tenantId = await getTenantId();
@@ -43,8 +52,27 @@ export async function PUT(request) {
 
     const updates = {};
     if (working_hours !== undefined) updates.working_hours = working_hours;
-    if (slot_duration_mins !== undefined) updates.slot_duration_mins = slot_duration_mins;
-    if (tenant_timezone !== undefined) updates.tenant_timezone = tenant_timezone;
+    // Reject slot_duration_mins <= 0 (the slot calculators step by this value, so
+    // 0/negative is a non-terminating loop) and invalid timezones (2026-06-12 audit LOW-27).
+    if (slot_duration_mins !== undefined) {
+      const n = Number(slot_duration_mins);
+      if (!Number.isInteger(n) || n < 5 || n > 480) {
+        return Response.json(
+          { error: 'slot_duration_mins must be an integer between 5 and 480' },
+          { status: 400 },
+        );
+      }
+      updates.slot_duration_mins = n;
+    }
+    if (tenant_timezone !== undefined) {
+      if (typeof tenant_timezone !== 'string' || !isValidTimeZone(tenant_timezone)) {
+        return Response.json(
+          { error: 'tenant_timezone must be a valid IANA timezone' },
+          { status: 400 },
+        );
+      }
+      updates.tenant_timezone = tenant_timezone;
+    }
 
     const { data, error } = await supabase
       .from('tenants')
