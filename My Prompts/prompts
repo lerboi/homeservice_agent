@@ -97,7 +97,3 @@ Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-com
 
 
 Can you look at my live kit agent repo in the sibling directory which is basically responsible for the code for the actual AI voice receptionist? Understand deeply what my website does, and what the AI receptionist is doing for home service businesses (specifically understand the livekit_agent repo). This is a AI receptionist to help home service businesses pick up calls and book slots based on availability and it has to be reliable all in all. So you have to fully understand what this app is supposed to do to make the best changes for it. Let me know once you understand.
-
-
-Look through issues 1, 2, and 3 and gather all the context and code needed to fully and correctly reach a 100% certain conclusion that the issues are legit and not false positives. 
-Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Then finally carry out the fix.
