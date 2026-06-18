@@ -1,5 +1,10 @@
+TODO
+-----------------
+- In the onboarding process, the input text is all white color against the white background.
+- In the Dashboard, the Take the tour button process doesnt work properly.
 
-- Is the check for availability tool working correctly? The AI offers only the current timing, and says every other slot is not free.
-- At the end of the call, the AI sounds like it cuts itself off. Can you check what this issue is? 
-- "- When calling a tool, do NOT speak while the tool is executing. Wait silently for the tool result before responding." this part is in the prompt in the livekit_agent. This is not the behaviour i want. When checking tools, I want the AI to let the caller know before checking, saying something like 'let me check' or similar to let the caller know. An example of this is when checking availability for a slot, let the caller know they will be checking
- 
+
+
+Thinking of implementing
+-----------------
+- Remove Jobber and Xero integration for now
