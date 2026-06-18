@@ -83,11 +83,26 @@ export async function proxy(request) {
 
     const onboarded = tenant?.onboarding_complete === true;
 
-    // Already signed in → route away from auth page
+    // Already signed in → route away from auth page (honor validated ?redirect)
     if (pathname.startsWith('/auth/signin')) {
-      return NextResponse.redirect(
-        new URL(onboarded ? '/dashboard' : '/onboarding', request.url)
-      );
+      const fallback = onboarded ? '/dashboard' : '/onboarding';
+      const raw = request.nextUrl.searchParams.get('redirect');
+      let safe = fallback;
+      if (raw) {
+        try {
+          // Validate against the RESOLVED origin, not string prefixes — a
+          // prefix check is bypassable (a backslash like "/\\host" parses to
+          // an external origin). Require the redirect to stay on this origin
+          // and not loop back to the signin page.
+          const dest = new URL(raw, request.nextUrl.origin);
+          if (dest.origin === request.nextUrl.origin && !dest.pathname.startsWith('/auth/signin')) {
+            safe = dest.pathname + dest.search + dest.hash;
+          }
+        } catch {
+          // Malformed redirect — keep the fallback.
+        }
+      }
+      return NextResponse.redirect(new URL(safe, request.url));
     }
 
     // Finished onboarding → skip wizard, go to dashboard

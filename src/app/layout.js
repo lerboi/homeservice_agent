@@ -43,7 +43,7 @@ async function LocaleShell({ children }) {
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="relative">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NextIntlClientProvider messages={messages}>

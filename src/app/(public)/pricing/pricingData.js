@@ -7,7 +7,6 @@ export const PRICING_TIERS = [
     overageRate: 2.48,
     description: 'For solo operators just getting started',
     cta: 'Start Free Trial',
-    ctaHref: '/onboarding',
     highlighted: false,
     inheritsFrom: null,
     features: [
@@ -29,7 +28,6 @@ export const PRICING_TIERS = [
     overageRate: 2.08,
     description: 'For growing crews booking 3-5 jobs per day',
     cta: 'Start Free Trial',
-    ctaHref: '/onboarding',
     highlighted: true,
     badge: 'Most Popular',
     inheritsFrom: 'Starter',
@@ -47,7 +45,6 @@ export const PRICING_TIERS = [
     overageRate: 1.50,
     description: 'For multi-crew operations at full capacity',
     cta: 'Start Free Trial',
-    ctaHref: '/onboarding',
     highlighted: false,
     inheritsFrom: 'Growth',
     features: [

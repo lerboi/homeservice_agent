@@ -16,27 +16,6 @@ export function LandingFooter() {
       />
       <div className="relative max-w-6xl mx-auto px-6 py-20">
 
-        {/* Newsletter CTA section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-10 mb-10 border-b border-white/[0.06]">
-          <div>
-            <h3 className="text-xl font-semibold text-[#F5F5F5] mb-1">Stay in the loop</h3>
-            <p className="text-sm text-[#71717A]">Product updates and tips for growing your business.</p>
-          </div>
-          <div className="flex shrink-0">
-            <input
-              type="email"
-              placeholder="you@example.com"
-              className="bg-[#121110] border border-white/[0.1] text-[#F5F5F5] placeholder:text-[#71717A] rounded-l-xl h-11 px-4 text-sm focus:border-[#F97316] focus:outline-none focus:shadow-[0_0_0_3px_rgba(249,115,22,0.2)] w-52"
-            />
-            <button
-              type="button"
-              className="bg-[#F97316] hover:bg-[#F97316]/90 text-white font-semibold px-5 h-11 rounded-r-xl text-sm transition-colors"
-            >
-              Subscribe
-            </button>
-          </div>
-        </div>
-
         {/* Four-column grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Product column */}
