@@ -72,6 +72,20 @@ export async function POST(request) {
     return Response.json({ error: 'Failed to disconnect' }, { status: 500 });
   }
 
+  // Jobber mirrors its scheduled jobs into calendar_events as 'jobber' provider rows.
+  // Purge them on disconnect so stale mirror rows don't linger. Guarded to 'jobber'
+  // only — a blanket delete would wipe Google/Outlook events. Non-fatal.
+  if (provider === 'jobber') {
+    const { error: mirrorDeleteError } = await supabase
+      .from('calendar_events')
+      .delete()
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'jobber');
+    if (mirrorDeleteError) {
+      console.error('[integrations-disconnect] jobber calendar_events purge failed (non-fatal):', mirrorDeleteError.message);
+    }
+  }
+
   revalidateTag(`integration-status-${tenantId}`);
   revalidateTag(`${provider}-context-${tenantId}`);
 

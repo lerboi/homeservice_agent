@@ -48,6 +48,14 @@ export async function PATCH(request, { params }) {
 
         if (!creds) return;
 
+        const isAllDay = !!data.is_all_day;
+        // Extract date string (YYYY-MM-DD) for all-day events
+        const blockDate = data.start_time.slice(0, 10);
+        // Next day for all-day end (Google/Outlook all-day = exclusive end date)
+        const nextDay = new Date(blockDate + 'T00:00:00');
+        nextDay.setDate(nextDay.getDate() + 1);
+        const endDateStr = `${nextDay.getFullYear()}-${String(nextDay.getMonth() + 1).padStart(2, '0')}-${String(nextDay.getDate()).padStart(2, '0')}`;
+
         if (creds.provider === 'google') {
           const { createOAuth2Client } = await import('@/lib/scheduling/google-calendar.js');
           const { google } = await import('googleapis');
@@ -63,8 +71,9 @@ export async function PATCH(request, { params }) {
             eventId: data.external_event_id,
             requestBody: {
               summary: `${data.title} — Blocked`,
-              start: { dateTime: data.start_time, timeZone: 'UTC' },
-              end: { dateTime: data.end_time, timeZone: 'UTC' },
+              // Google forbids mixing `date` with `dateTime`; always send both together
+              start: isAllDay ? { date: blockDate } : { dateTime: data.start_time, timeZone: 'UTC' },
+              end: isAllDay ? { date: endDateStr } : { dateTime: data.end_time, timeZone: 'UTC' },
               location: data.note || '',
             },
           });
@@ -80,8 +89,11 @@ export async function PATCH(request, { params }) {
             headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               subject: `${data.title} — Blocked`,
-              start: { dateTime: data.start_time, timeZone: 'UTC' },
-              end: { dateTime: data.end_time, timeZone: 'UTC' },
+              // Set explicitly so an all-day <-> timed toggle flips correctly.
+              // Graph all-day uses isAllDay:true + midnight dateTime, NOT a bare date field.
+              isAllDay: isAllDay,
+              start: isAllDay ? { dateTime: `${blockDate}T00:00:00`, timeZone: 'UTC' } : { dateTime: data.start_time, timeZone: 'UTC' },
+              end: isAllDay ? { dateTime: `${endDateStr}T00:00:00`, timeZone: 'UTC' } : { dateTime: data.end_time, timeZone: 'UTC' },
             }),
           });
         }

@@ -26,6 +26,10 @@ import { refreshTokenIfNeeded } from '@/lib/integrations/adapter';
 // again 10 min later with ~5 min spare.
 const LOOKAHEAD_MS = 15 * 60 * 1000;
 
+// Process credential rows in bounded-concurrency batches so a large fleet
+// refreshes within the cron window without flooding provider rate limits.
+const CONCURRENCY = 5;
+
 export async function GET(request) {
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
@@ -43,21 +47,23 @@ export async function GET(request) {
     .from('accounting_credentials')
     .select('*')
     .is('error_state', null)
-    .lt('expiry_date', Date.now() + LOOKAHEAD_MS);
+    .lt('expiry_date', Date.now() + LOOKAHEAD_MS)
+    .order('expiry_date', { ascending: true })
+    .limit(500);
 
   if (error) {
     console.error('[cron-refresh-integration-tokens] credential query failed:', error.message);
     return Response.json({ error: 'query failed' }, { status: 500 });
   }
 
-  const results = [];
-  for (const cred of creds ?? []) {
+  // Per-row body with try/catch isolation so one failing row never rejects
+  // the batch — fatal failures already flagged error_state + notified inside
+  // refreshTokenIfNeeded; transient ones retry next run.
+  async function perCred(cred) {
     try {
       await refreshTokenIfNeeded(admin, cred, { bufferMs: LOOKAHEAD_MS });
-      results.push({ tenant_id: cred.tenant_id, provider: cred.provider, status: 'refreshed' });
+      return { tenant_id: cred.tenant_id, provider: cred.provider, status: 'refreshed' };
     } catch (err) {
-      // Per-row isolation — fatal failures already flagged error_state +
-      // notified inside refreshTokenIfNeeded; transient ones retry next run.
       console.error(JSON.stringify({
         scope: 'cron-refresh-integration-tokens',
         tenant_id: cred.tenant_id,
@@ -65,9 +71,17 @@ export async function GET(request) {
         status: 'error',
         message: err?.message,
       }));
-      results.push({ tenant_id: cred.tenant_id, provider: cred.provider, status: 'error' });
+      return { tenant_id: cred.tenant_id, provider: cred.provider, status: 'error' };
     }
   }
 
-  return Response.json({ checked: creds?.length ?? 0, results });
+  const rows = creds ?? [];
+  const results = [];
+  for (let i = 0; i < rows.length; i += CONCURRENCY) {
+    const chunk = rows.slice(i, i + CONCURRENCY);
+    const chunkResults = await Promise.all(chunk.map(perCred));
+    results.push(...chunkResults);
+  }
+
+  return Response.json({ checked: rows.length, results });
 }
