@@ -346,7 +346,7 @@ export async function POST(request) {
  * Handle checkout.session.completed — marks onboarding complete and creates
  * the initial subscription row by delegating to handleSubscriptionEvent.
  */
-async function handleCheckoutCompleted(session, eventCreated) {
+export async function handleCheckoutCompleted(session, eventCreated) {
   const tenantId = session.metadata?.tenant_id;
   if (!tenantId) {
     console.warn('[stripe/webhook] checkout.session.completed missing tenant_id in metadata');
@@ -576,7 +576,7 @@ async function handleCheckoutCompleted(session, eventCreated) {
  * Core subscription sync — handles created/updated/deleted/paused/resumed events.
  * Implements out-of-order protection (D-10) and history table pattern (D-13).
  */
-async function handleSubscriptionEvent(subscription, eventCreated) {
+export async function handleSubscriptionEvent(subscription, eventCreated) {
   let tenantId = subscription.metadata?.tenant_id;
   if (!tenantId) {
     // Dashboard-created (or otherwise metadata-less) subscriptions: resolve the
@@ -755,7 +755,7 @@ async function handleSubscriptionEvent(subscription, eventCreated) {
  * Handle invoice.paid — reset calls_used on billing cycle renewal.
  * Only processes subscription_cycle invoices (not the first invoice).
  */
-async function handleInvoicePaid(invoice) {
+export async function handleInvoicePaid(invoice) {
   if (invoice.billing_reason !== 'subscription_cycle') {
     return;
   }
@@ -799,7 +799,7 @@ async function handleInvoicePaid(invoice) {
  * Idempotency via billing_notifications table (D-07).
  * Notification failures are logged but never thrown (Pitfall 3 in RESEARCH.md).
  */
-async function handleTrialWillEnd(subscription) {
+export async function handleTrialWillEnd(subscription) {
   try {
     const tenantId = subscription.metadata?.tenant_id;
     if (!tenantId) {
@@ -890,7 +890,7 @@ async function handleTrialWillEnd(subscription) {
  * Phase 24: BILLNOTIF-01
  * Uses Promise.allSettled — notification failures never crash the handler (Pitfall 3).
  */
-async function handleInvoicePaymentFailed(invoice) {
+export async function handleInvoicePaymentFailed(invoice) {
   try {
     // Basil (2025-03-31.basil): invoice.subscription moved to
     // invoice.parent.subscription_details.subscription.

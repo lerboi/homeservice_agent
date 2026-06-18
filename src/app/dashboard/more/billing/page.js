@@ -18,6 +18,15 @@ import { ErrorState } from '@/components/ui/error-state';
 // <ErrorState onRetry /> primitive so every dashboard page renders failures
 // consistently. Retry re-runs the SWR fetchers via mutate().
 
+function formatMoney(amountCents, currency) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: (currency || 'usd').toUpperCase(),
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format((amountCents || 0) / 100);
+}
+
 /**
  * Billing page — /dashboard/more/billing
  *
@@ -271,7 +280,7 @@ export default function BillingPage() {
                         {format(new Date(inv.date * 1000), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell className="text-sm text-foreground font-medium">
-                        ${(inv.amount / 100).toFixed(2)}
+                        {formatMoney(inv.amount, inv.currency)}
                       </TableCell>
                       <TableCell>
                         <Badge className={invoiceBadge}>
