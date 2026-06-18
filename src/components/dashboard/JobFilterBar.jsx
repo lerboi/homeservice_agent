@@ -44,14 +44,30 @@ const PILL_LABELS = {
 export default function JobFilterBar({ filters, onFilterChange, onClear }) {
   const searchTimerRef = useRef(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState(filters.search || '');
 
   function handleSearchChange(e) {
     const value = e.target.value;
+    setSearchInput(value);
     clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       onFilterChange({ search: value });
     }, 300);
   }
+
+  // Clear all: cancel any pending debounced write FIRST so a stale in-flight
+  // search (typed <300ms before clearing) can't fire and re-populate the input.
+  function handleClearAll() {
+    clearTimeout(searchTimerRef.current);
+    setSearchInput('');
+    onClear();
+  }
+
+  // Keep the controlled input in sync when the search filter is reset externally
+  // (Clear all, search-pill X) so cleared text doesn't linger in the DOM.
+  useEffect(() => {
+    setSearchInput(filters.search || '');
+  }, [filters.search]);
 
   useEffect(() => {
     return () => clearTimeout(searchTimerRef.current);
@@ -128,7 +144,7 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
           <Input
             type="text"
             placeholder="Search name or phone..."
-            defaultValue={filters.search}
+            value={searchInput}
             onChange={handleSearchChange}
             className="pl-9 h-9 text-sm border-border bg-muted focus:bg-card"
             aria-label="Search jobs"
@@ -142,7 +158,7 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
           {hasActiveFilters && (
             <button
               type="button"
-              onClick={onClear}
+              onClick={handleClearAll}
               className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium shrink-0"
             >
               Clear all
@@ -184,7 +200,7 @@ export default function JobFilterBar({ filters, onFilterChange, onClear }) {
             <div className="flex items-center justify-between gap-3 px-6 pt-2">
               <button
                 type="button"
-                onClick={() => { onClear(); setSheetOpen(false); }}
+                onClick={() => { handleClearAll(); setSheetOpen(false); }}
                 disabled={!hasActiveFilters}
                 className="text-sm text-[var(--brand-accent)] hover:text-[var(--brand-accent-hover)] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               >

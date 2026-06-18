@@ -31,8 +31,8 @@ import { AlertTriangle } from 'lucide-react';
  * @returns {{ fill: string, tone: string }}
  */
 export function usageThresholdClass(percent) {
-  if (percent >= 100) return { fill: 'bg-red-700', tone: 'text-red-700' };
-  if (percent >= 75) return { fill: 'bg-amber-600', tone: 'text-amber-700' };
+  if (percent >= 100) return { fill: 'bg-red-700 dark:bg-red-500', tone: 'text-red-700 dark:text-red-400' };
+  if (percent >= 75) return { fill: 'bg-amber-600 dark:bg-amber-500', tone: 'text-amber-700 dark:text-amber-300' };
   return { fill: 'bg-[var(--brand-accent)]', tone: 'text-muted-foreground' };
 }
 

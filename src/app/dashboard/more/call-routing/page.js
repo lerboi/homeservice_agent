@@ -890,8 +890,8 @@ export default function CallRoutingPage() {
         <div className="bg-card/95 backdrop-blur-md border-t border-border shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)] px-6 py-3">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-sm text-amber-700 font-medium">Unsaved changes</span>
+              <div className="h-2 w-2 rounded-full bg-amber-400 dark:bg-amber-500 animate-pulse" />
+              <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">Unsaved changes</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={handleDiscard}>

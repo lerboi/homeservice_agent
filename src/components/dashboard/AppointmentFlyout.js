@@ -77,6 +77,21 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   const [showCompletionNotes, setShowCompletionNotes] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
+  const [detail, setDetail] = useState(null);
+
+  // Fetch full detail (jobs join + call recording/transcript) when the flyout opens
+  useEffect(() => {
+    // Clear any prior appointment's detail before (re)fetching so a stale
+    // record never renders if the selected appointment changes while open.
+    setDetail(null);
+    if (!open || !appointment?.id) return;
+    let cancelled = false;
+    fetch(`/api/appointments/${appointment.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d?.appointment) setDetail(d.appointment); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, appointment?.id]);
 
   // Reset mark-complete state when flyout opens/closes
   useEffect(() => {
@@ -88,7 +103,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   }, [open]);
 
   // Resolve recording URL — prefer Supabase Storage (new calls), fall back to recording_url (historical)
-  const call = appointment?.calls;
+  const call = detail?.calls ?? appointment?.calls;
   const [recordingSrc, setRecordingSrc] = useState(null);
   useEffect(() => {
     if (!call) { setRecordingSrc(null); return; }
@@ -108,7 +123,8 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
   // jobs is a reverse-join array (jobs.appointment_id -> appointments.id, 1:1 per D-06).
   // Present only when the appointment payload joins jobs; otherwise undefined and the
   // Create Invoice shortcut stays hidden (non-fatal).
-  const linkedLead = Array.isArray(appointment.jobs) ? appointment.jobs[0] : appointment.jobs;
+  const jobsSrc = detail?.jobs ?? appointment?.jobs;
+  const linkedLead = Array.isArray(jobsSrc) ? jobsSrc[0] : jobsSrc;
 
   async function handleCancel() {
     setCancelling(true);
@@ -246,7 +262,7 @@ export default function AppointmentFlyout({ appointment, conflict, open, onOpenC
                 <span className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span>
-                    Job: <span className="font-medium text-foreground">{linkedLead.caller_name || 'Unnamed'}</span>
+                    Job: <span className="font-medium text-foreground">{linkedLead.customers?.name || linkedLead.caller_name || 'Unnamed'}</span>
                     <span className="text-muted-foreground ml-1.5">· {linkedLead.status}</span>
                   </span>
                 </span>

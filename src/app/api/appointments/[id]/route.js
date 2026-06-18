@@ -21,9 +21,10 @@ export async function GET(request, { params }) {
       service_address, postal_code, street_name,
       caller_name, caller_phone,
       urgency, zone_id, status, booked_via,
-      external_event_id, notes, created_at,
+      external_event_id, notes, created_at, jobber_visit_id,
       service_zones (id, name),
-      calls (id, recording_url, recording_storage_path, transcript_text, created_at, from_number)
+      calls (id, recording_url, recording_storage_path, transcript_text, created_at, from_number),
+      jobs ( id, status, customers ( name ) )
     `)
     .eq('id', id)
     .eq('tenant_id', tenantId)

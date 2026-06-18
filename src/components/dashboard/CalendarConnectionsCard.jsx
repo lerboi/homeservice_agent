@@ -60,12 +60,12 @@ function BusinessAppRow({ app, row }) {
           </Link>
         ) : connected ? (
           <span
-            className="inline-flex items-center gap-1.5 text-sm shrink-0 text-emerald-600"
+            className="inline-flex items-center gap-1.5 text-sm shrink-0 text-emerald-600 dark:text-emerald-400"
             role="status"
             aria-label={`${app.label} up to date`}
             title="Up to date"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block" />
           </span>
         ) : (
           <Link

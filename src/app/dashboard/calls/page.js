@@ -508,6 +508,11 @@ export default function CallLogsPage() {
   const [inquiryStatusFilter, setInquiryStatusFilter] = useState('open');
   const [selectedInquiryId, setSelectedInquiryId] = useState(null);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
+  // Search + date-range filters for the Callbacks view. Applied CLIENT-SIDE so
+  // the Open/Booked/Lost pill counts stay accurate (server-side filtering would
+  // skew them). Empty string / 'all' = no filter.
+  const [inquirySearch, setInquirySearch] = useState('');
+  const [inquiryDateRange, setInquiryDateRange] = useState('all');
 
   // ── View resolution ───────────────────────────────────────────────────────
   // 'callbacks' | 'all' — resolved synchronously from the URL (legacy
@@ -754,10 +759,41 @@ export default function CallLogsPage() {
 
   const openCallbacksCount = inquiryStatusCounts.open;
 
-  const displayedInquiries = useMemo(
-    () => (inquiryStatusFilter ? inquiries.filter((inq) => inq.status === inquiryStatusFilter) : inquiries),
-    [inquiries, inquiryStatusFilter]
-  );
+  const displayedInquiries = useMemo(() => {
+    // Date-range cutoff — computed exactly the way fetchCalls does for the
+    // classic view (YYYY-MM-DD boundary), kept client-side so pill counts stay
+    // accurate. Rows with created_at >= cutoff are kept.
+    let dateFrom;
+    if (inquiryDateRange && inquiryDateRange !== 'all') {
+      const now = new Date();
+      if (inquiryDateRange === 'today') {
+        dateFrom = now.toISOString().split('T')[0];
+      } else if (inquiryDateRange === '7d') {
+        const d = new Date(now); d.setDate(d.getDate() - 7);
+        dateFrom = d.toISOString().split('T')[0];
+      } else if (inquiryDateRange === '30d') {
+        const d = new Date(now); d.setDate(d.getDate() - 30);
+        dateFrom = d.toISOString().split('T')[0];
+      }
+    }
+    const cutoff = dateFrom ? new Date(dateFrom) : null;
+    const search = inquirySearch.trim().toLowerCase();
+
+    return inquiries.filter((inq) => {
+      if (inquiryStatusFilter && inq.status !== inquiryStatusFilter) return false;
+      if (cutoff && (!inq.created_at || new Date(inq.created_at) < cutoff)) return false;
+      if (search) {
+        const name = (inq.customer?.name || inq.caller_name || '').toLowerCase();
+        const phone = (inq.customer?.phone_e164 || inq.from_number || '').toLowerCase();
+        if (!name.includes(search) && !phone.includes(search)) return false;
+      }
+      return true;
+    });
+  }, [inquiries, inquiryStatusFilter, inquirySearch, inquiryDateRange]);
+
+  // Active search / date filter on the Callbacks view — drives the filtered
+  // empty-state variant (distinct from the "all caught up" zero-queue state).
+  const hasInquiryFilters = inquirySearch.trim() !== '' || (inquiryDateRange && inquiryDateRange !== 'all');
 
   // ── View + inquiry handlers ─────────────────────────────────────────────
 
@@ -816,7 +852,21 @@ export default function CallLogsPage() {
       </div>
     );
   } else if (displayedInquiries.length === 0) {
-    callbacksContent =
+    callbacksContent = hasInquiryFilters ? (
+      // Filtered to empty — mirror the classic CallsEmptyState filtered variant.
+      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+        <Phone className="h-10 w-10 text-muted-foreground/50 mb-4" aria-hidden="true" />
+        <h2 className="text-base font-semibold text-foreground mb-2">No callbacks match your filters</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm">Try adjusting your search or removing some filters to see more results.</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => { setInquirySearch(''); setInquiryDateRange('all'); }}
+        >
+          Clear all filters
+        </Button>
+      </div>
+    ) :
       !inquiryStatusFilter || inquiryStatusFilter === 'open' ? (
         // "All caught up" — stays for when the queue is empty but the user
         // navigates here explicitly. Same visual structure as the shared
@@ -879,6 +929,38 @@ export default function CallLogsPage() {
           </div>
 
           <div className={`${card.base} p-0`} data-view="callbacks">
+            {/* Search + date-range — applied client-side so pill counts stay accurate */}
+            <div className="flex items-center gap-2 px-4 pt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or phone..."
+                  value={inquirySearch}
+                  onChange={(e) => setInquirySearch(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+                {inquirySearch && (
+                  <button
+                    onClick={() => setInquirySearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-muted-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <Select value={inquiryDateRange} onValueChange={setInquiryDateRange}>
+                <SelectTrigger className="w-[130px] h-9 text-xs shrink-0">
+                  <SelectValue placeholder="Time range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="pt-3">
               <InquiryStatusPills
                 counts={inquiryStatusCounts}

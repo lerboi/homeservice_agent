@@ -122,21 +122,54 @@ export default function DashboardHomePage() {
     }
   }, []);
 
+  // ─── AI receptionist status (LOW-23) — derived from real provisioning + billing ─
+  const { data: account, error: accountError } = useSWRFetch('/api/account');
+  const { data: billing, error: billingError } = useSWRFetch('/api/billing/data');
+
+  const subStatus = billing?.subscription?.status;
+  // past_due stays "active" — calls are still answered during the 3-day grace.
+  const billingHealthy =
+    subStatus === 'active' || subStatus === 'trialing' || subStatus === 'past_due';
+  const hasNumber = !!account?.phone_number && account?.provisioning_failed !== true;
+  const aiActive = hasNumber && billingHealthy;
+  // A fetch error is a RESOLVED (non-loading) state — otherwise data stays
+  // undefined and the dot would hang on "Checking status…" forever.
+  const statusError = !!accountError || !!billingError;
+  const statusLoading =
+    !statusError && (account === undefined || billing === undefined);
+
+  // Status descriptor — render the neutral/loading dot while data is undefined
+  // (avoid defaulting to green flicker). Text conveys state; dot is decorative.
+  let aiStatus;
+  if (statusLoading) {
+    aiStatus = { label: 'Checking status…', ping: false, dotClass: 'bg-muted-foreground/50' };
+  } else if (statusError) {
+    aiStatus = { label: 'Status unavailable', ping: false, dotClass: 'bg-muted-foreground/50' };
+  } else if (aiActive) {
+    aiStatus = { label: 'AI Receptionist is active', ping: true, dotClass: 'bg-green-500' };
+  } else if (!hasNumber) {
+    aiStatus = { label: 'AI number not assigned yet', ping: false, dotClass: 'bg-amber-500' };
+  } else {
+    aiStatus = { label: 'AI Receptionist is paused', ping: false, dotClass: 'bg-red-500' };
+  }
+
   return (
     <div className="space-y-6 lg:space-y-8" data-tour="home-page">
       {/* Greeting + AI status indicator */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            {aiStatus.ping && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            )}
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${aiStatus.dotClass}`} />
           </span>
           <div>
             <h1 className="font-semibold text-2xl text-foreground leading-tight">
               {getGreeting()}
             </h1>
             <p className="font-normal text-sm text-muted-foreground leading-normal">
-              AI Receptionist is active
+              {aiStatus.label}
             </p>
           </div>
         </div>
