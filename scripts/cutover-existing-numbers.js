@@ -3,15 +3,22 @@
  * Phase 40: Cutover existing tenant Twilio numbers to webhook routing.
  *
  * Reads all tenants with phone_number IS NOT NULL from Supabase,
- * looks up each number's SID from Twilio, and sets voice_url,
- * voice_fallback_url, and sms_url to the Railway webhook.
+ * looks up each number's SID from Twilio, sets voice_url,
+ * voice_fallback_url, and sms_url to the Railway webhook, AND removes the
+ * number from the Elastic SIP trunk.
  *
- * SIP trunk associations are NOT removed (D-21 rollback safety net).
- * Idempotent: running twice sets the same URLs.
+ * Why disassociate the trunk: a number associated with a SIP trunk IGNORES its
+ * voice_url (the trunk's origination URI wins). Leaving the trunk on (the
+ * original "D-21 rollback safety net") meant webhook routing never took effect.
+ * Rollback is now: re-add the number to the trunk (Twilio console or the
+ * provisioning fail-safe), which immediately resumes AI-direct routing.
+ * Idempotent: running twice sets the same URLs; the trunk removal 404s once
+ * the number is already off the trunk.
  *
  * Required env vars:
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
- *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, RAILWAY_WEBHOOK_URL
+ *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, RAILWAY_WEBHOOK_URL,
+ *   TWILIO_SIP_TRUNK_SID
  *
  * Usage: node scripts/cutover-existing-numbers.js [--dry-run]
  */
@@ -33,6 +40,14 @@ const client = twilio(
 const base = process.env.RAILWAY_WEBHOOK_URL;
 if (!base) {
   console.error('RAILWAY_WEBHOOK_URL is required');
+  process.exit(1);
+}
+
+// Required to disassociate numbers from the trunk — without it the cutover is
+// unsound (trunk_sid wins over voice_url, so webhook routing never activates).
+const trunkSid = process.env.TWILIO_SIP_TRUNK_SID;
+if (!trunkSid) {
+  console.error('TWILIO_SIP_TRUNK_SID is required (numbers must be removed from the trunk for voice_url routing to take effect)');
   process.exit(1);
 }
 
@@ -74,18 +89,31 @@ async function main() {
       }
 
       if (dryRun) {
-        console.log(`DRY RUN: Would update ${tenant.phone_number} (SID: ${numbers[0].sid})`);
+        console.log(`DRY RUN: Would set webhook URLs on + remove from trunk ${tenant.phone_number} (SID: ${numbers[0].sid})`);
         updated++;
         continue;
       }
 
+      // Set the webhook URLs first so the number stays routable the instant it
+      // leaves the trunk (no unrouted window).
       await client.incomingPhoneNumbers(numbers[0].sid).update({
         voiceUrl,
+        voiceMethod: 'POST',
         voiceFallbackUrl,
+        voiceFallbackMethod: 'POST',
         smsUrl,
+        smsMethod: 'POST',
       });
 
-      console.log(`UPDATED: ${tenant.phone_number} (SID: ${numbers[0].sid})`);
+      // Disassociate from the trunk so voice_url actually takes precedence.
+      // Idempotent: a number already off the trunk returns 404, which we ignore.
+      try {
+        await client.trunking.v1.trunks(trunkSid).phoneNumbers(numbers[0].sid).remove();
+      } catch (trunkErr) {
+        if (trunkErr?.status !== 404) throw trunkErr;
+      }
+
+      console.log(`UPDATED: ${tenant.phone_number} (SID: ${numbers[0].sid}) — webhook URLs set, removed from trunk`);
       updated++;
     } catch (err) {
       console.error(`FAILED: ${tenant.phone_number} (tenant ${tenant.id}):`, err.message);

@@ -394,10 +394,12 @@ Phone number provisioning happens **after checkout success** (D-10) — never du
 | Country | Source | Method | When |
 |---------|--------|--------|------|
 | SG | `phone_inventory` table | `assign_sg_number` RPC (atomic, race-safe) | `checkout.session.completed` webhook |
-| US | Twilio API | `twilio.incomingPhoneNumbers.create({ countryCode: 'US' })` then associate with SIP trunk | `checkout.session.completed` webhook |
-| CA | Twilio API | `twilio.incomingPhoneNumbers.create({ countryCode: 'CA' })` then associate with SIP trunk | `checkout.session.completed` webhook |
+| US | Twilio API | `twilio.incomingPhoneNumbers.create({ countryCode: 'US' })` then `configureNumberRouting` | `checkout.session.completed` webhook |
+| CA | Twilio API | `twilio.incomingPhoneNumbers.create({ countryCode: 'CA' })` then `configureNumberRouting` | `checkout.session.completed` webhook |
 
-**Why Twilio-direct for US/CA:** Purchasing via Twilio API gives us ownership of the number, enabling SMS access from tenant numbers. After purchasing, the number is associated with the Elastic SIP trunk (`TWILIO_SIP_TRUNK_SID`) so calls route to LiveKit.
+**Why Twilio-direct for US/CA:** Purchasing via Twilio API gives us ownership of the number, enabling SMS access from tenant numbers.
+
+**Routing — `configureNumberRouting(client, phoneNumber, numberSid)` (R2 fix):** Both SG and US/CA numbers go through this helper after provisioning. When `RAILWAY_WEBHOOK_URL` is set it points the number's `voiceUrl`/`voiceFallbackUrl`/`smsUrl` at the FastAPI webhook (`/twilio/incoming-call` etc.) **and removes the number from the Elastic SIP trunk** — so owner-pickup, VIP routing, the working-hours schedule, and the outbound-minute cap (all implemented only in the livekit webhook) run for the new tenant. **Twilio precedence:** a number on a SIP trunk *ignores* its `voiceUrl` (the trunk wins), so the trunk association MUST be removed for webhook routing to take effect — the prior "associate with the SIP trunk so calls route to LiveKit" behavior (trunk-only, no voice URLs) was the R2 regression that left the whole routing layer dead for new tenants. **Fail-safe:** if `RAILWAY_WEBHOOK_URL` is unset, the helper falls back to the legacy trunk-only association (AI answers directly via the trunk's LiveKit origination) rather than setting a broken `voiceUrl`. Idempotent: re-sets the same URLs and 404-tolerates the trunk removal on Stripe retries. (Existing pre-fix numbers are migrated by `scripts/cutover-existing-numbers.js`, which now also disassociates the trunk.)
 
 ### Webhook Handler Flow (`src/app/api/stripe/webhook/route.js`)
 
@@ -436,7 +438,8 @@ Phone number provisioning happens **after checkout success** (D-10) — never du
 | `LIVEKIT_API_KEY` | LiveKit API auth for test call |
 | `LIVEKIT_API_SECRET` | LiveKit API auth for test call |
 | `LIVEKIT_SIP_OUTBOUND_TRUNK_ID` | LiveKit outbound SIP trunk for test calls |
-| `TWILIO_SIP_TRUNK_SID` | Elastic SIP trunk for number association |
+| `TWILIO_SIP_TRUNK_SID` | Elastic SIP trunk — numbers are removed FROM it for webhook routing; legacy/fallback association when `RAILWAY_WEBHOOK_URL` is unset |
+| `RAILWAY_WEBHOOK_URL` | Base URL of the livekit FastAPI webhook — when set, new numbers route to `<url>/twilio/incoming-call` (+ off the trunk); when unset, trunk-only fallback. MUST be set in Vercel prod for the routing layer to run for new tenants |
 
 ---
 
@@ -581,7 +584,7 @@ Populated during Step 1 (profile) and optionally modified in Step 2 (services). 
 
 - **Phone provisioning deferred to post-checkout (D-10)**: Numbers are NOT provisioned during wizard steps. This prevents wasting inventory or incurring Twilio API costs on abandoned signups. `tenant.country` must be saved by the sms-confirm route before checkout so the webhook can read it.
 
-- **US/CA provisioned via Twilio API + SIP trunk association**: Twilio-direct purchase gives ownership of the number, enabling SMS access. After purchase, the number is associated with the Elastic SIP trunk (`TWILIO_SIP_TRUNK_SID`) so inbound calls route to LiveKit.
+- **US/CA provisioned via Twilio API, then routed via `configureNumberRouting`**: Twilio-direct purchase gives ownership of the number, enabling SMS access. After purchase, the number is routed to the FastAPI webhook (`voiceUrl`/`voiceFallbackUrl`/`smsUrl` set + removed from the SIP trunk) when `RAILWAY_WEBHOOK_URL` is set, else trunk-only AI-direct fallback. A trunk-associated number ignores its `voiceUrl` (trunk wins), so the trunk MUST be disassociated for webhook routing — this is the R2 fix; the prior trunk-only provisioning left owner-pickup/VIP/schedule/cap dead for new tenants.
 
 - **SG race protection via SECURITY DEFINER RPC**: The `assign_sg_number(p_tenant_id)` function uses `SELECT ... FOR UPDATE SKIP LOCKED` inside an UPDATE subquery. Concurrent checkout webhooks for SG tenants cannot double-assign the same number. Returns empty set if no numbers available.
 

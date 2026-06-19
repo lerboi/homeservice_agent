@@ -171,8 +171,8 @@ Twilio voice_url → Railway webhook POST /twilio/incoming-call  (Phase 40)
 
 | File | Role |
 |------|------|
-| `src/app/api/stripe/webhook/route.js` | Phone provisioning (Twilio purchase) + SIP trunk + webhook URL config |
-| `scripts/cutover-existing-numbers.js` | One-time migration of existing tenant numbers to webhook routing |
+| `src/app/api/stripe/webhook/route.js` | Phone provisioning (Twilio purchase / SG inventory) + `configureNumberRouting` (set webhook voice/SMS URLs + remove from SIP trunk; trunk-only fallback when `RAILWAY_WEBHOOK_URL` unset) |
+| `scripts/cutover-existing-numbers.js` | One-time migration of existing tenant numbers to webhook routing (sets URLs + disassociates the trunk) |
 | `src/app/api/onboarding/test-call/route.js` | LiveKit SIP outbound test call trigger |
 | `src/lib/subscription-gate.js` | JS reference gate — live enforcement moved to the agent repo's shared `src/lib/subscription_gate.py` (2026-06-12), which also blocks past_due after the 3-day grace |
 | `src/app/api/cron/send-recovery-sms/route.js` | Recovery SMS cron |
@@ -378,7 +378,10 @@ Three JSON files in `livekit-agent/`:
   `roomPrefix: "call-"` and `agentName: "voco-voice-agent"`.
 
 Each inbound call creates a unique room. Twilio `voice_url` is the
-primary routing lever since Phase 40; SIP trunk preserved as rollback.
+primary routing lever since Phase 40 — but a number associated with a SIP
+trunk *ignores* its `voice_url` (the trunk wins), so webhook-routed numbers are
+**removed from the trunk** (provisioning + `cutover-existing-numbers.js` both
+disassociate it; R2 fix). Rollback = re-add the number to the trunk.
 
 ---
 
@@ -1754,8 +1757,14 @@ queries and deployment handoff.
 - **Meter failures go to a durable outbox** — `stripe_meter_failures` upsert
   on `call_id` (migration 071, main repo) + retry cron; the meter post itself
   is capped at 3s so Stripe latency can't starve the post-call envelope.
-- **Webhook routing replaces SIP-only routing (Phase 40)** — `voice_url`
-  takes priority; SIP trunk preserved as rollback.
+- **Webhook routing replaces SIP-only routing (Phase 40)** — numbers route
+  via `voice_url` → `/twilio/incoming-call`. A trunk-associated number IGNORES
+  its `voice_url` (the trunk's origination wins), so webhook-routed numbers are
+  **removed from the SIP trunk**; provisioning (`configureNumberRouting`) and
+  `cutover-existing-numbers.js` both set the URLs AND disassociate the trunk
+  when `RAILWAY_WEBHOOK_URL` is set, falling back to trunk-only AI-direct when
+  it isn't (R2 fix — trunk-only provisioning had left the routing layer dead
+  for new tenants). Rollback = re-associate the number with the trunk.
 - **Fail-open at every webhook stage** — blocked tenants, unknown
   numbers, subscription errors, schedule evaluation errors, cap errors
   → AI. (Blocked tenants get the AI route — never paid owner-pickup

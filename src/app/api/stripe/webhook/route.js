@@ -57,9 +57,106 @@ function getResendClient() {
 }
 
 /**
+ * Route a freshly provisioned Twilio number to the AI receptionist.
+ *
+ * Design A (R2 fix): route inbound through the FastAPI webhook
+ * (`RAILWAY_WEBHOOK_URL` + `/twilio/incoming-call`) so owner-pickup, VIP
+ * routing, the working-hours schedule, and the outbound-minute cap — all
+ * implemented ONLY in the livekit FastAPI webhook (`twilio_routes.py`) — run
+ * for every newly provisioned tenant.
+ *
+ * Twilio precedence: a number associated with a SIP trunk IGNORES its
+ * `voiceUrl` (the trunk's origination URI wins). So webhook routing requires
+ * BOTH setting the voice/SMS URLs AND ensuring the number is NOT on the trunk.
+ *
+ * Fail-safe: with `RAILWAY_WEBHOOK_URL` unset we must NOT point a number at a
+ * broken `voiceUrl` — fall back to the legacy trunk-only association (the AI
+ * answers directly via the trunk's LiveKit origination; no owner-pickup / VIP /
+ * schedule). This preserves the pre-fix behavior.
+ *
+ * Idempotent: Stripe retries reuse the same number — re-setting the URLs and
+ * re-attempting the trunk removal (404 once already removed) are both no-ops.
+ */
+async function configureNumberRouting(client, phoneNumber, numberSid) {
+  // SG inventory numbers arrive without a SID in hand — look it up by E.164.
+  if (!numberSid) {
+    const numbers = await client.incomingPhoneNumbers.list({ phoneNumber, limit: 1 });
+    if (numbers.length === 0) {
+      console.error(`[stripe/webhook] Cannot configure routing — Twilio has no record of ${phoneNumber}`);
+      return;
+    }
+    numberSid = numbers[0].sid;
+  }
+
+  const webhookBase = process.env.RAILWAY_WEBHOOK_URL;
+  const trunkSid = process.env.TWILIO_SIP_TRUNK_SID;
+
+  // Fail-safe: no webhook configured → legacy trunk-only routing.
+  if (!webhookBase) {
+    await associateWithTrunk(client, trunkSid, numberSid, phoneNumber, 'RAILWAY_WEBHOOK_URL unset — legacy trunk routing');
+    return;
+  }
+
+  // Set the webhook URLs FIRST so the number stays routable the instant it
+  // leaves the trunk (no unrouted window).
+  try {
+    await client.incomingPhoneNumbers(numberSid).update({
+      voiceUrl: `${webhookBase}/twilio/incoming-call`,
+      voiceMethod: 'POST',
+      voiceFallbackUrl: `${webhookBase}/twilio/dial-fallback`,
+      voiceFallbackMethod: 'POST',
+      smsUrl: `${webhookBase}/twilio/incoming-sms`,
+      smsMethod: 'POST',
+    });
+    console.log(`[stripe/webhook] Routed ${phoneNumber} to FastAPI webhook (${webhookBase})`);
+  } catch (urlErr) {
+    // Couldn't set the URLs — keep the number answerable by falling back to the
+    // trunk (AI-direct) rather than leaving a fresh number unrouted.
+    console.error(`[stripe/webhook] Failed to set webhook URLs on ${phoneNumber} — falling back to trunk:`, urlErr?.message);
+    await associateWithTrunk(client, trunkSid, numberSid, phoneNumber, 'webhook URL set failed — trunk fallback');
+    return;
+  }
+
+  // Disassociate from the trunk: trunk_sid wins over voiceUrl, so leaving it
+  // would nullify the routing change. Idempotent — a number never on the trunk
+  // (freshly purchased US/CA) returns 404, which is already the desired state.
+  if (trunkSid) {
+    try {
+      await client.trunking.v1.trunks(trunkSid).phoneNumbers(numberSid).remove();
+      console.log(`[stripe/webhook] Disassociated ${phoneNumber} from SIP trunk`);
+    } catch (trunkErr) {
+      if (trunkErr?.status !== 404) {
+        // Trunk still wins → webhook routing won't take effect. Loud but
+        // non-fatal: the number still answers (AI-direct via the trunk).
+        console.error(`[stripe/webhook] Trunk disassociation failed for ${phoneNumber} (webhook routing inactive until removed):`, trunkErr?.message);
+      }
+    }
+  }
+}
+
+/**
+ * Associate a number with the Elastic SIP trunk — the legacy AI-direct routing
+ * path, used only as the `RAILWAY_WEBHOOK_URL`-unset / URL-set-failed fallback.
+ */
+async function associateWithTrunk(client, trunkSid, numberSid, phoneNumber, reason) {
+  if (!trunkSid) {
+    console.warn(`[stripe/webhook] ${phoneNumber} has no routing configured (no RAILWAY_WEBHOOK_URL, no TWILIO_SIP_TRUNK_SID) — ${reason}`);
+    return;
+  }
+  try {
+    await client.trunking.v1.trunks(trunkSid).phoneNumbers.create({ phoneNumberSid: numberSid });
+    console.log(`[stripe/webhook] Associated ${phoneNumber} with SIP trunk (${reason})`);
+  } catch (trunkErr) {
+    console.error(`[stripe/webhook] SIP trunk association failed for ${phoneNumber} (${reason}):`, trunkErr?.message);
+  }
+}
+
+/**
  * Provision a phone number based on tenant's country.
  * SG: Assign from phone_inventory via atomic RPC.
- * US/CA: Purchase via Twilio API. Number routes via Twilio Elastic SIP trunk to LiveKit.
+ * US/CA: Purchase via Twilio API.
+ * Both then route to the AI receptionist via `configureNumberRouting`
+ * (FastAPI webhook when `RAILWAY_WEBHOOK_URL` is set, else legacy SIP trunk).
  *
  * Returns the provisioned phone number string, or null on failure.
  */
@@ -100,27 +197,14 @@ async function provisionPhoneNumber(tenantId, country) {
 
       const phoneNumber = data[0].phone_number;
 
-      // Associate SG number with the Elastic SIP trunk so calls route to LiveKit
-      if (process.env.TWILIO_SIP_TRUNK_SID) {
-        try {
-          const client = getTwilioClient();
-          // Look up the number's SID from Twilio by phone number
-          const numbers = await client.incomingPhoneNumbers.list({ phoneNumber, limit: 1 });
-          if (numbers.length > 0) {
-            await client.trunking.v1
-              .trunks(process.env.TWILIO_SIP_TRUNK_SID)
-              .phoneNumbers.create({ phoneNumberSid: numbers[0].sid });
-            console.log(`[stripe/webhook] Associated SG ${phoneNumber} with SIP trunk`);
-          }
-        } catch (trunkErr) {
-          console.error(`[stripe/webhook] SIP trunk association failed for SG ${phoneNumber}:`, trunkErr);
-        }
-      }
+      // Route the number to the AI receptionist. SG inventory numbers come
+      // without a SID in hand — configureNumberRouting looks it up.
+      await configureNumberRouting(getTwilioClient(), phoneNumber, null);
 
       return phoneNumber;
     } else if (country === 'US' || country === 'CA') {
-      // Purchase number via Twilio API
-      // Number routes via Twilio Elastic SIP trunk to LiveKit (no Retell import needed)
+      // Purchase number via Twilio API, then route it via configureNumberRouting
+      // (FastAPI webhook + trunk disassociation, or trunk-only fallback).
       const client = getTwilioClient();
 
       // Idempotency: a webhook re-run after a crash-after-purchase-before-
@@ -153,18 +237,9 @@ async function provisionPhoneNumber(tenantId, country) {
         console.log(`[stripe/webhook] Purchased Twilio number ${phoneNumber} (${country}) for tenant ${tenantId}`);
       }
 
-      // Associate number with the Elastic SIP trunk so calls route to LiveKit
-      if (process.env.TWILIO_SIP_TRUNK_SID) {
-        try {
-          await client.trunking.v1
-            .trunks(process.env.TWILIO_SIP_TRUNK_SID)
-            .phoneNumbers.create({ phoneNumberSid: numberSid });
-          console.log(`[stripe/webhook] Associated ${phoneNumber} with SIP trunk`);
-        } catch (trunkErr) {
-          // Non-fatal: number is purchased, trunk association can be done manually
-          console.error(`[stripe/webhook] SIP trunk association failed for ${phoneNumber}:`, trunkErr);
-        }
-      }
+      // Route the number to the AI receptionist (webhook routing when
+      // RAILWAY_WEBHOOK_URL is set, else legacy trunk association).
+      await configureNumberRouting(client, phoneNumber, numberSid);
 
       return phoneNumber;
     } else {

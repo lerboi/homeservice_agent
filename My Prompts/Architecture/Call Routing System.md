@@ -100,15 +100,13 @@ Not a URL on the number itself — it's the `action` URL inside the `<Dial>` Twi
 
 ---
 
-## SIP Trunk = Rollback Safety Net
+## SIP Trunk = Rollback Path
 
-The old SIP trunk associations are **still on every number**. Twilio prioritizes `voice_url` over SIP trunk when both are set. If anything goes wrong with the webhook:
+**Twilio precedence (important):** a number associated with a SIP trunk **ignores its `voice_url`** — the trunk's origination URI wins. So webhook routing only takes effect when the number is **removed from the trunk**. (The earlier belief that "`voice_url` takes priority over the SIP trunk" was backwards and was the root cause of new numbers silently bypassing the webhook — R2.)
 
-1. Clear `voice_url` on the Twilio number
-2. SIP trunk routing resumes immediately
-3. Every call goes straight to AI again (pre-Phase 40 behavior)
-
-No code changes needed — just a Twilio console toggle.
+Consequently:
+- **Provisioning** (`src/app/api/stripe/webhook/route.js`) and the **cutover script** both set the `voice_url`/`voice_fallback_url`/`sms_url` **and disassociate the number from the trunk**. When `RAILWAY_WEBHOOK_URL` is unset they fall back to the legacy trunk-only association (AI-direct).
+- **Rollback** (if anything goes wrong with the webhook): re-add the number to the SIP trunk — `client.trunking.v1.trunks(TWILIO_SIP_TRUNK_SID).phoneNumbers.create({ phoneNumberSid })` (or the Twilio console). The trunk immediately reclaims routing and every call goes straight to AI again (pre-Phase 40 behavior). Clearing `voice_url` alone is **not** sufficient while no trunk is attached — the number would be unrouted.
 
 ---
 
