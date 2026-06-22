@@ -14,10 +14,7 @@ export const PRICING_TIERS = [
       'Urgency triage & emergency SMS alerts',
       'Books appointments on the spot',
       'Google & Outlook Calendar sync',
-      'Lead capture, CRM & analytics',
-      'Invoicing & estimate management',
-      'Recovery SMS for missed callers',
-      'Multi-language support',
+      'Lead capture & CRM',
     ],
   },
   {
@@ -32,7 +29,7 @@ export const PRICING_TIERS = [
     badge: 'Most Popular',
     inheritsFrom: 'Starter',
     features: [
-      '3× the call volume — 120 calls/mo',
+      '3× the call volume',
       'Lower overage rate ($2.08/call)',
       'Priority email support',
     ],
@@ -48,7 +45,7 @@ export const PRICING_TIERS = [
     highlighted: false,
     inheritsFrom: 'Growth',
     features: [
-      '10× the call volume — 400 calls/mo',
+      '10× the call volume',
       'Lowest overage rate ($1.50/call)',
       'Priority support + onboarding call',
     ],

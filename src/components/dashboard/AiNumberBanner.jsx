@@ -84,7 +84,7 @@ export default function AiNumberBanner() {
     >
       <span
         aria-hidden="true"
-        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]"
+        className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-teal)]/10 text-[var(--accent-teal)]"
       >
         <Phone className="size-5" />
       </span>

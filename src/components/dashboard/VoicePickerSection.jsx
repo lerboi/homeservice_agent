@@ -154,7 +154,7 @@ export default function VoicePickerSection({ initialVoice, loading }) {
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted"
                   >
                     {isPlaying ? (
-                      <Pause size={14} className="text-[var(--brand-accent)]" />
+                      <Pause size={14} className="text-[var(--accent-teal)]" />
                     ) : (
                       <Play size={14} className="text-muted-foreground" />
                     )}

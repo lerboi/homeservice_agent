@@ -14,9 +14,9 @@ export default function RecurringBadge({ className = '' }) {
   return (
     <Badge
       variant="outline"
-      className={`bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/60 gap-1 ${className}`}
+      className={`bg-[var(--accent-sky)]/10 text-[var(--accent-sky)] border-[var(--accent-sky)]/25 gap-1 ${className}`}
     >
-      <Repeat className="h-3 w-3 text-[var(--brand-accent)]" />
+      <Repeat className="h-3 w-3 text-[var(--accent-sky)]" />
       Recurring
     </Badge>
   );

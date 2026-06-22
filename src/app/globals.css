@@ -221,6 +221,14 @@
   --brand-accent: #C2410C;
   --brand-accent-hover: #B53B0A;
   --brand-accent-fg: #FFFFFF;
+  /* Supporting accent palette (2026-06-21): keeps copper (--brand-accent) as the
+     primary action/brand color while giving the dashboard semantic variety.
+     Roles — emerald: progress/done/healthy · sky: scheduling · teal: calls ·
+     violet: needs-follow-up / usage. Darker shades for light surfaces. */
+  --accent-emerald: #059669;
+  --accent-sky: #0284C7;
+  --accent-teal: #0D9488;
+  --accent-violet: #7C3AED;
   --selected-fill: rgba(194, 65, 12, 0.04);
   --warm-surface: #F5F5F4;
   --warm-surface-elevated: #FAFAF9;
@@ -269,6 +277,11 @@
   --brand-accent: #FB923C;
   --brand-accent-hover: #F97316;
   --brand-accent-fg: #0F172A;
+  /* Supporting accent palette — lighter shades for dark surfaces (see :root). */
+  --accent-emerald: #34D399;
+  --accent-sky: #38BDF8;
+  --accent-teal: #2DD4BF;
+  --accent-violet: #A78BFA;
   --selected-fill: rgba(255, 255, 255, 0.04);
   --warm-surface: oklch(0.145 0 0);
   --warm-surface-elevated: oklch(0.205 0 0);

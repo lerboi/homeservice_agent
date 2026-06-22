@@ -29,7 +29,7 @@
  * Gated by the invoicing feature flag (Phase 53 FeatureFlagsProvider).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { HelpCircle, ChevronRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase-browser';
@@ -37,9 +37,29 @@ import DailyOpsHub from '@/components/dashboard/DailyOpsHub';
 import HelpDiscoverabilityCard from '@/components/dashboard/HelpDiscoverabilityCard';
 import RecentActivityFeed from '@/components/dashboard/RecentActivityFeed';
 import AiNumberBanner from '@/components/dashboard/AiNumberBanner';
+import CallReadinessCard from '@/components/dashboard/CallReadinessCard';
 import { card, focus } from '@/lib/design-tokens';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
+
+// "Has seen the guided tour" lives in localStorage (client-only). Read it via
+// useSyncExternalStore so there's no setState-in-effect and no SSR/hydration
+// mismatch. The custom event lets the "Take the tour" label update live when the
+// tour starts or finishes in the same tab — the native `storage` event only
+// fires across tabs.
+const TOUR_SEEN_KEY = 'gsd_has_seen_tour';
+const TOUR_SEEN_EVENT = 'voco-tour-seen-change';
+
+function subscribeTourSeen(onChange) {
+  window.addEventListener('storage', onChange);
+  window.addEventListener(TOUR_SEEN_EVENT, onChange);
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(TOUR_SEEN_EVENT, onChange);
+  };
+}
+const getTourSeen = () => localStorage.getItem(TOUR_SEEN_KEY) != null;
+const getTourSeenServer = () => false;
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -114,13 +134,29 @@ export default function DashboardHomePage() {
     loadActivity();
   }, []);
 
-  // ─── Tour trigger (preserved from prior page) ───────────────────────────
-  const [showTour, setShowTour] = useState(false);
+  // ─── Tour trigger ───────────────────────────────────────────────────────
+  // Label invites new users with "Take the tour"; returning users see "Tour".
+  const hasSeenTour = useSyncExternalStore(subscribeTourSeen, getTourSeen, getTourSeenServer);
+  const showTour = !hasSeenTour;
+
+  // Auto-start the guided tour once for brand-new users (never seen it). The
+  // dispatch is deferred so (a) the layout's 'start-dashboard-tour' listener is
+  // attached first — child effects run before parent effects — and (b) the
+  // data-tour targets (ops bento, nav) are mounted before Joyride anchors them.
+  // A per-session guard prevents re-firing if they revisit Home mid-tour.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setShowTour(!localStorage.getItem('gsd_has_seen_tour'));
+    if (hasSeenTour) return;
+    try {
+      if (sessionStorage.getItem('voco_tour_autostarted') === '1') return;
+      sessionStorage.setItem('voco_tour_autostarted', '1');
+    } catch {
+      /* sessionStorage unavailable — fall through and still offer the tour */
     }
-  }, []);
+    const t = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('start-dashboard-tour'));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [hasSeenTour]);
 
   // ─── AI receptionist status (LOW-23) — derived from real provisioning + billing ─
   const { data: account, error: accountError } = useSWRFetch('/api/account');
@@ -157,7 +193,7 @@ export default function DashboardHomePage() {
     <div className="space-y-6 lg:space-y-8" data-tour="home-page">
       {/* Greeting + AI status indicator */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" data-tour="ai-status">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
             {aiStatus.ping && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
@@ -177,8 +213,9 @@ export default function DashboardHomePage() {
           type="button"
           onClick={() => {
             if (typeof window !== 'undefined') {
-              localStorage.removeItem('gsd_has_seen_tour');
+              localStorage.removeItem(TOUR_SEEN_KEY);
               window.dispatchEvent(new CustomEvent('start-dashboard-tour'));
+              window.dispatchEvent(new Event(TOUR_SEEN_EVENT));
             }
           }}
           aria-label="Take a guided tour"
@@ -188,6 +225,10 @@ export default function DashboardHomePage() {
           {showTour ? 'Take the tour' : 'Tour'}
         </button>
       </div>
+
+      {/* Call-readiness — onboarding progress + the single next step.
+          Hides itself once all essentials are done and acknowledged. */}
+      <CallReadinessCard />
 
       {/* AI receptionist number — surfaces the provisioned Twilio number with a link to Account */}
       <AiNumberBanner />

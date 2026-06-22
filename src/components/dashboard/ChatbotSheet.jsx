@@ -79,7 +79,7 @@ export default function ChatbotSheet({ open, onOpenChange }) {
         {/* Header */}
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-[var(--brand-accent)]" />
+            <MessageSquare className="h-5 w-5 text-[var(--accent-teal)]" />
             <SheetTitle className="text-base font-semibold">Voco AI</SheetTitle>
             <SheetDescription className="sr-only">
               Ask questions about your dashboard, navigate features, or get help

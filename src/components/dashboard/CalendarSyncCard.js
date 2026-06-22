@@ -54,8 +54,8 @@ function SyncStatusDot({ status }) {
       hideLabel: true,
     },
     syncing: {
-      dotClass: 'bg-[var(--brand-accent)] animate-pulse',
-      textClass: 'text-[var(--brand-accent)]',
+      dotClass: 'bg-[var(--accent-sky)] animate-pulse',
+      textClass: 'text-[var(--accent-sky)]',
       label: 'Syncing...',
     },
     error: {

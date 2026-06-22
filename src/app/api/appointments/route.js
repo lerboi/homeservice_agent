@@ -329,7 +329,9 @@ export async function POST(request) {
         if (eventId) {
           await supabase
             .from('appointments')
-            .update({ external_event_id: eventId })
+            // Record the owning provider (M15) so the cancel reader deletes the
+            // event via the right provider even after a primary-calendar switch.
+            .update({ external_event_id: eventId, external_event_provider: creds.provider })
             .eq('id', data.id);
         }
       } catch (err) {

@@ -40,7 +40,7 @@ export default function HotJobsTile() {
     return (
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
-          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <PhoneIncoming className="h-5 w-5 text-[var(--accent-violet)]" />
           <h2 className={titleClass}>Needs follow-up</h2>
         </div>
         <Skeleton className="h-9 w-20" />
@@ -57,7 +57,7 @@ export default function HotJobsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <PhoneIncoming className="h-5 w-5 text-[var(--accent-violet)]" />
           <h2 className={titleClass}>Needs follow-up</h2>
         </div>
         <div
@@ -88,7 +88,7 @@ export default function HotJobsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+            <PhoneIncoming className="h-5 w-5 text-[var(--accent-violet)]" />
             <h2 className={titleClass}>Needs follow-up</h2>
           </div>
           <Link href="/dashboard/calls?view=callbacks" className={ctaClass}>
@@ -113,7 +113,7 @@ export default function HotJobsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <PhoneIncoming className="h-5 w-5 text-muted-foreground" />
+          <PhoneIncoming className="h-5 w-5 text-[var(--accent-violet)]" />
           <h2 className={titleClass}>Needs follow-up</h2>
         </div>
         <Link href="/dashboard/calls?view=callbacks" className={ctaClass}>

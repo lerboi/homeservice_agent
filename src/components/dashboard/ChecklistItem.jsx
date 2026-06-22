@@ -41,17 +41,22 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
   //  - `Finish setup` — required row, not started
   //  - `Continue` — partially done (mark_done_override flag is used here as signal)
   //  - `Open settings` — recommended-only row (default)
+  // Tier drives the badge + dismiss/CTA affordances. Fall back to the legacy
+  // `required` flag if an older payload omits `tier`.
+  const tier = item.tier || (item.required ? 'essential' : 'recommended');
+  const isEssential = tier === 'essential';
+
   let primaryLabel = 'Finish setup';
   if (item.has_error) {
     primaryLabel = 'Reconnect';
-  } else if (!item.required) {
+  } else if (!isEssential) {
     primaryLabel = 'Open settings';
   } else if (isOverridden && !isComplete) {
     primaryLabel = 'Continue';
   }
 
-  // Required items cannot be dismissed (product sensibility per plan spec).
-  const canDismiss = !item.required;
+  // Essential items cannot be dismissed — they gate call-readiness.
+  const canDismiss = !isEssential;
 
   return (
     <motion.div
@@ -66,7 +71,7 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
           simultaneously, but if it ever did, CheckCircle2 renders). */}
       {isComplete ? (
         <CheckCircle2
-          className="h-5 w-5 text-[var(--brand-accent)] shrink-0 mt-0.5"
+          className="h-5 w-5 text-[var(--accent-emerald)] shrink-0 mt-0.5"
           aria-hidden="true"
         />
       ) : item.has_error ? (
@@ -93,13 +98,17 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
           >
             {item.title}
           </span>
-          {item.required ? (
+          {isEssential ? (
             <Badge className="bg-[var(--brand-accent)]/10 text-[var(--brand-accent)] border border-[var(--brand-accent)]/20 font-normal text-xs tracking-wide uppercase leading-[1.4]">
-              Required
+              Essential
             </Badge>
-          ) : (
+          ) : tier === 'recommended' ? (
             <Badge className="bg-muted text-muted-foreground border border-border font-normal text-xs tracking-wide uppercase leading-[1.4]">
               Recommended
+            </Badge>
+          ) : (
+            <Badge className="bg-transparent text-muted-foreground/70 border border-border/70 font-normal text-xs tracking-wide uppercase leading-[1.4]">
+              Optional
             </Badge>
           )}
         </div>

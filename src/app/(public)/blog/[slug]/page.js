@@ -71,6 +71,7 @@ export default async function BlogDetailPage({ params }) {
           '@type': 'Article',
           headline: post.title,
           datePublished: post.publishedAt,
+          dateModified: post.updatedAt || post.publishedAt,
           author: {
             '@type': 'Organization',
             name: 'Voco',
@@ -106,6 +107,16 @@ export default async function BlogDetailPage({ params }) {
               day: 'numeric',
               year: 'numeric',
             })}
+            {post.updatedAt && post.updatedAt !== post.publishedAt && (
+              <>
+                {' · Updated '}
+                {new Date(post.updatedAt).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </>
+            )}
           </p>
         </AnimatedSection>
 

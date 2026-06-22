@@ -76,7 +76,7 @@ export default function CallsTile() {
     return (
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-muted-foreground" />
+          <Phone className="h-5 w-5 text-[var(--accent-teal)]" />
           <h2 className={titleClass}>Recent calls</h2>
         </div>
         <div className="flex flex-col gap-3">
@@ -93,7 +93,7 @@ export default function CallsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-muted-foreground" />
+          <Phone className="h-5 w-5 text-[var(--accent-teal)]" />
           <h2 className={titleClass}>Recent calls</h2>
         </div>
         <div
@@ -120,7 +120,7 @@ export default function CallsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-muted-foreground" />
+            <Phone className="h-5 w-5 text-[var(--accent-teal)]" />
             <h2 className={titleClass}>Recent calls</h2>
           </div>
           <Link href="/dashboard/calls" className={ctaClass}>
@@ -145,7 +145,7 @@ export default function CallsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Phone className="h-5 w-5 text-muted-foreground" />
+          <Phone className="h-5 w-5 text-[var(--accent-teal)]" />
           <h2 className={titleClass}>Recent calls</h2>
         </div>
         <Link href="/dashboard/calls" className={ctaClass}>

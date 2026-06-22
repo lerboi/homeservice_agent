@@ -1,6 +1,6 @@
 ---
 name: dashboard-crm-system
-description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, customers list + detail, calendar, calls with its Callbacks inquiries view, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, inquiries surfaced as the Callbacks view inside Calls since the 2026-06-10 merge, Customers list page + Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist accordion (Phase 48) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), prod-readiness 2026-06 UX/IA repointing (Customers list route, More-tab three-section regroup, CommandPalette Radix Dialog a11y, dashboard/stats 'new' = open inquiries, global search customers group), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, command palette, navigation/IA, design tokens, or UI polish patterns."
+description: "Complete architectural reference for the Voco dashboard and CRM system — all dashboard pages (home, jobs tab, customers list + detail, calendar, calls with its Callbacks inquiries view, invoices, estimates, more/*), Phase 59 customer/job model split (Jobs tab from jobs table, inquiries surfaced as the Callbacks view inside Calls since the 2026-06-10 merge, Customers list page + Customer detail page with Activity/Jobs/Invoices tabs + Edit modal + Merge/Unmerge UX + UnmergeBanner), admin /dashboard/admin/merges view (customer_merge_audit, D-19 expanded), D-07a owner-responsibility for open inquiries (no auto-timeout), setup checklist (Phase 48; 2026-06-21 onboarding revamp — retiered into Essential/Recommended/Optional, CallReadinessCard home indicator, auto-start tour) with Phase 58 red-dot error variant, Business Integrations card (Phase 55/56 — BusinessIntegrationsClient), Phase 57 overlays (JobberBookableUsersSection, JobberCopyBanner), Phase 58 UI polish primitives (EmptyState, ErrorState, AsyncButton, focus-visible ring token), prod-readiness 2026-06 UX/IA repointing (Customers list route, More-tab three-section regroup, CommandPalette Radix Dialog a11y, dashboard/stats 'new' = open inquiries, global search customers group), design tokens (Phase 49 light+dark mode via CSS variables), ImpersonationBanner / BillingWarningBanner / TrialCountdownBanner, guided tour, FeatureFlagsProvider (Phase 53), Supabase Realtime integration. Use this skill whenever making changes to dashboard pages, customer management, job management, inquiry management, merge/unmerge UX, CRM components, escalation contacts, service management, setup checklist, business integrations card, command palette, navigation/IA, design tokens, or UI polish patterns."
 ---
 
 # Dashboard & CRM System — Complete Reference
@@ -18,7 +18,25 @@ components.
 > files are `/audio/voices/{label}.mp3` — **assets pending** (not call-blocking). The earlier
 > Phase 65 10-voice OpenAI picker is historical.
 
-**Last updated**: 2026-06-12 (audit wave 1 dashboard fixes — (1) **Invoices/estimates pagination**: `useDocumentList` now paginates — `limit` grows 50 → 500 via a "Load more" button, `hasMore` derived from the API's `total_count`; a status-tab change resets the limit. The silent 50-row hard cap is gone. (2) **JobFlyout transcript + recordings work**: `getJob`'s detail select now includes `recording_storage_path`, `transcript_text`, `transcript_structured` (it previously selected none of them, so the flyout's TranscriptViewer was always empty and storage-path recordings never resolved). (3) **`job_type` UI removed everywhere** — the column never existed (migration 059): JobFilterBar input gone, JobCard/JobFlyout chips gone, jobs page param gone; the batch-invoice dialog now shows `service_address` instead. (4) **Realtime resilience**: ALL dashboard channels (calls ×2, jobs, customer-detail ×3, calendar ×2) now pass a status callback to `.subscribe()` and refetch on reconnect after `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`; INSERT events now trigger the page's fetch function instead of prepending the join-less Realtime payload — no more "Unknown" rows, and the phantom-field filter that silently dropped inserts is gone. (5) **AbortController everywhere**: the calendar page's abort pattern replicated in calls/jobs/customers/customer-detail fetches + CommandPalette search + CustomerMergeDialog typeahead. (6) **Mobile create-FABs** on invoices/estimates moved `bottom-6` → `bottom-20` (no longer cover the BottomTabBar). (7) **UnmergeBanner is ALWAYS mounted** on the customer detail page — it self-detects undoable merges via `/api/admin/merges` and renders null when inactive; the `merged_source_info` gate that could never be true is gone. (8) **Billing/Trial banners**: dismiss buttons removed; `BillingWarningBanner` gains a RED "AI receptionist is paused" suspended variant post-grace (see payment-architecture). (9) Voice picker → 3 labels (see banner above). (10) The stale untracked `src/app/dashboard/leads/` page (broken imports, pre-Phase-59 leftover) was deleted.)
+**Last updated**: 2026-06-20 (M16 P1 — "Service-Area gate", Capability A:
+the multi-zone `ZoneManager` (+ `zone_travel_buffers` pairwise-buffer matrix)
+and its `/api/zones` (+`[id]`) routes were **removed**, replaced by a single
+`ServiceAreaManager` mounted at `/dashboard/more/service-zones` (page heading
+"Service Zones & Travel" → **"Service Area"**) — a postal/ZIP-code chip input +
+town/city chip input (comma/Enter to add), an out-of-area action select
+(`callback` default: take a message & call back / `decline_referral`: politely
+decline + optional referral / `trip_fee`: book but mention a possible travel
+fee) with a conditional referral-note textarea (only for `decline_referral`),
+and an explicit dirty-tracked **"Save service area"** button; backed by new
+`GET/PUT /api/service-area`. Persists owner choice to `tenants.out_of_area_action`
++ `tenants.out_of_area_referral_note` (migration 074) and collapses
+`service_zones` coverage (`postal_codes` + new `cities[]`) to one canonical row
+on save. New durable `inquiries.out_of_area boolean` is set by the voice agent
+when a caller's confirmed address is outside the Service Area — **persisted but
+the Callbacks/CRM badge to surface it is a DEFERRED follow-up, not yet
+displayed**.)
+
+**2026-06-12 update**: (audit wave 1 dashboard fixes — (1) **Invoices/estimates pagination**: `useDocumentList` now paginates — `limit` grows 50 → 500 via a "Load more" button, `hasMore` derived from the API's `total_count`; a status-tab change resets the limit. The silent 50-row hard cap is gone. (2) **JobFlyout transcript + recordings work**: `getJob`'s detail select now includes `recording_storage_path`, `transcript_text`, `transcript_structured` (it previously selected none of them, so the flyout's TranscriptViewer was always empty and storage-path recordings never resolved). (3) **`job_type` UI removed everywhere** — the column never existed (migration 059): JobFilterBar input gone, JobCard/JobFlyout chips gone, jobs page param gone; the batch-invoice dialog now shows `service_address` instead. (4) **Realtime resilience**: ALL dashboard channels (calls ×2, jobs, customer-detail ×3, calendar ×2) now pass a status callback to `.subscribe()` and refetch on reconnect after `CHANNEL_ERROR`/`TIMED_OUT`/`CLOSED`; INSERT events now trigger the page's fetch function instead of prepending the join-less Realtime payload — no more "Unknown" rows, and the phantom-field filter that silently dropped inserts is gone. (5) **AbortController everywhere**: the calendar page's abort pattern replicated in calls/jobs/customers/customer-detail fetches + CommandPalette search + CustomerMergeDialog typeahead. (6) **Mobile create-FABs** on invoices/estimates moved `bottom-6` → `bottom-20` (no longer cover the BottomTabBar). (7) **UnmergeBanner is ALWAYS mounted** on the customer detail page — it self-detects undoable merges via `/api/admin/merges` and renders null when inactive; the `merged_source_info` gate that could never be true is gone. (8) **Billing/Trial banners**: dismiss buttons removed; `BillingWarningBanner` gains a RED "AI receptionist is paused" suspended variant post-grace (see payment-architecture). (9) Voice picker → 3 labels (see banner above). (10) The stale untracked `src/app/dashboard/leads/` page (broken imports, pre-Phase-59 leftover) was deleted.)
 
 **Previous update**: 2026-06-10 (b: calendar page rework — see §7 "2026-06-10
 rework": `IntegrationReconnectBanner` + `JobberCopyBanner` DELETED, replaced
@@ -132,6 +150,24 @@ chatbot corpus split into customers/jobs/inquiries)
   150ms body crossfade. Analytics deleted entirely — no `/dashboard/analytics`
   route, no `AnalyticsCharts` / `EmptyStateAnalytics` components, sidebar
   nav entry + DashboardTour step + `analytics.md` chatbot doc removed.
+- **Supporting accent palette (2026-06-21 — reduce orange monotony)** — added
+  theme-aware CSS vars in `globals.css` alongside `--brand-accent`:
+  `--accent-emerald` (progress/done/healthy), `--accent-sky` (scheduling),
+  `--accent-teal` (calls), `--accent-violet` (follow-up/usage) — each with a
+  lighter dark-mode shade. Copper stays the primary action/brand color (all
+  `btn.primary` CTAs, FAB, focus ring, Essential badge). Applied on the home:
+  DailyOpsHub tile icons (Appointments→sky, Calls→teal, Needs-follow-up→violet),
+  UsageTile healthy bar→emerald (amber→red escalation unchanged), CallReadinessCard
+  meter + call-ready success→emerald, SetupChecklist ring + call-ready note→emerald,
+  ChecklistItem completed checks→emerald (was copper). Consumed via Tailwind
+  arbitrary values `…-[var(--accent-*)]`. **Extended dashboard-wide** (audit→apply,
+  24 sites / 13 files): Calendar today/now/scheduled-appt markers + WorkingHours
+  availability bars + open-day rails + CalendarSync 'syncing' state + Connections
+  header icon + RecurringBadge → sky; AiNumberBanner phone badge + ChatbotSheet
+  header + user chat bubble + AudioPlayer scrub + voice-preview pause → teal;
+  UsageRingGauge healthy arc + invoice-timeline icon → emerald; RecentActivityFeed
+  inquiry/customer rows → violet. CTAs, focus rings, selected/active nav, and brand
+  stayed copper (audit kept 92 of 116 copper usages).
 - **Phase 58 (Setup checklist wiring + polish + skills, 2026-04-20)** —
   `ChecklistItem.jsx` gains red-dot + "Reconnect needed" error variant
   for `connect_xero` / `connect_jobber`; deriveChecklistItems emits
@@ -211,7 +247,7 @@ layout.js                          DashboardSidebar (desktop) + BottomTabBar (mo
   └── more/page.js                 Config hub: quick-access + settings sections
       ├── more/services-pricing/   Full service table (DnD, urgency tags, bulk select)
       ├── more/working-hours/      WorkingHoursEditor
-      ├── more/service-zones/      ZoneManager
+      ├── more/service-zones/      ServiceAreaManager (single "Service Area" editor)
       ├── more/escalation-contacts/ EscalationChainSection
       ├── more/notifications/      Notifications & Escalation preferences
       ├── more/ai-voice-settings/  SettingsAISection (phone + test call)
@@ -317,19 +353,73 @@ hook. Mounted server-side per request. Default value:
 **File**: `src/components/dashboard/DashboardTour.jsx` — wraps
 `react-joyride` v3. Mounted at layout level for cross-tab persistence.
 
-5 steps (Phase 49 removed Analytics step):
-1. `[data-tour="home-page"]` — Command center
-2. `[href="/dashboard/jobs"]` — Jobs tracking
-3. `[href="/dashboard/calendar"]` — Calendar
-4. `[href="/dashboard/calls"]` — Calls view
-5. `[href="/dashboard/more"]` — Config hub (placement: top)
+Up to 6 steps (2026-06-21 onboarding revamp — adds the call-readiness step + auto-start):
+1. **Welcome** — `target: 'body'`, `placement: 'center'` (modal: no spotlight, no scroll)
+2. `[data-tour="ai-status"]` — AI status block (greeting row, `page.js`); placement `right` desktop / `bottom` mobile
+3. `[data-tour="call-readiness"]` — the CallReadinessCard (essentials meter + next step); placement `bottom`. **Conditional**: included only when the card is in the DOM (it hides once the owner is fully set up). `buildSteps(desktop, hasReadiness)` takes a flag; the component computes `hasReadiness` in a `useMemo` keyed on `[run, desktop]` via `document.querySelector('[data-tour="call-readiness"]')`, so the DOM is read only when the tour starts (not via setState-in-effect, which the project bans).
+4. `[data-tour="todays-appointments"]` — the Today's-Appointments hero tile (`DailyOpsHub.jsx`); placement `bottom`. (Anchors the compact hero tile, NOT the full `daily-ops-hub` bento, which is taller than the mobile viewport and would push the tooltip off-screen.)
+5. Navigation — `[data-tour="sidebar-nav"]` (desktop, `right`) / `[data-tour="bottom-nav"]` (mobile, `top`)
+6. **Finish** — `target: 'body'`, `placement: 'center'` ("You're all set 🎉")
 
-Brand orange spotlight (`#C2410C`). `disableAnimation` respects
-`prefers-reduced-motion`. On FINISHED/SKIPPED:
+**Auto-start (2026-06-21)**: brand-new users (no `gsd_has_seen_tour`) get the tour
+automatically. `page.js` dispatches `start-dashboard-tour` from a `useEffect`,
+deferred ~400ms via `setTimeout` so (a) the layout's listener is attached first
+(child effects run before parent effects) and (b) the `data-tour` targets are
+mounted before Joyride anchors them. A per-session
+`sessionStorage['voco_tour_autostarted']` guard prevents re-firing on revisits.
+The checklist Sheet no longer auto-opens, so the tour is the only first-visit overlay.
+
+**Why this shape**: the old step 1 targeted `[data-tour="home-page"]` (the WHOLE
+page container) with `placement: 'bottom'`, so the first tooltip rendered below
+the entire page — the user had to scroll to the bottom to find it. Centered
+welcome/finish modals + spotlights on compact, real elements fix that and let
+react-joyride **smooth-scroll** each target into view (`scrollOffset: 96`,
+`scrollDuration: 350`). `placement: 'center'` (verified in the v3 build) renders a
+modal with neither spotlight nor scroll — ideal for intro/outro.
+
+**Responsive targeting**: the nav exists twice in the DOM — desktop sidebar
+(`hidden lg:flex`, `data-tour="sidebar-nav"`) and mobile bottom bar (`lg:hidden`,
+`data-tour="bottom-nav"`). Step 4 points at whichever is rendered for the current
+breakpoint, tracked via a `matchMedia('(min-width:1024px)')` listener + `useMemo`
+(also drives `right` vs `top` placement). Any new element step must target a
+compact, always-present node (avoid the full-page container) and, if it's the
+nav, branch on the breakpoint.
+
+**Polish/behavior**: per-step `title` (bold) + `content`; left-aligned tooltip
+(`tooltipContainer textAlign:left`), `borderRadius 14`, soft shadow,
+`1px solid var(--border)`, `width 360`, `spotlightPadding 8` + `spotlightRadius 12`,
+`overlayColor rgba(0,0,0,.55)`, `zIndex 10000`. `blockTargetInteraction: true` +
+`overlayClickAction: false` make the page non-interactive mid-tour so a stray
+click can't derail it (advance only via Next/Back/Skip). `showProgress` is OFF
+(clean `Next`/`Got it` buttons for a short tour).
+
+**react-joyride v3 API notes** (v3 differs substantially from v2 — get these
+wrong and the tooltip renders broken):
+- Theme + behavior live in the **`options`** prop, not `styles.options`:
+  `primaryColor`, `backgroundColor`, `textColor`, `arrowColor`, `zIndex`,
+  `showProgress`, `skipBeacon`, and `buttons: ['skip','back','primary']`
+  (v3 has no top-level `showSkipButton`/`showProgress`/`disableScrolling`/
+  `disableAnimation` props — `'skip'` in `buttons` is how the skip button shows).
+- Colors must reference the design tokens **directly** (`var(--popover)`) — the
+  tokens are OKLCH, so the old `hsl(var(--popover))` wrapping produced invalid
+  CSS. Tokens resolve inside joyride's body-level portal because `:root`/`.dark`
+  are on `<html>`.
+- `styles.buttonPrimary` (v2 was `buttonNext`); `styles.buttonBack`/`buttonSkip`.
+- Tour end handled via the **`onEvent`** prop (v2 was `callback`); both receive
+  `{ status }`. Per-step beacon suppression is `skipBeacon` (v2 `disableBeacon`).
+- `Joyride` and `STATUS` are **named** exports in v3.
+
+Brand orange primary/spotlight (`var(--brand-accent)` → `#C2410C` light /
+`#FB923C` dark). On FINISHED/SKIPPED:
 `localStorage.setItem('gsd_has_seen_tour', '1')`.
 
 Trigger via `window.dispatchEvent(new CustomEvent('start-dashboard-tour'))`.
 Home page button only shows if `gsd_has_seen_tour` not set.
+
+**Install note**: `react-joyride` (`package.json` + lockfile) must actually be
+present in `node_modules` — run `npm install` after a fresh checkout, or the
+layout's `dynamic(() => import('./DashboardTour'))` silently fails and the
+"Take the tour" button does nothing.
 
 ---
 
@@ -343,12 +433,39 @@ Post-Phase-48 single-column daily ops hub. No setup/active mode branching
 Structure:
 ```
 Greeting (time-of-day + AI status pulse + optional tour button)
+CallReadinessCard (onboarding progress indicator — see §3a; hides when set up)
 AiNumberBanner (AI number + copy button / provisioning-failed alert)
 DailyOpsHub (bento: TodayAppointmentsTile, CallsTile, HotJobsTile, UsageTile)
 MoneySnapshot (invoice money strip — gated by invoicing flag)
 HelpDiscoverabilityCard (4 quick-link tiles)
 RecentActivityFeed (wrapped in card.base)
 ```
+
+### 3a. CallReadinessCard (2026-06-21 onboarding revamp)
+
+**File**: `src/components/dashboard/CallReadinessCard.jsx` — the prominent
+home-page onboarding indicator. Answers "how close is my AI to fully taking and
+booking calls?" and points at the single next action. Tracks **ESSENTIAL**
+checklist items only (the call-readiness meter); recommended/optional steps live
+in the full checklist behind "View all steps".
+
+- Reads `/api/setup-checklist` (shared SWR key — no extra request) and the new
+  `readiness` block (`essentialsTotal`, `essentialsComplete`, `callReady`); also
+  recomputes essentials from the live `items` so an optimistic mark-done moves the
+  meter instantly.
+- **Not call-ready** → segmented essentials bar + "Next step" (the first
+  incomplete essential) as a primary deep-link, plus a "View all setup steps"
+  button that dispatches the `open-setup-checklist` window event (the launcher
+  Sheet listens for it).
+- **Call-ready** → calm success state ("You're call-ready"), an optional
+  "N steps to go further" link (opens the Sheet), and a dismiss X. Dismissal is
+  stored in `localStorage['voco_readiness_dismissed']`, read via
+  `useSyncExternalStore` (project bans setState-in-effect); it only suppresses the
+  success state — if an essential later lapses (e.g. billing), the not-ready card
+  returns on its own.
+- The live AI line status (active/paused) stays in the greeting row; this card is
+  purely about setup completeness, so the two signals don't compete.
+- Carries `data-tour="call-readiness"` for the guided-tour step (§2).
 
 ### AiNumberBanner (2026-06-13 onboarding-audit fix wave)
 
@@ -412,64 +529,98 @@ No sidebar, no grid. Responsive for free — children stack vertically.
 
 ---
 
-## 4. Setup Checklist — Accordion + Overlay Launcher (Phase 48)
+## 4. Setup Checklist — Tiered Accordion + Overlay Launcher (Phase 48 → 2026-06-21 retier)
+
+**Onboarding revamp (2026-06-21)**: the checklist is organized by **call-readiness
+TIER**, not by settings theme. Three tiers (single source of truth = `TIER_GROUPS`
+/ `TIER_ORDER` in the API route):
+
+| Tier | Items | Meaning |
+|------|-------|---------|
+| **essential** | `setup_profile`, `configure_services`, `configure_hours`, `configure_zones` (Service Area), `setup_billing` | Gate "can my AI take and book calls properly?" — drive the CallReadinessCard meter |
+| **recommended** | `connect_calendar`, `configure_call_routing`, `configure_notifications`, `setup_escalation`, `make_test_call` | Improve handling; AI still works on defaults |
+| **optional** | `connect_xero`, `connect_jobber` | Integrations / power features |
+
+`required` is derived per item as `tier === 'essential'` (back-compat with the
+leaf's dismiss/CTA logic). `THEME_GROUPS`/`THEME_ORDER` are still **exported** (and
+each item still carries a `theme`) for back-compat + the Phase-55 test asserting
+`connect_xero` lives under the `voice` theme — but the UI no longer groups by theme.
+`configure_zones` meta is now "Set up your service area" (the Service Area feature;
+still detected by `service_zones` count > 0).
 
 ### Launcher
 
 **File**: `src/components/dashboard/SetupChecklistLauncher.jsx`
 
-- **Auto-open**: desktop only (≥1024px), first visit per session, only
-  if incomplete. Gated by `sessionStorage['voco_setup_opened']`.
-- **FAB** (circular copper): conic-gradient progress ring around edge,
-  tabular-nums pending-count center. `aria-label="N steps left to finish setup"`.
-- **Responsive**: Sheet `side="right"` on desktop, `side="bottom"` on mobile.
-- **Complete state**: FAB hides entirely when `percent >= 100` or all
-  dismissed.
+- **No auto-open** (changed 2026-06-21): the always-visible CallReadinessCard is the
+  surfaced guide now, so popping a Sheet on top of it (and, for new users, the tour)
+  was redundant. The `voco_setup_opened` session gate is gone.
+- **Opens on demand**: FAB click OR the `open-setup-checklist` window event (fired by
+  the readiness card's "View all steps" / "go further" links).
+- **FAB** (circular copper, `var(--brand-accent)`): conic-gradient overall-progress
+  ring; center count = **essentials remaining** (falls back to total remaining once
+  essentials are done). `aria-label` includes "…finish setup". Min 44px tap target,
+  `bottom-[72px]` on mobile to clear the BottomTabBar.
+- **Complete state**: FAB hides entirely when `percent >= 100`.
 - **Hidden during impersonation**: layout skips mount on `?impersonate=...`.
 
 ### Accordion
 
 **File**: `src/components/dashboard/SetupChecklist.jsx`
 
-Themed accordion with groups: profile, voice, calendar, billing. Each
-theme shows its items; completion rolls up to a conic-gradient progress
-ring. Per-item actions: Dismiss / Mark done / Jump. Window-focus refetch.
+Tier accordion in `TIER_ORDER` order: **Essential → Recommended → Optional**
+(`TIER_LABELS` + per-tier sublabels). The header conic-gradient ring shows
+**essentials** progress (`essentialsComplete/essentialsTotal`), titled "Get
+call-ready" / "You're call-ready"; once essentials are done (but extras remain) a
+call-ready note renders above the accordions. Default-open tier = the first with an
+incomplete item. `SetupCompleteBar` still shows when ALL items complete. Per-item
+actions: Dismiss / Mark done / Jump. Window-focus refetch. Essentials are computed
+from the live (optimistically-mutated) item list so the meter reacts before the
+server round-trip.
 
-**Phase 58 contract comment** above `{themeItems.map(...)}` names
-`has_error`, `error_subtitle`, and "red-dot" as Phase 58 CHECKLIST-01
-forwarding fields — grep-anchored regression guard.
+**Phase 58 contract comment** above `{tierItems.map(...)}` names `has_error`,
+`error_subtitle`, and "red-dot" as Phase 58 CHECKLIST-01 forwarding fields —
+grep-anchored regression guard.
 
-### Leaf — ChecklistItem (Phase 58 red-dot)
+### Leaf — ChecklistItem (3-tier badge + Phase 58 red-dot)
 
 **File**: `src/components/dashboard/ChecklistItem.jsx`
 
-Three variants (first match wins):
+Badge is 3-tier from `item.tier` (fallback `required ? 'essential' :
+'recommended'`): **Essential** (accent), **Recommended** (muted fill), **Optional**
+(outline). `isEssential = tier === 'essential'` drives dismiss + CTA:
+- Only NON-essential items can be dismissed (`canDismiss = !isEssential`).
+- CTA precedence: `has_error` → **Reconnect** (red-dot variant) → non-essential →
+  **Open settings** → essential-in-progress → **Continue** → else **Finish setup**.
 
-1. **Error (red-dot)** — `item.has_error === true`. Leading icon:
-   `<span className="h-2 w-2 rounded-full bg-red-600 dark:bg-red-500" />`
-   (decorative, aria-hidden). Subtitle between title and description:
-   `<p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">{item.error_subtitle}</p>`
-   renders "Reconnect needed". CTA: `primaryLabel = 'Reconnect'` — this
-   branch is FIRST, precedes `!item.required` → "Open settings" because
-   `connect_xero` / `connect_jobber` are recommended, not required.
-2. **Complete** — `<CheckCircle2>` + muted label.
-3. **Idle** — `<Circle>` + "Finish setup" CTA.
+Completion icon variants (first match wins): **Error (red-dot)**
+`<span className="h-2 w-2 rounded-full bg-red-600 dark:bg-red-500" />` +
+"Reconnect needed" subtitle; **Complete** `<CheckCircle2>`; **Idle** `<Circle>`.
 
 ### API — setup-checklist
 
 **File**: `src/app/api/setup-checklist/route.js`
 
-- `fetchChecklistState` issues **4** `accounting_credentials` count
-  queries per provider pair (Phase 58):
-  - Healthy: `.is('error_state', null)`
-  - Error: `.not('error_state', 'is', null)`
-  Separate counts let auto-complete + `has_error` derive from
-  independent row sets.
-- `deriveChecklistItems` emits `has_error` + `error_subtitle` UNIFORMLY
-  on every item. Non-error items get `has_error: false, error_subtitle: null`
-  so leaf renderer never guards undefined.
-- Phase 50 migration added `tenants.checklist_overrides` JSONB; API
-  consumes for per-item `mark_done` + `dismiss` actions.
+- Exports `TIER_GROUPS`, `TIER_ORDER` (+ legacy `THEME_GROUPS`, `VALID_ITEM_IDS`,
+  `deriveChecklistItems`). `deriveChecklistItems` tags each item with `tier` +
+  `theme`, sets `required = tier === 'essential'`, and orders items by tier.
+- GET adds a **`readiness`** block: `{ essentialsTotal, essentialsComplete,
+  callReady }` (callReady = all essentials complete) alongside the existing
+  `progress` + `completedCount`. Consumed by CallReadinessCard + the FAB.
+- `fetchChecklistState` issues **4** `accounting_credentials` count queries per
+  provider pair (Phase 58): Healthy `.is('error_state', null)` / Error
+  `.not('error_state', 'is', null)`. Separate counts let auto-complete +
+  `has_error` derive from independent row sets.
+- `deriveChecklistItems` emits `has_error` + `error_subtitle` UNIFORMLY on every
+  item so the leaf never guards undefined.
+- Phase 50 migration added `tenants.checklist_overrides` JSONB; API consumes for
+  per-item `mark_done` + `dismiss` actions.
+- `make_test_call` auto-completes from `tenants.test_call_completed` (migration
+  002) — set only when a test call genuinely connects, via the LiveKit
+  `participant_joined` webhook `/api/webhooks/livekit` (2026-06-21 test-call
+  verification; migration 077 adds `test_call_status`/`test_call_last_at`). It no
+  longer keys off `onboarding_complete`. Owners can still "Mark done" manually if
+  the LiveKit webhook isn't registered.
 
 See `integrations-jobber-xero/references/dashboard-ui.md` for the full
 Reconnect-flow interaction.
@@ -603,6 +754,12 @@ same pattern as the admin/merges breadcrumb) that switches back to the
 classic view. **The inquiries data model, `/api/inquiries*` routes,
 voice-agent writes, stats, and customer-page inquiry surfaces are
 unchanged.**
+
+**M16 P1 (2026-06-20)** — a new durable `inquiries.out_of_area boolean`
+(migration 074) is set by the voice agent when a caller's confirmed address
+is outside the Service Area (see Section 14, `ServiceAreaManager`). The flag
+is persisted but a CRM badge to surface it in the Callbacks/inquiries view is
+a DEFERRED follow-up — **not yet displayed**.
 
 **Known consequences (deliberate, not bugs):**
 - The Callbacks view has **NO search / urgency / date filters** —
@@ -1114,10 +1271,17 @@ Per-urgency mapping rows via `Switch` (display-only). Emergency locked.
 - Break as inline pill with Clock icon + time inputs.
 - Copy popover: "All weekdays" + "Select all" quick-actions above
   per-day checkboxes.
+- "Default appointment duration" Select (`SLOT_DURATION_OPTIONS`, 30 min–2 h),
+  bound to `slotDuration` state.
+- **"Travel buffer between jobs" Select** (`TRAVEL_BUFFER_OPTIONS`:
+  None/15/30/45/60/90 min) — M16 P2. Bound to `travelBuffer` state, wired into
+  the same `isDirty`/save/discard flow as slot duration; loaded with `?? 30`
+  so a saved `0` ("None") survives. Helper copy: "Minimum drive time the AI
+  leaves between back-to-back jobs."
 - Sticky save bar (z-30, `lg:left-60`) slides up via `translate-y`
   when `isDirty`.
 - Mobile: stacked time inputs with "Opens"/"Closes" labels.
-- Save: `PUT /api/working-hours` with `{ working_hours, slot_duration_mins, tenant_timezone }`.
+- Save: `PUT /api/working-hours` with `{ working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone }`.
 
 ### CalendarView
 
@@ -1342,7 +1506,7 @@ section-label heading. Empty sections are dropped after flag filtering.
 
 | Section | Items (in order) |
 |---------|------------------|
-| **Business** | Services & Pricing, Working Hours, Service Zones & Travel, Account, **Customers** (`/dashboard/customers`), **Calendar** (`/dashboard/calendar`) |
+| **Business** | Services & Pricing, Working Hours, Service Area, Account, **Customers** (`/dashboard/customers`), **Calendar** (`/dashboard/calendar`) |
 | **AI & Calls** | AI & Voice Settings, Call Routing, Notifications & Escalation, Features |
 | **Billing & Money** | Billing, Invoice Settings, Integrations |
 
@@ -1362,7 +1526,19 @@ section-label heading. Empty sections are dropped after flag filtering.
 - `/more/services-pricing` — full service table (DnD, urgency tags,
   bulk select).
 - `/more/working-hours` — `WorkingHoursEditor`.
-- `/more/service-zones` — `ZoneManager` (geographic zones + travel buffers).
+- `/more/service-zones` — `ServiceAreaManager` (single **"Service Area"**
+  editor — page heading was "Service Zones & Travel"). Postal/ZIP-code chip
+  input + town/city chip input (comma/Enter to add), an **out-of-area action**
+  select — `callback` (default: take a message & call back, don't book) /
+  `decline_referral` (politely decline + optional referral) / `trip_fee` (book
+  but mention a possible travel fee) — with a conditional referral-note textarea
+  shown only for `decline_referral`, and an explicit dirty-tracked **"Save
+  service area"** button. Backed by `GET/PUT /api/service-area`. Persists the
+  owner choice to `tenants.out_of_area_action` + `tenants.out_of_area_referral_note`
+  (migration 074); coverage persists to `service_zones` (`postal_codes` + new
+  `cities[]`), collapsed to one canonical row on save. **Replaced the removed
+  multi-zone `ZoneManager` (`zone_travel_buffers` pairwise-buffer matrix) +
+  `/api/zones` (+`[id]`) routes (M16 P1, 2026-06-20).**
 - `/more/escalation-contacts` — `EscalationChainSection`.
 - `/more/notifications` — per-outcome SMS/email Switch grid
   (booked/declined/not_attempted/attempted × SMS/email).
@@ -1449,7 +1625,7 @@ persistence. Opened via `open-voco-chat` window event.
 | `POST /api/chat` | `src/app/api/chat/route.js` | RAG + Groq chat |
 | `GET/PATCH /api/account` | `src/app/api/account/route.js` | Tenant profile |
 | `GET/PATCH /api/notification-settings` | same pattern | `notification_preferences` JSONB |
-| `PUT /api/working-hours` | same pattern | `working_hours` + `slot_duration_mins` + `tenant_timezone` |
+| `PUT /api/working-hours` | same pattern | `working_hours` + `slot_duration_mins` + `travel_buffer_mins` (M16 P2, int 0–240) + `tenant_timezone` |
 | `GET/PATCH /api/call-routing` | same pattern | Schedule + pickup + dial_timeout + `vip_numbers` |
 
 ---

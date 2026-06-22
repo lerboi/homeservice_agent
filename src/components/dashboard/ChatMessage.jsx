@@ -14,7 +14,7 @@ export default function ChatMessage({ role, content, onNavigate }) {
   if (role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="bg-[var(--brand-accent)] text-[var(--brand-accent-fg)] rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm">
+        <div className="bg-[var(--accent-teal)] text-[var(--brand-accent-fg)] rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm">
           <p className="whitespace-pre-wrap">{content}</p>
         </div>
       </div>

@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/reconcile-stripe-webhooks",
       "schedule": "30 */6 * * *"
+    },
+    {
+      "path": "/api/cron/retry-owner-notifications",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

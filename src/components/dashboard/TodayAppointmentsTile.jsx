@@ -86,7 +86,7 @@ export default function TodayAppointmentsTile() {
       <div className={cardClass} aria-busy="true">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-muted-foreground" />
+            <CalendarDays className="h-6 w-6 text-[var(--accent-sky)]" />
             <h2 className={titleClass}>Today&apos;s appointments</h2>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function TodayAppointmentsTile() {
     return (
       <div className={cardClass}>
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-muted-foreground" />
+          <CalendarDays className="h-6 w-6 text-[var(--accent-sky)]" />
           <h2 className={titleClass}>Today&apos;s appointments</h2>
         </div>
         <div
@@ -132,7 +132,7 @@ export default function TodayAppointmentsTile() {
       <div className={cardClass}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-muted-foreground" />
+            <CalendarDays className="h-6 w-6 text-[var(--accent-sky)]" />
             <h2 className={titleClass}>Today&apos;s appointments</h2>
           </div>
           <Link href="/dashboard/calendar" className={ctaClass}>
@@ -160,7 +160,7 @@ export default function TodayAppointmentsTile() {
     <div className={cardClass}>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-muted-foreground" />
+          <CalendarDays className="h-6 w-6 text-[var(--accent-sky)]" />
           <h2 className={titleClass}>Today&apos;s appointments</h2>
         </div>
         <Link href="/dashboard/calendar" className={ctaClass}>

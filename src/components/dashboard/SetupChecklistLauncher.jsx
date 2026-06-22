@@ -1,29 +1,28 @@
 'use client';
 
 /**
- * SetupChecklistLauncher — overlay entry point for the setup checklist.
+ * SetupChecklistLauncher — overlay entry point for the FULL setup checklist.
  *
- * Revision of Plan 48-05 D-04/D-07 page-wiring decisions: the owner asked for
- * the checklist to become hidden-by-default and opened via an FAB (with a
- * responsive Sheet), instead of occupying real estate at the top of the
- * dashboard home page. See 48-05 SUMMARY "Revision" section for rationale.
+ * Since the onboarding revamp, the always-visible CallReadinessCard on the home
+ * page is the primary guide (essentials meter + next step). This launcher is the
+ * secondary surface: a persistent FAB for quick access on any dashboard page,
+ * plus the responsive Sheet that holds the complete tiered checklist.
  *
  * Behavior
- *  - Desktop (≥ lg, 1024px+): Sheet slides in from the right so page content
- *    stays visible. On first dashboard visit per session, the Sheet auto-opens
- *    (gated by `sessionStorage['voco_setup_opened']`). When closed, a circular
- *    FAB anchors bottom-right with a conic-gradient progress ring and a
- *    "N left" badge — clicking it reopens the Sheet.
- *  - Mobile (< lg): no auto-open (would block page content). Smaller FAB
- *    anchored bottom-right, offset above the 64px `BottomTabBar`. Sheet slides
- *    in from the bottom for the drawer pattern shadcn Sheet gives us free.
- *  - Completion: when the server reports progress.percent === 100 (or no items
- *    remain), the FAB hides entirely — nothing to launch. Auto-open also
- *    skips in this case.
+ *  - The Sheet opens on FAB click OR when any surface dispatches the
+ *    `open-setup-checklist` window event (the readiness card's "View all steps"
+ *    and its "go further" link both fire it).
+ *  - It NO LONGER auto-opens. Auto-popping a sheet on top of the readiness card
+ *    (and, for brand-new users, the guided tour) was redundant and jarring.
+ *  - FAB (bottom-right, above the mobile BottomTabBar) shows a conic-gradient
+ *    overall-progress ring with the count of ESSENTIALS remaining (the number
+ *    that gates call-readiness); once essentials are done it shows the remaining
+ *    recommended/optional count. Hidden entirely when everything is complete.
  *
- * The existing `SetupChecklist` component (from Plan 48-03) is unchanged —
- * this launcher wraps it and consumes its `onDataLoaded` callback to learn
- * the progress state.
+ * Progress is fetched here (not via SetupChecklist's onDataLoaded) because Radix
+ * Sheet does not mount its children until open=true, so the inner checklist
+ * never fetches before the Sheet opens — and the FAB needs progress to render.
+ * SWR dedupes the key, so the inner SetupChecklist shares this cached payload.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -41,44 +40,23 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { focus } from '@/lib/design-tokens';
 
-// Session-storage key — matches the project's `voco_*` naming convention
-// (see src/hooks/useWizardSession.js for other voco_* keys).
-const SESSION_KEY = 'voco_setup_opened';
-
 /**
- * Per-session auto-open guard.
- *  - Reads `sessionStorage['voco_setup_opened']`.
- *  - Returns `true` when the gate has NOT been set yet (i.e. first visit).
- *  - Safe during SSR — returns `false` when window is unavailable.
+ * FAB — circular launcher with conic-gradient progress ring and a pending
+ * count. Renders nothing when `percent >= 100`.
  */
-function shouldAutoOpen() {
-  if (typeof window === 'undefined') return false;
-  try {
-    return sessionStorage.getItem(SESSION_KEY) !== '1';
-  } catch {
-    return false;
-  }
-}
-
-function markAutoOpenFired() {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.setItem(SESSION_KEY, '1');
-  } catch {
-    /* best-effort only */
-  }
-}
-
-/**
- * FAB — circular launcher button with conic-gradient progress ring and
- * pending-count badge. Renders nothing when `percent >= 100`.
- */
-function SetupChecklistFab({ isMobile, percent, pending, onOpen }) {
+function SetupChecklistFab({ isMobile, percent, pending, essentialsLeft, onOpen }) {
   if (percent >= 100) return null;
 
   const size = isMobile ? 48 : 56;
   const bottomOffset = isMobile ? 'bottom-[72px]' : 'bottom-6'; // 72px clears the 64px BottomTabBar + 8px gap
-  const label = pending === 1 ? '1 step left to finish setup' : `${pending} steps left to finish setup`;
+  const label =
+    essentialsLeft > 0
+      ? essentialsLeft === 1
+        ? '1 essential left to finish setup'
+        : `${essentialsLeft} essentials left to finish setup`
+      : pending === 1
+        ? '1 step left to finish setup'
+        : `${pending} steps left to finish setup`;
 
   const ringStyle = {
     background: `conic-gradient(var(--brand-accent) 0% ${percent}%, rgba(255,255,255,0.35) ${percent}% 100%)`,
@@ -111,21 +89,20 @@ function SetupChecklistFab({ isMobile, percent, pending, onOpen }) {
         aria-hidden="true"
         className="absolute inset-[3px] rounded-full bg-[var(--brand-accent)]"
       />
-      {/* Content — centered fraction + sr-only semantic count */}
-      <span className="relative z-10 flex items-center justify-center h-full w-full font-semibold tabular-nums leading-none"
-            style={{ fontSize: isMobile ? 13 : 15 }}>
+      {/* Content — centered pending count + accessible label via aria-label */}
+      <span
+        className="relative z-10 flex items-center justify-center h-full w-full font-semibold tabular-nums leading-none"
+        style={{ fontSize: isMobile ? 13 : 15 }}
+      >
         {pending}
       </span>
-      {/* Label-only pill (optional small accent below the button on large screens
-          is skipped — the tooltip + aria-label carry the same info without
-          extra visual noise per Phase 48 spec). */}
     </button>
   );
 }
 
 /**
- * Main launcher. Mounts alongside `ChatbotSheet` in dashboard/layout.js so
- * the Sheet + FAB live above page content and survive route changes.
+ * Main launcher. Mounts in DashboardLayoutClient so the Sheet + FAB live above
+ * page content and survive route changes.
  */
 export default function SetupChecklistLauncher() {
   const isMobile = useIsMobile(1024); // lg: 1024px breakpoint per Tailwind default
@@ -133,53 +110,47 @@ export default function SetupChecklistLauncher() {
 
   const [open, setOpen] = useState(false);
 
-  // Progress is derived from /api/setup-checklist directly here in the launcher,
-  // NOT from <SetupChecklist>'s onDataLoaded callback. Reason: shadcn/Radix Sheet
-  // does not mount its children until open=true, so the inner SetupChecklist
-  // never fetches before the Sheet opens — and the FAB + auto-open both need
-  // progress to decide whether to render at all. By fetching here, the launcher
-  // can show the FAB immediately and auto-open on first session visit. SWR
-  // deduplicates the key, so the inner SetupChecklist shares this cached data.
   const { data: checklistData } = useSWRFetch('/api/setup-checklist', {
     revalidateOnFocus: true,
   });
 
+  // Open on demand — the readiness card's "View all steps" / "go further" links
+  // dispatch this event so there's a single way to surface the full checklist.
+  useEffect(() => {
+    function openFromEvent() {
+      setOpen(true);
+    }
+    window.addEventListener('open-setup-checklist', openFromEvent);
+    return () => window.removeEventListener('open-setup-checklist', openFromEvent);
+  }, []);
+
   const progress = useMemo(() => {
-    if (!checklistData) return { total: 0, complete: 0, percent: 0, ready: false };
-    if (checklistData.dismissed) return { total: 0, complete: 0, percent: 100, ready: true };
+    if (!checklistData)
+      return { total: 0, complete: 0, percent: 0, essentialsLeft: 0, ready: false };
+    if (checklistData.dismissed)
+      return { total: 0, complete: 0, percent: 100, essentialsLeft: 0, ready: true };
     const items = Array.isArray(checklistData.items) ? checklistData.items : [];
     const total = items.length;
     const complete = items.filter((i) => i.complete).length;
     const percent = total > 0 ? Math.round((complete / total) * 100) : 100;
-    return { total, complete, percent, ready: true };
+    const essentialsLeft = items.filter(
+      (i) =>
+        (i.tier || (i.required ? 'essential' : 'recommended')) === 'essential' &&
+        !i.complete
+    ).length;
+    return { total, complete, percent, essentialsLeft, ready: true };
   }, [checklistData]);
-
-  // Auto-open gate — desktop only, first session visit, only if incomplete.
-  useEffect(() => {
-    if (!progress.ready) return;
-    if (isMobile) return;
-    if (progress.percent >= 100) return;
-    if (!shouldAutoOpen()) return;
-
-    setOpen(true);
-    markAutoOpenFired();
-  }, [progress.ready, progress.percent, isMobile]);
-
-  // Whenever the Sheet closes via user action, make sure the gate is set so
-  // it does not reopen on the next state change.
-  const handleOpenChange = useCallback((next) => {
-    setOpen(next);
-    if (!next) markAutoOpenFired();
-  }, []);
 
   const handleFabOpen = useCallback(() => setOpen(true), []);
 
-  const pending = Math.max(progress.total - progress.complete, 0);
+  const totalRemaining = Math.max(progress.total - progress.complete, 0);
+  // Surface essentials first — they gate call-readiness; fall back to total.
+  const pending = progress.essentialsLeft > 0 ? progress.essentialsLeft : totalRemaining;
   const allDone = progress.ready && progress.percent >= 100;
 
   return (
     <>
-      <Sheet open={open} onOpenChange={handleOpenChange}>
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side={isMobile ? 'bottom' : 'right'}
           className={
@@ -206,29 +177,28 @@ export default function SetupChecklistLauncher() {
               </SheetTitle>
             </div>
             <SheetDescription className="font-normal text-sm text-muted-foreground leading-normal">
-              A few quick steps to get Voco answering every call the way you want.
+              Essentials get your AI taking calls — the rest fine-tunes how it handles them.
             </SheetDescription>
           </SheetHeader>
 
-          {/* Scrollable body — the actual checklist is unchanged from Plan 48-03.
-              Progress is derived at the launcher level (see useSWRFetch above);
-              no onDataLoaded prop needed — SWR shares the cached payload. */}
+          {/* Scrollable body — the tiered checklist. Progress is derived at the
+              launcher level (see useSWRFetch above); SWR shares the payload. */}
           <div className="flex-1 overflow-y-auto px-5 pb-8 pt-2">
             <SetupChecklist />
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* FAB — hidden before first data load OR when complete; respects
-          reduced-motion by nature (no entrance animation on this element). */}
+      {/* FAB — hidden before first data load OR when complete. */}
       {progress.ready && !open && !allDone && (
         <SetupChecklistFab
           isMobile={isMobile}
           percent={progress.percent}
           pending={pending}
+          essentialsLeft={progress.essentialsLeft}
           onOpen={handleFabOpen}
-          // prefersReduced reserved for future entrance animation if added;
-          // currently unused so the button stays instantly visible.
+          // prefersReduced reserved for a future entrance animation; unused so
+          // the button stays instantly visible.
           _prefersReduced={prefersReduced}
         />
       )}

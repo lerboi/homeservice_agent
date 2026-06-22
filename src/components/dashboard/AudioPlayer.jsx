@@ -141,7 +141,7 @@ export default function AudioPlayer({ src }) {
               <div className="absolute inset-0 rounded-full bg-border" />
               {/* Progress fill */}
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-[var(--brand-accent)] transition-all"
+                className="absolute inset-y-0 left-0 rounded-full bg-[var(--accent-teal)] transition-all"
                 style={{ width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' }}
               />
             </div>

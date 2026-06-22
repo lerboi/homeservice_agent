@@ -24,7 +24,7 @@ import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
 // language.
 
 const TONES = {
-  accent: { color: 'text-[var(--brand-accent)]', bg: 'bg-[var(--brand-accent)]/[0.08]' },
+  accent: { color: 'text-[var(--accent-violet)]', bg: 'bg-[var(--accent-violet)]/[0.08]' },
   blue: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40' },
   emerald: { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
   amber: { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },

@@ -60,8 +60,8 @@ const PERMANENT_TWILIO_ERRORS = new Set([
   21612, // The 'To' phone number is not a valid mobile number
   21614, // 'To' number is not a valid mobile number
   21408, // Permission to send SMS not enabled for the region
-  21610, // Message body is required
-  21602, // Message body is required (variant)
+  21610, // Recipient has opted out (replied STOP) — do not retry
+  21602, // Message body is required
   21608, // Account not authorized to call this number
 ]);
 

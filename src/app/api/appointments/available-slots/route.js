@@ -47,7 +47,7 @@ export async function GET(request) {
   // Load tenant for the authenticated owner
   const { data: tenant, error: tenantError } = await supabase
     .from('tenants')
-    .select('id, working_hours, slot_duration_mins, tenant_timezone')
+    .select('id, working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone')
     .eq('owner_id', user.id)
     .single();
 
@@ -133,6 +133,7 @@ export async function GET(request) {
       targetDate: targetDateStr,
       tenantTimezone,
       maxSlots: 20, // generous per-day limit for dashboard
+      travelBufferMins: tenant.travel_buffer_mins ?? 30,
     });
 
     // Add human-readable label for each slot

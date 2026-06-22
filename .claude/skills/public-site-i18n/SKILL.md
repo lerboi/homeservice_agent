@@ -357,7 +357,7 @@ Cross-domain: See auth-database-multitenancy skill for supabase-browser client d
 
 **File**: `src/app/(public)/pricing/page.js`
 
-**Last updated**: 2026-03-27 (Conversion optimization: 3-col additive cards, separate Enterprise, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs)
+**Last updated**: 2026-06-20 (Top-of-page conversion/declutter pass. **PricingTiers**: card header regrouped into 4 chunks — name+description subtitle, price block with the strikethrough INLINE beside the price (not its own row), a single quiet `Billed $X/yr` annual line (the duplicate "· save $Y/yr" dropped — the toggle's "Save 20%" already states the discount), and the call allotment PROMOTED from a small pill to a hero line (`{N} calls included / mo` in orange + `then $X/call after`). The old "2 AM" social-proof paragraph between the toggle and cards was **removed**; the 3 per-card "14-day free trial" lines, the standalone short-call note, AND the Risk-Free Guarantee (previously a separate block in page.js below Enterprise) are **consolidated into ONE high-contrast trust strip** directly under the 3-card grid (ShieldCheck + money-back promise + "no contracts, cancel anytime · calls under 20s never counted"). Recommended-card emptiness fixed: Starter trimmed 8→5 hero features and Growth/Scale now append 2 **dimmed** inherited reminders (`FOUNDATION_FEATURES`, computed from the base tier) so the Most-Popular card no longer looks the emptiest. Contrast floor raised (no meaningful text below white/50; min 12px). Toggle/CTA tap targets 40/42px→44px; toggle wrapper mb-5→mb-8, grid gap-5→gap-6. **page.js**: subline collapsed to one line (`Voco answers 24/7 and books the job — one call you'd have missed covers the whole year.`, white/50→white/60, `md:text-lg leading-relaxed`); the `AI Receptionist for Trades` eyebrow pill was **removed entirely**; hero spacing opened up for a cleaner feel, with a proportionate title↔toggle↔cards rhythm (`pt-28 pb-16`, hero block `mb-12`=48px title↔toggle, subline `mt-5`, toggle `mb-14`=56px below (extra room so it clears the floating Most-Popular badge that pokes ~12px into the gap), grid `lg:gap-7`, card header chunks `mt-4`, feature rows `space-y-3`, trust strip `mt-12`); guarantee block + its `ShieldCheck` import removed; bottom CTA relabeled "Start Free Trial"→"See Plans & Start Free". **pricingData**: Starter "Lead capture, CRM & analytics"→"Lead capture & CRM" (Analytics was removed from the product, commit b7df95c — the comparison table already omitted it); Growth/Scale call-volume deltas trimmed of the redundant "— N calls/mo" now that the header carries the allotment. NOTE: analytics still leaks in `landing/FeaturesGrid.jsx` ("Call Analytics & Dashboard" card) and chatbot knowledge docs (`pricing.md`, `features.md`) — tracked follow-up, not yet fixed. Previous: 2026-03-27 (Conversion optimization: 3-col additive cards, separate Enterprise, ROI calculator, guarantee badge, 3 testimonials, overage rates, 9 FAQs))
 
 Eight sections in order: dark hero + cards + guarantee badge (`#050505`) → ROI calculator (warm stone `#EDEAE7` with gradient blend to next section) → comparison table (light `#F5F5F4`) → testimonials (dark `#1A1816`) → FAQ (dark `#050505`) → CTA banner (dark warm `#1C1412`).
 
@@ -365,9 +365,9 @@ Eight sections in order: dark hero + cards + guarantee badge (`#050505`) → ROI
 
 | # | Section | Background | Notes |
 |---|---------|-----------|-------|
-| 1 | Hero | `bg-[#050505]` | Compact: smaller headline, tighter spacing to push cards above fold |
-| 2 | Billing Toggle + 3 Tier Cards | `bg-[#050505]` (continues) | 3-col grid (Starter/Growth/Scale), social proof line, Enterprise separate below |
-| 3 | Guarantee Badge | `bg-[#050505]` (continues) | ShieldCheck icon + "Risk-Free Guarantee" inline in hero section |
+| 1 | Hero | `bg-[#050505]` | H1 + one subline only (no eyebrow pill — removed 2026-06-20). Airier rhythm: `pt-28 pb-16`, hero block `mb-12` (title↔toggle 48px), subline `mt-5 md:text-lg leading-relaxed` |
+| 2 | Billing Toggle + 3 Tier Cards | `bg-[#050505]` (continues) | 3-col grid (Starter/Growth/Scale); no social-proof line; trust strip + Enterprise below (all inside PricingTiers.jsx) |
+| 3 | Trust Strip | `bg-[#050505]` (continues) | ShieldCheck + money-back guarantee + trial/cancel/short-call — under the card grid, inside PricingTiers (was a separate guarantee block in page.js) |
 | 4 | ROI Calculator | `bg-[#EDEAE7]` | Warm stone bg, bottom gradient blending into comparison table |
 | 5 | Comparison Table | `bg-[#F5F5F4]` | Always visible (not collapsible), 14 feature rows incl. overage rate |
 | 6 | Testimonials | `bg-[#1A1816]` | Three quotes in `md:grid-cols-3` |
@@ -376,7 +376,7 @@ Eight sections in order: dark hero + cards + guarantee badge (`#050505`) → ROI
 
 ### `pricingData.js` — Tier Data Structure
 
-**Additive feature pattern**: Starter lists 9 core features. Growth/Scale use `inheritsFrom` to show "Everything in X, plus:" with only their differentiators. Enterprise is a separate export.
+**Additive feature pattern**: Starter lists 5 hero features. Growth/Scale use `inheritsFrom` to show "Everything in X, plus:" with their 3 differentiators, then 2 dimmed inherited reminders (see PricingTiers). Enterprise is a separate export.
 
 ```js
 export const PRICING_TIERS = [
@@ -396,7 +396,7 @@ export function getAnnualPrice(monthlyPrice) { return Math.round(monthlyPrice * 
 export const COMPARISON_FEATURES = [ ... ]; // 14 rows — calls, overage rate, support level, 9 boolean features, custom integrations
 ```
 
-**Starter features** (trimmed to 8 in the 2026-06-10 conversion pass): AI receptionist answering 24/7, Urgency triage & emergency SMS alerts, Books appointments on the spot, Google & Outlook Calendar sync, Lead capture CRM & analytics, Invoicing & estimate management, Recovery SMS for missed callers, Multi-language support.
+**Starter features** (trimmed to 5 hero features in the 2026-06-20 pass; the rest live in the comparison table): AI receptionist answering 24/7, Urgency triage & emergency SMS alerts, Books appointments on the spot, Google & Outlook Calendar sync, Lead capture & CRM. (Analytics, Invoicing & estimates, Recovery SMS, and Multi-language were dropped from the card — Analytics no longer ships; the others remain comparison-table rows.) `FOUNDATION_FEATURES = base tier features.slice(0,2)` are re-shown as dimmed checks on Growth/Scale.
 
 **Overage rates**: Starter $2.48/call, Growth $2.08/call, Scale $1.50/call. Displayed on cards and in comparison table.
 
@@ -406,15 +406,17 @@ export const COMPARISON_FEATURES = [ ... ]; // 14 rows — calls, overage rate, 
 
 `'use client'` (billing toggle state). Monthly/annual toggle defaults to annual. **3-column grid** (`lg:grid-cols-3`) with `items-stretch` for equal-height cards.
 
-**Social proof line**: "Trusted by 500+ home service contractors across the US" between toggle and cards.
+**No social-proof line above the cards** (the old "2 AM" paragraph was removed — it was the main congestion driver). Toggle wrapper `mb-14` (clears the floating Most-Popular badge), grid `gap-6 lg:gap-7`.
 
 **Growth card elevation**: `lg:scale-[1.04] lg:z-10`, gradient bg `from-[#F97316]/[0.06] to-[#1A1816]`, `ring-2 ring-[#F97316]`. Renders first on mobile via `order-first`.
 
-**Call limit badge**: Prominent `bg-[#F97316]/[0.08] text-[#F97316]/70` pill showing "{N} calls/mo" + overage rate "then $X.XX/call".
+**Card header — 4 chunks**: (1) name + `tier.description` subtitle; (2) price block `$79 /mo` with `$99` strikethrough inline; (3) `Billed $X/yr` (annual only); (4) call-allotment hero line `{callLimit} calls included / mo` (orange) + `then $X.XX/call after`. The old standalone call-limit pill is gone.
 
-**Additive feature rendering**: Starter renders full 9-item feature list. Growth/Scale render "Everything in {inheritsFrom}, plus:" header + 2 additive features only.
+**Additive feature rendering**: Starter renders its 5 hero features (orange checks). Growth/Scale render "Everything in {inheritsFrom}, plus:" + their 3 deltas (orange checks) + `FOUNDATION_FEATURES` as 2 dimmed checks (`text-white/45`, `Check` `text-white/30`) so heights balance.
 
-**CTA at bottom**: Button pinned to card bottom via `flex-1` on feature list. "14-day free trial · Cancel anytime" below each CTA (the "No credit card required" claim was removed — checkout requires a card).
+**CTA at bottom**: Button pinned to card bottom via `flex-1` on feature list. No per-card trial line (consolidated into the trust strip below).
+
+**Trust strip**: `AnimatedSection` directly under the 3-card grid (before Enterprise). ShieldCheck + "Risk-free: try Voco free for 14 days. If it doesn't book you a job, you pay nothing." + "No contracts, cancel anytime · Calls under 20 seconds are never counted — you only pay for real conversations." This replaced the separate guarantee block that used to live in page.js.
 
 **Enterprise section**: Full-width horizontal card below the 3-col grid (`mt-10`). Building2 icon, 2x2 feature grid, "Custom" price, ghost "Contact Us" button.
 
@@ -443,9 +445,9 @@ Quotes (verbatim):
 - "Setup took 4 minutes. I heard my AI answer a call with my business name before I even finished my first cup." — Sandra T., Plumbing company owner, Austin TX
 - "One emergency booking at 2 AM paid for three months of Voco. I don't know why I waited so long." — Carlos M., Electrician, Miami FL
 
-### Guarantee Badge (inline in page.js)
+### Trust Strip (inside PricingTiers.jsx, not page.js)
 
-Inside the hero section after PricingTiers. ShieldCheck icon in orange circle + "Risk-Free Guarantee" heading + "Try Voco free for 14 days with real calls. If it doesn't book you a job, you pay nothing." Responsive: `flex-col sm:flex-row`.
+Replaced the old standalone "Guarantee Badge" block (which used to live inline in page.js below Enterprise). Now an `AnimatedSection` rendered directly under the 3-card grid so risk-reversal sits at the decision point. ShieldCheck in an orange circle + bold money-back line + a quieter reassurance line (no contracts / cancel anytime / short-call protection). Responsive `flex-col sm:flex-row`. See the PricingTiers.jsx notes above.
 
 ### `FAQSection.jsx`
 

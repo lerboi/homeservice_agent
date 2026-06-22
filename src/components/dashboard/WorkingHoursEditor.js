@@ -86,6 +86,15 @@ const SLOT_DURATION_OPTIONS = [
   { value: '120', label: '2 hours' },
 ];
 
+const TRAVEL_BUFFER_OPTIONS = [
+  { value: '0', label: 'None' },
+  { value: '15', label: '15 min' },
+  { value: '30', label: '30 min' },
+  { value: '45', label: '45 min' },
+  { value: '60', label: '1 hour' },
+  { value: '90', label: '1.5 hours' },
+];
+
 const TIMEZONE_GROUPS = [
   {
     label: 'United States',
@@ -179,8 +188,8 @@ function ScheduleBar({ dayData }) {
 
     return (
       <div className="relative h-1.5 rounded-full bg-muted">
-        <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar1Left}%`, width: `${bar1Width}%` }} />
-        <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${bar2Left}%`, width: `${bar2Width}%` }} />
+        <div className="absolute h-full rounded-full bg-[var(--accent-sky)]/60" style={{ left: `${bar1Left}%`, width: `${bar1Width}%` }} />
+        <div className="absolute h-full rounded-full bg-[var(--accent-sky)]/60" style={{ left: `${bar2Left}%`, width: `${bar2Width}%` }} />
       </div>
     );
   }
@@ -190,7 +199,7 @@ function ScheduleBar({ dayData }) {
 
   return (
     <div className="relative h-1.5 rounded-full bg-muted">
-      <div className="absolute h-full rounded-full bg-[var(--brand-accent)]/60" style={{ left: `${leftPct}%`, width: `${widthPct}%` }} />
+      <div className="absolute h-full rounded-full bg-[var(--accent-sky)]/60" style={{ left: `${leftPct}%`, width: `${widthPct}%` }} />
     </div>
   );
 }
@@ -204,6 +213,8 @@ export default function WorkingHoursEditor() {
   const [savedHours, setSavedHours] = useState(null);
   const [slotDuration, setSlotDuration] = useState('60');
   const [savedSlotDuration, setSavedSlotDuration] = useState('60');
+  const [travelBuffer, setTravelBuffer] = useState('30');
+  const [savedTravelBuffer, setSavedTravelBuffer] = useState('30');
   const [timezone, setTimezone] = useState('America/Chicago');
   const [savedTimezone, setSavedTimezone] = useState('America/Chicago');
   const [saving, setSaving] = useState(false);
@@ -213,6 +224,7 @@ export default function WorkingHoursEditor() {
   const isDirty =
     JSON.stringify(hours) !== JSON.stringify(savedHours) ||
     slotDuration !== savedSlotDuration ||
+    travelBuffer !== savedTravelBuffer ||
     timezone !== savedTimezone;
 
   const allDaysClosed = DAYS.every((d) => !hours[d]?.enabled);
@@ -232,6 +244,10 @@ export default function WorkingHoursEditor() {
         const dur = String(data.slot_duration_mins || 60);
         setSlotDuration(dur);
         setSavedSlotDuration(dur);
+        // ?? not || so a saved 0 ("None") survives instead of snapping back to 30.
+        const buf = String(data.travel_buffer_mins ?? 30);
+        setTravelBuffer(buf);
+        setSavedTravelBuffer(buf);
         const tz = data.tenant_timezone || 'America/Chicago';
         setTimezone(tz);
         setSavedTimezone(tz);
@@ -275,12 +291,14 @@ export default function WorkingHoursEditor() {
         body: JSON.stringify({
           working_hours: hours,
           slot_duration_mins: parseInt(slotDuration, 10),
+          travel_buffer_mins: parseInt(travelBuffer, 10),
           tenant_timezone: timezone,
         }),
       });
       if (!res.ok) throw new Error('Save failed');
       setSavedHours(hours);
       setSavedSlotDuration(slotDuration);
+      setSavedTravelBuffer(travelBuffer);
       setSavedTimezone(timezone);
       toast.success('Working hours saved.');
     } catch {
@@ -440,7 +458,7 @@ export default function WorkingHoursEditor() {
               key={day}
               className={`rounded-xl border px-4 py-3 transition-colors duration-150 ${
                 isEnabled
-                  ? 'bg-card border-border border-l-[3px] border-l-[var(--brand-accent)]'
+                  ? 'bg-card border-border border-l-[3px] border-l-[var(--accent-sky)]'
                   : 'bg-muted/80 border-border/50'
               }`}
             >
@@ -655,6 +673,29 @@ export default function WorkingHoursEditor() {
         </p>
       </div>
 
+      {/* Travel buffer between jobs */}
+      <div className="mt-6 pt-5 border-t border-border">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Travel buffer between jobs</span>
+          </div>
+          <Select value={travelBuffer} onValueChange={setTravelBuffer}>
+            <SelectTrigger className="w-32 h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TRAVEL_BUFFER_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5 ml-6">
+          Minimum drive time the AI leaves between back-to-back jobs.
+        </p>
+      </div>
+
       {/* Sticky save bar */}
       <div
         className={`fixed bottom-0 left-0 right-0 lg:left-60 z-30 transition-all duration-300 ease-out ${
@@ -676,6 +717,7 @@ export default function WorkingHoursEditor() {
                 onClick={() => {
                   setHours(savedHours);
                   setSlotDuration(savedSlotDuration);
+                  setTravelBuffer(savedTravelBuffer);
                   setTimezone(savedTimezone);
                 }}
               >

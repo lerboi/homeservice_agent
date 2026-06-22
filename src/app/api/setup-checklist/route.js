@@ -38,14 +38,45 @@ export const THEME_GROUPS = {
 /** Ordered theme list (drives GET response ordering). */
 const THEME_ORDER = ['profile', 'voice', 'calendar', 'billing'];
 
-/** Required = badge, NOT grouping (per D-02 + interfaces contract in 48-01-PLAN). */
-const REQUIRED_ITEM_IDS = new Set([
-  'setup_profile',
-  'configure_services',
-  'make_test_call',
-  'configure_hours',
-  'setup_billing',
-]);
+/**
+ * Tier classification (onboarding revamp) — the single source of truth for what
+ * the call-readiness meter tracks and how the checklist is grouped.
+ *
+ *   ESSENTIAL   → gates "can my AI actually take and book calls properly?"
+ *                 (greeting, what you do, when you work, where you serve, a live plan)
+ *   RECOMMENDED → improves call handling; the AI still works on sensible defaults
+ *   OPTIONAL    → integrations / power features
+ *
+ * `required` on each emitted item is derived as (tier === 'essential') so the
+ * existing ChecklistItem dismiss/CTA logic keeps working without a rename.
+ */
+export const TIER_GROUPS = {
+  essential: [
+    'setup_profile',
+    'configure_services',
+    'configure_hours',
+    'configure_zones',
+    'setup_billing',
+  ],
+  recommended: [
+    'connect_calendar',
+    'configure_call_routing',
+    'configure_notifications',
+    'setup_escalation',
+    'make_test_call',
+  ],
+  optional: ['connect_xero', 'connect_jobber'],
+};
+
+/** Ordered tier list — drives GET item ordering AND the checklist accordions. */
+export const TIER_ORDER = ['essential', 'recommended', 'optional'];
+
+function tierFor(itemId) {
+  for (const tier of TIER_ORDER) {
+    if (TIER_GROUPS[tier].includes(itemId)) return tier;
+  }
+  return 'recommended';
+}
 
 /** Static metadata per item: title, description, deep-link href. */
 const ITEM_META = {
@@ -85,8 +116,8 @@ const ITEM_META = {
     href: '/dashboard/calendar',
   },
   configure_zones: {
-    title: 'Set up service zones',
-    description: 'Define travel zones so appointments factor in drive time.',
+    title: 'Set up your service area',
+    description: 'Tell the AI which areas you serve so it only books jobs you can reach.',
     href: '/dashboard/more/service-zones',
   },
   setup_escalation: {
@@ -165,7 +196,9 @@ export function deriveChecklistItems(tenant, counts) {
       tenant.business_name.trim().length > 0
     ),
     configure_services: serviceCount > 0,
-    make_test_call: !!(tenant && tenant.onboarding_complete),
+    // Verified by the LiveKit participant_joined webhook (/api/webhooks/livekit)
+    // — true only once a test call actually connected, not at trigger time.
+    make_test_call: !!(tenant && tenant.test_call_completed),
     configure_hours: !!(tenant && tenant.working_hours),
     configure_notifications: hasCustomNotificationPrefs(
       tenant && tenant.notification_preferences
@@ -185,8 +218,8 @@ export function deriveChecklistItems(tenant, counts) {
   };
 
   const items = [];
-  for (const theme of THEME_ORDER) {
-    for (const id of THEME_GROUPS[theme]) {
+  for (const tier of TIER_ORDER) {
+    for (const id of TIER_GROUPS[tier]) {
       const override = overrides[id] || {};
       // dismiss removes the item from the list entirely
       if (override.dismissed === true) continue;
@@ -200,8 +233,11 @@ export function deriveChecklistItems(tenant, counts) {
         (id === 'connect_jobber' && counts.jobberHasError === true);
       items.push({
         id,
-        theme,
-        required: REQUIRED_ITEM_IDS.has(id),
+        tier,
+        // `theme` retained for back-compat (THEME_GROUPS export + any caller
+        // still keying off it); `tier` is the active grouping/ordering field.
+        theme: themeFor(id),
+        required: tier === 'essential',
         complete: autoComplete[id] || markDoneOverride,
         dismissed: false, // dismissed items never reach the output array
         mark_done_override: markDoneOverride,
@@ -239,7 +275,7 @@ async function fetchChecklistState(tenantId) {
         .select(
           'id, business_name, working_hours, onboarding_complete, phone_number, ' +
             'setup_checklist_dismissed, notification_preferences, call_forwarding_schedule, ' +
-            'pickup_numbers, checklist_overrides'
+            'pickup_numbers, checklist_overrides, test_call_completed'
         )
         .eq('id', tenantId)
         .single(),
@@ -369,6 +405,12 @@ export async function GET() {
   const completeCount = items.filter((i) => i.complete).length;
   const total = items.length;
 
+  // Call-readiness = ESSENTIAL items only. This is the meter that answers
+  // "can my AI take and book calls properly?" — recommended/optional items
+  // improve quality but never gate readiness.
+  const essentials = items.filter((i) => i.tier === 'essential');
+  const essentialsComplete = essentials.filter((i) => i.complete).length;
+
   return Response.json({
     items,
     dismissed: state.tenant.setup_checklist_dismissed ?? false,
@@ -379,6 +421,12 @@ export async function GET() {
       total,
       complete: completeCount,
       percent: total > 0 ? Math.round((completeCount / total) * 100) : 0,
+    },
+    readiness: {
+      essentialsTotal: essentials.length,
+      essentialsComplete,
+      callReady:
+        essentials.length > 0 && essentialsComplete === essentials.length,
     },
   });
 }

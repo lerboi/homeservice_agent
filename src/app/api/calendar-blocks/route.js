@@ -206,7 +206,9 @@ export async function POST(request) {
         if (eventId) {
           await supabase
             .from('calendar_blocks')
-            .update({ external_event_id: eventId })
+            // Record the owning provider (M15) so PATCH/DELETE cleanup targets it
+            // even after the tenant switches their primary calendar.
+            .update({ external_event_id: eventId, external_event_provider: creds.provider })
             .eq('id', data.id);
         }
     } catch (err) {

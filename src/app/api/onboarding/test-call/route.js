@@ -54,10 +54,13 @@ export async function POST(request) {
       },
     );
 
-    // Mark test call as triggered
+    // Mark the attempt as in-flight. The LiveKit `participant_joined` webhook
+    // (/api/webhooks/livekit) flips this to 'connected' + test_call_completed
+    // once the owner's phone actually joins the room — i.e. the call truly
+    // connected, not merely that we placed it.
     await supabase
       .from('tenants')
-      .update({ test_call_completed: true })
+      .update({ test_call_status: 'calling' })
       .eq('id', tenantId);
 
     return Response.json({ call_id: roomName });

@@ -266,8 +266,8 @@ function CurrentTimeIndicator({ gridStartHour, gridEndHour, hourHeight = HOUR_HE
       className="absolute left-0 right-0 z-20 pointer-events-none"
       style={{ top: `${top}px` }}
     >
-      <div className="relative w-full border-t-2 border-[var(--brand-accent)]">
-        <div className="absolute -left-1.5 -top-[5px] w-2.5 h-2.5 rounded-full bg-[var(--brand-accent)]" />
+      <div className="relative w-full border-t-2 border-[var(--accent-sky)]">
+        <div className="absolute -left-1.5 -top-[5px] w-2.5 h-2.5 rounded-full bg-[var(--accent-sky)]" />
       </div>
     </div>
   );
@@ -890,13 +890,13 @@ export default function CalendarView({
                       className={`
                         relative min-h-[96px] px-1.5 pb-1.5 text-left border-r border-border last:border-r-0 transition-colors
                         ${hasBlocks && isCurrentMonth ? 'bg-muted' : isCurrentMonth ? 'bg-card hover:bg-muted' : 'bg-muted/50 hover:bg-muted/50'}
-                        ${isTodayCell ? 'ring-1 ring-inset ring-[var(--brand-accent)]/30' : ''}
+                        ${isTodayCell ? 'ring-1 ring-inset ring-[var(--accent-sky)]/30' : ''}
                       `}
                     >
                       <span
                         className={`
                           absolute top-1.5 left-1.5 inline-flex items-center justify-center text-xs font-medium rounded-full size-6
-                          ${isTodayCell ? 'bg-[var(--brand-accent)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}
+                          ${isTodayCell ? 'bg-[var(--accent-sky)] text-white' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}
                         `}
                       >
                         {cell.date.getDate()}
@@ -935,7 +935,7 @@ export default function CalendarView({
                                   extClass ??
                                   (isCompleted
                                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 line-through decoration-emerald-400/60'
-                                    : 'bg-[var(--brand-accent)]/10 text-[var(--brand-accent)]')
+                                    : 'bg-[var(--accent-sky)]/10 text-[var(--accent-sky)]')
                                 }`}
                               >
                                 {isCompleted && <Check className="w-2.5 h-2.5 shrink-0" />}
@@ -1054,22 +1054,22 @@ export default function CalendarView({
             >
               <div className={isSingleDay ? 'flex items-center gap-2.5' : ''}>
                 {isSingleDay ? (
-                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-muted-foreground bg-muted' : 'text-foreground bg-muted'}`}>
+                  <div className={`text-sm font-bold inline-flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${isToday ? 'bg-[var(--accent-sky)] text-white' : isClosed ? 'text-muted-foreground bg-muted' : 'text-foreground bg-muted'}`}>
                     {day.getDate()}
                   </div>
                 ) : (
                   <>
-                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--brand-accent)]' : isClosed ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                    <div className={`text-[11px] font-semibold uppercase tracking-wider mb-1 ${isToday ? 'text-[var(--accent-sky)]' : isClosed ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
                       {DAY_ABBREVS[day.getDay()]}
                       {isClosed && <span className="ml-1 text-[9px] normal-case tracking-normal font-medium text-muted-foreground/50">(Closed)</span>}
                     </div>
-                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[var(--brand-accent)] text-white' : isClosed ? 'text-muted-foreground' : 'text-foreground'}`}>
+                    <div className={`text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full ${isToday ? 'bg-[var(--accent-sky)] text-white' : isClosed ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {day.getDate()}
                     </div>
                   </>
                 )}
                 {isSingleDay && (
-                  <div className={`text-sm font-semibold ${isToday ? 'text-[var(--brand-accent)]' : 'text-foreground'}`}>
+                  <div className={`text-sm font-semibold ${isToday ? 'text-[var(--accent-sky)]' : 'text-foreground'}`}>
                     {day.toLocaleDateString('en-US', { weekday: 'long' })}
                     {isClosed
                       ? <span className="ml-1.5 text-xs font-medium text-muted-foreground">(Closed)</span>
@@ -1183,7 +1183,7 @@ export default function CalendarView({
                 return (
                   <div
                     key={`off-${hour}`}
-                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-orange-50/50 dark:bg-orange-950/20' : 'bg-muted/60'}`}
+                    className={`absolute left-0 right-0 pointer-events-none ${isToday ? 'bg-[var(--accent-sky)]/5 dark:bg-[var(--accent-sky)]/10' : 'bg-muted/60'}`}
                     style={{ top: `${(hour - gridStartHour) * hourHeight}px`, height: `${hourHeight}px` }}
                   />
                 );

@@ -99,7 +99,7 @@ export default function CalendarConnectionsCard() {
   return (
     <div className={`${card.base} p-5`}>
       <div className="flex items-center gap-2 mb-4">
-        <Link2 className="size-4 text-[var(--brand-accent)]" />
+        <Link2 className="size-4 text-[var(--accent-sky)]" />
         <h2 className="text-sm font-semibold text-foreground">Connections</h2>
         {brokenApps.length > 0 && (
           <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full">

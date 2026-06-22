@@ -32,7 +32,7 @@ export default function DailyOpsHub() {
       className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"
       data-tour="daily-ops-hub"
     >
-      <div className="md:col-span-2">
+      <div className="md:col-span-2" data-tour="todays-appointments">
         <TodayAppointmentsTile />
       </div>
       <CallsTile />

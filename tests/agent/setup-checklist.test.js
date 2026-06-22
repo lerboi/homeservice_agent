@@ -1,238 +1,187 @@
 /**
- * Unit tests for the setup-checklist API route.
- * Tests GET (checklist derivation) and PATCH (dismiss state).
+ * setup-checklist — tier model + derivation tests (onboarding revamp).
+ *
+ * Replaces the stale create_account / `locked` 6-item assertions (that model was
+ * removed in the Phase 48 rewrite). Tests the pure deriveChecklistItems() with
+ * no Supabase mocking, plus the GET auth guard.
  */
 
 import { jest } from '@jest/globals';
-
-// ─── Shared mutable mocks ─────────────────────────────────────────────────────
 
 const mockGetUser = jest.fn();
 
 jest.unstable_mockModule('@/lib/supabase-server', () => ({
   createSupabaseServer: jest.fn().mockResolvedValue({
-    auth: {
-      getUser: mockGetUser,
-    },
+    auth: { getUser: mockGetUser },
   }),
 }));
 
-const mockFromImpl = jest.fn();
-const mockSupabase = {
-  from: (...args) => mockFromImpl(...args),
-};
-
 jest.unstable_mockModule('@/lib/supabase', () => ({
-  supabase: mockSupabase,
+  supabase: { from: jest.fn() },
 }));
 
-// ─── Load route module after mocks ───────────────────────────────────────────
-
-let GET, PATCH;
+let GET, deriveChecklistItems, TIER_GROUPS, TIER_ORDER, VALID_ITEM_IDS;
 
 beforeAll(async () => {
-  const routeModule = await import('@/app/api/setup-checklist/route.js');
-  GET = routeModule.GET;
-  PATCH = routeModule.PATCH;
+  const mod = await import('@/app/api/setup-checklist/route.js');
+  GET = mod.GET;
+  deriveChecklistItems = mod.deriveChecklistItems;
+  TIER_GROUPS = mod.TIER_GROUPS;
+  TIER_ORDER = mod.TIER_ORDER;
+  VALID_ITEM_IDS = mod.VALID_ITEM_IDS;
 });
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const fullTenant = {
+  business_name: 'Acme Plumbing',
+  working_hours: { mon: '09:00-17:00' },
+  onboarding_complete: true,
+  notification_preferences: null,
+  call_forwarding_schedule: null,
+  pickup_numbers: [],
+  checklist_overrides: {},
+};
 
-function makePatchRequest(body) {
-  return new Request('http://localhost/api/setup-checklist', {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-}
-
-/**
- * Chainable Supabase query mock — all methods return `q` (the chain object)
- * except terminal methods (single, maybeSingle) which resolve with the given value.
- */
-function makeTenantQuery(resolvedValue) {
-  const q = {};
-  q.select = jest.fn(() => q);
-  q.eq = jest.fn(() => q);
-  q.single = jest.fn(() => Promise.resolve(resolvedValue));
-  return q;
-}
-
-/**
- * Service query: select → eq → eq (last eq is the terminal, returns a thenable).
- * Promise.allSettled awaits the result of the last .eq() call.
- */
-function makeServiceQuery(resolvedValue) {
-  let eqCount = 0;
-  const q = {};
-  q.select = jest.fn(() => q);
-  q.eq = jest.fn(() => {
-    eqCount++;
-    if (eqCount >= 2) return Promise.resolve(resolvedValue);
-    return q;
-  });
-  return q;
-}
-
-/**
- * Calendar query: select → eq → eq → maybeSingle (terminal).
- */
-function makeCalendarQuery(resolvedValue) {
-  const q = {};
-  q.select = jest.fn(() => q);
-  q.eq = jest.fn(() => q);
-  q.maybeSingle = jest.fn(() => Promise.resolve(resolvedValue));
-  return q;
-}
-
-/**
- * Update query: update → eq (terminal).
- */
-function makeUpdateQuery(resolvedValue) {
-  const q = {};
-  q.update = jest.fn(() => q);
-  q.eq = jest.fn(() => Promise.resolve(resolvedValue));
-  return q;
-}
-
-// ─── GET /api/setup-checklist ─────────────────────────────────────────────────
-
-describe('GET /api/setup-checklist', () => {
-  it('returns 401 when user is not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-
-    const res = await GET();
-    const body = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(body.error).toBe('Unauthorized');
+describe('tier model', () => {
+  it('classifies items into essential / recommended / optional', () => {
+    expect(TIER_ORDER).toEqual(['essential', 'recommended', 'optional']);
+    expect(TIER_GROUPS.essential).toEqual(
+      expect.arrayContaining([
+        'setup_profile',
+        'configure_services',
+        'configure_hours',
+        'configure_zones',
+        'setup_billing',
+      ])
+    );
+    expect(TIER_GROUPS.recommended).toEqual(
+      expect.arrayContaining([
+        'connect_calendar',
+        'configure_call_routing',
+        'configure_notifications',
+        'setup_escalation',
+        'make_test_call',
+      ])
+    );
+    expect(TIER_GROUPS.optional).toEqual(['connect_xero', 'connect_jobber']);
   });
 
-  it('returns 404 when tenant is not found', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
-
-    const tenantQuery = makeTenantQuery({ data: null, error: null });
-    mockFromImpl.mockReturnValueOnce(tenantQuery);
-
-    const res = await GET();
-    const body = await res.json();
-
-    expect(res.status).toBe(404);
-    expect(body.error).toBe('Tenant not found');
+  it('service area (configure_zones) is essential; test call is recommended', () => {
+    expect(TIER_GROUPS.essential).toContain('configure_zones');
+    expect(TIER_GROUPS.recommended).toContain('make_test_call');
   });
 
-  it('returns 6 items with correct completion derivation', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
-
-    const tenant = {
-      id: 'tenant-1',
-      business_name: 'Acme Plumbing',
-      working_hours: { mon: '09:00-17:00' },
-      onboarding_complete: true,
-      phone_number: '+18005551234',
-      setup_checklist_dismissed: false,
-    };
-    mockFromImpl
-      .mockReturnValueOnce(makeTenantQuery({ data: tenant, error: null }))
-      .mockReturnValueOnce(makeServiceQuery({ count: 2, error: null }))
-      .mockReturnValueOnce(makeCalendarQuery({ data: null, error: null }));
-
-    const res = await GET();
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.items).toHaveLength(6);
-
-    // completedCount: create_account(true) + setup_profile(true) + configure_services(true)
-    // + connect_calendar(false) + configure_hours(true) + make_test_call(true) = 5
-    expect(body.completedCount).toBe(5);
-
-    expect(body.items[0].id).toBe('create_account');
-    expect(body.items[0].complete).toBe(true);
-    expect(body.items[3].id).toBe('connect_calendar');
-    expect(body.items[3].complete).toBe(false);
-  });
-
-  it('returns dismissed: false when column is null', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
-
-    const tenant = {
-      id: 'tenant-1',
-      business_name: 'Test Co',
-      working_hours: null,
-      onboarding_complete: false,
-      phone_number: null,
-      setup_checklist_dismissed: null,
-    };
-    mockFromImpl
-      .mockReturnValueOnce(makeTenantQuery({ data: tenant, error: null }))
-      .mockReturnValueOnce(makeServiceQuery({ count: 0, error: null }))
-      .mockReturnValueOnce(makeCalendarQuery({ data: null, error: null }));
-
-    const res = await GET();
-    const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.dismissed).toBe(false);
-  });
-
-  it('first 3 items always have locked: true', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
-
-    const tenant = {
-      id: 'tenant-1',
-      business_name: null,
-      working_hours: null,
-      onboarding_complete: false,
-      phone_number: null,
-      setup_checklist_dismissed: false,
-    };
-    mockFromImpl
-      .mockReturnValueOnce(makeTenantQuery({ data: tenant, error: null }))
-      .mockReturnValueOnce(makeServiceQuery({ count: 0, error: null }))
-      .mockReturnValueOnce(makeCalendarQuery({ data: null, error: null }));
-
-    const res = await GET();
-    const body = await res.json();
-
-    expect(body.items[0].locked).toBe(true);
-    expect(body.items[1].locked).toBe(true);
-    expect(body.items[2].locked).toBe(true);
-    expect(body.items[3].locked).toBe(false);
-    expect(body.items[4].locked).toBe(false);
-    expect(body.items[5].locked).toBe(false);
+  it('every tiered id is a valid item id', () => {
+    const all = [
+      ...TIER_GROUPS.essential,
+      ...TIER_GROUPS.recommended,
+      ...TIER_GROUPS.optional,
+    ];
+    for (const id of all) expect(VALID_ITEM_IDS).toContain(id);
   });
 });
 
-// ─── PATCH /api/setup-checklist ───────────────────────────────────────────────
-
-describe('PATCH /api/setup-checklist', () => {
-  it('returns 401 when user is not authenticated', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-
-    const res = await PATCH(makePatchRequest({ dismissed: true }));
-    const body = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(body.error).toBe('Unauthorized');
+describe('deriveChecklistItems', () => {
+  it('tags each item with its tier and sets required = (tier === essential)', () => {
+    const items = deriveChecklistItems(fullTenant, {});
+    const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+    expect(byId.configure_zones.tier).toBe('essential');
+    expect(byId.configure_zones.required).toBe(true);
+    expect(byId.make_test_call.tier).toBe('recommended');
+    expect(byId.make_test_call.required).toBe(false);
+    expect(byId.connect_xero.tier).toBe('optional');
+    expect(byId.connect_xero.required).toBe(false);
   });
 
-  it('sets dismissed to true and returns ok: true', async () => {
-    mockGetUser.mockResolvedValueOnce({ data: { user: { id: 'user-1' } } });
+  it('orders items essential → recommended → optional', () => {
+    const tiers = deriveChecklistItems(fullTenant, {}).map((i) => i.tier);
+    const lastEssential = tiers.lastIndexOf('essential');
+    const firstRecommended = tiers.indexOf('recommended');
+    const firstOptional = tiers.indexOf('optional');
+    expect(lastEssential).toBeLessThan(firstRecommended);
+    expect(firstRecommended).toBeLessThan(firstOptional);
+  });
 
-    const updateQuery = makeUpdateQuery({ error: null });
-    mockFromImpl.mockReturnValueOnce(updateQuery);
+  it('derives completion from tenant state + counts', () => {
+    const items = deriveChecklistItems(fullTenant, {
+      serviceCount: 2,
+      zoneCount: 1,
+      hasActiveSubscription: true,
+    });
+    const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+    expect(byId.setup_profile.complete).toBe(true); // business_name set
+    expect(byId.configure_services.complete).toBe(true); // serviceCount > 0
+    expect(byId.configure_hours.complete).toBe(true); // working_hours set
+    expect(byId.configure_zones.complete).toBe(true); // zoneCount > 0
+    expect(byId.setup_billing.complete).toBe(true); // active subscription
+    expect(byId.connect_calendar.complete).toBe(false); // not connected
+  });
 
-    const res = await PATCH(makePatchRequest({ dismissed: true }));
+  it('call-ready = every essential complete (derived)', () => {
+    const items = deriveChecklistItems(fullTenant, {
+      serviceCount: 2,
+      zoneCount: 1,
+      hasActiveSubscription: true,
+    });
+    const essentials = items.filter((i) => i.tier === 'essential');
+    expect(essentials).toHaveLength(5);
+    expect(essentials.every((i) => i.complete)).toBe(true);
+  });
+
+  it('mark_done override forces complete:true', () => {
+    const t = {
+      ...fullTenant,
+      business_name: null,
+      checklist_overrides: { setup_profile: { mark_done: true } },
+    };
+    const profile = deriveChecklistItems(t, {}).find((i) => i.id === 'setup_profile');
+    expect(profile.complete).toBe(true);
+    expect(profile.mark_done_override).toBe(true);
+  });
+
+  it('dismiss override removes the item from the list', () => {
+    const t = {
+      ...fullTenant,
+      checklist_overrides: { connect_xero: { dismissed: true } },
+    };
+    const items = deriveChecklistItems(t, {});
+    expect(items.find((i) => i.id === 'connect_xero')).toBeUndefined();
+  });
+
+  it('emits has_error + Reconnect subtitle for a failed integration', () => {
+    const jobber = deriveChecklistItems(fullTenant, { jobberHasError: true }).find(
+      (i) => i.id === 'connect_jobber'
+    );
+    expect(jobber.has_error).toBe(true);
+    expect(jobber.error_subtitle).toBe('Reconnect needed');
+  });
+
+  it('make_test_call completes from test_call_completed (verified), not onboarding', () => {
+    // fullTenant has onboarding_complete: true but no test_call_completed — the
+    // item must stay incomplete until a test call actually connected.
+    const notTested = deriveChecklistItems(
+      { ...fullTenant, test_call_completed: false },
+      {}
+    ).find((i) => i.id === 'make_test_call');
+    expect(notTested.complete).toBe(false);
+
+    const tested = deriveChecklistItems(
+      { ...fullTenant, test_call_completed: true },
+      {}
+    ).find((i) => i.id === 'make_test_call');
+    expect(tested.complete).toBe(true);
+  });
+});
+
+describe('GET /api/setup-checklist auth guard', () => {
+  it('returns 401 when the user is not authenticated', async () => {
+    mockGetUser.mockResolvedValueOnce({ data: { user: null } });
+    const res = await GET();
     const body = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(body.ok).toBe(true);
-    expect(updateQuery.update).toHaveBeenCalledWith({ setup_checklist_dismissed: true });
-    expect(updateQuery.eq).toHaveBeenCalledWith('owner_id', 'user-1');
+    expect(res.status).toBe(401);
+    expect(body.error).toBe('Unauthorized');
   });
 });

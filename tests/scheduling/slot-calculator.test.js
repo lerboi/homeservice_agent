@@ -114,12 +114,13 @@ describe('calculateAvailableSlots', () => {
       maxSlots: 20,
     });
 
-    // 9 total - 1 booked = 8 slots (also -1 for 30min flat buffer after 9AM booking = 10AM also excluded)
-    // Wait: with no zones, flat 30min buffer. After booking ends at 10:00, next slot must be >= 10:30.
-    // 10:00 slot starts at 10:00 which is exactly when booking ends, and buffer would push to 10:30.
-    // So 10:00 slot is excluded, 11:00 slot is fine.
-    // That means 8AM, 9AM(booked), 10AM(buffer), 11AM, 12PM, 1PM, 2PM, 3PM, 4PM
-    // Available: 8AM, 11AM, 12PM, 1PM, 2PM, 3PM, 4PM = 7 slots
+    // With no zones, the default 30min buffer applies on BOTH sides (M16 P2 forward+backward):
+    // - backward: after the booking ends at 10:00, the next slot must start >= 10:30, so the
+    //   10:00 slot is excluded (11:00 is the first free one after).
+    // - forward: before the booking starts at 09:00, a slot must end <= 08:30, so the 08:00 slot
+    //   (ends 09:00) is excluded too.
+    // Grid: 8AM(fwd buffer), 9AM(booked), 10AM(back buffer), 11AM, 12PM, 1PM, 2PM, 3PM, 4PM
+    // Available: 11AM, 12PM, 1PM, 2PM, 3PM, 4PM = 6 slots
     expect(slots.length).toBeLessThan(9);
     // 9AM slot should not be in results
     const startTimes = slots.map((s) => new Date(s.start).toISOString());
@@ -419,6 +420,71 @@ describe('calculateAvailableSlots', () => {
       });
 
       expect(slots).toHaveLength(0);
+    });
+  });
+
+  // ── M16 P2: owner-adjustable travel buffer + forward/backward adjacency ──────
+  //
+  // SHARED SCENARIO (kept identical in the Python twin
+  // livekit_agent/tests/test_slot_calculator_travel_buffer.py so both calculators
+  // are proven to agree): tenant timezone UTC, Monday 2026-03-23, working hours
+  // 09:00–17:00 with no lunch, 60-min slots, ONE existing booking 12:00–13:00 UTC.
+  // Expected available start-hours (UTC) by buffer value:
+  //   buffer 0  → [9, 10, 11, 13, 14, 15, 16]   (buffering disabled)
+  //   buffer 30 → [9, 10, 14, 15, 16]            (default; both sides buffered)
+  //   buffer 90 → [9, 15, 16]                    (wide buffer pushes both sides out)
+  describe('travel buffer (owner-adjustable, M16 P2)', () => {
+    const BUFFER_HOURS = {
+      ...STANDARD_HOURS,
+      monday: { open: '09:00', close: '17:00', enabled: true, lunchStart: null, lunchEnd: null },
+    };
+    const BOOKING = [{
+      start_time: `${MONDAY}T12:00:00.000Z`,
+      end_time: `${MONDAY}T13:00:00.000Z`,
+    }];
+
+    function startHours(slots) {
+      return slots.map((s) => new Date(s.start).getUTCHours());
+    }
+
+    function run(overrides) {
+      return calculateAvailableSlots({
+        workingHours: BUFFER_HOURS,
+        slotDurationMins: 60,
+        existingBookings: BOOKING,
+        externalBlocks: [],
+        zones: [],
+        zonePairBuffers: [],
+        targetDate: MONDAY,
+        tenantTimezone: 'UTC',
+        maxSlots: 20,
+        ...overrides,
+      });
+    }
+
+    test('travelBufferMins=0 disables buffering (all non-overlapping slots offered)', () => {
+      expect(startHours(run({ travelBufferMins: 0 }))).toEqual([9, 10, 11, 13, 14, 15, 16]);
+    });
+
+    test('default buffer (omitted) = 30 and applies on BOTH sides of the booking', () => {
+      // omitted travelBufferMins → defaults to 30 (proves the literal-30 value is preserved)
+      expect(startHours(run({}))).toEqual([9, 10, 14, 15, 16]);
+    });
+
+    test('explicit travelBufferMins=30 matches the default', () => {
+      expect(startHours(run({ travelBufferMins: 30 }))).toEqual([9, 10, 14, 15, 16]);
+    });
+
+    test('larger buffer (90) pushes slots further from the booking on both sides', () => {
+      expect(startHours(run({ travelBufferMins: 90 }))).toEqual([9, 15, 16]);
+    });
+
+    test('forward case: the slot ending exactly at the booking start is withheld at default buffer', () => {
+      // 11:00–12:00 ends right when the 12:00 booking starts (gap 0 < 30) → forward-buffered out;
+      // 10:00–11:00 (gap 60 >= 30) survives. Backward-only logic would have offered 11:00.
+      const hrs = startHours(run({}));
+      expect(hrs).toContain(10);
+      expect(hrs).not.toContain(11);
     });
   });
 });

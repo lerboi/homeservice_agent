@@ -7,7 +7,7 @@ description: "Complete architectural reference for the scheduling and calendar s
 
 This document is the single source of truth for the entire scheduling and calendar system. Read this before making any changes to slot calculation, booking, calendar sync, OAuth flows, working hours, zones, or appointment management.
 
-**Last updated**: 2026-06-12 (audit wave 1, calendar-sync durability + webhook hardening — (1) **Outlook 410 recovery**: `graphFetch` now attaches `err.status` + `err.graphErrorCode`; `syncOutlookCalendarEvents` recovers from 410 Gone by clearing `last_sync_token`, wiping the outlook mirror rows, and restarting as a full sync with a freshly-anchored now−30d → now+180d window — previously one expired deltaLink froze the mirror forever. (2) **`renewOutlookSubscription` 404 recovery**: Graph deletes subscriptions the moment they expire, so the PATCH 404s — it now creates a fresh subscription instead of retrying the dead PATCH daily forever. (3) **Monthly window re-anchor**: on the 1st of each month the `renew-calendar-channels` cron force re-anchors EVERY connected credential (clears sync token, wipes that provider's mirror rows, full resync) — both providers' now−30d→now+180d windows were otherwise frozen at connect time, so mirrors stopped seeing new events ~6 months in. (4) **Google webhook hardening**: the legacy fallback that trusted the spoofable `X-Goog-Channel-Token` header as a tenant_id was REMOVED — tenants are resolved only via `watch_channel_id` DB lookup; notifications without a resolvable channel id are dropped with 200. `src/lib/webhooks/google-calendar-push.js` and its test were DELETED — the logic lives in the route `src/app/api/webhooks/google-calendar/route.js` Cron inventory is now **11 endpoints** — 2026-06-12 added `/api/cron/release-churned-numbers` + `/api/cron/retry-meter-events`, both covered by payment-architecture.) Previous: 2026-06-10 (b: cron inventory grew to 9 endpoints — added `/api/cron/refresh-integration-tokens` (`*/10 * * * *`), the Jobber/Xero token keep-fresh sweep; see cron table + integrations-jobber-xero skill. Calendar dashboard page UI/perf rework same day — covered by dashboard-crm-system.) (a: Calendar/scheduling fixes from the 2026-06 audit — (1) Outlook OAuth code exchange now POSTs directly to the Microsoft token endpoint (MSAL's `acquireTokenByCode` never exposed the refresh token, so refresh tokens were never persisted and Outlook connections died after ~1h); callback persists `refresh_token` + `expiry_date` from `expires_in`. (2) Google `syncCalendarEvents` paginates via `nextPageToken` in BOTH incremental and full sync (max 20 pages); sync token persisted from the LAST page, including initial sync. (3) Slot calculator: past-window guard (`windowEnd <= now` → `[]`) + all-day busy rows (`is_all_day=true`) expand to tenant-local day bounds; available-slots route selects `is_all_day` from both mirror tables. (4) Appointment cancel deletes the external event via the credential matching `appointments.external_event_provider`, falling back to current primary only when the column is null. Also corrected: secondary booking defense is the GiST exclusion constraint `appointments_no_overlap` (migration 019), `book_appointment_atomic` is 17-arg since migration 062, cron inventory is 8 endpoints. Previous: 2026-04-15 — cron inventory, recurring-not-implemented note, calendar_blocks sync nuances)
+**Last updated**: 2026-06-20 (**M16 P1 — Service-Area gate (Capability A)** — `service_zones` repurposed as a single flat **Service Area** coverage list. Migration **074_service_area_gate.sql** is **PENDING manual apply** (alongside the also-pending 072/073) — it adds `service_zones.cities text[] NOT NULL DEFAULT '{}'` (the town/city half of the coverage list; `postal_codes[]` is the ZIP half — the agent matches coverage as the UNION of both across ALL of a tenant's `service_zones` rows) plus owner settings `tenants.out_of_area_action` ('callback' default | 'decline_referral' | 'trip_fee') + `tenants.out_of_area_referral_note`. The multi-zone UI and the pairwise `zone_travel_buffers` matrix are RETIRED: the dashboard now shows ONE "Service Area" via the new `ServiceAreaManager.js` at `/dashboard/more/service-zones` (page heading "Service Zones & Travel" → "Service Area"), backed by the new `src/app/api/service-area/route.js` (GET/PUT). `ZoneManager.js`, `api/zones/route.js`, and `api/zones/[id]/route.js` were git-rm'd. `zone_travel_buffers` stays dormant (its `slot_calculator.py::_get_travel_buffer_mins` differentiated path → flat-30 fallback is unchanged; slot math NOT touched) and is slated to be dropped in M16 P2 (Capability B, pending). The Service-Area GATE itself lives in the Python voice agent's `validate_address` tool — cross-reference voice-call-architecture. The agent slot-cache prefetch in `livekit_agent/src/agent.py` was widened to `select("id, name, postal_codes, cities")`.) Previous: 2026-06-12 (audit wave 1, calendar-sync durability + webhook hardening — (1) **Outlook 410 recovery**: `graphFetch` now attaches `err.status` + `err.graphErrorCode`; `syncOutlookCalendarEvents` recovers from 410 Gone by clearing `last_sync_token`, wiping the outlook mirror rows, and restarting as a full sync with a freshly-anchored now−30d → now+180d window — previously one expired deltaLink froze the mirror forever. (2) **`renewOutlookSubscription` 404 recovery**: Graph deletes subscriptions the moment they expire, so the PATCH 404s — it now creates a fresh subscription instead of retrying the dead PATCH daily forever. (3) **Monthly window re-anchor**: on the 1st of each month the `renew-calendar-channels` cron force re-anchors EVERY connected credential (clears sync token, wipes that provider's mirror rows, full resync) — both providers' now−30d→now+180d windows were otherwise frozen at connect time, so mirrors stopped seeing new events ~6 months in. (4) **Google webhook hardening**: the legacy fallback that trusted the spoofable `X-Goog-Channel-Token` header as a tenant_id was REMOVED — tenants are resolved only via `watch_channel_id` DB lookup; notifications without a resolvable channel id are dropped with 200. `src/lib/webhooks/google-calendar-push.js` and its test were DELETED — the logic lives in the route `src/app/api/webhooks/google-calendar/route.js` Cron inventory is now **11 endpoints** — 2026-06-12 added `/api/cron/release-churned-numbers` + `/api/cron/retry-meter-events`, both covered by payment-architecture.) Previous: 2026-06-10 (b: cron inventory grew to 9 endpoints — added `/api/cron/refresh-integration-tokens` (`*/10 * * * *`), the Jobber/Xero token keep-fresh sweep; see cron table + integrations-jobber-xero skill. Calendar dashboard page UI/perf rework same day — covered by dashboard-crm-system.) (a: Calendar/scheduling fixes from the 2026-06 audit — (1) Outlook OAuth code exchange now POSTs directly to the Microsoft token endpoint (MSAL's `acquireTokenByCode` never exposed the refresh token, so refresh tokens were never persisted and Outlook connections died after ~1h); callback persists `refresh_token` + `expiry_date` from `expires_in`. (2) Google `syncCalendarEvents` paginates via `nextPageToken` in BOTH incremental and full sync (max 20 pages); sync token persisted from the LAST page, including initial sync. (3) Slot calculator: past-window guard (`windowEnd <= now` → `[]`) + all-day busy rows (`is_all_day=true`) expand to tenant-local day bounds; available-slots route selects `is_all_day` from both mirror tables. (4) Appointment cancel deletes the external event via the credential matching `appointments.external_event_provider`, falling back to current primary only when the column is null. Also corrected: secondary booking defense is the GiST exclusion constraint `appointments_no_overlap` (migration 019), `book_appointment_atomic` is 17-arg since migration 062, cron inventory is 8 endpoints. Previous: 2026-04-15 — cron inventory, recurring-not-implemented note, calendar_blocks sync nuances)
 
 ---
 
@@ -26,7 +26,7 @@ The scheduling system spans slot generation, atomic booking, and bidirectional c
 | **Cron: renew-calendar-channels** | `cron/renew-calendar-channels/route.js` | Dual-provider renewal of Google watch channels + Outlook subscriptions before TTL expiry; monthly (1st) full window re-anchor of every connected credential |
 | **Appointments API** | `api/appointments/route.js`, `api/appointments/[id]/route.js` | Calendar view fetch, travel buffer + conflict detection, cancel, dismiss conflict |
 | **Working Hours API** | `api/working-hours/route.js` | GET/PUT tenant working hours, slot duration, timezone |
-| **Zones API** | `api/zones/route.js` | GET/POST zones, PUT travel buffers between zones |
+| **Service Area API** | `api/service-area/route.js` | GET/PUT the single flat Service Area coverage list (union of `postal_codes` + `cities`) + out-of-area owner settings. Replaces the retired `api/zones/*` (M16 P1) |
 | **Google OAuth Routes** | `api/google-calendar/auth/route.js`, `api/google-calendar/callback/route.js` | Initiate Google OAuth, handle callback, store credentials, register watch, initial sync |
 | **Outlook OAuth Routes** | `api/outlook-calendar/auth/route.js`, `api/outlook-calendar/callback/route.js` | Initiate Microsoft OAuth, handle callback, store credentials, create Graph subscription, initial sync |
 
@@ -76,12 +76,13 @@ calendar_events local mirror kept in sync (slot calculator reads from this, neve
 | `src/app/api/appointments/available-slots/route.js` | GET — dashboard slot lookup; fetches bookings + calendar_events/calendar_blocks mirrors (selecting `is_all_day`) and runs `calculateAvailableSlots` |
 | `src/app/api/cron/renew-calendar-channels/route.js` | POST — dual-provider channel/subscription renewal (run daily) |
 | `src/app/api/working-hours/route.js` | GET/PUT — tenant working_hours JSONB, slot_duration_mins, tenant_timezone |
-| `src/app/api/zones/route.js` | GET/POST/PUT — service zones and zone pair travel buffers |
+| `src/app/api/service-area/route.js` | GET/PUT — the single flat Service Area coverage list (GET returns the union of `postal_codes` + `cities` across rows + tenant `out_of_area_action`/`out_of_area_referral_note`; PUT collapses coverage into ONE canonical `service_zones` row — updates the oldest row in place, deletes extras — and persists the two tenant settings). Replaced the git-rm'd `api/zones/route.js` + `api/zones/[id]/route.js` (M16 P1). Dashboard surface is `ServiceAreaManager.js` (see dashboard-crm-system skill) |
 | `supabase/migrations/003_scheduling.sql` | Appointments, zones, credentials, events tables + `book_appointment_atomic` function (since extended — 17-arg as of 062) |
 | `supabase/migrations/007_outlook_calendar.sql` | Adds is_primary to calendar_credentials; renames google_event_id → external_event_id on appointments |
 | `supabase/migrations/019_appointments_exclusion_constraint.sql` | Replaces `UNIQUE(tenant_id, start_time)` with GiST exclusion constraint `appointments_no_overlap` (no overlapping non-cancelled ranges per tenant) |
 | `supabase/migrations/062_phase61_address_validation.sql` | Extends `book_appointment_atomic` to its current 17-arg signature (6 validated-address params, all DEFAULT NULL) — see auth-database-multitenancy skill |
 | `supabase/migrations/038_schema_hardening_2.sql` | `set_primary_calendar(p_tenant_id, p_provider)` RPC — atomic primary-calendar swap (single-statement UPDATE that flips is_primary across all of a tenant's calendar_credentials rows in one transaction). SECURITY DEFINER, service_role only. |
+| `supabase/migrations/074_service_area_gate.sql` | **M16 P1 (2026-06-20) — PENDING manual apply.** Adds `service_zones.cities text[] NOT NULL DEFAULT '{}'` (Service Area town/city coverage) + tenant `out_of_area_action` / `out_of_area_referral_note` owner settings. See §8. |
 
 ---
 
@@ -105,6 +106,7 @@ export function calculateAvailableSlots({
   tenantTimezone,      // string  — IANA timezone e.g. "America/Chicago"
   maxSlots,            // number  — max slots to return (default 10)
   candidateZoneId,     // string|null — zone ID for the candidate booking (for travel buffer calc)
+  travelBufferMins,    // number  — owner-adjustable tenant-wide buffer (tenants.travel_buffer_mins, M16 P2; default 30)
 })
 // Returns: Array<{ start: string, end: string }> — ISO strings
 ```
@@ -123,7 +125,7 @@ export function calculateAvailableSlots({
    - Overlaps with lunch break
    - Overlaps any `existingBookings` interval
    - Overlaps any `externalBlocks` interval (Google/Outlook calendar events)
-   - Violates travel buffer from the most recent prior booking (see travel buffer rules)
+   - Violates the travel buffer from the most recent **prior** booking (backward), OR from the earliest **following** booking (forward) — the buffer is enforced on **both** sides (M16 P2; see travel buffer rules)
 9. Accepted slots are returned as `{ start, end }` ISO strings
 
 ### All-Day Block Expansion (`expandAllDayInterval`)
@@ -136,17 +138,25 @@ External blocks with `is_all_day: true` are stored as date-only payloads that Po
 
 ### Travel Buffer Rules
 
-Implemented in `getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePairBuffers)`:
+Implemented in `getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePairBuffers, defaultBufferMins)` (Python twin: `_get_travel_buffer_mins(..., default_buffer_mins)`). `defaultBufferMins` is the **owner-adjustable** tenant-wide buffer — `tenants.travel_buffer_mins` (M16 P2, migration 075; `int NOT NULL DEFAULT 30`):
 
 | Condition | Buffer |
 |-----------|--------|
-| No zones configured (`zones` is empty) | 30 min (flat) |
-| One or both sides missing a zone ID | 30 min (cross-zone default) |
+| No zones configured (`zones` is empty) | `defaultBufferMins` (the tenant's `travel_buffer_mins`, default 30) |
+| One or both sides missing a zone ID | `defaultBufferMins` (cross-zone default) |
 | Same zone (`lastBookingZoneId === candidateZoneId`) | 0 min |
-| Different zones — matching pair in `zonePairBuffers` | `pair.buffer_mins` |
-| Different zones — no pair entry found | 30 min (default) |
+| Different zones — matching pair in `zonePairBuffers` | `pair.buffer_mins` (dormant) |
+| Different zones — no pair entry found | `defaultBufferMins` |
 
-The "last booking before this slot" is computed by filtering `parsedBookings` to those ending at or before `slotStart`, then picking the one with the latest end time.
+Because `zone_id` is always NULL today (the zone-differentiation rows are dormant), in practice every booking resolves to `defaultBufferMins`. The value is threaded into `calculateAvailableSlots({ ..., travelBufferMins })` exactly like `slotDurationMins`, so it applies automatically at **both** offer-time and book-time. **Default 30 = pre-P2 behavior (zero regression on the value).** A stored `0` disables buffering.
+
+The buffer is enforced on **both sides** of every existing booking (M16 P2):
+- **Backward** — the "last booking before this slot" is `parsedBookings` filtered to those ending at/before `slotStart`, picking the latest end; the slot must start ≥ `lastEnd + buffer`.
+- **Forward** — the "earliest booking after this slot" is `parsedBookings` filtered to those starting at/after `slotEnd`, picking the earliest start; the slot must end ≤ `nextStart − buffer`.
+
+Both sides consult `existingBookings` (appointments) only, not `externalBlocks`.
+
+> **M16 P1/P2 — pairwise buffers dormant; flat buffer now owner-adjustable.** The multi-zone UI and the pairwise `zone_travel_buffers` matrix are retired (nothing populates `zone_travel_buffers`); the `_get_travel_buffer_mins` zone-differentiation branches stay dormant. P2 (migration 075) kept that flat default path but made it the owner-set `tenants.travel_buffer_mins` and added the forward adjacency case. The `zone_travel_buffers` table still exists (inert).
 
 ---
 
@@ -483,23 +493,21 @@ Two modes:
 
 ### `GET /api/working-hours`
 
-Returns `{ working_hours, slot_duration_mins, tenant_timezone }` from `tenants` table.
+Returns `{ working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone }` from `tenants` table.
 
 ### `PUT /api/working-hours`
 
-Updates any combination of `working_hours` (JSONB), `slot_duration_mins` (int), `tenant_timezone` (IANA string). Only fields present in request body are updated.
+Updates any combination of `working_hours` (JSONB), `slot_duration_mins` (int, 5–480), `travel_buffer_mins` (int, 0–240 — M16 P2), `tenant_timezone` (IANA string). Only fields present in request body are updated; each is range-validated.
 
-### `GET /api/zones`
+### `GET /api/service-area`
 
-Returns `{ zones: [...], travelBuffers: [...] }`. Travel buffers only fetched when `zones.length >= 2`.
+Returns the tenant's single flat **Service Area**: the UNION of `postal_codes` + `cities` across all of the tenant's `service_zones` rows, plus the owner settings `out_of_area_action` and `out_of_area_referral_note` read from `tenants`. (M16 P1 — replaced `GET /api/zones`.)
 
-### `POST /api/zones`
+### `PUT /api/service-area`
 
-Creates a new service zone. Enforces 5-zone maximum per tenant (`count >= 5` → 400). Body: `{ name, postal_codes }`.
+Persists the Service Area. Collapses the submitted coverage into ONE canonical `service_zones` row — updates the tenant's oldest `service_zones` row in place and deletes any extras — then writes `out_of_area_action` and `out_of_area_referral_note` to `tenants`. (M16 P1 — replaced `POST /api/zones` + `PUT /api/zones`.)
 
-### `PUT /api/zones`
-
-Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_mins }] }`. Conflict: `zone_a_id,zone_b_id`.
+The dashboard surface is `ServiceAreaManager.js`, mounted at `/dashboard/more/service-zones` (page heading changed "Service Zones & Travel" → "Service Area"). The removed `ZoneManager.js`, `api/zones/route.js`, and `api/zones/[id]/route.js` were git-rm'd. UI details live in the dashboard-crm-system skill.
 
 ---
 
@@ -531,17 +539,24 @@ Upserts travel buffer pairs. Body: `{ buffers: [{ zone_a_id, zone_b_id, buffer_m
 
 **Key constraint**: `UNIQUE (tenant_id, start_time)` — secondary anti-double-booking defense.
 
-### `service_zones` (from 003_scheduling.sql)
+### `service_zones` (from 003_scheduling.sql + 074_service_area_gate.sql)
+
+**Repurposed in M16 P1 (2026-06-20) as a single flat Service Area coverage list** — no longer a set of differentiated geographic zones. The agent matches coverage as the UNION of `postal_codes` + `cities` across all of a tenant's rows; `PUT /api/service-area` keeps exactly ONE canonical row per tenant.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | |
 | `tenant_id` | uuid | FK → tenants(id) ON DELETE CASCADE |
 | `name` | text | |
-| `postal_codes` | text[] | DEFAULT '{}' |
+| `postal_codes` | text[] | DEFAULT '{}'. ZIP/postal half of the coverage list |
+| `cities` | text[] | **Added in 074 (M16 P1).** NOT NULL DEFAULT '{}'. Town/city half of the coverage list |
 | `created_at` | timestamptz | |
 
+The agent's slot-cache prefetch SELECT in `livekit_agent/src/agent.py` (feeding `deps["_slot_cache"]["service_zones"]`) was widened from `select("id, name, postal_codes")` to `select("id, name, postal_codes, cities")` so the gate sees both halves of the coverage list — see voice-call-architecture skill.
+
 ### `zone_travel_buffers` (from 003_scheduling.sql)
+
+**Dormant as of M16 P1 (2026-06-20).** The pairwise travel-buffer matrix is retired — nothing populates it after the multi-zone → single Service Area collapse — but the table still exists. Its differentiated-buffer code path (`slot_calculator.py::_get_travel_buffer_mins`) stays dormant, so the flat-30 fallback is unchanged. Slated to be dropped in M16 P2.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -619,7 +634,10 @@ Personal/unavailable time blocks (lunch, vacation, errands). Respected by the sl
 **Tenant columns** (relevant to scheduling, stored on `tenants` table):
 - `tenant_timezone` — IANA timezone string, DEFAULT 'America/Chicago'
 - `slot_duration_mins` — int, DEFAULT 60
+- `travel_buffer_mins` — int NOT NULL DEFAULT 30, **added in 075 (M16 P2)**. Owner-adjustable minimum drive time the slot calculator leaves between back-to-back jobs; threaded into `calculateAvailableSlots({ travelBufferMins })` like `slot_duration_mins`, enforced forward + backward. 0 disables buffering; default 30 = pre-P2 behavior. Owner-set on the Working Hours page (`PUT /api/working-hours`).
 - `working_hours` — JSONB, day-keyed config with `{ enabled, open, close, lunchStart, lunchEnd }` per day
+- `out_of_area_action` — text, **added in 074 (M16 P1)**. Owner setting: one of 'callback' (DEFAULT) | 'decline_referral' | 'trip_fee'. Consumed by the Python agent's `validate_address` Service-Area gate (see voice-call-architecture); also returned by `GET /api/service-area`.
+- `out_of_area_referral_note` — text, **added in 074 (M16 P1)**. Free-text note paired with `out_of_area_action`; surfaced/returned alongside it.
 
 ---
 
@@ -648,7 +666,7 @@ Personal/unavailable time blocks (lunch, vacation, errands). Respected by the sl
 
 - **`UNIQUE (tenant_id, start_time)` as secondary defense** — Even if two concurrent transactions race through the advisory lock and overlap check simultaneously (extremely rare), the DB-level unique constraint catches the second insert and raises an error. Belt-and-suspenders concurrency safety.
 
-- **Travel buffer logic is caller-zone-aware** — No zones = flat 30-min. Same zone = 0-min. Cross-zone = lookup or 30-min default. The candidate zone (`candidateZoneId`) is passed in from the caller so buffers can be computed without knowing what the next booking's zone will be until booking time.
+- **Travel buffer is owner-adjustable + symmetric** (M16 P2) — the default buffer is the tenant's `travel_buffer_mins` (DEFAULT 30, 0 disables), enforced on **both** sides of every booking (forward + backward). The zone-differentiated path (same zone = 0-min; cross-zone = `zonePairBuffers` lookup) remains in the code but is dormant (`zone_id` always NULL), so every booking resolves to the flat owner-set value. `candidateZoneId` is still passed through for that dormant path.
 
 - **`after()` for calendar push** — `pushBookingToCalendar` is always called inside `after()` from webhook handlers. Calendar event creation never blocks the synchronous `book_appointment` response to the AI. This keeps the booking confirmation fast and tolerates temporary calendar API unavailability.
 
@@ -675,6 +693,7 @@ Personal/unavailable time blocks (lunch, vacation, errands). Respected by the sl
 ## Cross-Domain References
 
 - For slot calculation during active calls, see **voice-call-architecture skill** (sections on agent entry, `check_availability` tool, `book_appointment` tool)
+- For the **Service-Area gate's runtime behavior** (M16 P1 Capability A) — the Python voice agent's `validate_address` tool checks a caller's address against the Service Area coverage union (`postal_codes` + `cities`) and branches on `out_of_area_action` — see the **voice-call-architecture skill**. The gate lives entirely in the agent; Capability A does not change slot math.
 - For Supabase service role vs. user client patterns, RLS policies, and multi-tenant data isolation, see **auth-database-multitenancy skill**
 - For dashboard calendar UI components (calendar page, appointment cards, conflict banner), see the dashboard/CRM skill
 

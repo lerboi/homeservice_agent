@@ -27,7 +27,7 @@ const PERMANENT_ERROR_CODES = new Set([
   21612, // 'To' number is not a valid mobile number
   21614, // 'To' number is not a valid mobile number (variant)
   21408, // Permission to send SMS not enabled for the region
-  21610, // Message body is required
+  21610, // Recipient has opted out (replied STOP) — do not retry
   21608, // Account not authorized
 ]);
 

@@ -85,7 +85,7 @@ export default function UsageRingGauge({ callsUsed = 0, callsLimit = 0, overageR
             cy="60"
             r={radius}
             fill="none"
-            stroke="var(--brand-accent)"
+            stroke="var(--accent-emerald)"
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}

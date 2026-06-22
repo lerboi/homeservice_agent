@@ -28,7 +28,7 @@ export async function PATCH(request, { params }) {
     .update(updates)
     .eq('id', id)
     .eq('tenant_id', tenantId)
-    .select('id, title, start_time, end_time, is_all_day, note, external_event_id, created_at')
+    .select('id, title, start_time, end_time, is_all_day, note, external_event_id, external_event_provider, created_at')
     .single();
 
   if (error) {
@@ -39,12 +39,16 @@ export async function PATCH(request, { params }) {
   if (data.external_event_id) {
     after(async () => {
       try {
-        const { data: creds } = await supabase
+        // Resolve creds via the provider that OWNS this event (M15), falling
+        // back to the primary provider for legacy rows with no recorded owner.
+        let credsQuery = supabase
           .from('calendar_credentials')
           .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_primary', true)
-          .single();
+          .eq('tenant_id', tenantId);
+        credsQuery = data.external_event_provider
+          ? credsQuery.eq('provider', data.external_event_provider)
+          : credsQuery.eq('is_primary', true);
+        const { data: creds } = await credsQuery.single();
 
         if (!creds) return;
 
@@ -124,7 +128,7 @@ export async function DELETE(request, { params }) {
   // Fetch block(s) to get external_event_ids before deleting
   const { data: block } = await supabase
     .from('calendar_blocks')
-    .select('id, external_event_id, group_id')
+    .select('id, external_event_id, external_event_provider, group_id')
     .eq('id', id)
     .eq('tenant_id', tenantId)
     .single();
@@ -134,7 +138,7 @@ export async function DELETE(request, { params }) {
     // Fetch all blocks in the group for calendar cleanup
     const { data: groupBlocks } = await supabase
       .from('calendar_blocks')
-      .select('id, external_event_id')
+      .select('id, external_event_id, external_event_provider')
       .eq('tenant_id', tenantId)
       .eq('group_id', block.group_id);
 
@@ -170,17 +174,24 @@ export async function DELETE(request, { params }) {
   if (blocksToClean.length > 0) {
     after(async () => {
       try {
-        const { data: creds } = await supabase
-          .from('calendar_credentials')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('is_primary', true)
-          .single();
-
-        if (!creds) return;
+        // Resolve creds per block by the provider that OWNS the event (M15),
+        // falling back to the primary for legacy rows. Cache per provider so a
+        // group delete doesn't re-query for every block.
+        const credsCache = new Map();
+        const resolveCreds = async (provider) => {
+          const key = provider || '__primary__';
+          if (credsCache.has(key)) return credsCache.get(key);
+          let q = supabase.from('calendar_credentials').select('*').eq('tenant_id', tenantId);
+          q = provider ? q.eq('provider', provider) : q.eq('is_primary', true);
+          const { data: c } = await q.single();
+          credsCache.set(key, c || null);
+          return c || null;
+        };
 
         for (const b of blocksToClean) {
           try {
+            const creds = await resolveCreds(b.external_event_provider);
+            if (!creds) continue;
             if (creds.provider === 'google') {
               const { createOAuth2Client } = await import('@/lib/scheduling/google-calendar.js');
               const { google } = await import('googleapis');

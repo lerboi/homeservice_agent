@@ -51,8 +51,10 @@ Pricing Page (/pricing)
   → Creates subscription row via handleSubscriptionEvent()
        ↓
   Dashboard — billing cycle begins
-  → Each call: Python agent calls increment_calls_used RPC
-  → If limit_exceeded: reports to Stripe Billing Meter (voco_calls)
+  → Each call: Python agent calls increment_calls_used RPC (post_call §4)
+  → If limit_exceeded: meter post DEFERRED to post_call §7.5 — runs AFTER owner
+      notifications (LK-B2, 2026-06-21) so billing never starves the owner alert
+      in the 8s post-call budget; still capped at 3s
   → If meter post fails: outbox row in stripe_meter_failures (migration 071)
       → /api/cron/retry-meter-events re-posts every 6h (same identifier — dedupe)
   → Overage charged automatically on next invoice
@@ -379,8 +381,10 @@ Routing is by `stripe_customer_id` (no subscription-item id needed), and the per
 
 A failed meter post used to be permanently unbilled revenue: `increment_calls_used` had already consumed the `call_id` (usage_events PK), so re-running the pipeline skipped the meter branch — there was no retry path. Now:
 
-- **Agent side**: on meter-post failure (capped at 3s via `asyncio.wait_for`), the Python agent upserts a row into `stripe_meter_failures` (upsert on `call_id` — see table in §9).
+- **Agent side**: on meter-post failure (capped at 3s via `asyncio.wait_for`), the Python agent upserts a row into `stripe_meter_failures` (upsert on `call_id` — see table in §9). **LK-B2 (2026-06-21):** this meter post now runs in post_call **§7.5 — AFTER owner notifications**, not §4, so a slow Stripe call can never starve the owner missed-job alert inside the 8s post-call budget. §4 keeps only the fast `increment_calls_used` + the customer lookup.
 - **Cron side**: `/api/cron/retry-meter-events` (every 6h, `vercel.json`) drains up to 25 rows per run, re-posting with the SAME `identifier=overage_{call_id}` — Stripe dedupes meter events by identifier, so a retry can never double-bill even if the original post landed before its response was lost. Rows are **deleted on success**; on failure `attempts`/`last_attempt_at`/`failure_reason` are updated, and crossing 10 attempts fires a one-time `Sentry.captureMessage` (the row is kept for manual review and skipped thereafter).
+
+> **Related (LK-B2):** the owner missed-job ALERT now has its own twin of this exact pattern — table `owner_notification_failures` (migration **076**) + cron `/api/cron/retry-owner-notifications` (every 5 min). It is a NOTIFICATION outbox, not a billing one, so it lives primarily in the `voice-call-architecture` skill; documented here only because it deliberately mirrors `stripe_meter_failures`. Key difference: delivery is **at-least-once** (Twilio/Resend have no server-side dedupe like Stripe's meter identifier), so a retry can produce a rare duplicate alert — acceptable vs a missed job.
 
 ---
 

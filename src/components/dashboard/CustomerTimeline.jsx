@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const TYPE_CONFIG = {
   call: { icon: Phone, color: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400', dot: 'bg-blue-400' },
   appointment: { icon: Calendar, color: 'bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400', dot: 'bg-green-400' },
-  invoice: { icon: FileText, color: 'bg-orange-50 text-[var(--brand-accent)] dark:bg-orange-950/40', dot: 'bg-[var(--brand-accent)]' },
+  invoice: { icon: FileText, color: 'bg-[var(--accent-emerald)]/10 text-[var(--accent-emerald)] dark:bg-[var(--accent-emerald)]/15', dot: 'bg-[var(--accent-emerald)]' },
   estimate: { icon: ClipboardList, color: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400', dot: 'bg-violet-400' },
 };
 

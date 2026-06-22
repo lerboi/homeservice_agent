@@ -1,24 +1,24 @@
 /**
- * Phase 48 Plan 05 REVISION — SetupChecklistLauncher component tests.
+ * SetupChecklistLauncher component tests (onboarding revamp).
  *
  * Target: `src/components/dashboard/SetupChecklistLauncher.jsx`
  *  - Wraps the existing SetupChecklist inside a responsive Sheet (side='right'
  *    on lg+, side='bottom' on mobile)
- *  - Auto-opens once per session via sessionStorage('voco_setup_opened') gate
- *    (desktop only, when incomplete)
+ *  - Opens on the `open-setup-checklist` window event (fired by the readiness
+ *    card) — NO LONGER auto-opens per session
  *  - Hides the FAB entirely when percent === 100
- *  - Passes data through onDataLoaded to capture progress server-side
+ *  - FAB surfaces the count of essentials remaining (the call-readiness blocker)
  *
  * Matches project test convention (static source-text inspection, no
- * @testing-library). Same pattern as setup-checklist.test.js and
- * chat-panel.test.js.
+ * @testing-library).
  */
 
 import { readFileSync, existsSync } from 'fs';
 
 const SRC = 'src/components/dashboard/SetupChecklistLauncher.jsx';
 const PAGE = 'src/app/dashboard/page.js';
-const LAYOUT = 'src/app/dashboard/layout.js';
+// The launcher mounts in the client layout shell, not the server layout.js.
+const LAYOUT = 'src/app/dashboard/DashboardLayoutClient.jsx';
 
 const read = (path) => readFileSync(path, 'utf8');
 
@@ -32,9 +32,6 @@ describe('SetupChecklistLauncher', () => {
     expect(src).toMatch(
       /import\s+SetupChecklist\s+from\s+['"]@\/components\/dashboard\/SetupChecklist['"]/
     );
-    // Progress is fetched directly in the launcher (Radix Sheet does not mount
-    // children until open=true, so an onDataLoaded callback on the child can
-    // never fire before the Sheet opens — which defeats the FAB + auto-open).
     expect(src).toMatch(/<SetupChecklist\s*\/>/);
   });
 
@@ -53,31 +50,31 @@ describe('SetupChecklistLauncher', () => {
     expect(src).toMatch(/useIsMobile\s*\(\s*1024\s*\)/);
   });
 
-  it('uses sessionStorage voco_setup_opened as the auto-open gate', () => {
+  it('opens the Sheet on the open-setup-checklist window event', () => {
     const src = read(SRC);
-    // Gate key
-    expect(src).toMatch(/voco_setup_opened/);
-    // Both read and write sides exist
-    expect(src).toMatch(/sessionStorage\.getItem/);
-    expect(src).toMatch(/sessionStorage\.setItem/);
+    expect(src).toMatch(/addEventListener\(\s*['"]open-setup-checklist['"]/);
+    expect(src).toMatch(/setOpen\(true\)/);
   });
 
-  it('skips auto-open on mobile (bottom-sheet blocks content)', () => {
+  it('no longer auto-opens the Sheet (the readiness card is the surfaced guide)', () => {
     const src = read(SRC);
-    // The effect must short-circuit when isMobile is truthy.
-    expect(src).toMatch(/if\s*\(\s*isMobile\s*\)\s*return/);
+    expect(src).not.toMatch(/voco_setup_opened/);
+    expect(src).not.toMatch(/shouldAutoOpen/);
   });
 
-  it('skips auto-open and hides the FAB when percent >= 100', () => {
+  it('hides the FAB when percent >= 100 (nothing left to launch)', () => {
     const src = read(SRC);
-    // Either as an effect short-circuit or in the FAB render guard.
     expect(src).toMatch(/percent\s*>=\s*100/);
   });
 
-  it('FAB is rendered with a copper accent and a 44px minimum tap target', () => {
+  it('FAB surfaces the essentials-remaining count', () => {
     const src = read(SRC);
-    expect(src).toMatch(/#C2410C/);
-    // FAB guards min tap size (WCAG) regardless of the visual diameter
+    expect(src).toMatch(/essentialsLeft/);
+  });
+
+  it('FAB uses the copper brand accent and a 44px minimum tap target', () => {
+    const src = read(SRC);
+    expect(src).toMatch(/var\(--brand-accent\)/);
     expect(src).toMatch(/minWidth:\s*44/);
     expect(src).toMatch(/minHeight:\s*44/);
   });
@@ -95,16 +92,13 @@ describe('SetupChecklistLauncher', () => {
   it('FAB button has an aria-label describing the pending count', () => {
     const src = read(SRC);
     expect(src).toMatch(/aria-label=/);
-    // Label text references steps / finish setup — not a raw count
+    // Label text references finishing setup — not a raw count
     expect(src).toMatch(/finish setup/i);
   });
 
   it('fetches /api/setup-checklist directly to derive progress', () => {
     const src = read(SRC);
-    // Launcher owns the fetch — not the inner SetupChecklist — because Radix
-    // Sheet doesn't mount children until open=true. See file-level comment.
     expect(src).toMatch(/useSWRFetch\s*\(\s*['"]\/api\/setup-checklist['"]/);
-    // Tracks percent derived from items array
     expect(src).toMatch(/checklistData\.items/);
   });
 
@@ -115,11 +109,11 @@ describe('SetupChecklistLauncher', () => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-// Integration checks — confirm the launcher replaced the inline mount pattern.
+// Integration checks — confirm the home page + layout wiring.
 // ───────────────────────────────────────────────────────────────────────────
 
-describe('Dashboard layout + page integration (launcher revision)', () => {
-  it('layout.js mounts SetupChecklistLauncher alongside ChatbotSheet', () => {
+describe('Dashboard layout + page integration (onboarding revamp)', () => {
+  it('DashboardLayoutClient mounts SetupChecklistLauncher alongside ChatbotSheet', () => {
     const src = read(LAYOUT);
     expect(src).toMatch(
       /import\s+SetupChecklistLauncher\s+from\s+['"]@\/components\/dashboard\/SetupChecklistLauncher['"]/
@@ -127,21 +121,20 @@ describe('Dashboard layout + page integration (launcher revision)', () => {
     expect(src).toMatch(/<SetupChecklistLauncher\s*\/>/);
   });
 
-  it('dashboard/page.js no longer renders SetupChecklist or ChatPanel inline', () => {
+  it('dashboard/page.js renders the CallReadinessCard, not the inline checklist', () => {
     const src = read(PAGE);
     expect(src).not.toMatch(/<SetupChecklist\s*\/?>/);
-    expect(src).not.toMatch(/<ChatPanel\s*\/?>/);
+    expect(src).toMatch(/<CallReadinessCard\s*\/>/);
     // Still composes the daily ops surfaces
     expect(src).toMatch(/<DailyOpsHub/);
     expect(src).toMatch(/<HelpDiscoverabilityCard/);
     expect(src).toMatch(/<RecentActivityFeed/);
   });
 
-  it('page.js dropped the 12-col sidebar grid (single-column layout)', () => {
+  it('page.js uses a single-column layout (no 12-col sidebar grid)', () => {
     const src = read(PAGE);
     expect(src).not.toMatch(/lg:grid-cols-12/);
     expect(src).not.toMatch(/lg:col-span-8/);
     expect(src).not.toMatch(/lg:col-span-4/);
-    expect(src).not.toMatch(/lg:sticky\s+lg:top-6/);
   });
 });

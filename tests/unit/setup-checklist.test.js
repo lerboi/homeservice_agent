@@ -23,21 +23,26 @@ describe('SetupChecklist', () => {
     expect(existsSync(SRC)).toBe(true);
   });
 
-  it('renders 4 theme accordions in order profile/voice/calendar/billing', () => {
+  it('renders 3 tier accordions in order essential/recommended/optional', () => {
     const src = read();
     // Uses shadcn Accordion primitives
     expect(src).toMatch(/from '@\/components\/ui\/accordion'/);
     expect(src).toMatch(/<Accordion\b/);
-    // Themes appear in canonical order somewhere in the source (THEME_ORDER array)
-    const themeOrderMatch = src.match(
-      /\[\s*['"]profile['"]\s*,\s*['"]voice['"]\s*,\s*['"]calendar['"]\s*,\s*['"]billing['"]\s*\]/
+    // Tiers appear in canonical order somewhere in the source (TIER_ORDER array)
+    const tierOrderMatch = src.match(
+      /\[\s*['"]essential['"]\s*,\s*['"]recommended['"]\s*,\s*['"]optional['"]\s*\]/
     );
-    expect(themeOrderMatch).not.toBeNull();
-    // THEME_LABELS covers all four
-    expect(src).toMatch(/profile:\s*['"]Profile['"]/);
-    expect(src).toMatch(/voice:\s*['"]Voice['"]/);
-    expect(src).toMatch(/calendar:\s*['"]Calendar['"]/);
-    expect(src).toMatch(/billing:\s*['"]Billing['"]/);
+    expect(tierOrderMatch).not.toBeNull();
+    // TIER_LABELS covers all three
+    expect(src).toMatch(/essential:\s*['"]Essential['"]/);
+    expect(src).toMatch(/recommended:\s*['"]Recommended['"]/);
+    expect(src).toMatch(/optional:\s*['"]Optional['"]/);
+  });
+
+  it('headlines the essentials meter with the call-ready milestone', () => {
+    const src = read();
+    expect(src).toMatch(/essentialsComplete/);
+    expect(src).toMatch(/callReady/);
   });
 
   it('Dismiss handler fires PATCH /api/setup-checklist with {item_id, dismiss:true}', () => {

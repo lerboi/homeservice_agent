@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { ShieldCheck } from 'lucide-react';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
 import PricingTiers from './PricingTiers';
 import ROICalculator from './ROICalculator';
@@ -29,7 +28,7 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero + Tiers (dark) */}
-      <section className="relative bg-[#050505] pt-24 pb-14 overflow-hidden">
+      <section className="relative bg-[#050505] pt-28 pb-16 overflow-hidden">
         {/* Radial gradient */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.06),transparent_70%)] pointer-events-none" />
         {/* Dot-grid texture */}
@@ -39,44 +38,20 @@ export default function PricingPage() {
 
         <div className="relative max-w-6xl mx-auto px-6">
           {/* Hero content */}
-          <div className="max-w-4xl mx-auto text-center mb-6">
+          <div className="max-w-4xl mx-auto text-center mb-12">
             <AnimatedSection>
-              {/* Eyebrow pill */}
-              <div className="flex justify-center mb-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.07]">
-                  <span className="size-1.5 rounded-full bg-[#F97316] animate-pulse" />
-                  <span className="text-xs font-semibold text-white/70 tracking-wide uppercase">AI Receptionist for Trades</span>
-                </div>
-              </div>
               {/* Headline */}
               <h1 className="text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold text-white tracking-tight leading-[1.1]">
                 Stop Losing <span className="text-[#F97316]">$1,000 Jobs</span> to Voicemail
               </h1>
               {/* Subline */}
-              <p className="mt-3 text-base text-white/50 max-w-xl mx-auto">
-                Every plan pays for itself after one booked job. Pick the volume that matches your crew.
+              <p className="mt-5 text-base md:text-lg text-white/60 max-w-xl mx-auto leading-relaxed">
+                Voco answers 24/7 and books the job &mdash; one call you&apos;d have missed covers the whole year.
               </p>
             </AnimatedSection>
           </div>
           <div id="pricing-plans">
             <PricingTiers />
-          </div>
-
-          {/* Guarantee Badge — inside same section, no background break */}
-          <div className="mt-10 max-w-3xl mx-auto">
-            <AnimatedSection>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
-                <div className="flex items-center justify-center size-12 rounded-full bg-[#F97316]/[0.08] shrink-0">
-                  <ShieldCheck className="size-6 text-[#F97316]" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-white">Risk-Free Guarantee</p>
-                  <p className="text-sm text-white/45 mt-0.5">
-                    Try Voco free for 14 days with real calls. If it doesn&apos;t book you a job, you pay nothing. Cancel anytime &mdash; no contracts, no fees.
-                  </p>
-                </div>
-              </div>
-            </AnimatedSection>
           </div>
 
         </div>
@@ -125,7 +100,7 @@ export default function PricingPage() {
                 asChild
                 className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[44px] px-8 text-base font-medium rounded-lg shadow-[0_4px_12px_0_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] transition-all hover:-translate-y-0.5"
               >
-                <a href="#pricing-plans">Start Free Trial</a>
+                <a href="#pricing-plans">See Plans &amp; Start Free</a>
               </Button>
             </div>
             <p className="text-sm text-white/40 mt-3">14-day free trial. Cancel anytime.</p>

@@ -88,7 +88,7 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 | `src/app/api/onboarding/sms-confirm/route.js` | POST: save owner_name + owner_phone + owner_email + country in one round-trip |
 | `src/app/api/onboarding/sms-verify/route.js` | POST: phone OTP verification (signInWithOtp) |
 | `src/app/api/onboarding/test-call/route.js` | POST: trigger LiveKit SIP test call — post-payment use from dashboard settings |
-| `src/app/api/onboarding/test-call-status/route.js` | GET: poll for onboarding_complete + phone_number — post-payment use from dashboard settings |
+| `src/app/api/onboarding/test-call-status/route.js` | GET: poll test-call state — `complete` = `test_call_status === 'connected'` (set by the LiveKit webhook), plus `status`, `ever_completed` (test_call_completed), `phone_number`. Post-payment use from dashboard settings |
 | `src/app/api/onboarding/complete/route.js` | POST: set onboarding_complete = true (legacy manual fallback) |
 | `src/app/api/onboarding/checkout-session/route.js` | POST: create Stripe Checkout Session with 14-day trial + CC required |
 | `src/app/api/onboarding/sg-availability/route.js` | GET: returns { available_count } for SG phone numbers from phone_inventory |
@@ -343,13 +343,13 @@ Phone OTP: calls `supabase.auth.signInWithOtp({ phone })`. Used for phone number
 
 **File**: `src/app/api/onboarding/test-call/route.js`
 
-Triggers LiveKit SIP outbound call to `owner_phone` via `SipClient.createSipParticipant()`. Returns `{ call_id: roomName }`. Called from `TestCallPanel` in dashboard settings (post-payment); no longer wired into the wizard.
+Triggers a LiveKit SIP outbound call to `owner_phone` via `SipClient.createSipParticipant()` into a `test-call-<tenantId>-<ts>` room (metadata `{ test_call, tenant_id, to_number }`; SIP participant identity `caller-<owner_phone>`). Sets `tenants.test_call_status = 'calling'` — it no longer marks `test_call_completed` at trigger time; that now happens only on a **genuine connect**, set by the `/api/webhooks/livekit` `participant_joined` webhook. Returns `{ call_id: roomName }`. Called from `TestCallPanel` in dashboard settings (post-payment); no longer wired into the wizard.
 
 ### `GET /api/onboarding/test-call-status`
 
 **File**: `src/app/api/onboarding/test-call-status/route.js`
 
-Returns `{ complete: boolean, phone_number: string | null }` from tenants row. Used by `TestCallPanel` in dashboard settings to load the tenant's provisioned phone number.
+Returns `{ complete, status, ever_completed, phone_number }`. `complete = test_call_status === 'connected'` — the CURRENT attempt actually connected (set by the LiveKit `/api/webhooks/livekit` webhook when the owner's SIP leg joins). `ever_completed = test_call_completed` (durable "ever connected", read by the setup checklist). Used by `TestCallPanel` to drive its polling state and to show the provisioned number.
 
 ### `GET /api/onboarding/sg-availability`
 
@@ -513,7 +513,9 @@ const AUTH_REQUIRED_PATHS = [
 | `phone_number` | text | Provisioned number — set by checkout webhook after Stripe payment (Phase 27) |
 | `onboarding_complete` | boolean | Set by checkout.session.completed webhook after Stripe payment |
 | `provisioning_failed` | boolean | Set by checkout webhook when phone provisioning fails (admin follow-up needed) (Phase 27) |
-| `test_call_completed` | boolean | Set by /test-call route at trigger time (legacy, no longer used in wizard) |
+| `test_call_completed` | boolean | "Test call ever connected" — set by the LiveKit `/api/webhooks/livekit` participant_joined webhook on a genuine connect (no longer at trigger time). Gates the setup checklist's `make_test_call` item |
+| `test_call_status` | text | Live state of the current test attempt: none\|calling\|connected\|failed (migration 077). `/api/onboarding/test-call` sets `calling`; the LiveKit webhook sets `connected` |
+| `test_call_last_at` | timestamptz | Timestamp of the last test call that actually connected (migration 077) |
 
 ### `phone_inventory` table
 

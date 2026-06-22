@@ -20,7 +20,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('tenants')
-      .select('working_hours, slot_duration_mins, tenant_timezone')
+      .select('working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone')
       .eq('id', tenantId)
       .single();
 
@@ -32,6 +32,7 @@ export async function GET() {
     return Response.json({
       working_hours: data.working_hours,
       slot_duration_mins: data.slot_duration_mins,
+      travel_buffer_mins: data.travel_buffer_mins,
       tenant_timezone: data.tenant_timezone,
     });
   } catch (err) {
@@ -48,7 +49,7 @@ export async function PUT(request) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { working_hours, slot_duration_mins, tenant_timezone } = await request.json();
+    const { working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone } = await request.json();
 
     const updates = {};
     if (working_hours !== undefined) updates.working_hours = working_hours;
@@ -64,6 +65,18 @@ export async function PUT(request) {
       }
       updates.slot_duration_mins = n;
     }
+    // Travel buffer (M16 P2): minutes the slot calculator leaves between back-to-back
+    // jobs. 0 disables buffering; cap at 240 (4h) — generous, still bounded.
+    if (travel_buffer_mins !== undefined) {
+      const n = Number(travel_buffer_mins);
+      if (!Number.isInteger(n) || n < 0 || n > 240) {
+        return Response.json(
+          { error: 'travel_buffer_mins must be an integer between 0 and 240' },
+          { status: 400 },
+        );
+      }
+      updates.travel_buffer_mins = n;
+    }
     if (tenant_timezone !== undefined) {
       if (typeof tenant_timezone !== 'string' || !isValidTimeZone(tenant_timezone)) {
         return Response.json(
@@ -78,7 +91,7 @@ export async function PUT(request) {
       .from('tenants')
       .update(updates)
       .eq('id', tenantId)
-      .select('working_hours, slot_duration_mins, tenant_timezone')
+      .select('working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone')
       .single();
 
     if (error) {
@@ -89,6 +102,7 @@ export async function PUT(request) {
     return Response.json({
       working_hours: data.working_hours,
       slot_duration_mins: data.slot_duration_mins,
+      travel_buffer_mins: data.travel_buffer_mins,
       tenant_timezone: data.tenant_timezone,
     });
   } catch (err) {

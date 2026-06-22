@@ -74,26 +74,32 @@ function expandAllDayInterval(start, end, timezone) {
  * Resolve the travel buffer in minutes between the last booking and a candidate slot.
  *
  * Logic:
- * - If zones array is empty (no zones configured): flat 30-min buffer
- * - If last booking has no zone_id or candidate has no zone: 30-min buffer (cross-zone default)
+ * - If zones array is empty (no zones configured): the tenant's default buffer
+ * - If last booking has no zone_id or candidate has no zone: the default buffer (cross-zone)
  * - If last booking's zone_id === candidateZoneId: 0-min buffer (same zone)
- * - If different zones: look up zonePairBuffers; default 30-min if no entry
+ * - If different zones: look up zonePairBuffers; default buffer if no entry
+ *
+ * `defaultBufferMins` is the owner-adjustable tenant-wide buffer
+ * (tenants.travel_buffer_mins, M16 P2; default 30 = pre-P2 behavior). The
+ * zone-differentiated branches stay dormant — zone_id is always null today —
+ * so in practice this returns `defaultBufferMins`.
  *
  * @param {string|null} lastBookingZoneId
  * @param {string|null} candidateZoneId
  * @param {Array}  zones            Array of { id, name } zone objects
  * @param {Array}  zonePairBuffers  Array of { zone_a_id, zone_b_id, buffer_mins }
+ * @param {number} [defaultBufferMins=30] Tenant-wide default travel buffer
  * @returns {number} buffer in minutes
  */
-function getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePairBuffers) {
-  // No zones configured at all — flat 30-min buffer
+function getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePairBuffers, defaultBufferMins = 30) {
+  // No zones configured at all — flat default buffer
   if (!zones || zones.length === 0) {
-    return 30;
+    return defaultBufferMins;
   }
 
-  // No zone info on one or both sides — treat as cross-zone (30min default)
+  // No zone info on one or both sides — treat as cross-zone (default buffer)
   if (!lastBookingZoneId || !candidateZoneId) {
-    return 30;
+    return defaultBufferMins;
   }
 
   // Same zone — no buffer
@@ -114,7 +120,7 @@ function getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePair
   }
 
   // Default cross-zone buffer
-  return 30;
+  return defaultBufferMins;
 }
 
 /**
@@ -131,6 +137,9 @@ function getTravelBufferMins(lastBookingZoneId, candidateZoneId, zones, zonePair
  * @param {string} config.tenantTimezone    - IANA timezone (e.g., "America/Chicago")
  * @param {number} config.maxSlots          - Maximum slots to return
  * @param {string} [config.candidateZoneId] - Zone ID for the candidate booking (for buffer calc)
+ * @param {number} [config.travelBufferMins=30] - Owner-adjustable tenant-wide travel buffer in
+ *   minutes (tenants.travel_buffer_mins, M16 P2; default 30 = pre-P2 behavior). Enforced on BOTH
+ *   sides of every existing booking (forward + backward).
  * @returns {Array<{ start: string, end: string }>} Available slots as ISO strings
  */
 export function calculateAvailableSlots({
@@ -144,6 +153,7 @@ export function calculateAvailableSlots({
   tenantTimezone,
   maxSlots = 10,
   candidateZoneId = null,
+  travelBufferMins = 30,
 }) {
   // Determine the day of week from the target date
   // Parse as local midnight to get correct day-of-week
@@ -251,7 +261,8 @@ export function calculateAvailableSlots({
       continue;
     }
 
-    // Travel buffer check: find the last booking that ends before this slot starts
+    // Travel buffer check (BACKWARD): find the last booking that ends before
+    // this slot starts; require travel time after it before this slot may begin.
     const bookingsBefore = parsedBookings.filter((b) => b.end <= slotStart);
     if (bookingsBefore.length > 0) {
       // Find the one that ends latest
@@ -263,12 +274,41 @@ export function calculateAvailableSlots({
         lastBooking.zone_id,
         candidateZoneId,
         zones,
-        zonePairBuffers
+        zonePairBuffers,
+        travelBufferMins
       );
 
       if (bufferMins > 0) {
         const earliestStart = addMinutes(lastBooking.end, bufferMins);
         if (slotStart < earliestStart) {
+          cursor = addMinutes(cursor, slotDurationMins);
+          continue;
+        }
+      }
+    }
+
+    // Travel buffer check (FORWARD, M16 P2): find the earliest booking that
+    // starts at/after this slot ends; require travel time after this slot before
+    // that booking begins. Mirrors the backward case so the buffer is symmetric
+    // on both sides of every booking (coordinate-free datetime math).
+    const bookingsAfter = parsedBookings.filter((b) => b.start >= slotEnd);
+    if (bookingsAfter.length > 0) {
+      // Find the one that starts earliest
+      const nextBooking = bookingsAfter.reduce((earliest, b) =>
+        b.start < earliest.start ? b : earliest
+      );
+
+      const bufferMins = getTravelBufferMins(
+        nextBooking.zone_id,
+        candidateZoneId,
+        zones,
+        zonePairBuffers,
+        travelBufferMins
+      );
+
+      if (bufferMins > 0) {
+        const latestEnd = addMinutes(nextBooking.start, -bufferMins);
+        if (slotEnd > latestEnd) {
           cursor = addMinutes(cursor, slotDurationMins);
           continue;
         }
