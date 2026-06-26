@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 const sections = [
   { id: 'audio-demo', label: 'Hear Voco' },
+  { id: 'the-math', label: 'The Math' },
   { id: 'features', label: 'Features' },
   { id: 'faq', label: 'FAQ' },
   { id: 'cta', label: 'Get Started' },

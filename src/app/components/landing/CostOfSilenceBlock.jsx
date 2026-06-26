@@ -120,6 +120,7 @@ function SplitLists() {
 export function CostOfSilenceBlock() {
   return (
     <section
+      id="the-math"
       className="bg-white"
       style={{ padding: 'clamp(88px, 14vw, 144px) clamp(24px, 6vw, 72px)' }}
     >

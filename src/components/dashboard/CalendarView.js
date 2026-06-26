@@ -811,7 +811,9 @@ export default function CalendarView({
     // Lanes are packed greedily so overlapping bars stack vertically.
     const BAR_HEIGHT = 18;
     const BAR_GAP = 2;
-    const BAR_TOP_OFFSET = 28; // below day-number circle
+    // Clear the absolutely-positioned day-number circle (top-1.5 = 6px + size-6 = 24px = 30px)
+    // with a 2px gap, so neither multi-day bars nor in-cell event pills overlap the date.
+    const BAR_TOP_OFFSET = 32;
     const weekRowBars = weekRows.map((week) => {
       const weekStart = startOfLocalDay(week[0].date);
       const weekEnd = startOfLocalDay(week[6].date);
@@ -866,7 +868,10 @@ export default function CalendarView({
           {weekRows.map((week, wi) => {
             const { bars, maxLane } = weekRowBars[wi];
             const barsBlockPx = (maxLane + 1) * (BAR_HEIGHT + BAR_GAP);
-            const cellPaddingTop = barsBlockPx > 0 ? BAR_TOP_OFFSET + barsBlockPx : 4;
+            // Always reserve room for the day-number circle; multi-day bars (if any) stack
+            // below it. Previously the no-bars branch fell back to 4px, letting the first
+            // event pill render on top of the date number.
+            const cellPaddingTop = BAR_TOP_OFFSET + barsBlockPx;
             return (
               <div
                 key={wi}

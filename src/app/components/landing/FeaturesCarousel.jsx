@@ -16,42 +16,93 @@ import { AnimatedSection } from './AnimatedSection';
    Micro Visual: 24/7 AI Answering
 ───────────────────────────────────────── */
 function AnsweringVisual({ active }) {
+  // 12 hour ticks; cardinals (12·3·6·9) are emphasized.
+  const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
   return (
-    <div className="relative w-full max-w-[420px] mx-auto aspect-square">
+    <div className="relative w-full max-w-[400px] mx-auto aspect-square">
       <div
         aria-hidden="true"
-        className="absolute inset-[12%] rounded-full"
+        className="absolute inset-[15%] rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(249,115,22,0.22), transparent 70%)',
-          filter: 'blur(30px)',
+          background: 'radial-gradient(circle, rgba(249,115,22,0.16), transparent 70%)',
+          filter: 'blur(34px)',
         }}
       />
-      <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="#F5F5F4" strokeWidth="1.5" />
+      <svg
+        viewBox="0 0 200 200"
+        className="absolute inset-0 w-full h-full"
+        role="img"
+        aria-label="An always-on clock answering around the clock"
+      >
+        <defs>
+          <radialGradient id="fc-dial" cx="50%" cy="40%" r="65%">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#F6F5F3" />
+          </radialGradient>
+          <filter id="fc-lift" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#1C1412" floodOpacity="0.10" />
+          </filter>
+        </defs>
+
+        {/* bezel + dial face */}
+        <circle cx="100" cy="100" r="86" fill="#FFFFFF" stroke="#ECEAE7" strokeWidth="1" filter="url(#fc-lift)" />
+        <circle cx="100" cy="100" r="80" fill="url(#fc-dial)" stroke="#E7E5E4" strokeWidth="1" />
+
+        {/* "always on" accent ring — a calm breath, not a spin */}
         <circle
-          cx="100" cy="100" r="84" fill="none" stroke="#F97316"
-          strokeOpacity="0.7" strokeWidth="3.5" strokeDasharray="528"
-          strokeDashoffset={active ? 0 : 528}
-          strokeLinecap="round" transform="rotate(-90 100 100)"
-          style={{ transition: 'stroke-dashoffset 1.4s ease-out' }}
+          cx="100" cy="100" r="80" fill="none"
+          stroke="#F97316" strokeWidth="1.75"
+          style={{
+            transformOrigin: '100px 100px',
+            opacity: 0.3,
+            animation: active ? 'fc-breathe 3.6s ease-in-out infinite' : 'none',
+          }}
         />
-        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((d) => (
-          <line
-            key={d} x1="100" y1="22" x2="100" y2="32"
-            stroke="#D6D3D1" strokeWidth="2" strokeLinecap="round"
-            transform={`rotate(${d} 100 100)`}
-          />
-        ))}
-        <g style={{ transformOrigin: '100px 100px', animation: active ? 'fc-spin-hr 32s linear infinite' : 'none' }}>
-          <line x1="100" y1="100" x2="100" y2="52" stroke="#0F172A" strokeWidth="3.5" strokeLinecap="round" />
+
+        {/* hour ticks */}
+        {ticks.map((d, i) => {
+          const cardinal = i % 3 === 0;
+          return (
+            <line
+              key={d}
+              x1="100" y1={cardinal ? 24 : 26}
+              x2="100" y2={cardinal ? 35 : 32}
+              stroke={cardinal ? '#1C1412' : '#D6D3D1'}
+              strokeWidth={cardinal ? 3 : 1.75}
+              strokeLinecap="round"
+              transform={`rotate(${d} 100 100)`}
+            />
+          );
+        })}
+
+        {/* hour + minute hands, posed at a balanced ~10:10 (static, intentional) */}
+        <g transform="rotate(305 100 100)">
+          <line x1="100" y1="110" x2="100" y2="62" stroke="#1C1412" strokeWidth="4.5" strokeLinecap="round" />
         </g>
-        <g style={{ transformOrigin: '100px 100px', animation: active ? 'fc-spin-min 8s linear infinite' : 'none' }}>
-          <line x1="100" y1="100" x2="100" y2="32" stroke="#A8A29E" strokeWidth="2" strokeLinecap="round" />
+        <g transform="rotate(60 100 100)">
+          <line x1="100" y1="112" x2="100" y2="44" stroke="#1C1412" strokeWidth="3" strokeLinecap="round" />
         </g>
-        <circle cx="100" cy="100" r="5" fill="#F97316" />
+
+        {/* second hand — the single, smooth, continuous motion */}
+        <g style={{ transformOrigin: '100px 100px', animation: active ? 'fc-rotate 12s linear infinite' : 'none' }}>
+          <line x1="100" y1="116" x2="100" y2="38" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="100" cy="38" r="2.4" fill="#F97316" />
+        </g>
+
+        {/* center cap */}
+        <circle cx="100" cy="100" r="6.5" fill="#FFFFFF" stroke="#1C1412" strokeWidth="2.5" />
+        <circle cx="100" cy="100" r="2.4" fill="#F97316" />
       </svg>
-      <div className="absolute bottom-[6%] left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-[#F97316]/10 border border-[#F97316]/25 whitespace-nowrap text-[12px] font-semibold text-[#F97316] tracking-[0.06em]">
-        24/7 ACTIVE
+
+      <div className="absolute bottom-[3%] left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#F97316]/25 shadow-sm whitespace-nowrap">
+        <span className="relative inline-flex w-1.5 h-1.5">
+          <span
+            className="absolute inline-flex w-full h-full rounded-full bg-[#F97316]/60"
+            style={{ animation: active ? 'fc-ping 2s cubic-bezier(0,0,0.2,1) infinite' : 'none' }}
+          />
+          <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-[#F97316]" />
+        </span>
+        <span className="text-[12px] font-semibold text-[#F97316] tracking-[0.07em]">24/7 ACTIVE</span>
       </div>
     </div>
   );
@@ -122,7 +173,7 @@ function BookingVisual({ active }) {
    Micro Visual: Speaks Your Trade
 ───────────────────────────────────────── */
 function TradeVisual({ active }) {
-  const langs = ['Hello — HVAC tech?', '¿Mi calefacción no funciona?', 'My AC just quit on me', '¿Pueden venir hoy mismo?'];
+  const langs = ['My AC just quit on me', '¿Mi calefacción no funciona?', 'Mon chauffe-eau fuit', 'Meine Heizung ist kaputt'];
   const [i, setI] = useState(0);
   useEffect(() => {
     if (!active) return;
@@ -157,7 +208,7 @@ function TradeVisual({ active }) {
           <span key={i} style={{ animation: 'fc-fade-slide 0.4s ease-out' }}>{langs[i]}</span>
         </div>
         <div className="mt-3.5 text-[12px] text-[#475569]">
-          Voco responds fluently in <b className="text-[#0F172A]">English and Spanish</b> · auto-detected
+          Voco responds fluently in <b className="text-[#0F172A]">English, Spanish &amp; 8 more</b> · auto-detected
         </div>
       </div>
     </div>
@@ -230,9 +281,7 @@ const FEATURES = [
     Icon: PhoneIncoming,
     navLabel: 'Always on',
     title: '24/7 AI Answering',
-    tagline: 'Picks up in under a second — 2 AM Sunday or mid-job-site.',
-    description:
-      'Every inbound call answered in under 1 ring — day, night, weekends, holidays. No voicemail, no lost leads.',
+    tagline: 'Picks up in under a second — 2 AM Sunday or mid-job.',
     Visual: AnsweringVisual,
   },
   {
@@ -240,9 +289,7 @@ const FEATURES = [
     Icon: CalendarCheck,
     navLabel: 'Books on the line',
     title: 'Real-Time Calendar Booking',
-    tagline: "Books the job while they're still on the line.",
-    description:
-      'Voco reads your Google or Outlook calendar live and books the caller into a confirmed slot before they hang up. Travel buffers included.',
+    tagline: 'Books the job before they hang up.',
     Visual: BookingVisual,
   },
   {
@@ -250,9 +297,7 @@ const FEATURES = [
     Icon: Wrench,
     navLabel: 'Speaks your trade',
     title: 'Speaks Your Trade',
-    tagline: 'Knows the vocabulary — and speaks the language.',
-    description:
-      'Plumbing, HVAC, electrical, handyman — Voco knows the vocabulary. Fluent in English and Spanish, detected automatically on every call, with more languages on the way.',
+    tagline: 'Knows the trade. Fluent in English, Spanish & 8 more.',
     Visual: TradeVisual,
   },
   {
@@ -260,9 +305,7 @@ const FEATURES = [
     Icon: PhoneMissed,
     navLabel: 'Recovers misses',
     title: 'Automated Lead Recovery',
-    tagline: 'Missed calls become SMS conversations that convert.',
-    description:
-      'If a caller hangs up before booking, Voco sends an SMS with available slots. You wake up to booked jobs, not missed opportunities.',
+    tagline: 'Missed calls become booked jobs.',
     Visual: RecoveryVisual,
   },
 ];
@@ -469,11 +512,8 @@ export function FeaturesCarousel() {
                     >
                       {f.title}
                     </h3>
-                    <p className="text-[16px] font-medium leading-[1.45] text-[#0F172A] m-0 mb-2">
+                    <p className="text-[16px] font-medium leading-[1.45] text-[#475569] m-0">
                       {f.tagline}
-                    </p>
-                    <p className="text-[14.5px] leading-[1.6] text-[#475569] m-0">
-                      {f.description}
                     </p>
 
                     {/* Mobile-only inline visual — desktop version lives in the sticky stage */}
@@ -501,8 +541,9 @@ export function FeaturesCarousel() {
           }
           .fc-stage { height: min(72vh, 600px) !important; }
         }
-        @keyframes fc-spin-hr { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-        @keyframes fc-spin-min { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+        @keyframes fc-rotate { to { transform: rotate(360deg); } }
+        @keyframes fc-breathe { 0%,100% { opacity: 0.28; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.012); } }
+        @keyframes fc-ping { 0% { transform: scale(1); opacity: 0.6; } 75%,100% { transform: scale(2.6); opacity: 0; } }
         @keyframes fc-pulse-day { 0%,100%{ border-color: rgba(249,115,22,0.45);} 50%{ border-color: rgba(249,115,22,0.9);} }
         @keyframes fc-floaty { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-4px);} }
         @keyframes fc-fade-slide { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform: translateY(0);} }
