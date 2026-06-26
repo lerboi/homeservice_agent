@@ -30,8 +30,9 @@
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { supabase } from '@/lib/supabase';
 
-// Webhook delivery is inherently dynamic; never cache.
-export const dynamic = 'force-dynamic';
+// Next.js 16 + Cache Components: do NOT set `export const dynamic = 'force-dynamic'`
+// (incompatible with nextConfig.cacheComponents). This is moot here anyway — a POST
+// route handler is never statically cached; it runs per request by definition.
 
 // ParticipantInfo_Kind.SIP — @livekit/protocol enum value (verified v2.15).
 const PARTICIPANT_KIND_SIP = 3;

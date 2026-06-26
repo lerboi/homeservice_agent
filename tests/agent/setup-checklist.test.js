@@ -53,7 +53,7 @@ describe('tier model', () => {
         'setup_profile',
         'configure_services',
         'configure_hours',
-        'configure_zones',
+        'make_test_call',
         'setup_billing',
       ])
     );
@@ -63,15 +63,17 @@ describe('tier model', () => {
         'configure_call_routing',
         'configure_notifications',
         'setup_escalation',
-        'make_test_call',
+        'configure_zones',
       ])
     );
     expect(TIER_GROUPS.optional).toEqual(['connect_xero', 'connect_jobber']);
   });
 
-  it('service area (configure_zones) is essential; test call is recommended', () => {
-    expect(TIER_GROUPS.essential).toContain('configure_zones');
-    expect(TIER_GROUPS.recommended).toContain('make_test_call');
+  it('test call (make_test_call) is essential; service area (configure_zones) is recommended', () => {
+    // make_test_call is the keystone readiness proof + the inbound webhook gate;
+    // configure_zones only restricts service area, so booking works without it.
+    expect(TIER_GROUPS.essential).toContain('make_test_call');
+    expect(TIER_GROUPS.recommended).toContain('configure_zones');
   });
 
   it('every tiered id is a valid item id', () => {
@@ -88,10 +90,10 @@ describe('deriveChecklistItems', () => {
   it('tags each item with its tier and sets required = (tier === essential)', () => {
     const items = deriveChecklistItems(fullTenant, {});
     const byId = Object.fromEntries(items.map((i) => [i.id, i]));
-    expect(byId.configure_zones.tier).toBe('essential');
-    expect(byId.configure_zones.required).toBe(true);
-    expect(byId.make_test_call.tier).toBe('recommended');
-    expect(byId.make_test_call.required).toBe(false);
+    expect(byId.make_test_call.tier).toBe('essential');
+    expect(byId.make_test_call.required).toBe(true);
+    expect(byId.configure_zones.tier).toBe('recommended');
+    expect(byId.configure_zones.required).toBe(false);
     expect(byId.connect_xero.tier).toBe('optional');
     expect(byId.connect_xero.required).toBe(false);
   });
@@ -121,11 +123,15 @@ describe('deriveChecklistItems', () => {
   });
 
   it('call-ready = every essential complete (derived)', () => {
-    const items = deriveChecklistItems(fullTenant, {
-      serviceCount: 2,
-      zoneCount: 1,
-      hasActiveSubscription: true,
-    });
+    // Essentials now require a connected test call (test_call_completed) instead
+    // of configure_zones, mirroring the inbound webhook readiness gate.
+    const items = deriveChecklistItems(
+      { ...fullTenant, test_call_completed: true },
+      {
+        serviceCount: 2,
+        hasActiveSubscription: true,
+      }
+    );
     const essentials = items.filter((i) => i.tier === 'essential');
     expect(essentials).toHaveLength(5);
     expect(essentials.every((i) => i.complete)).toBe(true);

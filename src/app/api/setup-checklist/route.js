@@ -55,7 +55,13 @@ export const TIER_GROUPS = {
     'setup_profile',
     'configure_services',
     'configure_hours',
-    'configure_zones',
+    // make_test_call is the keystone: it's the ONLY item that proves the live
+    // call path actually connects (verified inbound by the LiveKit
+    // participant_joined webhook). It is also the gate the inbound Twilio
+    // webhook enforces (is_tenant_call_ready / migration 078) — until it's done,
+    // live callers are forwarded to the owner instead of an unproven AI. So it
+    // belongs in ESSENTIAL, alongside the config the AI needs to handle a call.
+    'make_test_call',
     'setup_billing',
   ],
   recommended: [
@@ -63,7 +69,10 @@ export const TIER_GROUPS = {
     'configure_call_routing',
     'configure_notifications',
     'setup_escalation',
-    'make_test_call',
+    // configure_zones demoted from essential: booking works fine with zero
+    // zones (no service-area restriction), so it improves quality but does not
+    // gate call-readiness.
+    'configure_zones',
   ],
   optional: ['connect_xero', 'connect_jobber'],
 };

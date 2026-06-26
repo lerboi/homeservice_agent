@@ -333,7 +333,7 @@ mid-teardown.
 
 ### Webhook server boot (Phase 39) + boot preflight (2026-06-12)
 
-`__main__` in `src/agent.py` first runs a **boot preflight** (audit S4): it
+`__main__` in `src/agent.py` runs a **boot preflight** (audit S4): it
 raises `RuntimeError` and refuses to start when any of `OPENAI_API_KEY`,
 `DEEPGRAM_API_KEY`, `ELEVEN_API_KEY` is missing. The STT/LLM/TTS plugins are
 constructed PER CALL inside `entrypoint()`, so a missing key previously failed
@@ -341,7 +341,23 @@ at call time — every inbound call connected and died silently with no audio
 while the liveness healthcheck stayed green. Failing the deploy visibly is the
 fix.
 
-Then, before `cli.run_app()`, it calls
+**The preflight + `start_webhook_server()` are gated to the `start`/`dev`
+subcommands** (`2026-06-26`): `__main__` reads `sys.argv[1]` and only enforces
+the key check / starts the webhook for the worker-running modes. This is
+load-bearing for the Docker build. The `Dockerfile` pre-downloads the
+turn-detector + VAD models via `RUN python -m src.agent download-files` at
+**build time, before any secrets exist**. That command also executes `__main__`;
+before the gate, the preflight raised (no keys at build), `cli.run_app()` never
+ran, so `download-files` never dispatched — and a stray `|| true` swallowed the
+failure, shipping an image with **no turn-detector model files**. Every call
+then crashed at `MultilingualModel()` (`agent.py` ~L625) with
+`Could not find file "languages.json"`. `download-files` only fetches the
+public `livekit/turn-detector` HF model (no keys needed) into
+`/root/.cache/huggingface`, which bakes into the image layer (same path at
+runtime; no `HF_HOME` override, no volume mount). The `|| true` was also removed
+so a genuine download failure now fails the build loudly.
+
+For the worker modes, before `cli.run_app()`, `__main__` calls
 `start_webhook_server()` — spawns a daemon thread running uvicorn on port
 8080. Serves `/health`, `/health/db`, and `/twilio/*`.
 
@@ -1948,6 +1964,7 @@ queries and deployment handoff.
 | Webhook 403 on every request | Signature verification failing | Check `TWILIO_AUTH_TOKEN` env; confirm `proxy_headers=True` on uvicorn |
 | Webhook 503 on every request | `TWILIO_AUTH_TOKEN` empty/missing (2026-06-12 fail-closed) | Set the token on Railway — empty-key HMAC validation would accept forgeries, so the dep rejects instead |
 | Agent container exits at boot with `Missing required env vars` | Boot preflight (2026-06-12) — `OPENAI_API_KEY` / `DEEPGRAM_API_KEY` / `ELEVEN_API_KEY` unset | Set the missing keys on Railway; this is intentional (previously every call connected then died silently) |
+| Every call crashes at `MultilingualModel()` with `Could not find file "languages.json"` | Turn-detector model files not baked into the image — `download-files` was skipped during the Docker build | Fixed 2026-06-26 by gating the `__main__` preflight/webhook to `start`/`dev` so build-time `download-files` reaches `cli.run_app()`, + removing `\|\| true` from the Dockerfile. If it recurs, confirm the build log shows the model actually downloading and that no `HF_HOME`/volume diverts the cache path between build and runtime |
 | VIP caller routing to AI | Missing `pickup_numbers` OR `is_vip=false` | Check `tenants.vip_numbers` JSONB + `leads.is_vip` + `pickup_numbers` populated |
 | `customer_context` empty despite connected Xero | `error_state` set on row OR 2.5s timeout | Check `accounting_credentials.error_state`; query `activity_log WHERE event_type='integration_fetch'` |
 | No `integration_fetch_fanout` rows in activity_log | Railway not redeployed after Phase 58 | Sync Voco worktree → sibling repo → GitHub → Railway |
