@@ -108,7 +108,10 @@ export async function POST(request) {
       },
       // customer and customer_email are mutually exclusive — reuse the existing
       // Stripe customer when re-subscribing (M1), else create one from email.
-      ...(reuseCustomerId ? { customer: reuseCustomerId } : { customer_email: tenant.owner_email }),
+      // Fall back to the auth email: owner_email is only written at the contact
+      // step, so a user who reaches checkout without it would otherwise create a
+      // Stripe customer with no email (broken receipts).
+      ...(reuseCustomerId ? { customer: reuseCustomerId } : { customer_email: tenant.owner_email || user.email }),
       metadata: { tenant_id: tenant.id }, // On session too for checkout.session.completed
     };
 

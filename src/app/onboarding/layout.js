@@ -1,12 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Briefcase, Wrench, UserCircle, CreditCard, Check } from 'lucide-react';
+import { Briefcase, Wrench, UserCircle, CreditCard, Check, LogOut } from 'lucide-react';
 import { GridTexture } from '@/components/ui/grid-texture';
 import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
+import { supabase } from '@/lib/supabase-browser';
 import { OnboardingProvider, useOnboarding } from './OnboardingContext';
 
 function getStep(pathname) {
@@ -47,7 +49,7 @@ function StepIndicator({ currentStep, completed }) {
             </div>
             {i < STEP_ICONS.length - 1 && (
               <div
-                className={`w-4 sm:w-6 h-px transition-colors duration-500 ${
+                className={`w-2.5 sm:w-6 h-px transition-colors duration-500 ${
                   isDone ? 'bg-emerald-400' : 'bg-stone-200'
                 }`}
               />
@@ -65,8 +67,19 @@ function OnboardingLayoutInner({ children }) {
   const { completed } = useOnboarding();
   const currentStep = getStep(pathname);
 
+  const [signingOut, setSigningOut] = useState(false);
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Redirect regardless — a failed sign-out shouldn't trap the user here.
+    }
+    window.location.href = '/auth/signin';
+  }
+
   return (
-    <div className="min-h-screen bg-[#F5F5F4] relative">
+    <div data-onboarding-root className="min-h-screen bg-[#F5F5F4] relative">
       <GridTexture variant="light" />
       {/* Subtle orange radial gradient at top */}
       <div
@@ -90,7 +103,19 @@ function OnboardingLayoutInner({ children }) {
               priority
             />
           </Link>
-          <StepIndicator currentStep={currentStep} completed={completed} />
+          <div className="flex items-center gap-2 sm:gap-5">
+            <StepIndicator currentStep={currentStep} completed={completed} />
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              aria-label={t('sign_out')}
+              className="flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2410C]/40 rounded"
+            >
+              <LogOut className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{signingOut ? t('signing_out') : t('sign_out')}</span>
+            </button>
+          </div>
         </div>
 
         {/* Wizard card */}

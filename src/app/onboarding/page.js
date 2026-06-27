@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TradeSelector } from '@/components/onboarding/TradeSelector';
 import { useWizardSession } from '@/hooks/useWizardSession';
+import { useClearLoadingOnPageRestore } from '@/hooks/useClearLoadingOnPageRestore';
 import { TRADE_TEMPLATES } from '@/lib/trade-templates';
 
 export default function OnboardingProfile() {
@@ -59,6 +60,10 @@ export default function OnboardingProfile() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear a stale spinner if this step is restored via Back (bfcache / pending
+  // forward nav) — otherwise Continue stays disabled and spinning.
+  useClearLoadingOnPageRestore(setLoading);
 
   function handleSelectTrade(key) {
     setTrade(key);

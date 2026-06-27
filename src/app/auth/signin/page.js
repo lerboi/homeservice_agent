@@ -74,7 +74,13 @@ export default function AuthPage() {
 
   // Preserve redirect destination from middleware (e.g. /onboarding?plan=growth&interval=annual)
   const searchParams = useSearchParams();
-  const redirectTo = useMemo(() => searchParams.get('redirect') || '/onboarding', [searchParams]);
+  // Only allow same-origin relative paths — a raw `?redirect=//evil.com` here would
+  // send the just-authenticated user off-site (open redirect / phishing). Mirrors
+  // the `next` validation in auth/callback/route.js.
+  const redirectTo = useMemo(() => {
+    const raw = searchParams.get('redirect') || '/onboarding';
+    return raw.startsWith('/') && !raw.startsWith('//') ? raw : '/onboarding';
+  }, [searchParams]);
 
   useEffect(() => {
     if (cooldown <= 0) return;

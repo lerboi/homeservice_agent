@@ -29,6 +29,12 @@ export default function CheckoutPage() {
   const [phase, setPhase] = useState(sessionId ? 'verifying' : 'checkout');
   const [checkoutError, setCheckoutError] = useState(null);
   const checkoutSessionIdRef = useRef(null);
+  // Guards for the verify-checkout poll loop (handleComplete): cancelledRef stops
+  // setState after unmount; pollingRef prevents two overlapping loops (the
+  // sessionId effect + the error-screen "Check again" button).
+  const pollingRef = useRef(false);
+  const cancelledRef = useRef(false);
+  useEffect(() => () => { cancelledRef.current = true; }, []);
   const [trialInfo, setTrialInfo] = useState(null);
   const [aiNumber, setAiNumber] = useState(null);
   const [countdown, setCountdown] = useState(10);
@@ -69,31 +75,43 @@ export default function CheckoutPage() {
   useEffect(() => { intervalRef.current = selectedInterval; }, [selectedInterval]);
 
   const fetchClientSecret = useCallback(async () => {
-    const res = await fetch('/api/onboarding/checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan: planRef.current,
-        interval: intervalRef.current,
-        embedded: true,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to create checkout session');
+    try {
+      const res = await fetch('/api/onboarding/checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: planRef.current,
+          interval: intervalRef.current,
+          embedded: true,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create checkout session');
+      }
+      const data = await res.json();
+      if (!data.clientSecret) {
+        throw new Error('No client secret returned');
+      }
+      if (data.sessionId) {
+        checkoutSessionIdRef.current = data.sessionId;
+      }
+      return data.clientSecret;
+    } catch (e) {
+      // Surface the failure as an app-level recovery screen. Otherwise the
+      // rejection only reaches Stripe's <EmbeddedCheckout>, which renders a
+      // blank/internal-error iframe inside the 300px box and strands the user —
+      // notably the 409 "active subscription already exists" path on revisit.
+      setCheckoutError(e?.message || 'We could not start checkout.');
+      throw e;
     }
-    const data = await res.json();
-    if (!data.clientSecret) {
-      throw new Error('No client secret returned');
-    }
-    if (data.sessionId) {
-      checkoutSessionIdRef.current = data.sessionId;
-    }
-    return data.clientSecret;
   }, []);
 
   // Handle checkout completion — wait for Stripe webhook to create subscription
   const handleComplete = useCallback(async () => {
+    if (pollingRef.current) return; // one verify loop at a time
+    pollingRef.current = true;
+    setCheckoutError(null);
     setPhase('verifying');
 
     // Poll verify-checkout until webhook has created the subscription row.
@@ -116,16 +134,19 @@ export default function CheckoutPage() {
     let attempt = 0;
     for (const stage of POLL_PLAN) {
       for (let i = 0; i < stage.attempts; i++, attempt++) {
+        if (cancelledRef.current) { pollingRef.current = false; return; }
         try {
           // First 3 attempts: DB-only (give webhook a chance). After that: include Stripe fallback.
           const url = attempt < 3 ? baseUrl : fallbackUrl;
           const res = await fetch(url);
           const data = await res.json();
           if (data.verified) {
+            if (cancelledRef.current) { pollingRef.current = false; return; }
             setTrialInfo({ planName: data.planName, trialEndDate: data.trialEndDate });
             setPhase('success');
             markComplete();
             clearWizardSession();
+            pollingRef.current = false;
             return;
           }
         } catch {
@@ -135,12 +156,14 @@ export default function CheckoutPage() {
       }
     }
 
-    setPhase('error');
+    pollingRef.current = false;
+    if (!cancelledRef.current) setPhase('error');
   }, [markComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-redirect countdown on success
   useEffect(() => {
     if (phase !== 'success') return;
+    setCountdown(10);
 
     const interval = setInterval(() => {
       setCountdown((prev) => {
@@ -237,6 +260,43 @@ export default function CheckoutPage() {
           </svg>
           Your onboarding progress is saved — you&apos;ll pick up right here.
         </div>
+      </div>
+    );
+  }
+
+  // Checkout failed to start (invalid plan, already-subscribed 409, network) —
+  // a recoverable screen instead of a blank Stripe iframe.
+  if (checkoutError && phase === 'checkout') {
+    return (
+      <div className="text-center py-6">
+        <h1 className="text-xl font-semibold text-[#0F172A]">
+          We couldn&apos;t start checkout
+        </h1>
+        <p className="mt-2 text-sm text-[#475569] max-w-sm mx-auto">
+          {checkoutError}
+        </p>
+        <div className="mt-5 flex flex-col items-center gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full max-w-xs inline-flex items-center justify-center bg-[#C2410C] text-white hover:bg-[#C2410C]/90 min-h-[44px] rounded-lg font-medium text-sm transition-colors duration-150"
+          >
+            Try again
+          </button>
+          <button
+            onClick={handleGoToDashboard}
+            className="w-full max-w-xs inline-flex items-center justify-center text-[#475569] hover:text-[#0F172A] min-h-[44px] rounded-lg font-medium text-sm transition-colors duration-150"
+          >
+            Go to my dashboard
+          </button>
+        </div>
+        <p className="mt-4 text-xs text-[#475569]/80">
+          Already subscribed? Your account is active — head to your dashboard. Still
+          stuck?{' '}
+          <a href="/contact?type=support" className="underline text-[#C2410C]">
+            Contact support
+          </a>
+          .
+        </p>
       </div>
     );
   }
@@ -380,7 +440,7 @@ export default function CheckoutPage() {
       </button>
 
       <p className="mt-3 text-xs text-[#475569]" aria-live="polite" aria-atomic="true">
-        Taking you to your dashboard in {countdown} seconds...
+        Taking you to your dashboard in {countdown} second{countdown === 1 ? '' : 's'}...
       </p>
     </div>
   );

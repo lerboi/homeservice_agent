@@ -289,6 +289,36 @@
   --heading-text: var(--foreground);
 }
 
+/* Onboarding is a deliberately light-only surface: the wizard layout hardcodes a
+   white card on a stone page with dark (#0F172A) headings. If a user enabled dark
+   mode in the dashboard, the persisted `.dark` class on <html> flips --foreground
+   (and the other tokens) to their dark values, which inherit down into form
+   controls with no explicit text color (shadcn <Input>, the raw phone <input>),
+   rendering white text on the white card. Re-pin the light token set on the
+   onboarding root so the wizard always renders light regardless of global theme. */
+[data-onboarding-root] {
+  color-scheme: light;
+  color: var(--foreground);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.533 0.154 27.5);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.533 0.154 27.5);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

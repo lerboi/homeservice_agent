@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { TRADE_TEMPLATES } from '@/lib/trade-templates';
 import { AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
 import { useWizardSession } from '@/hooks/useWizardSession';
+import { useClearLoadingOnPageRestore } from '@/hooks/useClearLoadingOnPageRestore';
 
 const URGENCY_BADGE_CLASSES = {
   emergency: 'bg-red-100 text-red-700 hover:bg-red-100',
@@ -75,6 +76,10 @@ export default function OnboardingStep3Services() {
   const [addingService, setAddingService] = useState(false);
   const [newServiceName, setNewServiceName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear a stale spinner if this step is restored via Back (bfcache / pending
+  // forward nav) — otherwise the Continue button stays disabled and spinning.
+  useClearLoadingOnPageRestore(setLoading);
 
   function handleRemoveService(serviceId) {
     setServices((prev) => prev.filter((s) => s.id !== serviceId));

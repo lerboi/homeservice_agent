@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWizardSession } from '@/hooks/useWizardSession';
+import { useClearLoadingOnPageRestore } from '@/hooks/useClearLoadingOnPageRestore';
 import { supabase } from '@/lib/supabase-browser';
 
 const COUNTRY_CONFIG = {
@@ -78,6 +79,10 @@ export default function OnboardingStep3Contact() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({ name: '', phone: '', country: '' });
 
+  // Clear a stale spinner if this step is restored via Back (bfcache / pending
+  // forward nav) — otherwise Continue stays disabled and spinning.
+  useClearLoadingOnPageRestore(setLoading);
+
   async function handleCountryChange(val) {
     setCountry(val);
     // Deliberately keep any typed phone digits — wiping them punished users
@@ -90,7 +95,18 @@ export default function OnboardingStep3Contact() {
       setSgLoading(true);
       try {
         const res = await fetch('/api/onboarding/sg-availability');
+        // A failed check (transient DB/network) is NOT sold-out — treat it as
+        // UNKNOWN so we never wrongly show the waitlist or block Continue. The
+        // authoritative sold-out gate runs server-side at sms-confirm.
+        if (!res.ok) {
+          setSgAvailable(null);
+          return;
+        }
         const data = await res.json();
+        if (data.available_count == null) {
+          setSgAvailable(null);
+          return;
+        }
         setSgAvailable(data.available_count);
         if (data.available_count === 0) {
           setSgFull(true);

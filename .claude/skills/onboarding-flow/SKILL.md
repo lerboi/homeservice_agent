@@ -7,7 +7,9 @@ description: "Complete architectural reference for the onboarding wizard — 4-s
 
 This document is the single source of truth for the onboarding wizard system. Read this before making any changes to onboarding pages, wizard session management, or provisioning routes.
 
-**Last updated**: 2026-06-13 (Onboarding-audit fix wave: DB rehydration via new `GET /api/onboarding/state` + page hydration effects; contact step reordered country→phone, phone no longer wiped on country change, empty phone no longer saved as bare prefix; `sms-confirm` validates E.164, sets `tenant_timezone` (SG pinned to Asia/Singapore, US/CA from browser-detected IANA zone), distinguishes 503 count-errors from 409 sold-out, and 400s when no tenant row exists; `/start` validates business_name/trade_type/services (min 1, max 50, urgency enum); checkout verify polling extended to ~3 min two-stage with a retry button on the error phase, success screen shows the provisioned number (10s countdown); checkout webhook seeds default working_hours + timezone backstop, provisioning is idempotent (SG inventory reuse + Twilio friendlyName tag `voco-tenant-{id}` reuse), sends an idempotent WelcomeEmail with the number, and dedupes the provisioning-failure email via billing_notifications. proxy.js rescues paid-but-unflagged users hitting /dashboard.)
+**Last updated**: 2026-06-26 (Dark-mode + back-nav + checkout-robustness fix wave: (1) **white-on-white inputs in dark mode** — onboarding is a light-only surface but dark mode is class-based (`.dark` on `<html>`, persisted from the dashboard theme toggle), so inputs with no explicit text color inherited the dark `--foreground` over the hardcoded white card. Fixed by a `[data-onboarding-root]` block in `globals.css` that re-pins the LIGHT token set (`--foreground`, `--input`, `--ring`, `--primary`, etc.) + `color-scheme: light`, with `data-onboarding-root` on the layout's outer div. Caveat: the country `<Select>`'s dropdown is portaled to `document.body` (outside the root) so it stays dark-themed but readable. (2) **stuck Continue spinner after Back** — steps 1/2/3 set `loading=true` then `router.push()` on success without resetting it; on Back the step reappeared with the stale flag (button disabled + spinning). New hook `src/hooks/useClearLoadingOnPageRestore.js` resets the flag on mount + `pageshow` + `popstate`, wired into all three steps. (3) **sign-out button** added to the layout header (icon + i18n label `sign_out`/`signing_out`, `aria-label`, `supabase.auth.signOut()` → `window.location.href='/auth/signin'`). (4) **`sg-availability` DB error no longer reads as sold-out** — route returns `{available_count:null}`+503 (not 0) + `await connection()`; the contact page treats a failed check as UNKNOWN (no waitlist, no Continue block). (5) **checkout robustness** — `fetchClientSecret` failures (incl. 409 already-subscribed) now show a recovery screen instead of a blank Stripe iframe; verify-poll has unmount-cancel + concurrency guards; success countdown resets + pluralizes. (6) **signin open-redirect** hardened (`redirect` param validated `startsWith('/') && !startsWith('//')`). (7) `checkout-session` `customer_email` falls back to `user.email`. Signin itself is NOT affected by the white-on-white bug — it hardcodes `text-[#0F172A] bg-white` on every input.)
+
+**Earlier (2026-06-13)** (Onboarding-audit fix wave: DB rehydration via new `GET /api/onboarding/state` + page hydration effects; contact step reordered country→phone, phone no longer wiped on country change, empty phone no longer saved as bare prefix; `sms-confirm` validates E.164, sets `tenant_timezone` (SG pinned to Asia/Singapore, US/CA from browser-detected IANA zone), distinguishes 503 count-errors from 409 sold-out, and 400s when no tenant row exists; `/start` validates business_name/trade_type/services (min 1, max 50, urgency enum); checkout verify polling extended to ~3 min two-stage with a retry button on the error phase, success screen shows the provisioned number (10s countdown); checkout webhook seeds default working_hours + timezone backstop, provisioning is idempotent (SG inventory reuse + Twilio friendlyName tag `voco-tenant-{id}` reuse), sends an idempotent WelcomeEmail with the number, and dedupes the provisioning-failure email via billing_notifications. proxy.js rescues paid-but-unflagged users hitting /dashboard.)
 
 ---
 
@@ -83,6 +85,8 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 | `src/components/onboarding/TradeSelector.js` | Trade picker grid (plumber/hvac/electrician/handyman) |
 | `src/components/onboarding/OtpInput.js` | 6-digit OTP box inputs |
 | `src/hooks/useWizardSession.js` | `useWizardSession(key, default)` + `clearWizardSession()` |
+| `src/hooks/useClearLoadingOnPageRestore.js` | Resets a nav `loading` flag on mount + `pageshow` + `popstate` (back/bfcache restore). Used by steps 1/2/3 (2026-06-26) |
+| `src/app/onboarding/OnboardingContext.js` | `OnboardingProvider` + `useOnboarding()` → `{ completed, markComplete }`; checkout success calls `markComplete()` |
 | `src/app/api/onboarding/start/route.js` | POST: create/upsert tenant, save trade+services |
 | `src/app/api/onboarding/provision-number/route.js` | **DEPRECATED**: provisioning now happens in Stripe webhook after checkout |
 | `src/app/api/onboarding/sms-confirm/route.js` | POST: save owner_name + owner_phone + owner_email + country in one round-trip |
@@ -104,14 +108,42 @@ Layout: `onboarding/layout.js` wraps all wizard steps with logo, step counter ("
 
 **File**: `src/app/onboarding/layout.js`
 
-`OnboardingLayout({ children })` — wraps all steps:
+`OnboardingLayout({ children })` — wraps everything in `OnboardingProvider`
+(`./OnboardingContext`, which exposes `{ completed, markComplete }`; checkout's
+success phase calls `markComplete()` so the `StepIndicator` flips all dots to
+done). The inner `OnboardingLayoutInner`:
+- Outer div carries **`data-onboarding-root`** — see the light-mode pin below.
 - Logo link to `/`
-- Step counter: "Step X of 4" (`TOTAL_STEPS = 4`)
-- Orange progress bar: `width: (currentStep / TOTAL_STEPS) * 100%`, `transition-all duration-500 ease-out`
-- White wizard card: `bg-white rounded-2xl shadow-[...] border border-stone-200/60`
-- Mobile: full-width flat card (`max-sm:rounded-none max-sm:shadow-none max-sm:border-none`)
+- `StepIndicator` (icon dots, NOT a "Step X of 4" text counter): 4 lucide icons
+  (Briefcase/Wrench/UserCircle/CreditCard) with connector lines; done = emerald
+  check, current = copper ring, future = stone. `getStep(pathname)` maps path → 1–4.
+- **Sign-out button** (right cluster, next to `StepIndicator`): `LogOut` icon +
+  i18n label (`t('sign_out')` / `t('signing_out')`, hidden `<sm`), `aria-label`,
+  `signingOut` state; `supabase.auth.signOut()` → `window.location.href='/auth/signin'`.
+- White wizard card: `bg-white rounded-2xl shadow-[...] border border-stone-200/60`,
+  wrapped in `<AnimatedSection>`.
+- Mobile: full-width flat card (`max-sm:rounded-none max-sm:shadow-none max-sm:border-none`).
 
-`getStep(pathname)` maps path to 1–4 for progress bar.
+**Light-mode pin (dark-mode fix, 2026-06-26)**: dark mode is class-based
+(`.dark` on `<html>`, persisted from the dashboard theme toggle) and onboarding
+is a deliberately light-only surface (hardcoded `bg-white` card, `text-[#0F172A]`
+headings). Form controls with no explicit text color (shadcn `<Input>`, the raw
+phone `<input>`) inherit `--foreground`, which `.dark` flips to white → white text
+on the white card. `globals.css` re-pins the light token set on
+`[data-onboarding-root]` (`color-scheme: light` + `--foreground`/`--input`/`--ring`/
+`--primary`/... = their `:root` light values), so the wizard always renders light.
+The closer ancestor wins for inherited custom properties, so this overrides the
+`.dark` on `<html>` for the subtree. **Known limit**: the country `<Select>`
+dropdown is portaled to `document.body` (outside the root) and stays dark-themed
+(readable, just inconsistent) — fix would need a portal `container` or a
+light-forcing wrapper on `SelectContent`.
+
+**Stuck-spinner guard (2026-06-26)**: steps 1/2/3 call
+`useClearLoadingOnPageRestore(setLoading)` (`src/hooks/useClearLoadingOnPageRestore.js`)
+— resets the nav `loading` flag on mount + `pageshow` + `popstate`. Without it, a
+step that did `setLoading(true)` then `router.push()` on success reappears on Back
+with the stale flag, leaving Continue disabled + spinning. Step 4 (checkout) uses a
+`phase` state machine instead and is not wired.
 
 Pathname → step mapping:
 - `/onboarding` (profile) → Step 1
@@ -175,7 +207,9 @@ Embedded Stripe Checkout with 4 phases:
 1. **Checkout form**: Renders embedded Stripe Checkout via `EmbeddedCheckoutProvider` with a client secret from `POST /api/onboarding/checkout-session` (embedded mode). User enters payment details inline without leaving the wizard.
 2. **Verifying**: After Stripe form completes, polls `GET /api/onboarding/verify-checkout` on a two-stage plan (2026-06-13): 30×2s fast window, then 12×10s slow tail (~3 min total) — the old 60s cutoff stranded paid customers during webhook lag. Polls 4+ pass `session_id` so the endpoint can fall back to the Stripe API.
 3. **Error** (polling exhausted): "Still confirming your subscription" with an explicit **"Check again" retry button** (re-runs `handleComplete`) and **do-not-pay-again** copy, plus a support link. Not a dead end anymore.
-4. **Success**: Shows `CelebrationOverlay`, **the provisioned AI number** (fetched from `/api/onboarding/test-call-status`, short poll up to 4 tries, `formatInternational` display, "call it from your cell right now" nudge; falls back to "being assigned" copy). Calls `markComplete()` and `clearWizardSession()`. Auto-redirects to `/dashboard` after **10 seconds** (extended so the owner can read their number).
+4. **Success**: Shows `CelebrationOverlay`, **the provisioned AI number** (fetched from `/api/onboarding/test-call-status`, short poll up to 4 tries, `formatInternational` display, "call it from your cell right now" nudge; falls back to "being assigned" copy). Calls `markComplete()` and `clearWizardSession()`. Auto-redirects to `/dashboard` after **10 seconds** (the countdown resets on entry and pluralizes — "1 second" vs "N seconds").
+
+**Robustness (2026-06-26)**: (a) `fetchClientSecret` is wrapped in try/catch — on failure (invalid plan, **409 already-subscribed** on revisit, network) it sets `checkoutError`, and a dedicated recovery screen (Try again / Go to dashboard / Contact support) renders instead of a blank Stripe iframe that would otherwise strand the user. (b) The verify-checkout poll loop has an unmount-cancel ref (no `setState` after unmount) and a `pollingRef` concurrency guard (the `sessionId` effect and the error-screen "Check again" button can't run two loops at once).
 
 ### Deprecated: Plan Selection (`/onboarding/plan/page.js`)
 
@@ -355,7 +389,9 @@ Returns `{ complete, status, ever_completed, phone_number }`. `complete = test_c
 
 **File**: `src/app/api/onboarding/sg-availability/route.js`
 
-Returns `{ available_count: number }` for Singapore phone numbers. Queries `phone_inventory` table with `country='SG'` and `status='available'`. No auth required — fires on country dropdown change (D-07) for immediate feedback. Uses service_role client with `count: 'exact', head: true`.
+Returns `{ available_count: number }` for Singapore phone numbers. Queries `phone_inventory` table with `country='SG'` and `status='available'`. No auth required — fires on country dropdown change (D-07) for immediate feedback. Uses service_role client with `count: 'exact', head: true`. Calls `await connection()` (from `next/server`) so the live count is never prerendered/frozen under `cacheComponents`.
+
+**Error semantics (2026-06-26)**: on a DB error it returns `{ available_count: null, error: 'check_failed' }` with **503** — NOT `{ available_count: 0 }`. Returning `0` made a transient DB hiccup indistinguishable from genuinely sold-out, which flipped the contact page to the waitlist panel and disabled Continue with no recovery. The contact page now treats a non-OK response or `available_count == null` as **UNKNOWN** (no waitlist, no Continue block); the authoritative sold-out decision is made server-side at `sms-confirm` (409 sold-out vs 503 retry). Mirrors `sms-confirm`'s 503-vs-409 design.
 
 ### `POST /api/onboarding/sg-waitlist`
 
