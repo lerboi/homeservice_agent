@@ -17,6 +17,7 @@
 // Phase 54: accounting/adapter.js deleted; sync.js now imports from integrations/adapter.
 // getAccountingAdapter is aliased from getIntegrationAdapter for minimal-diff readability.
 import { getIntegrationAdapter as getAccountingAdapter, refreshTokenIfNeeded } from '@/lib/integrations/adapter';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 /**
  * Push an invoice to the tenant's connected accounting software.
@@ -28,6 +29,9 @@ import { getIntegrationAdapter as getAccountingAdapter, refreshTokenIfNeeded } f
  * @param {Object} settings - Invoice settings row
  */
 export async function pushToAccounting(supabase, tenantId, invoice, lineItems, settings) {
+  // v1: integrations flagged off — never push to Xero/Jobber. See
+  // My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) return;
   // Check if tenant has accounting connected
   const { data: credentials } = await supabase
     .from('accounting_credentials')
@@ -117,6 +121,9 @@ export async function pushToAccounting(supabase, tenantId, invoice, lineItems, s
  * @param {string} newStatus - 'paid' or 'void'
  */
 export async function pushStatusUpdate(supabase, tenantId, invoiceId, newStatus) {
+  // v1: integrations flagged off — never push status to Xero/Jobber. See
+  // My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) return;
   // Only process paid or void
   if (newStatus !== 'paid' && newStatus !== 'void') {
     return;

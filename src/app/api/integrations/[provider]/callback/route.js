@@ -18,6 +18,7 @@ import { verifyOAuthState } from '@/app/api/google-calendar/auth/route';
 import { getIntegrationAdapter } from '@/lib/integrations/adapter';
 import { PROVIDERS } from '@/lib/integrations/types';
 import { JOBBER_GRAPHQL_URL, JOBBER_API_VERSION } from '@/lib/integrations/jobber';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 const PAGE_URL = '/dashboard/more/integrations';
 
@@ -81,6 +82,12 @@ async function probeJobberAccountId(accessToken) {
 
 export async function GET(request, { params }) {
   const { provider } = await params;
+
+  // v1: integrations flagged off — no OAuth flow can be started, so a callback
+  // should never legitimately arrive. Refuse it. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}`);
+  }
 
   if (!PROVIDERS.includes(provider)) {
     return NextResponse.redirect(

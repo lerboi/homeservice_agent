@@ -1,18 +1,13 @@
 // Server Component — Phase 54 D-04 + D-10 (Pattern A).
-// Reads cached per-tenant integration status via getIntegrationStatus
-// ('use cache' + cacheTag inside status.js). Renders the Calendar Connections
-// section (preserved, unchanged) and delegates the Xero/Jobber provider cards
-// to BusinessIntegrationsClient for interactive state.
+// Renders the Calendar Connections section (a real, shipped feature) and, when
+// integrations are enabled, delegates the Xero/Jobber provider cards to
+// BusinessIntegrationsClient for interactive state.
 //
-// Phase 58 D-08 confirmation (CTX-01 / Plan 58-03 Task 2): the upstream
-// getIntegrationStatus reader at src/lib/integrations/status.js line 34
-// selects `last_context_fetch_at` for BOTH provider rows (Xero + Jobber)
-// symmetrically, so initialStatus.jobber.last_context_fetch_at is
-// populated whenever the livekit-agent successfully fetches Jobber customer
-// context. BusinessIntegrationsClient renders "Last synced N ago" from
-// this field (matches the Xero card pattern shipped in Phase 55).
-// No code change needed on this page — D-08 already shipped via Phase 56
-// caching uplift that unified the select string across providers.
+// v1: the Xero/Jobber "Accounting & Job Management" surface is flagged OFF via
+// INTEGRATIONS_ENABLED (see My Prompts/Jobber-Xero-Disable.md). When off we skip
+// the status fetch entirely and render a "Coming soon" panel — no connectable
+// OAuth cards, no reader query, no permanently-broken reconnect state. Flip
+// NEXT_PUBLIC_INTEGRATIONS_ENABLED=true to restore the full provider cards.
 
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
@@ -23,50 +18,32 @@ import BusinessIntegrationsClient from '@/components/dashboard/BusinessIntegrati
 import { card } from '@/lib/design-tokens';
 import { ErrorState } from '@/components/ui/error-state';
 import IntegrationsRetryButton from '@/components/dashboard/IntegrationsRetryButton';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
-// Phase 58 Plan 58-05 (POLISH-04): if getIntegrationStatus throws (e.g. a
-// transient Supabase outage), render <ErrorState> at the top-level instead of
-// crashing the whole server-rendered page. Retry is a thin client component
-// that calls router.refresh() — server components cannot own an onRetry
-// callback directly. NB: 58-03 already confirmed last_context_fetch_at is
-// selected symmetrically for Xero + Jobber via getIntegrationStatus (see
-// the block comment below); this plan does NOT touch the select string.
 export default async function IntegrationsPage() {
   const tenantId = await getTenantId();
   if (!tenantId) {
     redirect('/auth/signin');
   }
 
+  // Only reach for the (cached) provider status when integrations are enabled.
   let initialStatus = null;
   let statusError = null;
-  try {
-    initialStatus = await getIntegrationStatus(tenantId);
-  } catch {
-    statusError = "Couldn't load your integrations. Check your connection and try again.";
-  }
-
-  if (statusError) {
-    return (
-      <div>
-        <h1 className="text-xl font-semibold text-foreground mb-1">Business Integrations</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Connect Xero and Jobber so your AI receptionist knows your customers&apos; history during calls.
-        </p>
-        <div className={`${card.base} p-4`}>
-          <ErrorState message={statusError} />
-          <div className="flex justify-center">
-            <IntegrationsRetryButton />
-          </div>
-        </div>
-      </div>
-    );
+  if (INTEGRATIONS_ENABLED) {
+    try {
+      initialStatus = await getIntegrationStatus(tenantId);
+    } catch {
+      statusError = "Couldn't load your integrations. Check your connection and try again.";
+    }
   }
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-foreground mb-1">Business Integrations</h1>
       <p className="text-sm text-muted-foreground">
-        Connect Xero and Jobber so your AI receptionist knows your customers&apos; history during calls.
+        {INTEGRATIONS_ENABLED
+          ? "Connect Xero and Jobber so your AI receptionist knows your customers' history during calls."
+          : 'Connect the tools your business runs on.'}
       </p>
 
       {/* Calendar Connections — preserved from pre-Phase-54 page, unchanged copy */}
@@ -78,15 +55,44 @@ export default async function IntegrationsPage() {
         <CalendarSyncCard />
       </div>
 
-      {/* Accounting &amp; Job Management — provider-first cards per UI-SPEC */}
+      {/* Accounting &amp; Job Management — live cards when enabled, else "Coming soon". */}
       <h2 className="text-base font-semibold text-foreground mt-10 mb-1">Accounting &amp; Job Management</h2>
-      <p className="text-sm text-muted-foreground mb-6">
-        Connect Xero or Jobber to share customer history with your AI receptionist.
-      </p>
 
-      <Suspense fallback={null}>
-        <BusinessIntegrationsClient initialStatus={initialStatus} />
-      </Suspense>
+      {INTEGRATIONS_ENABLED ? (
+        <>
+          <p className="text-sm text-muted-foreground mb-6">
+            Connect Xero or Jobber to share customer history with your AI receptionist.
+          </p>
+          {statusError ? (
+            <div className={`${card.base} p-4`}>
+              <ErrorState message={statusError} />
+              <div className="flex justify-center">
+                <IntegrationsRetryButton />
+              </div>
+            </div>
+          ) : (
+            <Suspense fallback={null}>
+              <BusinessIntegrationsClient initialStatus={initialStatus} />
+            </Suspense>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground mb-6">
+            Xero and Jobber integrations are coming soon — your AI receptionist will be
+            able to recognize repeat callers and read back their job and invoice history
+            during a call.
+          </p>
+          <div className={`${card.base} p-5`}>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                Coming soon
+              </span>
+              <p className="text-sm text-muted-foreground">Xero &amp; Jobber — not yet available.</p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

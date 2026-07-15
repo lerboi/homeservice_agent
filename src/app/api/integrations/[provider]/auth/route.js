@@ -13,9 +13,16 @@ import { supabase } from '@/lib/supabase';
 import { signOAuthState } from '@/app/api/google-calendar/auth/route';
 import { getIntegrationAdapter } from '@/lib/integrations/adapter';
 import { PROVIDERS } from '@/lib/integrations/types';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 export async function GET(request, { params }) {
   const { provider } = await params;
+
+  // v1: integrations flagged off — refuse to start any OAuth flow, even via a
+  // direct URL. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return Response.json({ error: 'Integrations are not available yet.' }, { status: 404 });
+  }
 
   if (!PROVIDERS.includes(provider)) {
     return Response.json(

@@ -7,3 +7,10 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||= 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY ||= 'test-service-role-key';
 process.env.STRIPE_SECRET_KEY ||= 'sk_test_placeholder';
 process.env.STRIPE_WEBHOOK_SECRET ||= 'whsec_test_placeholder';
+
+// v1 ships with the Jobber/Xero integrations flagged OFF (see
+// My Prompts/Jobber-Xero-Disable.md). The existing integration test suites
+// exercise the ENABLED code path, so turn the flag on for tests — this keeps
+// the integration internals covered for the day we re-enable, while production
+// defaults to off (no NEXT_PUBLIC_INTEGRATIONS_ENABLED set).
+process.env.NEXT_PUBLIC_INTEGRATIONS_ENABLED ||= 'true';

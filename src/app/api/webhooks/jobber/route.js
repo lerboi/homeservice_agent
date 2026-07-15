@@ -41,6 +41,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { refreshTokenIfNeeded } from '@/lib/integrations/adapter';
 import { applyJobberVisit } from '@/lib/scheduling/jobber-schedule-mirror';
 import { fetchJobberVisitById, JOBBER_GRAPHQL_URL, JOBBER_API_VERSION } from '@/lib/integrations/jobber';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 // Phase 57 — Jobber schedule mirror topics (JOBSCHED-01).
 // Topic names per Jobber WebHookTopicEnum (verify in GraphiQL before locking
@@ -106,6 +107,11 @@ function normalizePhones(rawPhones) {
  * @returns {Promise<Response>}
  */
 export async function POST(request) {
+  // v1: integrations flagged off — this endpoint is dormant (no live connection
+  // can exist). Refuse before any work. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return new Response('', { status: 404 });
+  }
   // Phase 1: auth (HMAC) — reject before any tenant lookup or body parse
   const rawBody = await request.text();
   const sig = request.headers.get('x-jobber-hmac-sha256');

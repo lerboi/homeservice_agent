@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 // Phase 59 Plan 08: createOrAttachLeadForManualAppointment removed (src/lib/leads.js deleted).
 // Manual bookings now create a customer + job via the record_call_outcome RPC (D-14).
 import { notifyBookingCopyToJobber } from '@/lib/notifications';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 /**
  * Compute travel buffer blocks between consecutive same-day appointments.
@@ -344,7 +345,7 @@ export async function POST(request) {
   // after(); helper internally gates on Jobber-connected AND jobber_visit_id IS NULL,
   // so this no-ops cleanly for tenants without Jobber. Voice-agent bookings
   // (livekit-agent repo) wire this separately at their own post-booking site.
-  if (data) {
+  if (data && INTEGRATIONS_ENABLED) {
     after(async () => {
       try {
         await notifyBookingCopyToJobber({ tenantId, appointmentId: data.id });

@@ -16,8 +16,14 @@ import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
 import { getIntegrationAdapter } from '@/lib/integrations/adapter';
 import { PROVIDERS } from '@/lib/integrations/types';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 export async function POST(request) {
+  // v1: integrations flagged off — nothing connectable, so nothing to disconnect.
+  // See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return Response.json({ error: 'Integrations are not available yet.' }, { status: 404 });
+  }
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
