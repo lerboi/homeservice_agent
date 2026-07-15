@@ -20,6 +20,15 @@
 
 > A note on why this ran in pieces: the audit hit the account's session usage limit twice mid-run and the process was interrupted once. It was resumed from cache each time; the payment/Stripe audit (the one that kept failing because it's the heaviest) was completed directly. All findings below are from completed, grounded analysis.
 
+> ### 🧊 STATUS UPDATE — 2026-07-15: Jobber/Xero integrations DISABLED for v1
+>
+> Acting on §4's "reduce/freeze integrations" recommendation, the **entire Jobber/Xero surface is now flagged OFF (hard freeze — not deleted)** behind a single fail-closed master switch, merged to `main` in **both** repos (`homeservice_agent` `c45a925` / `livekit_agent` `29fc812`):
+> - **Flag:** `NEXT_PUBLIC_INTEGRATIONS_ENABLED` (Next.js) + `VOCO_INTEGRATIONS_ENABLED` (Python agent) — both default **OFF**.
+> - **What's off (verified in current code, 2026-07-15):** landing strip shows Jobber/Xero under "Coming soon"; the dashboard Accounting section + calendar "Business apps" card are hidden; every OAuth / webhook / status / disconnect / resync / bookable-users route is gated (404 / empty shape); both integration crons removed from `vercel.json`; invoice→accounting sync, the "copy to Jobber" hook, and the Xero/Jobber checklist items are gated; **and the voice agent never touches the integration on the call path** (no greeting latency, no in-call token-death surface, `check_customer_account` unregistered).
+> - **Effect on the findings below:** this neutralizes **all of §6.9 (INT-1/2/3)** and the integration items in §2, §4, §7, §8 **for v1**. INT-1 and INT-2 are **moot on the live paths but NOT fixed in code** — both are on the re-enable checklist and must be fixed before the flag is flipped.
+> - **Verification caveat (honest — adversarial re-check of the disable in current code):** airtight on the call path, the money path, and all Jobber/Xero network egress. A few **ungated render/cosmetic residuals** remain (the More-menu "Integrations" item, an invoices "Connect accounting" pill, public-chatbot integration copy) plus **one genuinely ungated page** — `/dashboard/integrations/jobber/setup` — whose safety rests on there being **no live `accounting_credentials` rows**, not on the flag. See §6.9's status note.
+> - Code stays in-tree, dormant, one flag from re-enable. Findings are retained below for that re-enable pass. **Full detail + re-enable checklist: `My Prompts/Jobber-Xero-Disable.md`.**
+
 ---
 
 ## 1. Executive summary
@@ -36,7 +45,7 @@
    - The **owner alert — the entire payoff — can be silently dropped** on ~4% of calls, and emergency detection leans on a single external LLM that fails to "routine" silently.
    - The AI books against a calendar mirror that is **frozen 16 days** in prod.
 
-2. **The product is over-scoped for its stage.** A solo founder pre-PMF has shipped roughly **two to three extra products' worth of surface** that *no live user touches*: a full invoicing + estimates suite (recurring, batch, PDF, reminder crons), a dual Jobber+Xero integration (dual OAuth, GraphQL+REST, cross-language refresh locks, a 15-min schedule-mirror poll), a programmatic-SEO content engine, a multi-zone travel-buffer matrix, and a customer merge/unmerge/undo stack. All of it is maintenance drag and focus drain; none of it is in the core loop.
+2. **The product is over-scoped for its stage.** A solo founder pre-PMF has shipped roughly **two to three extra products' worth of surface** that *no live user touches*: a full invoicing + estimates suite (recurring, batch, PDF, reminder crons), a dual Jobber+Xero integration (dual OAuth, GraphQL+REST, cross-language refresh locks, a 15-min schedule-mirror poll) *[🧊 disabled for v1 — 2026-07-15; see status banner above]*, a programmatic-SEO content engine, a multi-zone travel-buffer matrix, and a customer merge/unmerge/undo stack. All of it is maintenance drag and focus drain; none of it is in the core loop.
 
 **The prescription is simple to state:** narrow ruthlessly to the core loop, harden the ~5 launch-blocker seams, and freeze/defer everything else. You are not short on capability — you're short on *focus and reliability on the one path that matters*.
 
@@ -70,7 +79,7 @@ Each subsystem is mostly fine on its own; the danger is in the seams. Tracing th
 
 **Booked appointment → owner's real calendar.** Booking itself is atomic and durable. But the AI checks availability against a **calendar mirror that is frozen 16 days in prod** (both connected calendars last synced 2026-06-18), with no agent-side staleness gate — so it will happily book over real events the owner added since.
 
-**The "value-add" integrations.** Both live Jobber/Xero connections are **dead** (`token_refresh_failed`); the Jobber one **never served a single lookup** in 2.5 months. And the pre-call context fetch **blocks the greeting by up to 2.5s of dead air** for connected tenants.
+**The "value-add" integrations.** Both live Jobber/Xero connections are **dead** (`token_refresh_failed`); the Jobber one **never served a single lookup** in 2.5 months. And the pre-call context fetch **blocks the greeting by up to 2.5s of dead air** for connected tenants. **[🧊 DISABLED for v1 — 2026-07-15: the whole integration is flagged off; the pre-call context fetch no longer runs on the call path. See top-of-doc status banner.]**
 
 ---
 
@@ -94,8 +103,8 @@ Ranked by how much surface it removes for how little it costs you today. **None 
 |---|---|---|
 | **Invoicing suite** (recurring, batch, PDF, AI line-items, 2 crons, `@react-pdf/renderer`) | `invoicing:false` default; **0/5 tenants**; 13 test invoices | **Freeze.** Don't touch until a paying customer asks. If you need any, keep single-invoice create+send only. |
 | **Estimates subsystem** (list/convert/send/PDF) | 4 test estimates, same disabled flag | **Defer entirely.** Phase-2-if-invoicing-gets-traction. |
-| **Jobber + Xero integrations** (dual OAuth, GraphQL+REST, merge layer, cross-language refresh locks, per-phone caching) | **2 connections, both dead;** one never used once in 2.5 months | **Reduce to ONE provider (Jobber) behind a beta flag.** Cut the merge layer, the second provider, and the per-phone cache tags. |
-| **Jobber schedule-mirror** (Phase 57: VISIT_* webhooks + 15-min full-window poll cron) | 0 users; polls 90-day-past/180-day-future every 15 min because Jobber has no `updatedAt` filter | **Remove until a customer runs their crew on Jobber.** Wasteful polling for nobody. |
+| **Jobber + Xero integrations** (dual OAuth, GraphQL+REST, merge layer, cross-language refresh locks, per-phone caching) | **2 connections, both dead;** one never used once in 2.5 months | ~~**Reduce to ONE provider (Jobber) behind a beta flag.** Cut the merge layer, the second provider, and the per-phone cache tags.~~ 🧊 **DONE 2026-07-15 — went further than "reduce to one":** BOTH providers **frozen off** behind the master flag (a full freeze beats reduce-to-one, which keeps most of the surface). Merge layer, second provider, and cache tags left in-tree but dormant. |
+| **Jobber schedule-mirror** (Phase 57: VISIT_* webhooks + 15-min full-window poll cron) | 0 users; polls 90-day-past/180-day-future every 15 min because Jobber has no `updatedAt` filter | ~~**Remove until a customer runs their crew on Jobber.** Wasteful polling for nobody.~~ 🧊 **DONE 2026-07-15** — `poll-jobber-visits` cron removed from `vercel.json` + no-op gated. |
 | **Programmatic-SEO engine** (5 dynamic templates: compare/for/glossary/integrations/blog) | ~16 thin entries (2-term glossary, 3 blog posts) on a no-traffic site | **Deindex / hide footer links** until there's real content depth + traffic. Thin content is an SEO liability, not a win. |
 | **Per-zone travel-buffer matrix** (`zone_travel_buffers` + cross-zone lookup) | **Dead code** — `zone_id` is always NULL on real bookings; every path collapses to the flat buffer | **Delete the table + branch.** Keep the flat `travel_buffer_mins` and the flat service-area coverage list (that part is valuable). |
 | **Customer merge/unmerge/7-day-undo** (+admin view + UnmergeBanner + audit table) | `customer_merge_audit` has **0 rows ever**; 20 customers total | **Cut to a manual admin merge** (or nothing). Undo/preview/audit is scale you haven't reached. |
@@ -327,6 +336,10 @@ Caller-vs-caller double-booking is properly prevented at the DB; the risk is cal
 ### 6.9 Integrations (Jobber & Xero)
 *Verdict: partial — high craftsmanship, near-zero usage, both live connections dead. INT-1 CONFIRMED high; INT-2 downgraded high→medium (no healthy connected tenant pays it today).*
 
+> **🧊 DISABLED FOR v1 — 2026-07-15 (this entire subsystem).** All Jobber/Xero surface is flagged off behind the fail-closed master switch (`NEXT_PUBLIC_INTEGRATIONS_ENABLED` / `VOCO_INTEGRATIONS_ENABLED`, merged to `main` in both repos). **Nothing below runs in v1:** UI shows "Coming soon"; every OAuth/webhook/status/disconnect/resync/bookable-users route is gated (404/empty); both crons removed; invoice→accounting sync + copy-to-Jobber hook + Xero/Jobber checklist items gated; and the voice agent never fetches integration context or offers `check_customer_account` on the call path. **INT-1, INT-2, INT-3 are therefore moot on the live v1 paths — but NOT fixed in code**; INT-1 (silent death) and INT-2 (greeting latency) are on the re-enable checklist (`Jobber-Xero-Disable.md` §6) and must be fixed before the flag is flipped.
+>
+> **Verification (2026-07-15, adversarial re-check of the disable in current code):** airtight on the call path, the money path, and all Jobber/Xero network egress. Residuals worth noting for the re-enable pass: **(1)** `/dashboard/integrations/jobber/setup/page.js` is **not** flag-gated — a direct-URL visit fires live Jobber GraphQL + calendar-mirror writes **iff** a `jobber` `accounting_credentials` row exists (safe today only by data-absence, not by the flag); **(2)** the invoices page's "Connect accounting" pill + an ungated `accounting_sync_log` read, the More-menu "Integrations" item, and the public chatbot's integration copy still **render** (cosmetic — no live integration call); **(3)** a stale `fetch_xero_context_bounded` import lingers in `agent.py` (dead, no call-path effect). None of these touch the call path. Findings retained below for the re-enable pass.
+
 The engineering quality is genuinely high (timing-safe HMAC, shielded token rotation, graceful degradation). The problem is that this is a **large, fragile, high-maintenance surface built for demand that doesn't exist**, and the one real-world signal says it isn't staying connected.
 
 **Live reality check:** the entire `accounting_credentials` table has **two rows, both broken** — Xero (fetched customer context exactly **once**, ~3 min after connect, now `token_refresh_failed`) and Jobber (`last_context_fetch_at = null` — **never served a single lookup**, now `token_refresh_failed`). In 2.5 months this subsystem produced context for **one** call. Likely cause: the keep-fresh cron is a June addition, so Apr→June nothing rotated tokens and the unused grants aged out.
@@ -357,7 +370,7 @@ Facts pulled from the live DB / Stripe during this audit — useful as a baselin
 | `stripe_meter_failures` / `owner_notification_failures` | 0 / 0 (outboxes empty) |
 | Stranded paying tenant (paid, no number) | **1** (`f4665eef`) |
 | `phone_inventory` (SG numbers) | **0 rows** (SG onboarding closed) |
-| `accounting_credentials` (Jobber/Xero) | 2 rows, **both dead**; 1 never used |
+| `accounting_credentials` (Jobber/Xero) | 2 rows, **both dead**; 1 never used — *🧊 subsystem disabled for v1 (2026-07-15); rows now inert* |
 | Connected calendars | 2, **both frozen ~16 days** |
 | Invoicing-enabled tenants | 0/5 (13 test invoices, 4 test estimates) |
 | `customer_merge_audit` rows | 0 (ever) |
@@ -371,7 +384,7 @@ Facts pulled from the live DB / Stripe during this audit — useful as a baselin
 3. **Does `current_period_end` populate on a real *active* subscription?** (PAY-2) — if not, the past-due gate never enforces.
 4. **Is the LiveKit `participant_joined` webhook registered?** (DASH-3) — determines whether new tenants can legitimately complete the test-call essential.
 5. **Was `f4665eef` stranded by the inline fallback or a never-delivered webhook?** — either way there's no recovery path; backfill it and add the sweeper.
-6. **Root-cause the Jobber/Xero token death** — did the keep-fresh cron ever run + does Xero's 60-day non-use expiry get reset by rotation for a low-traffic tenant?
+6. **[🧊 DEFERRED — integrations disabled for v1, 2026-07-15]** **Root-cause the Jobber/Xero token death** — did the keep-fresh cron ever run + does Xero's 60-day non-use expiry get reset by rotation for a low-traffic tenant? *(Moot until re-enable; the keep-fresh cron is now removed. Revisit as part of the `Jobber-Xero-Disable.md` §6 re-enable checklist.)*
 
 ---
 
