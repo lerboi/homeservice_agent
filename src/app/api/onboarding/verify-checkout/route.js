@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { supabase as adminSupabase } from '@/lib/supabase';
 import { stripe } from '@/lib/stripe';
+import { activateTenant } from '@/lib/tenant-activation';
 
 /**
  * Verify checkout completion.
@@ -149,6 +150,22 @@ async function fulfillSubscription(session, tenantId) {
   // Re-retrieve with overage item included, then sync to local DB
   const updatedSubscription = await stripe.subscriptions.retrieve(session.subscription);
   await syncSubscription(updatedSubscription, tenantId);
+
+  // Billing is now guaranteed (onboarding_complete + subscription synced). ONLY
+  // after that do we seed working hours + provision the phone number, best-effort:
+  // a provisioning/Twilio error must NEVER block the billing rescue this fallback
+  // exists for. Uses the SAME activateTenant path as the webhook so the two can't
+  // diverge — omitting this is exactly what previously stranded paying tenants
+  // with no number and no working hours (invisibly, provisioning_failed=false).
+  try {
+    await activateTenant(tenantId, { eventCreatedForTrial: session.created });
+  } catch (activationErr) {
+    console.error('[verify-checkout] Activation (seed/provision) failed — billing already fulfilled:', activationErr?.message);
+    Sentry.captureMessage(
+      `verify-checkout activation FAILED for tenant ${tenantId}: ${activationErr?.message} — billing fulfilled but phone/seed may be incomplete; the sweeper will surface it`,
+      'error',
+    );
+  }
 }
 
 /**

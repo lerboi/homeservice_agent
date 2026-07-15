@@ -52,7 +52,25 @@ export async function PUT(request) {
     const { working_hours, slot_duration_mins, travel_buffer_mins, tenant_timezone } = await request.json();
 
     const updates = {};
-    if (working_hours !== undefined) updates.working_hours = working_hours;
+    if (working_hours !== undefined) {
+      // Defense-in-depth (DASH-1): the enforced call-readiness gate (migration 078)
+      // treats working_hours in ('null','{}') as NOT set, and the setup checklist
+      // mirrors that. Reject an empty/non-object payload so a crafted PUT can't
+      // create the {}-divergence where the checklist shows complete but the gate
+      // fails. The WorkingHoursEditor always sends a full 7-day object.
+      if (
+        typeof working_hours !== 'object' ||
+        working_hours === null ||
+        Array.isArray(working_hours) ||
+        Object.keys(working_hours).length === 0
+      ) {
+        return Response.json(
+          { error: 'working_hours must be a non-empty object' },
+          { status: 400 },
+        );
+      }
+      updates.working_hours = working_hours;
+    }
     // Reject slot_duration_mins <= 0 (the slot calculators step by this value, so
     // 0/negative is a non-terminating loop) and invalid timezones (2026-06-12 audit LOW-27).
     if (slot_duration_mins !== undefined) {

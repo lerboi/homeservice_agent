@@ -208,7 +208,16 @@ export function deriveChecklistItems(tenant, counts) {
     // Verified by the LiveKit participant_joined webhook (/api/webhooks/livekit)
     // — true only once a test call actually connected, not at trigger time.
     make_test_call: !!(tenant && tenant.test_call_completed),
-    configure_hours: !!(tenant && tenant.working_hours),
+    // Reject an empty object: the enforced gate is_tenant_call_ready (migration
+    // 078) treats working_hours in ('null','{}') as NOT set, so a bare
+    // !!{} === true here would mark the item complete while the gate still fails
+    // and the webhook keeps forwarding every call (DASH-1). Require a non-empty object.
+    configure_hours: !!(
+      tenant &&
+      tenant.working_hours &&
+      typeof tenant.working_hours === 'object' &&
+      Object.keys(tenant.working_hours).length > 0
+    ),
     configure_notifications: hasCustomNotificationPrefs(
       tenant && tenant.notification_preferences
     ),
@@ -234,6 +243,16 @@ export function deriveChecklistItems(tenant, counts) {
       if (override.dismissed === true) continue;
       const meta = ITEM_META[id] || { title: id, description: '', href: '#' };
       const markDoneOverride = override.mark_done === true;
+      // Essentials (except make_test_call) must NOT be satisfiable by a manual
+      // "Mark done". The enforced routing gate is_tenant_call_ready (migration 078)
+      // reads raw columns and ignores checklist overrides, so honoring mark-done
+      // here let the dashboard show "You're call-ready" while the gate still
+      // forwarded every inbound call to the owner (DASH-1). make_test_call KEEPS the
+      // mark-done fallback — its auto-detect needs the external LiveKit
+      // participant_joined webhook, which is the documented manual-completion escape
+      // hatch until that path is verified live (see webhooks/livekit/route.js).
+      const markDoneAllowed = !(tier === 'essential' && id !== 'make_test_call');
+      const complete = autoComplete[id] || (markDoneAllowed && markDoneOverride);
       // Phase 58 CHECKLIST-01: only connect_xero / connect_jobber can enter the
       // error sub-state. Emit has_error + error_subtitle uniformly on every item
       // so ChecklistItem.jsx doesn't have to guard undefined fields.
@@ -247,7 +266,7 @@ export function deriveChecklistItems(tenant, counts) {
         // still keying off it); `tier` is the active grouping/ordering field.
         theme: themeFor(id),
         required: tier === 'essential',
-        complete: autoComplete[id] || markDoneOverride,
+        complete,
         dismissed: false, // dismissed items never reach the output array
         mark_done_override: markDoneOverride,
         title: meta.title,

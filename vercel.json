@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/retry-owner-notifications",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sweep-unprovisioned-tenants",
+      "schedule": "0 6 * * *"
     }
   ]
 }

@@ -137,15 +137,60 @@ describe('deriveChecklistItems', () => {
     expect(essentials.every((i) => i.complete)).toBe(true);
   });
 
-  it('mark_done override forces complete:true', () => {
+  it('mark_done does NOT force a non-test essential complete (DASH-1)', () => {
+    // Essentials except make_test_call can only be satisfied by auto-detection.
+    // The enforced routing gate is_tenant_call_ready ignores checklist overrides,
+    // so honoring mark-done here let the dashboard claim "call-ready" while every
+    // inbound call was still forwarded to the owner. The override is still recorded
+    // (UI state) — it just no longer satisfies the item.
     const t = {
       ...fullTenant,
       business_name: null,
       checklist_overrides: { setup_profile: { mark_done: true } },
     };
     const profile = deriveChecklistItems(t, {}).find((i) => i.id === 'setup_profile');
-    expect(profile.complete).toBe(true);
+    expect(profile.complete).toBe(false);
     expect(profile.mark_done_override).toBe(true);
+  });
+
+  it('mark_done still completes make_test_call (retained essential fallback)', () => {
+    // make_test_call keeps the mark-done fallback: its auto-detect depends on the
+    // external LiveKit participant_joined webhook, so mark-done is the documented
+    // manual-completion path until that is verified live.
+    const t = {
+      ...fullTenant,
+      test_call_completed: false,
+      checklist_overrides: { make_test_call: { mark_done: true } },
+    };
+    const item = deriveChecklistItems(t, {}).find((i) => i.id === 'make_test_call');
+    expect(item.complete).toBe(true);
+    expect(item.mark_done_override).toBe(true);
+  });
+
+  it('mark_done still forces a recommended item complete', () => {
+    const t = {
+      ...fullTenant,
+      checklist_overrides: { setup_escalation: { mark_done: true } },
+    };
+    const item = deriveChecklistItems(t, {}).find((i) => i.id === 'setup_escalation');
+    expect(item.complete).toBe(true);
+    expect(item.mark_done_override).toBe(true);
+  });
+
+  it('configure_hours is NOT complete for an empty working_hours object (DASH-1)', () => {
+    // {} is truthy in JS but the enforced gate (migration 078) rejects
+    // working_hours in ('null','{}'); the checklist must agree.
+    const emptyHours = deriveChecklistItems(
+      { ...fullTenant, working_hours: {} },
+      {}
+    ).find((i) => i.id === 'configure_hours');
+    expect(emptyHours.complete).toBe(false);
+
+    const realHours = deriveChecklistItems(
+      { ...fullTenant, working_hours: { monday: { open: '08:00', close: '17:00', enabled: true } } },
+      {}
+    ).find((i) => i.id === 'configure_hours');
+    expect(realHours.complete).toBe(true);
   });
 
   it('dismiss override removes the item from the list', () => {

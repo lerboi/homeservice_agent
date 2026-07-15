@@ -58,6 +58,14 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
   // Essential items cannot be dismissed — they gate call-readiness.
   const canDismiss = !isEssential;
 
+  // Mark done is hidden for essential items EXCEPT make_test_call. Manually
+  // marking an essential done previously flipped the "call-ready" meter green
+  // while the enforced gate (is_tenant_call_ready) still forwarded every call,
+  // so the button is a false-confidence lever for those items (DASH-1). Their
+  // completion is auto-detected, so no button is needed. make_test_call keeps
+  // it as the documented fallback for when the LiveKit webhook isn't wired.
+  const canMarkDone = !isEssential || item.id === 'make_test_call';
+
   return (
     <motion.div
       layout
@@ -144,20 +152,22 @@ export default function ChecklistItem({ item, onMarkDone, onDismiss }) {
             </Link>
           )}
 
-          {/* Mark done / Unmark done */}
-          <button
-            type="button"
-            onClick={() => onMarkDone?.(item.id, !(isComplete && isOverridden))}
-            className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
-            aria-label={
-              isComplete && isOverridden
-                ? `Unmark ${item.title} as done`
-                : `Mark ${item.title} as done`
-            }
-          >
-            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-            {isComplete && isOverridden ? 'Unmark done' : 'Mark done'}
-          </button>
+          {/* Mark done / Unmark done — hidden for auto-detected essentials (DASH-1) */}
+          {canMarkDone && (
+            <button
+              type="button"
+              onClick={() => onMarkDone?.(item.id, !(isComplete && isOverridden))}
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1"
+              aria-label={
+                isComplete && isOverridden
+                  ? `Unmark ${item.title} as done`
+                  : `Mark ${item.title} as done`
+              }
+            >
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              {isComplete && isOverridden ? 'Unmark done' : 'Mark done'}
+            </button>
+          )}
 
           {/* Dismiss — icon-only, hidden for required items */}
           {canDismiss && (
