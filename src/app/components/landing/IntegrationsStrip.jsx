@@ -1,14 +1,24 @@
 import { AnimatedSection } from './AnimatedSection';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
+
+// v1: Jobber + Xero are flagged off (see My Prompts/Jobber-Xero-Disable.md), so
+// they render under the "Coming soon" heading — honest, since the code exists and
+// is one flag-flip away — rather than as live, connectable integrations. Flipping
+// NEXT_PUBLIC_INTEGRATIONS_ENABLED=true promotes them back into the live strip.
+const ACCOUNTING = [
+  { name: 'Jobber', slug: 'jobber' },
+  { name: 'Xero', slug: 'xero' },
+];
 
 const INTEGRATIONS = [
   { name: 'Google Calendar', slug: 'google-calendar' },
   { name: 'Outlook Calendar', slug: 'outlook' },
-  { name: 'Jobber', slug: 'jobber' },
-  { name: 'Xero', slug: 'xero' },
+  ...(INTEGRATIONS_ENABLED ? ACCOUNTING : []),
   { name: 'WhatsApp', slug: 'whatsapp' },
 ];
 
 const COMING_SOON = [
+  ...(INTEGRATIONS_ENABLED ? [] : ACCOUNTING),
   { name: 'Housecall Pro', slug: 'housecall-pro' },
   { name: 'ServiceTitan', slug: 'servicetitan' },
 ];

@@ -11,11 +11,19 @@
 
 import { getTenantId } from '@/lib/get-tenant-id';
 import { getIntegrationStatus } from '@/lib/integrations/status';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 export async function GET() {
   const tenantId = await getTenantId();
   if (!tenantId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // v1: integrations flagged off — no provider status to report. Return an empty
+  // shape so any client renders "not connected"/nothing. See
+  // My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return Response.json({ xero: null, jobber: null });
   }
 
   try {

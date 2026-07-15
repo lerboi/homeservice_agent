@@ -7,12 +7,15 @@ import { createClient } from '@supabase/supabase-js';
 import { getTenantId } from '@/lib/get-tenant-id';
 import { fetchJobberVisits } from '@/lib/integrations/jobber';
 import { rebuildJobberMirror } from '@/lib/scheduling/jobber-schedule-mirror';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 function fetchVisitsPage({ cred, windowStart, windowEnd, after }) {
   return fetchJobberVisits({ cred, windowStart, windowEnd, after, first: 100 });
 }
 
 export async function POST() {
+  // v1: integrations flagged off. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) return new Response('', { status: 404 });
   const tenantId = await getTenantId();
   if (!tenantId) return new Response('Unauthorized', { status: 401 });
 

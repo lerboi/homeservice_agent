@@ -5,6 +5,7 @@ import { Link2, AlertTriangle, Briefcase } from 'lucide-react';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 import CalendarSyncCard from '@/components/dashboard/CalendarSyncCard';
 import { card } from '@/lib/design-tokens';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 // Connections card for the calendar page. Replaces the old page-top
 // IntegrationReconnectBanner + JobberCopyBanner: calendar providers
@@ -88,13 +89,19 @@ function BusinessAppRow({ app, row }) {
 }
 
 export default function CalendarConnectionsCard() {
-  const { data, isLoading } = useSWRFetch('/api/integrations/status', {
-    refreshInterval: 60000,
-  });
-
-  const brokenApps = BUSINESS_APPS.filter(
-    (app) => data?.[app.key]?.error_state === 'token_refresh_failed',
+  // v1: Jobber/Xero integrations are flagged OFF (see My Prompts/Jobber-Xero-Disable.md).
+  // Skip the integrations/status poll (null key = no fetch) and hide the Business
+  // apps rows + their "Action needed" badge; the Calendars section stays.
+  const { data, isLoading } = useSWRFetch(
+    INTEGRATIONS_ENABLED ? '/api/integrations/status' : null,
+    { refreshInterval: 60000 },
   );
+
+  const brokenApps = INTEGRATIONS_ENABLED
+    ? BUSINESS_APPS.filter(
+        (app) => data?.[app.key]?.error_state === 'token_refresh_failed',
+      )
+    : [];
 
   return (
     <div className={`${card.base} p-5`}>
@@ -109,30 +116,35 @@ export default function CalendarConnectionsCard() {
         )}
       </div>
 
-      {/* Calendars (Google / Outlook) */}
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-0.5">
-        Calendars
-      </p>
+      {/* Calendars (Google / Outlook). The "Calendars" sub-label only earns its
+          keep when the Business apps section renders alongside it. */}
+      {INTEGRATIONS_ENABLED && (
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-0.5">
+          Calendars
+        </p>
+      )}
       <CalendarSyncCard />
 
-      {/* Business apps (Jobber / Xero) */}
-      <div className="mt-3 pt-3 border-t border-border">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-0.5">
-          Business apps
-        </p>
-        {isLoading ? (
-          <div className="space-y-3 py-2">
-            <div className="h-9 rounded-lg animate-pulse bg-muted" />
-            <div className="h-9 rounded-lg animate-pulse bg-muted" />
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {BUSINESS_APPS.map((app) => (
-              <BusinessAppRow key={app.key} app={app} row={data?.[app.key] ?? null} />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Business apps (Jobber / Xero) — v1: flagged off, hidden entirely. */}
+      {INTEGRATIONS_ENABLED && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-0.5">
+            Business apps
+          </p>
+          {isLoading ? (
+            <div className="space-y-3 py-2">
+              <div className="h-9 rounded-lg animate-pulse bg-muted" />
+              <div className="h-9 rounded-lg animate-pulse bg-muted" />
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {BUSINESS_APPS.map((app) => (
+                <BusinessAppRow key={app.key} app={app} row={data?.[app.key] ?? null} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

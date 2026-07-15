@@ -9,12 +9,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { applyJobberVisit } from '@/lib/scheduling/jobber-schedule-mirror';
 import { fetchJobberVisits } from '@/lib/integrations/jobber';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 const PAST_DAYS = 90;
 const FUTURE_DAYS = 180;
 const MS_PER_DAY = 86_400_000;
 
 export async function GET(request) {
+  // v1: integrations flagged off — this cron is also removed from vercel.json,
+  // but no-op if invoked manually. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return Response.json({ skipped: 'integrations_disabled' });
+  }
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   }

@@ -1,5 +1,6 @@
 import { createSupabaseServer } from '@/lib/supabase-server';
 import { supabase } from '@/lib/supabase';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 // ─── Constants (Phase 48 — exported for tests + UI consumers) ────────────────
 
@@ -238,6 +239,10 @@ export function deriveChecklistItems(tenant, counts) {
   const items = [];
   for (const tier of TIER_ORDER) {
     for (const id of TIER_GROUPS[tier]) {
+      // v1: Jobber/Xero integrations are flagged off — don't surface their
+      // checklist items (no "connect / reconnect" nudge). See
+      // My Prompts/Jobber-Xero-Disable.md.
+      if (!INTEGRATIONS_ENABLED && (id === 'connect_xero' || id === 'connect_jobber')) continue;
       const override = overrides[id] || {};
       // dismiss removes the item from the list entirely
       if (override.dismissed === true) continue;

@@ -27,6 +27,7 @@ import TimeBlockSheet from '@/components/dashboard/TimeBlockSheet';
 import ExternalEventSheet from '@/components/dashboard/ExternalEventSheet';
 import ConflictAlertBanner from '@/components/dashboard/ConflictAlertBanner';
 import CalendarConnectionsCard from '@/components/dashboard/CalendarConnectionsCard';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 import WorkingHoursEditor from '@/components/dashboard/WorkingHoursEditor';
 import { useSWRFetch } from '@/hooks/useSWRFetch';
 import { card } from '@/lib/design-tokens';
@@ -147,8 +148,13 @@ export default function CalendarPage() {
   // Phase 57 — Jobber connection flag drives "Not in Jobber" pills and the
   // AppointmentFlyout Copy-to-Jobber section. Shares the SWR key with
   // CalendarConnectionsCard, so this adds no extra network request.
-  const { data: integrationStatus } = useSWRFetch('/api/integrations/status');
-  const jobberConnected = !!integrationStatus?.jobber;
+  // v1: Jobber/Xero flagged off — skip the fetch (null key) so jobberConnected
+  // is always false and every Jobber affordance stays hidden. See
+  // My Prompts/Jobber-Xero-Disable.md.
+  const { data: integrationStatus } = useSWRFetch(
+    INTEGRATIONS_ENABLED ? '/api/integrations/status' : null,
+  );
+  const jobberConnected = INTEGRATIONS_ENABLED && !!integrationStatus?.jobber;
   // Holds the most recent fetch range so the Realtime callback can range-filter
   // INSERT events against whatever view the user is currently looking at.
   const currentRangeRef = useRef({ start: null, end: null });

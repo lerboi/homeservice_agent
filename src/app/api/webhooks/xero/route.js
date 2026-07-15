@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { revalidateTag } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { getIntegrationAdapter, refreshTokenIfNeeded } from '@/lib/integrations/adapter';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 /**
  * Xero webhook handler — Phase 55 (XERO-03).
@@ -16,6 +17,11 @@ import { getIntegrationAdapter, refreshTokenIfNeeded } from '@/lib/integrations/
  * D-07: unknown Xero tenantId → silent 200 (prevents retry storms).
  */
 export async function POST(request) {
+  // v1: integrations flagged off — dormant endpoint (no live connection can
+  // exist). Refuse before any work. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return new Response('', { status: 404 });
+  }
   const rawBody = await request.text();
   const sig = request.headers.get('x-xero-signature');
 

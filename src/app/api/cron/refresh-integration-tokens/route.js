@@ -20,6 +20,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { refreshTokenIfNeeded } from '@/lib/integrations/adapter';
+import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 // Must exceed the cron cadence (10 min) so a token can never expire between
 // two runs: worst case a row is refreshed when ~15 min remain and checked
@@ -31,6 +32,11 @@ const LOOKAHEAD_MS = 15 * 60 * 1000;
 const CONCURRENCY = 5;
 
 export async function GET(request) {
+  // v1: integrations flagged off — this cron is also removed from vercel.json,
+  // but no-op if invoked manually. See My Prompts/Jobber-Xero-Disable.md.
+  if (!INTEGRATIONS_ENABLED) {
+    return Response.json({ skipped: 'integrations_disabled' });
+  }
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
   }
