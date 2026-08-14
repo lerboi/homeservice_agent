@@ -155,9 +155,10 @@ export function CostOfSilenceBlock() {
           <div className="mt-14 flex justify-center">
             <Link
               href="/pricing#calculator"
-              className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#F97316] border-b border-[#F97316] py-2.5 hover:text-[#EA580C] hover:border-[#EA580C] transition-colors"
+              className="group inline-flex items-center gap-2 text-[14px] font-semibold text-[#F97316] border-b border-[#F97316] py-2.5 hover:text-[#EA580C] hover:border-[#EA580C] transition-colors"
             >
-              Run your own numbers <ArrowRight className="w-3.5 h-3.5" />
+              Run your own numbers{' '}
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
           </div>
         </AnimatedSection>

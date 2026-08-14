@@ -115,10 +115,9 @@ export function LandingFooter() {
               <Image
                 src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
                 alt="Voco"
-                width={100}
-                height={36}
-                className="h-9"
-                style={{ width: 'auto', height: 'auto' }}
+                width={129}
+                height={72}
+                className="h-9 w-auto"
               />
               <span className="text-base text-[#71717A]">Every call answered. Every job booked.</span>
             </div>
@@ -129,10 +128,10 @@ export function LandingFooter() {
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="flex items-center gap-1 text-sm text-[#71717A] hover:text-[#F97316] transition-colors"
+                className="group flex items-center gap-1 text-sm text-[#71717A] hover:text-[#F97316] transition-colors"
                 aria-label="Back to top"
               >
-                <ArrowUp className="size-3.5" />
+                <ArrowUp className="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5" />
                 <span>Top</span>
               </button>
             </div>

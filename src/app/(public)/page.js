@@ -2,48 +2,29 @@ import dynamic from 'next/dynamic';
 import { HeroSection } from '@/app/components/landing/HeroSection';
 import { ScrollProgress } from '@/app/components/landing/ScrollProgress';
 import { ScrollLinePath } from '@/app/components/landing/ScrollLinePath';
+import { PreloadSections } from '@/app/components/landing/PreloadSections';
+import { IntegrationsStrip } from '@/app/components/landing/IntegrationsStrip';
+import { CostOfSilenceBlock } from '@/app/components/landing/CostOfSilenceBlock';
+import { YouStayInControlSection } from '@/app/components/landing/YouStayInControlSection';
+import { FinalCTASection } from '@/app/components/landing/FinalCTASection';
 
 // Above-the-fold: HeroSection is statically imported for best LCP.
-// Below-the-fold: dynamically imported with loading skeletons to prevent CLS via explicit height reservations.
-// Phase 48.1: 7 content sections + FinalCTA ribbon.
+// Server Component sections (IntegrationsStrip, CostOfSilenceBlock, YouStayInControlSection,
+// FinalCTASection) are also statically imported — they render in the initial HTML with zero
+// loading state, so scrolling never reveals a skeleton for them.
+// Only the heavy 'use client' sections stay code-split; PreloadSections warms their chunks
+// during browser idle time right after hydration so the fallbacks below almost never paint.
+// Fallbacks reserve each section's height (CLS guard) but stay visually quiet: they match the
+// real section background instead of flashing a gray card.
 // ScrollLinePath wraps exactly 3 children: IntegrationsStrip, CostOfSilenceBlock, FeaturesCarousel.
 
-// AudioDemoSection declares 'use client' — Next.js App Router never SSRs 'use client' components.
-// ssr:false is omitted here (not allowed in Server Component dynamic() in Next.js 16) since the
-// 'use client' boundary in the component itself prevents server rendering of browser-only audio APIs.
 const AudioDemoSection = dynamic(
   () => import('@/app/components/landing/AudioDemoSection').then((m) => m.AudioDemoSection),
   {
     loading: () => (
       <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-5xl mx-auto">
-          <div className="h-[420px] rounded-2xl bg-white border border-stone-200/70 shadow-sm animate-pulse" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const IntegrationsStrip = dynamic(
-  () => import('@/app/components/landing/IntegrationsStrip').then((m) => m.IntegrationsStrip),
-  {
-    loading: () => (
-      <section className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-5xl mx-auto">
-          <div className="h-[200px] rounded-2xl bg-stone-100/60 animate-pulse" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const CostOfSilenceBlock = dynamic(
-  () => import('@/app/components/landing/CostOfSilenceBlock').then((m) => m.CostOfSilenceBlock),
-  {
-    loading: () => (
-      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="h-[280px] rounded-2xl bg-stone-100/60 animate-pulse" />
+          <div className="h-[420px]" />
         </div>
       </section>
     ),
@@ -56,20 +37,7 @@ const FeaturesCarousel = dynamic(
     loading: () => (
       <section id="features" className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-6xl mx-auto">
-          <div className="h-[560px] rounded-2xl bg-stone-100/60 animate-pulse" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const YouStayInControlSection = dynamic(
-  () => import('@/app/components/landing/YouStayInControlSection').then((m) => m.YouStayInControlSection),
-  {
-    loading: () => (
-      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-5xl mx-auto">
-          <div className="h-[520px] rounded-2xl bg-stone-100/60 animate-pulse" />
+          <div className="h-[560px]" />
         </div>
       </section>
     ),
@@ -82,20 +50,7 @@ const FAQSection = dynamic(
     loading: () => (
       <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
         <div className="max-w-4xl mx-auto">
-          <div className="h-[400px] rounded-2xl bg-stone-100/60 animate-pulse" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const FinalCTASection = dynamic(
-  () => import('@/app/components/landing/FinalCTASection').then((m) => m.FinalCTASection),
-  {
-    loading: () => (
-      <section className="bg-[#1C1412] py-16" aria-hidden="true">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="h-[240px] rounded-2xl bg-white/5 animate-pulse" />
+          <div className="h-[400px]" />
         </div>
       </section>
     ),
@@ -106,6 +61,7 @@ export default function HomePage() {
   return (
     <main>
       <ScrollProgress />
+      <PreloadSections />
       <HeroSection />
       <AudioDemoSection />
       <ScrollLinePath>

@@ -46,10 +46,10 @@ export function LandingNav() {
     <>
       <nav
         aria-label="Navigation"
-        className={`fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-500 ease-in-out border-b border-white/[0.06] ${
+        className={`fixed top-0 left-0 right-0 z-50 h-16 backdrop-blur-md transition-[background-color,box-shadow] duration-300 ease-out border-b border-white/[0.06] ${
           scrolled
-            ? 'bg-[#090807]/95 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
-            : 'bg-[#090807]/80 backdrop-blur-sm'
+            ? 'bg-[#090807]/90 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
+            : 'bg-[#090807]/70'
         }`}
       >
         <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
@@ -59,9 +59,9 @@ export function LandingNav() {
             <Image
               src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
               alt="Voco"
-              width={140}
-              height={44}
-              className="h-8 md:h-14 w-auto"
+              width={172}
+              height={96}
+              className="h-8 md:h-12 w-auto"
               priority
             />
           </Link>
@@ -150,10 +150,9 @@ export function LandingNav() {
             <Image
               src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
               alt="Voco"
-              width={100}
-              height={32}
-              className="h-8"
-              style={{ width: 'auto', height: 'auto' }}
+              width={143}
+              height={80}
+              className="h-8 w-auto"
             />
           </Link>
           <button

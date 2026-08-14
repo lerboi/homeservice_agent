@@ -15,10 +15,11 @@ function VoiceWave() {
       aria-hidden="true"
       className="relative w-full max-w-[560px] mx-auto aspect-square"
     >
-      {/* Expanding halo rings */}
+      {/* Expanding halo rings — delays spaced at even thirds of the 3.2s cycle so a new
+          ring launches at a steady rhythm with no visible pause between loops */}
       <span className="hero-vw-halo" style={{ animationDelay: '0s' }} />
-      <span className="hero-vw-halo" style={{ animationDelay: '0.8s' }} />
-      <span className="hero-vw-halo" style={{ animationDelay: '1.6s' }} />
+      <span className="hero-vw-halo" style={{ animationDelay: '1.07s' }} />
+      <span className="hero-vw-halo" style={{ animationDelay: '2.14s' }} />
 
       {/* Central orb */}
       <div
@@ -115,17 +116,14 @@ export function HeroSection() {
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8 md:mt-10">
             <Link
               href="/pricing"
-              className="inline-flex items-center justify-center gap-2 h-[54px] px-[26px] rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[15px] font-semibold text-white transition-colors"
-              style={{
-                boxShadow:
-                  '0 4px 24px 0 rgba(249,115,22,0.5), inset 0 1px 0 0 rgba(255,255,255,0.14)',
-              }}
+              className="group inline-flex items-center justify-center gap-2 h-[54px] px-[26px] rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[15px] font-semibold text-white transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 active:translate-y-0 shadow-[0_4px_24px_0_rgba(249,115,22,0.5),inset_0_1px_0_0_rgba(255,255,255,0.14)] hover:shadow-[0_8px_32px_0_rgba(249,115,22,0.55),inset_0_1px_0_0_rgba(255,255,255,0.14)]"
             >
-              Start my 5-minute setup <ArrowRight className="w-3.5 h-3.5" />
+              Start my 5-minute setup{' '}
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
             <a
               href="#audio-demo"
-              className="inline-flex items-center justify-center gap-2 h-[54px] px-6 rounded-xl border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.1] text-[14px] font-medium text-white transition-colors"
+              className="inline-flex items-center justify-center gap-2 h-[54px] px-6 rounded-xl border border-white/[0.12] hover:border-white/[0.22] bg-white/[0.06] hover:bg-white/[0.1] text-[14px] font-medium text-white transition-[background-color,border-color,transform] duration-200 hover:-translate-y-0.5 active:translate-y-0"
             >
               <PhoneIncoming className="w-3.5 h-3.5" /> Hear Voco in action
             </a>
@@ -161,6 +159,17 @@ export function HeroSection() {
           <div className="absolute top-[45%] right-[20%] w-[200px] h-[200px] rounded-full bg-[radial-gradient(circle,rgba(253,186,116,0.08)_0%,transparent_60%)]" />
         </div>
       </div>
+
+      {/* Copper hairline seam — softens the hard cut from the dark hero into the white
+          audio-demo section (mirrors the footer's top border treatment) */}
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{
+          background:
+            'linear-gradient(90deg, transparent 8%, rgba(249,115,22,0.35) 50%, transparent 92%)',
+        }}
+      />
     </section>
   );
 }
