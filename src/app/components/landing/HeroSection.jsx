@@ -87,18 +87,6 @@ export function HeroSection() {
 
       <div className="relative w-full max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-[1.45fr_1fr] md:gap-14 lg:gap-20 gap-14 items-center text-center md:text-left">
         <AnimatedSection className="max-w-[820px] mx-auto md:mx-0 z-[1] flex flex-col items-center md:items-start">
-          {/* Live indicator — inline label with animated green dot */}
-          <div className="inline-flex items-center gap-2.5 mb-7 text-[12px] font-medium uppercase tracking-[0.08em] text-white/60">
-            <span className="relative inline-flex items-center justify-center w-2 h-2">
-              <span className="hero-live-ring absolute inset-0 rounded-full bg-green-500/40" />
-              <span
-                className="absolute inset-[2px] rounded-full bg-green-500"
-                style={{ boxShadow: '0 0 10px rgba(34,197,94,0.8)' }}
-              />
-            </span>
-            <span>1,247 calls answered right now</span>
-          </div>
-
           <h1
             className="font-semibold text-white m-0 text-balance"
             style={{

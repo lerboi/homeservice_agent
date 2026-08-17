@@ -94,11 +94,6 @@
   100% { transform: translateX(-50%); }
 }
 
-@keyframes hero-live-pulse {
-  0%   { transform: scale(0.6); opacity: 0.9; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-
 @keyframes hero-vw-halo-pulse {
   0%   { transform: scale(0.55); opacity: 0.8; border-color: rgba(249,115,22,0.35); }
   100% { transform: scale(1.05); opacity: 0;   border-color: rgba(249,115,22,0);    }
@@ -115,7 +110,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero-live-ring { animation: hero-live-pulse 1.8s ease-out infinite; }
   .hero-vw-halo {
     position: absolute;
     inset: 0;
