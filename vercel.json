@@ -13,14 +13,6 @@
       "schedule": "0 2 * * *"
     },
     {
-      "path": "/api/cron/invoice-reminders",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/recurring-invoices",
-      "schedule": "0 8 * * *"
-    },
-    {
       "path": "/api/cron/cleanup-orphaned-calls",
       "schedule": "0 */4 * * *"
     },

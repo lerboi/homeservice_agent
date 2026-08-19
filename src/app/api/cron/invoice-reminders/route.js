@@ -12,9 +12,16 @@ import { getResendClient, getTwilioClient } from '@/lib/notifications';
 import { InvoiceReminderEmail, getReminderSubject } from '@/emails/InvoiceReminderEmail';
 import { calculateLateFee, shouldApplyLateFee } from '@/lib/late-fee-calculations';
 import { calculateInvoiceTotals } from '@/lib/invoice-calculations';
+import { INVOICING_ENABLED } from '@/lib/invoicing-enabled';
 import { addDays, differenceInDays, format } from 'date-fns';
 
 export async function GET(request) {
+  // v1: invoicing frozen — this cron is also removed from vercel.json, but
+  // no-op if invoked manually. See src/lib/invoicing-enabled.js for the
+  // re-enable checklist (flip the flag AND re-add the cron schedule).
+  if (!INVOICING_ENABLED) {
+    return Response.json({ skipped: 'invoicing_disabled' });
+  }
   // Auth check (same pattern as trial-reminders)
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });

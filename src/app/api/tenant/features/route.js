@@ -1,5 +1,6 @@
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
+import { INVOICING_ENABLED } from '@/lib/invoicing-enabled';
 
 /**
  * PATCH /api/tenant/features
@@ -43,6 +44,20 @@ export async function PATCH(request) {
     return Response.json(
       { error: 'Invalid: features.invoicing must be a boolean' },
       { status: 400 }
+    );
+  }
+
+  // v1 freeze: enabling invoicing is gated behind the global master flag so
+  // the two invoicing crons could be unscheduled from vercel.json without
+  // leaving a trap (a tenant enabling a feature whose background half —
+  // reminders, late fees, overdue flips, recurring generation — never runs).
+  // Disabling (`false`) is always allowed so any already-enabled tenant can
+  // still turn it off. See src/lib/invoicing-enabled.js for the re-enable
+  // checklist.
+  if (features.invoicing === true && !INVOICING_ENABLED) {
+    return Response.json(
+      { error: 'Invoicing is not available yet' },
+      { status: 403 }
     );
   }
 

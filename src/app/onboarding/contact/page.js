@@ -134,7 +134,10 @@ export default function OnboardingStep3Contact() {
       valid = false;
     }
     const digits = phone.replace(/\D/g, '');
-    if (digits && digits.length < 7) {
+    if (!digits) {
+      errors.phone = 'Please enter your phone number.';
+      valid = false;
+    } else if (digits.length < 7) {
       errors.phone = "That phone number doesn't look right. Check the format and try again.";
       valid = false;
     }
@@ -263,7 +266,7 @@ export default function OnboardingStep3Contact() {
         {/* Phone number */}
         <div className="space-y-1">
           <Label htmlFor="owner_phone" className="text-base font-normal text-[#0F172A]">
-            Phone number <span className="text-[#475569]/60 text-sm">(optional)</span>
+            Phone number
           </Label>
           <div className="flex items-center min-h-11 border border-stone-200 rounded-md focus-within:border-[#C2410C] overflow-hidden">
             {mounted && country && (

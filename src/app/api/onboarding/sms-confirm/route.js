@@ -58,18 +58,24 @@ export async function POST(request) {
     }
   }
 
-  // Always save the user's auth email; phone, owner_name, country are optional
+  // Always save the user's auth email; owner_name and country stay optional
+  // here, but the owner phone is required — SMS notifications, escalation
+  // calls, and the test call all deliver to it.
   const updateFields = { owner_email: user.email };
-  if (phone?.trim()) {
-    const trimmed = phone.trim();
-    if (!E164_RE.test(trimmed)) {
-      return Response.json(
-        { error: "That phone number doesn't look right. Check the format and try again." },
-        { status: 400 }
-      );
-    }
-    updateFields.owner_phone = trimmed;
+  const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
+  if (!trimmedPhone) {
+    return Response.json(
+      { error: 'Please enter your phone number.' },
+      { status: 400 }
+    );
   }
+  if (!E164_RE.test(trimmedPhone)) {
+    return Response.json(
+      { error: "That phone number doesn't look right. Check the format and try again." },
+      { status: 400 }
+    );
+  }
+  updateFields.owner_phone = trimmedPhone;
   if (owner_name?.trim()) updateFields.owner_name = owner_name.trim();
   if (country && ['SG', 'US', 'CA'].includes(country)) {
     updateFields.country = country;

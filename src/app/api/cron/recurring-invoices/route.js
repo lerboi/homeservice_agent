@@ -12,8 +12,15 @@ import { supabase } from '@/lib/supabase';
 import { calculateNextDate } from '@/lib/recurring-calculations';
 import { formatInvoiceNumber } from '@/lib/invoice-number';
 import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/invoice-calculations';
+import { INVOICING_ENABLED } from '@/lib/invoicing-enabled';
 
 export async function GET(request) {
+  // v1: invoicing frozen — this cron is also removed from vercel.json, but
+  // no-op if invoked manually. See src/lib/invoicing-enabled.js for the
+  // re-enable checklist (flip the flag AND re-add the cron schedule).
+  if (!INVOICING_ENABLED) {
+    return Response.json({ skipped: 'invoicing_disabled' });
+  }
   // CRON_SECRET Bearer auth check
   if (!process.env.CRON_SECRET) {
     return Response.json({ error: 'CRON_SECRET not configured' }, { status: 500 });

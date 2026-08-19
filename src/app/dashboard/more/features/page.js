@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { card, heading, body } from '@/lib/design-tokens';
 import { useFeatureFlags } from '@/components/FeatureFlagsProvider';
+import { INVOICING_ENABLED } from '@/lib/invoicing-enabled';
 
 const FEATURES = [
   {
@@ -138,6 +139,11 @@ export default function FeaturesPage() {
           const Icon = feature.icon;
           const isEnabled = enabled[feature.key] === true;
           const isPending = pendingKey === feature.key;
+          // v1 freeze: invoicing can't be turned ON while the global master
+          // flag is off (the API rejects it too) — but an already-enabled
+          // tenant can still turn it OFF, so only the off→on direction locks.
+          const comingSoon =
+            feature.key === 'invoicing' && !INVOICING_ENABLED && !isEnabled;
 
           return (
             <div
@@ -149,7 +155,14 @@ export default function FeaturesPage() {
                   <Icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold ${heading}`}>{feature.label}</p>
+                  <p className={`text-sm font-semibold ${heading}`}>
+                    {feature.label}
+                    {comingSoon && (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground align-middle">
+                        Coming soon
+                      </span>
+                    )}
+                  </p>
                   <p className={`text-xs ${body} mt-1`}>{feature.description}</p>
                 </div>
               </div>
@@ -158,8 +171,8 @@ export default function FeaturesPage() {
                 onCheckedChange={(next) => {
                   if (feature.key === 'invoicing') handleToggleInvoicing(next);
                 }}
-                disabled={isPending}
-                aria-label={`${feature.label} — ${isEnabled ? 'on' : 'off'}`}
+                disabled={isPending || comingSoon}
+                aria-label={`${feature.label} — ${comingSoon ? 'coming soon' : isEnabled ? 'on' : 'off'}`}
               />
             </div>
           );
