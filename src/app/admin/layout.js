@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 const TABS = [
   { label: 'Phone Inventory', href: '/admin/inventory' },
   { label: 'Tenants', href: '/admin/tenants' },
+  { label: 'Test Agent', href: '/admin/test-agent' },
 ];
 
 export default function AdminLayout({ children }) {

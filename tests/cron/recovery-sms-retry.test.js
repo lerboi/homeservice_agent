@@ -9,7 +9,8 @@ import { jest } from '@jest/globals';
 
 /**
  * Build a from() mock for the 'calls' table.
- * Branch A uses: .select().eq().is().is().lt().not().not().in().limit()
+ * Branch A uses: .select().eq().eq().is().is().lt().not().not().in().limit()
+ *   (second .eq is the is_test_call=false filter — migration 079)
  * Branch B uses: .select().eq().lt().not().limit()
  *
  * branchAData: data returned by Branch A query (firstSendCalls)
@@ -21,15 +22,17 @@ function makeCallsFrom({ branchAData = [], branchBData = [], updates = [] } = {}
 
     return {
       select: () => ({
-        // Branch A chain: eq -> is -> is -> lt -> not -> not -> in -> limit
+        // Branch A chain: eq -> eq(is_test_call) -> is -> is -> lt -> not -> not -> in -> limit
         eq: () => ({
-          is: () => ({
+          eq: () => ({
             is: () => ({
-              lt: () => ({
-                not: () => ({
+              is: () => ({
+                lt: () => ({
                   not: () => ({
-                    'in': () => ({
-                      limit: () => Promise.resolve({ data: branchAData, error: null }),
+                    not: () => ({
+                      'in': () => ({
+                        limit: () => Promise.resolve({ data: branchAData, error: null }),
+                      }),
                     }),
                   }),
                 }),

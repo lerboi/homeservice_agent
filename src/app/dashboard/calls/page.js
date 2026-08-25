@@ -615,6 +615,8 @@ export default function CallLogsPage() {
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
+          // Test calls (migration 079) never surface on the tenant dashboard.
+          if (payload.new?.is_test_call) return;
           setCalls((prev) => [payload.new, ...prev]);
         }
       )
@@ -627,6 +629,7 @@ export default function CallLogsPage() {
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
+          if (payload.new?.is_test_call) return;
           setCalls((prev) =>
             prev.map((c) => (c.id === payload.new.id ? payload.new : c))
           );

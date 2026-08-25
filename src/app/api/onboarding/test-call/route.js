@@ -1,6 +1,6 @@
 import { getTenantId } from '@/lib/get-tenant-id';
 import { supabase } from '@/lib/supabase';
-import { SipClient, RoomServiceClient } from 'livekit-server-sdk';
+import { SipClient, RoomServiceClient, AgentDispatchClient } from 'livekit-server-sdk';
 
 export async function POST(request) {
   const tenantId = await getTenantId();
@@ -37,6 +37,18 @@ export async function POST(request) {
         to_number: tenant.phone_number,
       }),
     });
+
+    // Explicitly dispatch the voice agent into the room BEFORE dialing the
+    // owner. The worker registers with agent_name "voco-voice-agent", which
+    // disables automatic dispatch — and outbound SIP participants don't go
+    // through the inbound SIP dispatch rule, so without this the owner's
+    // phone connected to an agent-less room (silence).
+    const dispatchClient = new AgentDispatchClient(
+      process.env.LIVEKIT_URL,
+      process.env.LIVEKIT_API_KEY,
+      process.env.LIVEKIT_API_SECRET,
+    );
+    await dispatchClient.createDispatch(roomName, 'voco-voice-agent');
 
     // Initiate outbound call to owner's phone via LiveKit SIP
     const sipClient = new SipClient(
