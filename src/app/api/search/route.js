@@ -33,6 +33,8 @@ export async function GET(request) {
       .from('calls')
       .select('id, from_number, booking_outcome, urgency_classification, created_at')
       .eq('tenant_id', tenantId)
+      // Test calls (migration 079) stay out of global search
+      .eq('is_test_call', false)
       .ilike('from_number', pattern)
       .order('created_at', { ascending: false })
       .limit(5),

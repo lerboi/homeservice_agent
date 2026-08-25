@@ -69,6 +69,8 @@ export async function GET() {
       .from('calls')
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
+      // Test calls (migration 079) are never "missed" work
+      .eq('is_test_call', false)
       .eq('booking_outcome', 'not_attempted')
       .gte('duration_seconds', 15)
       .gte('created_at', todayStartISO),

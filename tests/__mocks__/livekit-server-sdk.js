@@ -17,3 +17,12 @@ export const EgressClient = jest.fn().mockImplementation(() => ({
   startRoomCompositeEgress: jest.fn().mockResolvedValue({ egressId: 'mock-egress-id' }),
   stopEgress: jest.fn().mockResolvedValue({}),
 }));
+
+export const AgentDispatchClient = jest.fn().mockImplementation(() => ({
+  createDispatch: jest.fn().mockResolvedValue({ id: 'mock-dispatch-id' }),
+}));
+
+export const AccessToken = jest.fn().mockImplementation(() => ({
+  addGrant: jest.fn(),
+  toJwt: jest.fn().mockResolvedValue('mock-jwt'),
+}));

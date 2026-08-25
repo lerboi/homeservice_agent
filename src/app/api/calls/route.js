@@ -29,7 +29,10 @@ export async function GET(request) {
       routing_mode, outbound_dial_duration_sec,
       transcript_text, transcript_structured
     `)
-    .eq('tenant_id', tenantId);
+    .eq('tenant_id', tenantId)
+    // Admin/onboarding test calls (migration 079) never surface on the tenant
+    // dashboard — they live only in the admin test console.
+    .eq('is_test_call', false);
 
   if (callStatus) query = query.eq('status', callStatus);
   if (urgency) query = query.eq('urgency_classification', urgency);

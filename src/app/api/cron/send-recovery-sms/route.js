@@ -61,6 +61,11 @@ export async function GET(request) {
     .from('calls')
     .select('id, call_id, from_number, to_number, tenant_id, start_timestamp, end_timestamp, call_metadata, urgency_classification, detected_language')
     .eq('status', 'analyzed')
+    // Test calls (migration 079): never text a test/simulated caller number.
+    // Branch B is covered transitively — a test call can only reach 'retrying'
+    // via Branch A or the agent's mid-call recovery SMS, both of which are
+    // gated on is_test_call.
+    .eq('is_test_call', false)
     .is('recovery_sms_sent_at', null)
     .is('recovery_sms_status', null)         // Not already being tracked by Phase 17
     .lt('end_timestamp', cutoff)

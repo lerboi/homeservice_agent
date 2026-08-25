@@ -8,6 +8,7 @@ import { jest } from '@jest/globals';
 // Mutable shared mocks for LiveKit SDK
 const mockCreateRoom = jest.fn().mockResolvedValue({});
 const mockCreateSipParticipant = jest.fn().mockResolvedValue({});
+const mockCreateDispatch = jest.fn().mockResolvedValue({ id: 'dispatch-1' });
 
 jest.unstable_mockModule('livekit-server-sdk', () => ({
   RoomServiceClient: jest.fn().mockImplementation(() => ({
@@ -15,6 +16,9 @@ jest.unstable_mockModule('livekit-server-sdk', () => ({
   })),
   SipClient: jest.fn().mockImplementation(() => ({
     createSipParticipant: mockCreateSipParticipant,
+  })),
+  AgentDispatchClient: jest.fn().mockImplementation(() => ({
+    createDispatch: mockCreateDispatch,
   })),
 }));
 
@@ -143,6 +147,11 @@ describe('POST /api/onboarding/test-call', () => {
     expect(roomArgs.name).toMatch(/^test-call-/);
     const metadata = JSON.parse(roomArgs.metadata);
     expect(metadata.test_call).toBe(true);
+
+    // Verify the agent was explicitly dispatched (agent_name registration
+    // disables automatic dispatch; without this the room is agent-less)
+    expect(mockCreateDispatch).toHaveBeenCalledTimes(1);
+    expect(mockCreateDispatch.mock.calls[0][1]).toBe('voco-voice-agent');
 
     // Verify SIP participant was created
     expect(mockCreateSipParticipant).toHaveBeenCalledTimes(1);
