@@ -440,8 +440,64 @@ export default function PhoneInventoryPage() {
         />
       </div>
 
-      {/* Inventory Table */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      {/* ── Mobile: card list ── */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))
+        ) : numbers.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-lg text-center py-12 px-4">
+            <p className="text-sm font-semibold text-slate-700 mb-1">No numbers in inventory</p>
+            <p className="text-sm text-slate-500">
+              Add Singapore phone numbers individually or import a CSV file to make them available for assignment during onboarding.
+            </p>
+          </div>
+        ) : (
+          numbers.map((row) => (
+            <div key={row.id} className="bg-white border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-3 mb-1">
+                <span className="font-mono text-sm text-slate-800">{row.phone_number}</span>
+                <StatusBadge status={row.status} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mb-3">
+                <span>{row.country}</span>
+                <span>
+                  {new Date(row.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+                {row.assigned_tenant?.business_name && (
+                  <span className="text-slate-600">→ {row.assigned_tenant.business_name}</span>
+                )}
+              </div>
+              <div className="flex justify-end border-t border-slate-100 pt-3">
+                {row.status === 'retired' ? (
+                  <ReactivateDialog
+                    row={row}
+                    onConfirm={handleAction}
+                    loading={actionLoading === row.id}
+                  />
+                ) : (
+                  <RetireDialog
+                    row={row}
+                    onConfirm={handleAction}
+                    loading={actionLoading === row.id}
+                  />
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── Desktop: table ── */}
+      <div className="hidden md:block bg-white border border-slate-200 rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent border-slate-200">
@@ -518,7 +574,7 @@ export default function PhoneInventoryPage() {
 
       {/* Pagination */}
       {!loading && total > 0 && (
-        <div className="flex items-center justify-between mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
           <p className="text-sm text-slate-500">
             Showing {start}–{end} of {total}
           </p>

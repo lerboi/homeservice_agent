@@ -298,7 +298,7 @@ export default function TestAgentPage() {
 
       {/* ── Setup card ── */}
       {!inCall && phase !== 'ended' && (
-        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-6 max-w-3xl">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 mb-6 max-w-3xl">
           <h2 className="text-sm font-semibold text-slate-900 mb-3">1. Choose a tenant to test as</h2>
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -382,7 +382,7 @@ export default function TestAgentPage() {
           <button
             onClick={startCall}
             disabled={!selectedTenant || !selectedTenant.phone_number}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1D4ED8] text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1D4ED8] text-white text-sm font-medium rounded-md hover:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Phone className="h-4 w-4" />
             Start test call{selectedTenant ? ` as ${selectedTenant.business_name}` : ''}
@@ -392,9 +392,9 @@ export default function TestAgentPage() {
 
       {/* ── In-call card ── */}
       {inCall && (
-        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-6 max-w-3xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 mb-6 max-w-3xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 min-w-0">
               <span className={[
                 'inline-block h-2.5 w-2.5 rounded-full',
                 phase === 'in-call' && agentJoined ? 'bg-green-500 animate-pulse' : 'bg-amber-400',
@@ -407,17 +407,17 @@ export default function TestAgentPage() {
                     : 'Waiting for the agent to join…'}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={toggleMute}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-md text-sm text-slate-700 hover:bg-slate-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 border border-slate-300 rounded-md text-sm text-slate-700 hover:bg-slate-50"
               >
                 {muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 {muted ? 'Unmute' : 'Mute'}
               </button>
               <button
                 onClick={hangUp}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
               >
                 <PhoneOff className="h-4 w-4" />
                 Hang up
@@ -430,8 +430,8 @@ export default function TestAgentPage() {
 
       {/* ── Results card ── */}
       {phase === 'ended' && (
-        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-6 max-w-3xl">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 mb-6 max-w-3xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h2 className="text-sm font-semibold text-slate-900">Call ended — results</h2>
             <div className="flex items-center gap-2">
               {polling && (
