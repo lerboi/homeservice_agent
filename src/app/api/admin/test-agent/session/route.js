@@ -25,6 +25,44 @@ import { verifyAdmin } from '@/lib/admin';
 import { supabase } from '@/lib/supabase';
 import { RoomServiceClient, AccessToken } from 'livekit-server-sdk';
 
+/**
+ * Test-console voice options — the single source of truth (the page fetches
+ * this via GET; POST validates against it). Grouped by accent. The agent only
+ * honors the override on test calls, so production voice resolution
+ * (tenants.ai_voice → ELEVENLABS_VOICE_MAP) is never affected.
+ *
+ * Every ID here must be usable by the Voco ElevenLabs account: the premade
+ * default voices below are account-wide; any voice added from the community
+ * Voice Library must first be saved to "My Voices" (livekit/agents #3992 —
+ * an unavailable voice hard-fails the TTS). If a voice ever errors, the
+ * mid-call FallbackAdapter degrades to OpenAI TTS rather than dead air.
+ */
+const VOICE_OPTIONS = [
+  // Baseline — the two voices production tenants can already have
+  { id: 'BIvP0GN1cAtSRTxNHnWS', label: 'Voco Professional (production default)', group: 'Production' },
+  { id: '7EzWGsX10sAS4c9m9cPf', label: 'Voco Friendly (production)', group: 'Production' },
+  // American — top-reviewed customer-service premade voices
+  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah — warm, professional female', group: 'American' },
+  { id: 'nPczCjzI2devNBz1zQrb', label: 'Brian — deep, calm male', group: 'American' },
+  { id: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda — friendly, warm female', group: 'American' },
+  // British / European
+  { id: 'Xb7hH8MSUJpSbSDYk0k2', label: 'Alice — confident British female', group: 'British / European' },
+  // Australian
+  { id: 'IKne3meq5aSn9XLyUdCD', label: 'Charlie — conversational Australian male', group: 'Australian' },
+  // Asian-accented English — add a Voice Library pick (e.g. "Aakash Aryan" or
+  // "Anika") to the ElevenLabs account's My Voices, then put its voice ID here:
+  // { id: 'PASTE_VOICE_ID_HERE', label: 'Anika — Indian-accented customer care', group: 'Asian-accented English' },
+];
+
+const VOICE_IDS = new Set(VOICE_OPTIONS.map((v) => v.id));
+
+/** GET — the voice options for the console's picker (admin-only). */
+export async function GET() {
+  const admin = await verifyAdmin();
+  if (!admin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+  return Response.json({ voices: VOICE_OPTIONS });
+}
+
 export async function POST(request) {
   const admin = await verifyAdmin();
   if (!admin) return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -54,6 +92,20 @@ export async function POST(request) {
       );
     }
     simulateFrom = withPlus;
+  }
+
+  // Optional voice override — must be one of the curated options above (never
+  // a free-form ID). Empty/absent means the tenant's production voice.
+  let voiceOverride = null;
+  if (body.voice_override) {
+    const candidate = String(body.voice_override).trim();
+    if (!VOICE_IDS.has(candidate)) {
+      return Response.json(
+        { error: 'voice_override must be one of the curated test voices' },
+        { status: 400 },
+      );
+    }
+    voiceOverride = candidate;
   }
 
   const { data: tenant, error: tenantErr } = await supabase
@@ -92,6 +144,7 @@ export async function POST(request) {
         tenant_id: tenantId,
         to_number: tenant.phone_number,
         ...(simulateFrom ? { from_number: simulateFrom } : {}),
+        ...(voiceOverride ? { voice_override: voiceOverride } : {}),
       }),
     });
 

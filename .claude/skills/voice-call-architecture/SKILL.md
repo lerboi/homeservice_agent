@@ -2038,6 +2038,7 @@ recording, and transient appointment rows that post_call auto-cancels.
 | `post_call` §6.5 record_outcome | **skipped** — no CRM rows at all for test calls |
 | `post_call` §7 owner notifications | **skipped** — no owner SMS/email |
 | `transfer_call` | not gated: SIP REFER on a web participant fails fast → exercises the transfer-failure recovery path (documented in the console UI) |
+| `agent.py` voice override | test calls only: metadata `voice_override` (an ElevenLabs voice_id) replaces the resolved `voice_id` AFTER normal `_resolve_voice` resolution, guarded by an `[A-Za-z0-9]{10,40}` shape check. The value comes exclusively from the session route's curated `VOICE_OPTIONS` allowlist (server-set metadata); production voice resolution (`tenants.ai_voice` → `ELEVENLABS_VOICE_MAP`) is untouched |
 
 Still live on test calls (intentionally): full cascade pipeline, all tools,
 real slot math, triage (incl. the Groq layer-2 call), transcript, recording,
@@ -2062,7 +2063,7 @@ transitively). The calls page Realtime INSERT/UPDATE handlers skip
 | File | Role |
 |---|---|
 | `src/app/admin/test-agent/page.js` | Console UI: tenant picker, simulated caller number, mic connect (livekit-client), live captions via `lk.transcription` text streams, mute/hang-up, 10-min timer, post-call results + MP4 player/download |
-| `src/app/api/admin/test-agent/session/route.js` | verifyAdmin → createRoom (server-set sandbox metadata, emptyTimeout 600) + AccessToken (30m, join/publish/subscribe only) |
+| `src/app/api/admin/test-agent/session/route.js` | verifyAdmin → createRoom (server-set sandbox metadata, emptyTimeout 600) + AccessToken (30m, join/publish/subscribe only). Holds the curated `VOICE_OPTIONS` allowlist (grouped by accent; GET serves it to the picker, POST validates `voice_override` against it — 400 on anything else). Voice IDs must be usable by the Voco ElevenLabs account (premade defaults are; Voice Library picks must be saved to "My Voices" first — an Asian-accented-English slot is stubbed in the list awaiting a chosen library voice ID) |
 | `src/app/api/admin/test-agent/dispatch/route.js` | verifyAdmin → `createDispatch` — refuses non-`test-web-*` rooms |
 | `src/app/api/admin/test-agent/result/route.js` | verifyAdmin → flagged calls row + **service-role** signed URL for the MP4 (dashboard flyouts sign with the user's own RLS-scoped session; an admin needs the service-role path). Refuses rows where `is_test_call` is false |
 

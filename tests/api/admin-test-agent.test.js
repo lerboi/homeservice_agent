@@ -43,10 +43,10 @@ jest.unstable_mockModule('@/lib/supabase', () => ({
   },
 }));
 
-let sessionPOST, dispatchPOST, resultGET;
+let sessionPOST, sessionGET, dispatchPOST, resultGET;
 
 beforeAll(async () => {
-  ({ POST: sessionPOST } = await import('@/app/api/admin/test-agent/session/route.js'));
+  ({ POST: sessionPOST, GET: sessionGET } = await import('@/app/api/admin/test-agent/session/route.js'));
   ({ POST: dispatchPOST } = await import('@/app/api/admin/test-agent/dispatch/route.js'));
   ({ GET: resultGET } = await import('@/app/api/admin/test-agent/result/route.js'));
 });
@@ -143,6 +143,53 @@ describe('POST /api/admin/test-agent/session', () => {
     expect(mockAddGrant).toHaveBeenCalledWith(
       expect.objectContaining({ roomJoin: true, canPublish: true, canSubscribe: true }),
     );
+  });
+
+  it('GET returns the curated voice options (admin-gated)', async () => {
+    const res = await sessionGET();
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.voices)).toBe(true);
+    expect(body.voices.length).toBeGreaterThan(0);
+    expect(body.voices[0]).toEqual(
+      expect.objectContaining({ id: expect.any(String), label: expect.any(String), group: expect.any(String) }),
+    );
+
+    mockVerifyAdmin.mockResolvedValueOnce(null);
+    const forbidden = await sessionGET();
+    expect(forbidden.status).toBe(403);
+  });
+
+  it('400s on a voice_override outside the curated allowlist', async () => {
+    mockTenantSelect(TENANT);
+    const res = await sessionPOST(jsonRequest('http://localhost/api/admin/test-agent/session', {
+      tenant_id: 'tenant-1',
+      voice_override: 'not-a-curated-voice-id',
+    }));
+    expect(res.status).toBe(400);
+    expect(mockCreateRoom).not.toHaveBeenCalled();
+  });
+
+  it('passes a curated voice_override through to the room metadata', async () => {
+    mockTenantSelect(TENANT);
+    const res = await sessionPOST(jsonRequest('http://localhost/api/admin/test-agent/session', {
+      tenant_id: 'tenant-1',
+      voice_override: 'EXAVITQu4vr4xnSDxMaL', // Sarah — in VOICE_OPTIONS
+    }));
+    expect(res.status).toBe(200);
+    const metadata = JSON.parse(mockCreateRoom.mock.calls[0][0].metadata);
+    expect(metadata.voice_override).toBe('EXAVITQu4vr4xnSDxMaL');
+    expect(metadata.test_call).toBe(true);
+  });
+
+  it('omits voice_override from metadata when not requested', async () => {
+    mockTenantSelect(TENANT);
+    const res = await sessionPOST(jsonRequest('http://localhost/api/admin/test-agent/session', {
+      tenant_id: 'tenant-1',
+    }));
+    expect(res.status).toBe(200);
+    const metadata = JSON.parse(mockCreateRoom.mock.calls[0][0].metadata);
+    expect('voice_override' in metadata).toBe(false);
   });
 });
 

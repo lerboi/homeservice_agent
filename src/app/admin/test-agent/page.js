@@ -40,6 +40,8 @@ export default function TestAgentPage() {
   const [tenantsLoading, setTenantsLoading] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [simulateFrom, setSimulateFrom] = useState('');
+  const [voices, setVoices] = useState([]);
+  const [voiceOverride, setVoiceOverride] = useState(''); // '' = tenant's production voice
 
   // Call lifecycle: idle | connecting | in-call | ended | error
   const [phase, setPhase] = useState('idle');
@@ -84,6 +86,21 @@ export default function TestAgentPage() {
     }, 300);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // ── Voice options (curated allowlist served by the session route) ────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/test-agent/session');
+        if (res.ok) {
+          const json = await res.json();
+          setVoices(json.voices || []);
+        }
+      } catch {
+        /* picker degrades to "production voice" only */
+      }
+    })();
+  }, []);
 
   // ── Cleanup on unmount ───────────────────────────────────────────────────
   useEffect(() => {
@@ -149,6 +166,7 @@ export default function TestAgentPage() {
         body: JSON.stringify({
           tenant_id: selectedTenant.id,
           ...(simulateFrom.trim() ? { simulate_from_number: simulateFrom.trim() } : {}),
+          ...(voiceOverride ? { voice_override: voiceOverride } : {}),
         }),
       });
       sessionJson = await res.json();
@@ -327,6 +345,27 @@ export default function TestAgentPage() {
             onChange={(e) => setSimulateFrom(e.target.value)}
             className="w-full max-w-sm px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
           />
+
+          <h2 className="text-sm font-semibold text-slate-900 mb-2">
+            3. Optional: choose the AI voice for this test
+          </h2>
+          <select
+            value={voiceOverride}
+            onChange={(e) => setVoiceOverride(e.target.value)}
+            className="w-full max-w-sm px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-1"
+          >
+            <option value="">Tenant&apos;s production voice (no override)</option>
+            {[...new Set(voices.map((v) => v.group))].map((group) => (
+              <optgroup key={group} label={group}>
+                {voices.filter((v) => v.group === group).map((v) => (
+                  <option key={v.id} value={v.id}>{v.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <p className="text-xs text-slate-400 mb-4">
+            Test-call only — never changes what real callers hear.
+          </p>
 
           {selectedTenant && !selectedTenant.phone_number && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-4">
