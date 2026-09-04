@@ -70,8 +70,17 @@ const nextConfig = {
             value: 'SAMEORIGIN',
           },
           {
+            // microphone=(self): the admin test console (/admin/test-agent)
+            // captures the browser mic to talk to the AI receptionist.
+            // `()` (2026-06-03 hardening) made getUserMedia reject with
+            // NotAllowedError and the browser offered no way to grant it.
+            // Site-wide on purpose: Permissions-Policy binds to the loaded
+            // document, and App Router navigations are client-side, so a
+            // route-scoped header would not cover a user who reached the
+            // console via the admin tabs or the sign-in redirect. `self`
+            // still limits it to our own origin and to a user grant.
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(self), geolocation=()',
           },
         ],
       },

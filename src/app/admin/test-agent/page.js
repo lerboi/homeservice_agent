@@ -219,6 +219,20 @@ export default function TestAgentPage() {
       setPhase('error');
       return;
     }
+    // A Permissions-Policy header that disables the microphone makes
+    // getUserMedia fail exactly like a user denial, but the browser offers no
+    // way to allow it. Chrome exposes the effective policy — name it.
+    try {
+      const policy = document.permissionsPolicy || document.featurePolicy;
+      if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('microphone')) {
+        setError(
+          "The microphone is blocked by the site's Permissions-Policy header for this page. " +
+          'Hard-reload the page (the policy is fixed server-side as of 2026-09-05); if this persists, the deployment still sends microphone=().',
+        );
+        setPhase('error');
+        return;
+      }
+    } catch { /* policy API unavailable — fall through to getUserMedia */ }
     let micStream;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
