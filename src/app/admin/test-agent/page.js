@@ -310,8 +310,10 @@ export default function TestAgentPage() {
   }
 
   // getUserMedia audio constraint for a device id ('' / undefined = default).
+  // Guard the type: only a non-empty STRING is a device id — never let a stray
+  // value (e.g. a click event) become an { exact } constraint (OverconstrainedError).
   function micConstraint(id = deviceId) {
-    return id ? { deviceId: { exact: id } } : true;
+    return typeof id === 'string' && id ? { deviceId: { exact: id } } : true;
   }
 
   // Populate the device picker. Labels are only exposed after a mic permission
@@ -343,7 +345,7 @@ export default function TestAgentPage() {
   // `overrideId` lets onSelectDevice preview the just-picked device without
   // waiting for the deviceId state update to flush.
   async function checkMic(overrideId) {
-    const useId = overrideId !== undefined ? overrideId : deviceId;
+    const useId = typeof overrideId === 'string' ? overrideId : deviceId;
     setError(null);
     setMicSilent(false);
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
@@ -693,7 +695,7 @@ export default function TestAgentPage() {
             </select>
             <button
               type="button"
-              onClick={checkMic}
+              onClick={() => checkMic()}
               className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-700 hover:bg-slate-50 shrink-0"
             >
               <Mic className="h-4 w-4" />
