@@ -167,8 +167,12 @@ export default function TestAgentPage() {
 
   function describeMicError(err) {
     const name = err?.name || '';
-    if (/NotAllowed|Permission|denied|SecurityError/i.test(name + ' ' + String(err))) {
-      return 'Microphone access was denied. Allow the microphone for this site (browser address-bar icon) and try again.';
+    const text = name + ' ' + String(err?.message || err);
+    if (/by system|system denied/i.test(text)) {
+      return 'The operating system is blocking microphone access for this browser. On Windows: Settings > Privacy & security > Microphone > allow apps (and desktop apps) to access the microphone; on macOS: System Settings > Privacy & Security > Microphone. Then try again.';
+    }
+    if (/NotAllowed|Permission|denied|SecurityError/i.test(text)) {
+      return 'Microphone access was denied. Allow the microphone for this site (browser address-bar icon, or chrome://settings/content/microphone) and try again.';
     }
     if (/NotFound|DevicesNotFound|OverconstrainedError/i.test(name)) {
       return 'No microphone was found on this device.';
