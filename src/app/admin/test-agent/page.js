@@ -27,6 +27,32 @@ import { Search, Phone, PhoneOff, Mic, MicOff, Download, RefreshCw } from 'lucid
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 120_000; // egress upload can lag the call close
 
+/**
+ * Parse a JSON API response, but turn a non-JSON body (Vercel's HTML error
+ * pages for function crashes/timeouts, an HTML sign-in redirect, a proxy
+ * challenge page) into a readable error naming the HTTP status, the Vercel
+ * error code and request id — instead of "Unexpected token '<'".
+ */
+async function readJsonResponse(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    const vercelId = res.headers.get('x-vercel-id') || '';
+    const vercelErr = res.headers.get('x-vercel-error') || '';
+    const codeMatch = text.match(/[A-Z_]{6,}(?:_[A-Z]+)+/); // e.g. FUNCTION_INVOCATION_TIMEOUT
+    const snippet = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+    const detail = [
+      `HTTP ${res.status}`,
+      vercelErr || (codeMatch ? codeMatch[0] : null),
+      vercelId ? `id ${vercelId}` : null,
+      snippet ? `— ${snippet}` : null,
+    ].filter(Boolean).join(' ');
+    console.error('[test-agent] non-JSON response from', res.url, detail, text.slice(0, 2000));
+    throw new Error(`server returned a non-JSON page (${detail})`);
+  }
+}
+
 function fmtElapsed(sec) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
@@ -259,8 +285,8 @@ export default function TestAgentPage() {
           ...(voiceOverride ? { voice_override: voiceOverride } : {}),
         }),
       });
-      sessionJson = await res.json();
-      if (!res.ok) throw new Error(sessionJson.error || `Failed to create session (HTTP ${res.status})`);
+      sessionJson = await readJsonResponse(res);
+      if (!res.ok) throw new Error(sessionJson.error || `HTTP ${res.status}`);
     } catch (err) {
       console.error('[test-agent] session request failed:', err);
       setError(`Could not start a session: ${err.message}`);
@@ -348,9 +374,8 @@ export default function TestAgentPage() {
         body: JSON.stringify({ room_name: sessionJson.room_name }),
       });
       if (!res.ok) {
-        let detail = `HTTP ${res.status}`;
-        try { const j = await res.json(); detail = j.error || detail; } catch { /* non-JSON body */ }
-        throw new Error(detail);
+        const j = await readJsonResponse(res).catch((e) => ({ error: e.message }));
+        throw new Error(j.error || `HTTP ${res.status}`);
       }
     } catch (err) {
       abortCall(room, `Agent dispatch failed: ${err?.message || err}`, err);

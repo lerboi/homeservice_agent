@@ -63,8 +63,17 @@ export async function GET() {
   return Response.json({ voices: VOICE_OPTIONS });
 }
 
+// Vercel function budget: the LiveKit Cloud API + Supabase round-trips must
+// finish before the platform's default 10 s cutoff (a timeout surfaces to the
+// browser as an HTML error page, not JSON). 30 s is within the Hobby limit.
+export const maxDuration = 30;
+
 export async function POST(request) {
+  const _t0 = Date.now();
+  const _log = (step) => console.log(`[test-agent/session] ${step} +${Date.now() - _t0}ms`);
+
   const admin = await verifyAdmin();
+  _log(admin ? 'admin verified' : 'admin rejected');
   if (!admin) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
   let body = {};
@@ -134,6 +143,7 @@ export async function POST(request) {
       process.env.LIVEKIT_API_KEY,
       process.env.LIVEKIT_API_SECRET,
     );
+    _log('tenant loaded; creating room');
     await roomService.createRoom({
       name: roomName,
       // 10-min agent watchdog cap + margin; an abandoned room self-deletes.
@@ -163,6 +173,7 @@ export async function POST(request) {
       canSubscribe: true,
     });
     const token = await at.toJwt();
+    _log('room + token ready');
 
     return Response.json({
       room_name: roomName,
@@ -177,7 +188,7 @@ export async function POST(request) {
       },
     });
   } catch (err) {
-    console.error('test-agent session failed:', err);
+    console.error(`test-agent session failed after ${Date.now() - _t0}ms:`, err);
     return Response.json({ error: 'Failed to create test session' }, { status: 500 });
   }
 }
