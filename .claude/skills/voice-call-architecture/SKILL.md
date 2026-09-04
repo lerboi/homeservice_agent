@@ -2172,6 +2172,7 @@ queries and deployment handoff.
 | First tool query of a call is ~300 ms slower than later ones | Supabase TLS re-handshake (Tokyo) | P1.10: confirm `[agent] prewarm: supabase connection warmed` appears in the job-process logs and `VOCO_SUPABASE_KEEPALIVE` is not `false` |
 | 2–5 s of dead air before the greeting on a fresh call | No warm job process | P1.11: check for "no warmed process available for job"; raise `VOCO_NUM_IDLE_PROCESSES` |
 | Greeting starts 6-7 s after the agent joins, in the OpenAI voice; `greeting playout wait timed out at 10.0s` warnings | `ELEVEN_API_KEY` is the ElevenLabs key ID, not the `sk_` secret (or the key was rotated) — the FallbackAdapter burns ~5 s retrying ElevenLabs before OpenAI TTS | grep `[agent] ELEVEN_API_KEY rejected` (prewarm) / `ElevenLabs key rejected at prewarm` (per call); paste the `sk_…` secret into Railway `ELEVEN_API_KEY`. Since 2026-09-04 the preflight already routes such calls straight to OpenAI TTS (greeting ~2.8 s) |
+| Admin test console: "Microphone access was denied" and the browser offers no way to allow it | `Permissions-Policy` header disables the microphone for the origin (`next.config.js` `headers()` sent `microphone=()` from 2026-06-03 until 2026-09-05) — getUserMedia rejects with NotAllowedError, identical to a user denial | Keep `microphone=(self)` in `next.config.js` (camera/geolocation stay `()`); the console also checks `document.permissionsPolicy.allowsFeature('microphone')` and names a policy block. Verify with `curl -sD - https://www.voco.live/admin/test-agent \| grep -i permissions-policy` |
 | Web test call ends by itself / "immediately stops" in the admin console | The console flips to *ended* on `RoomEvent.Disconnected`; the SDK deletes the room whenever the AgentSession closes (`RoomInputOptions.delete_room_on_close` default) — so any early session close (error recovery after 3 errors, no-input net after 2 strikes, watchdog) or a deploy-window dispatch with no registered worker looks the same from the browser | Check `calls` for the room (`test-web-…`): no row = the agent never reached `_run_db_queries` (never joined / died pre-session); a row with `disconnection_reason` tells which net fired. Reproduce without a browser via the LiveKit API (create room with the session route's metadata, join a participant, `create_dispatch`) — the 2026-09-04 scratch scripts did exactly this and the deployed agent passed |
 | Need per-stage latency for a call | — | grep `[agent] turn_metrics call=<id>` (eot_delay = endpointing wait, llm_ttft, tts_ttfb) and `[agent] llm_metrics` (cached_tokens); gaps from `transcript_structured[].timestamp` via the SQL in the Phase 0+1 brief |
 | Recording missing | `recording_storage_path` not written at egress start | Check egress start awaits `db_task` |
@@ -2256,6 +2257,14 @@ transitively). The calls page Realtime INSERT/UPDATE handlers skip
 `invoice-describe` (test calls create no junction rows).
 
 ### Admin console files (main repo)
+
+> **2026-09-05:** the console needs the browser microphone, so the site-wide
+> `Permissions-Policy` in `next.config.js` must keep `microphone=(self)`.
+> The page requests the mic FIRST (inside the click gesture), publishes the
+> granted track, keeps error banners visible on failed steps (`abortCall`),
+> shows the LiveKit `DisconnectReason` on genuine ends, and offers a
+> tap-to-enable-audio button when autoplay is blocked (commits `ffdad13`, `d7f2654`).
+
 
 | File | Role |
 |---|---|
