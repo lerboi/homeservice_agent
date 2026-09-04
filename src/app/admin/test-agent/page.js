@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Room, RoomEvent, Track } from 'livekit-client';
+import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
 import { Search, Phone, PhoneOff, Mic, MicOff, Download, RefreshCw } from 'lucide-react';
 
 const POLL_INTERVAL_MS = 2500;
@@ -46,6 +46,8 @@ export default function TestAgentPage() {
   // Call lifecycle: idle | connecting | in-call | ended | error
   const [phase, setPhase] = useState('idle');
   const [error, setError] = useState(null);
+  const [endReason, setEndReason] = useState(null); // why the room disconnected (genuine ends only)
+  const [audioBlocked, setAudioBlocked] = useState(false); // browser autoplay policy blocked agent audio
   const [agentJoined, setAgentJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -58,6 +60,10 @@ export default function TestAgentPage() {
 
   const roomRef = useRef(null);
   const roomNameRef = useRef(null);
+  const micStreamRef = useRef(null);
+  // Set while startCall is tearing the room down because a step FAILED — the
+  // resulting RoomEvent.Disconnected must not be reported as a normal "ended".
+  const abortingRef = useRef(false);
   const audioContainerRef = useRef(null);
   const timerRef = useRef(null);
   const pollRef = useRef(null);
@@ -106,6 +112,7 @@ export default function TestAgentPage() {
   useEffect(() => {
     return () => {
       try { roomRef.current?.disconnect(); } catch { /* already gone */ }
+      try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
     };
@@ -139,24 +146,89 @@ export default function TestAgentPage() {
     }, POLL_INTERVAL_MS);
   }, []);
 
-  const handleEnded = useCallback(() => {
+  // Called on RoomEvent.Disconnected (reason = livekit DisconnectReason enum) and
+  // by the Hang up button (no reason). While an error path is tearing the room
+  // down (abortingRef) the disconnect is a side effect of the failure, not an
+  // end — the error banner must stay visible instead of the results card.
+  const handleEnded = useCallback((reason) => {
+    if (abortingRef.current) return;
     if (phaseRef.current === 'ended') return;
+    if (typeof reason === 'number') {
+      const name = DisconnectReason[reason] || `code ${reason}`;
+      console.warn('[test-agent] room disconnected:', name);
+      setEndReason(name);
+    }
     setPhase('ended');
     if (timerRef.current) clearInterval(timerRef.current);
+    try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    micStreamRef.current = null;
     if (roomNameRef.current) startPolling(roomNameRef.current);
   }, [startPolling]);
+
+  function describeMicError(err) {
+    const name = err?.name || '';
+    if (/NotAllowed|Permission|denied|SecurityError/i.test(name + ' ' + String(err))) {
+      return 'Microphone access was denied. Allow the microphone for this site (browser address-bar icon) and try again.';
+    }
+    if (/NotFound|DevicesNotFound|OverconstrainedError/i.test(name)) {
+      return 'No microphone was found on this device.';
+    }
+    if (/NotReadable|TrackStartError|AbortError/i.test(name)) {
+      return 'The microphone is in use by another app or could not be started. Close other apps using it and try again.';
+    }
+    return `Could not access the microphone: ${err?.message || err}`;
+  }
+
+  // Tear the room down after a failed step WITHOUT flipping the UI to "ended".
+  function abortCall(room, message, err) {
+    console.error('[test-agent]', message, err || '');
+    abortingRef.current = true;
+    setError(message);
+    setPhase('error');
+    try { room?.off(RoomEvent.Disconnected, handleEnded); } catch { /* noop */ }
+    try { room?.disconnect(); } catch { /* noop */ }
+    try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    micStreamRef.current = null;
+    roomRef.current = null;
+    // Release the guard once the disconnect has flushed its events.
+    setTimeout(() => { abortingRef.current = false; }, 1000);
+  }
 
   // ── Start test call ──────────────────────────────────────────────────────
   async function startCall() {
     if (!selectedTenant) return;
     setError(null);
+    setEndReason(null);
+    setAudioBlocked(false);
     setSegments([]);
     setResult(null);
     setRecordingUrl(null);
     setAgentJoined(false);
     setMuted(false);
     setElapsed(0);
+    abortingRef.current = false;
     setPhase('connecting');
+
+    // Microphone FIRST, inside the click's user-gesture window and before any
+    // network round-trip: a permission/device failure is then reported as
+    // itself (previously it happened after the room was connected, and the
+    // teardown's Disconnected event overwrote the error with "Call ended").
+    // Mobile Safari also only grants getUserMedia within the gesture.
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setError('This browser cannot capture the microphone here (needs HTTPS and a modern browser).');
+      setPhase('error');
+      return;
+    }
+    let micStream;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = micStream;
+    } catch (err) {
+      console.error('[test-agent] getUserMedia failed:', err);
+      setError(describeMicError(err));
+      setPhase('error');
+      return;
+    }
 
     let sessionJson;
     try {
@@ -170,10 +242,13 @@ export default function TestAgentPage() {
         }),
       });
       sessionJson = await res.json();
-      if (!res.ok) throw new Error(sessionJson.error || 'Failed to create session');
+      if (!res.ok) throw new Error(sessionJson.error || `Failed to create session (HTTP ${res.status})`);
     } catch (err) {
-      setError(err.message);
+      console.error('[test-agent] session request failed:', err);
+      setError(`Could not start a session: ${err.message}`);
       setPhase('error');
+      try { micStream.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+      micStreamRef.current = null;
       return;
     }
 
@@ -218,18 +293,32 @@ export default function TestAgentPage() {
     });
     room.on(RoomEvent.ParticipantConnected, () => setAgentJoined(true));
     room.on(RoomEvent.Disconnected, handleEnded);
+    // Autoplay policy (notably iOS/Safari and some Chrome states): the agent's
+    // audio element may be created outside a user gesture and stay silent
+    // until room.startAudio() is called from a tap — surface a button.
+    room.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+      setAudioBlocked(!room.canPlaybackAudio);
+    });
 
     try {
       await room.connect(sessionJson.livekit_url, sessionJson.token);
-      await room.localParticipant.setMicrophoneEnabled(true);
     } catch (err) {
-      setError(
-        /permission|denied|notallowed/i.test(String(err))
-          ? 'Microphone access was denied. Allow mic access and try again.'
-          : `Could not connect: ${err.message}`,
-      );
-      setPhase('error');
-      try { room.disconnect(); } catch { /* noop */ }
+      abortCall(room, `Could not connect to the call server: ${err?.message || err}`, err);
+      return;
+    }
+
+    try {
+      // Publish the already-granted microphone track (no second permission
+      // prompt, no gesture requirement). Source=Microphone keeps the Mute
+      // button's setMicrophoneEnabled() bound to this publication.
+      const [micTrack] = micStream.getAudioTracks();
+      if (!micTrack) throw new Error('microphone stream has no audio track');
+      await room.localParticipant.publishTrack(micTrack, {
+        source: Track.Source.Microphone,
+        name: 'microphone',
+      });
+    } catch (err) {
+      abortCall(room, `Could not publish the microphone: ${err?.message || err}`, err);
       return;
     }
 
@@ -241,16 +330,16 @@ export default function TestAgentPage() {
         body: JSON.stringify({ room_name: sessionJson.room_name }),
       });
       if (!res.ok) {
-        const j = await res.json();
-        throw new Error(j.error || 'Dispatch failed');
+        let detail = `HTTP ${res.status}`;
+        try { const j = await res.json(); detail = j.error || detail; } catch { /* non-JSON body */ }
+        throw new Error(detail);
       }
     } catch (err) {
-      setError(`Agent dispatch failed: ${err.message}`);
-      setPhase('error');
-      try { room.disconnect(); } catch { /* noop */ }
+      abortCall(room, `Agent dispatch failed: ${err?.message || err}`, err);
       return;
     }
 
+    setAudioBlocked(!room.canPlaybackAudio);
     setPhase('in-call');
     const startedAt = Date.now();
     timerRef.current = setInterval(() => {
@@ -259,8 +348,18 @@ export default function TestAgentPage() {
   }
 
   function hangUp() {
+    setEndReason('hung up');
     try { roomRef.current?.disconnect(); } catch { /* noop */ }
     handleEnded();
+  }
+
+  async function enableAudio() {
+    try {
+      await roomRef.current?.startAudio();
+      setAudioBlocked(!roomRef.current?.canPlaybackAudio);
+    } catch (err) {
+      console.warn('[test-agent] startAudio failed:', err);
+    }
   }
 
   async function toggleMute() {
@@ -424,6 +523,14 @@ export default function TestAgentPage() {
               </button>
             </div>
           </div>
+          {audioBlocked && (
+            <button
+              onClick={enableAudio}
+              className="w-full mb-3 inline-flex items-center justify-center gap-2 px-3 py-2 bg-amber-100 text-amber-900 border border-amber-300 rounded-md text-sm font-medium"
+            >
+              Tap to enable the agent&apos;s audio (blocked by the browser&apos;s autoplay policy)
+            </button>
+          )}
           <TranscriptPane segments={segments} live />
         </div>
       )}
@@ -432,7 +539,10 @@ export default function TestAgentPage() {
       {phase === 'ended' && (
         <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 mb-6 max-w-3xl">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-semibold text-slate-900">Call ended — results</h2>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Call ended — results
+              {endReason && <span className="ml-2 font-normal text-slate-500">({endReason})</span>}
+            </h2>
             <div className="flex items-center gap-2">
               {polling && (
                 <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
