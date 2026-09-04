@@ -79,6 +79,18 @@ export default function TestAgentPage() {
   const [elapsed, setElapsed] = useState(0);
   const [segments, setSegments] = useState([]); // [{id, who, text, final}]
 
+  // Microphone selection + live input level. A machine can expose several audio
+  // inputs (built-in, USB mic, virtual/streaming capture devices) and
+  // getUserMedia({audio:true}) blindly takes the OS default — which may be a
+  // silent virtual device, so the agent greets and then hears nothing. The
+  // picker + level meter let the admin choose the right mic and SEE it working
+  // before (and during) the call, turning "I can't talk" into a visible cause.
+  const [devices, setDevices] = useState([]); // [{deviceId, label}]
+  const [deviceId, setDeviceId] = useState(''); // '' = system default
+  const [micLevel, setMicLevel] = useState(0); // smoothed 0..1 peak for the meter
+  const [micChecked, setMicChecked] = useState(false); // preview has run at least once
+  const [micSilent, setMicSilent] = useState(false); // preview heard no sound
+
   // Post-call result
   const [result, setResult] = useState(null);
   const [recordingUrl, setRecordingUrl] = useState(null);
@@ -97,6 +109,59 @@ export default function TestAgentPage() {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  // ── Microphone level meter (Web Audio) ────────────────────────────────────
+  // A separate "preview" stream drives the meter before the call; during the
+  // call the meter runs on the published mic stream so the admin can watch
+  // their own voice register in real time.
+  const previewStreamRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const analyserRef = useRef(null);
+  const meterRafRef = useRef(null);
+  const peakRef = useRef(0); // running max since the meter (re)started — silence probe
+
+  const stopMeter = useCallback(() => {
+    if (meterRafRef.current) cancelAnimationFrame(meterRafRef.current);
+    meterRafRef.current = null;
+    try { analyserRef.current?.disconnect(); } catch { /* noop */ }
+    analyserRef.current = null;
+    try { audioCtxRef.current?.close(); } catch { /* noop */ }
+    audioCtxRef.current = null;
+    setMicLevel(0);
+  }, []);
+
+  const startMeter = useCallback((stream) => {
+    stopMeter();
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx || !stream) return;
+      const ctx = new Ctx();
+      ctx.resume?.().catch(() => { /* resumes on the click that called us */ });
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 1024;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      const data = new Uint8Array(analyser.fftSize);
+      peakRef.current = 0;
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let peak = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = Math.abs(data[i] - 128) / 128;
+          if (v > peak) peak = v;
+        }
+        if (peak > peakRef.current) peakRef.current = peak;
+        // Smooth for a calmer bar; snap up fast, decay slow.
+        setMicLevel((prev) => (peak > prev ? peak : prev * 0.8 + peak * 0.2));
+        meterRafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) {
+      console.warn('[test-agent] level meter unavailable:', e);
+    }
+  }, [stopMeter]);
 
   // ── Tenant search (debounced) ────────────────────────────────────────────
   useEffect(() => {
@@ -139,10 +204,12 @@ export default function TestAgentPage() {
     return () => {
       try { roomRef.current?.disconnect(); } catch { /* already gone */ }
       try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+      try { previewStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+      stopMeter();
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, []);
+  }, [stopMeter]);
 
   // ── Post-call result polling ─────────────────────────────────────────────
   const startPolling = useCallback((roomName) => {
@@ -186,10 +253,11 @@ export default function TestAgentPage() {
     }
     setPhase('ended');
     if (timerRef.current) clearInterval(timerRef.current);
+    stopMeter();
     try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
     micStreamRef.current = null;
     if (roomNameRef.current) startPolling(roomNameRef.current);
-  }, [startPolling]);
+  }, [startPolling, stopMeter]);
 
   function describeMicError(err) {
     const name = err?.name || '';
@@ -217,11 +285,103 @@ export default function TestAgentPage() {
     setPhase('error');
     try { room?.off(RoomEvent.Disconnected, handleEnded); } catch { /* noop */ }
     try { room?.disconnect(); } catch { /* noop */ }
+    stopMeter();
     try { micStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
     micStreamRef.current = null;
     roomRef.current = null;
     // Release the guard once the disconnect has flushed its events.
     setTimeout(() => { abortingRef.current = false; }, 1000);
+  }
+
+  // Returns a user-facing message when the site's Permissions-Policy blocks the
+  // microphone for this page (getUserMedia then fails like a denial with no way
+  // to grant), or null when the mic is allowed / the policy API is unavailable.
+  function micPolicyBlockedMessage() {
+    try {
+      const policy = document.permissionsPolicy || document.featurePolicy;
+      if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('microphone')) {
+        return (
+          "The microphone is blocked by the site's Permissions-Policy header for this page. " +
+          'Hard-reload the page; if this persists, the deployment is still sending microphone=().'
+        );
+      }
+    } catch { /* policy API unavailable — let getUserMedia decide */ }
+    return null;
+  }
+
+  // getUserMedia audio constraint for a device id ('' / undefined = default).
+  function micConstraint(id = deviceId) {
+    return id ? { deviceId: { exact: id } } : true;
+  }
+
+  // Populate the device picker. Labels are only exposed after a mic permission
+  // has been granted once, so this is called right after a successful
+  // getUserMedia — before that the list has anonymous entries we skip.
+  async function refreshDevices(preferredId) {
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      const inputs = list
+        .filter((d) => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default')
+        .map((d) => ({ deviceId: d.deviceId, label: d.label || 'Microphone' }));
+      setDevices(inputs);
+      // If nothing is selected yet, adopt whichever device the granted stream
+      // actually used so the picker and the live stream agree.
+      if (!deviceId && preferredId && inputs.some((d) => d.deviceId === preferredId)) {
+        setDeviceId(preferredId);
+      }
+    } catch { /* enumeration best-effort */ }
+  }
+
+  function stopPreview() {
+    try { previewStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    previewStreamRef.current = null;
+  }
+
+  // Preview the selected microphone: grant permission (once), light up the
+  // level meter, populate the device list, and after a short listen flag a
+  // silent device. Safe to call repeatedly (e.g. after switching devices).
+  // `overrideId` lets onSelectDevice preview the just-picked device without
+  // waiting for the deviceId state update to flush.
+  async function checkMic(overrideId) {
+    const useId = overrideId !== undefined ? overrideId : deviceId;
+    setError(null);
+    setMicSilent(false);
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setError('This browser cannot capture the microphone here (needs HTTPS and a modern browser).');
+      return;
+    }
+    const policyMsg = micPolicyBlockedMessage();
+    if (policyMsg) { setError(policyMsg); return; }
+    stopPreview();
+    stopMeter();
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: micConstraint(useId) });
+    } catch (err) {
+      console.error('[test-agent] checkMic getUserMedia failed:', err);
+      setError(describeMicError(err));
+      return;
+    }
+    previewStreamRef.current = stream;
+    setMicChecked(true);
+    const usedId = stream.getAudioTracks()[0]?.getSettings?.().deviceId;
+    await refreshDevices(usedId);
+    startMeter(stream);
+    // Listen for ~1.8s; if the peak never rises above the noise floor the
+    // device is producing no sound (muted hardware, wrong virtual device).
+    peakRef.current = 0;
+    const probed = stream;
+    setTimeout(() => {
+      if (previewStreamRef.current === probed) setMicSilent(peakRef.current < 0.02);
+    }, 1800);
+  }
+
+  function onSelectDevice(id) {
+    setDeviceId(id);
+    setMicSilent(false);
+    // Re-preview the newly chosen device so the meter reflects it immediately.
+    // Pass the id directly — the deviceId state update hasn't flushed yet.
+    if (micChecked) checkMic(id);
   }
 
   // ── Start test call ──────────────────────────────────────────────────────
@@ -236,6 +396,7 @@ export default function TestAgentPage() {
     setAgentJoined(false);
     setMuted(false);
     setElapsed(0);
+    setMicSilent(false);
     abortingRef.current = false;
     setPhase('connecting');
 
@@ -252,21 +413,24 @@ export default function TestAgentPage() {
     // A Permissions-Policy header that disables the microphone makes
     // getUserMedia fail exactly like a user denial, but the browser offers no
     // way to allow it. Chrome exposes the effective policy — name it.
-    try {
-      const policy = document.permissionsPolicy || document.featurePolicy;
-      if (policy && typeof policy.allowsFeature === 'function' && !policy.allowsFeature('microphone')) {
-        setError(
-          "The microphone is blocked by the site's Permissions-Policy header for this page. " +
-          'Hard-reload the page (the policy is fixed server-side as of 2026-09-05); if this persists, the deployment still sends microphone=().',
-        );
-        setPhase('error');
-        return;
-      }
-    } catch { /* policy API unavailable — fall through to getUserMedia */ }
+    const policyMsg = micPolicyBlockedMessage();
+    if (policyMsg) {
+      setError(policyMsg);
+      setPhase('error');
+      return;
+    }
+    // Release any preview stream + meter so the call opens the selected device
+    // cleanly (some drivers refuse a second concurrent open of the same mic).
+    stopPreview();
+    stopMeter();
     let micStream;
     try {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Honor the picked device; fall back to the system default when unset.
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: micConstraint() });
       micStreamRef.current = micStream;
+      // Labels only become available after a grant — refresh the list now so a
+      // first-time caller who skipped "Check microphone" still gets a picker.
+      refreshDevices(micStream.getAudioTracks()[0]?.getSettings?.().deviceId);
     } catch (err) {
       console.error('[test-agent] getUserMedia failed:', err);
       setError(describeMicError(err));
@@ -383,6 +547,10 @@ export default function TestAgentPage() {
     }
 
     setAudioBlocked(!room.canPlaybackAudio);
+    // Keep the level meter running on the published mic so the admin can watch
+    // their voice register during the call — a flat bar means the agent hears
+    // nothing (wrong/silent device), which was invisible before.
+    startMeter(micStream);
     setPhase('in-call');
     const startedAt = Date.now();
     timerRef.current = setInterval(() => {
@@ -509,6 +677,49 @@ export default function TestAgentPage() {
             Test-call only — never changes what real callers hear.
           </p>
 
+          <h2 className="text-sm font-semibold text-slate-900 mb-2">
+            4. Microphone
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-2 mb-1">
+            <select
+              value={deviceId}
+              onChange={(e) => onSelectDevice(e.target.value)}
+              className="w-full max-w-sm px-3 py-2 text-sm border border-slate-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">System default microphone</option>
+              {devices.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={checkMic}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-slate-300 rounded-md text-sm text-slate-700 hover:bg-slate-50 shrink-0"
+            >
+              <Mic className="h-4 w-4" />
+              {micChecked ? 'Re-check' : 'Check microphone'}
+            </button>
+          </div>
+          <MicMeter level={micLevel} active={micChecked} className="max-w-sm mb-1" />
+          {micChecked && !micSilent && (
+            <p className="text-xs text-slate-400 mb-4">
+              Speak — the bar should move. If it stays flat, pick a different device above. This is
+              exactly what the agent hears.
+            </p>
+          )}
+          {micSilent && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 my-2 max-w-sm">
+              No sound detected from this microphone — the agent would hear silence and end the call.
+              Choose a different device above, or check that the mic isn&apos;t muted, then re-check.
+            </p>
+          )}
+          {!micChecked && (
+            <p className="text-xs text-slate-400 mb-4">
+              Optional: confirm the right microphone is picked before calling (this machine has
+              several). The call also captures the selected device.
+            </p>
+          )}
+
           {selectedTenant && !selectedTenant.phone_number && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-4">
               This tenant has no AI phone number provisioned — the agent can&apos;t resolve it. Pick a
@@ -574,6 +785,13 @@ export default function TestAgentPage() {
               Tap to enable the agent&apos;s audio (blocked by the browser&apos;s autoplay policy)
             </button>
           )}
+          <div className="flex items-center gap-2 mb-3">
+            {muted ? <MicOff className="h-4 w-4 text-slate-400 shrink-0" /> : <Mic className="h-4 w-4 text-slate-500 shrink-0" />}
+            <MicMeter level={muted ? 0 : micLevel} active className="flex-1" />
+            <span className="text-[11px] text-slate-400 shrink-0 w-24 text-right">
+              {muted ? 'you are muted' : 'your mic → agent'}
+            </span>
+          </div>
           <TranscriptPane segments={segments} live />
         </div>
       )}
@@ -644,6 +862,20 @@ export default function TestAgentPage() {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+// Horizontal input-level bar. `level` is a 0..1 peak; green until it gets hot.
+function MicMeter({ level = 0, active = false, className = '' }) {
+  const pct = Math.min(100, Math.round(level * 140)); // headroom so normal speech fills most of the bar
+  const color = pct > 85 ? 'bg-red-500' : pct > 8 ? 'bg-green-500' : 'bg-slate-300';
+  return (
+    <div className={`h-2.5 rounded-full bg-slate-100 border border-slate-200 overflow-hidden ${className}`}>
+      <div
+        className={`h-full ${active ? color : 'bg-slate-200'} transition-[width] duration-75`}
+        style={{ width: active ? `${pct}%` : '0%' }}
+      />
     </div>
   );
 }
