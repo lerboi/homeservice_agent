@@ -38,20 +38,23 @@ import { RoomServiceClient, AccessToken } from 'livekit-server-sdk';
  * mid-call FallbackAdapter degrades to OpenAI TTS rather than dead air.
  */
 const VOICE_OPTIONS = [
-  // Baseline — the two voices production tenants can already have
-  { id: 'BIvP0GN1cAtSRTxNHnWS', label: 'Voco Professional (production default)', group: 'Production' },
-  { id: '7EzWGsX10sAS4c9m9cPf', label: 'Voco Friendly (production)', group: 'Production' },
-  // American — top-reviewed customer-service premade voices
-  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah — warm, professional female', group: 'American' },
-  { id: 'nPczCjzI2devNBz1zQrb', label: 'Brian — deep, calm male', group: 'American' },
-  { id: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda — friendly, warm female', group: 'American' },
-  // British / European
-  { id: 'Xb7hH8MSUJpSbSDYk0k2', label: 'Alice — confident British female', group: 'British / European' },
-  // Australian
-  { id: 'IKne3meq5aSn9XLyUdCD', label: 'Charlie — conversational Australian male', group: 'Australian' },
-  // Asian-accented English — add a Voice Library pick (e.g. "Aakash Aryan" or
-  // "Anika") to the ElevenLabs account's My Voices, then put its voice ID here:
-  // { id: 'PASTE_VOICE_ID_HERE', label: 'Anika — Indian-accented customer care', group: 'Asian-accented English' },
+  // 2026-09-05: ElevenLabs' curated CONVERSATIONAL voices (their voice-agent
+  // guide) — chatty cadence, not narration. Each id MUST be saved to the Voco
+  // ElevenLabs account's "My Voices" before it will play (an unsaved voice
+  // hard-fails and falls over to OpenAI "alloy"). The Production group mirrors
+  // src/agent.py ELEVENLABS_VOICE_MAP; the rest are for auditioning here.
+  { id: 'kdmDKE6EkgrWrrykO9Qt', label: 'Alexandra — chatty young female (production default / professional)', group: 'Production' },
+  { id: 'dj3G1R1ilKoFKhBnWOzG', label: 'Eryn — friendly, relatable (friendly)', group: 'Production' },
+  { id: '56AoDkrOh6qfVPDXZ7Pt', label: 'Cassidy — engaging, energetic (local_expert)', group: 'Production' },
+  // Other ElevenLabs conversational picks to audition (female)
+  { id: 'OYTbf65OHHFELVut7v2H', label: 'Hope — bright, uplifting', group: 'Conversational — female' },
+  { id: 'PT4nqlKZfc06VW1BuClj', label: 'Angela — down to earth, great listener', group: 'Conversational — female' },
+  { id: 'g6xIsTj2HwM6VR4iXFCw', label: 'Jessica Anne Bogart — empathetic, expressive', group: 'Conversational — female' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah — warm, professional (classic)', group: 'Conversational — female' },
+  // Male
+  { id: '1SM7GgM6IMuvQlz2BwM3', label: 'Mark — relaxed, laid back', group: 'Conversational — male' },
+  { id: 'HDA9tsk27wYi3uq0fPcK', label: 'Stuart — professional & friendly (Australian)', group: 'Conversational — male' },
+  { id: 'L0Dsvb3SLTyegXwtm47J', label: 'Archer — grounded, friendly (British)', group: 'Conversational — male' },
 ];
 
 const VOICE_IDS = new Set(VOICE_OPTIONS.map((v) => v.id));
