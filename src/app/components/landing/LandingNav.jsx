@@ -8,20 +8,35 @@ import { buttonClasses } from '@/components/marketing/primitives';
 import { BOOK_DEMO_HREF, NAV_LINKS } from '@/data/site';
 
 const LOGO_DARK = '/images/logos/VOCO%20Logo%20V1%20(no%20bg).png';
+const LOGO_WHITE = '/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png';
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
-  const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
+  // True while the bar sits over a dark hero (an element marked data-nav-ink).
+  // Starts true so the home page does not flash a light bar before hydration.
+  const [overInk, setOverInk] = useState(true);
+  const ink = pathname === '/' && overInk;
+
+  const isActive = (href) =>
+    href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 8);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 8);
+      const dark = document.querySelector('[data-nav-ink]');
+      setOverInk(dark ? dark.getBoundingClientRect().bottom > 56 : false);
+    };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
@@ -34,13 +49,15 @@ export function LandingNav() {
     <>
       <nav
         aria-label="Main"
-        className={`fixed left-0 right-0 top-0 z-50 h-16 border-b bg-mk-paper/85 backdrop-blur-md transition-colors duration-200 ${
-          scrolled ? 'border-mk-line' : 'border-transparent'
+        className={`fixed left-0 right-0 top-0 z-50 h-16 border-b backdrop-blur-md transition-colors duration-300 ${
+          ink
+            ? `bg-mk-ink/75 ${scrolled ? 'border-white/10' : 'border-transparent'}`
+            : `bg-mk-paper/85 ${scrolled ? 'border-mk-line' : 'border-transparent'}`
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Voco home">
-            <Image src={LOGO_DARK} alt="Voco" width={172} height={96} className="h-11 w-auto -ml-3" priority />
+            <Image src={ink ? LOGO_WHITE : LOGO_DARK} alt="Voco" width={172} height={96} className="h-11 w-auto -ml-3" priority />
           </Link>
 
           <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
@@ -50,7 +67,9 @@ export function LandingNav() {
                 href={href}
                 aria-current={isActive(href) ? 'page' : undefined}
                 className={`text-sm transition-colors ${
-                  isActive(href) ? 'text-mk-ink' : 'text-mk-muted hover:text-mk-ink'
+                  ink
+                    ? isActive(href) ? 'text-white' : 'text-white/60 hover:text-white'
+                    : isActive(href) ? 'text-mk-ink' : 'text-mk-muted hover:text-mk-ink'
                 }`}
               >
                 {label}
@@ -59,13 +78,13 @@ export function LandingNav() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href={BOOK_DEMO_HREF} className={buttonClasses({ variant: 'ink', size: 'sm', className: 'hidden md:inline-flex' })}>
+            <Link href={BOOK_DEMO_HREF} className={buttonClasses({ variant: ink ? 'white' : 'ink', size: 'sm' })}>
               Book a demo
             </Link>
 
             <button
               type="button"
-              className="flex size-11 items-center justify-center text-mk-ink md:hidden"
+              className={`flex size-11 items-center justify-center md:hidden ${ink ? 'text-white' : 'text-mk-ink'}`}
               onClick={() => setDrawerOpen((v) => !v)}
               aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={drawerOpen}

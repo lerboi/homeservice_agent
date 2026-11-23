@@ -164,6 +164,7 @@ const BUTTON_VARIANTS = {
   secondary: 'border border-mk-ink/20 bg-transparent text-mk-ink hover:border-mk-ink/50',
   secondaryOnInk: 'border border-white/25 bg-transparent text-white hover:border-white/60',
   ink: 'bg-mk-ink text-white hover:bg-mk-ink-soft',
+  white: 'bg-white text-mk-ink hover:bg-white/90',
 };
 
 export function buttonClasses({ variant = 'primary', size = 'md', className } = {}) {

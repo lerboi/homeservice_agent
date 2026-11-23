@@ -148,8 +148,9 @@ describe('site constants', () => {
     expect(PRODUCTS.agent).toMatchObject({ name: 'Voco Agent', href: '/agent', tone: 'spark' });
   });
 
-  it('nav links to Voice, Agent, Use cases, Demo, Pricing', () => {
-    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Voice', 'Agent', 'Use cases', 'Demo', 'Pricing']);
+  it('nav links to Home, Voice, Agent, Use cases, Demo, Pricing', () => {
+    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Home', 'Voice', 'Agent', 'Use cases', 'Demo', 'Pricing']);
+    expect(NAV_LINKS[0].href).toBe('/');
     expect(NAV_LINKS.every((l) => !l.href.includes('#'))).toBe(true);
   });
 
@@ -317,6 +318,13 @@ describe('landing page', () => {
   it('gives neither product the hero to itself', () => {
     expect(page).toContain('product={PRODUCTS.voice}');
     expect(page).toContain('product={PRODUCTS.agent}');
+  });
+
+  it('the nav goes dark over the home hero and marks Home only on the home page', () => {
+    const nav = read('src/app/components/landing/LandingNav.jsx');
+    expect(page).toContain('data-nav-ink');
+    expect(nav).toContain('[data-nav-ink]');
+    expect(nav).toContain("href === '/' ? pathname === '/'");
   });
 
   it('carries both calls to action, the same for every visitor', () => {

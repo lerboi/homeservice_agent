@@ -21,6 +21,7 @@ export const PRODUCTS = {
 };
 
 export const NAV_LINKS = [
+  { href: '/', label: 'Home' },
   { href: '/voice', label: 'Voice' },
   { href: '/agent', label: 'Agent' },
   { href: '/use-cases', label: 'Use cases' },

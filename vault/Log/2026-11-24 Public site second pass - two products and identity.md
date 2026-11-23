@@ -67,6 +67,15 @@ Owner's instruction: remove the Integrations tab entirely, and add Voco Agent en
 - `/use-cases` is rebuilt as two groups: Voco Voice (the five call-based use cases, green) and Voco Agent (its six jobs with an example message each, amber, linking to `/agent#jobs`). Headline "The work you can hand over."
 - Verified: 122 tests pass, `next build` succeeds, redirects return 308, Chrome at desktop width and 390 px.
 
+## Fourth round: home hero and a Home link
+
+The owner said the home hero did not blend together and asked for a Home tab.
+
+- Hero recomposed: centred headline, lede and buttons; the two illustrations sit in matching dark frames that overlap the edge between the dark field and the light page; glows sit behind their own product.
+- The nav is dark over the home hero instead of a pale bar on a dark page.
+- `Home` added as the first nav link.
+- Verified: public-site suites pass; Chrome at desktop width and 390 px, no overflow.
+
 ## Not done yet
 
 - `/demo`, `/pricing`, `/about` and `/contact` still open with the plain paper `PageHero` and have not been redesigned.

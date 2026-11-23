@@ -17,7 +17,7 @@ The site sells two products as equals (owner's instruction, 2026-11-24): **Voco 
 
 | # | Section | Component | Surface |
 |---|---|---|---|
-| 1 | Hero: "AI that does the work.", lede, CTAs, then the two products' illustrations side by side | inline + `LiveCallDemo` + `AgentChatDemo` | ink |
+| 1 | Hero: centred "AI that does the work.", lede and CTAs, then the two products' illustrations side by side in matching dark frames that step down onto the light page | inline + `LiveCallDemo` + `AgentChatDemo` | ink over paper |
 | 2 | The two products as panels, each with four jobs and a link to its page | `ProductsSection` | paper |
 | 3 | Voco Voice demo | `DemoSection` → `DemoVideo` | white |
 | 4 | Your tools: six icon tiles wired to a Voco node (WhatsApp, Email, Slack, Google Calendar, Outlook Calendar, your own API) | `BackendsSection`, `HOME_TOOLS` | ink |
@@ -26,6 +26,10 @@ The site sells two products as equals (owner's instruction, 2026-11-24): **Voco 
 | 7 | Final CTA | `FinalCtaSection` | ink |
 
 Anchors: `#products`, `#demo`, `#backends`, `#setup`, `#faq`.
+
+**How the hero is built.** The section itself is paper; an absolutely positioned ink field (`data-nav-ink`) covers all but its last 7 to 9 rem, so the two product frames overlap the boundary. Each frame (`ProductWindow` in `page.js`) is a solid `mk-ink-soft` panel holding the product name, one line on what it does, a "See how" link and the illustration. This replaced a left-aligned hero with bare white cards on ink, which the owner said did not blend (2026-11-24).
+
+**Nav.** `NAV_LINKS` starts with Home (owner's request). `LandingNav` turns dark (white logo, white links, white button) while it sits over an element marked `data-nav-ink`, and returns to the light bar once that element has scrolled past. Only the home page has one. Home is marked active only on `/`.
 
 The tools list is the owner's (2026-11-24): only those six appear on the home page. `HOME_TOOLS` in `LandingSections.jsx` holds them; WhatsApp and Google Calendar use their brand marks from the `simple-icons` package, the others a lucide icon (that package has no Slack or Outlook mark). The tiles are not links: the `/integrations` pages were removed the same day. "Use something else?" goes to the contact form.
 

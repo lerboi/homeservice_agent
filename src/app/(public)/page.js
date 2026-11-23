@@ -41,23 +41,26 @@ const SCHEMA = [
   },
 ];
 
-/** One product's window in the hero: a coloured label row above its illustration. */
+/**
+ * One product's window in the hero: a dark frame holding the product's name,
+ * what it does, and its illustration. Both frames are the same size and sit
+ * side by side so neither product leads.
+ */
 function ProductWindow({ product, does, children }) {
-  const dot = product.tone === 'spark' ? 'bg-mk-spark' : 'bg-mk-signal';
-  const text = product.tone === 'spark' ? 'text-mk-spark' : 'text-mk-signal';
+  const spark = product.tone === 'spark';
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-end justify-between gap-4">
-        <div>
-          <p className={`flex items-center gap-2 font-code text-[11px] uppercase tracking-[0.16em] ${text}`}>
-            <span className={`size-1.5 rounded-full ${dot}`} />
+    <div className="flex h-full flex-col rounded-[1.75rem] border border-white/10 bg-mk-ink-soft p-2 shadow-[0_40px_80px_-40px_rgba(11,15,20,0.7)]">
+      <div className="flex items-center justify-between gap-4 px-3 pb-3 pt-2.5">
+        <div className="min-w-0">
+          <p className={`flex items-center gap-2 font-code text-[11px] uppercase tracking-[0.16em] ${spark ? 'text-mk-spark' : 'text-mk-signal'}`}>
+            <span className={`size-1.5 rounded-full ${spark ? 'bg-mk-spark' : 'bg-mk-signal'}`} />
             {product.name}
           </p>
-          <p className="mt-1 font-display text-xl font-medium tracking-[-0.02em] text-white">{does}</p>
+          <p className="mt-1 text-[15px] leading-snug text-white/80">{does}</p>
         </div>
         <Link
           href={product.href}
-          className="mb-0.5 inline-flex shrink-0 items-center gap-1 text-sm text-white/60 transition-colors hover:text-white"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3.5 text-[13px] font-medium text-white transition-colors hover:border-white/50"
         >
           See how <ArrowRight className="size-3.5" />
         </Link>
@@ -74,39 +77,41 @@ export default function HomePage() {
         <SchemaMarkup key={schema['@type']} schema={schema} />
       ))}
 
-      {/* Hero: both products, side by side, neither first among them */}
-      <section className="relative overflow-hidden bg-mk-ink pb-20 pt-32 text-white md:pb-28 md:pt-40">
-        <div className="mk-grid-ink pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" aria-hidden="true" />
-        <div className="pointer-events-none absolute -left-40 top-24 size-[520px] rounded-full bg-mk-signal/20 blur-[140px]" aria-hidden="true" />
-        <div className="pointer-events-none absolute -right-40 top-56 size-[520px] rounded-full bg-mk-spark/15 blur-[140px]" aria-hidden="true" />
+      {/* Hero: centred statement, then both products side by side. The dark
+          field stops short of the section so the two windows step down onto
+          the light page below. */}
+      <section className="relative bg-mk-paper text-white">
+        <div data-nav-ink className="absolute inset-x-0 bottom-28 top-0 overflow-hidden bg-mk-ink sm:bottom-36" aria-hidden="true">
+          <div className="mk-grid-ink absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,black,transparent)]" />
+          <div className="absolute bottom-0 left-[8%] h-[420px] w-[38%] rounded-full bg-mk-signal/20 blur-[130px]" />
+          <div className="absolute bottom-0 right-[8%] h-[420px] w-[38%] rounded-full bg-mk-spark/[0.16] blur-[130px]" />
+        </div>
 
-        <Container size="wide" className="relative">
-          <div className="grid items-end gap-8 lg:grid-cols-[1.5fr_1fr] lg:gap-16">
-            <div>
-              <p className="font-code text-[11px] uppercase tracking-[0.16em] text-white/55">
-                <span className="text-mk-signal">Voice agents</span>
-                <span className="mx-2 text-white/30">+</span>
-                <span className="text-mk-spark">AI agents</span>
-                <span className="mx-2 text-white/30">/</span>
-                built into your business
-              </p>
-              <h1 className="mt-6 font-display text-[3.25rem] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-7xl lg:text-[6.75rem]">
-                AI that <Em tone="both">does</Em>
-                <br />
-                the work.
-              </h1>
-            </div>
-            <div className="lg:pb-3">
-              <p className="text-lg leading-relaxed text-white/70">
-                Voco puts two AI workers inside the tools your business already runs. One answers
-                your calls and books, schedules and records. The other takes a message from you and
-                handles reviews, email, search and the calendar.
-              </p>
-              <DemoCTA onInk className="mt-7" />
-            </div>
+        <Container className="relative pt-32 md:pt-44">
+          <div className="mx-auto max-w-4xl text-center">
+            <p className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 font-code text-[11px] uppercase tracking-[0.14em] text-white/60">
+              <span className="flex items-center gap-1.5 text-mk-signal">
+                <span className="size-1.5 rounded-full bg-mk-signal" />
+                Voice agents
+              </span>
+              <span className="flex items-center gap-1.5 text-mk-spark">
+                <span className="size-1.5 rounded-full bg-mk-spark" />
+                AI agents
+              </span>
+              <span>built into your business</span>
+            </p>
+            <h1 className="mt-7 text-balance font-display text-[3.25rem] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-7xl lg:text-[6.25rem]">
+              AI that <Em tone="both">does</Em> the work.
+            </h1>
+            <p className="mx-auto mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-white/70">
+              Voco puts two AI workers inside the tools your business already runs. One answers your
+              calls and books, schedules and records. The other takes a message from you and handles
+              reviews, email, search and the calendar.
+            </p>
+            <DemoCTA onInk className="mt-9 justify-center" />
           </div>
 
-          <div className="mt-16 grid gap-10 lg:mt-20 lg:grid-cols-2 lg:gap-8">
+          <div className="mt-16 grid gap-5 lg:mt-20 lg:grid-cols-2">
             <ProductWindow product={PRODUCTS.voice} does="Answers the call and does what the caller asked.">
               <LiveCallDemo />
             </ProductWindow>

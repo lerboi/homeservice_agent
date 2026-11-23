@@ -17,7 +17,7 @@ Part of [[Public Site]]. First decided in [[Plan 2 - Frontend rebrand to voice i
 - **Each page opens differently.** Home is an ink hero with both products; `/voice` is a green wash with the call illustration beside the headline; `/agent` is an amber wash with a centred headline and the chat in the middle. Do not reuse one hero block for every page.
 - **Headline emphasis is colour.** One face throughout; the words that matter take the product colour through `<Em tone>`. An italic serif was tried on 2026-11-24 and removed the same day: the owner found it hard to read. Do not bring italics back into headlines.
 - **One page width.** Every `Container` (and the nav and footer) is `max-w-7xl`, so section edges line up; text blocks set their own narrower measure.
-- Hairline borders, no drop shadows. The dark heroes carry a dot grid and two soft colour glows; that is the only gradient use.
+- Hairline borders. The home hero carries a dot grid, two soft colour glows (green behind the Voice frame, amber behind the Agent frame) and the one drop shadow on the site, under the two product frames.
 
 ## Tokens
 
@@ -64,7 +64,7 @@ The two marketing faces are loaded with `next/font` in `src/app/(public)/layout.
 | `Eyebrow` | Mono label; `tone="signal" | "spark"`, `onInk` |
 | `Em` | Coloured emphasis inside a headline: `tone="signal" | "spark"` on ink, `"signal-deep" | "spark-deep"` on light, `"both"` (green running into amber, home hero only) |
 | `PageTitle`, `SectionTitle`, `Lede` | Type styles |
-| `ButtonLink`, `buttonClasses` | `primary` (green), `spark` (amber), `secondary`, `secondaryOnInk`, `ink`; sizes `sm`, `md`, `lg` |
+| `ButtonLink`, `buttonClasses` | `primary` (green), `spark` (amber), `secondary`, `secondaryOnInk`, `ink`, `white` (the nav button over the dark hero); sizes `sm`, `md`, `lg` |
 | `Card`, `TextLink` | Bordered white card; signal-coloured link |
 
 Utility classes in `globals.css`: `mk-grid-ink` and `mk-grid-paper` (dot grids), `mk-rise`, `mk-bar`, `mk-dot` (motion).
@@ -75,4 +75,4 @@ Keyframes at the end of `globals.css`: `mk-rise` (new transcript, chat and log l
 
 ## Logo
 
-The existing wordmark is black with no background, so it is used as is on paper (`VOCO Logo V1 (no bg).png`); the white version is used on the ink footer. The nav is a light bar on every page, including over the ink hero.
+The existing wordmark is black with no background, so it is used as is on paper (`VOCO Logo V1 (no bg).png`); the white version is used on the ink footer. The nav is a light bar everywhere except over the home hero, where it is dark and uses the white logo.

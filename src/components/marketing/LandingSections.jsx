@@ -72,7 +72,7 @@ const PRODUCT_PANELS = [
 
 export function ProductsSection() {
   return (
-    <Section tone="paper" id="products" size="wide">
+    <Section tone="paper" id="products" size="wide" className="pt-16 md:pt-24">
       <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <h2 className="max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-6xl">
           Two products. One idea: the work gets done.
