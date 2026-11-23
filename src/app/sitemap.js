@@ -13,6 +13,8 @@ export default function sitemap() {
 
   return [
     page('', 'weekly', 1.0),
+    page('/voice', 'monthly', 0.9),
+    page('/agent', 'monthly', 0.9),
     page('/demo', 'monthly', 0.9),
     page('/use-cases', 'monthly', 0.9),
     page('/integrations', 'monthly', 0.9),

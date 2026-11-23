@@ -1,27 +1,28 @@
 /**
- * Landing-page sections below the hero (2026-11 rebrand). Server components.
+ * Sections shared by the home page and the product pages. Server components.
  *
- * Order on the page: Demo, How it works, What it can do, Backends, Control
- * and reliability, FAQ, Final CTA. Copy rule: claim only what the product
- * does; numbers must be ones measured on the system.
+ * Home: Products, Demo, Backends, Setup, FAQ, Final CTA.
+ * /voice: How it works, What it can do, Control and reliability, Final CTA.
+ * Copy rule: claim only what the product does; numbers must be ones measured
+ * on the system.
  */
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, FileText, Languages, PhoneForwarded, SlidersHorizontal } from 'lucide-react';
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { ArrowRight, ArrowUpRight, Check, FileText, Languages, PhoneForwarded, SlidersHorizontal } from 'lucide-react';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { FAQChatWidget } from '@/app/components/landing/FAQChatWidget';
 import { FAQ_ITEMS } from '@/data/faq';
 import { integrationsByGroup } from '@/data/integrations';
 import { EXTRA_CAPABILITIES, USE_CASES } from '@/data/use-cases';
 import { DemoVideo } from './DemoVideo';
 import { Icon } from './icons';
-import { Card, Eyebrow, Section, SectionHeader, TextLink } from './primitives';
+import { ButtonLink, Card, Em, Eyebrow, Section, SectionHeader, TextLink } from './primitives';
 
 export function DemoSection() {
   return (
     <Section tone="white" id="demo" bordered>
       <div className="grid items-end gap-8 md:grid-cols-[1fr_auto]">
         <SectionHeader
-          eyebrow="The demo"
+          eyebrow="Voco Voice · the demo"
           title="One call. Watch the calendar change."
           lede="A caller asks for an appointment. On one side you hear the conversation; on the other you see each action land in the business’s systems, ending with the event in Google Calendar."
         />
@@ -30,6 +31,132 @@ export function DemoSection() {
         </TextLink>
       </div>
       <DemoVideo className="mt-10" />
+    </Section>
+  );
+}
+
+const PRODUCT_PANELS = [
+  {
+    key: 'voice',
+    name: 'Voco Voice',
+    href: '/voice',
+    title: <>For the people who <Em>call you.</Em></>,
+    body: 'A voice agent on your phone line or website. It answers at once, works out what the caller wants, and finishes the job in your systems while they are still on the line.',
+    jobs: ['Books and moves appointments', 'Takes enquiries into your CRM', 'Schedules callbacks and tasks', 'Looks up orders and accounts'],
+    where: 'Phone · Web',
+    wash: 'bg-mk-signal-wash',
+    border: 'border-mk-signal/40',
+    deep: 'text-mk-signal-deep',
+    fill: 'bg-mk-signal',
+    button: 'primary',
+  },
+  {
+    key: 'agent',
+    name: 'Voco Agent',
+    href: '/agent',
+    title: <>For the work <Em>behind the counter.</Em></>,
+    body: 'An AI agent connected to your reviews, inbox, calendar, search data and support desk. Message it like a colleague. It finds the answer, then does the job.',
+    jobs: ['Reads and replies to customer feedback', 'Explains how you show up on Google', 'Sorts email and drafts replies', 'Runs the calendar and tells people'],
+    where: 'WhatsApp · Telegram · Slack · Email',
+    wash: 'bg-mk-spark-wash',
+    border: 'border-mk-spark/60',
+    deep: 'text-mk-spark-deep',
+    fill: 'bg-mk-spark',
+    button: 'spark',
+  },
+];
+
+export function ProductsSection() {
+  return (
+    <Section tone="paper" id="products" size="wide">
+      <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
+        <h2 className="max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-6xl">
+          Two products. <Em>One idea:</Em> the work gets done.
+        </h2>
+        <p className="max-w-xs text-[15px] leading-relaxed text-mk-muted md:pb-2">
+          Take either, or both. Each is set up by us, with you, in the tools you already use.
+        </p>
+      </div>
+
+      <div className="mt-12 grid gap-5 lg:grid-cols-2">
+        {PRODUCT_PANELS.map((panel) => (
+          <article key={panel.key} className={`flex flex-col rounded-3xl border p-7 sm:p-10 ${panel.wash} ${panel.border}`}>
+            <p className={`flex items-center gap-2 font-code text-[11px] uppercase tracking-[0.16em] ${panel.deep}`}>
+              <span className={`size-2 rounded-full ${panel.fill}`} />
+              {panel.name}
+            </p>
+            <h3 className="mt-5 font-display text-3xl font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[2.5rem]">
+              {panel.title}
+            </h3>
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-mk-ink/75">{panel.body}</p>
+
+            <ul className="mt-8 grid gap-x-6 gap-y-3 border-t border-mk-ink/10 pt-6 sm:grid-cols-2">
+              {panel.jobs.map((job) => (
+                <li key={job} className="flex items-start gap-2.5 text-[15px] leading-snug">
+                  <span className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full text-mk-ink ${panel.fill}`}>
+                    <Check className="size-2.5" strokeWidth={3.5} aria-hidden="true" />
+                  </span>
+                  {job}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-10">
+              <p className="font-code text-[11px] uppercase tracking-[0.14em] text-mk-ink/60">{panel.where}</p>
+              <ButtonLink href={panel.href} variant={panel.button}>
+                See {panel.name} <ArrowRight className="size-4" />
+              </ButtonLink>
+            </div>
+          </article>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+const SETUP_STEPS = [
+  {
+    n: '01',
+    title: 'Show us how you work',
+    body: 'What callers ask for, what eats your week, and which tools you run. A demo call is enough to start.',
+  },
+  {
+    n: '02',
+    title: 'We connect and test it',
+    body: 'Voco links to your systems, sets the rules with you, and tries it on real requests before anything goes live.',
+  },
+  {
+    n: '03',
+    title: 'It goes to work',
+    body: 'Calls get answered and jobs get done. You see every one of them in the tools you already use.',
+  },
+];
+
+export function SetupSection() {
+  return (
+    <Section tone="paper" id="setup" bordered>
+      <div className="grid gap-12 lg:grid-cols-[1fr_1.6fr] lg:gap-20">
+        <div>
+          <Eyebrow>Getting started</Eyebrow>
+          <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-5xl">
+            You do not set <Em>anything</Em> up.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-mk-muted">
+            No software to learn and nothing to install. We do the connecting; you tell us what good looks like.
+          </p>
+        </div>
+        <ol>
+          {SETUP_STEPS.map((step) => (
+            <li key={step.n} className="grid grid-cols-[auto_1fr] gap-x-6 border-t border-mk-ink py-7 last:border-b sm:gap-x-10">
+              <p className="font-display text-5xl font-semibold leading-none tracking-[-0.04em] text-mk-ink/15 sm:text-6xl">{step.n}</p>
+              <div>
+                <h3 className="font-display text-2xl font-semibold tracking-[-0.02em]">{step.title}</h3>
+                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-mk-muted">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
     </Section>
   );
 }
@@ -61,7 +188,7 @@ const FLOW = [
 
 export function HowItWorksSection() {
   return (
-    <Section tone="paper" id="how-it-works" bordered>
+    <Section tone="white" id="how-it-works">
       <SectionHeader
         eyebrow="How it works"
         title="From spoken request to finished work."
@@ -109,7 +236,7 @@ export function HowItWorksSection() {
 
 export function UseCasesSection() {
   return (
-    <Section tone="white" id="use-cases" bordered>
+    <Section tone="paper" id="use-cases" bordered>
       <SectionHeader
         eyebrow="What it can do"
         title="Whatever callers ring you to get done."
@@ -151,7 +278,7 @@ export function BackendsSection() {
           onInk
           eyebrow="Backends"
           title="It works in the tools you already run."
-          lede="Voco connects to your systems for you. Tell us what you use; we set the connection up and test it with you before the first real call."
+          lede="Both products work inside your systems, and Voco connects them for you. Tell us what you use; we set each connection up and test it with you before anything goes live."
         />
         <Link
           href="/integrations"
@@ -213,7 +340,7 @@ const CONTROLS = [
 
 export function ControlSection() {
   return (
-    <Section tone="paper" id="control" bordered>
+    <Section tone="white" id="control" bordered>
       <div className="grid gap-12 lg:grid-cols-[1fr_1.3fr] lg:gap-16">
         <div>
           <SectionHeader
@@ -256,7 +383,7 @@ export function FaqSection() {
         <div>
           <Eyebrow>Questions</Eyebrow>
           <h2 className="mt-4 font-display text-3xl font-medium leading-[1.1] tracking-[-0.025em] md:text-[2.75rem]">
-            Asked before the first call.
+            Asked before getting started.
           </h2>
           <div className="mt-8 border-t border-mk-line">
             {FAQ_ITEMS.map((item) => (
@@ -289,16 +416,17 @@ export function FaqSection() {
 }
 
 export function FinalCtaSection({
-  title = 'Hear it take a call in your systems.',
-  lede = 'Bring the list of what your callers ask for and the tools you run. We will show you the agent doing that work, live.',
+  title = 'See it done in your own systems.',
+  lede = 'Bring what your callers ask for, the jobs that eat your week, and the tools you run. We will show you the work being done, live.',
+  variant = 'primary',
 }) {
   return (
     <Section tone="ink" id="book-a-demo">
       <div className="max-w-3xl">
-        <Eyebrow onInk>Book a demo</Eyebrow>
-        <h2 className="mt-4 font-display text-4xl font-medium leading-[1.05] tracking-[-0.03em] md:text-6xl">{title}</h2>
+        <Eyebrow onInk tone={variant === 'spark' ? 'spark' : 'signal'}>Book a demo</Eyebrow>
+        <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-6xl">{title}</h2>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">{lede}</p>
-        <AuthAwareCTA onInk className="mt-9" />
+        <DemoCTA onInk variant={variant} className="mt-9" />
       </div>
     </Section>
   );

@@ -18,16 +18,16 @@ Part of [[Public Site]].
 Both post to `POST /api/public-chat` (`src/app/api/public-chat/route.js`): rate-limited, last 10 messages of history, a Groq-hosted Llama model, 400 tokens, replies in the visitor's language. The rebrand changed the persona and the knowledge, not the plumbing.
 
 ## What the prompt tells it
-- It answers only about Voco: what it does on a call, which systems it works in, how setup works, how to book a demo.
+- It answers only about Voco: the two products (Voco Voice and Voco Agent, presented as equals), what each does, which systems they work in, how setup works, how to book a demo.
 - Setup is described as done with the Voco team after a demo.
-- It must not: quote prices, plan names, call allowances or trial lengths; mention self-serve signup or a free trial; promise one-click setup for a specific system; invent customer numbers or testimonials; name competitors.
+- It must not: quote prices, plan names, call allowances or trial lengths; mention self-serve signup or a free trial; promise one-click setup for a specific system; invent customer numbers or testimonials; name competitors; name the technology Voco Agent is built on.
 - For a feature Voco does not have, it says so and links to the contact form.
 
 ## Knowledge (`src/lib/public-chatbot-knowledge/`)
 
-Seven Markdown files: `overview`, `features`, `how-it-works`, `integrations`, `faq`, `pricing`, `contact`. `index.js` picks at most two per message:
+Eight Markdown files: `overview`, `features` (Voco Voice), `agent` (Voco Agent), `how-it-works`, `integrations`, `faq`, `pricing`, `contact`. `index.js` picks at most two per message:
 
-1. The doc for the page the visitor is on. Sub-pages use their section's doc (`/integrations/hubspot` → `integrations.md`); unknown routes get `overview.md`.
+1. The doc for the page the visitor is on (`/voice` → `features.md`, `/agent` → `agent.md`). Sub-pages use their section's doc (`/integrations/hubspot` → `integrations.md`); unknown routes get `overview.md`.
 2. One more, by the first keyword group the message matches.
 
 `pricing.md` contains no numbers and tells the model not to give any. When the product or the measured reply time changes, update `features.md` here as well as the page copy.

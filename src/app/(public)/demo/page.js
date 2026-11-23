@@ -1,4 +1,4 @@
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { DemoVideo } from '@/components/marketing/DemoVideo';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
 import { Container, Eyebrow, Lede, PageTitle, Section, SectionHeader } from '@/components/marketing/primitives';
@@ -72,7 +72,7 @@ export default function DemoPage() {
             The recording uses a calendar. In a live demo we point the agent at the task your callers
             actually ring about and the tools you run.
           </p>
-          <AuthAwareCTA withWatch={false} className="mt-6" />
+          <DemoCTA withWatch={false} className="mt-6" />
         </div>
       </Section>
 

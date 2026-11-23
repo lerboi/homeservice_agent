@@ -1,16 +1,22 @@
 import {
-  CalendarCheck, ListChecks, MessageSquareText, MessagesSquare, Moon, PhoneForwarded, Search, UserPlus,
+  CalendarCheck, ClipboardList, Inbox, LifeBuoy, ListChecks, MessageSquareText, MessagesSquare, Moon,
+  PhoneForwarded, Search, Star, TrendingUp, UserPlus,
 } from 'lucide-react';
 
-/** Icons referenced by name from src/data/use-cases.js. */
+/** Icons referenced by name from src/data/use-cases.js and src/data/agent.js. */
 export const ICONS = {
   CalendarCheck,
+  ClipboardList,
+  Inbox,
+  LifeBuoy,
   ListChecks,
   MessageSquareText,
   MessagesSquare,
   Moon,
   PhoneForwarded,
   Search,
+  Star,
+  TrendingUp,
   UserPlus,
 };
 

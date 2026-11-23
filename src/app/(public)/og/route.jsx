@@ -12,7 +12,7 @@ const SIGNAL = '#00B37E';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const title = (searchParams.get('title') ?? 'Give your backend a voice.').slice(0, 120);
+  const title = (searchParams.get('title') ?? 'AI that does the work.').slice(0, 120);
   const type = (searchParams.get('type') ?? 'VOCO').slice(0, 24);
 
   return new ImageResponse(
@@ -42,7 +42,7 @@ export async function GET(request) {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `2px solid ${INK}`, paddingTop: '24px' }}>
           <div style={{ fontSize: '34px', fontWeight: 700, color: INK, letterSpacing: '-0.02em' }}>Voco</div>
-          <div style={{ fontSize: '24px', color: '#55606B' }}>Voice agents that work in your systems</div>
+          <div style={{ fontSize: '24px', color: '#55606B' }}>Voice agents and AI agents in your systems</div>
         </div>
       </div>
     ),

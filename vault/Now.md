@@ -18,7 +18,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
-| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Tests and build pass; looked at in Chrome at desktop width | [[2026-11-24 Public site rebrand]], [[Public Site]] |
+| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Second pass in progress after the owner's review: sign-in links removed, Voco Agent added as a second product, new identity. Stage one (home, `/voice`, `/agent`) is committed and waiting for the owner's look; the other pages are not restyled yet | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
 
 ## What is left of Task 2
 
@@ -27,7 +27,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 
 ## What is left of Task 3
 
-1. Owner's review of the look (the hero-first sign-off was skipped at the owner's instruction) and the go-ahead to push `rebrand` to `main`.
+1. Owner's look at stage one of the second pass (home, `/voice`, `/agent`); then stage two, restyling `/use-cases`, `/integrations`, `/demo`, `/pricing`, `/about`, `/contact` so each opens differently; then the go-ahead to push `rebrand` to `main`.
 2. The recorded demo video: record it ([[Record a demo]]), then set `DEMO_VIDEO.src` in `src/data/site.js`. Until then the site shows a labelled still.
 3. A look at mobile widths, the mobile nav drawer and a real contact-form submission.
 4. Owner's review of `/privacy` and `/terms`: the body text still says "AI receptionist" and describes a 14-day free trial.
@@ -53,8 +53,8 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 4. **Phone calls get the scheduling agent too** (no address intake, no urgency triage). `VOCO_AGENT_PROFILE=home_service` on Railway restores the old behaviour.
 5. **The model still speaks its own filler** before booking ("Okay, booking that in for you"), against the prompt.
 6. **A local dev worker refuses jobs when this machine is above 70% CPU**, which a running `next dev` can cause: [[Run a local dev worker and measure]].
-7. **The public site presents integrations that are not built** (owner's decision; done-for-you framing). The list of what is real is in [[Public Site - Content data and copy rules]].
-8. **Sign-up is still reachable** from `/auth/signin` and leads to the trade-based onboarding wizard, although no public page links to it.
+7. **The public site presents integrations, and a whole second product (Voco Agent), that are not built** (owner's decision; done-for-you framing). The list of what is real is in [[Public Site - Content data and copy rules]].
+8. **Sign-up is still reachable** from `/auth/signin` (by URL only: no public page links to sign-in any more) and leads to the trade-based onboarding wizard.
 9. Public repos contain audit findings ([[Log]]).
 
 ## Waiting on the owner

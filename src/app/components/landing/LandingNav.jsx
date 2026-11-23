@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase-browser';
 import { buttonClasses } from '@/components/marketing/primitives';
 import { BOOK_DEMO_HREF, NAV_LINKS } from '@/data/site';
 
@@ -13,12 +12,9 @@ const LOGO_DARK = '/images/logos/VOCO%20Logo%20V1%20(no%20bg).png';
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
   const pathname = usePathname();
 
-  // "/#how-it-works" is a section of the home page, not a page of its own.
-  const isActive = (href) =>
-    !href.includes('#') && (pathname === href || pathname.startsWith(href + '/'));
+  const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 8);
@@ -31,12 +27,6 @@ export function LandingNav() {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [drawerOpen]);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setHasSession(!!session);
-    });
-  }, []);
 
   const closeDrawer = () => setDrawerOpen(false);
 
@@ -53,7 +43,7 @@ export function LandingNav() {
             <Image src={LOGO_DARK} alt="Voco" width={172} height={96} className="h-11 w-auto -ml-3" priority />
           </Link>
 
-          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 md:flex">
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 md:flex">
             {NAV_LINKS.map(({ href, label }) => (
               <Link
                 key={href}
@@ -69,20 +59,9 @@ export function LandingNav() {
           </div>
 
           <div className="flex items-center gap-4">
-            {hasSession ? (
-              <Link href="/dashboard" className={buttonClasses({ variant: 'ink', size: 'sm', className: 'hidden md:inline-flex' })}>
-                Go to dashboard
-              </Link>
-            ) : (
-              <>
-                <Link href="/auth/signin" className="hidden text-[13px] font-medium text-mk-muted transition-colors hover:text-mk-ink md:inline-flex">
-                  Sign in
-                </Link>
-                <Link href={BOOK_DEMO_HREF} className={buttonClasses({ variant: 'primary', size: 'sm', className: 'hidden md:inline-flex' })}>
-                  Book a demo
-                </Link>
-              </>
-            )}
+            <Link href={BOOK_DEMO_HREF} className={buttonClasses({ variant: 'ink', size: 'sm', className: 'hidden md:inline-flex' })}>
+              Book a demo
+            </Link>
 
             <button
               type="button"
@@ -141,20 +120,9 @@ export function LandingNav() {
         </nav>
 
         <div className="space-y-3 border-t border-mk-line p-4">
-          {hasSession ? (
-            <Link href="/dashboard" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className={buttonClasses({ variant: 'ink', size: 'lg', className: 'w-full' })}>
-              Go to dashboard
-            </Link>
-          ) : (
-            <>
-              <Link href={BOOK_DEMO_HREF} onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className={buttonClasses({ variant: 'primary', size: 'lg', className: 'w-full' })}>
-                Book a demo
-              </Link>
-              <Link href="/auth/signin" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className="flex min-h-[44px] w-full items-center justify-center text-sm font-medium text-mk-muted hover:text-mk-ink">
-                Sign in
-              </Link>
-            </>
-          )}
+          <Link href={BOOK_DEMO_HREF} onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className={buttonClasses({ variant: 'ink', size: 'lg', className: 'w-full' })}>
+            Book a demo
+          </Link>
         </div>
       </div>
     </>

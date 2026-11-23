@@ -3,16 +3,26 @@
  */
 export const SITE_URL = 'https://voco.live';
 export const SITE_NAME = 'Voco';
+/** Site-level line covering both products. */
+export const HEADLINE = 'AI that does the work.';
+/** Voco Voice's own line. */
 export const TAGLINE = 'Give your backend a voice.';
-export const SITE_TITLE = 'Voco: a voice agent that works in your systems';
+export const SITE_TITLE = 'Voco: AI that answers your calls and does the work in your systems';
 export const SITE_DESCRIPTION =
-  'Voco answers the call, understands the request, and does the work in the systems you already run: books the appointment, schedules the task, creates the record.';
+  'Voco builds two AI workers into the systems a business already runs. Voco Voice answers calls and books, schedules and records. Voco Agent handles reviews, inbox, search data and calendar from a chat message.';
 
 export const BOOK_DEMO_HREF = '/contact?type=sales';
 export const WATCH_DEMO_HREF = '/demo';
 
+/** The two products. Neither leads: they are listed side by side everywhere. */
+export const PRODUCTS = {
+  voice: { name: 'Voco Voice', href: '/voice', tone: 'signal' },
+  agent: { name: 'Voco Agent', href: '/agent', tone: 'spark' },
+};
+
 export const NAV_LINKS = [
-  { href: '/#how-it-works', label: 'Product' },
+  { href: '/voice', label: 'Voice' },
+  { href: '/agent', label: 'Agent' },
   { href: '/use-cases', label: 'Use cases' },
   { href: '/integrations', label: 'Integrations' },
   { href: '/demo', label: 'Demo' },

@@ -50,7 +50,13 @@
   --color-mk-muted: #55606B;
   --color-mk-faint: #8A929C;
   --color-mk-line: rgba(11, 15, 20, 0.1);
-  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Second product colour (Voco Agent). Signal green belongs to Voco Voice. */
+  --color-mk-spark: #FFB020;
+  --color-mk-spark-deep: #8F5B00;
+  --color-mk-spark-wash: #FFF4DC;
+  --color-mk-signal-wash: #E3F6EE;
+  --font-display: var(--font-mk-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-mk-accent), Georgia, 'Times New Roman', serif;
   --font-code: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-landing-surface: var(--color-landing-surface);
   --color-landing-dark: var(--color-landing-dark);
@@ -362,7 +368,21 @@
   0%   { transform: scaleY(0.3); }
   100% { transform: scaleY(1); }
 }
+@keyframes mk-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40%           { opacity: 1; transform: translateY(-2px); }
+}
+/* Dot grid behind the dark heroes. */
+.mk-grid-ink {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.mk-grid-paper {
+  background-image: radial-gradient(rgba(11, 15, 20, 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
 @media (prefers-reduced-motion: no-preference) {
+  .mk-dot { animation: mk-dot 1100ms ease-in-out infinite; }
   .mk-rise { animation: mk-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
   .mk-bar  { transform-origin: center; animation: mk-bar 900ms ease-in-out infinite alternate; }
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
 import { Icon } from '@/components/marketing/icons';
 import { PageHero, Section } from '@/components/marketing/primitives';
@@ -24,7 +24,7 @@ export default function UseCasesPage() {
         title="Whatever callers ring you to get done."
         lede="Each of these is a conversation that ends with a change in one of your systems. Start with one; add the rest as you see what callers ask for."
       >
-        <AuthAwareCTA />
+        <DemoCTA />
       </PageHero>
 
       <Section tone="white">

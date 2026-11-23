@@ -9,10 +9,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 // metadataBase makes relative OG/Twitter image URLs resolve to absolute URLs
 // on link previews (2026-06-12 audit M24). Defaults to prod; override via env.
-const TITLE = 'Voco: a voice agent that works in your systems';
+const TITLE = 'Voco: AI that answers your calls and does the work in your systems';
 const DESCRIPTION =
-  'Voco answers the call, understands the request, and does the work in the systems you already run: books the appointment, schedules the task, creates the record.';
-const OG_IMAGE = '/og?title=Give%20your%20backend%20a%20voice.&type=VOCO';
+  'Voco builds two AI workers into the systems a business already runs. Voco Voice answers calls and books, schedules and records. Voco Agent handles reviews, inbox, search data and calendar from a chat message.';
+const OG_IMAGE = '/og?title=AI%20that%20does%20the%20work.&type=VOCO';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://voco.live'),

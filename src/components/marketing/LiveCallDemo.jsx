@@ -71,12 +71,12 @@ export function LiveCallDemo() {
 
   return (
     <div
-      className="grid overflow-hidden rounded-2xl border border-mk-line bg-white text-left md:grid-cols-[1.15fr_1fr]"
+      className="grid h-full overflow-hidden rounded-2xl border border-mk-line bg-white text-left text-mk-ink md:grid-cols-[1.15fr_1fr]"
       role="img"
       aria-label="Illustration: a caller books a product demo by voice while the appointment is created and written to Google Calendar."
     >
       {/* Call */}
-      <div className="flex min-h-[380px] flex-col border-b border-mk-line md:border-b-0 md:border-r" aria-hidden="true">
+      <div className="flex min-h-[380px] flex-col border-b md:min-h-[484px] border-mk-line md:border-b-0 md:border-r" aria-hidden="true">
         <div className="flex h-11 items-center justify-between border-b border-mk-line px-4">
           <span className="flex items-center gap-2 font-code text-[10px] uppercase tracking-[0.16em] text-mk-muted">
             <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-mk-signal' : 'bg-mk-ink/25'}`} />

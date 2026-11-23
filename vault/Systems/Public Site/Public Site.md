@@ -3,16 +3,16 @@ type: system-index
 system: Public Site
 status: current
 repo: homeservice_agent
-description: "The public marketing site after the 2026-11 rebrand: routes, where copy and data live, the design system, calls to action, the demo video slot, SEO, and the rules the copy must keep. Start here for any change to a public page."
+description: "The public marketing site after the 2026-11 rebrand: two products sold as equals (Voco Voice and Voco Agent), routes, where copy and data live, the design system, calls to action, the demo video slot, SEO, and the rules the copy must keep. Start here for any change to a public page."
 verified: 2026-11-24
 tags: [voco/system/public-site]
 ---
 
 # Public Site
 
-Up: [[Home]] · [[Systems]] · Positioning: [[Positioning]] · Build record: [[2026-11-24 Public site rebrand]]
+Up: [[Home]] · [[Systems]] · Positioning: [[Positioning]] · Build records: [[2026-11-24 Public site rebrand]], [[2026-11-24 Public site second pass - two products and identity]]
 
-Rebuilt on 2026-11-24 for the positioning "voice integration for any backend". Tagline: "Give your backend a voice." The dashboard, onboarding, billing and emails were not touched.
+Rebuilt on 2026-11-24 for the positioning "voice integration for any backend", then widened the same day to two products sold as equals: **Voco Voice** (the voice agent; line "Give your backend a voice.") and **Voco Agent** (an AI agent the owner messages, connected to reviews, inbox, calendar, search data and support). Site headline: "AI that does the work." The dashboard, onboarding, billing and emails were not touched.
 
 ## Routes
 
@@ -20,7 +20,9 @@ Everything public is under the `src/app/(public)/` route group, whose `layout.js
 
 | Route | File | What it is |
 |---|---|---|
-| `/` | `page.js` | Hero + seven sections (see [[Public Site - Landing page and components]]) |
+| `/` | `page.js` | Hero with both products + six sections (see [[Public Site - Landing page and components]]) |
+| `/voice` | `voice/page.js` | Voco Voice: the call illustration, how a call works, use cases, control |
+| `/agent` | `agent/page.js` | Voco Agent: the chat illustration, jobs, channels, control, setup. Data in `src/data/agent.js` |
 | `/demo` | `demo/page.js` | The recorded demo (placeholder until the video exists) and what it shows |
 | `/use-cases`, `/use-cases/[slug]` | `use-cases/` | Five task-based use cases, generated from `src/data/use-cases.js` |
 | `/integrations`, `/integrations/[tool]` | `integrations/` | 22 systems in six groups, generated from `src/data/integrations.js` |
@@ -46,9 +48,9 @@ Retired with permanent redirects in `next.config.js`: `/blog`, `/glossary`, `/co
 
 ## Calls to action
 
-Two, everywhere: **Book a demo** (`/contact?type=sales`) and **Watch the demo** (`/demo`). Both come from `src/components/landing/AuthAwareCTA.js`; the hrefs are constants in `src/data/site.js`. A signed-in visitor sees "Go to dashboard" instead of "Book a demo". There is no self-serve signup link on any public page; "Sign in" stays in the nav and footer for existing accounts.
+Two, everywhere: **Book a demo** (`/contact?type=sales`) and **Watch the demo** (`/demo`). Both come from `src/components/landing/DemoCTA.js`; the hrefs are constants in `src/data/site.js`. Every visitor sees the same buttons. Since 2026-11-24 no public page carries a sign-in, dashboard or self-serve signup link (owner's instruction); existing accounts reach `/auth/signin` by URL.
 
-The seam this leaves: `/auth/signin` still offers sign-up, and the onboarding wizard it leads to still asks for a trade. That is deliberate (see [[Plan 2 - Frontend rebrand to voice integration for any backend]], "Deliberately not touched").
+The seam that remains: `/auth/signin` still offers sign-up, and the onboarding wizard it leads to still asks for a trade. That is deliberate (see [[Plan 2 - Frontend rebrand to voice integration for any backend]], "Deliberately not touched").
 
 ## Pricing data: do not move
 
@@ -62,7 +64,7 @@ The seam this leaves: `/auth/signin` still offers sign-up, and the onboarding wi
 
 ## Tests
 
-`tests/unit/public-site.test.js` (about 90 cases): data completeness and cross-links, sitemap equals the routes that exist, redirects, section order, the demo placeholder, pricing importers, chatbot rules, and a scan of every public source file for retired wording (trades, "receptionist", prices, "free trial", invented social proof, the old orange).
+`tests/unit/public-site.test.js` (about 105 cases): data completeness and cross-links for use cases, integrations and the agent data, sitemap equals the routes that exist, redirects, section order on the home and product pages, the demo placeholder, pricing importers, chatbot rules, no sign-in or dashboard link on a public page, and a scan of every public source file for retired wording (trades, "receptionist", prices, "free trial", invented social proof, the old orange).
 
 ## Things to know
 

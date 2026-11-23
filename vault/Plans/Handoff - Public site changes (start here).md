@@ -13,6 +13,8 @@ For a fresh session that will keep changing the public site. Read this note full
 
 ## 1. State on 2026-11-24
 
+**Update, later the same day:** the owner reviewed the site and a second pass is under way. Read [[2026-11-24 Public site second pass - two products and identity]] first: it records the removal of sign-in links, the second product (Voco Agent), the new fonts and colours, and what stage two still has to do. The tables below predate it where they disagree.
+
 | Thing | State |
 |---|---|
 | Task 1, vault | Done, pushed |
@@ -36,11 +38,12 @@ Full map: [[Public Site]]. The short version:
 | Colours, fonts | Tokens in the `@theme inline` block of `src/app/globals.css` (`mk-*`, `font-display`, `font-code`); fonts loaded in `src/app/(public)/layout.js`. [[Public Site - Design system (2026-11)]] |
 | Section, heading, button, card styles | `src/components/marketing/primitives.jsx` |
 | Landing page order and hero text | `src/app/(public)/page.js` |
-| Landing sections 2 to 8 | `src/components/marketing/LandingSections.jsx` |
+| Home and product-page sections | `src/components/marketing/LandingSections.jsx` |
+| Voco Voice and Voco Agent pages | `src/app/(public)/voice/page.js`, `src/app/(public)/agent/page.js`, `src/data/agent.js`, `src/components/marketing/AgentChatDemo.jsx` |
 | Hero animation (script and layout) | `src/components/marketing/LiveCallDemo.jsx` |
 | Demo video or its placeholder | `src/components/marketing/DemoVideo.jsx`; switch on with `DEMO_VIDEO.src` in `src/data/site.js` |
 | Nav links, CTA targets, tagline, metadata helper | `src/data/site.js` |
-| Nav, footer, CTA buttons | `src/app/components/landing/LandingNav.jsx`, `LandingFooter.jsx`, `src/components/landing/AuthAwareCTA.js` |
+| Nav, footer, CTA buttons | `src/app/components/landing/LandingNav.jsx`, `LandingFooter.jsx`, `src/components/landing/DemoCTA.js` |
 | Use cases (cards and pages) | `src/data/use-cases.js`, `src/app/(public)/use-cases/` |
 | Integrations (list and pages) | `src/data/integrations.js`, `src/app/(public)/integrations/` |
 | FAQ | `src/data/faq.js` |
@@ -54,8 +57,8 @@ Component and section detail: [[Public Site - Landing page and components]].
 ## 4. Rules to keep
 
 Design ([[Public Site - Design system (2026-11)]]):
-- Light first: paper `#F7F8F5` and white, ink `#0B0F14` for one or two dark sections and the footer, one accent, hairline borders, no shadows or gradients.
-- White text on the signal green fails contrast. Primary button is ink text on `mk-signal`; signal-coloured text on light surfaces uses `mk-signal-deep`.
+- One colour per product (green for Voco Voice, amber for Voco Agent), each page with its own hero, headlines mixing the grotesque with italic serif emphasis, hairline borders, no drop shadows.
+- White text on the green or the amber fails contrast. Buttons are ink text on the colour; coloured text on light surfaces uses the `-deep` variant.
 - Build from the primitives; do not hand-write section markup or hardcode hex values in pages.
 
 Copy ([[Public Site - Content data and copy rules]]):
@@ -86,7 +89,7 @@ Look at the result in Chrome with the browser tools (the local session is alread
 
 ## 6. Traps already hit
 
-- **Shell heredocs with apostrophes fail** in this environment's Bash tool (`unexpected EOF while looking for matching '`). Write files with the Write tool and make edits with the Edit tool; if a script is needed, write it to a file under `$TEMP` first and run that.
+- **Shell heredocs fail unpredictably** (apostrophes and escapes in the body) in this environment's Bash tool (`unexpected EOF while looking for matching '`). Write files with the Write tool and make edits with the Edit tool; if a script is needed, write it to a file under `$TEMP` first and run that.
 - **Stale stylesheet in dev.** After editing tokens in `globals.css` with the dev server running, the served CSS can stay old. Touch the file again (or restart `next dev`) and reload.
 - **First load of each route takes 30 to 60 s** in dev on this machine. A Chrome tab navigated too early shows "New Tab" and the browser tools report a browser-internal URL. Request the route with `curl` first, then navigate.
 - **Dark mode.** The app's theme provider follows the system. `src/app/(public)/layout.js` sets the light background and text colour on its wrapper; keep that or dark-mode visitors get dark surfaces under light styles.

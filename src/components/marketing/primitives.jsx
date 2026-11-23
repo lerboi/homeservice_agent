@@ -36,13 +36,31 @@ export function Section({ tone = 'paper', id, className, containerClassName, siz
   );
 }
 
+/**
+ * The emphasised words inside a headline: italic serif against the grotesque.
+ * `tone` colours it for a product (signal = Voice, spark = Agent).
+ */
+export function Em({ children, tone, className }) {
+  const colour = tone === 'signal' ? 'text-mk-signal' : tone === 'spark' ? 'text-mk-spark' : tone === 'signal-deep' ? 'text-mk-signal-deep' : tone === 'spark-deep' ? 'text-mk-spark-deep' : undefined;
+  return (
+    <em className={cx('font-accent font-normal italic tracking-[-0.01em]', colour, className)}>
+      {children}
+    </em>
+  );
+}
+
+const EYEBROW_TONES = {
+  signal: { ink: 'text-mk-signal', light: 'text-mk-signal-deep' },
+  spark: { ink: 'text-mk-spark', light: 'text-mk-spark-deep' },
+};
+
 /** Small mono label above a heading. */
-export function Eyebrow({ children, onInk = false, className }) {
+export function Eyebrow({ children, onInk = false, tone = 'signal', className }) {
   return (
     <p
       className={cx(
         'font-code text-[11px] uppercase tracking-[0.16em]',
-        onInk ? 'text-mk-signal' : 'text-mk-signal-deep',
+        EYEBROW_TONES[tone][onInk ? 'ink' : 'light'],
         className,
       )}
     >
@@ -55,7 +73,7 @@ export function PageTitle({ children, className }) {
   return (
     <h1
       className={cx(
-        'font-display text-[2.5rem] font-medium leading-[1.05] tracking-[-0.03em] sm:text-6xl lg:text-[4.25rem]',
+        'font-display text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-[4.25rem]',
         className,
       )}
     >
@@ -81,10 +99,10 @@ export function Lede({ children, onInk = false, className }) {
 }
 
 /** Eyebrow + title + optional lede, the standard section opener. */
-export function SectionHeader({ eyebrow, title, lede, onInk = false, align = 'left', className }) {
+export function SectionHeader({ eyebrow, title, lede, onInk = false, tone, align = 'left', className }) {
   return (
     <div className={cx('max-w-2xl', align === 'center' && 'mx-auto text-center', className)}>
-      {eyebrow && <Eyebrow onInk={onInk}>{eyebrow}</Eyebrow>}
+      {eyebrow && <Eyebrow onInk={onInk} tone={tone}>{eyebrow}</Eyebrow>}
       <SectionTitle className={eyebrow ? 'mt-4' : undefined}>{title}</SectionTitle>
       {lede && <Lede onInk={onInk} className="mt-5">{lede}</Lede>}
     </div>
@@ -115,6 +133,8 @@ const BUTTON_SIZES = {
 const BUTTON_VARIANTS = {
   // Ink text on the signal colour: about 7:1 contrast. White text on it fails.
   primary: 'bg-mk-signal text-mk-ink hover:bg-[#00C48A]',
+  // Voco Agent's colour. Ink text on amber, same contrast reasoning.
+  spark: 'bg-mk-spark text-mk-ink hover:bg-[#FFBD45]',
   secondary: 'border border-mk-ink/20 bg-transparent text-mk-ink hover:border-mk-ink/50',
   secondaryOnInk: 'border border-white/25 bg-transparent text-white hover:border-white/60',
   ink: 'bg-mk-ink text-white hover:bg-mk-ink-soft',

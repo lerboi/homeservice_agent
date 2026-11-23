@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Check } from 'lucide-react';
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { SchemaMarkup } from '@/components/SchemaMarkup';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
 import { Card, Container, Eyebrow, Lede, PageTitle, Section, SectionHeader } from '@/components/marketing/primitives';
@@ -64,7 +64,7 @@ export default async function IntegrationPage({ params }) {
               <Eyebrow>{group?.title}</Eyebrow>
               <PageTitle className="mt-5 lg:text-6xl">Voco + {item.name}</PageTitle>
               <Lede className="mt-6">{item.summary}</Lede>
-              <AuthAwareCTA className="mt-9" />
+              <DemoCTA className="mt-9" />
             </div>
             <Card className="p-6 sm:p-7">
               <h2 className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">

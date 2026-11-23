@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
 import { PageHero, Section } from '@/components/marketing/primitives';
 import { integrationsByGroup } from '@/data/integrations';
@@ -23,7 +23,7 @@ export default function IntegrationsPage() {
         title="It works in the tools you already run."
         lede="Voco connects to your systems for you. Tell us what you use; we set the connection up, decide with you what the agent may do there, and test it before the first real call."
       >
-        <AuthAwareCTA />
+        <DemoCTA />
       </PageHero>
 
       <Section tone="white">

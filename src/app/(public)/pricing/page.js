@@ -1,4 +1,4 @@
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { Card, PageHero, Section, SectionHeader, TextLink } from '@/components/marketing/primitives';
 import { pageMetadata } from '@/data/site';
 
@@ -46,7 +46,7 @@ export default function PricingPage() {
         title="Priced to your calls and your systems."
         lede="There is no table to pick from, because no two setups are the same. Tell us how many calls you take and what you want the agent to do; we will give you a number."
       >
-        <AuthAwareCTA />
+        <DemoCTA />
       </PageHero>
 
       <Section tone="white">
@@ -77,8 +77,8 @@ export default function PricingPage() {
               ))}
             </ul>
             <p className="mt-7 border-t border-mk-line pt-5 text-sm leading-relaxed text-mk-muted">
-              Already a customer? Your plan and usage are in your dashboard under Billing.{' '}
-              <TextLink href="/auth/signin">Sign in</TextLink>
+              Already a customer with a billing question?{' '}
+              <TextLink href="/contact?type=support">Contact support</TextLink>
             </p>
           </Card>
         </div>

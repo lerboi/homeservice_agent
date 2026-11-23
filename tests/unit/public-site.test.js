@@ -19,7 +19,12 @@ import { FAQ_ITEMS, FAQ_CHAT_SUGGESTIONS } from '../../src/data/faq.js';
 import {
   INTEGRATIONS, INTEGRATION_GROUPS, getIntegration, integrationsByGroup,
 } from '../../src/data/integrations.js';
-import { BOOK_DEMO_HREF, NAV_LINKS, SITE_URL, TAGLINE, pageMetadata } from '../../src/data/site.js';
+import {
+  AGENT_CHANNELS, AGENT_CONTROLS, AGENT_CONVERSATIONS, AGENT_JOBS, AGENT_RELIEFS, AGENT_STEPS, AGENT_WEEK,
+} from '../../src/data/agent.js';
+import {
+  BOOK_DEMO_HREF, HEADLINE, NAV_LINKS, PRODUCTS, SITE_URL, TAGLINE, pageMetadata,
+} from '../../src/data/site.js';
 import { EXTRA_CAPABILITIES, USE_CASES, getUseCase } from '../../src/data/use-cases.js';
 import { getPublicKnowledge } from '../../src/lib/public-chatbot-knowledge/index.js';
 
@@ -42,6 +47,7 @@ const PUBLIC_SOURCES = [
   'src/data/faq.js',
   'src/data/use-cases.js',
   'src/data/integrations.js',
+  'src/data/agent.js',
 ].filter((f) => /\.(js|jsx)$/.test(f) && !f.replace(/\\/g, '/').endsWith('pricing/pricingData.js'));
 
 // Legal documents keep their own wording until the owner reviews them.
@@ -80,7 +86,7 @@ describe('use cases data', () => {
 
   it('uses only icons the icon map provides', () => {
     const icons = read('src/components/marketing/icons.js');
-    for (const item of [...USE_CASES, ...EXTRA_CAPABILITIES]) {
+    for (const item of [...USE_CASES, ...EXTRA_CAPABILITIES, ...AGENT_JOBS]) {
       expect(icons).toContain(item.icon);
     }
   });
@@ -132,12 +138,19 @@ describe('integrations data', () => {
 
 describe('site constants', () => {
   it('carries the positioning', () => {
+    expect(HEADLINE).toBe('AI that does the work.');
     expect(TAGLINE).toBe('Give your backend a voice.');
     expect(BOOK_DEMO_HREF).toBe('/contact?type=sales');
   });
 
-  it('nav links to Product, Use cases, Integrations, Demo, Pricing', () => {
-    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Product', 'Use cases', 'Integrations', 'Demo', 'Pricing']);
+  it('lists the two products side by side, each with its own page and colour', () => {
+    expect(PRODUCTS.voice).toMatchObject({ name: 'Voco Voice', href: '/voice', tone: 'signal' });
+    expect(PRODUCTS.agent).toMatchObject({ name: 'Voco Agent', href: '/agent', tone: 'spark' });
+  });
+
+  it('nav links to Voice, Agent, Use cases, Integrations, Demo, Pricing', () => {
+    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Voice', 'Agent', 'Use cases', 'Integrations', 'Demo', 'Pricing']);
+    expect(NAV_LINKS.every((l) => !l.href.includes('#'))).toBe(true);
   });
 
   it('builds page metadata with a canonical path and an OG image', () => {
@@ -145,6 +158,35 @@ describe('site constants', () => {
     expect(meta.alternates.canonical).toBe('/x');
     expect(meta.openGraph.images[0].url).toBe('/og?title=Hello%20there&type=X');
     expect(meta.twitter.card).toBe('summary_large_image');
+  });
+});
+
+describe('Voco Agent data', () => {
+  const channelIds = AGENT_CHANNELS.map((c) => c.id);
+
+  it('is reached on WhatsApp, Telegram, Slack and email', () => {
+    expect([...channelIds].sort()).toEqual(['email', 'slack', 'telegram', 'whatsapp']);
+  });
+
+  it('has one complete scripted conversation per channel', () => {
+    expect(AGENT_CONVERSATIONS.map((c) => c.channel).sort()).toEqual([...channelIds].sort());
+    for (const c of AGENT_CONVERSATIONS) {
+      for (const field of ['ask', 'answer', 'instruction']) expect(c[field].length).toBeGreaterThan(5);
+      expect(c.sources.length).toBeGreaterThanOrEqual(2);
+      expect(c.done.length).toBeGreaterThanOrEqual(1);
+      expect(Array.isArray(c.points)).toBe(true);
+    }
+  });
+
+  it('describes jobs, reliefs, controls, steps and an example week', () => {
+    expect(AGENT_JOBS.length).toBeGreaterThanOrEqual(6);
+    for (const job of AGENT_JOBS) {
+      for (const field of ['id', 'icon', 'title', 'body', 'say']) expect(job[field].length).toBeGreaterThan(1);
+    }
+    expect(AGENT_RELIEFS.every((r) => r.pain && r.relief)).toBe(true);
+    expect(AGENT_CONTROLS).toHaveLength(3);
+    expect(AGENT_STEPS).toHaveLength(3);
+    expect(AGENT_WEEK.every((e) => ['act', 'report'].includes(e.kind))).toBe(true);
   });
 });
 
@@ -169,7 +211,7 @@ describe('sitemap', () => {
   });
 
   it('lists every static page', () => {
-    for (const path of ['/demo', '/use-cases', '/integrations', '/pricing', '/about', '/contact', '/privacy', '/terms']) {
+    for (const path of ['/voice', '/agent', '/demo', '/use-cases', '/integrations', '/pricing', '/about', '/contact', '/privacy', '/terms']) {
       expect(urls).toContain(`${SITE_URL}${path}`);
     }
   });
@@ -177,7 +219,7 @@ describe('sitemap', () => {
   it('lists every use case and integration page', () => {
     for (const u of USE_CASES) expect(urls).toContain(`${SITE_URL}/use-cases/${u.slug}`);
     for (const i of INTEGRATIONS) expect(urls).toContain(`${SITE_URL}/integrations/${i.slug}`);
-    expect(entries).toHaveLength(9 + USE_CASES.length + INTEGRATIONS.length);
+    expect(entries).toHaveLength(11 + USE_CASES.length + INTEGRATIONS.length);
   });
 
   it('lists no retired route', () => {
@@ -198,7 +240,7 @@ describe('sitemap', () => {
 
 describe('routes', () => {
   it.each([
-    'page.js', 'demo/page.js', 'pricing/page.js', 'about/page.js', 'contact/page.js',
+    'page.js', 'voice/page.js', 'agent/page.js', 'demo/page.js', 'pricing/page.js', 'about/page.js', 'contact/page.js',
     'use-cases/page.js', 'use-cases/[slug]/page.js', 'integrations/page.js', 'integrations/[tool]/page.js',
     'privacy/page.js', 'terms/page.js',
   ])('%s exists', (file) => {
@@ -229,24 +271,44 @@ describe('routes', () => {
 
 describe('landing page', () => {
   const page = read('src/app/(public)/page.js');
+  const voice = read('src/app/(public)/voice/page.js');
+  const agent = read('src/app/(public)/agent/page.js');
   const sections = read('src/components/marketing/LandingSections.jsx');
 
-  it('renders the eight sections in order', () => {
+  it('renders its sections in order, with both products in the hero', () => {
     const order = [
-      '<LiveCallDemo />', '<DemoSection />', '<HowItWorksSection />', '<UseCasesSection />',
-      '<BackendsSection />', '<ControlSection />', '<FaqSection />', '<FinalCtaSection />',
+      '<LiveCallDemo />', '<AgentChatDemo />', '<ProductsSection />', '<DemoSection />',
+      '<BackendsSection />', '<SetupSection />', '<FaqSection />', '<FinalCtaSection />',
     ].map((tag) => page.indexOf(tag));
     expect(order.every((i) => i > -1)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it('leads with the tagline and both calls to action', () => {
-    expect(page).toContain('{TAGLINE}');
-    expect(page).toContain('<AuthAwareCTA');
-    const cta = read('src/components/landing/AuthAwareCTA.js');
+  it('gives neither product the hero to itself', () => {
+    expect(page).toContain('product={PRODUCTS.voice}');
+    expect(page).toContain('product={PRODUCTS.agent}');
+  });
+
+  it('carries both calls to action, the same for every visitor', () => {
+    expect(page).toContain('<DemoCTA');
+    const cta = read('src/components/landing/DemoCTA.js');
     expect(cta).toContain('Book a demo');
     expect(cta).toContain('Watch the demo');
     expect(cta).toContain('BOOK_DEMO_HREF');
+    expect(cta).not.toMatch(/supabase|useEffect/i);
+  });
+
+  it('the voice page keeps the tagline and the call sections', () => {
+    expect(voice).toContain('Give your backend');
+    for (const tag of ['<LiveCallDemo />', '<HowItWorksSection />', '<UseCasesSection />', '<ControlSection />']) {
+      expect(voice).toContain(tag);
+    }
+  });
+
+  it('the agent page shows the chat, the jobs, the channels and the controls', () => {
+    for (const token of ['<AgentChatDemo', 'AGENT_RELIEFS', 'AGENT_JOBS', 'AGENT_WEEK', 'AGENT_CHANNELS', 'AGENT_CONTROLS', 'AGENT_STEPS']) {
+      expect(agent).toContain(token);
+    }
   });
 
   it('publishes Organization, SoftwareApplication and FAQ structured data', () => {
@@ -256,7 +318,7 @@ describe('landing page', () => {
   });
 
   it('gives each section an anchor the nav and footer can link to', () => {
-    for (const id of ['demo', 'how-it-works', 'use-cases', 'backends', 'control', 'faq']) {
+    for (const id of ['products', 'demo', 'how-it-works', 'use-cases', 'backends', 'setup', 'control', 'faq']) {
       expect(sections).toContain(`id="${id}"`);
     }
   });
@@ -272,6 +334,9 @@ describe('landing page', () => {
     const hero = read('src/components/marketing/LiveCallDemo.jsx');
     expect(hero).toContain('prefers-reduced-motion: reduce');
     expect(hero).toContain('useState(SCRIPT.length)');
+    const chat = read('src/components/marketing/AgentChatDemo.jsx');
+    expect(chat).toContain('prefers-reduced-motion: reduce');
+    expect(chat).toContain('useState(STEPS)');
   });
 });
 
@@ -296,6 +361,14 @@ describe('public copy', () => {
     }
   });
 
+  it('no public page links to sign-in or the dashboard', () => {
+    for (const file of PUBLIC_SOURCES) {
+      const source = read(file);
+      expect(source).not.toMatch(/href=["'{`]+\/(auth|dashboard)/);
+      expect(source).not.toMatch(/Go to dashboard|>\s*Sign in\s*</);
+    }
+  });
+
   it('no public page links to self-serve signup', () => {
     for (const file of PUBLIC_SOURCES) {
       const source = read(file);
@@ -312,7 +385,7 @@ describe('public copy', () => {
 
   it('root metadata describes the new product', () => {
     const layout = read('src/app/layout.js');
-    expect(layout).toContain('a voice agent that works in your systems');
+    expect(layout).toContain('AI that answers your calls and does the work in your systems');
     expect(layout).not.toMatch(/Receptionist|Home Service/);
   });
 });
@@ -320,7 +393,7 @@ describe('public copy', () => {
 describe('pricing', () => {
   it('the public page is talk-to-us and shows no plan table', () => {
     const page = read('src/app/(public)/pricing/page.js');
-    expect(page).toContain('<AuthAwareCTA');
+    expect(page).toContain('<DemoCTA');
     expect(page).not.toMatch(/PRICING_TIERS|PricingTiers|ROICalculator|ComparisonTable/);
   });
 
@@ -350,7 +423,7 @@ describe('public chatbot', () => {
     const dir = 'src/lib/public-chatbot-knowledge';
     const docs = readdirSync(dir).filter((f) => f.endsWith('.md'));
     expect(docs.sort()).toEqual(
-      ['contact.md', 'faq.md', 'features.md', 'how-it-works.md', 'integrations.md', 'overview.md', 'pricing.md'],
+      ['agent.md', 'contact.md', 'faq.md', 'features.md', 'how-it-works.md', 'integrations.md', 'overview.md', 'pricing.md'],
     );
     for (const doc of docs) {
       const text = read(join(dir, doc));
@@ -363,13 +436,22 @@ describe('public chatbot', () => {
     expect(await getPublicKnowledge('hello', '/pricing')).toContain('# Voco pricing');
     expect(await getPublicKnowledge('hello', '/integrations/hubspot')).toContain('# Systems Voco works in');
     expect(await getPublicKnowledge('hello', '/use-cases/lead-intake')).toContain('# What Voco does');
-    expect(await getPublicKnowledge('hello', '/somewhere-else')).toContain('a voice agent that works in your systems');
+    expect(await getPublicKnowledge('hello', '/somewhere-else')).toContain('AI that does the work in your systems');
+    expect(await getPublicKnowledge('hello', '/agent')).toContain('# Voco Agent');
+    expect(await getPublicKnowledge('hello', '/voice')).toContain('# What Voco does');
   });
 
   it('adds one keyword-matched doc', async () => {
     const text = await getPublicKnowledge('does it work with hubspot?', '/');
-    expect(text).toContain('a voice agent that works in your systems');
+    expect(text).toContain('AI that does the work in your systems');
     expect(text).toContain('# Systems Voco works in');
     expect(text.split('\n\n---\n\n')).toHaveLength(2);
+    expect(await getPublicKnowledge('can it reply to my reviews?', '/')).toContain('# Voco Agent');
+  });
+
+  it('is told about both products and not to name what the agent is built on', () => {
+    expect(route).toContain('Voco Voice');
+    expect(route).toContain('Voco Agent');
+    expect(route).toContain('Name the underlying technology');
   });
 });

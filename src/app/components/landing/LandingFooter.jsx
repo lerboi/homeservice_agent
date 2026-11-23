@@ -3,30 +3,30 @@
 // prerendered Server Component may not do under cacheComponents.
 import Link from 'next/link';
 import Image from 'next/image';
-import { TAGLINE } from '@/data/site';
+import { HEADLINE } from '@/data/site';
 
 const COLUMNS = [
   {
-    title: 'Product',
+    title: 'Products',
     links: [
-      { href: '/#how-it-works', label: 'How it works' },
+      { href: '/voice', label: 'Voco Voice' },
+      { href: '/agent', label: 'Voco Agent' },
+      { href: '/demo', label: 'Watch the demo' },
+    ],
+  },
+  {
+    title: 'Explore',
+    links: [
       { href: '/use-cases', label: 'Use cases' },
       { href: '/integrations', label: 'Integrations' },
-      { href: '/demo', label: 'Watch the demo' },
+      { href: '/pricing', label: 'Pricing' },
     ],
   },
   {
     title: 'Company',
     links: [
       { href: '/about', label: 'About' },
-      { href: '/pricing', label: 'Pricing' },
       { href: '/contact', label: 'Contact' },
-    ],
-  },
-  {
-    title: 'Account',
-    links: [
-      { href: '/auth/signin', label: 'Sign in' },
       { href: '/contact?type=support', label: 'Support' },
     ],
   },
@@ -53,7 +53,7 @@ export function LandingFooter() {
               className="-ml-3 h-12 w-auto"
             />
             <p className="mt-3 max-w-xs font-display text-xl leading-snug tracking-[-0.01em] text-white/90">
-              {TAGLINE}
+              {HEADLINE}
             </p>
           </div>
 

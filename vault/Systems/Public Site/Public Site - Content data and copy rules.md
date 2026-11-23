@@ -15,7 +15,8 @@ Part of [[Public Site]]. No public page uses next-intl; copy is in JSX and in th
 
 | File | Drives | Shape |
 |---|---|---|
-| `site.js` | Nav, CTAs, metadata, the demo video slot | `NAV_LINKS`, `BOOK_DEMO_HREF`, `WATCH_DEMO_HREF`, `TAGLINE`, `DEMO_VIDEO`, `pageMetadata()` |
+| `site.js` | Nav, CTAs, metadata, the two products, the demo video slot | `NAV_LINKS`, `PRODUCTS`, `BOOK_DEMO_HREF`, `WATCH_DEMO_HREF`, `HEADLINE` (site), `TAGLINE` (Voco Voice), `DEMO_VIDEO`, `pageMetadata()` |
+| `agent.js` | `/agent`, the agent chat illustration | `AGENT_CHANNELS`, `AGENT_CONVERSATIONS` (one per channel), `AGENT_RELIEFS`, `AGENT_JOBS`, `AGENT_WEEK`, `AGENT_CONTROLS`, `AGENT_STEPS` |
 | `use-cases.js` | `/use-cases`, `/use-cases/[slug]`, landing grid, sitemap | `USE_CASES[]`: `slug`, `icon`, `title`, `short`, `headline`, `summary`, `call[]`, `log[]`, `steps[4]`, `integrations[]`; `EXTRA_CAPABILITIES[]` |
 | `integrations.js` | `/integrations`, `/integrations/[tool]`, landing backends, sitemap | `INTEGRATION_GROUPS[]`; `INTEGRATIONS[]`: `slug`, `name`, `group`, `summary`, `actions[]` |
 | `faq.js` | Landing FAQ, FAQ structured data, chat suggestions | `FAQ_ITEMS[]`: `q`, `a`, optional `link` |
@@ -29,9 +30,12 @@ Part of [[Public Site]]. No public page uses next-intl; copy is in JSX and in th
 3. No trades and no "receptionist". The buyer is any business whose callers need something done.
 4. No prices, plan names, call allowances or trial lengths on public pages or in the chatbot.
 5. No customer counts, testimonials or statistics that were not measured on the system.
-6. No link to self-serve signup.
+6. No link to self-serve signup, sign-in or the dashboard.
+7. The two products are equals: "Voco Voice" and "Voco Agent". Do not call either the main product, and list them side by side.
+8. Do not name the framework or vendors Voco Agent is built on (owner's decision, 2026-11-24).
+9. Voco Agent copy is for an owner who is not technical: jobs and outcomes ("replies to your reviews"), not connectors or APIs. Its scripted examples are labelled as illustrations.
 
-Rules 2 to 6 are enforced by the wording scan in `tests/unit/public-site.test.js`.
+Rules 2 to 6 are enforced by the wording and link scans in `tests/unit/public-site.test.js`.
 
 ## What is claimed against what is built
 
@@ -44,6 +48,7 @@ The owner decided (2026-11-23) to present a broad set of integrations as availab
 | Jobber, Xero | Built, behind a feature flag that is off |
 | Stripe | Used for Voco's own billing. No caller-facing payment lookup exists |
 | Calendly, Cal.com, HubSpot, Salesforce, Pipedrive, Zoho, ServiceTitan, Housecall Pro, WhatsApp, Slack, QuickBooks, Zapier, Make, webhooks, "your own API" | Not built. Each would be built during a customer's setup |
+| **Voco Agent** (all of `/agent`): answering from and acting in reviews, inbox, calendar, search data and support, over WhatsApp, Telegram, Slack and email | Not built. Added to the site on 2026-11-24 at the owner's instruction; it would be set up per customer |
 | Use cases: appointment booking | Built (the scheduling profile) |
 | Use cases: lead intake, callbacks, order lookup, after-hours rescheduling | Partly present in the older home-service profile (lead capture into Voco's own CRM, caller lookup). Not available in the deployed scheduling profile; writing to an external CRM is not built |
 

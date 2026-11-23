@@ -2,14 +2,21 @@
 type: system
 system: Public Site
 status: current
-description: "The marketing site's palette, type and primitives: token names, where they are defined, the components every page is built from, and the contrast rule for the signal colour."
+description: "The marketing site's palette, type and primitives: token names, where they are defined, one colour per product (green for Voco Voice, amber for Voco Agent), the components every page is built from, and the contrast rules."
 verified: 2026-11-24
 tags: [voco/system/public-site]
 ---
 
 # Public Site - Design system (2026-11)
 
-Part of [[Public Site]]. Decided in [[Plan 2 - Frontend rebrand to voice integration for any backend]] section 6: light first, one accent, hairline borders instead of shadows and gradients.
+Part of [[Public Site]]. First decided in [[Plan 2 - Frontend rebrand to voice integration for any backend]] section 6, then changed on 2026-11-24 after the owner found the first pass "boring" and without identity: [[2026-11-24 Public site second pass - two products and identity]].
+
+## Principles
+
+- **One colour per product.** Signal green is Voco Voice; spark amber is Voco Agent. A page or section about one product uses that product's colour for its eyebrow, checks, wash and primary button.
+- **Each page opens differently.** Home is an ink hero with both products; `/voice` is a green wash with the call illustration beside the headline; `/agent` is an amber wash with a centred headline and the chat in the middle. Do not reuse one hero block for every page.
+- **Headlines mix two faces.** The grotesque carries the line; the words that matter are set in the italic serif with `<Em>`.
+- Hairline borders, no drop shadows. The dark heroes carry a dot grid and two soft colour glows; that is the only gradient use.
 
 ## Tokens
 
@@ -19,46 +26,53 @@ Defined in the `@theme inline` block of `src/app/globals.css`, so they are ordin
 |---|---|---|
 | `mk-paper` | `#F7F8F5` | Default page surface |
 | white | `#FFFFFF` | Alternating sections, cards |
-| `mk-ink` | `#0B0F14` | Text; the dark sections and footer |
+| `mk-ink` | `#0B0F14` | Text; dark sections and footer |
 | `mk-ink-soft` | `#151B23` | Hover on ink buttons |
-| `mk-signal` | `#00B37E` | Live states, primary button fill, accents on ink |
-| `mk-signal-deep` | `#007A57` | Links, eyebrows and icons on light surfaces |
+| `mk-signal` | `#00B37E` | Voco Voice: live states, primary button fill, accents on ink |
+| `mk-signal-deep` | `#007A57` | Voice-coloured text and icons on light surfaces |
+| `mk-signal-wash` | `#E3F6EE` | Voice panels and the `/voice` hero |
+| `mk-spark` | `#FFB020` | Voco Agent: button fill, checks, accents on ink |
+| `mk-spark-deep` | `#8F5B00` | Agent-coloured text and icons on light surfaces |
+| `mk-spark-wash` | `#FFF4DC` | Agent panels and the `/agent` hero |
 | `mk-muted` | `#55606B` | Secondary text |
 | `mk-faint` | `#8A929C` | Tertiary labels |
 | `mk-line` | ink at 10% | Hairline borders |
 
-**Contrast rule.** White text on `mk-signal` fails (about 2.7:1). The primary button is ink text on signal (about 7:1). For signal-coloured text on a light surface use `mk-signal-deep`, never `mk-signal`. On ink, `mk-signal` is fine.
+**Contrast rule.** White text on `mk-signal` or `mk-spark` fails. Buttons are ink text on the colour. Coloured text on a light surface uses the `-deep` variant, never the base colour. On ink, the base colours are fine.
 
 ## Type
 
 | Class | Face | Use |
 |---|---|---|
-| `font-display` | Space Grotesk | Headlines, card titles, big numbers |
+| `font-display` | Bricolage Grotesque | Headlines, card titles, big numbers (semibold, tight tracking) |
+| `font-accent` | Instrument Serif italic | Emphasised words inside headlines, through `<Em>` |
 | (default) | Inter | Body |
-| `font-code` | JetBrains Mono | Eyebrows, transcript speaker labels, action logs |
+| `font-code` | JetBrains Mono | Eyebrows, transcript speaker labels, action logs, chips |
 
-Space Grotesk and JetBrains Mono are loaded with `next/font` in `src/app/(public)/layout.js`, not the root layout, so the app does not load them.
+The three marketing faces are loaded with `next/font` in `src/app/(public)/layout.js`, not the root layout, so the app does not load them.
 
 ## Primitives
 
-`src/components/marketing/primitives.jsx`. Build pages from these rather than writing section markup by hand.
+`src/components/marketing/primitives.jsx`.
 
 | Export | What it gives |
 |---|---|
 | `Section` | `tone="paper" | "white" | "ink"`, standard vertical padding, optional top hairline, an `id` for anchors |
 | `Container` | Width (`narrow`, default, `wide`) and side padding |
-| `PageHero` | Interior page opener: eyebrow, title, lede, slot for CTAs, room for the fixed nav |
-| `SectionHeader` | Eyebrow + title + lede |
-| `Eyebrow`, `PageTitle`, `SectionTitle`, `Lede` | Type styles; `onInk` variants |
-| `ButtonLink`, `buttonClasses` | `primary`, `secondary`, `secondaryOnInk`, `ink`; sizes `sm`, `md`, `lg` |
+| `PageHero` | The plain interior page opener (still used by pages not yet restyled) |
+| `SectionHeader` | Eyebrow + title + lede; takes `tone` |
+| `Eyebrow` | Mono label; `tone="signal" | "spark"`, `onInk` |
+| `Em` | Italic serif emphasis inside a headline; optional `tone` |
+| `PageTitle`, `SectionTitle`, `Lede` | Type styles |
+| `ButtonLink`, `buttonClasses` | `primary` (green), `spark` (amber), `secondary`, `secondaryOnInk`, `ink`; sizes `sm`, `md`, `lg` |
 | `Card`, `TextLink` | Bordered white card; signal-coloured link |
 
-Recurring patterns: numbered steps under a 1px ink rule; grids made with `gap-px` over a line-coloured background; pill links for integrations.
+Utility classes in `globals.css`: `mk-grid-ink` and `mk-grid-paper` (dot grids), `mk-rise`, `mk-bar`, `mk-dot` (motion).
 
 ## Motion
 
-Two keyframes at the end of `globals.css`: `mk-rise` (new transcript and log lines) and `mk-bar` (the speaking indicator). Both sit inside `prefers-reduced-motion: no-preference`. framer-motion is not used on public pages.
+Keyframes at the end of `globals.css`: `mk-rise` (new transcript, chat and log lines), `mk-bar` (the speaking indicator), `mk-dot` (the agent's "reading" dots). All sit inside `prefers-reduced-motion: no-preference`. framer-motion is not used on public pages.
 
 ## Logo
 
-The existing wordmark is black with no background, so it is used as is on paper (`VOCO Logo V1 (no bg).png`); the white version is used on the ink footer.
+The existing wordmark is black with no background, so it is used as is on paper (`VOCO Logo V1 (no bg).png`); the white version is used on the ink footer. The nav is a light bar on every page, including over the ink hero.

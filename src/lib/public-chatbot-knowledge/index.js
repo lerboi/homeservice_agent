@@ -20,6 +20,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 const ROUTE_DOC_MAP = {
   '/': 'overview.md',
+  '/voice': 'features.md',
+  '/agent': 'agent.md',
   '/demo': 'how-it-works.md',
   '/use-cases': 'features.md',
   '/integrations': 'integrations.md',
@@ -42,6 +44,7 @@ function routeDoc(route) {
  */
 const KEYWORD_DOC_MAP = [
   { keywords: ['price', 'pricing', 'cost', 'plan', 'tier', 'trial', 'cancel', 'discount', 'annual', 'monthly', 'how much', 'fee', 'quote'], doc: 'pricing.md' },
+  { keywords: ['voco agent', 'ai agent', 'review', 'feedback', 'seo', 'search data', 'inbox', 'telegram', 'weekly', 'report', 'summary'], doc: 'agent.md' },
   { keywords: ['integrat', 'connect', 'calendar', 'crm', 'hubspot', 'salesforce', 'pipedrive', 'zoho', 'jobber', 'servicetitan', 'housecall', 'slack', 'whatsapp', 'stripe', 'xero', 'quickbooks', 'zapier', 'make.com', 'webhook', 'api', 'calendly', 'cal.com', 'outlook', 'google'], doc: 'integrations.md' },
   { keywords: ['setup', 'set up', 'start', 'install', 'configure', 'onboard', 'get started', 'demo', 'how does it work', 'how it works', 'number', 'forward'], doc: 'how-it-works.md' },
   { keywords: ['feature', 'booking', 'book', 'appointment', 'lead', 'task', 'callback', 'order', 'lookup', 'sms', 'alert', 'language', 'recording', 'transcript', 'transfer', 'escalat', 'after hours', 'after-hours', 'voice', 'fast', 'latency'], doc: 'features.md' },

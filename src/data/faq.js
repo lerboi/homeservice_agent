@@ -4,6 +4,15 @@
  */
 export const FAQ_ITEMS = [
   {
+    q: 'What is the difference between Voco Voice and Voco Agent?',
+    a: 'Voco Voice talks to your callers: it answers the phone and does what they rang about. Voco Agent talks to you: you message it on WhatsApp, Telegram, Slack or email, and it handles reviews, the inbox, the calendar, search data and routine support. Both work inside the systems you already run, and you can take either or both.',
+    link: { href: '/agent', label: 'See Voco Agent' },
+  },
+  {
+    q: 'Does Voco Agent act on its own?',
+    a: 'Only as far as you allow. Some jobs it can simply do; others it prepares and waits for your OK. You choose which is which, job by job, and every answer and action is logged so you can check it.',
+  },
+  {
     q: 'What does Voco actually do on a call?',
     a: 'It answers, works out what the caller wants, and does that work in your systems while they are on the line: checks availability and books the appointment, creates the lead or the task, looks up the record. Then it confirms with the caller and leaves you a transcript and a recording.',
   },

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { DemoCTA } from '@/components/landing/DemoCTA';
 import { SchemaMarkup } from '@/components/SchemaMarkup';
 import { CallAndLog } from '@/components/marketing/CallAndLog';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
@@ -58,7 +58,7 @@ export default async function UseCasePage({ params }) {
               <Eyebrow>{useCase.title}</Eyebrow>
               <PageTitle className="mt-5 lg:text-6xl">{useCase.headline}</PageTitle>
               <Lede className="mt-6">{useCase.summary}</Lede>
-              <AuthAwareCTA className="mt-9" />
+              <DemoCTA className="mt-9" />
             </div>
             <CallAndLog call={useCase.call} log={useCase.log} />
           </div>
