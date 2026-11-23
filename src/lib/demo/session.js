@@ -15,6 +15,7 @@ import { getDestination, isDestinationSelectable } from './destinations.js';
 import { isScenarioLive, getScenario } from './scenarios.js';
 import { VOICE_IDS } from './voices.js';
 import { MODEL_IDS } from './models.js';
+import { GREETING_IDS, QUALITY_IDS } from './voice-quality.js';
 
 export const DEMO_ROOM_PREFIX = 'test-web-';
 
@@ -85,7 +86,29 @@ export function validateDemoRequest(body, destinationStatuses = []) {
     return { ok: false, status: 400, error: 'business_name must be a short plain name' };
   }
 
-  return { ok: true, task, destination: destinationId, voiceOverride, llm, businessName: businessName || null };
+  // Optional: how the voice is produced and which greeting opens the call
+  // (voice-quality.js). Absent = the agent's production settings.
+  let voiceQuality = null;
+  if (body?.voice_quality) {
+    const candidate = String(body.voice_quality).trim().toLowerCase();
+    if (!QUALITY_IDS.has(candidate)) {
+      return { ok: false, status: 400, error: 'voice_quality must be one of the listed voice qualities' };
+    }
+    voiceQuality = candidate;
+  }
+  let greeting = null;
+  if (body?.greeting) {
+    const candidate = String(body.greeting).trim().toLowerCase();
+    if (!GREETING_IDS.has(candidate)) {
+      return { ok: false, status: 400, error: 'greeting must be one of the listed greetings' };
+    }
+    greeting = candidate;
+  }
+
+  return {
+    ok: true, task, destination: destinationId, voiceOverride, llm, businessName: businessName || null,
+    voiceQuality, greeting,
+  };
 }
 
 export function buildDemoRoomName(tenantId, now = Date.now()) {
@@ -94,7 +117,9 @@ export function buildDemoRoomName(tenantId, now = Date.now()) {
   return `${DEMO_ROOM_PREFIX}${tenantId}-${now}`;
 }
 
-export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride = null, llm = null, businessName = null }) {
+export function buildDemoRoomMetadata({
+  tenant, task, destination, voiceOverride = null, llm = null, businessName = null, voiceQuality = null, greeting = null,
+}) {
   // `agent` picks the voice agent on the worker (livekit-agent
   // src/agents/__init__.py). It is honoured on test calls only.
   const agent = getScenario(task)?.agent;
@@ -106,6 +131,8 @@ export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride
     ...(agent ? { agent } : {}),
     ...(llm ? { llm } : {}),
     ...(voiceOverride ? { voice_override: voiceOverride } : {}),
+    ...(voiceQuality ? { voice_quality: voiceQuality } : {}),
+    ...(greeting ? { greeting } : {}),
     demo: { task, destination, keep_booking: true, ...(businessName ? { business_name: businessName } : {}) },
   };
 }

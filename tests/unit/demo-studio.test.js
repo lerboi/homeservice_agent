@@ -8,6 +8,7 @@ import { DEFAULT_SCENARIO_ID, SCENARIOS, getScenario, isScenarioLive } from '@/l
 import {
   buildDemoRoomMetadata, cleanBusinessName, buildDemoRoomName, isDemoRoomOfTenant, validateDemoRequest,
 } from '@/lib/demo/session';
+import { DEFAULT_PREVIEW_VOICE_ID, QUALITY_OPTIONS, buildPreviewRequest } from '@/lib/demo/voice-quality';
 import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
 import { VOICE_OPTIONS } from '@/lib/demo/voices';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
@@ -62,6 +63,7 @@ describe('validateDemoRequest', () => {
   it('accepts the live task with a healthy destination', () => {
     expect(validateDemoRequest({ task: 'scheduling', destination: 'google' }, STATUSES)).toEqual({
       ok: true, task: 'scheduling', destination: 'google', voiceOverride: null, llm: null, businessName: null,
+      voiceQuality: null, greeting: null,
     });
   });
 
@@ -156,6 +158,34 @@ describe('room name and metadata', () => {
       expect(ok(bad)).toMatchObject({ ok: false, status: 400 });
     }
     expect(cleanBusinessName("Tan & Lim's Clinic")).toBe("Tan & Lim's Clinic");
+  });
+
+  it('carries the voice quality and greeting only when chosen, and rejects unknown ones', () => {
+    const meta = buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google', voiceQuality: 'turbo', greeting: 'warm' });
+    expect(meta.voice_quality).toBe('turbo');
+    expect(meta.greeting).toBe('warm');
+    const plain = buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google' });
+    expect('voice_quality' in plain || 'greeting' in plain).toBe(false);
+    const ask = (extra) => validateDemoRequest({ task: 'scheduling', destination: 'voco', ...extra }, STATUSES);
+    expect(ask({ voice_quality: 'Rich', greeting: 'warm' })).toMatchObject({ ok: true, voiceQuality: 'rich', greeting: 'warm' });
+    expect(ask({ voice_quality: 'studio' })).toMatchObject({ ok: false, status: 400 });
+    expect(ask({ greeting: 'rude' })).toMatchObject({ ok: false, status: 400 });
+  });
+
+  it('builds the spoken sample from the same settings the agent uses', () => {
+    expect(QUALITY_OPTIONS.map((q) => q.id)).toEqual(['fast', 'natural', 'turbo', 'rich']);
+    const fast = buildPreviewRequest({ voiceId: '', quality: 'fast', greeting: 'standard', businessName: 'Brightside Dental' });
+    expect(fast.voiceId).toBe(DEFAULT_PREVIEW_VOICE_ID);
+    expect(fast.body.model_id).toBe('eleven_flash_v2_5');
+    expect(fast.body.voice_settings).toEqual({ stability: 0.45, similarity_boost: 0.75, speed: 1.08 });
+    expect(fast.body.text.startsWith('Thanks for calling Brightside Dental. Calls are recorded')).toBe(true);
+    const rich = buildPreviewRequest({ voiceId: 'abc', quality: 'rich', greeting: 'warm', businessName: 'Brightside Dental' });
+    expect(rich.voiceId).toBe('abc');
+    expect(rich.body.model_id).toBe('eleven_multilingual_v2');
+    expect(rich.body.voice_settings).toEqual({ stability: 0.4, similarity_boost: 0.75, speed: 1, style: 0.2 });
+    expect(rich.body.text.startsWith('Hi, thanks for calling Brightside Dental!')).toBe(true);
+    expect(rich.body.text).toContain('this call is recorded');
+    expect(buildPreviewRequest({ quality: 'turbo', greeting: 'standard' }).body.model_id).toBe('eleven_turbo_v2_5');
   });
 
   it('sends the scheduling task to the demo agent', () => {
