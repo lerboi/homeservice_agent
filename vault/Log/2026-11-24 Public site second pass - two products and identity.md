@@ -9,7 +9,7 @@ tags: [voco/log]
 
 # 2026-11-24 Public site second pass - two products and identity
 
-Follows [[2026-11-24 Public site rebrand]]. System description: [[Public Site]]. On the `rebrand` branch, committed locally, not pushed.
+Follows [[2026-11-24 Public site rebrand]]. System description: [[Public Site]]. Built on the `rebrand` branch; pushed to `main` at the end of the day (see "Pushed").
 
 ## What the owner asked for
 
@@ -81,6 +81,10 @@ The owner said the home hero did not blend together and asked for a Home tab.
 - The owner rejected "Give your backend a voice." (reason recorded in [[Public Site - Landing page and components]]). New line: "It answers every call. Then it does the job."
 - The `/voice` hero now follows the `/agent` hero: centred headline, the call illustration in the middle, pills either side. The side pills are a shared `ReachColumn` component.
 - The sign-in panel shows "AI that does the work" in place of the old line.
+
+## Pushed
+
+On the owner's instruction the whole of `rebrand` was pushed to GitHub `main` on 2026-11-24 as a fast-forward (`cf9879e..229789b`). `next build` and the public-site suites (124 tests) passed on that commit first. `main` was checked out in another worktree, so the push was `rebrand:main` and that worktree's local `main` is behind until it pulls.
 
 ## Not done yet
 

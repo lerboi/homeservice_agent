@@ -20,7 +20,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 | Demo call (script, clinic business name, rehearsal and reset scripts, dedicated demo agent) | **Deployed from `main` in both repos, 2026-11-24.** The owner's first spoken take failed (the agent asked what the appointment was for instead of booking); the Demo Studio now runs a dedicated demo agent (`livekit-agent/src/agents/demo`) on GPT-4.1 mini. Rehearsals of it with the scripted caller: 3 of 3 locally, then 5 of 5 on Railway (agent `3138fa8`, 43 to 51 s as run, every check passed). No spoken take on it yet. Next: the owner records again | [[2026-11-24 Demo call script and persona]] · [[Record a demo]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
-| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Second pass in progress after the owner's review: sign-in links removed, Voco Agent added as a second product, new identity. The owner approved the direction; their follow-up changes are in (no italic headline face, six-tool icon section, one page width, phone widths checked). `/pricing`, `/about`, `/demo` and `/contact` still carry voice-only copy and the plain opener | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
+| Public site rebrand (Task 3) | **Pushed to `main` on 2026-11-24** (GitHub `main` = `229789b`, fast-forward from `rebrand`), so Vercel deploys it. Two products (Voco Voice, Voco Agent), no sign-in links, no integrations pages, new identity. Production has not been looked at after the deploy. `/pricing`, `/about`, `/demo` and `/contact` still carry voice-only copy | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
 
 ## What is left of Task 2
 
@@ -29,7 +29,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 
 ## What is left of Task 3
 
-1. Rewrite `/pricing`, `/about`, `/demo` and `/contact` for two products (their copy still speaks only of calls), then the go-ahead to push `rebrand` to `main`. The integrations pages are gone and `/use-cases` covers both products.
+1. Look at the production site after the deploy. Then rewrite `/pricing`, `/about`, `/demo` and `/contact` for two products (their copy still speaks only of calls).
 2. The recorded demo video: record it ([[Record a demo]]), then set `DEMO_VIDEO.src` in `src/data/site.js`. Until then the site shows a labelled still.
 3. The mobile nav drawer and a real contact-form submission (page layouts were checked at 390 px on 2026-11-24).
 4. Owner's review of `/privacy` and `/terms`: the body text still says "AI receptionist" and describes a 14-day free trial.
@@ -62,7 +62,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 ## Waiting on the owner
 
 - A spoken test call through `/admin/demo`.
-- Review of the rebranded site on the `rebrand` branch, and the go-ahead to push it.
+- A look at the rebranded site in production.
 - Google Cloud Console: is the OAuth consent screen "Testing" or "In production"?
 - Whether to make the GitHub repos private.
 - Appointments agent: try both models with the Model switch on `/admin/demo` and choose one for production (Groq Qwen: about 0.4 s to first token, 9 of 10 scripted bookings correct with the guards; gpt-4.1-mini: about 1.0 s, 8 of 8). The production setting is the Railway variable `VOCO_APPT_LLM_PROVIDER` (`groq` or `openai`); unset, it is Groq.
