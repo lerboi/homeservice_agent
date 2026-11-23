@@ -72,6 +72,7 @@ export async function POST(request) {
           businessName: checked.businessName,
           voiceQuality: checked.voiceQuality,
           greeting: checked.greeting,
+          typingSound: checked.typingSound,
         }),
       ),
     });

@@ -105,9 +105,13 @@ export function validateDemoRequest(body, destinationStatuses = []) {
     greeting = candidate;
   }
 
+  // Optional: false turns off the keyboard sound the agent plays while it
+  // looks something up. Anything else leaves it as the agent has it.
+  const typingSound = body?.typing_sound === false ? false : null;
+
   return {
     ok: true, task, destination: destinationId, voiceOverride, llm, businessName: businessName || null,
-    voiceQuality, greeting,
+    voiceQuality, greeting, typingSound,
   };
 }
 
@@ -119,6 +123,7 @@ export function buildDemoRoomName(tenantId, now = Date.now()) {
 
 export function buildDemoRoomMetadata({
   tenant, task, destination, voiceOverride = null, llm = null, businessName = null, voiceQuality = null, greeting = null,
+  typingSound = null,
 }) {
   // `agent` picks the voice agent on the worker (livekit-agent
   // src/agents/__init__.py). It is honoured on test calls only.
@@ -133,6 +138,7 @@ export function buildDemoRoomMetadata({
     ...(voiceOverride ? { voice_override: voiceOverride } : {}),
     ...(voiceQuality ? { voice_quality: voiceQuality } : {}),
     ...(greeting ? { greeting } : {}),
+    ...(typingSound === false ? { typing_sound: false } : {}),
     demo: { task, destination, keep_booking: true, ...(businessName ? { business_name: businessName } : {}) },
   };
 }

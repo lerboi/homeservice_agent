@@ -139,3 +139,9 @@ Built for the Demo Studio, test calls only (server-set room metadata `voice_qual
 - Seen in Chrome on localhost before pushing: the page renders, Listen played a six-second sample, no console errors.
 
 Not measured: how much later Turbo and Rich start speaking on a live call. Not heard by the author: any of it. Samples made while investigating are in `temp/voice-quality/` in the main working folder (not committed).
+
+## 12. Typing sound switch, a spoken tool name, and the audio format on production
+
+- **Typing sound.** The Voice section has a "Typing sound" checkbox. Off sends `typing_sound: false` in the server-set metadata; the agent then attaches no keyboard clips (`entry.py`, test calls only).
+- **Audio format checked on production** (agent `394dbdc`): one scripted call with no booking. The agent spoke on every turn, time to first audio from ElevenLabs was 0.10 to 0.25 s, and the log shows no speech error and no switch to the backup voice.
+- **That call ended with the agent saying "Goodbye and take care. (functions.end_call)"** and not hanging up: the model wrote the tool's name instead of calling it. `src/agents/appointments/speech_filter.py` now removes a parenthesised tool name from every reply before speech, and ends the call after the goodbye when the name was `end_call` and the tool was not called. The demo prompt's example no longer ends in "(end_call)". Agent tests: 958 pass. Not yet seen working on a live call.
