@@ -16,6 +16,7 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 |---|---|---|
 | Obsidian vault | Done and pushed | [[Plan 1 - Obsidian vault migration]] |
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
+| Appointments agent (dedicated agent: book, find, move, cancel) | **Built, not committed or deployed.** Branch `appointments-agent` in both repos (Next app in the worktree `..\homeservice_agent-appointments`). Book, move and cancel each verified against Google Calendar with scripted calls on a local worker | [[Voice Agent - Appointments agent (verified)]] · [[2026-11-24 Appointments agent build]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
 | Public site rebrand (Task 3) | Approved, not started. Waits for Task 2 to be verified end to end and the owner's confirmation | [[Plan 2 - Frontend rebrand to voice integration for any backend]] |
@@ -44,7 +45,7 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 2. **If the Google OAuth app is in "Testing" mode the new connection expires on 2026-11-30.** Google's consent flow does not say which mode it is in; the Cloud Console does.
 3. **Post-call triage layer 2 always fails**: it calls `gpt-4.1-nano`, which OpenAI rejects as deprecated. Calls are still recorded.
 4. **Phone calls get the scheduling agent too** (no address intake, no urgency triage). `VOCO_AGENT_PROFILE=home_service` on Railway restores the old behaviour.
-5. **The model still speaks its own filler** before booking ("Okay, booking that in for you"), against the prompt.
+5. **The "filler before booking" is mostly the runtime's own line**, not the model: with the 0.6 s delay it starts as the booking finishes and the caller waits for it to end. Fixed in the appointments agent (per-tool delay, and model preambles are dropped); the deployed scheduling profile still has it: [[2026-11-24 Appointments agent build]].
 6. **A local dev worker refuses jobs when this machine is above 70% CPU**, which a running `next dev` can cause: [[Run a local dev worker and measure]].
 7. Public repos contain audit findings ([[Log]]).
 
@@ -53,6 +54,7 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 - A spoken test call through `/admin/demo`, then confirmation that Task 2 is done.
 - Google Cloud Console: is the OAuth consent screen "Testing" or "In production"?
 - Whether to make the GitHub repos private.
+- Appointments agent: go-ahead to commit and deploy; and the model choice for it (Groq Qwen: 0.38 s to first token, needed the guards; gpt-4.1-mini: 1.04 s, no slips in three calls). `VOCO_APPT_LLM_PROVIDER=openai` switches.
 
 ## Carried over from earlier logs (not re-verified)
 

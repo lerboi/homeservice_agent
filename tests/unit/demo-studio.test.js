@@ -10,6 +10,7 @@ import {
 } from '@/lib/demo/session';
 import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
 import { VOICE_OPTIONS } from '@/lib/demo/voices';
+import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 
 const READY_GOOGLE = { id: 'google', kind: 'external', connected: true, healthy: true };
 const DEAD_GOOGLE = { id: 'google', kind: 'external', connected: true, healthy: false };
@@ -60,8 +61,21 @@ describe('destinations', () => {
 describe('validateDemoRequest', () => {
   it('accepts the live task with a healthy destination', () => {
     expect(validateDemoRequest({ task: 'scheduling', destination: 'google' }, STATUSES)).toEqual({
-      ok: true, task: 'scheduling', destination: 'google', voiceOverride: null,
+      ok: true, task: 'scheduling', destination: 'google', voiceOverride: null, llm: null,
     });
+  });
+
+  it('accepts a listed model and nothing else', () => {
+    expect(MODEL_OPTIONS.map((m) => m.id)).toEqual(['groq', 'openai']);
+    for (const id of ['groq', 'openai']) {
+      expect(validateDemoRequest({ task: 'scheduling', destination: 'voco', llm: id }, STATUSES))
+        .toMatchObject({ ok: true, llm: id });
+    }
+    expect(validateDemoRequest({ task: 'scheduling', destination: 'voco', llm: ' OpenAI ' }, STATUSES))
+      .toMatchObject({ ok: true, llm: 'openai' });
+    expect(validateDemoRequest({ task: 'scheduling', destination: 'voco', llm: 'claude' }, STATUSES))
+      .toMatchObject({ ok: false, status: 400 });
+    expect(getModel('nope')).toBeNull();
   });
 
   it('rejects unknown and coming-soon tasks', () => {
@@ -105,8 +119,32 @@ describe('room name and metadata', () => {
       web_test: true,
       tenant_id: 'tenant-1',
       to_number: '+18005550001',
+      agent: 'appointments',
       demo: { task: 'scheduling', destination: 'google', keep_booking: true },
     });
+  });
+
+  it('carries the chosen model only when one was chosen', () => {
+    expect(buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google', llm: 'openai' }).llm).toBe('openai');
+    // No choice = the worker's own setting, which is what production runs.
+    expect('llm' in buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google' })).toBe(false);
+  });
+
+  it('shows which model the call is running on', () => {
+    const { actions } = buildTimeline([
+      { id: 's', type: 'session', agent: 'appointments', llm: 'groq', model: 'qwen/qwen3.8-27b', fallback: 'gpt-4.1-mini' },
+    ]);
+    expect(actions).toEqual([
+      { id: 's', tone: 'info', title: 'Running on Qwen on Groq', detail: 'Falls back to gpt-4.1-mini' },
+    ]);
+    expect(buildTimeline([{ id: 's', type: 'session', llm: 'openai', model: 'gpt-4.1-mini' }]).actions[0])
+      .toMatchObject({ title: 'Running on GPT-4.1 mini', detail: '' });
+  });
+
+  it('sends the scheduling task to the appointments agent', () => {
+    expect(getScenario('scheduling').agent).toBe('appointments');
+    // A task with no agent of its own leaves the choice to the worker.
+    expect('agent' in buildDemoRoomMetadata({ tenant, task: 'lead_crm', destination: 'voco' })).toBe(false);
   });
 
   it('adds the voice override only when given', () => {
@@ -173,11 +211,82 @@ describe('live actions timeline', () => {
 
   it('describes a slot check', () => {
     const { actions } = buildTimeline([
-      { id: 'a', type: 'tool', name: 'check_slot', args: { date: '2026-11-26', time: '15:00' }, state: 'STATE:slot_available token=slot_1' },
-      { id: 'b', type: 'tool', name: 'check_slot', args: { date: '2026-11-26', time: '09:30' }, state: 'STATE:slot_unavailable' },
+      { id: 'a', type: 'tool', name: 'check_slot', args: { date: '2026-11-26', time: '15:00' }, state: 'STATE:slot_ok token=slot_1 speech=Thursday' },
+      { id: 'b', type: 'tool', name: 'check_slot', args: { date: '2026-11-26', time: '09:30' }, state: 'STATE:slot_taken requested=…' },
     ]);
     expect(actions[0]).toMatchObject({ title: 'Checked availability', detail: 'Thu 26 Nov, 3:00 PM · open' });
     expect(actions[1].detail).toBe('Thu 26 Nov, 9:30 AM · not open');
+  });
+
+  it('shows an appointment being moved in the calendar', () => {
+    const { actions, booking } = buildTimeline([
+      { id: 'a', type: 'tool', name: 'find_appointment', args: { caller_name: 'Alex Tan' }, state: 'STATE:appointment_found count=1' },
+      { id: 'b', type: 'tool', name: 'check_slot', args: { date: '2026-11-26', time: '10:00' }, state: 'STATE:slot_ok token=slot_1' },
+      { id: 'c', type: 'rescheduled', appointment_id: 'appt-1', start: '2026-11-26T02:00:00+00:00', end: '2026-11-26T03:00:00+00:00', previous_start: '2026-11-25T06:00:00+00:00', caller_name: 'Alex Tan', reason: 'product demo' },
+      { id: 'd', type: 'calendar_updated', appointment_id: 'appt-1', provider: 'google', event_id: 'evt-1', link: 'https://calendar.example/evt-1' },
+      { id: 'e', type: 'tool', name: 'reschedule_appointment', args: {}, state: 'RESCHEDULED: confirm the new day and time' },
+    ], { timeZone: tz });
+    expect(actions.map((a) => a.title)).toEqual([
+      'Found the appointment',
+      'Checked availability',
+      'Moved the appointment',
+      'Updated in Google Calendar',
+    ]);
+    expect(actions[0].detail).toBe('Under Alex Tan');
+    expect(booking).toMatchObject({
+      appointmentId: 'appt-1',
+      status: 'moved',
+      title: 'Alex Tan: Product demo',
+      when: 'Thu, 26 Nov · 10:00 – 11:00 AM',
+      previousWhen: 'Wed, 25 Nov · 2:00 – 3:00 PM',
+      provider: 'google',
+      link: 'https://calendar.example/evt-1',
+      saved: true,
+    });
+  });
+
+  it('shows an appointment being cancelled and removed from the calendar', () => {
+    const { actions, booking } = buildTimeline([
+      { id: 'a', type: 'tool', name: 'find_appointment', args: { caller_name: 'Alex Tan' }, state: 'STATE:appointment_found count=1' },
+      { id: 'b', type: 'cancelled', appointment_id: 'appt-1', start: '2026-11-26T02:00:00+00:00', end: '2026-11-26T03:00:00+00:00', caller_name: 'Alex Tan', reason: 'product demo' },
+      { id: 'c', type: 'calendar_removed', appointment_id: 'appt-1', provider: 'google', event_id: 'evt-1' },
+      { id: 'd', type: 'tool', name: 'cancel_appointment', args: {}, state: 'CANCELLED: tell the caller' },
+    ], { timeZone: tz });
+    expect(actions.map((a) => a.title)).toEqual([
+      'Found the appointment',
+      'Cancelled the appointment',
+      'Removed from Google Calendar',
+    ]);
+    expect(booking).toMatchObject({ status: 'cancelled', saved: true, link: null, provider: 'google' });
+  });
+
+  it('keeps the event link when the same call books and then moves', () => {
+    const { booking } = buildTimeline([
+      events[1],
+      events[3],
+      { id: 'm', type: 'rescheduled', appointment_id: 'appt-1', start: '2026-11-26T02:00:00+00:00', end: '2026-11-26T03:00:00+00:00', previous_start: '2026-11-24T04:00:00+00:00', caller_name: 'Alex Tan', reason: 'product demo' },
+    ], { timeZone: tz });
+    expect(booking).toMatchObject({ status: 'moved', saved: false, provider: 'google', link: 'https://calendar.example/evt-1' });
+  });
+
+  it('shows a lookup that found nothing, and changes that did not happen', () => {
+    const { actions } = buildTimeline([
+      { id: 'a', type: 'tool', name: 'find_appointment', args: { caller_name: 'Alex Tan' }, state: 'STATE:appointment_not_found' },
+      { id: 'b', type: 'tool', name: 'reschedule_appointment', args: {}, state: 'STATE:needs_confirmation from=[…] to=[…]' },
+      { id: 'c', type: 'tool', name: 'reschedule_appointment', args: {}, state: 'STATE:slot_taken kept=[…]' },
+      { id: 'd', type: 'tool', name: 'cancel_appointment', args: {}, state: 'STATE:cancel_invalid reason=unknown_appointment' },
+      { id: 'e', type: 'calendar_failed', appointment_id: 'appt-1', provider: 'google', action: 'move' },
+      { id: 'f', type: 'calendar_failed', appointment_id: null, provider: 'google', action: 'connect' },
+    ]);
+    expect(actions.map((a) => a.title)).toEqual([
+      'Looked for the appointment',
+      'Asked the caller to confirm',
+      'That time was just taken',
+      'The appointment was not cancelled',
+      'Could not update Google Calendar',
+      'Could not reach Google Calendar',
+    ]);
+    expect(actions[0].detail).toBe('Under Alex Tan · nothing found');
   });
 
   it('reports a booking that is not saved to the calendar', () => {

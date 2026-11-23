@@ -137,7 +137,7 @@ describe('POST /api/admin/demo/session', () => {
     const json = await res.json();
     expect(json.room_name).toMatch(/^test-web-tenant-1-\d+$/);
     expect(json.token).toBe('mock-jwt');
-    expect(json.demo).toEqual({ task: 'scheduling', destination: 'google' });
+    expect(json.demo).toEqual({ task: 'scheduling', destination: 'google', llm: null });
 
     expect(mockCreateRoom).toHaveBeenCalledTimes(1);
     const room = mockCreateRoom.mock.calls[0][0];
@@ -147,6 +147,7 @@ describe('POST /api/admin/demo/session', () => {
       web_test: true,
       tenant_id: 'tenant-1',
       to_number: '+18005550001',
+      agent: 'appointments',
       demo: { task: 'scheduling', destination: 'google', keep_booking: true },
     });
   });

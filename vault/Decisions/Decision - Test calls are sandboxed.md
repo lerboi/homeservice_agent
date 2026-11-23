@@ -33,5 +33,12 @@ Room metadata may also carry `demo: { task, destination, keep_booking }`. It is 
 
 Caller SMS, recovery SMS, usage billing, CRM rows and owner notifications stay off: those gates still test `is_test_call` alone (`tests/test_demo_studio.py` holds this). Full description: [[Demo Studio]].
 
+## The appointments agent (added 2026-11-24, on the `appointments-agent` branch)
+The appointments agent can move and cancel as well as book, so the sandbox also limits what a call can reach:
+- Which calendar a call may write to is decided once, in `livekit-agent/src/calendars/__init__.py::calendar_target`: production writes to the tenant's primary calendar, a demo call only to the calendar its metadata names, any other test call to none.
+- `src/agents/appointments/store.py::upcoming` returns, on a test call, only appointments made by test calls, and leaves out any whose calendar event this call could not update. On a production call it returns only appointments booked from the caller's own number.
+
+Held by `tests/test_appointments_agent.py`. Details: [[Voice Agent - Appointments agent (verified)]].
+
 ## Sources
 [[Demo Studio]], [[Voice Agent - Test Calls and Admin Web Test Console (2026-08-25)]].

@@ -14,6 +14,8 @@ Up: [[Home]] · [[Systems]] · How to use it: [[Record a demo]] · Build record:
 
 **State on 2026-11-24:** deployed in both repos. The agent path is verified in production with scripted calls (the event lands in Google Calendar and is read back through the Google API). The page is verified in a browser on a local server up to starting a call. A spoken call through the page on production has not been made yet.
 
+**On branch `appointments-agent` (2026-11-24, not deployed):** a demo call is taken by the dedicated appointments agent, which can also move and cancel a booking an earlier demo call kept. The room metadata gains `agent: "appointments"`, the event stream gains four event types, and the event card shows a moved or cancelled event. See [[Voice Agent - Appointments agent (verified)]] and the section "With the appointments agent" below. The rest of this note describes what is deployed.
+
 ## What it is
 
 | Page | File | Purpose |
@@ -84,8 +86,30 @@ A demo call is a test call. See [[Decision - Test calls are sandboxed]] for the 
 | Caller SMS, recovery SMS | Never | Never |
 | Usage billing, CRM rows, owner SMS/email | Never | Never |
 
+## With the appointments agent (branch `appointments-agent`)
+
+Room metadata: `{ test_call: true, web_test: true, tenant_id, to_number, agent: "appointments", demo: { … } }`. `agent` comes from the task's entry in `src/lib/demo/scenarios.js`.
+
+Extra events on `voco.events`:
+
+| `type` | Fields |
+|---|---|
+| `rescheduled` | `appointment_id`, `start`, `end`, `when`, `previous_start`, `previous_when`, `caller_name`, `reason` |
+| `calendar_updated` | `appointment_id`, `provider`, `event_id`, `link` |
+| `cancelled` | `appointment_id`, `start`, `end`, `when`, `caller_name`, `reason` |
+| `calendar_removed` | `appointment_id`, `provider`, `event_id` |
+| `calendar_failed` | now also `action`: `create`, `move`, `remove` or `connect` |
+
+`tool` events no longer carry `slot_token` or `appointment_token`.
+
+**Model switch.** The setup column has a three-way Model control: Production (the worker's own setting), Qwen on Groq, GPT-4.1 mini. The registry is `src/lib/demo/models.js`; the session route validates the choice and writes it to the room metadata as `llm`. The agent's `session` event (`llm`, `model`, `fallback`) becomes the first timeline line, "Running on …". How the agent resolves it: [[Voice Agent - Appointments agent (verified)]].
+
+What a demo call may touch: appointments made by test calls of the demo tenant, with no calendar event or an event in the calendar the demo named. A moved appointment is re-attached to the call that moved it, so "Remove demo booking" after that call still finds it. An appointment cancelled by the agent needs no cleanup.
+
+Recording a move or a cancel takes two calls: book in the first, then start a second call and ask to move or cancel "my appointment" under the same name.
+
 ## Tests
-- Agent: `tests/test_demo_studio.py` (what fires for production, test and demo calls; explicit provider; event wording; events; post-call gates), `tests/test_test_call_sandbox.py`.
+- Agent: `tests/test_appointments_agent.py` (the appointments agent), `tests/test_demo_studio.py` (what fires for production, test and demo calls; explicit provider; event wording; events; post-call gates), `tests/test_test_call_sandbox.py`.
 - Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js`, `tests/api/admin-test-agent.test.js`.
 - Scripted call: `BASELINE_DEMO=google python vault/_meta/tools/baseline_call.py <tenant_id> <phone>`, then `node --env-file=.env.local vault/_meta/tools/demo_event_check.mjs <tenant_id> --cleanup` reads the event back through the Google API and removes it.
 

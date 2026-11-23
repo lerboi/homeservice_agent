@@ -24,6 +24,7 @@ import {
 import { fmtElapsed, useAgentCall } from '@/hooks/useAgentCall';
 import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
 import { destinationState, getDestination, isDestinationSelectable } from '@/lib/demo/destinations';
+import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 import { DEFAULT_SCENARIO_ID } from '@/lib/demo/scenarios';
 
 // Brand tokens for this page (the public-site palette: paper, ink, one
@@ -60,6 +61,7 @@ export default function DemoStudioPage() {
   const [task, setTask] = useState(DEFAULT_SCENARIO_ID);
   const [destination, setDestination] = useState('google');
   const [voice, setVoice] = useState('');
+  const [llm, setLlm] = useState(''); // '' = the worker's own setting
   const [presenting, setPresenting] = useState(false);
   const [cleanup, setCleanup] = useState({ state: 'idle', message: null }); // idle | working | done | error
 
@@ -107,7 +109,7 @@ export default function DemoStudioPage() {
     setCleanup({ state: 'idle', message: null });
     call.startCall({
       sessionUrl: '/api/admin/demo/session',
-      body: { task, destination, ...(voice ? { voice_override: voice } : {}) },
+      body: { task, destination, ...(voice ? { voice_override: voice } : {}), ...(llm ? { llm } : {}) },
     });
   }
 
@@ -312,6 +314,30 @@ export default function DemoStudioPage() {
                   );
                 })}
               </div>
+            </SetupSection>
+
+            <SetupSection label="Model">
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-md border bg-white" style={{ borderColor: LINE }}>
+                {[{ id: '', label: 'Production' }, ...MODEL_OPTIONS].map((m) => {
+                  const selected = llm === m.id;
+                  return (
+                    <button
+                      key={m.id || 'production'}
+                      type="button"
+                      disabled={inCall}
+                      aria-pressed={selected}
+                      onClick={() => setLlm(m.id)}
+                      className="h-8 px-1.5 rounded text-xs font-medium leading-tight disabled:opacity-60"
+                      style={selected ? { background: INK, color: '#fff' } : { color: INK }}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] leading-snug" style={{ color: 'rgba(11,15,20,0.6)' }}>
+                {getModel(llm)?.hint || 'Whatever the live agent is set to, so the demo matches a real call.'}
+              </p>
             </SetupSection>
 
             <SetupSection label="Voice">
@@ -698,19 +724,37 @@ function ActionRow({ action }) {
 function EventCard({ booking, destination }) {
   const def = getDestination(booking.provider || destination);
   const external = def?.kind === 'external';
+  // status: 'booked' | 'moved' | 'cancelled' (the appointments agent can
+  // change an event an earlier call created, not only create one).
+  const cancelled = booking.status === 'cancelled';
+  const moved = booking.status === 'moved';
+  const pending = cancelled ? 'Removing from' : moved ? 'Updating' : 'Saving to';
+  const done = cancelled ? 'Removed from ' : '';
+  const footer = cancelled
+    ? 'Cancelled by the Voco voice agent'
+    : moved
+      ? 'Moved by the Voco voice agent'
+      : 'Booked by the Voco voice agent';
   return (
     <div className="mt-5 rounded-lg border overflow-hidden" style={{ borderColor: booking.saved ? SIGNAL : LINE }}>
       <div className="flex">
-        <span className="w-1 shrink-0" style={{ background: SIGNAL }} />
+        <span className="w-1 shrink-0" style={{ background: cancelled ? LINE : SIGNAL }} />
         <div className="p-4 min-w-0 flex-1">
           <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: 'rgba(11,15,20,0.62)' }}>
             <CalendarCheck className="h-3.5 w-3.5" />
-            {booking.saved ? def?.label || 'Calendar' : external && !booking.failed ? `Saving to ${def.label}…` : 'Voco calendar'}
+            {booking.saved
+              ? `${done}${def?.label || 'Calendar'}`
+              : external && !booking.failed
+                ? `${pending} ${def.label}…`
+                : 'Voco calendar'}
           </p>
-          <p className="mt-1.5 text-[15px] font-semibold leading-snug">{booking.title}</p>
-          <p className="font-mono text-xs mt-1" style={{ color: 'rgba(11,15,20,0.72)' }}>{booking.when}</p>
-          <p className="text-xs mt-1" style={{ color: 'rgba(11,15,20,0.5)' }}>Booked by the Voco voice agent</p>
-          {booking.link && (
+          <p className={`mt-1.5 text-[15px] font-semibold leading-snug${cancelled ? ' line-through opacity-60' : ''}`}>{booking.title}</p>
+          {moved && booking.previousWhen && (
+            <p className="font-mono text-xs mt-1 line-through" style={{ color: 'rgba(11,15,20,0.4)' }}>{booking.previousWhen}</p>
+          )}
+          <p className={`font-mono text-xs mt-1${cancelled ? ' line-through' : ''}`} style={{ color: 'rgba(11,15,20,0.72)' }}>{booking.when}</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(11,15,20,0.5)' }}>{footer}</p>
+          {booking.link && !cancelled && (
             <a
               href={booking.link}
               target="_blank"

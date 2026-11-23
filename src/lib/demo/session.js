@@ -13,6 +13,7 @@
 import { getDestination, isDestinationSelectable } from './destinations.js';
 import { isScenarioLive, getScenario } from './scenarios.js';
 import { VOICE_IDS } from './voices.js';
+import { MODEL_IDS } from './models.js';
 
 export const DEMO_ROOM_PREFIX = 'test-web-';
 
@@ -51,7 +52,18 @@ export function validateDemoRequest(body, destinationStatuses = []) {
     voiceOverride = candidate;
   }
 
-  return { ok: true, task, destination: destinationId, voiceOverride };
+  // Optional: which model the agent runs this call on. Absent = the worker's
+  // own setting, i.e. what production uses.
+  let llm = null;
+  if (body?.llm) {
+    const candidate = String(body.llm).trim().toLowerCase();
+    if (!MODEL_IDS.has(candidate)) {
+      return { ok: false, status: 400, error: 'llm must be one of the listed models' };
+    }
+    llm = candidate;
+  }
+
+  return { ok: true, task, destination: destinationId, voiceOverride, llm };
 }
 
 export function buildDemoRoomName(tenantId, now = Date.now()) {
@@ -60,12 +72,17 @@ export function buildDemoRoomName(tenantId, now = Date.now()) {
   return `${DEMO_ROOM_PREFIX}${tenantId}-${now}`;
 }
 
-export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride = null }) {
+export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride = null, llm = null }) {
+  // `agent` picks the voice agent on the worker (livekit-agent
+  // src/agents/__init__.py). It is honoured on test calls only.
+  const agent = getScenario(task)?.agent;
   return {
     test_call: true,
     web_test: true,
     tenant_id: tenant.id,
     to_number: tenant.phone_number,
+    ...(agent ? { agent } : {}),
+    ...(llm ? { llm } : {}),
     ...(voiceOverride ? { voice_override: voiceOverride } : {}),
     demo: { task, destination, keep_booking: true },
   };

@@ -68,6 +68,7 @@ export async function POST(request) {
           task: checked.task,
           destination: checked.destination,
           voiceOverride: checked.voiceOverride,
+          llm: checked.llm,
         }),
       ),
     });
@@ -88,7 +89,7 @@ export async function POST(request) {
       token,
       livekit_url: process.env.LIVEKIT_URL,
       identity,
-      demo: { task: checked.task, destination: checked.destination },
+      demo: { task: checked.task, destination: checked.destination, llm: checked.llm },
       tenant: {
         id: tenant.id,
         business_name: tenant.business_name,

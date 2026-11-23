@@ -6,7 +6,13 @@ Env switches:
   BASELINE_DEMO=google                       Demo Studio call: the booking is pushed to that
                                              calendar and kept after the call (clean it up with
                                              demo_event_check.mjs --cleanup). Prints the
-                                             voco.events stream under EVENTS."""
+                                             voco.events stream under EVENTS.
+  BASELINE_AGENT=appointments                ask for the appointments agent (room metadata
+                                             `agent`); unset = the worker's default agent.
+  BASELINE_LLM=groq|openai                   the model the appointments agent runs this call on
+                                             (room metadata `llm`); unset = the worker's setting.
+  BASELINE_SCRIPT=book|reschedule|cancel     what the caller says (default book). reschedule and
+                                             cancel act on a booking an earlier demo call kept."""
 import asyncio, json, os, sys, time, array, math, urllib.request, io
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
@@ -29,14 +35,28 @@ from livekit import api, rtc  # noqa: E402
 TENANT_ID = sys.argv[1]
 TO_NUMBER = sys.argv[2]
 SR = 24000
-UTTERANCES = [
-    "Hi, I'd like to book an appointment for a product demo.",
-    "My name is Alex Tan.",
-    "What times do you have tomorrow afternoon?",
-    "The first one works for me.",
-    "Yes, please book it.",
-    "No, that's all. Thank you, goodbye.",
-]
+SCRIPTS = {
+    "book": [
+        "Hi, I'd like to book an appointment for a product demo.",
+        "My name is Alex Tan.",
+        "What times do you have tomorrow afternoon?",
+        "The first one works for me.",
+        "Yes, please book it.",
+        "No, that's all. Thank you, goodbye.",
+    ],
+    "reschedule": [
+        "Hi, I need to move my appointment. My name is Alex Tan.",
+        "Could we do the day after tomorrow at ten in the morning instead?",
+        "Yes, please move it.",
+        "No, that's all. Thank you, goodbye.",
+    ],
+    "cancel": [
+        "Hi, I'd like to cancel my appointment. It's under Alex Tan.",
+        "Yes, please cancel it.",
+        "No thanks, that's everything. Goodbye.",
+    ],
+}
+UTTERANCES = SCRIPTS[os.environ.get("BASELINE_SCRIPT", "book").strip().lower() or "book"]
 
 
 def tts(text):
@@ -65,6 +85,12 @@ async def main():
     demo_destination = os.environ.get("BASELINE_DEMO", "").strip().lower()
     if demo_destination:
         room_meta["demo"] = {"task": "scheduling", "destination": demo_destination, "keep_booking": True}
+    agent_kind = os.environ.get("BASELINE_AGENT", "").strip().lower()
+    if agent_kind:
+        room_meta["agent"] = agent_kind
+    llm_choice = os.environ.get("BASELINE_LLM", "").strip().lower()
+    if llm_choice:
+        room_meta["llm"] = llm_choice
     await lk.room.create_room(api.CreateRoomRequest(
         name=room_name, empty_timeout=120,
         metadata=json.dumps(room_meta)))
