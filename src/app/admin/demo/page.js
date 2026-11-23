@@ -693,13 +693,23 @@ function VoiceOrb({ live, agentSpeaking, userSpeaking, level }) {
 }
 
 function Captions({ segments, live, businessName }) {
-  const endRef = useRef(null);
+  // Follow new captions by scrolling THIS box only, and only while the reader
+  // is at its bottom. scrollIntoView (used before) also scrolls every
+  // ancestor, so each new caption dragged the whole page back up.
+  const boxRef = useRef(null);
+  const followRef = useRef(true);
   useEffect(() => {
-    if (live) endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const box = boxRef.current;
+    if (live && box && followRef.current) box.scrollTop = box.scrollHeight;
   }, [segments, live]);
 
   return (
     <div
+      ref={boxRef}
+      onScroll={(e) => {
+        const box = e.currentTarget;
+        followRef.current = box.scrollHeight - box.scrollTop - box.clientHeight < 48;
+      }}
       className="flex-1 min-h-[180px] overflow-y-auto rounded-lg border bg-white px-5 py-4"
       style={{ borderColor: LINE }}
     >
@@ -725,7 +735,6 @@ function Captions({ segments, live, businessName }) {
               </div>
             );
           })}
-          <div ref={endRef} />
         </div>
       )}
     </div>
