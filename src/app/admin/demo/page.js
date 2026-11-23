@@ -420,7 +420,11 @@ export default function DemoStudioPage() {
               </Field>
               <Field label="Model">
                 <Segmented
-                  options={[...MODEL_OPTIONS, { id: '', label: 'Agent default' }]}
+                  options={[
+                    // Short names: three buttons share the column's width.
+                    ...MODEL_OPTIONS.map((m) => ({ id: m.id, label: m.id === 'groq' ? 'Qwen' : m.label })),
+                    { id: '', label: 'Default' },
+                  ]}
                   value={llm}
                   onChange={setLlm}
                   disabled={inCall}

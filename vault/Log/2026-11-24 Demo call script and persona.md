@@ -122,3 +122,20 @@ Merging `main` into `rebrand` (so localhost runs this work) was not done: it nee
 - **The call ended without a goodbye.** The model sometimes sent `end_call` with no words in the same response. `preamble.goodbye_with_end_call` now puts the call's goodbye line ("Thanks for calling <business>. Goodbye.") in front of an `end_call` that comes with nothing spoken. Two local calls: the line was spoken both times. Agent tests: 945 pass.
 - **Voices.** The ElevenLabs Voice Library was searched through its API for English voices with Singaporean, Malaysian, Filipino and Chinese accents. Five Singaporean voices were added to `src/lib/demo/voices.js` (Lilian, Cynthia, Christine, Lim, Mun); samples of each speaking the demo's lines are in `temp/voice-samples/` in the main working folder (not committed). A library voice plays through the API with this account's key, but the agent only uses a voice that is in the account's own list, so each must be added to My Voices in ElevenLabs first. The agent now re-reads that list when a test call asks for a voice it does not know, so no redeploy is needed after adding one.
 - Two local rehearsals in this round failed their checks because the owner was recording at the same time on the same tenant: bookings from those takes were on the calendar, and `demo_reset.mjs` removed them. Do not run rehearsals while the owner is recording.
+
+## 11. Why the voice sounded robotic, and the Voice section
+
+The owner said the voice, the greeting above all, sounded robotic. Read from the code:
+
+- **Audio format.** `_build_tts` never set one, so the ElevenLabs plugin's default applied: `mp3_22050_32` (22 kHz MP3 at 32 kbps). Now `pcm_24000` for every agent in the worker (`ELEVENLABS_TTS_ENCODING`; `VOCO_TTS_ENCODING=mp3_22050_32` goes back). The account's plan refuses `pcm_44100` and `mp3_44100_192`.
+- **Model and pace.** Flash v2.5 at speed 1.08. Unchanged for production calls.
+- **Greeting text.** Two clipped statements joined by a dash.
+- Text was already sent to ElevenLabs a sentence at a time (the plugin's `auto_mode` with a sentence tokenizer), so chunking was not a cause.
+
+Built for the Demo Studio, test calls only (server-set room metadata `voice_quality` and `greeting`):
+
+- Agent: `VOICE_QUALITY` in `src/agent.py` (`fast` = production, `natural` = Flash at speed 1.0, `turbo` = Turbo v2.5, `rich` = Multilingual v2 with a little style) and `WARM_GREETING` in `src/agents/appointments/entry.py`. The `session` event carries `voice_quality`. Agent tests: 949 pass.
+- Next app: `src/lib/demo/voice-quality.js` (must mirror the agent's table), `POST /api/admin/demo/voice-preview` (admin only; an MP3 of the chosen greeting and two booking lines in the chosen voice and quality), and a Voice section in the setup panel with a "Listen to this voice" button. The setup panel is regrouped into Business, Voice, Calendar and model, Microphone; tasks that are not live are no longer listed. Demo Studio tests: 68 pass.
+- Seen in Chrome on localhost before pushing: the page renders, Listen played a six-second sample, no console errors.
+
+Not measured: how much later Turbo and Rich start speaking on a live call. Not heard by the author: any of it. Samples made while investigating are in `temp/voice-quality/` in the main working folder (not committed).
