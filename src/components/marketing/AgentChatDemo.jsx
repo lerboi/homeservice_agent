@@ -72,7 +72,7 @@ export function AgentChatDemo({ className = '' }) {
   const reading = !reduced && started && visible === 2;
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden rounded-2xl border border-mk-line bg-white text-left text-mk-ink ${className}`}>
+    <div className={`flex flex-1 flex-col overflow-hidden rounded-2xl border border-mk-line bg-white text-left text-mk-ink ${className}`}>
       <div className="flex h-11 items-center justify-between gap-3 border-b border-mk-line px-3" role="tablist" aria-label="Where you message Voco Agent">
         <div className="flex items-center gap-1">
           {AGENT_CONVERSATIONS.map((c, i) => (
@@ -93,7 +93,7 @@ export function AgentChatDemo({ className = '' }) {
       </div>
 
       <div
-        className="mk-grid-paper flex min-h-[400px] flex-1 flex-col justify-end gap-3 overflow-hidden bg-mk-paper/70 p-4 sm:p-5"
+        className="mk-grid-paper flex min-h-[360px] flex-1 flex-col justify-end md:min-h-[400px] gap-3 overflow-hidden bg-mk-paper/70 p-4 sm:p-5"
         role="img"
         aria-label={`Illustration: on ${CHANNEL_NAME[conversation.channel]}, the owner asks “${conversation.ask}” Voco Agent answers from ${conversation.sources.join(', ')}, then: ${conversation.done.join('; ')}.`}
       >

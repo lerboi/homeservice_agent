@@ -52,7 +52,7 @@ export default function AgentPage() {
             </Eyebrow>
             <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-[4.75rem]">
               Ask your business anything. <br className="hidden md:block" />
-              <Em>Then tell it what to do.</Em>
+              <Em tone="spark-deep">Then tell it what to do.</Em>
             </h1>
             <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-mk-ink/70">
               Voco Agent is an AI agent connected to your reviews, inbox, calendar, search data and
@@ -79,7 +79,7 @@ export default function AgentPage() {
           <div className="lg:sticky lg:top-28 lg:self-start">
             <Eyebrow tone="spark">Sound familiar?</Eyebrow>
             <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-5xl">
-              The jobs nobody <Em>has time for.</Em>
+              The jobs nobody <Em tone="spark-deep">has time for.</Em>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-mk-muted">
               They are not hard. There are just too many of them, spread over too many screens.
@@ -106,7 +106,7 @@ export default function AgentPage() {
         <div className="max-w-3xl">
           <Eyebrow tone="spark">What it does</Eyebrow>
           <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-6xl">
-            It tells you. <Em>And it does it.</Em>
+            It tells you. <Em tone="spark-deep">And it does it.</Em>
           </h2>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-mk-muted">
             Six jobs to start with. Under each is the kind of thing you would type.
@@ -170,7 +170,7 @@ export default function AgentPage() {
         <div className="max-w-2xl">
           <Eyebrow tone="spark">Where you talk to it</Eyebrow>
           <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-5xl">
-            No new app. <Em>It is in the ones you have.</Em>
+            No new app. <Em tone="spark-deep">It is in the ones you have.</Em>
           </h2>
         </div>
         <ul className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-mk-line bg-mk-line sm:grid-cols-2 lg:grid-cols-4">
@@ -189,7 +189,7 @@ export default function AgentPage() {
           <div>
             <Eyebrow tone="spark">You stay in charge</Eyebrow>
             <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-5xl">
-              It acts on <Em>your say-so.</Em>
+              It acts on <Em tone="spark-deep" className="whitespace-nowrap">your say-so.</Em>
             </h2>
             <ul className="mt-9 space-y-7">
               {AGENT_CONTROLS.map((control) => (

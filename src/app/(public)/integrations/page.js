@@ -19,11 +19,12 @@ export default function IntegrationsPage() {
   return (
     <>
       <PageHero
+        tone="ink"
         eyebrow="Integrations"
         title="It works in the tools you already run."
         lede="Voco connects to your systems for you. Tell us what you use; we set the connection up, decide with you what the agent may do there, and test it before the first real call."
       >
-        <DemoCTA />
+        <DemoCTA onInk />
       </PageHero>
 
       <Section tone="white">

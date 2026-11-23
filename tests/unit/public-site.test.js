@@ -284,6 +284,20 @@ describe('landing page', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
+  it('shows only the six agreed tools on the home page, each with an integration page', () => {
+    const block = sections.slice(sections.indexOf('export const HOME_TOOLS'), sections.indexOf('function ToolIcon'));
+    const slugs = [...block.matchAll(/slug: '([a-z-]+)'/g)].map((m) => m[1]);
+    expect(slugs).toEqual(['whatsapp', 'email', 'slack', 'google-calendar', 'outlook-calendar', 'rest-api']);
+    for (const slug of slugs) expect(getIntegration(slug)).not.toBeNull();
+    expect(sections).not.toContain('integrationsByGroup');
+  });
+
+  it('sets headline emphasis in colour, not in an italic face', () => {
+    const primitives = read('src/components/marketing/primitives.jsx');
+    expect(primitives).not.toMatch(/italic|font-accent/);
+    expect(read('src/app/(public)/layout.js')).not.toContain('Instrument_Serif');
+  });
+
   it('gives neither product the hero to itself', () => {
     expect(page).toContain('product={PRODUCTS.voice}');
     expect(page).toContain('product={PRODUCTS.agent}');

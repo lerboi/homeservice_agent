@@ -18,7 +18,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
-| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Second pass in progress after the owner's review: sign-in links removed, Voco Agent added as a second product, new identity. Stage one (home, `/voice`, `/agent`) is committed and waiting for the owner's look; the other pages are not restyled yet | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
+| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Second pass in progress after the owner's review: sign-in links removed, Voco Agent added as a second product, new identity. The owner approved the direction; their follow-up changes are in (no italic headline face, six-tool icon section, one page width, phone widths checked). `/pricing`, `/about`, `/demo` and `/contact` still carry voice-only copy and the plain opener | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
 
 ## What is left of Task 2
 
@@ -27,9 +27,9 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 
 ## What is left of Task 3
 
-1. Owner's look at stage one of the second pass (home, `/voice`, `/agent`); then stage two, restyling `/use-cases`, `/integrations`, `/demo`, `/pricing`, `/about`, `/contact` so each opens differently; then the go-ahead to push `rebrand` to `main`.
+1. Owner's decisions: trim `/integrations` to the six tools shown on the home page or keep all 22; give Voco Agent entries on `/use-cases`. Then rewrite `/pricing`, `/about`, `/demo` and `/contact` for two products, and the go-ahead to push `rebrand` to `main`.
 2. The recorded demo video: record it ([[Record a demo]]), then set `DEMO_VIDEO.src` in `src/data/site.js`. Until then the site shows a labelled still.
-3. A look at mobile widths, the mobile nav drawer and a real contact-form submission.
+3. The mobile nav drawer and a real contact-form submission (page layouts were checked at 390 px on 2026-11-24).
 4. Owner's review of `/privacy` and `/terms`: the body text still says "AI receptionist" and describes a 14-day free trial.
 
 ## Verified in production on 2026-11-24 (agent `f7c632d`)

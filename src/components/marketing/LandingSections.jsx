@@ -7,11 +7,15 @@
  * on the system.
  */
 import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Check, FileText, Languages, PhoneForwarded, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowRight, ArrowUpRight, Braces, CalendarDays, Check, FileText, Languages, Mail, PhoneForwarded, Slack,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { siGooglecalendar, siWhatsapp } from 'simple-icons';
 import { DemoCTA } from '@/components/landing/DemoCTA';
 import { FAQChatWidget } from '@/app/components/landing/FAQChatWidget';
 import { FAQ_ITEMS } from '@/data/faq';
-import { integrationsByGroup } from '@/data/integrations';
+import { getIntegration } from '@/data/integrations';
 import { EXTRA_CAPABILITIES, USE_CASES } from '@/data/use-cases';
 import { DemoVideo } from './DemoVideo';
 import { Icon } from './icons';
@@ -40,7 +44,7 @@ const PRODUCT_PANELS = [
     key: 'voice',
     name: 'Voco Voice',
     href: '/voice',
-    title: <>For the people who <Em>call you.</Em></>,
+    title: <>For the people who <Em tone="signal-deep">call you.</Em></>,
     body: 'A voice agent on your phone line or website. It answers at once, works out what the caller wants, and finishes the job in your systems while they are still on the line.',
     jobs: ['Books and moves appointments', 'Takes enquiries into your CRM', 'Schedules callbacks and tasks', 'Looks up orders and accounts'],
     where: 'Phone · Web',
@@ -54,7 +58,7 @@ const PRODUCT_PANELS = [
     key: 'agent',
     name: 'Voco Agent',
     href: '/agent',
-    title: <>For the work <Em>behind the counter.</Em></>,
+    title: <>For the work <Em tone="spark-deep">behind the counter.</Em></>,
     body: 'An AI agent connected to your reviews, inbox, calendar, search data and support desk. Message it like a colleague. It finds the answer, then does the job.',
     jobs: ['Reads and replies to customer feedback', 'Explains how you show up on Google', 'Sorts email and drafts replies', 'Runs the calendar and tells people'],
     where: 'WhatsApp · Telegram · Slack · Email',
@@ -71,7 +75,7 @@ export function ProductsSection() {
     <Section tone="paper" id="products" size="wide">
       <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-end">
         <h2 className="max-w-3xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-6xl">
-          Two products. <Em>One idea:</Em> the work gets done.
+          Two products. One idea: the work gets done.
         </h2>
         <p className="max-w-xs text-[15px] leading-relaxed text-mk-muted md:pb-2">
           Take either, or both. Each is set up by us, with you, in the tools you already use.
@@ -139,7 +143,7 @@ export function SetupSection() {
         <div>
           <Eyebrow>Getting started</Eyebrow>
           <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.035em] md:text-5xl">
-            You do not set <Em>anything</Em> up.
+            You do not set <Em tone="signal-deep">anything</Em> up.
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-mk-muted">
             No software to learn and nothing to install. We do the connecting; you tell us what good looks like.
@@ -269,47 +273,93 @@ export function UseCasesSection() {
   );
 }
 
+/**
+ * The tools shown on the home page (owner's list, 2026-11-24): messaging,
+ * email, the two calendars and the business's own API. `slug` must exist in
+ * src/data/integrations.js. `brand` is a simple-icons mark drawn in its own
+ * colour; the rest use a lucide icon.
+ */
+export const HOME_TOOLS = [
+  { slug: 'whatsapp', name: 'WhatsApp', does: 'Confirmations to your callers, and a chat with your agent.', brand: siWhatsapp },
+  { slug: 'email', name: 'Email', does: 'Sorts the inbox, drafts replies, sends confirmations.', icon: Mail },
+  { slug: 'slack', name: 'Slack', does: 'Alerts for your team, and the agent in your channel.', icon: Slack },
+  { slug: 'google-calendar', name: 'Google Calendar', does: 'Checks real availability and writes the booking.', brand: siGooglecalendar },
+  { slug: 'outlook-calendar', name: 'Outlook Calendar', does: 'The same, for teams on Microsoft 365.', icon: CalendarDays },
+  { slug: 'rest-api', name: 'Your own API', does: 'Anything else your systems can do, through your API.', icon: Braces, accent: true },
+];
+
+function ToolIcon({ tool }) {
+  if (tool.brand) {
+    return (
+      <svg viewBox="0 0 24 24" className="size-7" fill={`#${tool.brand.hex}`} aria-hidden="true">
+        <path d={tool.brand.path} />
+      </svg>
+    );
+  }
+  const Glyph = tool.icon;
+  return <Glyph className="size-7 text-mk-ink" strokeWidth={1.75} aria-hidden="true" />;
+}
+
 export function BackendsSection() {
-  const groups = integrationsByGroup();
+  const tools = HOME_TOOLS.filter((tool) => getIntegration(tool.slug));
   return (
-    <Section tone="ink" id="backends">
-      <div className="grid gap-8 md:grid-cols-[1fr_auto] md:items-end">
+    <Section tone="ink" id="backends" className="relative overflow-hidden">
+      <div className="mk-grid-ink pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" aria-hidden="true" />
+      <div className="relative">
         <SectionHeader
           onInk
-          eyebrow="Backends"
+          align="center"
+          eyebrow="Your tools"
           title="It works in the tools you already run."
-          lede="Both products work inside your systems, and Voco connects them for you. Tell us what you use; we set each connection up and test it with you before anything goes live."
+          lede="Voco connects them for you and tests each one with you before anything goes live."
         />
-        <Link
-          href="/integrations"
-          className="mb-1 inline-flex items-center gap-1 text-sm font-medium text-mk-signal underline decoration-mk-signal/40 underline-offset-4 hover:decoration-mk-signal"
-        >
-          All integrations <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
 
-      <div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
-        {groups.map((group) => (
-          <div key={group.id} className="bg-mk-ink p-6">
-            <h3 className="font-code text-[11px] uppercase tracking-[0.16em] text-white/50">{group.title}</h3>
-            <ul className="mt-4 flex flex-wrap gap-2">
-              {group.items.map((item) => (
-                <li key={item.slug}>
-                  <Link
-                    href={`/integrations/${item.slug}`}
-                    className={`inline-flex h-8 items-center rounded-full border px-3 text-[13px] transition-colors ${
-                      item.slug === 'rest-api'
-                        ? 'border-mk-signal/60 text-mk-signal hover:border-mk-signal'
-                        : 'border-white/15 text-white/85 hover:border-white/50'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        {/* Voco in the middle, a line out to each tool */}
+        <div className="relative mx-auto mt-12 hidden h-24 max-w-5xl lg:block" aria-hidden="true">
+          <span className="absolute left-1/2 top-0 flex h-11 -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 font-display text-base font-semibold tracking-[-0.01em]">
+            <span className="size-2 rounded-full bg-mk-signal" />
+            Voco
+            <span className="size-2 rounded-full bg-mk-spark" />
+          </span>
+          <span className="absolute left-1/2 top-11 h-6 w-px bg-white/20" />
+          <span className="absolute left-[16.66%] right-[16.66%] top-[4.25rem] h-px bg-white/20" />
+          {['left-[16.66%]', 'left-1/2', 'left-[83.33%]'].map((x) => (
+            <span key={x} className={`absolute top-[4.25rem] h-7 w-px bg-white/20 ${x}`} />
+          ))}
+        </div>
+
+        <ul className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:mt-0 lg:grid-cols-3">
+          {tools.map((tool) => (
+            <li key={tool.slug}>
+              <Link
+                href={`/integrations/${tool.slug}`}
+                className={`group flex h-full items-start gap-4 rounded-2xl border p-5 transition-colors ${
+                  tool.accent
+                    ? 'border-mk-signal/50 bg-mk-signal/[0.08] hover:border-mk-signal'
+                    : 'border-white/10 bg-white/[0.04] hover:border-white/30'
+                }`}
+              >
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white">
+                  <ToolIcon tool={tool} />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 font-display text-lg font-semibold tracking-[-0.01em]">
+                    {tool.name}
+                    <ArrowUpRight className="size-3.5 text-white/40 transition-colors group-hover:text-white" aria-hidden="true" />
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-white/65">{tool.does}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-10 text-center text-sm text-white/60">
+          Use something else?{' '}
+          <Link href="/integrations" className="font-medium text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">
+            See how we connect it
+          </Link>
+        </p>
       </div>
     </Section>
   );

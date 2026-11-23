@@ -28,7 +28,7 @@ export default function VoicePage() {
                 Voco Voice
               </Eyebrow>
               <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-[5rem]">
-                Give your backend <Em>a voice.</Em>
+                Give your backend <Em tone="signal-deep">a voice.</Em>
               </h1>
               <p className="mt-7 max-w-xl text-lg leading-relaxed text-mk-ink/70">
                 Voco Voice answers the call, understands what the caller wants, and does the work in

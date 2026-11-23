@@ -15,7 +15,8 @@ Part of [[Public Site]]. First decided in [[Plan 2 - Frontend rebrand to voice i
 
 - **One colour per product.** Signal green is Voco Voice; spark amber is Voco Agent. A page or section about one product uses that product's colour for its eyebrow, checks, wash and primary button.
 - **Each page opens differently.** Home is an ink hero with both products; `/voice` is a green wash with the call illustration beside the headline; `/agent` is an amber wash with a centred headline and the chat in the middle. Do not reuse one hero block for every page.
-- **Headlines mix two faces.** The grotesque carries the line; the words that matter are set in the italic serif with `<Em>`.
+- **Headline emphasis is colour.** One face throughout; the words that matter take the product colour through `<Em tone>`. An italic serif was tried on 2026-11-24 and removed the same day: the owner found it hard to read. Do not bring italics back into headlines.
+- **One page width.** Every `Container` (and the nav and footer) is `max-w-7xl`, so section edges line up; text blocks set their own narrower measure.
 - Hairline borders, no drop shadows. The dark heroes carry a dot grid and two soft colour glows; that is the only gradient use.
 
 ## Tokens
@@ -45,11 +46,10 @@ Defined in the `@theme inline` block of `src/app/globals.css`, so they are ordin
 | Class | Face | Use |
 |---|---|---|
 | `font-display` | Bricolage Grotesque | Headlines, card titles, big numbers (semibold, tight tracking) |
-| `font-accent` | Instrument Serif italic | Emphasised words inside headlines, through `<Em>` |
 | (default) | Inter | Body |
 | `font-code` | JetBrains Mono | Eyebrows, transcript speaker labels, action logs, chips |
 
-The three marketing faces are loaded with `next/font` in `src/app/(public)/layout.js`, not the root layout, so the app does not load them.
+The two marketing faces are loaded with `next/font` in `src/app/(public)/layout.js`, not the root layout, so the app does not load them.
 
 ## Primitives
 
@@ -58,11 +58,11 @@ The three marketing faces are loaded with `next/font` in `src/app/(public)/layou
 | Export | What it gives |
 |---|---|
 | `Section` | `tone="paper" | "white" | "ink"`, standard vertical padding, optional top hairline, an `id` for anchors |
-| `Container` | Width (`narrow`, default, `wide`) and side padding |
-| `PageHero` | The plain interior page opener (still used by pages not yet restyled) |
+| `Container` | Side padding and the page width (`narrow` for legal text; everything else is one width) |
+| `PageHero` | Interior page opener with a dot grid; `tone="paper" | "white" | "signal" | "spark" | "ink"` so pages do not open alike (`/use-cases` signal, `/integrations` ink) |
 | `SectionHeader` | Eyebrow + title + lede; takes `tone` |
 | `Eyebrow` | Mono label; `tone="signal" | "spark"`, `onInk` |
-| `Em` | Italic serif emphasis inside a headline; optional `tone` |
+| `Em` | Coloured emphasis inside a headline: `tone="signal" | "spark"` on ink, `"signal-deep" | "spark-deep"` on light, `"both"` (green running into amber, home hero only) |
 | `PageTitle`, `SectionTitle`, `Lede` | Type styles |
 | `ButtonLink`, `buttonClasses` | `primary` (green), `spark` (amber), `secondary`, `secondaryOnInk`, `ink`; sizes `sm`, `md`, `lg` |
 | `Card`, `TextLink` | Bordered white card; signal-coloured link |

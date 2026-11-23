@@ -46,7 +46,7 @@ function ProductWindow({ product, does, children }) {
   const dot = product.tone === 'spark' ? 'bg-mk-spark' : 'bg-mk-signal';
   const text = product.tone === 'spark' ? 'text-mk-spark' : 'text-mk-signal';
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
           <p className={`flex items-center gap-2 font-code text-[11px] uppercase tracking-[0.16em] ${text}`}>
@@ -91,7 +91,7 @@ export default function HomePage() {
                 built into your business
               </p>
               <h1 className="mt-6 font-display text-[3.25rem] font-semibold leading-[0.95] tracking-[-0.045em] sm:text-7xl lg:text-[6.75rem]">
-                AI that <Em className="text-white">does</Em>
+                AI that <Em tone="both">does</Em>
                 <br />
                 the work.
               </h1>

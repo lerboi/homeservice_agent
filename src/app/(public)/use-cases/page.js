@@ -20,7 +20,8 @@ export default function UseCasesPage() {
   return (
     <>
       <PageHero
-        eyebrow="Use cases"
+        tone="signal"
+        eyebrow="Voco Voice · use cases"
         title="Whatever callers ring you to get done."
         lede="Each of these is a conversation that ends with a change in one of your systems. Start with one; add the rest as you see what callers ask for."
       >

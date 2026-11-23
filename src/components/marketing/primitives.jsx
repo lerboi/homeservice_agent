@@ -14,7 +14,8 @@ export function cx(...parts) {
 }
 
 export function Container({ className, size = 'default', children }) {
-  const width = size === 'narrow' ? 'max-w-3xl' : size === 'wide' ? 'max-w-7xl' : 'max-w-6xl';
+  // One page width everywhere so section edges line up with the nav.
+  const width = size === 'narrow' ? 'max-w-3xl' : 'max-w-7xl';
   return <div className={cx('mx-auto w-full px-6', width, className)}>{children}</div>;
 }
 
@@ -36,17 +37,22 @@ export function Section({ tone = 'paper', id, className, containerClassName, siz
   );
 }
 
+const EM_TONES = {
+  signal: 'text-mk-signal',
+  spark: 'text-mk-spark',
+  'signal-deep': 'text-mk-signal-deep',
+  'spark-deep': 'text-mk-spark-deep',
+  // Both products at once: green running into amber. Home hero only.
+  both: 'bg-linear-to-r from-mk-signal to-mk-spark bg-clip-text text-transparent',
+};
+
 /**
- * The emphasised words inside a headline: italic serif against the grotesque.
- * `tone` colours it for a product (signal = Voice, spark = Agent).
+ * The emphasised words inside a headline. Same face and weight as the rest of
+ * the line; the emphasis is the product's colour (signal = Voice, spark =
+ * Agent; use the -deep variants on light surfaces).
  */
 export function Em({ children, tone, className }) {
-  const colour = tone === 'signal' ? 'text-mk-signal' : tone === 'spark' ? 'text-mk-spark' : tone === 'signal-deep' ? 'text-mk-signal-deep' : tone === 'spark-deep' ? 'text-mk-spark-deep' : undefined;
-  return (
-    <em className={cx('font-accent font-normal italic tracking-[-0.01em]', colour, className)}>
-      {children}
-    </em>
-  );
+  return <span className={cx(tone && EM_TONES[tone], className)}>{children}</span>;
 }
 
 const EYEBROW_TONES = {
@@ -109,14 +115,34 @@ export function SectionHeader({ eyebrow, title, lede, onInk = false, tone, align
   );
 }
 
-/** Page opener for interior pages: paper background, room for the fixed nav. */
-export function PageHero({ eyebrow, title, lede, children, size }) {
+const HERO_TONES = {
+  paper: 'border-b border-mk-line bg-mk-paper text-mk-ink',
+  white: 'border-b border-mk-line bg-white text-mk-ink',
+  signal: 'border-b border-mk-ink/10 bg-mk-signal-wash text-mk-ink',
+  spark: 'border-b border-mk-ink/10 bg-mk-spark-wash text-mk-ink',
+  ink: 'bg-mk-ink text-white',
+};
+
+/**
+ * Page opener for interior pages, with room for the fixed nav. `tone` sets the
+ * surface so pages do not all open alike: signal for Voco Voice pages, spark
+ * for Voco Agent pages, ink for the tools pages, paper or white otherwise.
+ */
+export function PageHero({ eyebrow, title, lede, children, size, tone = 'paper' }) {
+  const onInk = tone === 'ink';
   return (
-    <section className="border-b border-mk-line bg-mk-paper pb-16 pt-32 text-mk-ink md:pb-20 md:pt-40">
-      <Container size={size}>
-        {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+    <section className={cx('relative overflow-hidden pb-16 pt-32 md:pb-20 md:pt-40', HERO_TONES[tone])}>
+      <div
+        className={cx(
+          'pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_right,transparent_30%,black)]',
+          onInk ? 'mk-grid-ink' : 'mk-grid-paper',
+        )}
+        aria-hidden="true"
+      />
+      <Container size={size} className="relative">
+        {eyebrow && <Eyebrow onInk={onInk} tone={tone === 'spark' ? 'spark' : 'signal'}>{eyebrow}</Eyebrow>}
         <PageTitle className={cx('max-w-4xl', eyebrow && 'mt-5')}>{title}</PageTitle>
-        {lede && <Lede className="mt-6 max-w-2xl">{lede}</Lede>}
+        {lede && <Lede onInk={onInk} className="mt-6 max-w-2xl">{lede}</Lede>}
         {children && <div className="mt-9">{children}</div>}
       </Container>
     </section>

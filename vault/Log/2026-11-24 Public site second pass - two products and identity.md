@@ -47,9 +47,22 @@ Voco Agent is not built. The page describes it under the same done-for-you frami
 - ESLint on the public sources: only the pre-existing `PublicChatButton.jsx` error.
 - Chrome at desktop width: home, `/agent` and `/voice` top to bottom; both animations play; no console errors.
 
+## Owner's review of stage one, and the changes made
+
+The owner liked the direction and the separate Voice and Agent pages. Changes asked for and made:
+
+- **No italic serif.** Hard to read. Emphasis is now the product colour in the same face; Instrument Serif is no longer loaded.
+- **"It works in the tools you already run"** shows only WhatsApp, email, Slack, the two calendars and "your own API", as icon tiles wired to a Voco node instead of text pills.
+- **Cleaner and consistent.** One page width for every section, nav and footer.
+- **Phones.** Checked at 390 px; fixed the home hero, where the call illustration overlapped the label of the agent illustration below it.
+- `PageHero` takes a `tone`; `/use-cases` opens on the green wash and `/integrations` on ink.
+
+Verified after these: 123 public-site, SEO and chat tests pass; `next build` succeeds; Chrome at desktop width and at 390 px.
+
 ## Not done yet
 
-- Stage two: `/use-cases`, `/integrations`, `/demo`, `/pricing`, `/about`, `/contact` still open with the same plain `PageHero`. Held until the owner has seen stage one.
-- `next build` was not re-run after this pass.
-- Mobile widths, as before.
+- `/demo`, `/pricing`, `/about` and `/contact` still open with the plain paper `PageHero` and have not been redesigned.
+- `/integrations` still lists all 22 systems although the home page shows six; the owner has not said whether to trim it.
+- `/pricing`, `/about`, `/demo` and `/contact` copy still speaks only of calls.
+- The mobile nav drawer and a real contact-form submission are still unexercised.
 - Use-case pages and the integrations list are still voice-only; whether the agent gets its own use cases there is undecided.

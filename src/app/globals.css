@@ -56,7 +56,6 @@
   --color-mk-spark-wash: #FFF4DC;
   --color-mk-signal-wash: #E3F6EE;
   --font-display: var(--font-mk-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-accent: var(--font-mk-accent), Georgia, 'Times New Roman', serif;
   --font-code: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-landing-surface: var(--color-landing-surface);
   --color-landing-dark: var(--color-landing-dark);

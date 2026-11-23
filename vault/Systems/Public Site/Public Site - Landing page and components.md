@@ -20,12 +20,14 @@ The site sells two products as equals (owner's instruction, 2026-11-24): **Voco 
 | 1 | Hero: "AI that does the work.", lede, CTAs, then the two products' illustrations side by side | inline + `LiveCallDemo` + `AgentChatDemo` | ink |
 | 2 | The two products as panels, each with four jobs and a link to its page | `ProductsSection` | paper |
 | 3 | Voco Voice demo | `DemoSection` → `DemoVideo` | white |
-| 4 | Backends: integration groups | `BackendsSection` | ink |
+| 4 | Your tools: six icon tiles wired to a Voco node (WhatsApp, Email, Slack, Google Calendar, Outlook Calendar, your own API) | `BackendsSection`, `HOME_TOOLS` | ink |
 | 5 | Getting started: three steps, done by Voco | `SetupSection` | paper |
 | 6 | FAQ with the chat widget | `FaqSection` | white |
 | 7 | Final CTA | `FinalCtaSection` | ink |
 
 Anchors: `#products`, `#demo`, `#backends`, `#setup`, `#faq`.
+
+The tools list is the owner's (2026-11-24): only those six appear on the home page. `HOME_TOOLS` in `LandingSections.jsx` holds them; WhatsApp and Google Calendar use their brand marks from the `simple-icons` package, the others a lucide icon (that package has no Slack or Outlook mark). `/integrations` still lists all 22 systems.
 
 ## Voco Voice (`src/app/(public)/voice/page.js`)
 
@@ -58,6 +60,10 @@ Written for an owner who is not technical: jobs and outcomes, no connectors or A
 | `primitives.jsx` | See the design system note. |
 
 Elsewhere: `src/app/components/landing/LandingNav.jsx` (links from `NAV_LINKS`; mobile drawer; one "Book a demo" button), `LandingFooter.jsx`, `FAQChatWidget.jsx`; `src/components/landing/DemoCTA.js`, `PublicChatButton.jsx`, `PublicChatPanel.jsx`.
+
+## Phone widths
+
+Checked on 2026-11-24 at 390 px (home, `/voice`, `/agent`, `/use-cases`, `/integrations`, `/contact`): no horizontal overflow; the two hero illustrations stack and use shorter minimum heights. This machine's Chrome window cannot be made narrow, so the check loads the page in a 390 px same-origin iframe from the browser tools.
 
 ## No sign-in on the public site
 

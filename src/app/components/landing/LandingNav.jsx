@@ -38,7 +38,7 @@ export function LandingNav() {
           scrolled ? 'border-mk-line' : 'border-transparent'
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex shrink-0 items-center" aria-label="Voco home">
             <Image src={LOGO_DARK} alt="Voco" width={172} height={96} className="h-11 w-auto -ml-3" priority />
           </Link>
