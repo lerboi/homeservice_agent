@@ -73,13 +73,17 @@ export async function GET(request) {
       // Non-critical -- continue with default name
     }
 
-    // Determine is_primary (D-03): first connected calendar becomes primary
-    const { count } = await supabase
+    // Determine is_primary (D-03): this calendar is primary unless ANOTHER
+    // provider already holds that role. Counting all rows (the old rule)
+    // cleared the flag on reconnect, because the replaced row was counted too.
+    const { data: existingRows } = await supabase
       .from('calendar_credentials')
-      .select('id', { count: 'exact', head: true })
+      .select('provider, is_primary')
       .eq('tenant_id', tenantId);
 
-    const isPrimary = count === 0;
+    const isPrimary = !(existingRows || []).some(
+      (row) => row.provider !== 'outlook' && row.is_primary
+    );
 
     // Upsert credentials into DB
     const { error: upsertError } = await supabase.from('calendar_credentials').upsert(

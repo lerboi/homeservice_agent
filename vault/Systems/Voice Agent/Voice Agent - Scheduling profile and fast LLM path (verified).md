@@ -34,8 +34,22 @@ Every call logs one line at start: `[agent] LLM: groq qwen/qwen3.8-27b (reasonin
 ## Why these choices
 Measurements, the model bake-off and the rejected option (Groq `gpt-oss-120b`: erratic first token, and it booked before the caller confirmed) are in [[2026-11-23 Pipeline health check before the demo]]. This supersedes [[Decision - Stay on gpt-4.1-mini (no Cerebras or Groq)]] for the scheduling profile only.
 
+## Safeguards added on the `demo-studio` branch (2026-11-23, not yet deployed)
+
+| Safeguard | What it does | Where | Switch |
+|---|---|---|---|
+| Booking-claim guard | On turns between an offer and a booking, holds back the first 90 characters of the reply. If they state the booking is done and there is no tool call, the reply is dropped unspoken and the turn is re-run with `book_appointment` forced. At most twice per call. | `src/lib/booking_claim_guard.py`, `VocoAgent.llm_node` in `src/agent.py` | `VOCO_BOOKING_CLAIM_GUARD=false` |
+| Confirm-then-book gate | Refuses, once per slot, a booking for a time first offered after the caller's last turn, and tells the model to read it back and ask. | `src/tools/book_appointment.py` (search for `Confirm-then-book gate`) | `VOCO_CONFIRM_GATE=false` |
+
+Why the guard exists: on a scripted call Qwen answered "yes, please book it" with "You're booked for tomorrow at twelve noon" and never called the tool. See [[2026-11-23 Demo Studio build]]. The gate only catches look-up-and-book in the same turn; it cannot tell whether a "yes" was really a yes.
+
+Scheduling bookings now write a calendar event titled `<caller>: <reason>` with the body "Booked by the Voco voice agent" (`src/lib/calendar_text.py`), for real calls as well as demos.
+
+## Tests
+`tests/test_scheduling_profile.py` (prompt invariants, the five tools, the booking schema, provider selection and fallback wiring, env switches), `tests/test_booking_claim_guard.py`, and the gate tests in `tests/test_demo_studio.py`. The provider block sits inside the entrypoint, so its wiring is checked against the source text rather than by running it.
+
 ## Known gaps
-- No automated tests cover the scheduling prompt, the scheduling tool schema or the provider selection yet.
-- The confirm-then-book rule is enforced by the prompt, not by code. Qwen followed it in every scripted call so far; a code-level gate does not exist.
-- The agent sometimes speaks its own filler ("Okay, booking that in for you") although the prompt tells it not to.
+- The agent sometimes speaks its own filler ("Alright, locking that in now") although the prompt tells it not to.
+- The guard reads English. A false confirmation in another language passes.
+- The greeting starts about 2 s after dispatch.
 - Measuring: `python vault/_meta/tools/baseline_call.py <tenant_id> <tenant_phone>`.

@@ -1,5 +1,12 @@
 """Scripted sandboxed web test call against the DEPLOYED agent. Measures voice-to-voice gap
-(end of caller audio -> first agent audio) from this machine. No secrets are printed."""
+(end of caller audio -> first agent audio) from this machine. No secrets are printed.
+
+Env switches:
+  BASELINE_AGENT_NAME=voco-voice-agent-dev   dispatch a local dev worker instead of production
+  BASELINE_DEMO=google                       Demo Studio call: the booking is pushed to that
+                                             calendar and kept after the call (clean it up with
+                                             demo_event_check.mjs --cleanup). Prints the
+                                             voco.events stream under EVENTS."""
 import asyncio, json, os, sys, time, array, math, urllib.request, io
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
@@ -54,9 +61,13 @@ async def main():
     print("caller audio ready:", [round(len(p) / 2 / SR, 2) for p in pcm], "s")
     room_name = f"test-web-{TENANT_ID}-{int(time.time() * 1000)}"
     lk = api.LiveKitAPI()
+    room_meta = {"test_call": True, "web_test": True, "tenant_id": TENANT_ID, "to_number": TO_NUMBER}
+    demo_destination = os.environ.get("BASELINE_DEMO", "").strip().lower()
+    if demo_destination:
+        room_meta["demo"] = {"task": "scheduling", "destination": demo_destination, "keep_booking": True}
     await lk.room.create_room(api.CreateRoomRequest(
         name=room_name, empty_timeout=120,
-        metadata=json.dumps({"test_call": True, "web_test": True, "tenant_id": TENANT_ID, "to_number": TO_NUMBER})))
+        metadata=json.dumps(room_meta)))
     token = (api.AccessToken().with_identity(f"baseline-{int(time.time())}").with_name("Baseline Caller")
              .with_grants(api.VideoGrants(room_join=True, room=room_name, can_publish=True, can_subscribe=True)).to_jwt())
     room = rtc.Room()
@@ -97,6 +108,16 @@ async def main():
             lines.append((now(), who, text.strip()))
 
     room.register_text_stream_handler("lk.transcription", lambda r, pid: asyncio.create_task(on_text(r, pid)))
+
+    events = []
+
+    async def on_event(reader, participant_identity):
+        try:
+            events.append((now(), json.loads(await reader.read_all())))
+        except Exception as err:
+            events.append((now(), {"type": "unparseable", "error": str(err)}))
+
+    room.register_text_stream_handler("voco.events", lambda r, pid: asyncio.create_task(on_event(r, pid)))
 
     await room.connect(os.environ["LIVEKIT_URL"], token)
     source = rtc.AudioSource(SR, 1)
@@ -170,6 +191,9 @@ async def main():
     print("TRANSCRIPT")
     for t, who, text in sorted(lines):
         print(f"  [{t:6.2f}] {who}: {text}")
+    print("EVENTS")
+    for t, ev in events:
+        print(f"  [{t:6.2f}] {json.dumps(ev)}")
     print("RESULTS", json.dumps(results))
 
 

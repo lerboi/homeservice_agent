@@ -16,7 +16,9 @@
 import { verifyAdmin } from '@/lib/admin';
 import { AgentDispatchClient } from 'livekit-server-sdk';
 
-const AGENT_NAME = 'voco-voice-agent';
+// VOCO_TEST_AGENT_NAME points test calls at a local dev worker
+// (voco-voice-agent-dev) when developing; unset in production.
+const AGENT_NAME = process.env.VOCO_TEST_AGENT_NAME || 'voco-voice-agent';
 
 // Vercel function budget: the LiveKit Cloud API + Supabase round-trips must
 // finish before the platform's default 10 s cutoff (a timeout surfaces to the

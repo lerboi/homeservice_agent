@@ -36,6 +36,16 @@ cd /c/Users/leheh/.Projects/homeservice_agent
 BASELINE_AGENT_NAME=voco-voice-agent-dev python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
 ```
 
+### A demo call (books into Google Calendar and keeps the booking)
+```bash
+BASELINE_DEMO=google BASELINE_AGENT_NAME=voco-voice-agent-dev python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+node --env-file=.env.local vault/_meta/tools/demo_event_check.mjs 24141cd0-5735-4c7a-82d5-994c6b821861 --cleanup
+```
+The first prints the `voco.events` stream under `EVENTS` (expect `booked` then `calendar_saved`). The second reads the event back through the Google API, then deletes it and cancels the appointment. Without `BASELINE_AGENT_NAME` the call goes to production. `node --env-file=.env.local vault/_meta/tools/verify_google_calendar.mjs <tenant_id>` checks the connection alone.
+
+### The Demo Studio page against the local worker
+Start the Next app with `VOCO_TEST_AGENT_NAME=voco-voice-agent-dev npm run dev`; the dispatch route then sends `/admin/demo` and `/admin/test-agent` calls to the dev worker.
+
 Override behaviour for an experiment by exporting env vars before starting the worker, for example `VOCO_GROQ_MODEL`, `VOCO_LLM_PROVIDER=openai`, `VOCO_AGENT_PROFILE=home_service`, `VOCO_VAD_MIN_SILENCE_S`.
 
 ## Compare LLMs without a call
@@ -47,6 +57,7 @@ Override behaviour for an experiment by exporting env vars before starting the w
 - **Do not start the worker through `runpy` or a wrapper script.** On Windows the worker's child processes re-run the wrapper, start a second webhook server, fail to bind port 8080, and leave orphans.
 - **Stopping the worker**: stopping the shell does not always stop the Python processes. Find them by command line (`src.agent`, or executables under `livekit-agent\.venv18`) and stop those specific PIDs. Check that nothing is still listening on port 8080 before starting again. Do not kill every `python.exe`.
 - **Do not pipe the scripted call through `tail`**: output is lost if it hangs. `grep` on its stdout is fine.
+- **The worker refuses jobs when the machine is busy.** In `start` mode livekit-agents marks the worker unavailable above 70% CPU load (`worker is at full capacity, marking as unavailable` in the log) and the call sits at "Waiting for the agent". A compiling `next dev` is enough to cause it. Close what you can, or run the scripted call without the Next server.
 - **Local numbers are not Railway numbers.** A local worker reaches Groq and LiveKit through different regions. Compare like with like.
 - **Free-plan ElevenLabs library voices return 402** and the caller audio cannot be synthesized. The script uses a premade voice for the caller for that reason.
 

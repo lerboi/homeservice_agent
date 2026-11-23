@@ -9,6 +9,8 @@ tags: [voco/plan]
 
 # Handoff - Demo Studio and rebrand (start here)
 
+> **Update, 2026-11-23 late:** Task 2 is built and locally verified on the `demo-studio` branch in both repos, not deployed. Sections 1 and 3 below describe the starting point; what was done, what the tests showed and what is left are in [[2026-11-23 Demo Studio build]], [[Demo Studio]] and [[Now]]. Remaining for Task 2: the owner's go-ahead to push, a scripted call against production, and a spoken call through `/admin/demo`. Task 3 has not started.
+
 Read this note fully, then [[Now]]. It overrides [[Plan 3 - Demo Studio]] and [[Plan 2 - Frontend rebrand to voice integration for any backend]] wherever they disagree, because the owner changed several decisions after those were written.
 
 Naming: the owner calls the Demo Studio "Task 2" and the public-site rebrand "Task 3" (the vault migration was Task 1 and is finished). The plan notes are numbered by when they were written: Plan 3 = Demo Studio, Plan 2 = rebrand.
