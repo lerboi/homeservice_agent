@@ -9,7 +9,7 @@ tags: [voco/system/voice-agent]
 
 # Appointments agent (verified)
 
-Part of [[Voice Agent]]. Built 2026-11-24 on branch `appointments-agent` in both repos; **not merged, not deployed**. Build record and call results: [[2026-11-24 Appointments agent build]]. Why it is a separate package: [[Decision - One worker runs several agents]].
+Part of [[Voice Agent]]. Built and deployed 2026-11-24 (agent `5c0d395` on Railway, Next app `a307ce1` on Vercel). Demo Studio calls use it; phone calls do not yet. Build record and call results: [[2026-11-24 Appointments agent build]]. Why it is a separate package: [[Decision - One worker runs several agents]].
 
 It books, looks up, moves and cancels appointments in the business's connected calendar. It has no address intake, urgency triage, lead capture, transfer, caller history or CRM context: none of that code loads on its calls.
 
@@ -86,11 +86,12 @@ A demo or test call can therefore never move or cancel a real customer's appoint
 
 ## Guards against a model that talks instead of acting
 
-All three sit in `AppointmentsAgent.llm_node`. They exist because the fast model (Groq Qwen) did each of these on scripted calls on 2026-11-24.
+All of them sit in `AppointmentsAgent.llm_node`. They exist because the fast model (Groq Qwen) did each of these on scripted calls on 2026-11-24.
 
 | Guard | Catches | Action |
 |---|---|---|
-| Grounding check (`guard.py`) | Before any calendar tool has returned, a reply that names a time, announces a lookup or claims a change ("I have you down for two o'clock") | Reply dropped unspoken; turn re-run with a tool call required |
+| Grounding check (`guard.py`) | Before any calendar tool has returned, a reply that names a time, offers a day ("I can offer you Monday the thirtieth"), announces a lookup or claims a change ("I have you down for two o'clock") | Reply dropped unspoken; turn re-run with a tool call required |
+| Promise check (`guard.py`) | "I'll go ahead and book …" ending with no tool call | Dropped; the model is told nothing happened and answers again. No tool is forced, since the caller may not have agreed |
 | Claim guard (`guard.py`) | After an offer or lookup and before a completed write, a reply that opens with "you're booked / I've moved it / it's cancelled" and has no tool call | Dropped. If only a new booking is in play, `book_appointment` is forced. If an existing appointment is in play, the model is corrected and answers again (a forced move or cancel would be worse than the false claim) |
 | Preamble filter (`preamble.py`) | Speech in the same response as a tool call ("Let me check that for you", a stray "[assistant]") | The speech is dropped; the goodbye before `end_call` is kept |
 
@@ -117,13 +118,13 @@ The prompt is the same for both except a closing `REMEMBER` section (`prompt.MOD
 | `VOCO_DEFAULT_AGENT` | `receptionist` | Agent for calls that do not name one. `appointments` moves phone calls over. |
 | `VOCO_APPT_LLM_PROVIDER` | unset (follows `VOCO_LLM_PROVIDER`) | `groq` or `openai` for this agent in production. See above. |
 | `VOCO_CALENDAR_WAIT_S` | `2.5` | How long a tool waits for the calendar write. |
-| `VOCO_APPT_LOOKUP_FILLER_DELAY_S` / `VOCO_APPT_WRITE_FILLER_DELAY_S` | `1.2` / `2.0` | How long a tool runs before a spoken filler covers the wait. |
+| `VOCO_APPT_LOOKUP_FILLER_DELAY_S` / `VOCO_APPT_WRITE_FILLER_DELAY_S` | `2.5` / `3.5` | Idle seconds since the caller stopped speaking before a spoken filler covers a tool's wait (the typing sound covers it until then). It counts from the end of the caller's turn, not from the tool start. |
 
 ## Tests
 `livekit-agent/tests/test_appointments_agent.py` (104 tests). Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js`. Scripted calls: [[Run a local dev worker and measure]] (`BASELINE_AGENT=appointments`, `BASELINE_SCRIPT=book|reschedule|cancel`).
 
 ## Known gaps
-- Not deployed, and not tried through the `/admin/demo` page: verified with scripted calls against a local worker only.
+- Not tried through the `/admin/demo` page by a person: verified with scripted calls, locally and on Railway. The page's Model switch and the moved/cancelled card are covered by unit tests only.
 - The fast model is the weak point. See the call table in [[2026-11-24 Appointments agent build]] before choosing between speed and `VOCO_APPT_LLM_PROVIDER=openai`.
 - No caller SMS confirmation on production calls (the receptionist's SMS template needs a service address).
 - Outlook: the client is written and unit-tested, never run against a live account.

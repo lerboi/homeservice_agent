@@ -16,7 +16,7 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 |---|---|---|
 | Obsidian vault | Done and pushed | [[Plan 1 - Obsidian vault migration]] |
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
-| Appointments agent (dedicated agent: book, find, move, cancel) | **Built, not committed or deployed.** Branch `appointments-agent` in both repos (Next app in the worktree `..\homeservice_agent-appointments`). Book, move and cancel each verified against Google Calendar with scripted calls on a local worker | [[Voice Agent - Appointments agent (verified)]] · [[2026-11-24 Appointments agent build]] |
+| Appointments agent (dedicated agent: book, find, move, cancel; model switch) | **Deployed** 2026-11-24: agent `5c0d395` on Railway, Next app `a307ce1` on Vercel. Final production check: 4 of 4 scripted booking calls correct (3 Groq, 1 gpt-4.1-mini). Demo Studio calls use it; phone calls do not until `VOCO_DEFAULT_AGENT=appointments`. Production check: see the build record, section 7 | [[Voice Agent - Appointments agent (verified)]] · [[2026-11-24 Appointments agent build]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
 | Public site rebrand (Task 3) | Approved, not started. Waits for Task 2 to be verified end to end and the owner's confirmation | [[Plan 2 - Frontend rebrand to voice integration for any backend]] |
@@ -54,7 +54,8 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 - A spoken test call through `/admin/demo`, then confirmation that Task 2 is done.
 - Google Cloud Console: is the OAuth consent screen "Testing" or "In production"?
 - Whether to make the GitHub repos private.
-- Appointments agent: go-ahead to commit and deploy; and the model choice for it (Groq Qwen: 0.38 s to first token, needed the guards; gpt-4.1-mini: 1.04 s, no slips in three calls). `VOCO_APPT_LLM_PROVIDER=openai` switches.
+- Appointments agent: try both models with the Model switch on `/admin/demo` and choose one for production (Groq Qwen: about 0.4 s to first token, 9 of 10 scripted bookings correct with the guards; gpt-4.1-mini: about 1.0 s, 8 of 8). The production setting is the Railway variable `VOCO_APPT_LLM_PROVIDER` (`groq` or `openai`); unset, it is Groq.
+- The `rebrand` branch was cut before this work: merge `main` into it before it ships (`vault/Now.md` is edited on both).
 
 ## Carried over from earlier logs (not re-verified)
 

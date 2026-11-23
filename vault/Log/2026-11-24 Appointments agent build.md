@@ -9,7 +9,7 @@ tags: [voco/log]
 
 # 2026-11-24 Appointments agent build
 
-Outcome: a separate appointments agent exists on branch `appointments-agent` in both repos, uncommitted and undeployed. Booking, moving and cancelling were each verified end to end against Google Calendar with scripted calls on a local dev worker. System description: [[Voice Agent - Appointments agent (verified)]]. Why this shape: [[Decision - One worker runs several agents]].
+Outcome: a separate appointments agent, deployed the same day (section 7). Booking, moving and cancelling were each verified end to end against Google Calendar with scripted calls on a local dev worker, and booking again on Railway on both models. System description: [[Voice Agent - Appointments agent (verified)]]. Why this shape: [[Decision - One worker runs several agents]].
 
 ## 1. What was built
 
@@ -73,8 +73,22 @@ The owner asked to be able to switch models in the demo and in production and to
 - `WinError 10035` on concurrent Supabase requests from threads appeared twice on this Windows machine. Not seen on Railway (Linux); not investigated.
 - Speech-to-text heard "Alex Tan" as "Alex Turn" once. The name goes to the calendar as heard.
 
+## 7. Deployed and checked in production (same day)
+With the owner's go-ahead: agent `e50b4b8`, then `b5ea552` and `5c0d395` (the two fixes below), pushed to `main` and built on Railway; Next app `a307ce1` pushed to `main` (the Model control was seen on the production `/admin/demo` page). All calls below are scripted demo booking calls against the Railway worker; every event was read back from Google and removed.
+
+| Agent commit | Model | Result | Change made |
+|---|---|---|---|
+| `e50b4b8` | Groq, gpt-4.1-mini (1 each) | Both booked. Calendar write 0.4 s. On both, the runtime filler ("Let me get that on the schedule") still started as the booking finished | Filler delay raised to 2.5 s (lookups) and 3.5 s (writes): it counts from the end of the caller's turn, not from the tool start |
+| `e50b4b8` | default agent (no `agent` key) | Booked on the receptionist's scheduling profile as before, auto-cancelled | none |
+| `b5ea552` | gpt-4.1-mini | Booked, no filler collision | none |
+| `b5ea552` | Groq | **Nothing booked.** Offered "Monday the thirtieth, Tuesday the first of December" with no lookup, ignored "tomorrow afternoon", then answered "yes, book it" with "I'll go ahead and book your product demo" and called no tool | Grounding check now also catches a day offered with no lookup; a promise to act with no tool call is dropped and answered again |
+| `5c0d395` | Groq (3), gpt-4.1-mini (1) | 4 of 4 booked the slot the caller chose, no filler collision, hung up after the goodbye | none |
+
+Production gaps (end of caller audio to first agent audio, final commit): Groq 0.96 to 1.48 s on the turns without a tool; gpt-4.1-mini 1.64 to 1.93 s.
+
+Count for the day, booking script, final or near-final code: gpt-4.1-mini booked correctly in 8 of 8 calls; Groq Qwen in 9 of 10 since the first set of guards, the miss being the `b5ea552` call above. Reschedule and cancel were not re-run in production.
+
 ## 6. Not done
-- Nothing is committed, merged or deployed.
-- No call through the `/admin/demo` page; the page changes are covered by unit tests only.
+- No spoken call through the `/admin/demo` page; the page changes are covered by unit tests, and the page was loaded once on production to confirm the Model control is there.
 - Reschedule and cancel were run once each on Groq (calls 6 and 8) and not on gpt-4.1-mini.
 - Outlook was not run against a live account.
