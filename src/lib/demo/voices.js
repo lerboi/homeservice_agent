@@ -25,6 +25,17 @@ export const VOICE_OPTIONS = [
   // it is not offered here.
   { id: 'kdmDKE6EkgrWrrykO9Qt', label: 'Alexandra: chatty young female (production default / professional)', group: 'Production' },
   { id: '56AoDkrOh6qfVPDXZ7Pt', label: 'Cassidy: engaging, energetic (local_expert)', group: 'Production' },
+  // Singapore-accent English, from the ElevenLabs Voice Library (searched
+  // 2026-11-24). These must be ADDED to the account ("Add to My Voices" on
+  // the voice's page in ElevenLabs) before the agent will speak with them;
+  // until then a call falls back to the agent's default voice. The agent
+  // re-reads the account's voice list when a test call asks for a voice it
+  // does not know, so a newly added voice works without a redeploy.
+  { id: '6qpxBH5KUSDb40bij36w', label: 'Lilian: warm, calm, young woman (Singaporean)', group: 'Singapore accent (add to My Voices first)' },
+  { id: 'SEWXl8lPSO01tdGbWECX', label: 'Cynthia: professional woman (Singaporean)', group: 'Singapore accent (add to My Voices first)' },
+  { id: 'Y7xQSS5ZtS4xv4VJotWd', label: 'Christine: calm, professional woman (Singaporean)', group: 'Singapore accent (add to My Voices first)' },
+  { id: 'aFxDLa1A1dSRlzW8nziT', label: 'Lim: neutral, clear man (Singaporean)', group: 'Singapore accent (add to My Voices first)' },
+  { id: 'owsLoyJNU4K7ctU6NF7F', label: 'Mun: friendly, clear man (Singaporean)', group: 'Singapore accent (add to My Voices first)' },
   // Female
   { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah: warm, professional', group: 'Female' },
   { id: 'hpp4J3VqNfWAUOO0d1Us', label: 'Bella: professional, bright, warm', group: 'Female' },
