@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarCheck, Check, CircleAlert, Download, ExternalLink, Loader2, Maximize2, Mic, MicOff,
-  Minimize2, Phone, PhoneOff, RefreshCw, Trash2,
+  Minimize2, Phone, PhoneOff, RefreshCw, Trash2, Volume2,
 } from 'lucide-react';
 import { fmtElapsed, useAgentCall } from '@/hooks/useAgentCall';
 import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
@@ -27,6 +27,9 @@ import { destinationState, getDestination, isDestinationSelectable } from '@/lib
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 import { DEFAULT_DEMO_BUSINESS_NAME, cleanBusinessName } from '@/lib/demo/session';
 import { DEFAULT_SCENARIO_ID } from '@/lib/demo/scenarios';
+import {
+  DEFAULT_GREETING_ID, DEFAULT_QUALITY_ID, GREETING_OPTIONS, QUALITY_OPTIONS, getGreeting, getQuality,
+} from '@/lib/demo/voice-quality';
 
 // Brand tokens for this page (the public-site palette: paper, ink, one
 // green-teal signal colour). Kept local until the rebrand moves them into
@@ -66,6 +69,12 @@ export default function DemoStudioPage() {
   const [llm, setLlm] = useState('openai');
   // The business the agent answers as on the recording. '' = the tenant's own name.
   const [answerAs, setAnswerAs] = useState(DEFAULT_DEMO_BUSINESS_NAME);
+  // How the voice is produced, and which greeting opens the call.
+  const [quality, setQuality] = useState(DEFAULT_QUALITY_ID);
+  const [greeting, setGreeting] = useState(DEFAULT_GREETING_ID);
+  // The spoken sample: idle | loading | ready | error. `of` is what it is a sample of.
+  const [sample, setSample] = useState({ state: 'idle', url: null, error: null, of: '' });
+  const sampleUrlRef = useRef(null);
   const [presenting, setPresenting] = useState(false);
   const [cleanup, setCleanup] = useState({ state: 'idle', message: null }); // idle | working | done | error
 
@@ -89,6 +98,11 @@ export default function DemoStudioPage() {
       cancelled = true;
     };
   }, [applyStatus]);
+
+  // Free the last sample's memory when the page goes away.
+  useEffect(() => () => {
+    if (sampleUrlRef.current) URL.revokeObjectURL(sampleUrlRef.current);
+  }, []);
 
   // Esc leaves presentation mode.
   useEffect(() => {
@@ -127,8 +141,33 @@ export default function DemoStudioPage() {
         ...(voice ? { voice_override: voice } : {}),
         ...(llm ? { llm } : {}),
         ...(persona ? { business_name: persona } : {}),
+        voice_quality: quality,
+        greeting,
       },
     });
+  }
+
+  // A spoken sample of the current voice, quality and greeting.
+  const sampleKey = `${voice}|${quality}|${greeting}|${persona || ''}`;
+  async function listen() {
+    setSample({ state: 'loading', url: null, error: null, of: sampleKey });
+    try {
+      const res = await fetch('/api/admin/demo/voice-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voice, quality, greeting, business_name: persona || '' }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      const url = URL.createObjectURL(await res.blob());
+      if (sampleUrlRef.current) URL.revokeObjectURL(sampleUrlRef.current);
+      sampleUrlRef.current = url;
+      setSample({ state: 'ready', url, error: null, of: sampleKey });
+    } catch (err) {
+      setSample({ state: 'error', url: null, error: err.message, of: sampleKey });
+    }
   }
 
   async function connect(dest) {
@@ -228,47 +267,98 @@ export default function DemoStudioPage() {
       >
         {/* ── Setup column ── */}
         {!presenting && (
-          <aside className="border-b lg:border-b-0 lg:border-r p-5 space-y-6 overflow-y-auto" style={{ borderColor: LINE }}>
-            <SetupSection label="Task">
-              <div className="space-y-2">
-                {(status?.scenarios || []).map((s) => {
-                  const live = s.status === 'live';
-                  const active = task === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      disabled={!live || inCall}
-                      onClick={() => setTask(s.id)}
-                      className="w-full text-left rounded-lg border px-3 py-2.5 transition-colors disabled:cursor-not-allowed"
-                      style={{
-                        borderColor: active ? SIGNAL : LINE,
-                        background: active ? 'rgba(0,179,126,0.06)' : 'white',
-                        opacity: live ? 1 : 0.55,
-                      }}
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">{s.title}</span>
-                        {!live && (
-                          <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: 'rgba(11,15,20,0.5)' }}>
-                            soon
-                          </span>
-                        )}
-                      </span>
-                      {active && (
-                        <span className="block text-xs mt-1 leading-snug" style={{ color: 'rgba(11,15,20,0.62)' }}>
-                          {s.description}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-                {statusLoading && !status && <p className="text-xs text-black/50">Loading…</p>}
-              </div>
-            </SetupSection>
+          <aside className="border-b lg:border-b-0 lg:border-r overflow-y-auto" style={{ borderColor: LINE }}>
+            {/* The business and what the call does */}
+            <SetupGroup title="Business">
+              <Field label="Answer as">
+                <input
+                  type="text"
+                  value={answerAs}
+                  disabled={inCall}
+                  maxLength={40}
+                  onChange={(e) => setAnswerAs(e.target.value)}
+                  placeholder={status?.tenant?.business_name || 'Business name'}
+                  className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
+                  style={{ borderColor: persona === null ? '#DC2626' : LINE }}
+                  aria-label="Business the agent answers as"
+                />
+                {persona === null && (
+                  <Hint tone="error">Use a short plain name of 2 to 40 characters: letters, numbers, spaces, and the marks &amp; . -</Hint>
+                )}
+              </Field>
+              {(status?.scenarios || []).filter((sc) => sc.status === 'live').length > 1 ? (
+                <Field label="Task">
+                  <select
+                    value={task}
+                    disabled={inCall}
+                    onChange={(e) => setTask(e.target.value)}
+                    className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
+                    style={{ borderColor: LINE }}
+                  >
+                    {status.scenarios.filter((sc) => sc.status === 'live').map((sc) => (
+                      <option key={sc.id} value={sc.id}>{sc.title}</option>
+                    ))}
+                  </select>
+                </Field>
+              ) : (
+                <Hint>
+                  Task: {(status?.scenarios || []).find((sc) => sc.id === task)?.title || 'Book, move or cancel an appointment'}.
+                </Hint>
+              )}
+            </SetupGroup>
 
-            <SetupSection
-              label="Save to"
+            {/* Everything about how the agent sounds, with a sample to hear it */}
+            <SetupGroup title="Voice">
+              <Field label="Voice">
+                <select
+                  value={voice}
+                  disabled={inCall}
+                  onChange={(e) => setVoice(e.target.value)}
+                  className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
+                  style={{ borderColor: LINE }}
+                >
+                  <option value="">Production voice</option>
+                  {[...new Set((status?.voices || []).map((v) => v.group))].map((group) => (
+                    <optgroup key={group} label={group}>
+                      {(status?.voices || []).filter((v) => v.group === group).map((v) => (
+                        <option key={v.id} value={v.id}>{v.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Quality">
+                <Segmented options={QUALITY_OPTIONS} value={quality} onChange={setQuality} disabled={inCall} columns={4} />
+                <Hint>{getQuality(quality)?.hint}</Hint>
+              </Field>
+              <Field label="Greeting">
+                <Segmented options={GREETING_OPTIONS} value={greeting} onChange={setGreeting} disabled={inCall} columns={2} />
+                <Hint>&ldquo;{getGreeting(greeting)?.text(persona || status?.tenant?.business_name || 'the business')}&rdquo;</Hint>
+              </Field>
+              <div>
+                <button
+                  type="button"
+                  onClick={listen}
+                  disabled={sample.state === 'loading' || persona === null}
+                  className="inline-flex items-center justify-center gap-2 w-full h-9 rounded-md border bg-white text-sm font-medium hover:bg-black/[0.03] disabled:opacity-60"
+                  style={{ borderColor: LINE }}
+                >
+                  {sample.state === 'loading' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+                  {sample.state === 'loading' ? 'Preparing the sample…' : 'Listen to this voice'}
+                </button>
+                {sample.state === 'ready' && (
+                  <>
+                    <audio key={sample.url} controls autoPlay src={sample.url} className="w-full mt-2 h-9" />
+                    {sample.of !== sampleKey && <Hint>You changed a setting. Press Listen again to hear it.</Hint>}
+                  </>
+                )}
+                {sample.state === 'error' && <Hint tone="error">Could not play a sample: {sample.error}</Hint>}
+              </div>
+            </SetupGroup>
+
+            {/* Where the booking goes and which model runs the call */}
+            <SetupGroup
+              title="Calendar and model"
               action={
                 <button
                   type="button"
@@ -282,125 +372,69 @@ export default function DemoStudioPage() {
                 </button>
               }
             >
-              <div className="space-y-2">
-                {(status?.destinations || []).map((d) => {
-                  const state = destinationState(d);
-                  const selectable = isDestinationSelectable(d);
-                  const active = destination === d.id;
-                  return (
-                    <div
-                      key={d.id}
-                      className="rounded-lg border px-3 py-2.5"
-                      style={{ borderColor: active ? SIGNAL : LINE, background: active ? 'rgba(0,179,126,0.06)' : 'white' }}
-                    >
-                      <label className={`flex items-start gap-2.5 ${selectable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
-                        <input
-                          type="radio"
-                          name="destination"
-                          className="sr-only"
-                          checked={active}
-                          disabled={!selectable || inCall}
-                          onChange={() => setDestination(d.id)}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2">
+              <Field label="Save to">
+                <div className="rounded-md border bg-white divide-y" style={{ borderColor: LINE }}>
+                  {(status?.destinations || []).map((d) => {
+                    const state = destinationState(d);
+                    const selectable = isDestinationSelectable(d);
+                    const active = destination === d.id;
+                    return (
+                      <div key={d.id} className="px-2.5 py-2" style={{ borderColor: LINE }}>
+                        <label className={`flex items-center gap-2 ${selectable ? 'cursor-pointer' : 'cursor-default'}`}>
+                          <input
+                            type="radio"
+                            name="destination"
+                            className="h-3.5 w-3.5 accent-[#0B0F14]"
+                            checked={active}
+                            disabled={!selectable || inCall}
+                            onChange={() => setDestination(d.id)}
+                          />
+                          <span className="text-sm font-medium" style={{ opacity: selectable ? 1 : 0.55 }}>{d.label}</span>
+                          <span className="ml-auto flex items-center gap-2 min-w-0">
+                            {d.kind === 'external' && state !== 'ready' && (
+                              <button
+                                type="button"
+                                onClick={() => connect(d)}
+                                className="text-xs font-medium underline underline-offset-2"
+                                style={{ color: INK }}
+                              >
+                                {state === 'needs_reconnect' ? 'Reconnect' : 'Connect'}
+                              </button>
+                            )}
                             <HealthDot state={state} />
-                            <span className="text-sm font-medium">{d.label}</span>
                           </span>
-                          <span className="block text-xs mt-0.5 truncate" style={{ color: 'rgba(11,15,20,0.62)' }}>
-                            {state === 'ready' && d.kind === 'external' && (d.account || 'Connected')}
-                            {state === 'ready' && d.kind === 'internal' && 'No external calendar'}
-                            {state === 'not_connected' && 'Connect to enable'}
-                            {state === 'needs_reconnect' && 'Connection failed its check'}
-                          </span>
-                        </span>
-                      </label>
-                      {d.kind === 'external' && state !== 'ready' && (
-                        <button
-                          type="button"
-                          onClick={() => connect(d)}
-                          className="mt-2 text-xs font-medium underline underline-offset-2"
-                          style={{ color: INK }}
-                        >
-                          {state === 'needs_reconnect' ? 'Reconnect' : 'Connect'}
-                        </button>
-                      )}
-                      {state === 'needs_reconnect' && d.detail && (
-                        <p className="mt-1 font-mono text-[10px] leading-snug text-red-700 break-words">{d.detail}</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </SetupSection>
+                        </label>
+                        {state === 'ready' && d.kind === 'external' && d.account && (
+                          <p className="pl-[22px] text-[11px] truncate" style={{ color: 'rgba(11,15,20,0.6)' }}>{d.account}</p>
+                        )}
+                        {state === 'needs_reconnect' && (
+                          <p className="pl-[22px] text-[11px] text-red-700 break-words">
+                            Connection failed its check{d.detail ? `: ${d.detail}` : ''}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {statusLoading && !status && <p className="px-2.5 py-2 text-xs text-black/50">Loading…</p>}
+                </div>
+              </Field>
+              <Field label="Model">
+                <Segmented
+                  options={[...MODEL_OPTIONS, { id: '', label: 'Agent default' }]}
+                  value={llm}
+                  onChange={setLlm}
+                  disabled={inCall}
+                  columns={3}
+                />
+                <Hint>{getModel(llm)?.hint || 'Whatever the agent itself is set to.'}</Hint>
+              </Field>
+            </SetupGroup>
 
-            <SetupSection label="Answer as">
-              <input
-                type="text"
-                value={answerAs}
-                disabled={inCall}
-                maxLength={40}
-                onChange={(e) => setAnswerAs(e.target.value)}
-                placeholder={status?.tenant?.business_name || 'Business name'}
-                className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
-                style={{ borderColor: persona === null ? '#DC2626' : LINE }}
-                aria-label="Business the agent answers as"
-              />
-              <p className="mt-1.5 text-[11px] leading-snug" style={{ color: persona === null ? '#B91C1C' : 'rgba(11,15,20,0.6)' }}>
-                {persona === null
-                  ? 'Use a short plain name of 2 to 40 characters: letters, numbers, spaces, and the marks & . -'
-                  : 'The business named in the greeting and the captions. Leave empty to answer as the demo tenant. Hours, calendar and bookings are unchanged.'}
-              </p>
-            </SetupSection>
-
-            <SetupSection label="Model">
-              <div className="grid grid-cols-3 gap-1 p-1 rounded-md border bg-white" style={{ borderColor: LINE }}>
-                {[{ id: '', label: 'Production' }, ...MODEL_OPTIONS].map((m) => {
-                  const selected = llm === m.id;
-                  return (
-                    <button
-                      key={m.id || 'production'}
-                      type="button"
-                      disabled={inCall}
-                      aria-pressed={selected}
-                      onClick={() => setLlm(m.id)}
-                      className="h-8 px-1.5 rounded text-xs font-medium leading-tight disabled:opacity-60"
-                      style={selected ? { background: INK, color: '#fff' } : { color: INK }}
-                    >
-                      {m.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-1.5 text-[11px] leading-snug" style={{ color: 'rgba(11,15,20,0.6)' }}>
-                {getModel(llm)?.hint || 'Whatever the live agent is set to, so the demo matches a real call.'}
-              </p>
-            </SetupSection>
-
-            <SetupSection label="Voice">
-              <select
-                value={voice}
-                disabled={inCall}
-                onChange={(e) => setVoice(e.target.value)}
-                className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
-                style={{ borderColor: LINE }}
-              >
-                <option value="">Production voice</option>
-                {[...new Set((status?.voices || []).map((v) => v.group))].map((group) => (
-                  <optgroup key={group} label={group}>
-                    {(status?.voices || []).filter((v) => v.group === group).map((v) => (
-                      <option key={v.id} value={v.id}>{v.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </SetupSection>
-
-            <SetupSection label="Microphone">
+            <SetupGroup title="Microphone">
               <select
                 value={deviceId}
                 onChange={(e) => call.onSelectDevice(e.target.value)}
-                className="w-full h-9 px-2.5 text-sm rounded-md border bg-white mb-2"
+                className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
                 style={{ borderColor: LINE }}
               >
                 <option value="">System default</option>
@@ -420,34 +454,33 @@ export default function DemoStudioPage() {
                   </button>
                 )}
               </div>
-              {micSilent && (
-                <p className="mt-2 text-xs text-amber-700">
-                  No sound from this microphone. Pick another device or unmute it.
-                </p>
-              )}
-            </SetupSection>
+              {micSilent && <Hint tone="error">No sound from this microphone. Pick another device or unmute it.</Hint>}
+            </SetupGroup>
 
             {(status?.kept_bookings?.length || 0) > 0 && !inCall && (
-              <SetupSection label="Still on the calendar">
-                <div className="space-y-2">
+              <SetupGroup title="Still on the calendar">
+                <div className="rounded-md border bg-white divide-y" style={{ borderColor: LINE }}>
                   {status.kept_bookings.map((b) => (
-                    <div key={b.appointment_id} className="rounded-lg border bg-white px-3 py-2" style={{ borderColor: LINE }}>
-                      <p className="text-xs font-medium truncate">{eventTitle(b.caller_name, b.reason)}</p>
-                      <p className="font-mono text-[11px]" style={{ color: 'rgba(11,15,20,0.62)' }}>
-                        {formatEventWhen(b.start_time, b.end_time, timeZone)}
-                      </p>
+                    <div key={b.appointment_id} className="flex items-center gap-2 px-2.5 py-2" style={{ borderColor: LINE }}>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-medium truncate">{eventTitle(b.caller_name, b.reason)}</span>
+                        <span className="block font-mono text-[11px]" style={{ color: 'rgba(11,15,20,0.62)' }}>
+                          {formatEventWhen(b.start_time, b.end_time, timeZone)}
+                        </span>
+                      </span>
                       <button
                         type="button"
                         disabled={!b.room_name || cleanup.state === 'working'}
                         onClick={() => removeBooking(b.room_name)}
-                        className="mt-1 inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2 disabled:opacity-50"
+                        className="shrink-0 inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2 disabled:opacity-50"
+                        aria-label={`Remove ${eventTitle(b.caller_name, b.reason)}`}
                       >
                         <Trash2 className="h-3 w-3" /> Remove
                       </button>
                     </div>
                   ))}
                 </div>
-              </SetupSection>
+              </SetupGroup>
             )}
           </aside>
         )}
@@ -625,16 +658,60 @@ export default function DemoStudioPage() {
   );
 }
 
-function SetupSection({ label, action = null, children }) {
+// One block of the setup column: a title, an optional action, its fields.
+function SetupGroup({ title, action = null, children }) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: 'rgba(11,15,20,0.62)' }}>
-          {label}
-        </h2>
+    <section className="px-5 py-4 border-b last:border-b-0" style={{ borderColor: LINE }}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[13px] font-semibold tracking-tight">{title}</h2>
         {action}
       </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium" style={{ color: 'rgba(11,15,20,0.62)' }}>{label}</p>
       {children}
+    </div>
+  );
+}
+
+function Hint({ tone = 'muted', children }) {
+  if (!children) return null;
+  return (
+    <p className="mt-1.5 text-[11px] leading-snug" style={{ color: tone === 'error' ? '#B91C1C' : 'rgba(11,15,20,0.6)' }}>
+      {children}
+    </p>
+  );
+}
+
+// A row of mutually exclusive choices. options: [{ id, label }].
+function Segmented({ options, value, onChange, disabled = false, columns = 2 }) {
+  return (
+    <div
+      className="grid gap-1 p-1 rounded-md border bg-white"
+      style={{ borderColor: LINE, gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+    >
+      {options.map((o) => {
+        const selected = value === o.id;
+        return (
+          <button
+            key={o.id || 'default'}
+            type="button"
+            disabled={disabled}
+            aria-pressed={selected}
+            onClick={() => onChange(o.id)}
+            className="h-8 px-1 rounded text-xs font-medium leading-tight truncate disabled:opacity-60"
+            style={selected ? { background: INK, color: '#fff' } : { color: INK }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

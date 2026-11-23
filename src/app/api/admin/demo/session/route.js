@@ -70,6 +70,8 @@ export async function POST(request) {
           voiceOverride: checked.voiceOverride,
           llm: checked.llm,
           businessName: checked.businessName,
+          voiceQuality: checked.voiceQuality,
+          greeting: checked.greeting,
         }),
       ),
     });
