@@ -43,6 +43,19 @@ node --env-file=.env.local vault/_meta/tools/demo_event_check.mjs 24141cd0-5735-
 ```
 The first prints the `voco.events` stream under `EVENTS` (expect `booked` then `calendar_saved`). The second reads the event back through the Google API, then deletes it and cancels the appointment. Without `BASELINE_AGENT_NAME` the call goes to production. `node --env-file=.env.local vault/_meta/tools/verify_google_calendar.mjs <tenant_id>` checks the connection alone.
 
+### The appointments agent: book, move, cancel
+`BASELINE_AGENT=appointments` puts `agent: "appointments"` in the room metadata ([[Voice Agent - Appointments agent (verified)]]). `BASELINE_SCRIPT` picks what the caller says; `reschedule` and `cancel` act on a booking an earlier demo call kept, so run them after a `book`:
+
+```bash
+export BASELINE_DEMO=google BASELINE_AGENT=appointments BASELINE_AGENT_NAME=voco-voice-agent-dev
+python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+BASELINE_SCRIPT=reschedule python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+BASELINE_SCRIPT=cancel python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+```
+Expect `booked` and `calendar_saved`, then `rescheduled` and `calendar_updated`, then `cancelled` and `calendar_removed` under `EVENTS`. `demo_event_check.mjs <tenant_id> <room_name>` reads the event back for a given call. To compare models, add `BASELINE_LLM=groq` or `BASELINE_LLM=openai` to a call (the same switch the Demo Studio's Model control sets); the first `EVENTS` line, `session`, says which model ran.
+
+The gap the script prints is to the first agent audio, and the typing sound that covers a tool call counts as audio. For a booking turn, read the time of the spoken confirmation from the transcript instead.
+
 ### The Demo Studio page against the local worker
 Start the Next app with `VOCO_TEST_AGENT_NAME=voco-voice-agent-dev npm run dev`; the dispatch route then sends `/admin/demo` and `/admin/test-agent` calls to the dev worker.
 
@@ -58,6 +71,7 @@ Override behaviour for an experiment by exporting env vars before starting the w
 - **Stopping the worker**: stopping the shell does not always stop the Python processes. Find them by command line (`src.agent`, or executables under `livekit-agent\.venv18`) and stop those specific PIDs. Check that nothing is still listening on port 8080 before starting again. Do not kill every `python.exe`.
 - **Do not pipe the scripted call through `tail`**: output is lost if it hangs. `grep` on its stdout is fine.
 - **The worker refuses jobs when the machine is busy.** In `start` mode livekit-agents marks the worker unavailable above 70% CPU load (`worker is at full capacity, marking as unavailable` in the log) and the call sits at "Waiting for the agent". A compiling `next dev` is enough to cause it. Close what you can, or run the scripted call without the Next server.
+- **`npm run dev` dies with "JavaScript heap out of memory", or admin routes return 404 pages.** Stop the server, delete the `.next` folder (it is rebuilt), start again. On 2026-11-24 `.next/dev/cache` had grown to 15.3 GB; see [[2026-11-24 Demo call script and persona]] section 8.
 - **Local numbers are not Railway numbers.** A local worker reaches Groq and LiveKit through different regions. Compare like with like.
 - **Free-plan ElevenLabs library voices return 402** and the caller audio cannot be synthesized. The script uses a premade voice for the caller for that reason.
 

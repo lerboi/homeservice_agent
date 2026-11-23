@@ -14,6 +14,8 @@ tags: [voco/system/voice-agent]
 
 Up: [[Home]] · [[Systems]]
 
+> **Two agents, one worker (2026-11-24, not yet deployed):** the dedicated appointments agent is described in [[Voice Agent - Appointments agent (verified)]]; the router that picks an agent per call is in [[Decision - One worker runs several agents]]. Every other note here describes the receptionist in `src/agent.py`.
+
 > **Start with:** [[Voice Agent - Scheduling profile and fast LLM path (verified)]] for what is deployed today (most notes below describe the older `home_service` profile), then [[Demo Studio]] for test calls and the sandbox, and [[Scheduling - Booking to calendar on agent calls (verified path)]] for booking and the calendar push. Both were checked against code on 2026-11-23.
 
 > **How to use:** read this index, then open only the notes the task needs. After changing code in this system, update the matching note and set its `verified:` date.
@@ -24,6 +26,7 @@ Up: [[Home]] · [[Systems]]
 
 | Note | Lines | Status | What is in it |
 |---|---|---|---|
+| [[Voice Agent - Appointments agent (verified)]] | 120 | current | The dedicated appointments agent (`src/agents/appointments`): routing, its eight tools, the calendar layer, guards, sandbox scope, switches, known gaps. Not migrated from the skill; written from the code on 2026-11-24 |
 | [[Voice Agent - Architecture Overview]] | 81 | current | End-to-end flow and main components of Voice Agent. Covers: End-to-end call flow; Service boundaries; Related skills |
 | [[Voice Agent - File Map]] | 64 | current | Which files implement Voice Agent and what each one is responsible for. Covers: Agent Repo (`lerboi/livekit_agent`, deployed to Railway); Main Repo (`homeservice_agent`, deployed to Vercel) |
 | [[Voice Agent - Agent Service (LiveKit + Phase 66 cascade pipeline)]] | 273 | current | Agent connects — await ctx.connect() joins the LiveKit room. Covers: Connection lifecycle; Call-duration watchdog (2026-06-10); Webhook server boot (Phase 39) + boot preflight (2026-06-12); Critical pin set — livekit-agents + sibling plugins |

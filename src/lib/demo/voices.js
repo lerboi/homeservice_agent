@@ -12,23 +12,33 @@
  * mid-call FallbackAdapter degrades to OpenAI TTS rather than dead air.
  */
 export const VOICE_OPTIONS = [
-  // 2026-09-05: ElevenLabs' curated CONVERSATIONAL voices (their voice-agent
-  // guide) — chatty cadence, not narration. Each id MUST be saved to the Voco
-  // ElevenLabs account's "My Voices" before it will play (an unsaved voice
-  // hard-fails and falls over to OpenAI "alloy"). The Production group mirrors
-  // src/agent.py ELEVENLABS_VOICE_MAP; the rest are for auditioning here.
-  { id: 'kdmDKE6EkgrWrrykO9Qt', label: 'Alexandra — chatty young female (production default / professional)', group: 'Production' },
-  { id: 'dj3G1R1ilKoFKhBnWOzG', label: 'Eryn — friendly, relatable (friendly)', group: 'Production' },
-  { id: '56AoDkrOh6qfVPDXZ7Pt', label: 'Cassidy — engaging, energetic (local_expert)', group: 'Production' },
-  // Other ElevenLabs conversational picks to audition (female)
-  { id: 'OYTbf65OHHFELVut7v2H', label: 'Hope — bright, uplifting', group: 'Conversational — female' },
-  { id: 'PT4nqlKZfc06VW1BuClj', label: 'Angela — down to earth, great listener', group: 'Conversational — female' },
-  { id: 'g6xIsTj2HwM6VR4iXFCw', label: 'Jessica Anne Bogart — empathetic, expressive', group: 'Conversational — female' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah — warm, professional (classic)', group: 'Conversational — female' },
+  // Checked against the Voco ElevenLabs account on 2026-11-24 (GET /v1/voices):
+  // every id below is in the account, so the agent can speak with it. A voice
+  // that is NOT in the account does not fail loudly: the agent logs an error
+  // and speaks the whole call in its fallback voice (livekit-agent
+  // src/agent.py _build_tts), which is why picking a voice here used to change
+  // nothing. Seven of the ten voices listed before that date were not in the
+  // account. Before adding an id, confirm it is returned by /v1/voices.
+  //
+  // The Production group mirrors src/agent.py ELEVENLABS_VOICE_MAP. Its
+  // "friendly" voice (dj3G1R1ilKoFKhBnWOzG) is not in the account either, so
+  // it is not offered here.
+  { id: 'kdmDKE6EkgrWrrykO9Qt', label: 'Alexandra: chatty young female (production default / professional)', group: 'Production' },
+  { id: '56AoDkrOh6qfVPDXZ7Pt', label: 'Cassidy: engaging, energetic (local_expert)', group: 'Production' },
+  // Female
+  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah: warm, professional', group: 'Female' },
+  { id: 'hpp4J3VqNfWAUOO0d1Us', label: 'Bella: professional, bright, warm', group: 'Female' },
+  { id: 'cgSgspJ2msm6clMCkdW9', label: 'Jessica: playful, bright, warm', group: 'Female' },
+  { id: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda: knowledgeable, professional', group: 'Female' },
+  { id: 'Xb7hH8MSUJpSbSDYk0k2', label: 'Alice: clear, engaging (British)', group: 'Female' },
+  { id: '8tsLeAV5vPVuzCCvqbbU', label: 'Eryn: confident, corporate', group: 'Female' },
   // Male
-  { id: '1SM7GgM6IMuvQlz2BwM3', label: 'Mark — relaxed, laid back', group: 'Conversational — male' },
-  { id: 'HDA9tsk27wYi3uq0fPcK', label: 'Stuart — professional & friendly (Australian)', group: 'Conversational — male' },
-  { id: 'L0Dsvb3SLTyegXwtm47J', label: 'Archer — grounded, friendly (British)', group: 'Conversational — male' },
+  { id: 'cjVigY5qzO86Huf0OWal', label: 'Eric: smooth, trustworthy', group: 'Male' },
+  { id: 'iP95p4xoKVk53GoZ742B', label: 'Chris: charming, down to earth', group: 'Male' },
+  { id: 'CwhRBWXzGAHq8TQ4Fs17', label: 'Roger: laid back, casual', group: 'Male' },
+  { id: 'bIHbv24MWmeRgasZH58o', label: 'Will: relaxed, optimistic', group: 'Male' },
+  { id: 'nPczCjzI2devNBz1zQrb', label: 'Brian: deep, comforting', group: 'Male' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', label: 'Daniel: steady (British)', group: 'Male' },
 ];
 
 export const VOICE_IDS = new Set(VOICE_OPTIONS.map((v) => v.id));

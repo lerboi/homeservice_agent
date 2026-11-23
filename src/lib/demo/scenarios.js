@@ -1,7 +1,9 @@
 /**
  * Demo Studio task registry.
  *
- * One task is live (scheduling: the agent books an appointment). The others
+ * One task is live (scheduling: the agent books, moves and cancels
+ * appointments). `agent` names the voice agent that takes the call
+ * (livekit-agent src/agents); it goes into the room metadata. The others
  * are listed as "coming soon" so the page shows where the product goes
  * without pretending those flows exist. A task becomes selectable only when
  * its status is 'live'.
@@ -9,9 +11,12 @@
 export const SCENARIOS = [
   {
     id: 'scheduling',
-    title: 'Book an appointment',
-    description: 'The caller asks for a time. The agent checks availability, books it, and the event lands in the calendar.',
+    title: 'Book, move or cancel an appointment',
+    description: 'The caller asks for a time, or to change a booking. The agent checks availability, makes the change, and the calendar event appears, moves or disappears.',
     status: 'live',
+    // The clinic front desk built for the recording (livekit-agent
+    // src/agents/demo): its own prompt on the appointments agent's real tools.
+    agent: 'demo',
   },
   {
     id: 'lead_crm',
