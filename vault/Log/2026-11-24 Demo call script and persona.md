@@ -106,3 +106,13 @@ Production rehearsals of the demo agent (agent `3138fa8`, Next app `ea570ea`, gp
 ## 8. Local dev server running out of memory
 
 `npm run dev` in the main working folder died with "JavaScript heap out of memory" at about 8 GB, and before dying returned 404 pages for every `/api/admin/*` route (which is what the Demo Studio's "Unexpected token '<'" on localhost was). `.next/dev/cache` held 15.3 GB. A restarted server reached 9.4 GB of private memory within four minutes of starting. After deleting `.next` a fresh server sat at about 3 GB over the first 100 seconds and the admin routes answered. Not watched for longer than that, so the cache is the likely cause and not a proven one. See [[Run a local dev worker and measure]].
+
+## 9. Feedback after the second take
+
+The owner reported three things. What each turned out to be:
+
+1. **The page scrolled back up on every new caption.** The captions used `scrollIntoView`, which scrolls every ancestor, not only the captions box. Now the box scrolls itself, and only while the reader is at its bottom (`Captions` in `src/app/admin/demo/page.js`). `/admin/test-agent` has the same call and was not changed.
+2. **A move made a second booking and left the first.** That take was started from `localhost`, where the main working folder is on the `rebrand` branch: no `agent` key in the room metadata, so the old receptionist's scheduling profile answered ("Thanks for calling Voco"), and it has no tool for moving a booking. The demo agent was not involved. Its policy was still tightened: when the caller asked to move or change an appointment since the last booking change, a yes requires `reschedule_appointment` even if the model never called `find_appointment` (`asked_to_move_since_last_write`). Agent tests: 941 pass.
+3. **The Voice dropdown changed nothing.** Seven of the ten voices in `src/lib/demo/voices.js` were not in the ElevenLabs account. The agent does not fail on such a voice: it logs "is not in this account's voices" and speaks the call in its fallback voice. The list now holds 14 voices, each returned by ElevenLabs `GET /v1/voices` for the account on 2026-11-24. Production's "friendly" voice (`dj3G1R1ilKoFKhBnWOzG` in `ELEVENLABS_VOICE_MAP`) is not in the account either, so a tenant with that setting gets the fallback voice; not changed here.
+
+Merging `main` into `rebrand` (so localhost runs this work) was not done: it needs the owner's say-so.
