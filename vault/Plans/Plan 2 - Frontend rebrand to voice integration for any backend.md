@@ -10,6 +10,8 @@ tags: [voco/plan]
 
 # Plan 2 — Rebrand the public site: from "AI receptionist for home services" to "voice integration for any backend"
 
+> **Read [[Handoff - Demo Studio and rebrand (start here)]] first.** It records the state on 2026-11-23 and the owner decisions made after this plan was written; where the two disagree, the handoff is right.
+
 Status: DECISIONS RECORDED 2026-11-23. Awaiting green light to implement.
 
 ## 1. New positioning

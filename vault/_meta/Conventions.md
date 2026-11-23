@@ -74,5 +74,6 @@ Status meanings:
 - `python vault/_meta/tools/build_hubs.py`: regenerates the hub tables in `Log`, `Decisions`, `Plans`, `Reference`, `Product`, `Runbooks` from each note's frontmatter. Run after adding a note to one of those folders.
 
 - `python vault/_meta/tools/baseline_call.py <tenant_id> <tenant_phone>`: places a scripted, sandboxed test call against the deployed agent and prints the gap between the end of each caller utterance and the agent's first audio. Reads keys from both repos' env files; prints no secrets.
+- `vault/_meta/tools/dev_worker_env.py` and `llm_ttft_bench.py`: see [[Run a local dev worker and measure]].
 
 Templates are in `_meta/templates/`.

@@ -8,7 +8,7 @@ tags: [voco/hub]
 
 # Now
 
-Last updated 2026-11-23 (end of day). This note is overwritten, not appended: history belongs in [[Log]].
+Last updated 2026-11-23 (end of day). **Continuing the work? Read [[Handoff - Demo Studio and rebrand (start here)]] next.** This note is overwritten, not appended: history belongs in [[Log]].
 
 ## Where things stand
 
@@ -27,7 +27,7 @@ Last updated 2026-11-23 (end of day). This note is overwritten, not appended: hi
 - The demo tenant is `24141cd0-5735-4c7a-82d5-994c6b821861`, renamed "Voco" (was "Make It AI"). It is the only tenant with a real phone number, and its owner login is the admin. The tenant that was already called `voco` has an empty phone number and cannot take calls.
 - Both GitHub repos are public.
 
-## Next task: Demo Studio ([[Plan 3 - Demo Studio]])
+## Next task: Demo Studio ([[Handoff - Demo Studio and rebrand (start here)]])
 
 Decisions already made by the owner: browser call only (phone calls set aside); agent answers as Voco; demo and production use the same fast configuration; Google Calendar first (Outlook later). Remaining work:
 

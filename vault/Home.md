@@ -19,6 +19,7 @@ Voco is a voice integration that connects to a business's backend. A voice agent
 | Do an operational task (deploy, test call, env, MCP) | [[Runbooks]] |
 | Know why something is the way it is | [[Decisions]] |
 | Find what was done and when (audits, fix waves, investigations) | [[Log]] |
+| Continue the current work (Demo Studio, then the rebrand) | [[Handoff - Demo Studio and rebrand (start here)]] |
 | See active plans | [[Plans]] |
 | Look up research, SDK gotchas, external pointers, documents | [[Reference]] |
 | Product positioning, site flow, backlog and ideas | [[Product]] |

@@ -1,0 +1,54 @@
+---
+type: runbook
+status: current
+description: "Run the voice agent locally under a separate worker name, place a scripted test call against it or against production, and read the latency numbers. Includes the Windows traps already hit."
+verified: 2026-11-23
+tags: [voco/runbook]
+---
+
+# Run a local dev worker and measure
+
+## When to use
+To test agent changes before deploying, or to measure voice-to-voice latency. All calls placed this way are sandboxed test calls ([[Decision - Test calls are sandboxed]]).
+
+## Measure the deployed agent (no local worker)
+From the `homeservice_agent` repo root, in Git Bash:
+
+```bash
+python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+```
+
+It creates a `test-web-` room, plays six synthesized caller utterances (book a demo for tomorrow afternoon, confirm, goodbye), and prints, per turn, the seconds from the end of the caller's audio to the agent's first audio, then the transcript. Stage timings for the same call are in the Railway logs: search for `turn_metrics` and `llm_metrics` (Railway MCP `get-logs` with a `startDate`).
+
+## Run a local dev worker
+The agent repo's own `.env` is incomplete (no OpenAI key, a stale ElevenLabs value), so load both repos' env files:
+
+```bash
+cd /c/Users/leheh/.Projects/livekit-agent
+eval "$(python ../homeservice_agent/vault/_meta/tools/dev_worker_env.py)"
+.venv18/Scripts/python.exe -m src.agent start > /tmp/dev_worker.log 2>&1 &
+```
+
+`dev_worker_env.py` sets `VOCO_AGENT_NAME=voco-voice-agent-dev`, so the local worker never receives production dispatches. Wait for `registered worker` in the log, then point the scripted call at it:
+
+```bash
+cd /c/Users/leheh/.Projects/homeservice_agent
+BASELINE_AGENT_NAME=voco-voice-agent-dev python vault/_meta/tools/baseline_call.py 24141cd0-5735-4c7a-82d5-994c6b821861 +14783755631
+```
+
+Override behaviour for an experiment by exporting env vars before starting the worker, for example `VOCO_GROQ_MODEL`, `VOCO_LLM_PROVIDER=openai`, `VOCO_AGENT_PROFILE=home_service`, `VOCO_VAD_MIN_SILENCE_S`.
+
+## Compare LLMs without a call
+`python vault/_meta/tools/llm_ttft_bench.py 6` times first token for several OpenAI and Groq models with a scheduling prompt and tool schemas. It ranks models from this machine; it is not a production number.
+
+## Traps already hit
+- **Run `eval "$(python …dev_worker_env.py)"`, never the script on its own**: bare, it prints secrets to the terminal.
+- **Use `.venv18`** (livekit-agents 1.8.0, what production runs). The system Python has 1.5.7.
+- **Do not start the worker through `runpy` or a wrapper script.** On Windows the worker's child processes re-run the wrapper, start a second webhook server, fail to bind port 8080, and leave orphans.
+- **Stopping the worker**: stopping the shell does not always stop the Python processes. Find them by command line (`src.agent`, or executables under `livekit-agent\.venv18`) and stop those specific PIDs. Check that nothing is still listening on port 8080 before starting again. Do not kill every `python.exe`.
+- **Do not pipe the scripted call through `tail`**: output is lost if it hangs. `grep` on its stdout is fine.
+- **Local numbers are not Railway numbers.** A local worker reaches Groq and LiveKit through different regions. Compare like with like.
+- **Free-plan ElevenLabs library voices return 402** and the caller audio cannot be synthesized. The script uses a premade voice for the caller for that reason.
+
+## How to tell it worked
+The scripted call prints a `RESULTS` line with one number per turn and a transcript in which the agent offers times, reads back, waits for "yes", books and says goodbye. A `null` gap means the agent never answered that turn.
