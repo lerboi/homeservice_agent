@@ -101,7 +101,7 @@ Local rehearsals of the demo agent (`BASELINE_AGENT=demo`, gpt-4.1-mini):
 | The caller never says what the appointment is for | Booked and moved | 47 s | No question about the reason; event titled with the name only |
 | The script | PASS | 45 s | Same |
 
-Production rehearsals of the demo agent: see [[Now]] for the latest.
+Production rehearsals of the demo agent (agent `3138fa8`, Next app `ea570ea`, gpt-4.1-mini, the script): 5 of 5 passed every check, 43 to 51 s as run (37 to 45 s at a person's pace). The agent's lines were one short sentence each ("Tomorrow at two is free. Shall I book it?"). All five bookings were removed afterwards. Not yet tried with a spoken caller.
 
 ## 8. Local dev server running out of memory
 
