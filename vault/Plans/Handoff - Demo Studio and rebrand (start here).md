@@ -9,6 +9,8 @@ tags: [voco/plan]
 
 # Handoff - Demo Studio and rebrand (start here)
 
+> **Superseded for front-end work on 2026-11-24** by [[Handoff - Public site changes (start here)]]. Tasks 2 and 3 are built; this note is kept as the record of how they started.
+
 > **Update, 2026-11-23 late:** Task 2 is built and locally verified on the `demo-studio` branch in both repos, not deployed. Sections 1 and 3 below describe the starting point; what was done, what the tests showed and what is left are in [[2026-11-23 Demo Studio build]], [[Demo Studio]] and [[Now]]. Remaining for Task 2: the owner's go-ahead to push, a scripted call against production, and a spoken call through `/admin/demo`. Task 3 has not started.
 >
 > **Update, 2026-11-24:** Task 2 is deployed and verified in production with scripted calls. Task 3 is built on the `rebrand` branch of `homeservice_agent`, not pushed: [[2026-11-24 Public site rebrand]]. Left: the owner's review of the look and the go-ahead to push; the recorded demo video (`DEMO_VIDEO.src` in `src/data/site.js`); a mobile check.

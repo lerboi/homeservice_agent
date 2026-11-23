@@ -8,7 +8,7 @@ tags: [voco/hub]
 
 # Now
 
-Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Demo Studio and rebrand (start here)]] next.** This note is overwritten, not appended: history belongs in [[Log]].
+Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site changes (start here)]] next.** The owner's next step is front-end changes to the rebranded site on the `rebrand` branch. This note is overwritten, not appended: history belongs in [[Log]].
 
 ## Where things stand
 

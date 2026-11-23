@@ -9,4 +9,5 @@
 - [feedback_decisive_recommendation.md](feedback_decisive_recommendation.md) — Give ONE committed persona-grounded recommendation, not option menus; one confirm question max
 
 ## References
+- [reference_bash_heredoc_mangles_escapes.md](reference_bash_heredoc_mangles_escapes.md) — Inline heredoc scripts lose backslash escapes here; write patch scripts with the Write tool
 - [reference_project_vault.md](reference_project_vault.md) — Project knowledge lives in the Obsidian vault (vault/Home.md, vault/Now.md); write project facts there, not in memory
