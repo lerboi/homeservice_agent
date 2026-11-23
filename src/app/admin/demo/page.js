@@ -25,6 +25,7 @@ import { fmtElapsed, useAgentCall } from '@/hooks/useAgentCall';
 import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
 import { destinationState, getDestination, isDestinationSelectable } from '@/lib/demo/destinations';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
+import { DEFAULT_DEMO_BUSINESS_NAME, cleanBusinessName } from '@/lib/demo/session';
 import { DEFAULT_SCENARIO_ID } from '@/lib/demo/scenarios';
 
 // Brand tokens for this page (the public-site palette: paper, ink, one
@@ -62,6 +63,8 @@ export default function DemoStudioPage() {
   const [destination, setDestination] = useState('google');
   const [voice, setVoice] = useState('');
   const [llm, setLlm] = useState(''); // '' = the worker's own setting
+  // The business the agent answers as on the recording. '' = the tenant's own name.
+  const [answerAs, setAnswerAs] = useState(DEFAULT_DEMO_BUSINESS_NAME);
   const [presenting, setPresenting] = useState(false);
   const [cleanup, setCleanup] = useState({ state: 'idle', message: null }); // idle | working | done | error
 
@@ -101,15 +104,28 @@ export default function DemoStudioPage() {
 
   const destinationStatus = status?.destinations?.find((d) => d.id === destination) || null;
   const canStart =
-    Boolean(status?.tenant?.can_take_calls) && isDestinationSelectable(destinationStatus) && !statusLoading;
-  const businessName = status?.tenant?.business_name || 'Voco';
+    Boolean(status?.tenant?.can_take_calls) &&
+    isDestinationSelectable(destinationStatus) &&
+    !statusLoading &&
+    persona !== null;
+  const persona = cleanBusinessName(answerAs);
+  const businessName =
+    (inCall || phase === 'ended' ? session?.tenant?.business_name : persona) ||
+    status?.tenant?.business_name ||
+    'Voco';
   const roomName = session?.room_name || null;
 
   function start() {
     setCleanup({ state: 'idle', message: null });
     call.startCall({
       sessionUrl: '/api/admin/demo/session',
-      body: { task, destination, ...(voice ? { voice_override: voice } : {}), ...(llm ? { llm } : {}) },
+      body: {
+        task,
+        destination,
+        ...(voice ? { voice_override: voice } : {}),
+        ...(llm ? { llm } : {}),
+        ...(persona ? { business_name: persona } : {}),
+      },
     });
   }
 
@@ -316,6 +332,25 @@ export default function DemoStudioPage() {
               </div>
             </SetupSection>
 
+            <SetupSection label="Answer as">
+              <input
+                type="text"
+                value={answerAs}
+                disabled={inCall}
+                maxLength={40}
+                onChange={(e) => setAnswerAs(e.target.value)}
+                placeholder={status?.tenant?.business_name || 'Business name'}
+                className="w-full h-9 px-2.5 text-sm rounded-md border bg-white"
+                style={{ borderColor: persona === null ? '#DC2626' : LINE }}
+                aria-label="Business the agent answers as"
+              />
+              <p className="mt-1.5 text-[11px] leading-snug" style={{ color: persona === null ? '#B91C1C' : 'rgba(11,15,20,0.6)' }}>
+                {persona === null
+                  ? 'Use a short plain name of 2 to 40 characters: letters, numbers, spaces, and the marks & . -'
+                  : 'The business named in the greeting and the captions. Leave empty to answer as the demo tenant. Hours, calendar and bookings are unchanged.'}
+              </p>
+            </SetupSection>
+
             <SetupSection label="Model">
               <div className="grid grid-cols-3 gap-1 p-1 rounded-md border bg-white" style={{ borderColor: LINE }}>
                 {[{ id: '', label: 'Production' }, ...MODEL_OPTIONS].map((m) => {
@@ -501,7 +536,7 @@ export default function DemoStudioPage() {
               </>
             )}
           </div>
-          {!inCall && !canStart && !statusLoading && status && (
+          {!inCall && !canStart && !statusLoading && status && persona !== null && (
             <p className="mt-3 text-center text-xs" style={{ color: 'rgba(11,15,20,0.62)' }}>
               {status.tenant.can_take_calls
                 ? `${getDestination(destination)?.label || 'That destination'} is not ready. Connect it or choose another under “Save to”.`

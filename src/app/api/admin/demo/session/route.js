@@ -7,7 +7,7 @@
  * unchanged. The difference is the SERVER-SET metadata: on top of the
  * sandbox flags it carries
  *
- *   demo: { task, destination, keep_booking: true }
+ *   demo: { task, destination, keep_booking: true, business_name? }
  *
  * which tells the agent to push the booking to the chosen calendar and to
  * leave it there after the call. The agent honours `demo` only when
@@ -69,6 +69,7 @@ export async function POST(request) {
           destination: checked.destination,
           voiceOverride: checked.voiceOverride,
           llm: checked.llm,
+          businessName: checked.businessName,
         }),
       ),
     });
@@ -92,7 +93,7 @@ export async function POST(request) {
       demo: { task: checked.task, destination: checked.destination, llm: checked.llm },
       tenant: {
         id: tenant.id,
-        business_name: tenant.business_name,
+        business_name: checked.businessName || tenant.business_name,
         timezone: tenant.tenant_timezone || 'UTC',
       },
     });

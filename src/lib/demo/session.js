@@ -8,6 +8,7 @@
  * test call: no billing, no SMS, no CRM rows, no owner notifications. The
  * `demo` block relaxes two rules only: push the booking to the chosen external
  * calendar, and keep it after the call (the Studio's cleanup removes it).
+ * It may also name the business the agent answers as (`business_name`).
  */
 
 import { getDestination, isDestinationSelectable } from './destinations.js';
@@ -16,6 +17,21 @@ import { VOICE_IDS } from './voices.js';
 import { MODEL_IDS } from './models.js';
 
 export const DEMO_ROOM_PREFIX = 'test-web-';
+
+// The business a demo call answers as, for a recording that should name a
+// believable business and not the demo tenant. Same rule as the agent's
+// clean_business_name (livekit-agent src/lib/demo.py): a short plain name.
+export const DEFAULT_DEMO_BUSINESS_NAME = 'Brightside Dental';
+const BUSINESS_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 &'.-]{1,39}$/;
+
+/** The cleaned name, '' when none was given, or null when it is not a plain name. */
+export function cleanBusinessName(value) {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string') return null;
+  const name = value.trim().replace(/ +/g, ' ');
+  if (name === '') return '';
+  return BUSINESS_NAME_RE.test(name) ? name : null;
+}
 
 /**
  * @returns {{ ok: true, task: string, destination: string, voiceOverride: string|null }
@@ -63,7 +79,13 @@ export function validateDemoRequest(body, destinationStatuses = []) {
     llm = candidate;
   }
 
-  return { ok: true, task, destination: destinationId, voiceOverride, llm };
+  // Optional: the business the agent answers as. Absent = the tenant's name.
+  const businessName = cleanBusinessName(body?.business_name);
+  if (businessName === null) {
+    return { ok: false, status: 400, error: 'business_name must be a short plain name' };
+  }
+
+  return { ok: true, task, destination: destinationId, voiceOverride, llm, businessName: businessName || null };
 }
 
 export function buildDemoRoomName(tenantId, now = Date.now()) {
@@ -72,7 +94,7 @@ export function buildDemoRoomName(tenantId, now = Date.now()) {
   return `${DEMO_ROOM_PREFIX}${tenantId}-${now}`;
 }
 
-export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride = null, llm = null }) {
+export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride = null, llm = null, businessName = null }) {
   // `agent` picks the voice agent on the worker (livekit-agent
   // src/agents/__init__.py). It is honoured on test calls only.
   const agent = getScenario(task)?.agent;
@@ -84,7 +106,7 @@ export function buildDemoRoomMetadata({ tenant, task, destination, voiceOverride
     ...(agent ? { agent } : {}),
     ...(llm ? { llm } : {}),
     ...(voiceOverride ? { voice_override: voiceOverride } : {}),
-    demo: { task, destination, keep_booking: true },
+    demo: { task, destination, keep_booking: true, ...(businessName ? { business_name: businessName } : {}) },
   };
 }
 

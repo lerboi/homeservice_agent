@@ -108,6 +108,12 @@ What a demo call may touch: appointments made by test calls of the demo tenant, 
 
 Recording a move or a cancel takes two calls: book in the first, then start a second call and ask to move or cancel "my appointment" under the same name.
 
+## The business the call answers as (branch `demo-persona`, 2026-11-24, not deployed)
+
+The setup column has an "Answer as" field, default "Brightside Dental" (`DEFAULT_DEMO_BUSINESS_NAME` in `src/lib/demo/session.js`). The session route validates it (`cleanBusinessName`: a plain name of 2 to 40 characters) and writes it into the `demo` block as `business_name`; the agent greets and answers as that business, and the captions show that name. Empty means the demo tenant's own name. It is a name only: hours, calendar, bookings and the sandbox rules are the tenant's. Build record: [[2026-11-24 Demo call script and persona]].
+
+Between takes, `node --env-file=.env.local vault/_meta/tools/demo_reset.mjs <tenant_id>` removes every booking that test calls left (Google event, synced copy, appointment). The page's "Remove demo booking" does the same for one call.
+
 ## Tests
 - Agent: `tests/test_appointments_agent.py` (the appointments agent), `tests/test_demo_studio.py` (what fires for production, test and demo calls; explicit provider; event wording; events; post-call gates), `tests/test_test_call_sandbox.py`.
 - Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js`, `tests/api/admin-test-agent.test.js`.

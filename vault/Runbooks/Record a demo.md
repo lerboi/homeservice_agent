@@ -2,7 +2,7 @@
 type: runbook
 status: current
 description: "Record the product demo from /admin/demo: checks before the take, the take itself, and removing the booking afterwards. Includes what to do when the calendar connection or the agent fails."
-verified: 2026-11-23
+verified: 2026-11-24
 tags: [voco/runbook]
 ---
 
@@ -12,6 +12,25 @@ tags: [voco/runbook]
 To record a browser call in which the agent books an appointment and it appears in Google Calendar. How the pieces work: [[Demo Studio]].
 
 Needs the `demo-studio` work deployed in both repos (see [[Now]] for whether it is).
+
+## The script (needs branch `demo-persona` deployed; see [[Now]])
+
+One caller rings a clinic, books a cleaning and moves it, in under a minute. Under **Answer as** the page says "Brightside Dental". Record on a Monday, Tuesday or Wednesday (Singapore time) so "tomorrow" and "Friday" are two different working days.
+
+| You say | The agent should | On screen |
+|---|---|---|
+| (nothing) | "Thanks for calling Brightside Dental. Calls are recorded — how can I help?" | Captions start |
+| "Hi, it's Alex Tan. Can I book a cleaning for tomorrow at two?" | Say two tomorrow is free and ask to book it | Checked availability · open |
+| "Yes, please." | Confirm the booking, ask if there is anything else | Booked, Saved to Google Calendar, the event card; the event appears in Google |
+| "Actually, sorry, I've got a meeting then. Could you move it to Friday at ten?" | Say Friday at ten is free and ask to move it | Found the appointment, Checked availability · open |
+| "Yes, please." | Confirm the move, ask if there is anything else | Moved, Updated in Google Calendar; the card shows the old time struck through; the event moves in Google |
+| "That's all, thanks. Bye." | Say goodbye and hang up | Ended the call |
+
+Say each line in one breath: a pause inside a line lets the agent start answering early. Say "two" and "ten" as plain numbers.
+
+Rehearse it without a microphone first: `BASELINE_SCRIPT=demo BASELINE_DEMO=google BASELINE_AGENT=appointments BASELINE_LLM=openai BASELINE_BUSINESS="Brightside Dental" python vault/_meta/tools/baseline_call.py <tenant_id> <phone>` speaks these lines, prints the call length (`TIMING`) and checks the result (`CHECKS`, `VERDICT`). Then reset: `node --env-file=.env.local vault/_meta/tools/demo_reset.mjs <tenant_id>`. Rehearsal results so far: [[2026-11-24 Demo call script and persona]].
+
+Screen for the recording: 1920×1080, the Demo Studio in Presentation mode on the left, Google Calendar in week view on the right with tomorrow and Friday both visible. Keep them as two windows so the video edit can crop them separately. Download the call audio from the page afterwards.
 
 ## Before the take
 1. Sign in with the admin account and open `/admin/demo`.

@@ -62,6 +62,10 @@ Every time or appointment the agent mentions comes from a tool return, and every
 
 Differences from the receptionist's availability tools: no travel buffer between appointments (the receptionist keeps `tenants.travel_buffer_mins`, default 30, clear on both sides of every booking), and a failed lookup never tells the model to "offer capture_lead".
 
+Two behaviours added on branch `demo-persona` (2026-11-24, not deployed; [[2026-11-24 Demo call script and persona]]):
+- `check_slot` reads a time before the day's opening as the afternoon when the afternoon twin is inside the day's hours (`afternoon_if_before_opening`): the model passed `2:00` for "tomorrow at two".
+- When the caller gives the new time together with the request to move, the agent looks the appointment up, checks the new time and asks once. The rule is in the prompt and in the `find_appointment` return for a single match.
+
 A move is one `UPDATE` of the appointment's times. The `appointments_no_overlap` exclusion constraint refuses it if the new time is held, so the caller never has neither slot. The row id and the calendar event id stay the same.
 
 ## Calendar
@@ -99,6 +103,10 @@ All of them sit in `AppointmentsAgent.llm_node`. They exist because the fast mod
 
 Code gates that do not depend on the model's wording: a booking, move or cancel for something first put to the caller after their last turn is refused once (`common.unconfirmed`, `VOCO_CONFIRM_GATE`); a date in the past is sent back for a silent retry.
 
+## The business name on a demo call
+
+On branch `demo-persona` (not deployed): a Demo Studio call may answer as a named business. The server-set `demo` block carries `business_name`; `lib/demo.clean_business_name` accepts a plain name of 2 to 40 characters; `entry.py` uses it for the greeting, the prompt and the speech-to-text keyterm. `demo` is `None` on every production call, so a production call always answers as the tenant. Nothing else changes: the tenant, its hours, its calendar and the tools are the real ones.
+
 ## Which model runs a call
 
 Two choices: `groq` (Groq Qwen first, gpt-4.1-mini as the fallback leg) and `openai` (gpt-4.1-mini alone). `pipeline.resolve_provider` picks, in this order:
@@ -121,7 +129,7 @@ The prompt is the same for both except a closing `REMEMBER` section (`prompt.MOD
 | `VOCO_APPT_LOOKUP_FILLER_DELAY_S` / `VOCO_APPT_WRITE_FILLER_DELAY_S` | `2.5` / `3.5` | Idle seconds since the caller stopped speaking before a spoken filler covers a tool's wait (the typing sound covers it until then). It counts from the end of the caller's turn, not from the tool start. |
 
 ## Tests
-`livekit-agent/tests/test_appointments_agent.py` (104 tests). Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js`. Scripted calls: [[Run a local dev worker and measure]] (`BASELINE_AGENT=appointments`, `BASELINE_SCRIPT=book|reschedule|cancel`).
+`livekit-agent/tests/test_appointments_agent.py` (104 tests). Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js`. Scripted calls: [[Run a local dev worker and measure]] (`BASELINE_AGENT=appointments`, `BASELINE_SCRIPT=book|reschedule|cancel|demo`).
 
 ## Known gaps
 - Not tried through the `/admin/demo` page by a person: verified with scripted calls, locally and on Railway. The page's Model switch and the moved/cancelled card are covered by unit tests only.
