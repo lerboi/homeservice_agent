@@ -520,7 +520,7 @@ export default function AuthPage() {
                   Voice agents for your systems
                 </p>
                 <h2 className="text-[1.65rem] xl:text-[1.8rem] font-semibold text-[#F1F5F9] tracking-tight leading-[1.2]">
-                  Give your backend a voice
+                  AI that does the work
                 </h2>
                 <p className="mt-3 text-sm text-[#94A3B8] leading-relaxed">
                   Voco answers the call, understands the request, and does the work in the systems you already run.

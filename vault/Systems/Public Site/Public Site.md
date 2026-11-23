@@ -12,7 +12,7 @@ tags: [voco/system/public-site]
 
 Up: [[Home]] · [[Systems]] · Positioning: [[Positioning]] · Build records: [[2026-11-24 Public site rebrand]], [[2026-11-24 Public site second pass - two products and identity]]
 
-Rebuilt on 2026-11-24 for the positioning "voice integration for any backend", then widened the same day to two products sold as equals: **Voco Voice** (the voice agent; line "Give your backend a voice.") and **Voco Agent** (an AI agent the owner messages, connected to reviews, inbox, calendar, search data and support). Site headline: "AI that does the work." The dashboard, onboarding, billing and emails were not touched.
+Rebuilt on 2026-11-24 for the positioning "voice integration for any backend", then widened the same day to two products sold as equals: **Voco Voice** (the voice agent; line "It answers every call. Then it does the job.") and **Voco Agent** (an AI agent the owner messages, connected to reviews, inbox, calendar, search data and support). Site headline: "AI that does the work." The dashboard, onboarding, billing and emails were not touched.
 
 ## Routes
 

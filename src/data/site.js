@@ -6,7 +6,7 @@ export const SITE_NAME = 'Voco';
 /** Site-level line covering both products. */
 export const HEADLINE = 'AI that does the work.';
 /** Voco Voice's own line. */
-export const TAGLINE = 'Give your backend a voice.';
+export const TAGLINE = 'It answers every call. Then it does the job.';
 export const SITE_TITLE = 'Voco: AI that answers your calls and does the work in your systems';
 export const SITE_DESCRIPTION =
   'Voco builds two AI workers into the systems a business already runs. Voco Voice answers calls and books, schedules and records. Voco Agent handles reviews, inbox, search data and calendar from a chat message.';

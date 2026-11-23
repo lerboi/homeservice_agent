@@ -35,7 +35,7 @@ The tools list is the owner's (2026-11-24): only those six appear on the home pa
 
 ## Voco Voice (`src/app/(public)/voice/page.js`)
 
-Green-wash hero with the tagline "Give your backend a voice." and `LiveCallDemo`, then `HowItWorksSection` (three steps and the caller → agent → connectors → backend flow), `UseCasesSection`, `ControlSection` (the two measured numbers) and the final CTA. Anchors: `#how-it-works`, `#use-cases`, `#control`.
+Green-wash hero built like the agent's: a centred headline, "It answers every call. Then it does the job.", with `LiveCallDemo` in the middle and `ReachColumn` pills either side (how callers reach it on the left, where the work lands on the right). Then `HowItWorksSection` (three steps and the caller → agent → connectors → backend flow), `UseCasesSection`, `ControlSection` (the two measured numbers) and the final CTA. Anchors: `#how-it-works`, `#use-cases`, `#control`.
 
 ## Voco Agent (`src/app/(public)/agent/page.js`)
 
@@ -57,6 +57,7 @@ Written for an owner who is not technical: jobs and outcomes, no connectors or A
 |---|---|
 | `LiveCallDemo.jsx` | Client. A scripted booking call revealed step by step: speech on the left, backend actions on the right, ending with the calendar event. Loops. Renders the finished exchange on the server and for reduced motion. An illustration, labelled as one for screen readers. |
 | `AgentChatDemo.jsx` | Client. One scripted conversation per channel: the owner asks, the agent reads named sources, answers, is told what to do, and reports what it did. Plays the four in turn; the channel tabs switch between them. Same server-render and reduced-motion behaviour as the call. |
+| `ReachColumn.jsx` | The pills wired to either side of a product hero's illustration; `tone` picks the product colour, `label` adds a small heading. Used by `/voice` and `/agent`. Desktop only. |
 | `LandingSections.jsx` | Server. `ProductsSection`, `DemoSection`, `HowItWorksSection`, `UseCasesSection`, `BackendsSection`, `SetupSection`, `ControlSection`, `FaqSection`, `FinalCtaSection` (`title`, `lede`, `variant="primary" | "spark"`). |
 | `DemoVideo.jsx` | The demo slot. See below. |
 | `CallAndLog.jsx` | Static transcript beside its action log. Used on use-case pages. |
@@ -85,3 +86,7 @@ Every place that shows the demo (home section 3 and `/demo`) switches from the p
 Only two measured ones, both about Voco Voice: the typical reply time (1 to 1.5 s, measured on production calls: [[2026-11-23 Pipeline health check before the demo]]) and "no double bookings" (the atomic booking RPC: [[Scheduling - Booking to calendar on agent calls (verified path)]]). If the measured latency changes, change the figure in `ControlSection`, `src/data/faq.js` and the chatbot's `features.md`.
 
 The figures inside the agent chat and the example week ("Replied to 6 reviews", "4 meetings moved") belong to scripted illustrations and are labelled as examples on the page. They are not claims about a customer.
+
+## Voco Voice's headline
+
+The first line, "Give your backend a voice.", was dropped on 2026-11-24. The owner's objection: the product does not give a backend a voice; it gives a business that needs to talk to callers a voice agent that is already connected to its calendar and other systems. A headline for this page should speak to the owner about calls being answered and the work being done, not about backends. `TAGLINE` in `src/data/site.js` holds the current line; the sign-in panel now shows the site headline instead.

@@ -4,7 +4,7 @@
 
 Voco builds two AI workers into the systems a business already runs. Site headline: "AI that does the work."
 
-- **Voco Voice** is a voice agent. It answers the call, understands what the caller wants, and does that work in the business's own tools: it books the appointment, schedules the task, creates the record. Its line: "Give your backend a voice." Page: [Voco Voice](/voice)
+- **Voco Voice** is a voice agent. It answers the call, understands what the caller wants, and does that work in the business's own tools: it books the appointment, schedules the task, creates the record. Its line: "It answers every call. Then it does the job." Page: [Voco Voice](/voice)
 - **Voco Agent** is an AI agent the owner or team messages on WhatsApp, Telegram, Slack or email. It is connected to reviews, the inbox, the calendar, search data and the support desk; it finds the answer, then does the job. Page: [Voco Agent](/agent)
 
 A business can take either or both. Neither is the "main" product.

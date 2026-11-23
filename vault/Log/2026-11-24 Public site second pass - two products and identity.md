@@ -76,6 +76,12 @@ The owner said the home hero did not blend together and asked for a Home tab.
 - `Home` added as the first nav link.
 - Verified: public-site suites pass; Chrome at desktop width and 390 px, no overflow.
 
+## Fifth round: Voco Voice headline and hero
+
+- The owner rejected "Give your backend a voice." (reason recorded in [[Public Site - Landing page and components]]). New line: "It answers every call. Then it does the job."
+- The `/voice` hero now follows the `/agent` hero: centred headline, the call illustration in the middle, pills either side. The side pills are a shared `ReachColumn` component.
+- The sign-in panel shows "AI that does the work" in place of the old line.
+
 ## Not done yet
 
 - `/demo`, `/pricing`, `/about` and `/contact` still open with the plain paper `PageHero` and have not been redesigned.

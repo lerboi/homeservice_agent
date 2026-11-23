@@ -139,7 +139,7 @@ describe('integrations data', () => {
 describe('site constants', () => {
   it('carries the positioning', () => {
     expect(HEADLINE).toBe('AI that does the work.');
-    expect(TAGLINE).toBe('Give your backend a voice.');
+    expect(TAGLINE).toBe('It answers every call. Then it does the job.');
     expect(BOOK_DEMO_HREF).toBe('/contact?type=sales');
   });
 
@@ -337,7 +337,9 @@ describe('landing page', () => {
   });
 
   it('the voice page keeps the tagline and the call sections', () => {
-    expect(voice).toContain('Give your backend');
+    expect(voice).toContain('It answers every call.');
+    expect(voice).not.toMatch(/Give your backend/i);
+    expect(voice).toContain('<ReachColumn');
     for (const tag of ['<LiveCallDemo />', '<HowItWorksSection />', '<UseCasesSection />', '<ControlSection />']) {
       expect(voice).toContain(tag);
     }
@@ -418,7 +420,7 @@ describe('public copy', () => {
   it('the sign-in panel no longer claims customers it does not have', () => {
     const signin = read('src/app/auth/signin/page.js');
     expect(signin).not.toMatch(/500\+|Trusted by|home service/i);
-    expect(signin).toContain('Give your backend a voice');
+    expect(signin).toContain('AI that does the work');
   });
 
   it('root metadata describes the new product', () => {

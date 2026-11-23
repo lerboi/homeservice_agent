@@ -3,6 +3,7 @@ import { DemoCTA } from '@/components/landing/DemoCTA';
 import { AgentChatDemo } from '@/components/marketing/AgentChatDemo';
 import { FinalCtaSection } from '@/components/marketing/LandingSections';
 import { Icon } from '@/components/marketing/icons';
+import { ReachColumn } from '@/components/marketing/ReachColumn';
 import { Container, Em, Eyebrow, Section } from '@/components/marketing/primitives';
 import {
   AGENT_CHANNELS, AGENT_CONTROLS, AGENT_JOBS, AGENT_RELIEFS, AGENT_STEPS, AGENT_WEEK,
@@ -21,22 +22,6 @@ export const metadata = pageMetadata({
 // What the agent reaches, shown either side of the chat in the hero.
 const REACH_LEFT = ['Reviews', 'Inbox', 'Calendar'];
 const REACH_RIGHT = ['Google Search', 'Support desk', 'Your records'];
-
-function ReachColumn({ items, side }) {
-  return (
-    <ul className={`hidden flex-col justify-center gap-5 lg:flex ${side === 'left' ? 'items-end' : 'items-start'}`} aria-hidden="true">
-      {items.map((item, i) => (
-        <li key={item} className={`flex items-center ${side === 'left' ? 'flex-row' : 'flex-row-reverse'}`}>
-          <span className="rounded-full border border-mk-ink/15 bg-white px-4 py-2 font-code text-[11px] uppercase tracking-[0.12em] text-mk-ink">
-            {item}
-          </span>
-          <span className={`h-px bg-mk-ink/25 ${i === 1 ? 'w-10' : 'w-20'}`} />
-          <span className="size-1.5 rounded-full bg-mk-spark-deep" />
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 export default function AgentPage() {
   return (
@@ -63,9 +48,9 @@ export default function AgentPage() {
           </div>
 
           <div className="mt-12 grid items-stretch gap-0 lg:grid-cols-[1fr_minmax(0,34rem)_1fr]">
-            <ReachColumn items={REACH_LEFT} side="left" />
+            <ReachColumn items={REACH_LEFT} side="left" tone="spark" />
             <AgentChatDemo className="mx-auto w-full max-w-xl border-mk-ink/15" />
-            <ReachColumn items={REACH_RIGHT} side="right" />
+            <ReachColumn items={REACH_RIGHT} side="right" tone="spark" />
           </div>
           <p className="mt-6 text-center font-code text-[11px] uppercase tracking-[0.14em] text-mk-ink/50">
             An illustration. Pick a channel to see another job.
