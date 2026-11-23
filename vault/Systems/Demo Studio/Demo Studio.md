@@ -108,7 +108,11 @@ What a demo call may touch: appointments made by test calls of the demo tenant, 
 
 Recording a move or a cancel takes two calls: book in the first, then start a second call and ask to move or cancel "my appointment" under the same name.
 
-## The business the call answers as (branch `demo-persona`, 2026-11-24, not deployed)
+## The demo agent (deployed 2026-11-24)
+
+Demo Studio calls are taken by the demo agent, `livekit-agent/src/agents/demo`: the scheduling task in `src/lib/demo/scenarios.js` names `agent: 'demo'`. It is the front desk of a clinic with its own prompt and one turn policy (a plain "yes" to a single time on offer must make the change), running on the appointments agent's real tools, calendar writes and call wiring. It is a working agent, not a script, and is reachable from test calls only. The Model control starts on GPT-4.1 mini. Why it exists and how it rehearsed: [[2026-11-24 Demo call script and persona]] section 7.
+
+## The business the call answers as (deployed 2026-11-24)
 
 The setup column has an "Answer as" field, default "Brightside Dental" (`DEFAULT_DEMO_BUSINESS_NAME` in `src/lib/demo/session.js`). The session route validates it (`cleanBusinessName`: a plain name of 2 to 40 characters) and writes it into the `demo` block as `business_name`; the agent greets and answers as that business, and the captions show that name. Empty means the demo tenant's own name. It is a name only: hours, calendar, bookings and the sandbox rules are the tenant's. Build record: [[2026-11-24 Demo call script and persona]].
 

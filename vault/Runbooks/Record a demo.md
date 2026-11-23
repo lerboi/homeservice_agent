@@ -13,7 +13,7 @@ To record a browser call in which the agent books an appointment and it appears 
 
 Needs the `demo-studio` work deployed in both repos (see [[Now]] for whether it is).
 
-## The script (needs branch `demo-persona` deployed; see [[Now]])
+## The script
 
 One caller rings a clinic, books a cleaning and moves it, in under a minute. Under **Answer as** the page says "Brightside Dental". Record on a Monday, Tuesday or Wednesday (Singapore time) so "tomorrow" and "Friday" are two different working days.
 
@@ -28,7 +28,7 @@ One caller rings a clinic, books a cleaning and moves it, in under a minute. Und
 
 Say each line in one breath: a pause inside a line lets the agent start answering early. Say "two" and "ten" as plain numbers.
 
-Rehearse it without a microphone first: `BASELINE_SCRIPT=demo BASELINE_DEMO=google BASELINE_AGENT=appointments BASELINE_LLM=openai BASELINE_BUSINESS="Brightside Dental" python vault/_meta/tools/baseline_call.py <tenant_id> <phone>` speaks these lines, prints the call length (`TIMING`) and checks the result (`CHECKS`, `VERDICT`). Then reset: `node --env-file=.env.local vault/_meta/tools/demo_reset.mjs <tenant_id>`. Rehearsal results so far: [[2026-11-24 Demo call script and persona]].
+Rehearse it without a microphone first: `BASELINE_SCRIPT=demo BASELINE_DEMO=google BASELINE_AGENT=demo BASELINE_BUSINESS="Brightside Dental" python vault/_meta/tools/baseline_call.py <tenant_id> <phone>` speaks these lines, prints the call length (`TIMING`) and checks the result (`CHECKS`, `VERDICT`). Then reset: `node --env-file=.env.local vault/_meta/tools/demo_reset.mjs <tenant_id>`. Rehearsal results so far: [[2026-11-24 Demo call script and persona]].
 
 Screen for the recording: 1920×1080, the Demo Studio in Presentation mode on the left, Google Calendar in week view on the right with tomorrow and Friday both visible. Keep them as two windows so the video edit can crop them separately. Download the call audio from the page afterwards.
 

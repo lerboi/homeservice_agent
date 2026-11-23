@@ -9,7 +9,7 @@ tags: [voco/log]
 
 # 2026-11-24 Demo call script and persona
 
-Outcome: the script for the recorded demo is fixed, and the code for it is built on branch `demo-persona` in both repos. **Not deployed.** Rehearsed on a local dev worker only. How to record: [[Record a demo]]. System notes: [[Demo Studio]], [[Voice Agent - Appointments agent (verified)]].
+Outcome: the script for the recorded demo is fixed and the code for it is deployed from `main` in both repos (sections 5 to 7). The first spoken take failed and led to a dedicated demo agent (section 7). How to record: [[Record a demo]]. System notes: [[Demo Studio]], [[Voice Agent - Appointments agent (verified)]].
 
 ## 1. The script and why
 
@@ -63,9 +63,46 @@ Local numbers are not Railway numbers. Every booking was removed with `demo_rese
 gpt-4.1-mini: 4 of 4, the last three with one reply per turn. Groq Qwen: 3 of 5, one failure fixed in code and one caused by this machine; two of its three passes had wording a recording could not use.
 
 ## 4. Not done
-- Nothing is pushed or deployed. The page change has not been opened in a browser.
-- No rehearsal on Railway with the new code, so there is no production timing for the final script.
-- No spoken call through `/admin/demo`.
 - How fast the Google Calendar web page redraws after the write was not measured (the API write took 0.4 to 0.6 s).
 - The take would show the owner's personal Google Calendar; a separate calendar for the demo was proposed and not set up. Whether the Next cleanup and status routes honour a non-primary `calendar_id` end to end was not checked beyond reading the code.
 - Whether a real clinic in Singapore is called Brightside Dental was not checked.
+
+## 5. Deployed, and a page crash
+
+With the owner's go-ahead: agent `32d352e` and Next app `2d6b3fb` pushed to `main`. The Demo Studio page then crashed on load in production ("Cannot access ... before initialization"): `canStart` read `persona` one line before its declaration. The page had not been opened in a browser before the push, and neither the tests nor the default lint rules catch a use before declaration. Fixed in `02441c8`. Check to run on that page before pushing: `npx eslint --rule '{"no-use-before-define": ["error", {"functions": false, "classes": false, "variables": true}]}' src/app/admin/demo/page.js`.
+
+## 6. Production rehearsals of the appointments agent (agent `32d352e`, `BASELINE_SCRIPT=demo`)
+
+| Model | Passed | Length as run | Failures |
+|---|---|---|---|
+| gpt-4.1-mini | 4 of 5 | 50 to 58 s | Speech-to-text heard the name as "Alexton" once; the booking and the move were otherwise right |
+| Groq Qwen | 3 of 5 | 53 to 58 s | One call rambled, then said the line was breaking up and booked nothing more; one said "Too many slots returned" aloud and never booked |
+
+Across about twenty scripted calls on 2026-11-24 the synthetic caller's "Alex Tan" was heard as "Alex Than", "Alex Turn" and "Alexton" once each.
+
+## 7. The first spoken take, and the demo agent
+
+The owner's first take through `/admin/demo` (gpt-4.1-mini) failed. From the recording and the Railway log: the agent checked tomorrow at two and asked "Is that right for you?"; the owner said "Yes, please."; the agent replied "What is the appointment for? What is the appointment for?" and booked nothing; the owner went on to ask for the move, and `find_appointment` found nothing.
+
+The owner asked for a dedicated demo agent in its own folder: a working agent for the demo's setting, not scripted replies, with gpt-4.1-mini as the default. Built on `main`:
+
+- `livekit-agent/src/agents/demo/`: `prompt.py` (the front desk of a dental clinic; never asks what an appointment is for; books the moment the caller agrees), `policy.py` (`confirm_pending_write`: a plain "yes" from the caller while exactly one time is on offer requires the turn to call `book_appointment`, or `reschedule_appointment` when the appointment was looked up since the last change), `entry.py` (the profile: this prompt, this policy, `llm: openai`, clinic keyterms for speech-to-text).
+- `src/agents/appointments/entry.py`: `run_call` takes an optional `profile`; `AppointmentsAgent` takes an optional `turn_policy`. With neither, behaviour is unchanged.
+- `src/agents/__init__.py`, `src/agent.py`: the router knows `demo`. Test calls only; `VOCO_DEFAULT_AGENT=demo` is ignored.
+- Demo Studio: the scheduling task names `agent: 'demo'`; the Model control starts on GPT-4.1 mini.
+- `baseline_call.py`: `BASELINE_LINES` (caller lines as a JSON list).
+- Tests: agent 934 pass (same one pre-existing failure deselected); Demo Studio suites 66 pass.
+
+Local rehearsals of the demo agent (`BASELINE_AGENT=demo`, gpt-4.1-mini):
+
+| Call | Verdict | Length as run | Notes |
+|---|---|---|---|
+| The script | PASS | 48 s | The policy required `book_appointment`, then `reschedule_appointment` |
+| The caller never says what the appointment is for | Booked and moved | 47 s | No question about the reason; event titled with the name only |
+| The script | PASS | 45 s | Same |
+
+Production rehearsals of the demo agent: see [[Now]] for the latest.
+
+## 8. Local dev server running out of memory
+
+`npm run dev` in the main working folder died with "JavaScript heap out of memory" at about 8 GB, and before dying returned 404 pages for every `/api/admin/*` route (which is what the Demo Studio's "Unexpected token '<'" on localhost was). `.next/dev/cache` held 15.3 GB. A restarted server reached 9.4 GB of private memory within four minutes of starting. After deleting `.next` a fresh server sat at about 3 GB over the first 100 seconds and the admin routes answered. Not watched for longer than that, so the cache is the likely cause and not a proven one. See [[Run a local dev worker and measure]].

@@ -22,6 +22,7 @@ Env switches:
                                              "Friday" are two different working days.
   BASELINE_BUSINESS="Brightside Dental"      the business the agent answers as (demo block
                                              `business_name`); unset = the tenant's own name.
+  BASELINE_LINES='["Hi", "Bye"]'              caller lines as a JSON list, instead of a named script.
   BASELINE_QUIET=1.8                         seconds of agent silence before the caller speaks.
   BASELINE_TZ=Asia/Singapore                 the business's timezone, for the demo script's checks.
 
@@ -82,6 +83,10 @@ SCRIPTS = {
 }
 SCRIPT = os.environ.get("BASELINE_SCRIPT", "book").strip().lower() or "book"
 UTTERANCES = SCRIPTS[SCRIPT]
+if os.environ.get("BASELINE_LINES"):
+    # A JSON list of caller lines, to try a variation without editing this file.
+    UTTERANCES = json.loads(os.environ["BASELINE_LINES"])
+    SCRIPT = "custom"
 QUIET = float(os.environ.get("BASELINE_QUIET", "1.8"))
 EXIT_CODE = 0
 

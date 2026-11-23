@@ -147,7 +147,7 @@ describe('POST /api/admin/demo/session', () => {
       web_test: true,
       tenant_id: 'tenant-1',
       to_number: '+18005550001',
-      agent: 'appointments',
+      agent: 'demo',
       demo: { task: 'scheduling', destination: 'google', keep_booking: true },
     });
   });

@@ -14,7 +14,9 @@ export const SCENARIOS = [
     title: 'Book, move or cancel an appointment',
     description: 'The caller asks for a time, or to change a booking. The agent checks availability, makes the change, and the calendar event appears, moves or disappears.',
     status: 'live',
-    agent: 'appointments',
+    // The clinic front desk built for the recording (livekit-agent
+    // src/agents/demo): its own prompt on the appointments agent's real tools.
+    agent: 'demo',
   },
   {
     id: 'lead_crm',

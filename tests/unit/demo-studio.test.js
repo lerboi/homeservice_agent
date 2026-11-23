@@ -119,7 +119,7 @@ describe('room name and metadata', () => {
       web_test: true,
       tenant_id: 'tenant-1',
       to_number: '+18005550001',
-      agent: 'appointments',
+      agent: 'demo',
       demo: { task: 'scheduling', destination: 'google', keep_booking: true },
     });
   });
@@ -158,8 +158,8 @@ describe('room name and metadata', () => {
     expect(cleanBusinessName("Tan & Lim's Clinic")).toBe("Tan & Lim's Clinic");
   });
 
-  it('sends the scheduling task to the appointments agent', () => {
-    expect(getScenario('scheduling').agent).toBe('appointments');
+  it('sends the scheduling task to the demo agent', () => {
+    expect(getScenario('scheduling').agent).toBe('demo');
     // A task with no agent of its own leaves the choice to the worker.
     expect('agent' in buildDemoRoomMetadata({ tenant, task: 'lead_crm', destination: 'voco' })).toBe(false);
   });

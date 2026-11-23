@@ -62,7 +62,8 @@ export default function DemoStudioPage() {
   const [task, setTask] = useState(DEFAULT_SCENARIO_ID);
   const [destination, setDestination] = useState('google');
   const [voice, setVoice] = useState('');
-  const [llm, setLlm] = useState(''); // '' = the worker's own setting
+  // GPT-4.1 mini by default: the steadier model in rehearsals. '' = the agent's own setting.
+  const [llm, setLlm] = useState('openai');
   // The business the agent answers as on the recording. '' = the tenant's own name.
   const [answerAs, setAnswerAs] = useState(DEFAULT_DEMO_BUSINESS_NAME);
   const [presenting, setPresenting] = useState(false);

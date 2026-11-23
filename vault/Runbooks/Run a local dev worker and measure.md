@@ -71,6 +71,7 @@ Override behaviour for an experiment by exporting env vars before starting the w
 - **Stopping the worker**: stopping the shell does not always stop the Python processes. Find them by command line (`src.agent`, or executables under `livekit-agent\.venv18`) and stop those specific PIDs. Check that nothing is still listening on port 8080 before starting again. Do not kill every `python.exe`.
 - **Do not pipe the scripted call through `tail`**: output is lost if it hangs. `grep` on its stdout is fine.
 - **The worker refuses jobs when the machine is busy.** In `start` mode livekit-agents marks the worker unavailable above 70% CPU load (`worker is at full capacity, marking as unavailable` in the log) and the call sits at "Waiting for the agent". A compiling `next dev` is enough to cause it. Close what you can, or run the scripted call without the Next server.
+- **`npm run dev` dies with "JavaScript heap out of memory", or admin routes return 404 pages.** Stop the server, delete the `.next` folder (it is rebuilt), start again. On 2026-11-24 `.next/dev/cache` had grown to 15.3 GB; see [[2026-11-24 Demo call script and persona]] section 8.
 - **Local numbers are not Railway numbers.** A local worker reaches Groq and LiveKit through different regions. Compare like with like.
 - **Free-plan ElevenLabs library voices return 402** and the caller audio cannot be synthesized. The script uses a premade voice for the caller for that reason.
 

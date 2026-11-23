@@ -62,7 +62,7 @@ Every time or appointment the agent mentions comes from a tool return, and every
 
 Differences from the receptionist's availability tools: no travel buffer between appointments (the receptionist keeps `tenants.travel_buffer_mins`, default 30, clear on both sides of every booking), and a failed lookup never tells the model to "offer capture_lead".
 
-Two behaviours added on branch `demo-persona` (2026-11-24, not deployed; [[2026-11-24 Demo call script and persona]]):
+Two behaviours added on 2026-11-24 (deployed; [[2026-11-24 Demo call script and persona]]):
 - `check_slot` reads a time before the day's opening as the afternoon when the afternoon twin is inside the day's hours (`afternoon_if_before_opening`): the model passed `2:00` for "tomorrow at two".
 - When the caller gives the new time together with the request to move, the agent looks the appointment up, checks the new time and asks once. The rule is in the prompt and in the `find_appointment` return for a single match.
 
@@ -105,7 +105,11 @@ Code gates that do not depend on the model's wording: a booking, move or cancel 
 
 ## The business name on a demo call
 
-On branch `demo-persona` (not deployed): a Demo Studio call may answer as a named business. The server-set `demo` block carries `business_name`; `lib/demo.clean_business_name` accepts a plain name of 2 to 40 characters; `entry.py` uses it for the greeting, the prompt and the speech-to-text keyterm. `demo` is `None` on every production call, so a production call always answers as the tenant. Nothing else changes: the tenant, its hours, its calendar and the tools are the real ones.
+A Demo Studio call may answer as a named business. The server-set `demo` block carries `business_name`; `lib/demo.clean_business_name` accepts a plain name of 2 to 40 characters; `entry.py` uses it for the greeting, the prompt and the speech-to-text keyterm. `demo` is `None` on every production call, so a production call always answers as the tenant. Nothing else changes: the tenant, its hours, its calendar and the tools are the real ones.
+
+## The demo agent built on this one
+
+`src/agents/demo` is a second agent that reuses this one's `run_call`, tools, guards and calendar layer and supplies a `profile`: its own prompt (a clinic front desk), a turn policy, gpt-4.1-mini as its model when the call names none, and extra speech-to-text keyterms. `run_call(..., profile=None)` and `AppointmentsAgent(..., turn_policy=None)` are the two extension points; with neither, this agent behaves as described here. The demo agent is selected by `agent: "demo"` in a test call's metadata and can never be the default. The Demo Studio uses it.
 
 ## Which model runs a call
 
