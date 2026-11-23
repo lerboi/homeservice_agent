@@ -103,12 +103,13 @@ export default function DemoStudioPage() {
   const { actions, booking } = useMemo(() => buildTimeline(events, { timeZone }), [events, timeZone]);
 
   const destinationStatus = status?.destinations?.find((d) => d.id === destination) || null;
+  // Must be declared before canStart, which reads it.
+  const persona = cleanBusinessName(answerAs);
   const canStart =
     Boolean(status?.tenant?.can_take_calls) &&
     isDestinationSelectable(destinationStatus) &&
     !statusLoading &&
     persona !== null;
-  const persona = cleanBusinessName(answerAs);
   const businessName =
     (inCall || phase === 'ended' ? session?.tenant?.business_name : persona) ||
     status?.tenant?.business_name ||
