@@ -4,7 +4,7 @@ system: Demo Studio
 status: current
 repo: homeservice_agent (src/app/admin/demo, src/app/api/admin/demo, src/lib/demo, src/hooks/useAgentCall.js) + livekit-agent
 description: "The /admin/demo recording station: a browser call in which the agent books an appointment that lands in Google Calendar. How the page, its three routes, the agent's demo flag and the live event stream fit together, and what is and is not verified."
-verified: 2026-11-23
+verified: 2026-11-24
 tags: [voco/system/demo-studio]
 ---
 
@@ -12,7 +12,7 @@ tags: [voco/system/demo-studio]
 
 Up: [[Home]] · [[Systems]] · How to use it: [[Record a demo]] · Build record: [[2026-11-23 Demo Studio build]]
 
-**State on 2026-11-23:** built on the `demo-studio` branch in both repos, not deployed. The agent path is verified with scripted calls against a local worker (the event lands in Google Calendar and is read back through the Google API). The page is verified in a browser up to starting a call. A full call through the page against the deployed agent has not been run yet: it needs both branches deployed.
+**State on 2026-11-24:** deployed in both repos. The agent path is verified in production with scripted calls (the event lands in Google Calendar and is read back through the Google API). The page is verified in a browser on a local server up to starting a call. A spoken call through the page on production has not been made yet.
 
 ## What it is
 

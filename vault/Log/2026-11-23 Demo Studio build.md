@@ -2,14 +2,14 @@
 type: log
 date: 2026-11-23
 status: record
-description: "Task 2 build record: Google Calendar reconnected and verified, agent demo flag and live events, a guard against the model claiming a booking it did not make, the /admin/demo page and routes, tests, and the scripted-call results. Not yet deployed."
+description: "Task 2 build record: Google Calendar reconnected and verified, agent demo flag and live events, a guard against the model claiming a booking it did not make, the /admin/demo page and routes, tests, and the scripted-call results. Deployed 2026-11-24."
 verified: 2026-11-23
 tags: [voco/log]
 ---
 
 # 2026-11-23 Demo Studio build
 
-Outcome: the Demo Studio is built on the `demo-studio` branch in both repos and verified locally. Nothing is pushed or deployed. System description: [[Demo Studio]]. How to use it: [[Record a demo]].
+Outcome: the Demo Studio is built on the `demo-studio` branch in both repos and verified locally. Section 6 records the deploy. System description: [[Demo Studio]]. How to use it: [[Record a demo]].
 
 ## 1. Google Calendar
 - Connected the owner's personal Google account to the demo tenant through Chrome (dashboard page → fetch `/api/google-calendar/auth` → Google consent).
@@ -56,6 +56,9 @@ Verified in Chrome on a local server: the page loads, Google Calendar shows heal
 - Agent: 771 pass, 1 pre-existing failure (`tests/webhook/test_routes.py::test_incoming_call_vip_lead`). New: `tests/test_demo_studio.py`, `tests/test_scheduling_profile.py`, `tests/test_booking_claim_guard.py`; `tests/test_test_call_sandbox.py` updated for the new gate.
 - Next app: `tests/unit/demo-studio.test.js`, `tests/api/admin-demo.test.js` (56 tests with the existing test-console file).
 
-## 6. Found along the way, not fixed
+## 6. Deployed and verified in production (2026-11-24)
+With the owner's go-ahead both branches were fast-forwarded to `main` and pushed: agent `f7c632d` (Railway deploy succeeded), Next app `123e543` (Vercel). Two scripted demo calls against the Railway agent both booked; both Google events were read back through the API and removed by cleanup. Booking turn 1.44 s and 1.54 s, against 2.1 to 2.9 s before. Still open: a spoken call through `/admin/demo`.
+
+## 7. Found along the way, not fixed
 - Post-call triage layer 2 calls `gpt-4.1-nano`, which OpenAI now rejects as deprecated (`[triage] layer2 failed … model_not_found` in the worker log). Layer 2 never succeeds; the call is still recorded.
 - The model sometimes offers "twelve noon" as an afternoon time and once stumbled over the month name. Prompt and model quality, not addressed here.
