@@ -63,7 +63,7 @@ describe('validateDemoRequest', () => {
   it('accepts the live task with a healthy destination', () => {
     expect(validateDemoRequest({ task: 'scheduling', destination: 'google' }, STATUSES)).toEqual({
       ok: true, task: 'scheduling', destination: 'google', voiceOverride: null, llm: null, businessName: null,
-      voiceQuality: null, greeting: null,
+      voiceQuality: null, greeting: null, typingSound: null,
     });
   });
 
@@ -170,6 +170,17 @@ describe('room name and metadata', () => {
     expect(ask({ voice_quality: 'Rich', greeting: 'warm' })).toMatchObject({ ok: true, voiceQuality: 'rich', greeting: 'warm' });
     expect(ask({ voice_quality: 'studio' })).toMatchObject({ ok: false, status: 400 });
     expect(ask({ greeting: 'rude' })).toMatchObject({ ok: false, status: 400 });
+  });
+
+  it('turns the typing sound off only when asked to', () => {
+    const ask = (extra) => validateDemoRequest({ task: 'scheduling', destination: 'voco', ...extra }, STATUSES);
+    expect(ask({ typing_sound: false }).typingSound).toBe(false);
+    expect(ask({ typing_sound: true }).typingSound).toBe(null);
+    expect(ask({}).typingSound).toBe(null);
+    expect(ask({ typing_sound: 'false' }).typingSound).toBe(null);
+    const off = buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google', typingSound: false });
+    expect(off.typing_sound).toBe(false);
+    expect('typing_sound' in buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google' })).toBe(false);
   });
 
   it('builds the spoken sample from the same settings the agent uses', () => {

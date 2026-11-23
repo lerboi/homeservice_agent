@@ -72,6 +72,8 @@ export default function DemoStudioPage() {
   // How the voice is produced, and which greeting opens the call.
   const [quality, setQuality] = useState(DEFAULT_QUALITY_ID);
   const [greeting, setGreeting] = useState(DEFAULT_GREETING_ID);
+  // The keyboard sound the agent plays while it looks something up.
+  const [typingSound, setTypingSound] = useState(true);
   // The spoken sample: idle | loading | ready | error. `of` is what it is a sample of.
   const [sample, setSample] = useState({ state: 'idle', url: null, error: null, of: '' });
   const sampleUrlRef = useRef(null);
@@ -142,6 +144,7 @@ export default function DemoStudioPage() {
         ...(llm ? { llm } : {}),
         ...(persona ? { business_name: persona } : {}),
         voice_quality: quality,
+        ...(typingSound ? {} : { typing_sound: false }),
         greeting,
       },
     });
@@ -335,6 +338,23 @@ export default function DemoStudioPage() {
                 <Segmented options={GREETING_OPTIONS} value={greeting} onChange={setGreeting} disabled={inCall} columns={2} />
                 <Hint>&ldquo;{getGreeting(greeting)?.text(persona || status?.tenant?.business_name || 'the business')}&rdquo;</Hint>
               </Field>
+              <label className={`flex items-start gap-2 ${inCall ? 'cursor-default' : 'cursor-pointer'}`}>
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-3.5 w-3.5 accent-[#0B0F14]"
+                  checked={typingSound}
+                  disabled={inCall}
+                  onChange={(e) => setTypingSound(e.target.checked)}
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium leading-4">Typing sound</span>
+                  <span className="block mt-1 text-[11px] leading-snug" style={{ color: 'rgba(11,15,20,0.6)' }}>
+                    {typingSound
+                      ? 'A keyboard sound plays while the agent checks or updates the calendar.'
+                      : 'Off: the agent is silent while it checks or updates the calendar.'}
+                  </span>
+                </span>
+              </label>
               <div>
                 <button
                   type="button"
