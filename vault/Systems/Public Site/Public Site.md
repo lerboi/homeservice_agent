@@ -24,14 +24,13 @@ Everything public is under the `src/app/(public)/` route group, whose `layout.js
 | `/voice` | `voice/page.js` | Voco Voice: the call illustration, how a call works, use cases, control |
 | `/agent` | `agent/page.js` | Voco Agent: the chat illustration, jobs, channels, control, setup. Data in `src/data/agent.js` |
 | `/demo` | `demo/page.js` | The recorded demo (placeholder until the video exists) and what it shows |
-| `/use-cases`, `/use-cases/[slug]` | `use-cases/` | Five task-based use cases, generated from `src/data/use-cases.js` |
-| `/integrations`, `/integrations/[tool]` | `integrations/` | 22 systems in six groups, generated from `src/data/integrations.js` |
+| `/use-cases`, `/use-cases/[slug]` | `use-cases/` | Both products' work: five call-based use cases from `src/data/use-cases.js` (each with its own page) and Voco Agent's six jobs from `src/data/agent.js` (cards linking to `/agent#jobs`) |
 | `/pricing` | `pricing/page.js` | "Talk to us". No plan table |
 | `/about`, `/contact` | | Company page; the demo-request form |
 | `/privacy`, `/terms` | | Legal. Restyled; only the one-line product descriptor changed |
 | `/og` | `og/route.jsx` | Generated Open Graph image (`?title=&type=`) |
 
-Retired with permanent redirects in `next.config.js`: `/blog`, `/glossary`, `/compare` → `/`; `/for` and `/for/*` → `/use-cases`; `/integrations/twilio` → `/integrations/sms`. The old `/demo` stub outside the route group is gone.
+Retired with permanent redirects in `next.config.js`: `/blog`, `/glossary`, `/compare` → `/`; `/for` and `/for/*` → `/use-cases`; `/integrations` and `/integrations/*` → `/` (the integrations pages and nav link were removed on 2026-11-24 at the owner's instruction; the home page's tools section is the only place tools are shown). The old `/demo` stub outside the route group is gone.
 
 ## Notes
 
@@ -59,8 +58,8 @@ The seam that remains: `/auth/signin` still offers sign-up, and the onboarding w
 ## SEO
 
 - Root metadata in `src/app/layout.js`; per-page metadata through `pageMetadata()` in `src/data/site.js` (title, description, canonical, Open Graph, Twitter).
-- `src/app/sitemap.js` is generated from the same data files as the pages, so a new use case or integration appears automatically.
-- JSON-LD: Organization, SoftwareApplication and FAQPage on the home page; BreadcrumbList on use-case and integration pages.
+- `src/app/sitemap.js` is generated from the same data files as the pages, so a new use case appears automatically.
+- JSON-LD: Organization, SoftwareApplication and FAQPage on the home page; BreadcrumbList on use-case pages.
 
 ## Tests
 

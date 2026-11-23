@@ -88,12 +88,9 @@ export default async function UseCasePage({ params }) {
           <ul className="flex flex-wrap content-start gap-2.5">
             {integrations.map((integration) => (
               <li key={integration.slug}>
-                <Link
-                  href={`/integrations/${integration.slug}`}
-                  className="inline-flex h-10 items-center rounded-full border border-mk-ink/15 bg-white px-4 text-sm transition-colors hover:border-mk-ink/50"
-                >
+                <span className="inline-flex h-10 items-center rounded-full border border-mk-ink/15 bg-white px-4 text-sm">
                   {integration.name}
-                </Link>
+                </span>
               </li>
             ))}
           </ul>

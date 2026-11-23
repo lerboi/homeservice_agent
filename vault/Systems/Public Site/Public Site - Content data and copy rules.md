@@ -18,10 +18,10 @@ Part of [[Public Site]]. No public page uses next-intl; copy is in JSX and in th
 | `site.js` | Nav, CTAs, metadata, the two products, the demo video slot | `NAV_LINKS`, `PRODUCTS`, `BOOK_DEMO_HREF`, `WATCH_DEMO_HREF`, `HEADLINE` (site), `TAGLINE` (Voco Voice), `DEMO_VIDEO`, `pageMetadata()` |
 | `agent.js` | `/agent`, the agent chat illustration | `AGENT_CHANNELS`, `AGENT_CONVERSATIONS` (one per channel), `AGENT_RELIEFS`, `AGENT_JOBS`, `AGENT_WEEK`, `AGENT_CONTROLS`, `AGENT_STEPS` |
 | `use-cases.js` | `/use-cases`, `/use-cases/[slug]`, landing grid, sitemap | `USE_CASES[]`: `slug`, `icon`, `title`, `short`, `headline`, `summary`, `call[]`, `log[]`, `steps[4]`, `integrations[]`; `EXTRA_CAPABILITIES[]` |
-| `integrations.js` | `/integrations`, `/integrations/[tool]`, landing backends, sitemap | `INTEGRATION_GROUPS[]`; `INTEGRATIONS[]`: `slug`, `name`, `group`, `summary`, `actions[]` |
+| `integrations.js` | The system names shown as plain labels on use-case pages; validates the home tools list. Its pages were removed on 2026-11-24 | `INTEGRATION_GROUPS[]`; `INTEGRATIONS[]`: `slug`, `name`, `group`, `summary`, `actions[]` |
 | `faq.js` | Landing FAQ, FAQ structured data, chat suggestions | `FAQ_ITEMS[]`: `q`, `a`, optional `link` |
 
-**Add a use case:** append to `USE_CASES`; its `integrations` must be existing slugs and its `icon` must be in `src/components/marketing/icons.js`. The page, the grid card and the sitemap entry follow. **Add an integration:** append to `INTEGRATIONS` with an existing `group`.
+**Add a use case:** append to `USE_CASES`; its `integrations` must be existing slugs and its `icon` must be in `src/components/marketing/icons.js`. The page, the grid card and the sitemap entry follow. **Tools on the home page:** `HOME_TOOLS` in `LandingSections.jsx`; the owner fixed that list at six (WhatsApp, email, Slack, Google Calendar, Outlook Calendar, your own API). Do not add to it without asking. Use-case pages still name other systems (HubSpot, Salesforce and others) as labels under "Where the work lands".
 
 ## Copy rules
 

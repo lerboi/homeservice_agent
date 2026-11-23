@@ -59,10 +59,18 @@ The owner liked the direction and the separate Voice and Agent pages. Changes as
 
 Verified after these: 123 public-site, SEO and chat tests pass; `next build` succeeds; Chrome at desktop width and at 390 px.
 
+## Third round: integrations removed, agent on the use-cases page
+
+Owner's instruction: remove the Integrations tab entirely, and add Voco Agent entries to the use-cases page.
+
+- `/integrations` and `/integrations/[tool]` deleted; both redirect permanently to `/`. Gone from the nav, footer and sitemap. Home tool tiles and the system chips on use-case pages are plain labels now.
+- `/use-cases` is rebuilt as two groups: Voco Voice (the five call-based use cases, green) and Voco Agent (its six jobs with an example message each, amber, linking to `/agent#jobs`). Headline "The work you can hand over."
+- Verified: 122 tests pass, `next build` succeeds, redirects return 308, Chrome at desktop width and 390 px.
+
 ## Not done yet
 
 - `/demo`, `/pricing`, `/about` and `/contact` still open with the plain paper `PageHero` and have not been redesigned.
-- `/integrations` still lists all 22 systems although the home page shows six; the owner has not said whether to trim it.
+- Use-case pages and the chatbot's `integrations.md` still name systems beyond the six on the home page (HubSpot, Salesforce and others).
 - `/pricing`, `/about`, `/demo` and `/contact` copy still speaks only of calls.
 - The mobile nav drawer and a real contact-form submission are still unexercised.
-- Use-case pages and the integrations list are still voice-only; whether the agent gets its own use cases there is undecided.
+- Voco Agent's jobs have no detail pages of their own; the cards link to `/agent`.

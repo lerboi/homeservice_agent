@@ -59,7 +59,7 @@ The two marketing faces are loaded with `next/font` in `src/app/(public)/layout.
 |---|---|
 | `Section` | `tone="paper" | "white" | "ink"`, standard vertical padding, optional top hairline, an `id` for anchors |
 | `Container` | Side padding and the page width (`narrow` for legal text; everything else is one width) |
-| `PageHero` | Interior page opener with a dot grid; `tone="paper" | "white" | "signal" | "spark" | "ink"` so pages do not open alike (`/use-cases` signal, `/integrations` ink) |
+| `PageHero` | Interior page opener with a dot grid; `tone="paper" | "white" | "signal" | "spark" | "ink"` so pages do not open alike (all current pages use paper; the other tones are available) |
 | `SectionHeader` | Eyebrow + title + lede; takes `tone` |
 | `Eyebrow` | Mono label; `tone="signal" | "spark"`, `onInk` |
 | `Em` | Coloured emphasis inside a headline: `tone="signal" | "spark"` on ink, `"signal-deep" | "spark-deep"` on light, `"both"` (green running into amber, home hero only) |

@@ -18,7 +18,6 @@ const COLUMNS = [
     title: 'Explore',
     links: [
       { href: '/use-cases', label: 'Use cases' },
-      { href: '/integrations', label: 'Integrations' },
       { href: '/pricing', label: 'Pricing' },
     ],
   },

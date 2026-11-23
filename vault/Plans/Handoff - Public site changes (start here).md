@@ -45,7 +45,7 @@ Full map: [[Public Site]]. The short version:
 | Nav links, CTA targets, tagline, metadata helper | `src/data/site.js` |
 | Nav, footer, CTA buttons | `src/app/components/landing/LandingNav.jsx`, `LandingFooter.jsx`, `src/components/landing/DemoCTA.js` |
 | Use cases (cards and pages) | `src/data/use-cases.js`, `src/app/(public)/use-cases/` |
-| Integrations (list and pages) | `src/data/integrations.js`, `src/app/(public)/integrations/` |
+| Tools shown on the home page | `HOME_TOOLS` in `src/components/marketing/LandingSections.jsx` (the integrations pages were removed) |
 | FAQ | `src/data/faq.js` |
 | Other pages | `src/app/(public)/{demo,pricing,about,contact,privacy,terms}/page.js` |
 | Chatbot persona and knowledge | `src/app/api/public-chat/route.js`, `src/lib/public-chatbot-knowledge/*.md`. [[Public Site - Public chatbot (2026-11)]] |

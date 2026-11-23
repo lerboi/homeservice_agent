@@ -331,33 +331,27 @@ export function BackendsSection() {
         <ul className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:mt-0 lg:grid-cols-3">
           {tools.map((tool) => (
             <li key={tool.slug}>
-              <Link
-                href={`/integrations/${tool.slug}`}
-                className={`group flex h-full items-start gap-4 rounded-2xl border p-5 transition-colors ${
-                  tool.accent
-                    ? 'border-mk-signal/50 bg-mk-signal/[0.08] hover:border-mk-signal'
-                    : 'border-white/10 bg-white/[0.04] hover:border-white/30'
+              <div
+                className={`flex h-full items-start gap-4 rounded-2xl border p-5 ${
+                  tool.accent ? 'border-mk-signal/50 bg-mk-signal/[0.08]' : 'border-white/10 bg-white/[0.04]'
                 }`}
               >
                 <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-white">
                   <ToolIcon tool={tool} />
                 </span>
                 <span className="min-w-0">
-                  <span className="flex items-center gap-1.5 font-display text-lg font-semibold tracking-[-0.01em]">
-                    {tool.name}
-                    <ArrowUpRight className="size-3.5 text-white/40 transition-colors group-hover:text-white" aria-hidden="true" />
-                  </span>
+                  <span className="block font-display text-lg font-semibold tracking-[-0.01em]">{tool.name}</span>
                   <span className="mt-1 block text-sm leading-relaxed text-white/65">{tool.does}</span>
                 </span>
-              </Link>
+              </div>
             </li>
           ))}
         </ul>
 
         <p className="mt-10 text-center text-sm text-white/60">
           Use something else?{' '}
-          <Link href="/integrations" className="font-medium text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">
-            See how we connect it
+          <Link href="/contact?type=sales" className="font-medium text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">
+            Tell us what you run
           </Link>
         </p>
       </div>

@@ -24,7 +24,6 @@ export const NAV_LINKS = [
   { href: '/voice', label: 'Voice' },
   { href: '/agent', label: 'Agent' },
   { href: '/use-cases', label: 'Use cases' },
-  { href: '/integrations', label: 'Integrations' },
   { href: '/demo', label: 'Demo' },
   { href: '/pricing', label: 'Pricing' },
 ];

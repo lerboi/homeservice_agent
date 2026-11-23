@@ -109,7 +109,8 @@ const nextConfig = {
       { source: '/compare/:path*', destination: '/', permanent: true },
       { source: '/for', destination: '/use-cases', permanent: true },
       { source: '/for/:path*', destination: '/use-cases', permanent: true },
-      { source: '/integrations/twilio', destination: '/integrations/sms', permanent: true },
+      { source: '/integrations', destination: '/', permanent: true },
+      { source: '/integrations/:path*', destination: '/', permanent: true },
     ];
   },
 };

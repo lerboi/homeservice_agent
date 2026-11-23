@@ -27,7 +27,7 @@ The site sells two products as equals (owner's instruction, 2026-11-24): **Voco 
 
 Anchors: `#products`, `#demo`, `#backends`, `#setup`, `#faq`.
 
-The tools list is the owner's (2026-11-24): only those six appear on the home page. `HOME_TOOLS` in `LandingSections.jsx` holds them; WhatsApp and Google Calendar use their brand marks from the `simple-icons` package, the others a lucide icon (that package has no Slack or Outlook mark). `/integrations` still lists all 22 systems.
+The tools list is the owner's (2026-11-24): only those six appear on the home page. `HOME_TOOLS` in `LandingSections.jsx` holds them; WhatsApp and Google Calendar use their brand marks from the `simple-icons` package, the others a lucide icon (that package has no Slack or Outlook mark). The tiles are not links: the `/integrations` pages were removed the same day. "Use something else?" goes to the contact form.
 
 ## Voco Voice (`src/app/(public)/voice/page.js`)
 
@@ -63,7 +63,7 @@ Elsewhere: `src/app/components/landing/LandingNav.jsx` (links from `NAV_LINKS`; 
 
 ## Phone widths
 
-Checked on 2026-11-24 at 390 px (home, `/voice`, `/agent`, `/use-cases`, `/integrations`, `/contact`): no horizontal overflow; the two hero illustrations stack and use shorter minimum heights. This machine's Chrome window cannot be made narrow, so the check loads the page in a 390 px same-origin iframe from the browser tools.
+Checked on 2026-11-24 at 390 px (home, `/voice`, `/agent`, `/use-cases`, a use-case page, `/contact`): no horizontal overflow; the two hero illustrations stack and use shorter minimum heights. This machine's Chrome window cannot be made narrow, so the check loads the page in a 390 px same-origin iframe from the browser tools.
 
 ## No sign-in on the public site
 

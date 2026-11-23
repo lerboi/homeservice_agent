@@ -1,6 +1,7 @@
 /**
- * Backends Voco can act in, for the public site (/integrations,
- * /integrations/[tool], the landing page).
+ * Backends Voco can act in. The /integrations pages were removed on
+ * 2026-11-24; this file now only names the systems shown as plain labels on
+ * use-case pages and validates the home page's tools list.
  *
  * Framing (owner decision, 2026-11-23): connectors are presented as
  * available, done-for-you. "Voco connects to …" is true of the sales model:

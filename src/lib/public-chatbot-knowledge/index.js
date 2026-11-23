@@ -24,7 +24,6 @@ const ROUTE_DOC_MAP = {
   '/agent': 'agent.md',
   '/demo': 'how-it-works.md',
   '/use-cases': 'features.md',
-  '/integrations': 'integrations.md',
   '/pricing': 'pricing.md',
   '/about': 'overview.md',
   '/contact': 'contact.md',

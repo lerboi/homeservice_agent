@@ -27,7 +27,7 @@ Both post to `POST /api/public-chat` (`src/app/api/public-chat/route.js`): rate-
 
 Eight Markdown files: `overview`, `features` (Voco Voice), `agent` (Voco Agent), `how-it-works`, `integrations`, `faq`, `pricing`, `contact`. `index.js` picks at most two per message:
 
-1. The doc for the page the visitor is on (`/voice` → `features.md`, `/agent` → `agent.md`). Sub-pages use their section's doc (`/integrations/hubspot` → `integrations.md`); unknown routes get `overview.md`.
+1. The doc for the page the visitor is on (`/voice` → `features.md`, `/agent` → `agent.md`). Sub-pages use their section's doc (`/use-cases/lead-intake` → `features.md`); unknown routes get `overview.md`. `integrations.md` is now reached by keyword only, and still lists more systems than the home page shows.
 2. One more, by the first keyword group the message matches.
 
 `pricing.md` contains no numbers and tells the model not to give any. When the product or the measured reply time changes, update `features.md` here as well as the page copy.

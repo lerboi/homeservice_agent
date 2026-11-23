@@ -27,7 +27,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 
 ## What is left of Task 3
 
-1. Owner's decisions: trim `/integrations` to the six tools shown on the home page or keep all 22; give Voco Agent entries on `/use-cases`. Then rewrite `/pricing`, `/about`, `/demo` and `/contact` for two products, and the go-ahead to push `rebrand` to `main`.
+1. Rewrite `/pricing`, `/about`, `/demo` and `/contact` for two products (their copy still speaks only of calls), then the go-ahead to push `rebrand` to `main`. The integrations pages are gone and `/use-cases` covers both products.
 2. The recorded demo video: record it ([[Record a demo]]), then set `DEMO_VIDEO.src` in `src/data/site.js`. Until then the site shows a labelled still.
 3. The mobile nav drawer and a real contact-form submission (page layouts were checked at 390 px on 2026-11-24).
 4. Owner's review of `/privacy` and `/terms`: the body text still says "AI receptionist" and describes a 14-day free trial.

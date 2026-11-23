@@ -30,7 +30,7 @@ export function Section({ tone = 'paper', id, className, containerClassName, siz
     <section
       id={id}
       data-tone={tone}
-      className={cx(TONES[tone], 'py-20 md:py-28 scroll-mt-16', bordered && 'border-t border-mk-line', className)}
+      className={cx(TONES[tone], 'py-20 md:py-28 scroll-mt-20', bordered && 'border-t border-mk-line', className)}
     >
       <Container size={size} className={containerClassName}>{children}</Container>
     </section>

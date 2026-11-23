@@ -13,5 +13,5 @@ Voco connects to a business's systems for them. The connection is set up by the 
 ## If a system is not listed
 If it has an API or accepts a webhook, the agent can usually work in it. The honest answer for a specific stack comes from a conversation with the team: suggest booking a demo and bringing the list of tools.
 
-- [All integrations](/integrations)
+- [Book a demo](/contact?type=sales)
 - [Book a demo](/contact?type=sales)

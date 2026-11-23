@@ -148,8 +148,8 @@ describe('site constants', () => {
     expect(PRODUCTS.agent).toMatchObject({ name: 'Voco Agent', href: '/agent', tone: 'spark' });
   });
 
-  it('nav links to Voice, Agent, Use cases, Integrations, Demo, Pricing', () => {
-    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Voice', 'Agent', 'Use cases', 'Integrations', 'Demo', 'Pricing']);
+  it('nav links to Voice, Agent, Use cases, Demo, Pricing', () => {
+    expect(NAV_LINKS.map((l) => l.label)).toEqual(['Voice', 'Agent', 'Use cases', 'Demo', 'Pricing']);
     expect(NAV_LINKS.every((l) => !l.href.includes('#'))).toBe(true);
   });
 
@@ -211,15 +211,15 @@ describe('sitemap', () => {
   });
 
   it('lists every static page', () => {
-    for (const path of ['/voice', '/agent', '/demo', '/use-cases', '/integrations', '/pricing', '/about', '/contact', '/privacy', '/terms']) {
+    for (const path of ['/voice', '/agent', '/demo', '/use-cases', '/pricing', '/about', '/contact', '/privacy', '/terms']) {
       expect(urls).toContain(`${SITE_URL}${path}`);
     }
   });
 
-  it('lists every use case and integration page', () => {
+  it('lists every use case page and no integration page', () => {
     for (const u of USE_CASES) expect(urls).toContain(`${SITE_URL}/use-cases/${u.slug}`);
-    for (const i of INTEGRATIONS) expect(urls).toContain(`${SITE_URL}/integrations/${i.slug}`);
-    expect(entries).toHaveLength(11 + USE_CASES.length + INTEGRATIONS.length);
+    expect(urls.some((u) => u.includes('/integrations'))).toBe(false);
+    expect(entries).toHaveLength(10 + USE_CASES.length);
   });
 
   it('lists no retired route', () => {
@@ -241,13 +241,13 @@ describe('sitemap', () => {
 describe('routes', () => {
   it.each([
     'page.js', 'voice/page.js', 'agent/page.js', 'demo/page.js', 'pricing/page.js', 'about/page.js', 'contact/page.js',
-    'use-cases/page.js', 'use-cases/[slug]/page.js', 'integrations/page.js', 'integrations/[tool]/page.js',
+    'use-cases/page.js', 'use-cases/[slug]/page.js',
     'privacy/page.js', 'terms/page.js',
   ])('%s exists', (file) => {
     expect(existsSync(join(PUBLIC_DIR, file))).toBe(true);
   });
 
-  it.each(['blog', 'glossary', 'compare', 'for'])('/%s is retired', (dir) => {
+  it.each(['blog', 'glossary', 'compare', 'for', 'integrations'])('/%s is retired', (dir) => {
     expect(existsSync(join(PUBLIC_DIR, dir))).toBe(false);
   });
 
@@ -258,6 +258,9 @@ describe('routes', () => {
   it('retired routes redirect permanently', () => {
     const config = read('next.config.js');
     for (const source of ['/blog', '/blog/:path*', '/glossary', '/glossary/:path*', '/compare', '/compare/:path*']) {
+      expect(config).toContain(`{ source: '${source}', destination: '/', permanent: true }`);
+    }
+    for (const source of ['/integrations', '/integrations/:path*']) {
       expect(config).toContain(`{ source: '${source}', destination: '/', permanent: true }`);
     }
     expect(config).toContain("{ source: '/for', destination: '/use-cases', permanent: true }");
@@ -284,12 +287,25 @@ describe('landing page', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
-  it('shows only the six agreed tools on the home page, each with an integration page', () => {
+  it('shows only the six agreed tools on the home page', () => {
     const block = sections.slice(sections.indexOf('export const HOME_TOOLS'), sections.indexOf('function ToolIcon'));
     const slugs = [...block.matchAll(/slug: '([a-z-]+)'/g)].map((m) => m[1]);
     expect(slugs).toEqual(['whatsapp', 'email', 'slack', 'google-calendar', 'outlook-calendar', 'rest-api']);
     for (const slug of slugs) expect(getIntegration(slug)).not.toBeNull();
     expect(sections).not.toContain('integrationsByGroup');
+  });
+
+  it('no public page links to the removed integrations pages', () => {
+    for (const file of PUBLIC_SOURCES) {
+      expect(read(file)).not.toMatch(/href=["'{`]+\/integrations/);
+    }
+  });
+
+  it('the use-cases page lists both products\' work', () => {
+    const useCases = read('src/app/(public)/use-cases/page.js');
+    for (const token of ['USE_CASES.map', 'AGENT_JOBS.map', 'id="voice"', 'id="agent"']) {
+      expect(useCases).toContain(token);
+    }
   });
 
   it('sets headline emphasis in colour, not in an italic face', () => {
@@ -448,7 +464,6 @@ describe('public chatbot', () => {
 
   it('serves the doc for the page the visitor is on, including sub-pages', async () => {
     expect(await getPublicKnowledge('hello', '/pricing')).toContain('# Voco pricing');
-    expect(await getPublicKnowledge('hello', '/integrations/hubspot')).toContain('# Systems Voco works in');
     expect(await getPublicKnowledge('hello', '/use-cases/lead-intake')).toContain('# What Voco does');
     expect(await getPublicKnowledge('hello', '/somewhere-else')).toContain('AI that does the work in your systems');
     expect(await getPublicKnowledge('hello', '/agent')).toContain('# Voco Agent');
