@@ -14,7 +14,7 @@ function fetchVisitsPage({ cred, windowStart, windowEnd, after }) {
 }
 
 export async function POST() {
-  // v1: integrations flagged off. See My Prompts/Jobber-Xero-Disable.md.
+  // v1: integrations flagged off. See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) return new Response('', { status: 404 });
   const tenantId = await getTenantId();
   if (!tenantId) return new Response('Unauthorized', { status: 401 });

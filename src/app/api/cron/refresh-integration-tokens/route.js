@@ -33,7 +33,7 @@ const CONCURRENCY = 5;
 
 export async function GET(request) {
   // v1: integrations flagged off — this cron is also removed from vercel.json,
-  // but no-op if invoked manually. See My Prompts/Jobber-Xero-Disable.md.
+  // but no-op if invoked manually. See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return Response.json({ skipped: 'integrations_disabled' });
   }

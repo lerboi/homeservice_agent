@@ -89,7 +89,7 @@ function BusinessAppRow({ app, row }) {
 }
 
 export default function CalendarConnectionsCard() {
-  // v1: Jobber/Xero integrations are flagged OFF (see My Prompts/Jobber-Xero-Disable.md).
+  // v1: Jobber/Xero integrations are flagged OFF (see vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md).
   // Skip the integrations/status poll (null key = no fetch) and hide the Business
   // apps rows + their "Action needed" badge; the Calendars section stays.
   const { data, isLoading } = useSWRFetch(

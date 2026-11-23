@@ -20,7 +20,7 @@ import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 
 export async function POST(request) {
   // v1: integrations flagged off — nothing connectable, so nothing to disconnect.
-  // See My Prompts/Jobber-Xero-Disable.md.
+  // See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return Response.json({ error: 'Integrations are not available yet.' }, { status: 404 });
   }

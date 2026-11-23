@@ -84,7 +84,7 @@ export async function GET(request, { params }) {
   const { provider } = await params;
 
   // v1: integrations flagged off — no OAuth flow can be started, so a callback
-  // should never legitimately arrive. Refuse it. See My Prompts/Jobber-Xero-Disable.md.
+  // should never legitimately arrive. Refuse it. See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${PAGE_URL}`);
   }

@@ -1,0 +1,123 @@
+---
+type: meta
+status: current
+description: "Owner's reusable prompts for Claude sessions (moved verbatim from My Prompts/prompts). Some reference files and paths that no longer exist."
+source: "My Prompts/prompts"
+migrated: 2026-11-23
+tags: [voco/meta]
+---
+
+# Prompt Library
+
+````text
+
+Confirm
+--------------
+Before making any changes, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know.    
+
+
+Improve UI
+--------------
+I want to improve the UI/UX for this page. You will refer to any relevant frontend design skills (frontend-design, web-design-guidelines, vercel-best-practices, ui-ux-pro-max).
+For the design, try to use icons with little text to convey information to keep it looking professional/minimalistic and not so cluttered (however, use text is it makes more sense UI/UX wise).
+It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design changes should be made
+
+
+Confirm the issues
+--------------
+Look through all the issues and gather all the context and code needed to fully and correctly reach a 100% certain conclusion that the issues are legit and not false positives. 
+Once you guarantee that it indeed is an issue, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 
+
+
+Backend
+--------------
+Can you just look through the entire calling process from start to finish, the supabase DB, the code, the skill files to get the full context, every process the ai agent does, the tools, and the dashboard and let me know if everything works together well and wether everything is production ready? Suggest me potential issues, errors, improvements, or improvements that can be made. You have to heavily understand the context of the codebase and the website in general first. Let me know your findings, dont edit any code, only read.
+
+
+Frontend
+--------------
+Can you look at the frontend for both the dashboard and the home page with all the pages, and let me know what optimisations can be made to improve page loading speed, and any other core web vitals for the website? This process shold only be focused on any changes that can improve the user experience of the user using the wbsite, through improving page loading speeds, optimising core web vitals, etc, while NOT affecting ANY of the functionality. If required, you can look for relevant skills for frontend best practices or nextjs/vercel best practies or web design best practices, anything that can improve the page load speed and overall give the website a much more responsive feeling. It is MANDATORY that ALL changes are purely Design/UI UX changes and that NO functionality is affected. NO backend files shouild be touched, and ONLY frontend, UI/UX design changes should be made 
+
+
+Fullstack
+--------------
+Deeply read and understand the entire codebase — all frontend pages and components (dashboard + home page), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready.
+
+Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+
+
+voice-call-architecture
+--------------
+Deeply read and understand the voice-call system code — all frontend pages and components (dashboard + backend + the livekit_agent repo), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I want to fix some issues that showed up in the livekit_agent deployed on railway during a call, and some of the AI agents behaviour during a call by changing the prompts in the livekit_agent. But you have to first fully understand the full context. Let me know once you have a full understanding. Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+
+
+Prompt crafting prompt
+--------------
+When constructing or editing prompts in the livekit_agent, follow best practices for the exact model (Gemini 3.1 flash live) and livekit SDK. The prompt is your only enforcement surface; the SDK cannot force tool calls per turn, and the model is free to fabricate fluent outcomes if you don't constrain it. You have to cross reference every
+planned implementation with the actual docs from google for gemini flash 3.1 live model and also for current livekit sdk version.
+
+For conversational behavior — info gathering, persona, language switching, decline handling, address verification, transfers — write outcome-oriented guidance. Tell the AI what it should achieve and what information it needs to extract, not exactly what to say. The receptionist must adapt to whatever the caller does (interruptions, out-of-order info, fragments, code-switching, romanized names, vague time windows). Over-scripting flattens both adaptability and persona. Detail constraints and success criteria, never utterances.
+
+For truth claims and tool prerequisites, be directive. This is not "if X say Y" scripting — it is constraining a class of claims the model cannot verify on its own. Gemini 3.1 Flash Live hallucinates outcomes fluently in real-time audio: it will say "confirmed", "available", or read out a specific time without ever invoking the tool that produced those facts. Words tied to verifiable state must be prohibited unless a tool result returned them. Anti-hallucination rules belong near the top of the promptwith the same CRITICAL RULE framing as the corrections section, not buried inside the booking section where long-context audio attention drops them.
+
+Tool descriptions are part of the prompt — Gemini reads them during generation. Encode hard preconditions in them, not just usage hints.
+
+Tool returns must be data + directive, not speakable English. A return like "Your appointment is confirmed for 3 PM" invites the model to produce that sentence without ever calling the tool. Shape returns as state + relay instruction (e.g. "BOOKED: relay confirmation for 3 PM tomorrow at [address], then ask if anything else is needed"), forcing the model to translate. This breaks the parrot loop that lets it skip the tool entirely.
+
+Trim dead weight. Server VAD handles turn-taking — anything about "let the caller finish" or "don't talk over" is wasted attention budget. The pinned plugin uses send_realtime_input, not send_client_content; do not import patterns that depend on the latter.   
+
+Preserve persona throughout. The constraints above are guardrails on what the AI can claim, not scripts that flatten the voice. The receptionist should still respond naturally within the configured tone (professional / friendly / local_expert) — outcomes and prohibitions, not utterances.
+
+
+Payment Architecture
+--------------
+Deeply read and understand the entire onboarding, payment, and schema architecture concerning the payment — all frontend components for onboarding, backend logic and API routes for payment/subscription related info, Supabase DB schema, tables, relationships and RLS policies, all relevant skill files, and once you have a full understanding, let me know if eveyrthing is correct, in place, and setup as intended and that there are no errors/issues. Understand you understand the billing (monthly, yearly, overage charge, metered billing etc) so you can reach a full 100% correct conclusion. Let me know if you find any issues or potential issues with the payment architecture. I want to make ask some questions about the payment architecture, but ensure you have a full 100% understanding of the curentt payment architecture first.
+
+
+
+Dashboard + call architecture
+--------------
+Deeply read and understand the dashboard and call architecture — all frontend pages and components (dashboard + livekit_agent), backend logic and API routes, Supabase DB schema (you can use the supabase mcp), tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready. Additionally, i want to improve the UI and UX experience, and make everything in the dashboard feel connected and easy to understand and use. You can also give me some suggestions to combine/merge some tabs in the more tab to 1 tab if it makes sense. Overall, im aiming for a UI and UX feel where the dashboard and every tab feels connected, and has a seamless UI UX. Put yourself in the shoes of a home service business owner using my dashboard, and how you would want the dashabord to feel, what accessibility options you would like for each tab, and wether the overall experience is great and provides a great user experience. Go in depth into each tab and just give recommendations on what would make sense to add/improve to purely from a User experience perspective. Do not make any changes yet, just let me know your findings.
+
+Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+
+
+
+Look through all the issues and gather all the context and code needed to fully and correctly reach a 100% certain conclusion of the cause of the issues. Once you guarantee the cause of the issues, ensure you have the full context needed to properly make changes without breaking any code (read the codebase, skill files, db schema, RLS, and anything needed to get full context). Understand what change youre making, why youre making it, and whether the change is correct. Confirm first that all changes made will not cause any issues, and that it will all work. Do not write any code yet, just let me know. 
+
+
+When constructing/editing the prompt in livekit_agent, ensure that the prompts follow best practices for the specific model used (Gemini 3.1 flash live), and that the instructions are detailed yet not instructive, which means to guide the AI on what it should do, and what the outcome should be, but not to give specific instructions on exactly what to do in certain scenarios. The livekit_agent is a AI call receptionist that needs to adapt to certain things the caller might say, so the prompt should be optimised to effectively reach the end goal and extract whatever information is needed, while still maintaining persona and responding naturally.
+
+
+Do proper research and find out the issue with 100% certainty and identify a 100% fix that is correct before implementing anything.
+
+
+Which option/design provides the best UI/UX that is usable in the real world and that provides the best possible user experience for the home service business owner using this feature?
+
+Which option provides the best UX that is usable in the real world and that provides the best possible user experience for the caller that is calling the home service business owner?
+
+
+Deeply read and understand the dashboard and call architecture — all frontend pages and components (dashboard + livekit_agent), backend logic and API routes, Supabase DB schema, tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files — then give me a full structured report of any issues, bugs, broken integrations, security concerns, performance problems, and anything that isn't production-ready. Additionally, i want to improve the UI and UX experience, and make everything in the dashboard feel connected and easy to understand and use. You can also give me some suggestions to improve the UI/UX. Overall, im aiming for a UI and UX feel where the dashboard and every tab feels connected, and has a seamless UI UX. Put yourself in the shoes of a home service business owner using my dashboard, and how you would want the dashabord to feel, what accessibility options you would like for each tab, and wether the overall experience is great and provides a great user experience. Go in depth into each tab and just give recommendations on what would make sense to add/improve to purely from a User experience perspective. Write your report in the /My Prompts/text1.md file. 
+
+You have to have a deep understanding of what exactly i am building here, and let me know a brief summary at the end as well if i am going in the right direction, and if home service business owners will actually find my tool useful and wether im adding too many features etc. Ground all your findings based on how useful it is for the home service business owner and whether it will provide value to them.
+
+Once you are done with the full report, carry out making all the improvements/fixes/changes you deem are the highest impact in terms of overall improvement in quality for any specific area. Utilise subagents to complete tasks however you see fit.
+
+Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+
+
+
+
+Can you look at my live kit agent repo in the sibling directory which is basically responsible for the code for the actual AI voice receptionist? Understand deeply what my website does, and what the AI receptionist is doing for home service businesses (specifically understand the livekit_agent repo). This is a AI receptionist to help home service businesses pick up calls and book slots based on availability and it has to be reliable all in all. So you have to fully understand what this app is supposed to do to make the best changes for it. Let me know once you understand.
+
+
+Can you read '/Users/leroyngzz/Projects/homeservice_agent/My Prompts/audit-2026-06-12.md'. Understand what we have done and what we have left to do, and also just double confirm that the issues that exist are legitimate and not false positives. Also make use of the stripe MCP and supabase MCP and read the database of the stripe if needed to get full context. Also note that you can read the sibling folder livekit_agent that contains the code for the actual AI receptionist itself if you need to read it.
+
+
+
+
+
+Deeply read and understand the dashboard and call architecture — all frontend pages and components (dashboard + livekit_agent), backend logic and API routes, Supabase DB schema (you can use the supabase mcp), tables, relationships and RLS policies, the livekit_agent code, all skill files, AI agent logic, tools and integrations, and all config files. I plan to make some changes, but you will need to understand what my website is for what the air receptionist is built to do and understand the purpose of this app so that you can properly do what I want you to do while staying grounded with what will provide the most value that I am seeking to provide while not over complicating things are over engineering things
+
+Note that i am using Nextjs v16, and read any skill files (such as nextjs-16-complete-guide) to fully understand the codebase.
+````

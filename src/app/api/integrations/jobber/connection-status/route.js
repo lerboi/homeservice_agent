@@ -8,7 +8,7 @@ import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
 export async function GET() {
   // v1: integrations flagged off — always report not-connected (a dead
   // accounting_credentials row must not read as connected). See
-  // My Prompts/Jobber-Xero-Disable.md.
+  // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) return Response.json({ connected: false });
   const tenantId = await getTenantId();
   if (!tenantId) return Response.json({ connected: false });

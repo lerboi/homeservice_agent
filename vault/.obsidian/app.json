@@ -1,0 +1,9 @@
+{
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "_attachments",
+  "alwaysUpdateLinks": true,
+  "userIgnoreFilters": [
+    "_meta/tools/"
+  ]
+}

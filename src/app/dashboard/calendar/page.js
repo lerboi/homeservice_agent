@@ -150,7 +150,7 @@ export default function CalendarPage() {
   // CalendarConnectionsCard, so this adds no extra network request.
   // v1: Jobber/Xero flagged off — skip the fetch (null key) so jobberConnected
   // is always false and every Jobber affordance stays hidden. See
-  // My Prompts/Jobber-Xero-Disable.md.
+  // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   const { data: integrationStatus } = useSWRFetch(
     INTEGRATIONS_ENABLED ? '/api/integrations/status' : null,
   );

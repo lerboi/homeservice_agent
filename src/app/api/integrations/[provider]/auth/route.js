@@ -19,7 +19,7 @@ export async function GET(request, { params }) {
   const { provider } = await params;
 
   // v1: integrations flagged off — refuse to start any OAuth flow, even via a
-  // direct URL. See My Prompts/Jobber-Xero-Disable.md.
+  // direct URL. See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return Response.json({ error: 'Integrations are not available yet.' }, { status: 404 });
   }

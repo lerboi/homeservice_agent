@@ -9,7 +9,7 @@ process.env.STRIPE_SECRET_KEY ||= 'sk_test_placeholder';
 process.env.STRIPE_WEBHOOK_SECRET ||= 'whsec_test_placeholder';
 
 // v1 ships with the Jobber/Xero integrations flagged OFF (see
-// My Prompts/Jobber-Xero-Disable.md). The existing integration test suites
+// vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md). The existing integration test suites
 // exercise the ENABLED code path, so turn the flag on for tests — this keeps
 // the integration internals covered for the day we re-enable, while production
 // defaults to off (no NEXT_PUBLIC_INTEGRATIONS_ENABLED set).

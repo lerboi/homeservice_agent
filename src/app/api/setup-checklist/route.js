@@ -241,7 +241,7 @@ export function deriveChecklistItems(tenant, counts) {
     for (const id of TIER_GROUPS[tier]) {
       // v1: Jobber/Xero integrations are flagged off — don't surface their
       // checklist items (no "connect / reconnect" nudge). See
-      // My Prompts/Jobber-Xero-Disable.md.
+      // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
       if (!INTEGRATIONS_ENABLED && (id === 'connect_xero' || id === 'connect_jobber')) continue;
       const override = overrides[id] || {};
       // dismiss removes the item from the list entirely

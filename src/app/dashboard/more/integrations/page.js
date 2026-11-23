@@ -4,7 +4,7 @@
 // BusinessIntegrationsClient for interactive state.
 //
 // v1: the Xero/Jobber "Accounting & Job Management" surface is flagged OFF via
-// INTEGRATIONS_ENABLED (see My Prompts/Jobber-Xero-Disable.md). When off we skip
+// INTEGRATIONS_ENABLED (see vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md). When off we skip
 // the status fetch entirely and render a "Coming soon" panel — no connectable
 // OAuth cards, no reader query, no permanently-broken reconnect state. Flip
 // NEXT_PUBLIC_INTEGRATIONS_ENABLED=true to restore the full provider cards.

@@ -30,7 +30,7 @@ import { INTEGRATIONS_ENABLED } from '@/lib/integrations-enabled';
  */
 export async function pushToAccounting(supabase, tenantId, invoice, lineItems, settings) {
   // v1: integrations flagged off — never push to Xero/Jobber. See
-  // My Prompts/Jobber-Xero-Disable.md.
+  // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) return;
   // Check if tenant has accounting connected
   const { data: credentials } = await supabase
@@ -122,7 +122,7 @@ export async function pushToAccounting(supabase, tenantId, invoice, lineItems, s
  */
 export async function pushStatusUpdate(supabase, tenantId, invoiceId, newStatus) {
   // v1: integrations flagged off — never push status to Xero/Jobber. See
-  // My Prompts/Jobber-Xero-Disable.md.
+  // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) return;
   // Only process paid or void
   if (newStatus !== 'paid' && newStatus !== 'void') {

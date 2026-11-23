@@ -108,7 +108,7 @@ function normalizePhones(rawPhones) {
  */
 export async function POST(request) {
   // v1: integrations flagged off — this endpoint is dormant (no live connection
-  // can exist). Refuse before any work. See My Prompts/Jobber-Xero-Disable.md.
+  // can exist). Refuse before any work. See vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return new Response('', { status: 404 });
   }

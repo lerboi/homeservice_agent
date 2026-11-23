@@ -1,61 +1,41 @@
 # Voco — Project Instructions
 
-## What This Is
+## What this is
 
-Voco is a Next.js SaaS platform for home service businesses (plumbers, HVAC, electricians, handymen). An AI receptionist answers phone calls 24/7 via Twilio SIP + LiveKit + Gemini, triages urgency, books appointments, and creates CRM leads — so contractors never lose a job to voicemail.
+Voco is a voice integration that connects to a business's backend. A voice agent answers a call (phone or browser), understands the request, and does the work in the systems the business already runs: books the appointment, schedules the task, creates the record. It was first built as an AI receptionist for home-service contractors; the public positioning is being changed (November 2026) while the dashboard app behind sign-in is unchanged.
 
-**Tech stack**: Next.js (App Router), Supabase (Auth + Postgres + RLS + Realtime), Twilio SIP + LiveKit + Gemini 3.1 Flash Live (AI voice calls, Python agent on Railway), Stripe (billing), Resend (transactional email), Tailwind CSS, shadcn/ui, next-intl (i18n).
+**Stack**: Next.js 16 (App Router, JavaScript), React 19, Tailwind v4, shadcn/ui, next-intl, Supabase (Auth, Postgres, RLS, Realtime, Storage), Stripe, Resend, Twilio SIP → LiveKit → Python voice agent on Railway (Deepgram nova-3 → OpenAI gpt-4.1-mini → ElevenLabs flash v2.5).
 
-## Site Flow
+**Two repos**: this one (Next app, deployed to Vercel) and the sibling `../livekit-agent` (Python voice agent, deployed to Railway).
 
-```
-New User:
-  Public Site (landing, about, contact) → Pricing Page (select plan) → /auth/signin (signup + OTP) → Onboarding Wizard → Dashboard
+## Project knowledge lives in the Obsidian vault: `vault/`
 
-Returning User:
-  /auth/signin (signin) → Dashboard
+Do not look for architecture docs in this file or in `.claude/skills/`. Everything is in `vault/`, as small linked notes.
 
-Background:
-  Voice Calls — Twilio SIP → LiveKit → Gemini AI answers calls → triage → booking → lead creation → notifications
-```
+| Need | Read |
+|---|---|
+| Orientation | `vault/Home.md` |
+| What is in flight, broken, or waiting on the owner | `vault/Now.md` |
+| How a system works | `vault/Systems/Systems.md` → `vault/Systems/<System>/<System>.md` (index with one line per note) → only the notes you need |
+| Operational steps (deploy, test call, env, MCP) | `vault/Runbooks/Runbooks.md` |
+| Why something is the way it is | `vault/Decisions/Decisions.md` |
+| What was done and when | `vault/Log/Log.md` |
+| Active plans | `vault/Plans/Plans.md` |
+| Research, SDK gotchas, documents | `vault/Reference/Reference.md` |
+| How the vault is organised and maintained | `vault/_meta/Conventions.md` |
+| Working agreements with the owner (Claude memory) | `vault/Memory/MEMORY.md` |
 
-## Skill Reference — Which Skill Covers What
-
-Each skill below is a complete architectural reference for one part of the codebase. **Read the relevant skill before making changes, and update it after.**
-
-### Core Application Skills
-
-| Skill | Covers | Read this when you need to... |
-|-------|--------|-------------------------------|
-| `auth-database-multitenancy` | Supabase Auth, 3 client types, middleware guards, RLS policies, **all DB migrations (through 075) with every table definition**, getTenantId pattern, tenant isolation | ...understand the DB schema, add a migration, debug RLS, modify auth middleware, add a new table, or find any Supabase table definition |
-| `onboarding-flow` | 5-step signup wizard, all `/api/onboarding/*` routes, Twilio phone provisioning + SIP trunk association, trade templates, LiveKit SIP test call, Stripe Checkout Session, wizard session persistence | ...modify the signup/onboarding flow, debug OTP or provisioning, change wizard steps, or touch billing checkout |
-| `dashboard-crm-system` | All dashboard pages, lead lifecycle + merging, Kanban board, analytics charts, escalation chain, settings panels, setup checklist, design tokens, guided tour, Supabase Realtime | ...change anything on the dashboard, modify lead management, update analytics, edit settings panels, or debug Realtime subscriptions |
-| `voice-call-architecture` | Twilio SIP + LiveKit + Gemini 3.1 Flash Live Python agent (Railway), SIP trunking, in-process tools, post-call pipeline, triage, scheduling, booking, notifications, lead creation | ...modify call handling, change AI agent behavior, update triage logic, debug the LiveKit agent, or touch the Twilio/LiveKit/Gemini integration |
-| `payment-architecture` | Stripe Checkout Sessions (onboarding + upgrade), webhook handler (9 event types, history table, idempotency), Billing Meters overage, subscription lifecycle, usage tracking (increment_calls_used RPC), subscription gate, billing notifications, billing dashboard, pricing plans (monthly/annual/overage), all 4 billing DB tables | ...modify Stripe integration, change checkout flow, update subscription handling, debug webhooks, adjust overage billing, change pricing, or touch the billing dashboard |
-| `integrations-jobber-xero` | Xero (REST, xero-node SDK) + Jobber (GraphQL, graphql-request) OAuth/refresh/refresh-locks (migrations 052/053/054/058), shared `src/lib/integrations/` module, webhook HMAC + intent-verify + per-phone cacheTag invalidation, Python agent pre-session context fetch (`livekit_agent/src/integrations/{xero,jobber}.py`), `check_customer_account` tool, BusinessIntegrationsClient 4-state card + reconnect banner, setup checklist Reconnect flow + Phase 58 red-dot variant, telemetry (`last_context_fetch_at` + `activity_log` `integration_fetch` events) | ...modify Xero or Jobber OAuth, debug webhook delivery, change caching or cacheTag invalidation, touch the Python agent's customer-context injection, update BusinessIntegrationsClient, debug setup-checklist Reconnect flow, or investigate integration latency |
-| `scheduling-calendar-system` | Slot calculation, atomic booking, Google Calendar OAuth/sync/webhooks, Outlook Calendar OAuth/sync/webhooks, travel buffers, geographic zones, cron jobs, appointment management | ...change booking logic, modify calendar sync, debug OAuth flows, adjust working hours, or touch appointment APIs |
-| `public-site-i18n` | Landing page sections, pricing page, about page, contact form (Resend email), navigation, footer, animation system, AuthAwareCTA, next-intl config, translation files (en/es) | ...edit public-facing pages, modify pricing tiers, change navigation/footer, update translations, or debug i18n |
-| `scroll-line-path` | Decorative SVG scroll-draw line on the landing page (copper sine wave from How It Works → Get Started CTA) | ...adjust the scroll line animation, change section order on the landing page, or debug why the line doesn't align |
-
-### Where to Find Database Tables
-
-All Supabase table definitions, columns, RLS policies, and migrations are documented in `auth-database-multitenancy`. The migrations (through 075) are in `supabase/migrations/`. Key tables: `tenants`, `calls`, `services`, `appointments`, `customers`, `jobs`, `inquiries`, `customer_calls`, `job_calls`, `customer_merge_audit`, `activity_log`, `escalation_contacts`, `calendar_credentials`, `calendar_events`, `calendar_blocks`, `service_zones`, `zone_travel_buffers`, `subscriptions`, `stripe_webhook_events`, `usage_events`, `gmaps_validate_events`, `phone_inventory`, `phone_inventory_waitlist`, `billing_notifications`.
+Systems: Voice Agent, Scheduling and Calendar, Auth and Database (all tables and migrations), Demo Studio, Public Site, and the legacy app systems Dashboard and CRM, Onboarding, Billing, Integrations Jobber Xero.
 
 ## Supabase MCP
 
-A Supabase MCP server (`supabase-voco`) is configured for this project via `.mcp.json` (gitignored). After restarting Claude Code, MCP tools are available with the prefix `mcp__supabase-voco__`.
-
-**Project**: `exbzhmparzjlpkryeiso` → `https://exbzhmparzjlpkryeiso.supabase.co`
-
-Key tools:
-- `mcp__supabase-voco__execute_sql` — run arbitrary SQL against the live DB
-- `mcp__supabase-voco__list_tables` — list all tables in a schema
-- `mcp__supabase-voco__apply_migration` — apply a SQL migration
-- `mcp__supabase-voco__get_logs` — fetch project logs (api, postgres, edge functions, etc.)
-
-Use these tools to inspect live data, verify migrations, and debug schema issues instead of reading migration files alone.
+The `supabase-voco` MCP server (`.mcp.json`, gitignored) gives tools prefixed `mcp__supabase-voco__` against project `exbzhmparzjlpkryeiso`: `execute_sql`, `list_tables`, `apply_migration`, `get_logs`. Use them to inspect live data and verify the schema instead of relying on migration files or notes alone.
 
 ## Rules
 
-- **Keep skills in sync**: When making changes to any system covered by a skill, read the skill first, make the code changes, then update the skill to reflect the new state.
+- **Keep the vault in sync.** Before changing a system, read its index note. After changing it, update the matching note and set its `verified:` date. Record decisions in `vault/Decisions/`, notable work in `vault/Log/`, and keep `vault/Now.md` current. Run `python vault/_meta/tools/check_vault.py` after editing the vault.
+- **Trust levels.** Notes with an empty `verified:` field were migrated verbatim from the old skills on 2026-11-23. Confirm specifics against the code before relying on them.
+- **No secrets in the vault.** Both GitHub repos are public: no keys, tokens, customer data or personal data in notes.
 - **Brand name is Voco** — not HomeService AI, not homeserviceai. Fallback email domains use `voco.live`.
+- **Request gating goes in `src/proxy.js`**, not `middleware.js`.
+- **Never push to `main` in either repo without the owner's go-ahead.** Both deploy to production from `main`.

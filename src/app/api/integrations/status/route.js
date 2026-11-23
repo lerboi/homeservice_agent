@@ -21,7 +21,7 @@ export async function GET() {
 
   // v1: integrations flagged off — no provider status to report. Return an empty
   // shape so any client renders "not connected"/nothing. See
-  // My Prompts/Jobber-Xero-Disable.md.
+  // vault/Decisions/Decision - Jobber and Xero integrations frozen behind a flag for v1.md.
   if (!INTEGRATIONS_ENABLED) {
     return Response.json({ xero: null, jobber: null });
   }
