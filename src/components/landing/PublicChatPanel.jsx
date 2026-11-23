@@ -16,7 +16,7 @@ const GREETING = {
   id: 'greeting',
   role: 'ai',
   content:
-    "Hi! I'm Voco AI. Ask me anything about pricing, features, or how Voco works for your business. What would you like to know?",
+    "Hi, I can answer questions about Voco: what it does on a call, which systems it works in, and how setup works. What would you like to know?",
 };
 
 export default function PublicChatPanel({ onClose }) {
@@ -98,7 +98,7 @@ export default function PublicChatPanel({ onClose }) {
     if (msg.role === 'user') {
       return (
         <div key={msg.id} className="flex justify-end">
-          <div className="bg-[#C2410C] text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm">
+          <div className="bg-mk-ink text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm">
             <p className="whitespace-pre-wrap">{msg.content}</p>
           </div>
         </div>
@@ -109,10 +109,10 @@ export default function PublicChatPanel({ onClose }) {
 
     return (
       <div key={msg.id} className="flex items-start gap-3 justify-start">
-        <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#F5F5F4] border border-stone-200 shrink-0">
-          <Bot className="h-3.5 w-3.5 text-[#475569]" />
+        <div className="flex items-center justify-center h-7 w-7 rounded-full bg-[#F5F5F4] border border-mk-line shrink-0">
+          <Bot className="h-3.5 w-3.5 text-mk-muted" />
         </div>
-        <div className="bg-[#F5F5F4] text-[#0F172A] rounded-2xl rounded-bl-sm px-4 py-2 max-w-[80%] text-sm leading-relaxed">
+        <div className="bg-[#F5F5F4] text-mk-ink rounded-2xl rounded-bl-sm px-4 py-2 max-w-[80%] text-sm leading-relaxed">
           <p className="whitespace-pre-wrap">{text}</p>
           {links.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
@@ -134,7 +134,7 @@ export default function PublicChatPanel({ onClose }) {
   return (
     <div
       className={`fixed z-50 bottom-28 right-4 lg:right-6 w-[calc(100vw-2rem)] sm:w-[380px]
-        bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col
+        bg-white rounded-2xl shadow-2xl border border-mk-line flex flex-col
         max-h-[min(500px,calc(100vh-6rem))] origin-bottom-right
         transition-all duration-300 ease-out
         ${visible
@@ -142,13 +142,13 @@ export default function PublicChatPanel({ onClose }) {
           : 'opacity-0 scale-95 translate-y-2'
         }`}
       role="dialog"
-      aria-label="Voco AI chat assistant"
+      aria-label="Voco chat assistant"
     >
       {/* Header */}
       <div className="px-4 py-3 border-b border-stone-100 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-[#C2410C]" />
-          <span className="text-base font-semibold text-[#0F172A]">Voco AI</span>
+          <MessageSquare className="h-5 w-5 text-mk-signal-deep" />
+          <span className="text-base font-semibold text-mk-ink">Voco</span>
           <Badge variant="secondary" className="text-xs">
             Product Questions
           </Badge>
@@ -186,7 +186,7 @@ export default function PublicChatPanel({ onClose }) {
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
             size="icon-lg"
-            className="bg-[#C2410C] hover:bg-[#C2410C]/90 text-white h-10 w-10 shrink-0"
+            className="bg-mk-ink hover:bg-mk-ink-soft text-white h-10 w-10 shrink-0"
           >
             <Send className="h-4 w-4" />
             <span className="sr-only">Send message</span>

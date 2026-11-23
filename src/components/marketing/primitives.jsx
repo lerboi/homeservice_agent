@@ -1,0 +1,156 @@
+/**
+ * Marketing-site primitives (2026-11 rebrand).
+ *
+ * Every public page is built from these so spacing, type and colour stay in
+ * one place. Tokens live in globals.css (`mk-*` colours, `font-display`,
+ * `font-code`). Light first: paper and white surfaces, ink for the one or two
+ * dark sections, a single green-teal "signal" colour for live states, links
+ * and the primary button, hairline borders instead of shadows.
+ */
+import Link from 'next/link';
+
+export function cx(...parts) {
+  return parts.filter(Boolean).join(' ');
+}
+
+export function Container({ className, size = 'default', children }) {
+  const width = size === 'narrow' ? 'max-w-3xl' : size === 'wide' ? 'max-w-7xl' : 'max-w-6xl';
+  return <div className={cx('mx-auto w-full px-6', width, className)}>{children}</div>;
+}
+
+const TONES = {
+  paper: 'bg-mk-paper text-mk-ink',
+  white: 'bg-white text-mk-ink',
+  ink: 'bg-mk-ink text-white',
+};
+
+export function Section({ tone = 'paper', id, className, containerClassName, size, bordered = false, children }) {
+  return (
+    <section
+      id={id}
+      data-tone={tone}
+      className={cx(TONES[tone], 'py-20 md:py-28 scroll-mt-16', bordered && 'border-t border-mk-line', className)}
+    >
+      <Container size={size} className={containerClassName}>{children}</Container>
+    </section>
+  );
+}
+
+/** Small mono label above a heading. */
+export function Eyebrow({ children, onInk = false, className }) {
+  return (
+    <p
+      className={cx(
+        'font-code text-[11px] uppercase tracking-[0.16em]',
+        onInk ? 'text-mk-signal' : 'text-mk-signal-deep',
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+export function PageTitle({ children, className }) {
+  return (
+    <h1
+      className={cx(
+        'font-display text-[2.5rem] font-medium leading-[1.05] tracking-[-0.03em] sm:text-6xl lg:text-[4.25rem]',
+        className,
+      )}
+    >
+      {children}
+    </h1>
+  );
+}
+
+export function SectionTitle({ children, className, as: Tag = 'h2' }) {
+  return (
+    <Tag className={cx('font-display text-3xl font-medium leading-[1.1] tracking-[-0.025em] md:text-[2.75rem]', className)}>
+      {children}
+    </Tag>
+  );
+}
+
+export function Lede({ children, onInk = false, className }) {
+  return (
+    <p className={cx('text-lg leading-relaxed', onInk ? 'text-white/70' : 'text-mk-muted', className)}>
+      {children}
+    </p>
+  );
+}
+
+/** Eyebrow + title + optional lede, the standard section opener. */
+export function SectionHeader({ eyebrow, title, lede, onInk = false, align = 'left', className }) {
+  return (
+    <div className={cx('max-w-2xl', align === 'center' && 'mx-auto text-center', className)}>
+      {eyebrow && <Eyebrow onInk={onInk}>{eyebrow}</Eyebrow>}
+      <SectionTitle className={eyebrow ? 'mt-4' : undefined}>{title}</SectionTitle>
+      {lede && <Lede onInk={onInk} className="mt-5">{lede}</Lede>}
+    </div>
+  );
+}
+
+/** Page opener for interior pages: paper background, room for the fixed nav. */
+export function PageHero({ eyebrow, title, lede, children, size }) {
+  return (
+    <section className="border-b border-mk-line bg-mk-paper pb-16 pt-32 text-mk-ink md:pb-20 md:pt-40">
+      <Container size={size}>
+        {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+        <PageTitle className={cx('max-w-4xl', eyebrow && 'mt-5')}>{title}</PageTitle>
+        {lede && <Lede className="mt-6 max-w-2xl">{lede}</Lede>}
+        {children && <div className="mt-9">{children}</div>}
+      </Container>
+    </section>
+  );
+}
+
+const BUTTON_BASE =
+  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mk-signal focus-visible:ring-offset-2';
+const BUTTON_SIZES = {
+  sm: 'h-9 px-4 text-[13px]',
+  md: 'h-11 px-5 text-sm',
+  lg: 'h-12 px-6 text-[15px]',
+};
+const BUTTON_VARIANTS = {
+  // Ink text on the signal colour: about 7:1 contrast. White text on it fails.
+  primary: 'bg-mk-signal text-mk-ink hover:bg-[#00C48A]',
+  secondary: 'border border-mk-ink/20 bg-transparent text-mk-ink hover:border-mk-ink/50',
+  secondaryOnInk: 'border border-white/25 bg-transparent text-white hover:border-white/60',
+  ink: 'bg-mk-ink text-white hover:bg-mk-ink-soft',
+};
+
+export function buttonClasses({ variant = 'primary', size = 'md', className } = {}) {
+  return cx(BUTTON_BASE, BUTTON_SIZES[size], BUTTON_VARIANTS[variant], className);
+}
+
+export function ButtonLink({ href, variant = 'primary', size = 'md', className, children, ...rest }) {
+  return (
+    <Link href={href} className={buttonClasses({ variant, size, className })} {...rest}>
+      {children}
+    </Link>
+  );
+}
+
+export function Card({ className, as: Tag = 'div', children, ...rest }) {
+  return (
+    <Tag className={cx('rounded-xl border border-mk-line bg-white', className)} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
+/** Text link in the signal colour. */
+export function TextLink({ href, children, className }) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        'font-medium text-mk-signal-deep underline decoration-mk-signal-deep/30 underline-offset-4 hover:decoration-mk-signal-deep',
+        className,
+      )}
+    >
+      {children}
+    </Link>
+  );
+}

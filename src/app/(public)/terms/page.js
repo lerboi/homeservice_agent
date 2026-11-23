@@ -1,28 +1,28 @@
 export const metadata = {
   title: 'Terms of Service — Voco',
-  description: 'Terms of Service for Voco Private Limited — the AI receptionist platform for home service businesses.',
+  description: 'Terms of Service for Voco Private Limited, the voice agent platform that works in your business systems.',
 };
 
 const LAST_UPDATED = 'March 30, 2026';
 
 export default function TermsOfServicePage() {
   return (
-    <div className="bg-[#050505] min-h-screen">
+    <div className="bg-mk-paper min-h-screen">
       {/* Page hero */}
-      <section className="pt-32 pb-16 px-6 border-b border-white/[0.06]">
+      <section className="pt-32 pb-16 px-6 border-b border-mk-line">
         <div className="max-w-3xl mx-auto">
-          <p className="text-sm text-[#F97316] font-medium uppercase tracking-widest mb-4">Legal</p>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Terms of Service</h1>
-          <p className="text-[#71717A] text-sm">Last updated: {LAST_UPDATED}</p>
+          <p className="text-sm text-mk-signal-deep font-medium uppercase tracking-widest mb-4">Legal</p>
+          <h1 className="text-4xl md:text-5xl font-display font-medium tracking-[-0.03em] text-mk-ink mb-4">Terms of Service</h1>
+          <p className="text-mk-muted text-sm">Last updated: {LAST_UPDATED}</p>
         </div>
       </section>
 
       {/* Content */}
       <section className="py-16 px-6">
-        <div className="max-w-3xl mx-auto space-y-6 text-[#A1A1AA] text-[15px] leading-7">
+        <div className="max-w-3xl mx-auto space-y-6 text-mk-muted text-[15px] leading-7">
 
           <p>
-            These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Voco platform and services (&quot;Service&quot;) provided by <strong className="text-[#E4E4E7] font-medium">Voco Private Limited</strong>, a company incorporated in Singapore (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;).
+            These Terms of Service (&quot;Terms&quot;) govern your access to and use of the Voco platform and services (&quot;Service&quot;) provided by <strong className="text-mk-ink font-medium">Voco Private Limited</strong>, a company incorporated in Singapore (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;).
           </p>
           <p>
             By creating an account or using the Service, you agree to be bound by these Terms. If you do not agree, do not use the Service.
@@ -30,7 +30,7 @@ export default function TermsOfServicePage() {
 
           <SectionHeading>1. The Service</SectionHeading>
           <p>
-            Voco provides an AI-powered telephone receptionist for home service businesses. The Service includes:
+            Voco provides an AI-powered voice agent that answers telephone calls for businesses and carries out callers&apos; requests in the business&apos;s systems. The Service includes:
           </p>
           <ul className="list-disc list-outside ml-5 space-y-2">
             <li>An AI voice agent that answers inbound calls on your behalf, 24/7.</li>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
           <SectionHeading>2. Account Registration</SectionHeading>
           <p>
             You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account. Notify us immediately at{' '}
-            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>
+            <a href="mailto:support@voco.live" className="text-mk-signal-deep hover:underline">support@voco.live</a>
             {' '}if you suspect unauthorised access.
           </p>
           <p>
@@ -66,11 +66,11 @@ export default function TermsOfServicePage() {
             Paid subscriptions are billed monthly or annually in advance, depending on the plan you select. All prices are in USD unless otherwise stated.
           </p>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Auto-renewal</strong> — subscriptions renew automatically at the end of each billing period. You may cancel at any time from your billing settings to prevent renewal.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Overage charges</strong> — each plan includes a monthly call allowance. Calls exceeding your plan limit are billed at the per-call overage rate listed on the pricing page. Overage charges are billed at the end of the billing period.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Mid-cycle upgrades</strong> — if you upgrade your plan mid-cycle, you will be charged a prorated amount for the remainder of the current billing period, and your new plan limits apply immediately.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Downgrades</strong> — plan downgrades take effect at the start of the next billing period.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Taxes</strong> — prices exclude applicable taxes (including GST where applicable). You are responsible for any taxes applicable in your jurisdiction.</li>
+            <li><strong className="text-mk-ink font-medium">Auto-renewal</strong> — subscriptions renew automatically at the end of each billing period. You may cancel at any time from your billing settings to prevent renewal.</li>
+            <li><strong className="text-mk-ink font-medium">Overage charges</strong> — each plan includes a monthly call allowance. Calls exceeding your plan limit are billed at the per-call overage rate listed on the pricing page. Overage charges are billed at the end of the billing period.</li>
+            <li><strong className="text-mk-ink font-medium">Mid-cycle upgrades</strong> — if you upgrade your plan mid-cycle, you will be charged a prorated amount for the remainder of the current billing period, and your new plan limits apply immediately.</li>
+            <li><strong className="text-mk-ink font-medium">Downgrades</strong> — plan downgrades take effect at the start of the next billing period.</li>
+            <li><strong className="text-mk-ink font-medium">Taxes</strong> — prices exclude applicable taxes (including GST where applicable). You are responsible for any taxes applicable in your jurisdiction.</li>
           </ul>
           <p>
             Payments are processed by Stripe. By providing a payment method, you authorise Voco to charge that method for all fees due under your subscription.
@@ -172,20 +172,20 @@ export default function TermsOfServicePage() {
 
           <SectionHeading>17. General</SectionHeading>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Entire agreement</strong> — these Terms, together with our Privacy Policy, constitute the entire agreement between you and Voco regarding the Service.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Severability</strong> — if any provision of these Terms is found invalid or unenforceable, the remaining provisions remain in full force.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">No waiver</strong> — failure to enforce any provision does not constitute a waiver of our right to enforce it in the future.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Assignment</strong> — you may not assign your rights or obligations under these Terms without our written consent. We may assign these Terms in connection with a merger, acquisition, or sale of assets.</li>
+            <li><strong className="text-mk-ink font-medium">Entire agreement</strong> — these Terms, together with our Privacy Policy, constitute the entire agreement between you and Voco regarding the Service.</li>
+            <li><strong className="text-mk-ink font-medium">Severability</strong> — if any provision of these Terms is found invalid or unenforceable, the remaining provisions remain in full force.</li>
+            <li><strong className="text-mk-ink font-medium">No waiver</strong> — failure to enforce any provision does not constitute a waiver of our right to enforce it in the future.</li>
+            <li><strong className="text-mk-ink font-medium">Assignment</strong> — you may not assign your rights or obligations under these Terms without our written consent. We may assign these Terms in connection with a merger, acquisition, or sale of assets.</li>
           </ul>
 
           <SectionHeading>18. Contact Us</SectionHeading>
           <p>For questions about these Terms:</p>
-          <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-6 space-y-1">
-            <p className="text-[#E4E4E7] font-medium">Voco Private Limited</p>
+          <div className="bg-white border border-mk-line rounded-xl p-6 space-y-1">
+            <p className="text-mk-ink font-medium">Voco Private Limited</p>
             <p>Singapore</p>
             <p>
               Email:{' '}
-              <a href="mailto:legal@voco.live" className="text-[#F97316] hover:underline">
+              <a href="mailto:legal@voco.live" className="text-mk-signal-deep hover:underline">
                 legal@voco.live
               </a>
             </p>
@@ -199,7 +199,7 @@ export default function TermsOfServicePage() {
 
 function SectionHeading({ children }) {
   return (
-    <h2 className="text-xl font-semibold text-white mt-12 mb-1 pt-8 border-t border-white/[0.06]">
+    <h2 className="text-xl font-semibold text-mk-ink mt-12 mb-1 pt-8 border-t border-mk-line">
       {children}
     </h2>
   );

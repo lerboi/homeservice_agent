@@ -1,29 +1,8 @@
 # Contact Voco
 
-## Get in Touch
+- Book a demo: [contact form](/contact?type=sales). Say what your callers ask for and which systems you run.
+- Support for existing customers: [contact form](/contact?type=support), or sign in to the dashboard.
+- Partnerships: [contact form](/contact?type=partnerships).
+- Response time: within one business day.
 
-You can reach the Voco team through:
-
-- **Contact form**: Visit [our contact page](/contact) to send us a message
-- **Sales inquiries**: Use the [contact form](/contact?type=sales) for enterprise and custom pricing
-- **Response time**: We aim to respond within 24 hours
-
-## Enterprise Inquiries
-
-For franchises and multi-location operations, we offer:
-- Unlimited calls
-- Dedicated account manager
-- Custom integrations and SLAs
-- Custom onboarding
-
-[Contact us for enterprise pricing](/contact?type=sales)
-
-## Already a Customer?
-
-If you're already signed up, log in to your dashboard for support and account management.
-
-## Links
-
-- [Contact Form](/contact)
-- [See Pricing](/pricing)
-- [Start Free Trial](/onboarding)
+What happens after a demo request: a short call to hear what callers ask for and which systems are in use, then a live demo of the agent doing that work.

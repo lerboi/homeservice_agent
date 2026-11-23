@@ -40,6 +40,18 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Public marketing site (2026-11 rebrand): paper, ink, one signal colour.
+     Used only under src/app/(public) and src/components/marketing. */
+  --color-mk-paper: #F7F8F5;
+  --color-mk-ink: #0B0F14;
+  --color-mk-ink-soft: #151B23;
+  --color-mk-signal: #00B37E;
+  --color-mk-signal-deep: #007A57;
+  --color-mk-muted: #55606B;
+  --color-mk-faint: #8A929C;
+  --color-mk-line: rgba(11, 15, 20, 0.1);
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-code: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-landing-surface: var(--color-landing-surface);
   --color-landing-dark: var(--color-landing-dark);
   --color-landing-accent: var(--color-landing-accent);
@@ -340,3 +352,18 @@
     border-right: 1px solid var(--sidebar-bg-border);
   }
 }
+
+/* Public marketing site (2026-11 rebrand) */
+@keyframes mk-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes mk-bar {
+  0%   { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mk-rise { animation: mk-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .mk-bar  { transform-origin: center; animation: mk-bar 900ms ease-in-out infinite alternate; }
+}
+

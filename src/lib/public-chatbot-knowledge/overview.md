@@ -1,38 +1,20 @@
-# Voco — AI Receptionist for Home Service Businesses
+# Voco: a voice agent that works in your systems
 
 ## What is Voco?
 
-Voco is an AI receptionist built specifically for home service businesses — plumbers, electricians, HVAC techs, roofers, and handymen. It answers every inbound call 24/7, captures lead details, triages urgency, and books appointments — so contractors never lose a job to voicemail.
+Voco is a voice agent connected to the systems a business already runs. It answers the call, understands what the caller wants, and does that work in the business's own tools: it books the appointment, schedules the task, creates the record. Tagline: "Give your backend a voice."
 
-## The Problem Voco Solves
+## Who it is for
 
-94% of callers hang up when they reach voicemail. When you're under a sink or up a ladder, you can't answer the phone. But the person calling has a burst pipe, a dead furnace, or a sparking outlet. They're not leaving a voicemail — they're calling the next name on the list.
+Businesses and operations teams whose callers ring to get something done: book or move an appointment, ask where an order is, request a callback, make an enquiry. It is not tied to one industry.
 
-Hiring a receptionist costs $3,000–$4,000/month. That math never works for a two-person crew. So calls go to voicemail, and jobs go to competitors.
+## What is different about it
 
-## How Voco is Different
+Most phone automation takes a message. Voco finishes the job the caller rang about, while they are on the line, and the result lands in the business's system of record (calendar, CRM, field tool, or the business's own API).
 
-- **Trained on trade calls**: Understands "burst pipe", "no heat", and "sparking outlet" — not just generic booking requests. Asks the right follow-up questions and tags urgency automatically.
-- **Your voice, your brand**: Callers hear your business name and get a warm, professional experience every time — whether you're on a job or asleep.
-- **Booking, not just answering**: Captures lead details, qualifies the job type, and routes everything into your dashboard with full context.
+## How a business gets it
 
-## Key Stats
+Through a demo and a guided setup. The Voco team connects the business's systems and tests the agent with them before it takes real calls. There is no self-serve signup on the public site.
 
-- $650 average value of a missed emergency call
-- 3 AM is when your best leads call
-- 5 minutes to get Voco live
-- Under 2 rings to answer every call
-
-## Our Values
-
-- **Trades-first**: Every decision starts with what a tradesperson actually needs
-- **Speed over complexity**: 5-minute setup, no IT team, no manuals
-- **You own the relationship**: Your AI, not a third-party answering service
-- **Always improving**: Every edge case makes the AI sharper for everyone
-
-## Links
-
-- [See Pricing](/pricing)
-- [How It Works](/#how-it-works)
-- [Contact Us](/contact)
-- [Start Free Trial](/onboarding)
+- [Book a demo](/contact?type=sales)
+- [Watch the demo](/demo)

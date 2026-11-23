@@ -1,40 +1,25 @@
-# Frequently Asked Questions
+# Frequently asked questions
 
-## How long does setup take?
-Under 5 minutes. You'll enter your business name, choose your trade, and hear your AI receptionist answer a real call — all before your first coffee break. No technical skills needed.
+## What does Voco do on a call?
+It answers, works out what the caller wants, and does that work in the business's systems while they are on the line. Then it confirms with the caller and leaves a transcript and a recording.
 
-## Do I need any technical skills?
-None at all. If you can fill out a form on your phone, you can set up Voco. We handle the AI, the phone number, and the call routing — you just show up for the jobs.
+## How do we get set up?
+With the Voco team. You say what callers ask for and which systems hold the answers; we configure the agent, connect the systems and test it with you. You do not build anything.
 
-## Can callers tell they're talking to an AI?
-Some might sense it, but most don't stop to ask. What matters is that your phone gets answered in one ring, every time, with your business name and a professional tone.
+## Does it work with our existing number?
+Yes. Your line forwards to a dedicated Voco number. You choose which calls it takes.
 
-## What if the AI gets confused on a call?
-Voco captures the caller's info and routes the call to you with a full summary. You never lose a lead — even on edge cases.
+## What happens when it cannot help?
+It says so and hands over, by your rules: transfer to a person, create a callback, or alert whoever is on call. It does not invent answers.
 
-## How does the 14-day trial work?
-Sign up, complete the 5-minute setup, and your AI receptionist starts answering calls immediately. You have 14 full days to evaluate with real calls.
+## Can callers tell it is an AI?
+The agent does not pretend to be a person. Calls open with the business's name, and a recording notice where that is configured.
 
-## Can I cancel anytime?
-Yes. No lock-in contracts. Cancel from your dashboard at any time. Service stops at the end of the current billing period. No cancellation fees.
+## Which languages?
+It replies in the language the caller speaks. English is the most thoroughly tested; other languages are tested with the business before launch.
 
-## What happens if I go over my call limit?
-We don't cut you off mid-month. Extra calls are charged at a transparent per-call overage rate. Only calls lasting 20+ seconds count — quick hang-ups and wrong numbers are always free.
+## Is call data secure?
+Calls are recorded and transcribed to provide the service, and each business's data is kept separate from every other's. Details are in the [Privacy Policy](/privacy).
 
-## What happens if I upgrade mid-cycle?
-You only pay the difference. We prorate the cost — you're charged for the remaining time at the new rate, minus what you've already paid.
-
-## Where are call recordings stored?
-Recordings are stored on encrypted servers in the US. Only your account can access your recordings and transcripts. Voco does not share or sell your data.
-
-## What trades does Voco support?
-Plumbing, HVAC, electrical, roofing, handyman, and more. Voco is trained on trade-specific call patterns and understands job types like "burst pipe", "no heat", and "sparking outlet".
-
-## What languages does Voco support?
-English and Spanish, fluently. The AI detects the caller's language automatically on every call — no setup needed. More languages are on the roadmap.
-
-## Links
-
-- [See Pricing](/pricing)
-- [Start Free Trial](/onboarding)
-- [Contact Us](/contact)
+## What does it cost?
+Pricing is scoped to call volume and the systems connected. There is no public price table. See [Pricing](/pricing) or [book a demo](/contact?type=sales).

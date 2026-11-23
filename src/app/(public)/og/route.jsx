@@ -4,10 +4,16 @@ import { ImageResponse } from 'next/og';
 // `runtime` segment config is rejected when nextConfig.cacheComponents is enabled (Phase 54 INTFOUND-03).
 // ImageResponse runs on the default (Node) runtime without regressions.
 
+// Brand colours (2026-11 rebrand): paper, ink, signal. Kept as literals:
+// ImageResponse cannot read the CSS tokens.
+const PAPER = '#F7F8F5';
+const INK = '#0B0F14';
+const SIGNAL = '#00B37E';
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') ?? 'Voco AI Receptionist';
-  const type = searchParams.get('type') ?? 'PAGE';
+  const title = (searchParams.get('title') ?? 'Give your backend a voice.').slice(0, 120);
+  const type = (searchParams.get('type') ?? 'VOCO').slice(0, 24);
 
   return new ImageResponse(
     (
@@ -17,53 +23,26 @@ export async function GET(request) {
           height: '630px',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0F172A 0%, #1C1412 60%, #C2410C 100%)',
-          padding: '80px',
+          justifyContent: 'space-between',
+          background: PAPER,
+          padding: '72px 80px',
           fontFamily: 'Inter, sans-serif',
         }}
       >
-        {/* Page type badge */}
-        <div
-          style={{
-            background: '#F97316',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: '600',
-            padding: '6px 16px',
-            borderRadius: '999px',
-            marginBottom: '32px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}
-        >
-          {type}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: '12px', height: '12px', borderRadius: '999px', background: SIGNAL, marginRight: '14px' }} />
+          <div style={{ fontSize: '20px', fontWeight: 600, letterSpacing: '0.16em', color: '#55606B', textTransform: 'uppercase' }}>
+            {type}
+          </div>
         </div>
-        {/* Title */}
-        <div
-          style={{
-            fontSize: '56px',
-            fontWeight: '700',
-            color: 'white',
-            lineHeight: 1.15,
-            maxWidth: '900px',
-          }}
-        >
+
+        <div style={{ fontSize: '76px', fontWeight: 600, color: INK, lineHeight: 1.05, letterSpacing: '-0.03em', maxWidth: '1000px' }}>
           {title}
         </div>
-        {/* Voco branding */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '60px',
-            left: '80px',
-            fontSize: '24px',
-            fontWeight: '600',
-            color: 'rgba(255,255,255,0.6)',
-          }}
-        >
-          voco.live
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: `2px solid ${INK}`, paddingTop: '24px' }}>
+          <div style={{ fontSize: '34px', fontWeight: 700, color: INK, letterSpacing: '-0.02em' }}>Voco</div>
+          <div style={{ fontSize: '24px', color: '#55606B' }}>Voice agents that work in your systems</div>
         </div>
       </div>
     ),

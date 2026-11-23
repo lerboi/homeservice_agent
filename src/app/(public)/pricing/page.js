@@ -1,112 +1,88 @@
-import { Button } from '@/components/ui/button';
-import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
-import PricingTiers from './PricingTiers';
-import ROICalculator from './ROICalculator';
-import ComparisonTable from './ComparisonTable';
-import FAQSection from './FAQSection';
+import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { Card, PageHero, Section, SectionHeader, TextLink } from '@/components/marketing/primitives';
+import { pageMetadata } from '@/data/site';
 
-export const metadata = {
-  title: 'Pricing — Voco AI Receptionist',
-  description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
-  openGraph: {
-    title: 'Pricing — Voco AI Receptionist',
-    description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
-    type: 'website',
-    siteName: 'Voco AI',
-    url: '/pricing',
-    images: [{ url: '/og?title=Simple%2C%20transparent%20pricing&type=PRICING', width: 1200, height: 630, alt: 'Voco AI pricing' }],
+// Public pricing is "talk to us" (owner decision, 2026-11-23). The plan data
+// in ./pricingData.js is NOT shown here but must stay: onboarding checkout,
+// the dashboard upgrade screen and /api/usage read it, and its plan ids are
+// wired to Stripe.
+export const metadata = pageMetadata({
+  title: 'Pricing | Voco',
+  description:
+    'Voco is priced to your call volume and the systems we connect. Tell us both and we will scope it with you.',
+  path: '/pricing',
+  ogTitle: 'Priced to your calls and your systems.',
+  ogType: 'PRICING',
+});
+
+const FACTORS = [
+  {
+    title: 'Call volume',
+    body: 'How many calls the agent takes in a month, and how long they tend to run.',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Pricing — Voco AI Receptionist',
-    description: 'Simple, transparent pricing for AI receptionist service. Every tier pays for itself after one booked job.',
-    images: ['/og?title=Simple%2C%20transparent%20pricing&type=PRICING'],
+  {
+    title: 'Systems connected',
+    body: 'Which of your tools the agent works in. A calendar is simpler than a CRM plus your own API.',
   },
-};
+  {
+    title: 'What the agent does',
+    body: 'Booking only, or booking plus intake, lookups, callbacks and escalation rules.',
+  },
+];
+
+const INCLUDED = [
+  'Setup and testing with our team',
+  'The connections to your systems',
+  'A dedicated phone number',
+  'Transcripts and recordings of every call',
+  'Changes to rules and wording as you learn what callers ask',
+];
 
 export default function PricingPage() {
   return (
     <>
-      {/* Hero + Tiers (dark) */}
-      <section className="relative bg-[#050505] pt-28 pb-16 overflow-hidden">
-        {/* Radial gradient */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.06),transparent_70%)] pointer-events-none" />
-        {/* Dot-grid texture */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-        {/* Blur orb */}
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[#F97316]/[0.03] blur-[100px] pointer-events-none" />
+      <PageHero
+        eyebrow="Pricing"
+        title="Priced to your calls and your systems."
+        lede="There is no table to pick from, because no two setups are the same. Tell us how many calls you take and what you want the agent to do; we will give you a number."
+      >
+        <AuthAwareCTA />
+      </PageHero>
 
-        <div className="relative max-w-6xl mx-auto px-6">
-          {/* Hero content */}
-          <div className="max-w-4xl mx-auto text-center mb-12">
-            <AnimatedSection>
-              {/* Headline */}
-              <h1 className="text-[2.25rem] md:text-[2.75rem] lg:text-[3rem] font-semibold text-white tracking-tight leading-[1.1]">
-                Stop Losing <span className="text-[#F97316]">$1,000 Jobs</span> to Voicemail
-              </h1>
-              {/* Subline */}
-              <p className="mt-5 text-base md:text-lg text-white/60 max-w-xl mx-auto leading-relaxed">
-                Voco answers 24/7 and books the job &mdash; one call you&apos;d have missed covers the whole year.
-              </p>
-            </AnimatedSection>
-          </div>
-          <div id="pricing-plans">
-            <PricingTiers />
+      <Section tone="white">
+        <div className="grid gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
+          <div>
+            <SectionHeader eyebrow="What sets the price" title="Three things." />
+            <ol className="mt-10 space-y-8">
+              {FACTORS.map((factor, i) => (
+                <li key={factor.title} className="grid grid-cols-[auto_1fr] gap-5 border-t border-mk-line pt-6">
+                  <span className="font-code text-xs text-mk-signal-deep">0{i + 1}</span>
+                  <div>
+                    <h3 className="font-display text-xl font-medium tracking-[-0.01em]">{factor.title}</h3>
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-mk-muted">{factor.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
           </div>
 
-        </div>
-      </section>
-
-      {/* ROI Calculator (warm light) */}
-      <section id="calculator" className="relative bg-[#EDEAE7] py-16">
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-[#EDEAE7] to-[#F5F5F4] pointer-events-none" />
-        <div className="relative max-w-6xl mx-auto px-6">
-          <ROICalculator />
-        </div>
-      </section>
-
-      {/* Comparison Table (light) */}
-      <section className="bg-[#F5F5F4] py-16">
-        <div className="max-w-6xl mx-auto px-6">
-          <ComparisonTable />
-        </div>
-      </section>
-
-      {/* FAQ (dark) */}
-      <section className="bg-[#050505] py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <AnimatedSection>
-            <h2 className="text-2xl font-semibold text-white text-center mb-12 tracking-tight leading-[1.3]">
-              Questions from the field
-            </h2>
-          </AnimatedSection>
-          <FAQSection />
-        </div>
-      </section>
-
-      {/* CTA Banner */}
-      <section className="relative bg-[#1C1412] py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.1),transparent_60%)]" />
-        <div className="relative max-w-4xl mx-auto px-6 text-center">
-          <AnimatedSection>
-            <h2 className="text-2xl md:text-3xl font-semibold text-white tracking-tight leading-[1.3]">
-              Every missed call is a job your competitor booked.
-            </h2>
-            <p className="mt-4 text-white/50">
-              Your AI receptionist is 5 minutes away.
+          <Card className="h-fit bg-mk-paper p-7">
+            <h2 className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">Every setup includes</h2>
+            <ul className="mt-5 space-y-3.5">
+              {INCLUDED.map((item) => (
+                <li key={item} className="flex gap-3 text-[15px] leading-snug">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mk-signal" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-7 border-t border-mk-line pt-5 text-sm leading-relaxed text-mk-muted">
+              Already a customer? Your plan and usage are in your dashboard under Billing.{' '}
+              <TextLink href="/auth/signin">Sign in</TextLink>
             </p>
-            <div className="mt-8">
-              <Button
-                asChild
-                className="bg-[#F97316] text-white hover:bg-[#F97316]/90 min-h-[44px] px-8 text-base font-medium rounded-lg shadow-[0_4px_12px_0_rgba(249,115,22,0.3)] hover:shadow-[0_8px_24px_0_rgba(249,115,22,0.4)] transition-all hover:-translate-y-0.5"
-              >
-                <a href="#pricing-plans">See Plans &amp; Start Free</a>
-              </Button>
-            </div>
-            <p className="text-sm text-white/40 mt-3">14-day free trial. Cancel anytime.</p>
-          </AnimatedSection>
+          </Card>
         </div>
-      </section>
+      </Section>
     </>
   );
 }

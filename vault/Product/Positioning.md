@@ -2,7 +2,7 @@
 type: product
 status: current
 description: "What Voco is sold as. New positioning decided 2026-11-23 (voice integration for any backend) and the legacy home-service positioning it replaces."
-verified: 2026-11-23
+verified: 2026-11-24
 tags: [voco/product]
 ---
 
@@ -20,7 +20,7 @@ tags: [voco/product]
 | Integrations | A broad set presented as available under a done-for-you framing ("Voco connects to …"). |
 | Brand | Name stays Voco. New palette (light, ink, one green-teal accent). |
 
-Decision record: [[Decision - Rebrand to voice integration for any backend]]. Build plan: [[Plan 2 - Frontend rebrand to voice integration for any backend]].
+Decision record: [[Decision - Rebrand to voice integration for any backend]]. The public site was rebuilt for this on 2026-11-24 (branch `rebrand`): [[Public Site]], [[2026-11-24 Public site rebrand]]. What the site claims against what is built: [[Public Site - Content data and copy rules]].
 
 ### What is actually built (2026-11-23)
 - Phone answering (Twilio SIP) and browser voice (LiveKit).
@@ -29,8 +29,8 @@ Decision record: [[Decision - Rebrand to voice integration for any backend]]. Bu
 - Jobber and Xero: built, flagged off.
 - Not built: generic webhooks, a public API or SDK, other CRMs.
 
-## Legacy (until the rebrand ships)
+## Legacy (still in the app behind sign-in)
 
-"AI receptionist for home service businesses": plumbers, HVAC, electricians, handymen. The agent answers calls 24/7, triages urgency, books appointments and creates CRM leads so contractors never lose a job to voicemail. The dashboard, onboarding wizard (trade selector, trade templates) and the agent's production prompt still embody this.
+"AI receptionist for home service businesses": plumbers, HVAC, electricians, handymen. The public site no longer says this. The dashboard, the onboarding wizard (trade selector, trade templates) and the agent's `home_service` profile still embody it; the agent's default profile is now general scheduling.
 
 Related: [[Site Flow]], [[Backlog]].

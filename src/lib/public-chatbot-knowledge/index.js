@@ -20,21 +20,33 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 const ROUTE_DOC_MAP = {
   '/': 'overview.md',
+  '/demo': 'how-it-works.md',
+  '/use-cases': 'features.md',
+  '/integrations': 'integrations.md',
   '/pricing': 'pricing.md',
   '/about': 'overview.md',
   '/contact': 'contact.md',
 };
+
+/** Section pages share their index page's doc: /use-cases/x -> /use-cases. */
+function routeDoc(route) {
+  if (!route) return 'overview.md';
+  if (ROUTE_DOC_MAP[route]) return ROUTE_DOC_MAP[route];
+  const section = '/' + route.split('/').filter(Boolean)[0];
+  return ROUTE_DOC_MAP[section] || 'overview.md';
+}
 
 /**
  * Maps keyword groups to knowledge docs.
  * Checked in order — first match wins (breaks after 1 additional doc).
  */
 const KEYWORD_DOC_MAP = [
-  { keywords: ['price', 'pricing', 'cost', 'plan', 'tier', 'starter', 'growth', 'scale', 'enterprise', 'trial', 'cancel', 'discount', 'annual', 'monthly', 'overage', 'upgrade'], doc: 'pricing.md' },
-  { keywords: ['feature', 'booking', 'triage', 'sms', 'alert', 'crm', 'lead', 'invoice', 'estimate', 'calendar', 'sync', 'analytics', 'language', 'recording', 'notification', 'priority', 'vip', 'forward', 'forwarding', 'route', 'routing', 'pickup', 'voice', 'time block', 'vacation', 'block off'], doc: 'features.md' },
-  { keywords: ['setup', 'start', 'how', 'work', 'install', 'configure', 'sign up', 'onboard', 'get started', 'demo'], doc: 'how-it-works.md' },
-  { keywords: ['faq', 'question', 'confused', 'data', 'security', 'privacy', 'support', 'trade', 'plumb', 'hvac', 'electric', 'roofer', 'handyman'], doc: 'faq.md' },
-  { keywords: ['contact', 'talk', 'reach', 'email', 'sales', 'enterprise'], doc: 'contact.md' },
+  { keywords: ['price', 'pricing', 'cost', 'plan', 'tier', 'trial', 'cancel', 'discount', 'annual', 'monthly', 'how much', 'fee', 'quote'], doc: 'pricing.md' },
+  { keywords: ['integrat', 'connect', 'calendar', 'crm', 'hubspot', 'salesforce', 'pipedrive', 'zoho', 'jobber', 'servicetitan', 'housecall', 'slack', 'whatsapp', 'stripe', 'xero', 'quickbooks', 'zapier', 'make.com', 'webhook', 'api', 'calendly', 'cal.com', 'outlook', 'google'], doc: 'integrations.md' },
+  { keywords: ['setup', 'set up', 'start', 'install', 'configure', 'onboard', 'get started', 'demo', 'how does it work', 'how it works', 'number', 'forward'], doc: 'how-it-works.md' },
+  { keywords: ['feature', 'booking', 'book', 'appointment', 'lead', 'task', 'callback', 'order', 'lookup', 'sms', 'alert', 'language', 'recording', 'transcript', 'transfer', 'escalat', 'after hours', 'after-hours', 'voice', 'fast', 'latency'], doc: 'features.md' },
+  { keywords: ['faq', 'question', 'data', 'security', 'privacy', 'secure', 'ai', 'human', 'cannot help', "can't help"], doc: 'faq.md' },
+  { keywords: ['contact', 'talk', 'reach', 'email', 'sales', 'support', 'partner'], doc: 'contact.md' },
 ];
 
 /**
@@ -48,13 +60,13 @@ export async function getPublicKnowledge(message, currentRoute) {
   const docs = new Set();
   const msgLower = (message || '').toLowerCase();
 
-  // 1. Route-matched doc gets priority — fallback to overview.md for unknown routes
-  const routeDoc = ROUTE_DOC_MAP[currentRoute] || 'overview.md';
-  docs.add(routeDoc);
+  // 1. Route-matched doc gets priority; unknown routes fall back to overview.md
+  const primaryDoc = routeDoc(currentRoute);
+  docs.add(primaryDoc);
 
   // 2. Keyword match — add up to 1 additional doc that differs from the route doc
   for (const { keywords, doc } of KEYWORD_DOC_MAP) {
-    if (keywords.some((k) => msgLower.includes(k)) && doc !== routeDoc) {
+    if (keywords.some((k) => msgLower.includes(k)) && doc !== primaryDoc) {
       docs.add(doc);
       break;
     }

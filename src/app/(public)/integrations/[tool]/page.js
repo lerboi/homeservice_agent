@@ -1,194 +1,149 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, Bell, RefreshCw } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { AnimatedSection } from '@/app/components/landing/AnimatedSection';
-import { SchemaMarkup } from '@/components/SchemaMarkup';
+import { ArrowLeft, Check } from 'lucide-react';
 import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
-import { INTEGRATIONS } from '@/data/integrations';
-
-const ICON_MAP = {
-  Calendar,
-  Clock,
-  Bell,
-  RefreshCw,
-};
+import { SchemaMarkup } from '@/components/SchemaMarkup';
+import { FinalCtaSection } from '@/components/marketing/LandingSections';
+import { Card, Container, Eyebrow, Lede, PageTitle, Section, SectionHeader } from '@/components/marketing/primitives';
+import { INTEGRATIONS, INTEGRATION_GROUPS, getIntegration } from '@/data/integrations';
+import { SITE_URL, pageMetadata } from '@/data/site';
+import { USE_CASES } from '@/data/use-cases';
 
 export async function generateStaticParams() {
   return INTEGRATIONS.map((i) => ({ tool: i.slug }));
 }
 
 export async function generateMetadata({ params }) {
-  const { tool: toolSlug } = await params;
-  const item = INTEGRATIONS.find((i) => i.slug === toolSlug);
-
-  if (!item) {
-    return { title: 'Not Found | Voco' };
-  }
-
-  return {
-    title: `${item.toolName} Integration | Voco`,
-    description: item.description.slice(0, 160),
-    alternates: {
-      canonical: `https://voco.live/integrations/${toolSlug}`,
-    },
-    openGraph: {
-      images: [
-        {
-          url: `/og?title=${encodeURIComponent(item.toolName + ' + Voco')}&type=INTEGRATION`,
-        },
-      ],
-    },
-  };
+  const { tool } = await params;
+  const item = getIntegration(tool);
+  if (!item) return { title: 'Not found | Voco' };
+  return pageMetadata({
+    title: `${item.name} and Voco | Voice agent integration`,
+    description: item.summary,
+    path: `/integrations/${item.slug}`,
+    ogTitle: `Voco + ${item.name}`,
+    ogType: 'INTEGRATION',
+  });
 }
 
-export default async function IntegrationDetailPage({ params }) {
-  const { tool: toolSlug } = await params;
-  const item = INTEGRATIONS.find((i) => i.slug === toolSlug);
+const SETUP = [
+  { title: 'You tell us what callers need', body: 'Which requests should end in this system, and what the agent may do there.' },
+  { title: 'We connect it', body: 'Our team sets up the connection with the access you approve, and nothing wider.' },
+  { title: 'We test it together', body: 'Real calls against your data, before a customer ever reaches the agent.' },
+];
 
-  if (!item) {
-    notFound();
-  }
+export default async function IntegrationPage({ params }) {
+  const { tool } = await params;
+  const item = getIntegration(tool);
+  if (!item) notFound();
 
-  const relatedItems = item.relatedSlugs
-    .map((slug) => INTEGRATIONS.find((i) => i.slug === slug))
-    .filter(Boolean);
+  const group = INTEGRATION_GROUPS.find((g) => g.id === item.group);
+  const siblings = INTEGRATIONS.filter((i) => i.group === item.group && i.slug !== item.slug);
+  const useCases = USE_CASES.filter((u) => u.integrations.includes(item.slug));
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
       <SchemaMarkup
         schema={{
           '@context': 'https://schema.org',
-          '@type': 'SoftwareApplication',
-          name: 'Voco',
-          applicationCategory: 'BusinessApplication',
-          operatingSystem: 'Web',
-          description:
-            'AI receptionist for home service businesses — integrates with ' +
-            item.toolName,
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Integrations', item: `${SITE_URL}/integrations` },
+            { '@type': 'ListItem', position: 2, name: item.name, item: `${SITE_URL}/integrations/${item.slug}` },
+          ],
         }}
       />
 
-      {/* Hero section */}
-      <section className="bg-white">
-        <div className="max-w-5xl mx-auto px-6 pt-24 md:pt-32 pb-12">
-          <AnimatedSection direction="up">
-            <Link
-              href="/integrations"
-              className="inline-flex items-center gap-2 text-sm text-[#475569] hover:text-[#F97316] transition-colors mb-8"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              All integrations
-            </Link>
-
-            {/* Logo connector row */}
-            <div className="flex items-center">
-              <span className="text-xl font-semibold text-[#0F172A]">Voco</span>
-              <span className="mx-4 text-2xl text-[#64748B]">+</span>
-              <span className="text-xl font-semibold text-[#0F172A]">
-                {item.toolName}
-              </span>
+      <section className="border-b border-mk-line bg-mk-paper pb-16 pt-32 text-mk-ink md:pb-20 md:pt-40">
+        <Container>
+          <Link href="/integrations" className="inline-flex items-center gap-1.5 text-sm text-mk-muted hover:text-mk-ink">
+            <ArrowLeft className="size-3.5" /> Integrations
+          </Link>
+          <div className="mt-8 grid items-start gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
+            <div>
+              <Eyebrow>{group?.title}</Eyebrow>
+              <PageTitle className="mt-5 lg:text-6xl">Voco + {item.name}</PageTitle>
+              <Lede className="mt-6">{item.summary}</Lede>
+              <AuthAwareCTA className="mt-9" />
             </div>
-
-            <h1 className="text-4xl md:text-5xl font-semibold text-[#0F172A] leading-tight mt-8">
-              Voco + {item.toolName}
-            </h1>
-            <p className="text-lg text-[#475569] mt-4 max-w-2xl">
-              {item.description.slice(0, 160)}
-            </p>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* Description section */}
-      <section className="bg-white">
-        <div className="max-w-5xl mx-auto px-6 pb-12">
-          <AnimatedSection direction="up">
-            <p className="max-w-2xl text-base text-[#475569] leading-relaxed">
-              {item.description}
-            </p>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* Use cases section */}
-      <section className="bg-[#F5F5F4] py-16 md:py-24">
-        <div className="max-w-5xl mx-auto px-6">
-          <AnimatedSection direction="up">
-            <h2 className="text-2xl md:text-3xl font-semibold text-[#0F172A] text-center mb-12">
-              What you can do
-            </h2>
-          </AnimatedSection>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {item.useCases.map((useCase, index) => {
-              const IconComponent = ICON_MAP[useCase.icon];
-              return (
-                <AnimatedSection key={index} direction="up" delay={index * 0.05}>
-                  <Card className="bg-white border border-stone-200/60 p-6">
-                    {IconComponent && (
-                      <IconComponent className="w-8 h-8 text-[#F97316] mb-4" />
-                    )}
-                    <h3 className="text-lg font-semibold text-[#0F172A] mb-2">
-                      {useCase.title}
-                    </h3>
-                    <p className="text-sm text-[#475569] leading-relaxed">
-                      {useCase.body}
-                    </p>
-                  </Card>
-                </AnimatedSection>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA section */}
-      <section className="bg-[#F5F5F4]">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <AnimatedSection direction="up">
-            <div className="bg-white rounded-2xl p-8 md:p-12 text-center border border-stone-200/60">
-              <h2 className="text-2xl md:text-3xl font-semibold text-[#0F172A] mb-6">
-                {item.ctaHeading}
+            <Card className="p-6 sm:p-7">
+              <h2 className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">
+                What the agent does in {item.name}
               </h2>
-              <AuthAwareCTA variant="cta" />
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* Related integrations */}
-      {relatedItems.length > 0 && (
-        <section className="bg-white">
-          <div className="max-w-5xl mx-auto px-6 py-16">
-            <AnimatedSection direction="up">
-              <h2 className="text-2xl font-semibold text-[#0F172A] mb-8">
-                Related integrations
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {relatedItems.map((related) => (
-                  <Link
-                    key={related.slug}
-                    href={'/integrations/' + related.slug}
-                    className="block"
-                  >
-                    <Card className="bg-white border border-stone-200/60 p-6 hover:shadow-[0_4px_12px_0_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200">
-                      <span className="bg-[#F97316]/10 text-[#F97316] text-xs font-medium rounded-full px-2.5 py-0.5">
-                        INTEGRATION
-                      </span>
-                      <p className="text-base font-semibold text-[#0F172A] mt-3">
-                        {related.toolName}
-                      </p>
-                      <p className="text-sm text-[#475569] line-clamp-2 mt-1">
-                        {related.description}
-                      </p>
-                    </Card>
-                  </Link>
+              <ul className="mt-5 space-y-3.5">
+                {item.actions.map((action) => (
+                  <li key={action} className="flex gap-3 text-[15px] leading-snug">
+                    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-mk-signal/15 text-mk-signal-deep">
+                      <Check className="size-2.5" strokeWidth={3.5} />
+                    </span>
+                    {action}
+                  </li>
                 ))}
-              </div>
-            </AnimatedSection>
+              </ul>
+            </Card>
           </div>
-        </section>
+        </Container>
+      </section>
+
+      <Section tone="white">
+        <SectionHeader
+          eyebrow="Getting connected"
+          title="We set it up with you."
+          lede={`There is nothing for you to build. Connecting ${item.name} is part of setup.`}
+        />
+        <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
+          {SETUP.map((step, i) => (
+            <li key={step.title} className="border-t border-mk-ink pt-5">
+              <p className="font-code text-xs text-mk-signal-deep">0{i + 1}</p>
+              <h3 className="mt-3 font-display text-xl font-medium tracking-[-0.01em]">{step.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-mk-muted">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Section>
+
+      {(useCases.length > 0 || siblings.length > 0) && (
+        <Section tone="paper" bordered>
+          <div className="grid gap-12 md:grid-cols-2 md:gap-16">
+            {useCases.length > 0 && (
+              <div>
+                <h2 className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">Used for</h2>
+                <ul className="mt-4">
+                  {useCases.map((useCase) => (
+                    <li key={useCase.slug} className="border-t border-mk-line">
+                      <Link href={`/use-cases/${useCase.slug}`} className="block py-4 font-display text-lg font-medium tracking-[-0.01em] hover:text-mk-signal-deep">
+                        {useCase.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {siblings.length > 0 && (
+              <div>
+                <h2 className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">Also in {group?.title.toLowerCase()}</h2>
+                <ul className="mt-4 flex flex-wrap gap-2.5 border-t border-mk-line pt-5">
+                  {siblings.map((sibling) => (
+                    <li key={sibling.slug}>
+                      <Link
+                        href={`/integrations/${sibling.slug}`}
+                        className="inline-flex h-10 items-center rounded-full border border-mk-ink/15 bg-white px-4 text-sm transition-colors hover:border-mk-ink/50"
+                      >
+                        {sibling.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </Section>
       )}
-    </div>
+
+      <FinalCtaSection
+        title={`See it work in ${item.name}.`}
+        lede="Bring a real request your callers make. We will show you the agent carrying it out."
+      />
+    </>
   );
 }

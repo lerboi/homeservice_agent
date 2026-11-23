@@ -9,30 +9,28 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 // metadataBase makes relative OG/Twitter image URLs resolve to absolute URLs
 // on link previews (2026-06-12 audit M24). Defaults to prod; override via env.
+const TITLE = 'Voco: a voice agent that works in your systems';
+const DESCRIPTION =
+  'Voco answers the call, understands the request, and does the work in the systems you already run: books the appointment, schedules the task, creates the record.';
+const OG_IMAGE = '/og?title=Give%20your%20backend%20a%20voice.&type=VOCO';
+
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://voco.live'),
-  title: 'Voco AI — AI Receptionist for Home Service Businesses',
-  description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring — for plumbers, HVAC, electricians, and handymen.',
+  title: TITLE,
+  description: DESCRIPTION,
   openGraph: {
-    title: 'Voco AI — AI Receptionist for Home Service Businesses',
-    description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
+    title: TITLE,
+    description: DESCRIPTION,
     type: 'website',
-    siteName: 'Voco AI',
+    siteName: 'Voco',
     url: '/',
-    images: [
-      {
-        url: '/og?title=AI%20Receptionist%20for%20Home%20Service%20Businesses&type=HOME',
-        width: 1200,
-        height: 630,
-        alt: 'Voco AI — AI Receptionist for Home Service Businesses',
-      },
-    ],
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: 'Voco: give your backend a voice' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Voco AI — AI Receptionist for Home Service Businesses',
-    description: 'Stop losing revenue to missed calls. Voco AI answers, triages, and books every call in under 1 ring.',
-    images: ['/og?title=AI%20Receptionist%20for%20Home%20Service%20Businesses&type=HOME'],
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [OG_IMAGE],
   },
 };
 

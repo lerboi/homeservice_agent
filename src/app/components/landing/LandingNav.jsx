@@ -4,15 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase-browser';
+import { buttonClasses } from '@/components/marketing/primitives';
+import { BOOK_DEMO_HREF, NAV_LINKS } from '@/data/site';
 
-const NAV_LINKS = [
-  { href: '/', label: 'Home', exact: true },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
-];
+const LOGO_DARK = '/images/logos/VOCO%20Logo%20V1%20(no%20bg).png';
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -20,16 +16,16 @@ export function LandingNav() {
   const [hasSession, setHasSession] = useState(false);
   const pathname = usePathname();
 
-  const isActive = (href, exact) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
+  // "/#how-it-works" is a section of the home page, not a page of its own.
+  const isActive = (href) =>
+    !href.includes('#') && (pathname === href || pathname.startsWith(href + '/'));
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen ? 'hidden' : '';
@@ -42,82 +38,56 @@ export function LandingNav() {
     });
   }, []);
 
+  const closeDrawer = () => setDrawerOpen(false);
+
   return (
     <>
       <nav
-        aria-label="Navigation"
-        className={`fixed top-0 left-0 right-0 z-50 h-16 backdrop-blur-md transition-[background-color,box-shadow] duration-300 ease-out border-b border-white/[0.06] ${
-          scrolled
-            ? 'bg-[#090807]/90 shadow-[0_1px_0_0_rgba(255,255,255,0.04),0_4px_24px_0_rgba(0,0,0,0.4)]'
-            : 'bg-[#090807]/70'
+        aria-label="Main"
+        className={`fixed left-0 right-0 top-0 z-50 h-16 border-b bg-mk-paper/85 backdrop-blur-md transition-colors duration-200 ${
+          scrolled ? 'border-mk-line' : 'border-transparent'
         }`}
       >
-        <div className="max-w-6xl mx-auto h-16 flex items-center justify-between px-6">
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center group shrink-0">
-            <Image
-              src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
-              alt="Voco"
-              width={172}
-              height={96}
-              className="h-8 md:h-12 w-auto"
-              priority
-            />
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="flex shrink-0 items-center" aria-label="Voco home">
+            <Image src={LOGO_DARK} alt="Voco" width={172} height={96} className="h-11 w-auto -ml-3" priority />
           </Link>
 
-          {/* Desktop center links */}
-          <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
-            {NAV_LINKS.map(({ href, label, exact }) => (
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 md:flex">
+            {NAV_LINKS.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
-                className={`text-sm transition-colors relative pb-1 ${
-                  isActive(href, exact) ? 'text-white' : 'text-white/50 hover:text-white'
+                aria-current={isActive(href) ? 'page' : undefined}
+                className={`text-sm transition-colors ${
+                  isActive(href) ? 'text-mk-ink' : 'text-mk-muted hover:text-mk-ink'
                 }`}
               >
                 {label}
-                {isActive(href, exact) && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#F97316]" />
-                )}
               </Link>
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {hasSession ? (
-              <Button
-                asChild
-                size="sm"
-                className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
-              >
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
+              <Link href="/dashboard" className={buttonClasses({ variant: 'ink', size: 'sm', className: 'hidden md:inline-flex' })}>
+                Go to dashboard
+              </Link>
             ) : (
               <>
-                {/* Sign in (desktop) */}
-                <Link
-                  href="/auth/signin"
-                  className="hidden md:inline-flex text-[13px] font-medium text-white/60 hover:text-white transition-colors"
-                >
+                <Link href="/auth/signin" className="hidden text-[13px] font-medium text-mk-muted transition-colors hover:text-mk-ink md:inline-flex">
                   Sign in
                 </Link>
-
-                {/* CTA (desktop) */}
-                <Button
-                  asChild
-                  size="sm"
-                  className="hidden md:inline-flex bg-[#F97316] text-white hover:bg-[#F97316]/90 shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)] min-h-[36px] px-4 text-[13px] font-medium rounded-lg transition-all hover:shadow-[0_2px_8px_0_rgba(249,115,22,0.4)]"
-                >
-                  <Link href="/pricing">Start My 5-Minute Setup</Link>
-                </Button>
+                <Link href={BOOK_DEMO_HREF} className={buttonClasses({ variant: 'primary', size: 'sm', className: 'hidden md:inline-flex' })}>
+                  Book a demo
+                </Link>
               </>
             )}
 
-            {/* Mobile hamburger */}
             <button
-              className="md:hidden flex items-center justify-center size-10 min-h-[44px] min-w-[44px] text-white/70 hover:text-white transition-colors"
-              onClick={() => setDrawerOpen(v => !v)}
+              type="button"
+              className="flex size-11 items-center justify-center text-mk-ink md:hidden"
+              onClick={() => setDrawerOpen((v) => !v)}
               aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={drawerOpen}
             >
@@ -127,88 +97,61 @@ export function LandingNav() {
         </div>
       </nav>
 
-      {/* Mobile drawer — CSS transitions only, no Framer Motion */}
-
-      {/* Backdrop */}
+      {/* Mobile drawer: CSS transitions only */}
       <div
-        onClick={() => setDrawerOpen(false)}
-        className={`md:hidden fixed inset-0 z-40 bg-black/70 transition-opacity duration-300 ${
-          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        onClick={closeDrawer}
+        className={`fixed inset-0 z-40 bg-mk-ink/40 transition-opacity duration-200 md:hidden ${
+          drawerOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
       />
-
-      {/* Drawer panel */}
       <div
-        className={`md:hidden fixed top-0 right-0 bottom-0 z-50 w-72 bg-[#0D0D0D] flex flex-col
-          transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed bottom-0 right-0 top-0 z-50 flex w-72 flex-col border-l border-mk-line bg-mk-paper transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:hidden ${
+          drawerOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!drawerOpen}
       >
-        {/* Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.06]">
-          <Link href="/" onClick={() => setDrawerOpen(false)}>
-            <Image
-              src="/images/logos/WHITE%20VOCO%20LOGO%20V1%20(no%20bg).png"
-              alt="Voco"
-              width={143}
-              height={80}
-              className="h-8 w-auto"
-            />
-          </Link>
+        <div className="flex h-16 items-center justify-between border-b border-mk-line px-5">
+          <span className="font-code text-[11px] uppercase tracking-[0.16em] text-mk-muted">Menu</span>
           <button
-            onClick={() => setDrawerOpen(false)}
-            className="flex items-center justify-center size-9 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+            type="button"
+            onClick={closeDrawer}
+            className="flex size-9 items-center justify-center text-mk-ink"
             aria-label="Close menu"
+            tabIndex={drawerOpen ? 0 : -1}
           >
-            <X className="size-4.5" />
+            <X className="size-5" />
           </button>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {NAV_LINKS.map(({ href, label, exact }) => {
-            const active = isActive(href, exact);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-[15px] font-medium transition-colors ${
-                  active
-                    ? 'bg-white/[0.08] text-white'
-                    : 'text-white/50 hover:text-white hover:bg-white/[0.04]'
-                }`}
-              >
-                {active && (
-                  <span className="w-1 h-4 rounded-full bg-[#F97316] shrink-0" aria-hidden="true" />
-                )}
-                {label}
-              </Link>
-            );
-          })}
+        <nav aria-label="Mobile" className="flex-1 px-3 py-4">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={closeDrawer}
+              tabIndex={drawerOpen ? 0 : -1}
+              className={`block rounded-lg px-3 py-3 text-[15px] font-medium ${
+                isActive(href) ? 'bg-mk-ink/[0.05] text-mk-ink' : 'text-mk-muted hover:text-mk-ink'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
 
-        {/* CTA + Sign in */}
-        <div className="p-4 border-t border-white/[0.06] space-y-3">
+        <div className="space-y-3 border-t border-mk-line p-4">
           {hasSession ? (
-            <Link
-              href="/dashboard"
-              className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
-            >
-              Go to Dashboard
+            <Link href="/dashboard" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className={buttonClasses({ variant: 'ink', size: 'lg', className: 'w-full' })}>
+              Go to dashboard
             </Link>
           ) : (
             <>
-              <Link
-                href="/pricing"
-                className="flex items-center justify-center w-full min-h-[48px] bg-[#F97316] hover:bg-[#F97316]/90 active:bg-[#EA6C10] text-white font-semibold rounded-xl text-[15px] transition-colors shadow-[0_1px_2px_0_rgba(0,0,0,0.3),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
-              >
-                Start My 5-Minute Setup
+              <Link href={BOOK_DEMO_HREF} onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className={buttonClasses({ variant: 'primary', size: 'lg', className: 'w-full' })}>
+                Book a demo
               </Link>
-              <Link
-                href="/auth/signin"
-                className="flex items-center justify-center w-full min-h-[44px] text-[14px] font-medium text-white/50 hover:text-white transition-colors"
-              >
-                Already have an account? Sign in
+              <Link href="/auth/signin" onClick={closeDrawer} tabIndex={drawerOpen ? 0 : -1} className="flex min-h-[44px] w-full items-center justify-center text-sm font-medium text-mk-muted hover:text-mk-ink">
+                Sign in
               </Link>
             </>
           )}

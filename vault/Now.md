@@ -8,7 +8,7 @@ tags: [voco/hub]
 
 # Now
 
-Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Studio and rebrand (start here)]] next.** This note is overwritten, not appended: history belongs in [[Log]].
+Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Demo Studio and rebrand (start here)]] next.** This note is overwritten, not appended: history belongs in [[Log]].
 
 ## Where things stand
 
@@ -18,12 +18,19 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
-| Public site rebrand (Task 3) | Approved, not started. Waits for Task 2 to be verified end to end and the owner's confirmation | [[Plan 2 - Frontend rebrand to voice integration for any backend]] |
+| Public site rebrand (Task 3) | **Built, not pushed.** Branch `rebrand` in `homeservice_agent`. Tests and build pass; looked at in Chrome at desktop width | [[2026-11-24 Public site rebrand]], [[Public Site]] |
 
 ## What is left of Task 2
 
 1. A spoken call through `/admin/demo` on production. Only a person at a microphone can do it; the page has so far been exercised on a local server up to starting a call. Then the owner records: [[Record a demo]].
 2. The owner's confirmation that Task 2 is done, before Task 3 starts.
+
+## What is left of Task 3
+
+1. Owner's review of the look (the hero-first sign-off was skipped at the owner's instruction) and the go-ahead to push `rebrand` to `main`.
+2. The recorded demo video: record it ([[Record a demo]]), then set `DEMO_VIDEO.src` in `src/data/site.js`. Until then the site shows a labelled still.
+3. A look at mobile widths, the mobile nav drawer and a real contact-form submission.
+4. Owner's review of `/privacy` and `/terms`: the body text still says "AI receptionist" and describes a 14-day free trial.
 
 ## Verified in production on 2026-11-24 (agent `f7c632d`)
 
@@ -46,11 +53,14 @@ Last updated 2026-11-23 (late). **Continuing the work? Read [[Handoff - Demo Stu
 4. **Phone calls get the scheduling agent too** (no address intake, no urgency triage). `VOCO_AGENT_PROFILE=home_service` on Railway restores the old behaviour.
 5. **The model still speaks its own filler** before booking ("Okay, booking that in for you"), against the prompt.
 6. **A local dev worker refuses jobs when this machine is above 70% CPU**, which a running `next dev` can cause: [[Run a local dev worker and measure]].
-7. Public repos contain audit findings ([[Log]]).
+7. **The public site presents integrations that are not built** (owner's decision; done-for-you framing). The list of what is real is in [[Public Site - Content data and copy rules]].
+8. **Sign-up is still reachable** from `/auth/signin` and leads to the trade-based onboarding wizard, although no public page links to it.
+9. Public repos contain audit findings ([[Log]]).
 
 ## Waiting on the owner
 
-- A spoken test call through `/admin/demo`, then confirmation that Task 2 is done.
+- A spoken test call through `/admin/demo`.
+- Review of the rebranded site on the `rebrand` branch, and the go-ahead to push it.
 - Google Cloud Console: is the OAuth consent screen "Testing" or "In production"?
 - Whether to make the GitHub repos private.
 

@@ -7,45 +7,45 @@ const LAST_UPDATED = 'March 30, 2026';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="bg-[#050505] min-h-screen">
+    <div className="bg-mk-paper min-h-screen">
       {/* Page hero */}
-      <section className="pt-32 pb-16 px-6 border-b border-white/[0.06]">
+      <section className="pt-32 pb-16 px-6 border-b border-mk-line">
         <div className="max-w-3xl mx-auto">
-          <p className="text-sm text-[#F97316] font-medium uppercase tracking-widest mb-4">Legal</p>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Privacy Policy</h1>
-          <p className="text-[#71717A] text-sm">Last updated: {LAST_UPDATED}</p>
+          <p className="text-sm text-mk-signal-deep font-medium uppercase tracking-widest mb-4">Legal</p>
+          <h1 className="text-4xl md:text-5xl font-display font-medium tracking-[-0.03em] text-mk-ink mb-4">Privacy Policy</h1>
+          <p className="text-mk-muted text-sm">Last updated: {LAST_UPDATED}</p>
         </div>
       </section>
 
       {/* Content */}
       <section className="py-16 px-6">
-        <div className="max-w-3xl mx-auto space-y-6 text-[#A1A1AA] text-[15px] leading-7">
+        <div className="max-w-3xl mx-auto space-y-6 text-mk-muted text-[15px] leading-7">
 
           <p>
-            Voco Private Limited (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is incorporated in Singapore. We operate an AI-powered receptionist platform for home service businesses accessible at voco.live.
+            Voco Private Limited (&quot;Voco&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is incorporated in Singapore. We operate a voice agent platform that answers calls for businesses and carries out the caller&apos;s request in the systems those businesses use, accessible at voco.live.
           </p>
           <p>
-            This Privacy Policy explains how we collect, use, disclose, and protect personal data in accordance with Singapore&apos;s <strong className="text-[#E4E4E7] font-medium">Personal Data Protection Act 2012 (PDPA)</strong>. By using our services, you consent to the practices described below.
+            This Privacy Policy explains how we collect, use, disclose, and protect personal data in accordance with Singapore&apos;s <strong className="text-mk-ink font-medium">Personal Data Protection Act 2012 (PDPA)</strong>. By using our services, you consent to the practices described below.
           </p>
 
           <SectionHeading>1. Data We Collect</SectionHeading>
           <SubHeading>From business owners (subscribers)</SubHeading>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Account data</strong> — name, email address, business name, trade type, business address, and phone number provided during sign-up and onboarding.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Billing data</strong> — payment method details processed by Stripe. We do not store full card numbers.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Configuration data</strong> — working hours, service zones, escalation contacts, and calendar credentials you provide to configure the AI receptionist.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Usage data</strong> — call logs, appointment records, lead records, and analytics generated through your use of the platform.</li>
+            <li><strong className="text-mk-ink font-medium">Account data</strong> — name, email address, business name, trade type, business address, and phone number provided during sign-up and onboarding.</li>
+            <li><strong className="text-mk-ink font-medium">Billing data</strong> — payment method details processed by Stripe. We do not store full card numbers.</li>
+            <li><strong className="text-mk-ink font-medium">Configuration data</strong> — working hours, service zones, escalation contacts, and calendar credentials you provide to configure the AI receptionist.</li>
+            <li><strong className="text-mk-ink font-medium">Usage data</strong> — call logs, appointment records, lead records, and analytics generated through your use of the platform.</li>
           </ul>
           <SubHeading>From callers (your customers)</SubHeading>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Call data</strong> — name, phone number, service address, and job description shared during an AI-answered call.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Call recordings and transcripts</strong> — recordings of calls handled by the AI receptionist. Callers are informed of recording at the start of each call.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Appointment data</strong> — booking details created during a call, including date, time, and service address.</li>
+            <li><strong className="text-mk-ink font-medium">Call data</strong> — name, phone number, service address, and job description shared during an AI-answered call.</li>
+            <li><strong className="text-mk-ink font-medium">Call recordings and transcripts</strong> — recordings of calls handled by the AI receptionist. Callers are informed of recording at the start of each call.</li>
+            <li><strong className="text-mk-ink font-medium">Appointment data</strong> — booking details created during a call, including date, time, and service address.</li>
           </ul>
           <SubHeading>Automatically collected</SubHeading>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Log data</strong> — IP address, browser type, pages visited, and timestamps when you access our website or dashboard.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Cookies</strong> — session cookies required for authentication. We do not use advertising or third-party tracking cookies.</li>
+            <li><strong className="text-mk-ink font-medium">Log data</strong> — IP address, browser type, pages visited, and timestamps when you access our website or dashboard.</li>
+            <li><strong className="text-mk-ink font-medium">Cookies</strong> — session cookies required for authentication. We do not use advertising or third-party tracking cookies.</li>
           </ul>
 
           <SectionHeading>2. How We Use Your Data</SectionHeading>
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <p>
             For a full list of our sub-processors, please contact us at{' '}
-            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
+            <a href="mailto:support@voco.live" className="text-mk-signal-deep hover:underline">support@voco.live</a>.
           </p>
 
           <SectionHeading>4. Call Recordings and AI Processing</SectionHeading>
@@ -81,30 +81,30 @@ export default function PrivacyPolicyPage() {
 
           <SectionHeading>5. Data Retention</SectionHeading>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Account data</strong> — retained for the duration of your subscription and for 90 days after account closure, then permanently deleted.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Call recordings and transcripts</strong> — retained for 12 months from the date of the call, then deleted.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Billing records</strong> — retained for 7 years as required by Singapore&apos;s accounting and tax regulations.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Log data</strong> — retained for 30 days.</li>
+            <li><strong className="text-mk-ink font-medium">Account data</strong> — retained for the duration of your subscription and for 90 days after account closure, then permanently deleted.</li>
+            <li><strong className="text-mk-ink font-medium">Call recordings and transcripts</strong> — retained for 12 months from the date of the call, then deleted.</li>
+            <li><strong className="text-mk-ink font-medium">Billing records</strong> — retained for 7 years as required by Singapore&apos;s accounting and tax regulations.</li>
+            <li><strong className="text-mk-ink font-medium">Log data</strong> — retained for 30 days.</li>
           </ul>
 
           <SectionHeading>6. Your Rights Under the PDPA</SectionHeading>
           <p>As an individual whose personal data we hold, you have the right to:</p>
           <ul className="list-disc list-outside ml-5 space-y-2">
-            <li><strong className="text-[#E4E4E7] font-medium">Access</strong> — request a copy of the personal data we hold about you.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Correction</strong> — request that we correct inaccurate or incomplete personal data.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Withdrawal of consent</strong> — withdraw consent to collection, use, or disclosure of your personal data at any time. Note that withdrawal may affect your ability to use the service.</li>
-            <li><strong className="text-[#E4E4E7] font-medium">Data portability</strong> — request your account data in a machine-readable format where technically feasible.</li>
+            <li><strong className="text-mk-ink font-medium">Access</strong> — request a copy of the personal data we hold about you.</li>
+            <li><strong className="text-mk-ink font-medium">Correction</strong> — request that we correct inaccurate or incomplete personal data.</li>
+            <li><strong className="text-mk-ink font-medium">Withdrawal of consent</strong> — withdraw consent to collection, use, or disclosure of your personal data at any time. Note that withdrawal may affect your ability to use the service.</li>
+            <li><strong className="text-mk-ink font-medium">Data portability</strong> — request your account data in a machine-readable format where technically feasible.</li>
           </ul>
           <p>
             To exercise any of these rights, email us at{' '}
-            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
+            <a href="mailto:support@voco.live" className="text-mk-signal-deep hover:underline">support@voco.live</a>.
             We will respond within 30 days.
           </p>
 
           <SectionHeading>7. Security</SectionHeading>
           <p>
             We implement industry-standard security measures including encryption in transit (TLS), encryption at rest, row-level security policies on our database, and access controls limiting data access to authorised personnel only. Despite these measures, no system is entirely secure. If you become aware of a security concern, please contact{' '}
-            <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">support@voco.live</a>.
+            <a href="mailto:support@voco.live" className="text-mk-signal-deep hover:underline">support@voco.live</a>.
           </p>
 
           <SectionHeading>8. Children&apos;s Privacy</SectionHeading>
@@ -119,12 +119,12 @@ export default function PrivacyPolicyPage() {
 
           <SectionHeading>10. Contact Us</SectionHeading>
           <p>For privacy-related enquiries or to exercise your rights:</p>
-          <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-6 not-italic space-y-1">
-            <p className="text-[#E4E4E7] font-medium">Voco Private Limited</p>
+          <div className="bg-white border border-mk-line rounded-xl p-6 not-italic space-y-1">
+            <p className="text-mk-ink font-medium">Voco Private Limited</p>
             <p>Singapore</p>
             <p>
               Email:{' '}
-              <a href="mailto:support@voco.live" className="text-[#F97316] hover:underline">
+              <a href="mailto:support@voco.live" className="text-mk-signal-deep hover:underline">
                 support@voco.live
               </a>
             </p>
@@ -137,7 +137,7 @@ export default function PrivacyPolicyPage() {
 
 function SectionHeading({ children }) {
   return (
-    <h2 className="text-xl font-semibold text-white mt-12 mb-1 pt-8 border-t border-white/[0.06]">
+    <h2 className="text-xl font-semibold text-mk-ink mt-12 mb-1 pt-8 border-t border-mk-line">
       {children}
     </h2>
   );
@@ -145,7 +145,7 @@ function SectionHeading({ children }) {
 
 function SubHeading({ children }) {
   return (
-    <h3 className="text-base font-semibold text-[#E4E4E7] mt-6 mb-1">
+    <h3 className="text-base font-semibold text-mk-ink mt-6 mb-1">
       {children}
     </h3>
   );

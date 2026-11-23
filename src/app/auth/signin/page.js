@@ -44,15 +44,15 @@ function VocoLogo() {
 }
 
 const SELLING_POINTS_SIGNUP = [
-  { icon: Phone, text: 'Every call answered 24/7' },
-  { icon: Calendar, text: 'Auto-books appointments' },
-  { icon: Zap, text: 'Setup in under 5 minutes' },
-  { icon: Shield, text: 'Cancel anytime' },
+  { icon: Phone, text: 'Every call answered' },
+  { icon: Calendar, text: 'Work done in your systems' },
+  { icon: Zap, text: 'Set up with our team' },
+  { icon: Shield, text: 'Transcripts of every call' },
 ];
 
 const SELLING_POINTS_SIGNIN = [
   { icon: Phone, text: 'Your calls, handled' },
-  { icon: Calendar, text: 'Appointments on autopilot' },
+  { icon: Calendar, text: 'Bookings in your calendar' },
   { icon: Zap, text: 'Pick up where you left off' },
   { icon: Lock, text: 'Secure & encrypted' },
 ];
@@ -517,13 +517,13 @@ export default function AuthPage() {
             >
               <div>
                 <p className="text-[11px] font-semibold text-[#C2410C] uppercase tracking-[0.15em] mb-4">
-                  AI-powered answering
+                  Voice agents for your systems
                 </p>
                 <h2 className="text-[1.65rem] xl:text-[1.8rem] font-semibold text-[#F1F5F9] tracking-tight leading-[1.2]">
-                  Never lose a job to voicemail again
+                  Give your backend a voice
                 </h2>
                 <p className="mt-3 text-sm text-[#94A3B8] leading-relaxed">
-                  Your AI receptionist answers calls, books appointments, and triages emergencies while you work.
+                  Voco answers the call, understands the request, and does the work in the systems you already run.
                 </p>
               </div>
 
@@ -542,18 +542,9 @@ export default function AuthPage() {
               </div>
 
               <div className="mt-10 pt-6 border-t border-white/[0.06]">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex -space-x-1.5">
-                    {['bg-amber-500', 'bg-sky-500', 'bg-emerald-500'].map((bg, i) => (
-                      <div key={i} className={`size-7 rounded-full ${bg} border-[1.5px] border-[#0F172A] flex items-center justify-center text-[10px] text-white font-semibold`}>
-                        {['D', 'J', 'M'][i]}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-[#94A3B8]">
-                    Trusted by <span className="text-[#F1F5F9] font-semibold">500+</span> home service businesses
-                  </p>
-                </div>
+                <p className="text-xs text-[#94A3B8]">
+                  Every call leaves a transcript, a recording and the work done.
+                </p>
               </div>
             </div>
 
@@ -574,7 +565,7 @@ export default function AuthPage() {
                   Good to see you again
                 </h2>
                 <p className="mt-3 text-sm text-[#94A3B8] leading-relaxed">
-                  Your AI receptionist has been handling calls while you were away. Jump back in.
+                  Your voice agent has been taking calls while you were away. Jump back in.
                 </p>
               </div>
 

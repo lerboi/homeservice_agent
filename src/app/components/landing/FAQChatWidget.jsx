@@ -2,12 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, Loader2 } from 'lucide-react';
+import { FAQ_CHAT_SUGGESTIONS } from '@/data/faq';
 
-const SUGGESTIONS = [
-  'Does it really sound natural?',
-  'How long does setup take?',
-  'What does it cost?',
-];
+const SUGGESTIONS = FAQ_CHAT_SUGGESTIONS;
 
 const ERROR_COPY = "Couldn't connect right now — try refreshing the page.";
 
@@ -31,7 +28,7 @@ function renderAssistantContent(text) {
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noopener noreferrer' : undefined}
-        className="font-semibold text-[#F97316] underline underline-offset-2 hover:text-[#EA580C]"
+        className="font-semibold text-mk-signal-deep underline underline-offset-2 hover:text-mk-ink"
       >
         {label}
       </a>
@@ -95,18 +92,18 @@ export function FAQChatWidget() {
   };
 
   return (
-    <div className="rounded-2xl border border-stone-200/60 bg-[#FAFAF9] shadow-sm flex flex-col h-[520px] max-h-[80vh]">
+    <div className="rounded-2xl border border-mk-line bg-mk-paper flex flex-col h-[520px] max-h-[80vh]">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-stone-200/60">
-        <p className="text-[15px] font-semibold text-[#0F172A]">Still wondering?</p>
-        <p className="text-[14px] text-[#71717A]">Ask Voco directly.</p>
+      <div className="px-4 py-4 border-b border-mk-line">
+        <p className="text-[15px] font-semibold text-mk-ink">Still wondering?</p>
+        <p className="text-[14px] text-mk-muted">Ask Voco directly.</p>
       </div>
 
       {/* Message thread */}
       <div ref={threadRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {messages.length === 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-[14px] text-[#71717A]">Try one of these:</p>
+            <p className="text-[14px] text-mk-muted">Try one of these:</p>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -114,7 +111,7 @@ export function FAQChatWidget() {
                   type="button"
                   onClick={() => onChipClick(s)}
                   disabled={isLoading}
-                  className="inline-flex px-3 py-2 rounded-full bg-white border border-stone-200/60 text-[14px] text-[#475569] hover:border-[#F97316]/40 hover:text-[#0F172A] transition-colors disabled:opacity-50"
+                  className="inline-flex px-3 py-2 rounded-full bg-white border border-mk-line text-[14px] text-mk-muted hover:border-mk-signal hover:text-mk-ink transition-colors disabled:opacity-50"
                 >
                   {s}
                 </button>
@@ -128,8 +125,8 @@ export function FAQChatWidget() {
             <div
               className={
                 m.role === 'user'
-                  ? 'bg-[#F97316] text-white rounded-2xl rounded-br-sm px-4 py-2 text-[15px] max-w-[85%] whitespace-pre-wrap'
-                  : 'bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-[#475569] max-w-[85%] whitespace-pre-wrap'
+                  ? 'bg-mk-ink text-white rounded-2xl rounded-br-sm px-4 py-2 text-[15px] max-w-[85%] whitespace-pre-wrap'
+                  : 'bg-white border border-mk-line rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-mk-muted max-w-[85%] whitespace-pre-wrap'
               }
             >
               {m.role === 'assistant' ? renderAssistantContent(m.content) : m.content}
@@ -139,7 +136,7 @@ export function FAQChatWidget() {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white border border-stone-200/60 rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-[#71717A] max-w-[85%] flex items-center gap-2">
+            <div className="bg-white border border-mk-line rounded-2xl rounded-bl-sm px-4 py-2 text-[15px] text-mk-muted max-w-[85%] flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               <span>Thinking…</span>
             </div>
@@ -148,20 +145,20 @@ export function FAQChatWidget() {
       </div>
 
       {/* Input area */}
-      <form onSubmit={onSubmit} className="border-t border-stone-200/60 px-4 py-2 flex gap-2">
+      <form onSubmit={onSubmit} className="border-t border-mk-line px-4 py-2 flex gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask anything about Voco…"
           disabled={isLoading}
-          className="flex-1 rounded-xl border border-stone-200 bg-white px-4 py-2 text-[15px] text-[#0F172A] caret-[#F97316] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#F97316]/50 disabled:opacity-60"
+          className="flex-1 rounded-xl border border-mk-line bg-white px-4 py-2 text-[15px] text-mk-ink caret-mk-signal placeholder:text-[#94A3B8] focus:outline-none focus:border-mk-signal disabled:opacity-60"
           aria-label="Ask Voco anything about the product"
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="w-9 h-9 rounded-xl bg-[#F97316] text-white flex items-center justify-center hover:bg-[#EA6B0F] transition-colors disabled:opacity-50 shrink-0"
+          className="w-9 h-9 rounded-xl bg-mk-ink text-white flex items-center justify-center hover:bg-mk-ink-soft transition-colors disabled:opacity-50 shrink-0"
           aria-label="Send message"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <SendHorizonal className="w-4 h-4" />}

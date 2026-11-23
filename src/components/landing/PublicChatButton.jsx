@@ -54,8 +54,8 @@ export default function PublicChatButton() {
       <div className="fixed bottom-6 right-4 lg:right-6 z-40 flex flex-col items-center">
         {/* Speech bubble — in flow so FAB centers under it */}
         <div
-          className={`mb-3 relative bg-white text-[#0F172A] text-sm font-medium
-            pl-4 pr-2 py-2 rounded-xl shadow-lg border border-stone-200 whitespace-nowrap
+          className={`mb-3 relative bg-white text-mk-ink text-sm font-medium
+            pl-4 pr-2 py-2 rounded-xl shadow-lg border border-mk-line whitespace-nowrap
             flex items-center gap-2
             transition-all duration-300 ease-out
             ${showBubble && !open
@@ -63,7 +63,7 @@ export default function PublicChatButton() {
               : 'opacity-0 translate-y-2 pointer-events-none'
             }`}
         >
-          <span>Ask Voco AI</span>
+          <span>Ask about Voco</span>
           <button
             onClick={dismissBubble}
             className="p-0.5 rounded-full hover:bg-stone-100 transition-colors"
@@ -74,7 +74,7 @@ export default function PublicChatButton() {
           {/* Downward caret pointing to button */}
           <div
             className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3
-              bg-white border-r border-b border-stone-200 rotate-45"
+              bg-white border-r border-b border-mk-line rotate-45"
           />
         </div>
 
@@ -82,12 +82,12 @@ export default function PublicChatButton() {
         <button
           onClick={() => setOpen((prev) => !prev)}
           className={`h-16 w-16 rounded-full
-            bg-[#C2410C] hover:bg-[#C2410C]/90 text-white shadow-lg
+            bg-mk-ink hover:bg-mk-ink-soft text-white shadow-lg
             flex items-center justify-center transition-all duration-300
-            focus:outline-none focus:ring-2 focus:ring-[#C2410C] focus:ring-offset-2
+            focus:outline-none focus:ring-2 focus:ring-mk-signal focus:ring-offset-2
             ${mounted ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
             ${showBubble && !open ? '' : 'translate-x-9'}`}
-          aria-label={open ? 'Close chat' : 'Open Voco AI chat'}
+          aria-label={open ? 'Close chat' : 'Open the Voco chat'}
         >
           {open ? (
             <X className="h-7 w-7" />

@@ -1,65 +1,58 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
-import { AnimatedSection, AnimatedStagger, AnimatedItem } from '@/app/components/landing/AnimatedSection';
-import { INTEGRATIONS } from '@/data/integrations';
-import { card } from '@/lib/design-tokens';
+import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { FinalCtaSection } from '@/components/marketing/LandingSections';
+import { PageHero, Section } from '@/components/marketing/primitives';
+import { integrationsByGroup } from '@/data/integrations';
+import { pageMetadata } from '@/data/site';
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: 'Integrations | Voco',
-  description: 'Connect Voco to the tools you already use — Google Calendar, Outlook, and more.',
-  alternates: {
-    canonical: 'https://voco.live/integrations',
-  },
-};
+  description:
+    'The systems a Voco voice agent can work in: calendars, CRMs, field tools, messaging, payments, automation platforms and your own API. We connect them for you.',
+  path: '/integrations',
+  ogTitle: 'It works in the tools you already run.',
+  ogType: 'INTEGRATIONS',
+});
 
 export default function IntegrationsPage() {
+  const groups = integrationsByGroup();
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header section */}
-      <section className="bg-[#F5F5F4] pt-24 md:pt-28 pb-16 md:pb-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <AnimatedSection direction="up">
-            <h1 className="text-4xl md:text-5xl font-semibold text-[#0F172A]">
-              Integrations
-            </h1>
-            <p className="text-lg text-[#475569] mt-4">
-              Connect Voco to the tools you already use.
-            </p>
-          </AnimatedSection>
-        </div>
-      </section>
+    <>
+      <PageHero
+        eyebrow="Integrations"
+        title="It works in the tools you already run."
+        lede="Voco connects to your systems for you. Tell us what you use; we set the connection up, decide with you what the agent may do there, and test it before the first real call."
+      >
+        <AuthAwareCTA />
+      </PageHero>
 
-      {/* Card grid section */}
-      <section className="bg-white">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <AnimatedStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {INTEGRATIONS.map((integration) => (
-              <AnimatedItem key={integration.slug}>
-                <Link href={'/integrations/' + integration.slug} className="block h-full">
-                  <Card
-                    className={[card.base, card.hover, 'p-6 h-full flex flex-col gap-3 cursor-pointer'].join(' ')}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#F97316]/10 text-[#F97316] text-xs font-medium rounded-full px-2.5 py-0.5">
-                        INTEGRATION
-                      </span>
-                    </div>
-                    <p className="text-base font-semibold text-[#0F172A]">
-                      {integration.toolName}
-                    </p>
-                    <p className="text-sm text-[#475569] line-clamp-2 flex-1">
-                      {integration.description}
-                    </p>
-                    <span className="text-sm text-[#F97316] font-medium mt-auto">
-                      Learn more
-                    </span>
-                  </Card>
-                </Link>
-              </AnimatedItem>
-            ))}
-          </AnimatedStagger>
+      <Section tone="white">
+        <div className="space-y-14">
+          {groups.map((group) => (
+            <div key={group.id} id={group.id} className="grid gap-6 scroll-mt-24 lg:grid-cols-[1fr_2.4fr] lg:gap-12">
+              <div>
+                <h2 className="font-display text-2xl font-medium tracking-[-0.02em]">{group.title}</h2>
+                <p className="mt-2 text-[15px] leading-relaxed text-mk-muted">{group.blurb}</p>
+              </div>
+              <ul className="grid gap-px overflow-hidden rounded-2xl border border-mk-line bg-mk-line sm:grid-cols-2">
+                {group.items.map((item) => (
+                  <li key={item.slug} className="bg-white">
+                    <Link href={`/integrations/${item.slug}`} className="block h-full p-5 transition-colors hover:bg-mk-paper">
+                      <h3 className="font-display text-lg font-medium tracking-[-0.01em]">{item.name}</h3>
+                      <p className="mt-1.5 text-sm leading-relaxed text-mk-muted">{item.summary}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-      </section>
-    </div>
+      </Section>
+
+      <FinalCtaSection
+        title="Running something else?"
+        lede="If it has an API or accepts a webhook, the agent can work in it. Tell us what it is and what callers need done there."
+      />
+    </>
   );
 }

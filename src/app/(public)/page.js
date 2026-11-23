@@ -1,77 +1,75 @@
-import dynamic from 'next/dynamic';
-import { HeroSection } from '@/app/components/landing/HeroSection';
-import { ScrollProgress } from '@/app/components/landing/ScrollProgress';
-import { ScrollLinePath } from '@/app/components/landing/ScrollLinePath';
-import { PreloadSections } from '@/app/components/landing/PreloadSections';
-import { IntegrationsStrip } from '@/app/components/landing/IntegrationsStrip';
-import { CostOfSilenceBlock } from '@/app/components/landing/CostOfSilenceBlock';
-import { YouStayInControlSection } from '@/app/components/landing/YouStayInControlSection';
-import { FinalCTASection } from '@/app/components/landing/FinalCTASection';
+import { AuthAwareCTA } from '@/components/landing/AuthAwareCTA';
+import { SchemaMarkup } from '@/components/SchemaMarkup';
+import { LiveCallDemo } from '@/components/marketing/LiveCallDemo';
+import {
+  BackendsSection, ControlSection, DemoSection, FaqSection, FinalCtaSection, HowItWorksSection, UseCasesSection,
+} from '@/components/marketing/LandingSections';
+import { Container, Eyebrow, Lede, PageTitle } from '@/components/marketing/primitives';
+import { FAQ_ITEMS } from '@/data/faq';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, TAGLINE } from '@/data/site';
 
-// Above-the-fold: HeroSection is statically imported for best LCP.
-// Server Component sections (IntegrationsStrip, CostOfSilenceBlock, YouStayInControlSection,
-// FinalCTASection) are also statically imported — they render in the initial HTML with zero
-// loading state, so scrolling never reveals a skeleton for them.
-// Only the heavy 'use client' sections stay code-split; PreloadSections warms their chunks
-// during browser idle time right after hydration so the fallbacks below almost never paint.
-// Fallbacks reserve each section's height (CLS guard) but stay visually quiet: they match the
-// real section background instead of flashing a gray card.
-// ScrollLinePath wraps exactly 3 children: IntegrationsStrip, CostOfSilenceBlock, FeaturesCarousel.
-
-const AudioDemoSection = dynamic(
-  () => import('@/app/components/landing/AudioDemoSection').then((m) => m.AudioDemoSection),
+const SCHEMA = [
   {
-    loading: () => (
-      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-5xl mx-auto">
-          <div className="h-[420px]" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const FeaturesCarousel = dynamic(
-  () => import('@/app/components/landing/FeaturesCarousel').then((m) => m.FeaturesCarousel),
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    legalName: 'Voco Private Limited',
+    url: SITE_URL,
+    logo: `${SITE_URL}/images/logos/VOCO%20Logo%20V1.png`,
+    description: SITE_DESCRIPTION,
+  },
   {
-    loading: () => (
-      <section id="features" className="bg-[#FAFAF9] py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-6xl mx-auto">
-          <div className="h-[560px]" />
-        </div>
-      </section>
-    ),
-  }
-);
-
-const FAQSection = dynamic(
-  () => import('@/app/components/landing/FAQSection').then((m) => m.FAQSection),
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: SITE_NAME,
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+  },
   {
-    loading: () => (
-      <section className="bg-white py-20 md:py-28 px-6" aria-hidden="true">
-        <div className="max-w-4xl mx-auto">
-          <div className="h-[400px]" />
-        </div>
-      </section>
-    ),
-  }
-);
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  },
+];
 
 export default function HomePage() {
   return (
-    <main>
-      <ScrollProgress />
-      <PreloadSections />
-      <HeroSection />
-      <AudioDemoSection />
-      <ScrollLinePath>
-        <IntegrationsStrip />
-        <CostOfSilenceBlock />
-        <FeaturesCarousel />
-      </ScrollLinePath>
-      <YouStayInControlSection />
-      <FAQSection />
-      <FinalCTASection />
-    </main>
+    <>
+      {SCHEMA.map((schema) => (
+        <SchemaMarkup key={schema['@type']} schema={schema} />
+      ))}
+
+      {/* Hero */}
+      <section className="bg-mk-paper pb-16 pt-28 text-mk-ink md:pb-24 md:pt-36">
+        <Container>
+          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
+            <div>
+              <Eyebrow>Voice agents for the systems you already run</Eyebrow>
+              <PageTitle className="mt-5">{TAGLINE}</PageTitle>
+              <Lede className="mt-6 max-w-xl">
+                Voco answers the call, understands what the caller wants, and does the work in your
+                systems: books the appointment, schedules the task, creates the record.
+              </Lede>
+              <AuthAwareCTA className="mt-9" />
+            </div>
+            <LiveCallDemo />
+          </div>
+        </Container>
+      </section>
+
+      <DemoSection />
+      <HowItWorksSection />
+      <UseCasesSection />
+      <BackendsSection />
+      <ControlSection />
+      <FaqSection />
+      <FinalCtaSection />
+    </>
   );
 }

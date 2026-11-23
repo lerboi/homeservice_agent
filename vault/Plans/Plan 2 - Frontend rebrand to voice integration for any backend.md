@@ -1,7 +1,7 @@
 ---
 type: plan
 date: 2026-11-23
-status: approved
+status: in-progress
 description: "Plan and decisions for rebuilding the public site around the new positioning."
 source: "My Prompts/Rebrand-2026-11/02-frontend-rebrand-plan.md"
 migrated: 2026-11-23
@@ -10,6 +10,8 @@ tags: [voco/plan]
 
 # Plan 2 — Rebrand the public site: from "AI receptionist for home services" to "voice integration for any backend"
 
+> **Built on 2026-11-24** on the `rebrand` branch, not yet pushed: [[2026-11-24 Public site rebrand]]. The sign-off gate in section 4 was skipped at the owner's instruction, so the look is still to be approved. This note stays as the record of the plan.
+>
 > **Read [[Handoff - Demo Studio and rebrand (start here)]] first.** It records the state on 2026-11-23 and the owner decisions made after this plan was written; where the two disagree, the handoff is right.
 
 Status: DECISIONS RECORDED 2026-11-23. Awaiting green light to implement.

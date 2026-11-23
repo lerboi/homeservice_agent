@@ -98,6 +98,18 @@ const nextConfig = {
         destination: '/dashboard/jobs/:path*',
         permanent: true,
       },
+      // 2026-11 rebrand: the trade-specific blog, glossary, comparison and
+      // persona pages were retired. /for became /use-cases (the old slugs
+      // were trades, so they all land on the index).
+      { source: '/blog', destination: '/', permanent: true },
+      { source: '/blog/:path*', destination: '/', permanent: true },
+      { source: '/glossary', destination: '/', permanent: true },
+      { source: '/glossary/:path*', destination: '/', permanent: true },
+      { source: '/compare', destination: '/', permanent: true },
+      { source: '/compare/:path*', destination: '/', permanent: true },
+      { source: '/for', destination: '/use-cases', permanent: true },
+      { source: '/for/:path*', destination: '/use-cases', permanent: true },
+      { source: '/integrations/twilio', destination: '/integrations/sms', permanent: true },
     ];
   },
 };

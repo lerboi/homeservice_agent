@@ -1,122 +1,294 @@
+/**
+ * Backends Voco can act in, for the public site (/integrations,
+ * /integrations/[tool], the landing page).
+ *
+ * Framing (owner decision, 2026-11-23): connectors are presented as
+ * available, done-for-you. "Voco connects to …" is true of the sales model:
+ * a business books a demo and the Voco team sets the connection up with
+ * them. The copy must not promise self-serve one-click setup.
+ *
+ * `actions` are the things the voice agent does in that system during or
+ * right after a call.
+ */
+export const INTEGRATION_GROUPS = [
+  { id: 'calendars', title: 'Calendars', blurb: 'Read availability, write bookings.' },
+  { id: 'crm', title: 'CRM', blurb: 'Find the caller, create and update records.' },
+  { id: 'field', title: 'Field and practice tools', blurb: 'Jobs, visits and clients in the tool your team works from.' },
+  { id: 'messaging', title: 'Messaging', blurb: 'Confirm with the caller, alert your team.' },
+  { id: 'payments', title: 'Payments and accounting', blurb: 'Look up what is owed and what was paid.' },
+  { id: 'automation', title: 'Automation and your own API', blurb: 'Anything else, through a webhook or your REST API.' },
+];
+
 export const INTEGRATIONS = [
+  // ── Calendars ──────────────────────────────────────────────────────────
   {
     slug: 'google-calendar',
-    toolName: 'Google Calendar',
-    description:
-      'Voco syncs bidirectionally with Google Calendar so your AI receptionist always knows your real availability. When a caller requests an appointment, Voco checks your calendar in real time, finds the next open slot with travel time buffers, and books it — all while the caller is on the line.',
-    useCases: [
-      {
-        icon: 'Calendar',
-        title: 'Auto-sync appointments',
-        body: 'Every booking Voco makes appears in your Google Calendar within seconds. No double-entry, no missed appointments.',
-      },
-      {
-        icon: 'Clock',
-        title: 'Real-time availability',
-        body: 'Block time in Google Calendar and Voco instantly knows. Personal appointments, lunch breaks, days off — all respected automatically.',
-      },
-      {
-        icon: 'Bell',
-        title: 'Conflict prevention',
-        body: 'Voco never double-books. If a slot is taken in Google Calendar, it offers the next available time with built-in travel buffers between jobs.',
-      },
-      {
-        icon: 'RefreshCw',
-        title: 'Bidirectional sync',
-        body: 'Changes flow both ways. Edit an appointment in Google Calendar and Voco updates. Reschedule in Voco and Google Calendar reflects it.',
-      },
+    name: 'Google Calendar',
+    group: 'calendars',
+    summary: 'The agent reads your availability from Google Calendar and writes each booking back as an event.',
+    actions: [
+      'Check free and busy time before offering a slot',
+      'Create the event when the caller confirms',
+      'Title the event with who it is with and what it is for',
+      'Respect time you block off in the calendar',
     ],
-    ctaHeading: 'Connect Google Calendar to Voco in 5 minutes',
-    relatedSlugs: ['outlook-calendar', 'stripe', 'twilio'],
   },
   {
     slug: 'outlook-calendar',
-    toolName: 'Outlook Calendar',
-    description:
-      'Voco integrates directly with Microsoft Outlook Calendar, giving your AI receptionist real-time access to your schedule. When a caller requests an appointment, Voco checks your Outlook Calendar for availability, finds the next open slot with travel time buffers between jobs, and books the appointment — all while the caller is still on the phone. If you use Microsoft 365 for your business, Voco works seamlessly with your existing calendar.',
-    useCases: [
-      {
-        icon: 'Calendar',
-        title: 'Sync with Microsoft 365',
-        body: 'Already using Outlook for your business schedule? Voco reads and writes directly to your Outlook Calendar. No new tools to learn, no extra apps to manage.',
-      },
-      {
-        icon: 'Clock',
-        title: 'Real-time availability checks',
-        body: 'Block time in Outlook for personal appointments, lunch, or days off. Voco sees the block instantly and never offers that slot to a caller.',
-      },
-      {
-        icon: 'Bell',
-        title: 'Instant booking confirmations',
-        body: 'When Voco books a new appointment, it appears in your Outlook Calendar immediately. You get a standard Outlook notification alongside your Voco SMS alert.',
-      },
-      {
-        icon: 'RefreshCw',
-        title: 'Two-way sync',
-        body: 'Move an appointment in Outlook and Voco updates. Reschedule in Voco and Outlook reflects it. Both systems always show the same schedule.',
-      },
+    name: 'Outlook Calendar',
+    group: 'calendars',
+    summary: 'For teams on Microsoft 365: availability comes from Outlook and bookings land there.',
+    actions: [
+      'Check free and busy time before offering a slot',
+      'Create the event when the caller confirms',
+      'Keep the event in the business’s own timezone',
+      'Respect time you block off in the calendar',
     ],
-    ctaHeading: 'Connect Outlook Calendar to Voco in 5 minutes',
-    relatedSlugs: ['google-calendar', 'stripe', 'twilio'],
   },
+  {
+    slug: 'calendly',
+    name: 'Calendly',
+    group: 'calendars',
+    summary: 'Callers who would rather talk than click a link get the same Calendly slots, booked by voice.',
+    actions: [
+      'Offer the open times of an event type',
+      'Book the invitee with their name and contact details',
+      'Trigger the confirmations you already have set up',
+    ],
+  },
+  {
+    slug: 'cal-com',
+    name: 'Cal.com',
+    group: 'calendars',
+    summary: 'Voice booking on top of your Cal.com event types and availability rules.',
+    actions: [
+      'Offer the open times of an event type',
+      'Create the booking for the caller',
+      'Leave reschedule and cancel to your existing flows',
+    ],
+  },
+
+  // ── CRM ────────────────────────────────────────────────────────────────
+  {
+    slug: 'hubspot',
+    name: 'HubSpot',
+    group: 'crm',
+    summary: 'Calls become contacts, deals and tasks in HubSpot, with the transcript attached.',
+    actions: [
+      'Match the caller to an existing contact',
+      'Create a contact and a deal for a new enquiry',
+      'Log the call with its transcript and recording',
+      'Create a follow-up task for the owner',
+    ],
+  },
+  {
+    slug: 'salesforce',
+    name: 'Salesforce',
+    group: 'crm',
+    summary: 'Leads, cases and tasks created in Salesforce from what the caller said.',
+    actions: [
+      'Look the caller up by phone number',
+      'Create a lead or a case',
+      'Log the call as an activity',
+      'Assign a follow-up task',
+    ],
+  },
+  {
+    slug: 'pipedrive',
+    name: 'Pipedrive',
+    group: 'crm',
+    summary: 'New enquiries enter the right Pipedrive pipeline as a person and a deal.',
+    actions: [
+      'Find or create the person',
+      'Open a deal in the stage you choose',
+      'Add a note with the call summary',
+      'Schedule the follow-up activity',
+    ],
+  },
+  {
+    slug: 'zoho-crm',
+    name: 'Zoho CRM',
+    group: 'crm',
+    summary: 'Leads and call logs written to Zoho CRM as the conversation ends.',
+    actions: [
+      'Find the caller’s lead or contact',
+      'Create a lead for a new enquiry',
+      'Log the call and its outcome',
+      'Create a task for the record’s owner',
+    ],
+  },
+
+  // ── Field and practice tools ───────────────────────────────────────────
+  {
+    slug: 'jobber',
+    name: 'Jobber',
+    group: 'field',
+    summary: 'The agent knows the caller’s jobs and visits in Jobber and books around your crew’s schedule.',
+    actions: [
+      'Recognise an existing client by phone number',
+      'Read their upcoming visits and open jobs',
+      'Book around visits already on the schedule',
+      'Create a request for new work',
+    ],
+  },
+  {
+    slug: 'servicetitan',
+    name: 'ServiceTitan',
+    group: 'field',
+    summary: 'Customer lookups and new bookings against your ServiceTitan account.',
+    actions: [
+      'Look up the customer and their locations',
+      'Create a booking for the dispatch board',
+      'Add the call notes to the customer record',
+    ],
+  },
+  {
+    slug: 'housecall-pro',
+    name: 'Housecall Pro',
+    group: 'field',
+    summary: 'Customers and jobs in Housecall Pro, created and updated from the call.',
+    actions: [
+      'Find or create the customer',
+      'Schedule a job or an estimate visit',
+      'Attach the call summary to the job',
+    ],
+  },
+
+  // ── Messaging ──────────────────────────────────────────────────────────
+  {
+    slug: 'sms',
+    name: 'SMS',
+    group: 'messaging',
+    summary: 'Text messages to the caller and to your team, sent from your business number.',
+    actions: [
+      'Confirm a booking to the caller',
+      'Send a link the caller asked for',
+      'Alert the owner about a call that needs them',
+    ],
+  },
+  {
+    slug: 'whatsapp',
+    name: 'WhatsApp',
+    group: 'messaging',
+    summary: 'Confirmations and follow-ups on WhatsApp for customers who prefer it.',
+    actions: [
+      'Send the booking confirmation',
+      'Follow up with the details discussed on the call',
+      'Notify a team group',
+    ],
+  },
+  {
+    slug: 'email',
+    name: 'Email',
+    group: 'messaging',
+    summary: 'A written record of the call to the people who need it.',
+    actions: [
+      'Email the call summary and transcript to your team',
+      'Send the caller a confirmation',
+      'Escalate an urgent call to an on-call address',
+    ],
+  },
+  {
+    slug: 'slack',
+    name: 'Slack',
+    group: 'messaging',
+    summary: 'Calls that need attention posted to the Slack channel your team already watches.',
+    actions: [
+      'Post new leads and bookings to a channel',
+      'Mention the person on call for urgent requests',
+      'Link to the transcript and recording',
+    ],
+  },
+
+  // ── Payments and accounting ────────────────────────────────────────────
   {
     slug: 'stripe',
-    toolName: 'Stripe',
-    description:
-      'Voco uses Stripe to handle all subscription billing securely. Your monthly plan, usage tracking, and payment history are managed through Stripe — the same payment platform trusted by millions of businesses worldwide. You never share credit card details directly with Voco. Stripe handles PCI compliance, payment processing, and receipt generation automatically.',
-    useCases: [
-      {
-        icon: 'Bell',
-        title: 'Automated billing notifications',
-        body: 'Receive email receipts for every payment. Get notified before subscription renewals. Never wonder what you are being charged or when.',
-      },
-      {
-        icon: 'Clock',
-        title: 'Usage-based tracking',
-        body: 'Your call usage is tracked against your plan limits in real time. Approach your limit and Voco notifies you — no surprise charges.',
-      },
-      {
-        icon: 'Calendar',
-        title: 'Self-service billing management',
-        body: 'Update your payment method, switch plans, or view invoice history through the Stripe Customer Portal. No emails to support, no waiting on hold.',
-      },
-      {
-        icon: 'RefreshCw',
-        title: 'Seamless plan upgrades',
-        body: 'Outgrowing your plan? Upgrade instantly from your Voco dashboard. Stripe prorates the charge and your new call limits take effect immediately.',
-      },
+    name: 'Stripe',
+    group: 'payments',
+    summary: 'The agent can answer payment questions from Stripe and send the caller a link to pay.',
+    actions: [
+      'Look up a customer’s recent payments',
+      'Tell the caller whether an invoice is paid',
+      'Send a payment link by text or email',
     ],
-    ctaHeading: 'Start your free trial — billing powered by Stripe',
-    relatedSlugs: ['google-calendar', 'outlook-calendar', 'twilio'],
   },
   {
-    slug: 'twilio',
-    toolName: 'Twilio',
-    description:
-      'Voco is built on Twilio, the world leader in cloud communications. Your Voco phone number is a real US or Canadian phone number provisioned through Twilio, which means carrier-grade call quality, 99.95% uptime, and support for call forwarding from your existing business number. Twilio handles the telephony infrastructure so your AI receptionist can focus on answering calls and booking jobs.',
-    useCases: [
-      {
-        icon: 'Bell',
-        title: 'Carrier-grade reliability',
-        body: 'Twilio powers communications for companies like Uber, Airbnb, and Lyft. Your Voco calls ride the same infrastructure — 99.95% uptime, crystal-clear audio.',
-      },
-      {
-        icon: 'Clock',
-        title: 'Instant number provisioning',
-        body: 'During signup, Voco provisions a real local phone number for your business through Twilio. You can use it as your primary number or forward your existing number to it.',
-      },
-      {
-        icon: 'Calendar',
-        title: 'SMS notifications',
-        body: 'Voco uses Twilio to send you SMS alerts when calls come in, appointments are booked, or emergencies are detected. Real text messages to your phone, not app notifications.',
-      },
-      {
-        icon: 'RefreshCw',
-        title: 'Call forwarding support',
-        body: 'Keep your existing business number. Set up call forwarding from your carrier to your Voco number and every inbound call is answered by your AI receptionist.',
-      },
+    slug: 'xero',
+    name: 'Xero',
+    group: 'payments',
+    summary: 'Invoice and balance questions answered from Xero.',
+    actions: [
+      'Recognise the caller as a Xero contact',
+      'Read outstanding invoices and balances',
+      'Note the call against the contact',
     ],
-    ctaHeading: 'Get your Voco number — powered by Twilio',
-    relatedSlugs: ['google-calendar', 'outlook-calendar', 'stripe'],
+  },
+  {
+    slug: 'quickbooks',
+    name: 'QuickBooks',
+    group: 'payments',
+    summary: 'Customer balances and invoice status read from QuickBooks during the call.',
+    actions: [
+      'Find the customer by phone number',
+      'Read open invoices and their due dates',
+      'Pass payment questions to your accounts team with context',
+    ],
+  },
+
+  // ── Automation and custom ──────────────────────────────────────────────
+  {
+    slug: 'zapier',
+    name: 'Zapier',
+    group: 'automation',
+    summary: 'Hand any call outcome to a Zap and reach the thousands of apps behind it.',
+    actions: [
+      'Trigger a Zap when a call ends',
+      'Pass the caller, the outcome and the transcript',
+      'Start different Zaps for different outcomes',
+    ],
+  },
+  {
+    slug: 'make',
+    name: 'Make',
+    group: 'automation',
+    summary: 'Call outcomes as the first step of a Make scenario.',
+    actions: [
+      'Start a scenario when a call ends',
+      'Send structured data: who called, what they wanted, what was done',
+      'Branch on the outcome',
+    ],
+  },
+  {
+    slug: 'webhooks',
+    name: 'Webhooks',
+    group: 'automation',
+    summary: 'A signed HTTP request to your endpoint for the events you care about.',
+    actions: [
+      'Post when a call starts, ends or books',
+      'Include the transcript and the structured outcome',
+      'Retry on failure',
+    ],
+  },
+  {
+    slug: 'rest-api',
+    name: 'Your own API',
+    group: 'automation',
+    summary: 'If your system has an API, the agent can call it: read a record mid-call, write one when the caller confirms.',
+    actions: [
+      'Look up an order, an account or a booking',
+      'Create or update a record in your system',
+      'Use only the endpoints and scopes you grant',
+    ],
   },
 ];
+
+export function getIntegration(slug) {
+  return INTEGRATIONS.find((i) => i.slug === slug) || null;
+}
+
+export function integrationsByGroup() {
+  return INTEGRATION_GROUPS.map((group) => ({
+    ...group,
+    items: INTEGRATIONS.filter((i) => i.group === group.id),
+  }));
+}
