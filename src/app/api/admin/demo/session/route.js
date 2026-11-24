@@ -73,6 +73,7 @@ export async function POST(request) {
           voiceQuality: checked.voiceQuality,
           greeting: checked.greeting,
           typingSound: checked.typingSound,
+          sttLanguage: checked.sttLanguage,
         }),
       ),
     });

@@ -25,6 +25,7 @@ import { fmtElapsed, useAgentCall } from '@/hooks/useAgentCall';
 import { buildTimeline, eventTitle, formatEventWhen, recordingProblem } from '@/lib/demo/actions';
 import { describeAudioHealth } from '@/lib/demo/audio-health';
 import { destinationState, getDestination, isDestinationSelectable } from '@/lib/demo/destinations';
+import { DEFAULT_LANGUAGE_ID, LANGUAGE_OPTIONS, getLanguage } from '@/lib/demo/languages';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 import { DEFAULT_DEMO_BUSINESS_NAME, cleanBusinessName } from '@/lib/demo/session';
 import { DEFAULT_SCENARIO_ID } from '@/lib/demo/scenarios';
@@ -75,6 +76,8 @@ export default function DemoStudioPage() {
   const [greeting, setGreeting] = useState(DEFAULT_GREETING_ID);
   // The keyboard sound the agent plays while it looks something up.
   const [typingSound, setTypingSound] = useState(true);
+  // What the agent listens for: English only, or any language.
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE_ID);
   // The spoken sample: idle | loading | ready | error. `of` is what it is a sample of.
   const [sample, setSample] = useState({ state: 'idle', url: null, error: null, of: '' });
   const sampleUrlRef = useRef(null);
@@ -149,6 +152,7 @@ export default function DemoStudioPage() {
         voice_quality: quality,
         ...(typingSound ? {} : { typing_sound: false }),
         greeting,
+        stt_language: language,
       },
     });
   }
@@ -291,6 +295,10 @@ export default function DemoStudioPage() {
                 {persona === null && (
                   <Hint tone="error">Use a short plain name of 2 to 40 characters: letters, numbers, spaces, and the marks &amp; . -</Hint>
                 )}
+              </Field>
+              <Field label="Language">
+                <Segmented options={LANGUAGE_OPTIONS} value={language} onChange={setLanguage} disabled={inCall} columns={2} />
+                <Hint>{getLanguage(language)?.hint}</Hint>
               </Field>
               {(status?.scenarios || []).filter((sc) => sc.status === 'live').length > 1 ? (
                 <Field label="Task">

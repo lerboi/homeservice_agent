@@ -13,6 +13,7 @@ import { buildTimeline, eventTitle, formatEventWhen, recordingProblem } from '@/
 import { describeAudioHealth, summariseAudioStats } from '@/lib/demo/audio-health';
 import { VOICE_OPTIONS } from '@/lib/demo/voices';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
+import { DEFAULT_LANGUAGE_ID, LANGUAGE_OPTIONS, getLanguage } from '@/lib/demo/languages';
 
 const READY_GOOGLE = { id: 'google', kind: 'external', connected: true, healthy: true };
 const DEAD_GOOGLE = { id: 'google', kind: 'external', connected: true, healthy: false };
@@ -64,7 +65,7 @@ describe('validateDemoRequest', () => {
   it('accepts the live task with a healthy destination', () => {
     expect(validateDemoRequest({ task: 'scheduling', destination: 'google' }, STATUSES)).toEqual({
       ok: true, task: 'scheduling', destination: 'google', voiceOverride: null, llm: null, businessName: null,
-      voiceQuality: null, greeting: null, typingSound: null,
+      voiceQuality: null, greeting: null, typingSound: null, sttLanguage: null,
     });
   });
 
@@ -400,5 +401,30 @@ describe('a missing recording and the audio as received', () => {
     expect(damaged).toMatchObject({ patchedPct: 5, lostPct: 3, jitterMs: 80, poor: true });
     expect(describeAudioHealth(damaged)).toMatch(/damaged/);
     expect(describeAudioHealth(null)).toBe('');
+  });
+});
+
+describe('language the agent listens for', () => {
+  const ready = [{ id: 'google', connected: true, healthy: true }];
+  const tenant = { id: 't1', phone_number: '+10000000000' };
+
+  it('defaults to English only and offers multilingual', () => {
+    expect(DEFAULT_LANGUAGE_ID).toBe('en');
+    expect(LANGUAGE_OPTIONS.map((l) => l.id)).toEqual(['en', 'multi']);
+    expect(getLanguage('multi').label).toBe('Multilingual');
+  });
+
+  it('validates the choice and writes it to the room metadata', () => {
+    const ok = validateDemoRequest({ task: 'scheduling', destination: 'google', stt_language: 'en' }, ready);
+    expect(ok).toMatchObject({ ok: true, sttLanguage: 'en' });
+    const bad = validateDemoRequest({ task: 'scheduling', destination: 'google', stt_language: 'xx' }, ready);
+    expect(bad).toMatchObject({ ok: false, status: 400 });
+    expect(buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google', sttLanguage: 'multi' }).stt_language).toBe('multi');
+    expect(buildDemoRoomMetadata({ tenant, task: 'scheduling', destination: 'google' })).not.toHaveProperty('stt_language');
+  });
+
+  it('shows what the call is listening for on the first timeline line', () => {
+    const { actions } = buildTimeline([{ id: 's', type: 'session', llm: 'openai', voice_quality: 'fast', stt_language: 'en' }]);
+    expect(actions[0].detail).toContain('Listening: English only');
   });
 });

@@ -16,6 +16,7 @@ import { isScenarioLive, getScenario } from './scenarios.js';
 import { VOICE_IDS } from './voices.js';
 import { MODEL_IDS } from './models.js';
 import { GREETING_IDS, QUALITY_IDS } from './voice-quality.js';
+import { LANGUAGE_IDS } from './languages.js';
 
 export const DEMO_ROOM_PREFIX = 'test-web-';
 
@@ -109,9 +110,20 @@ export function validateDemoRequest(body, destinationStatuses = []) {
   // looks something up. Anything else leaves it as the agent has it.
   const typingSound = body?.typing_sound === false ? false : null;
 
+  // Optional: what the agent's speech-to-text listens for (languages.js).
+  // Absent = the agent's own setting for that agent.
+  let sttLanguage = null;
+  if (body?.stt_language) {
+    const candidate = String(body.stt_language).trim().toLowerCase();
+    if (!LANGUAGE_IDS.has(candidate)) {
+      return { ok: false, status: 400, error: 'stt_language must be one of the listed languages' };
+    }
+    sttLanguage = candidate;
+  }
+
   return {
     ok: true, task, destination: destinationId, voiceOverride, llm, businessName: businessName || null,
-    voiceQuality, greeting, typingSound,
+    voiceQuality, greeting, typingSound, sttLanguage,
   };
 }
 
@@ -123,7 +135,7 @@ export function buildDemoRoomName(tenantId, now = Date.now()) {
 
 export function buildDemoRoomMetadata({
   tenant, task, destination, voiceOverride = null, llm = null, businessName = null, voiceQuality = null, greeting = null,
-  typingSound = null,
+  typingSound = null, sttLanguage = null,
 }) {
   // `agent` picks the voice agent on the worker (livekit-agent
   // src/agents/__init__.py). It is honoured on test calls only.
@@ -139,6 +151,7 @@ export function buildDemoRoomMetadata({
     ...(voiceQuality ? { voice_quality: voiceQuality } : {}),
     ...(greeting ? { greeting } : {}),
     ...(typingSound === false ? { typing_sound: false } : {}),
+    ...(sttLanguage ? { stt_language: sttLanguage } : {}),
     demo: { task, destination, keep_booking: true, ...(businessName ? { business_name: businessName } : {}) },
   };
 }

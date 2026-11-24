@@ -18,6 +18,7 @@
 import { getDestination } from './destinations.js';
 import { getModel } from './models.js';
 import { getQuality } from './voice-quality.js';
+import { getLanguage } from './languages.js';
 
 // Weekday, day and month assembled from parts: the joined string differs
 // between JS engines ("Tue 24 Nov" vs "Tue, 24 Nov"), the parts do not.
@@ -220,6 +221,7 @@ export function buildTimeline(events, { timeZone = 'UTC' } = {}) {
         detail: [
           event.fallback ? `Falls back to ${event.fallback}` : '',
           getQuality(event.voice_quality) ? `Voice quality: ${getQuality(event.voice_quality).label}` : '',
+          getLanguage(event.stt_language) ? `Listening: ${getLanguage(event.stt_language).label}` : '',
         ].filter(Boolean).join(' · '),
       });
     } else if (event.type === 'tool') {
