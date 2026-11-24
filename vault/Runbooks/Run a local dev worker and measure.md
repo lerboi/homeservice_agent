@@ -72,6 +72,7 @@ Override behaviour for an experiment by exporting env vars before starting the w
 - **Do not pipe the scripted call through `tail`**: output is lost if it hangs. `grep` on its stdout is fine.
 - **The worker refuses jobs when the machine is busy.** In `start` mode livekit-agents marks the worker unavailable above 70% CPU load (`worker is at full capacity, marking as unavailable` in the log) and the call sits at "Waiting for the agent". A compiling `next dev` is enough to cause it. Close what you can, or run the scripted call without the Next server.
 - **`npm run dev` dies with "JavaScript heap out of memory", or admin routes return 404 pages.** Stop the server, delete the `.next` folder (it is rebuilt), start again. On 2026-11-24 `.next/dev/cache` had grown to 15.3 GB; see [[2026-11-24 Demo call script and persona]] section 8.
+- **`npm run dev` does not start in the `homeservice_agent-appointments` worktree** ("Symlink node_modules is invalid, it points out of the filesystem root"). To see a `main` change in a browser before pushing: commit it on `main` locally, fast-forward `rebrand` to it in the main working folder (`git merge --ff-only main`), and run `npm run dev` there.
 - **Local numbers are not Railway numbers.** A local worker reaches Groq and LiveKit through different regions. Compare like with like.
 - **Free-plan ElevenLabs library voices return 402** and the caller audio cannot be synthesized. The script uses a premade voice for the caller for that reason.
 
