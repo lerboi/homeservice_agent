@@ -2,13 +2,13 @@
 type: status
 status: current
 description: "Current state of the project: what is in flight, what is broken, what is waiting on the owner. Keep this short and overwrite it as things change."
-verified: 2026-11-24
+verified: 2026-11-25
 tags: [voco/hub]
 ---
 
 # Now
 
-Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site changes (start here)]] next.** The owner's next step is front-end changes to the rebranded site on the `rebrand` branch. This note is overwritten, not appended: history belongs in [[Log]].
+Last updated 2026-11-25. **Continuing the work? Read [[Handoff - Public site changes (start here)]] next.** The owner's next step is front-end changes to the rebranded site on the `rebrand` branch. This note is overwritten, not appended: history belongs in [[Log]].
 
 ## Where things stand
 
@@ -17,7 +17,7 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 | Obsidian vault | Done and pushed | [[Plan 1 - Obsidian vault migration]] |
 | Fast voice path (scheduling prompt + Groq Qwen with OpenAI fallback) | **Deployed** to Railway, agent commit `c1b048e` | [[Voice Agent - Scheduling profile and fast LLM path (verified)]] |
 | Appointments agent (dedicated agent: book, find, move, cancel; model switch) | **Deployed** 2026-11-24: agent `5c0d395` on Railway, Next app `a307ce1` on Vercel. Final production check: 4 of 4 scripted booking calls correct (3 Groq, 1 gpt-4.1-mini). Demo Studio calls use it; phone calls do not until `VOCO_DEFAULT_AGENT=appointments`. Production check: see the build record, section 7 | [[Voice Agent - Appointments agent (verified)]] · [[2026-11-24 Appointments agent build]] |
-| Demo call (script, clinic business name, rehearsal and reset scripts, dedicated demo agent) | **Deployed from `main` in both repos, 2026-11-24.** The owner's first spoken take failed (the agent asked what the appointment was for instead of booking); the Demo Studio now runs a dedicated demo agent (`livekit-agent/src/agents/demo`) on GPT-4.1 mini. Rehearsals of it with the scripted caller: 3 of 3 locally, then 5 of 5 on Railway (agent `3138fa8`, 43 to 51 s as run, every check passed). No spoken take on it yet. Next: the owner records again | [[2026-11-24 Demo call script and persona]] · [[Record a demo]] |
+| Demo call (script, clinic business name, rehearsal and reset scripts, dedicated demo agent) | **Deployed from `main` in both repos, 2026-11-24.** The owner's first spoken take failed (the agent asked what the appointment was for instead of booking); the Demo Studio now runs a dedicated demo agent (`livekit-agent/src/agents/demo`) on GPT-4.1 mini. Rehearsals of it with the scripted caller: 3 of 3 locally, then 5 of 5 on Railway (agent `3138fa8`, 43 to 51 s as run, every check passed). Since then (2026-11-25): respectful register, same-call lookup, and it now asks what time the caller wants instead of offering two. Spoken takes have been made; none is yet a clean take. Next: the owner records again | [[2026-11-24 Demo call script and persona]] · [[Record a demo]] |
 | Google Calendar connection | **Connected and verified** (token refresh, create, read, delete) on the demo tenant, with the owner's personal Google account | [[2026-11-23 Demo Studio build]] |
 | Demo Studio (Task 2) | **Deployed** (agent `f7c632d` on Railway, Next app `123e543` on Vercel). Verified in production with two scripted calls. One step left: a spoken call through `/admin/demo` | [[Demo Studio]] |
 | Public site rebrand (Task 3) | **Pushed to `main` on 2026-11-24** (GitHub `main` = `229789b`, fast-forward from `rebrand`), so Vercel deploys it. Two products (Voco Voice, Voco Agent), no sign-in links, no integrations pages, new identity. Production has not been looked at after the deploy. `/pricing`, `/about`, `/demo` and `/contact` still carry voice-only copy | [[2026-11-24 Public site second pass - two products and identity]], [[Public Site]] |
@@ -61,6 +61,8 @@ Last updated 2026-11-24. **Continuing the work? Read [[Handoff - Public site cha
 
 ## Waiting on the owner
 
+- LiveKit recording quota: call recordings are refused with `egress minutes exceeded` since 2026-11-25. A plan with more egress minutes, or wait for the quota to reset. Production phone calls record through the same account.
+- The glitchy voice: after the next call that sounds wrong, the line under the call on `/admin/demo` and the `tts_metrics` log lines say which side it is on ([[2026-11-24 Demo call script and persona]] section 14).
 - A spoken test call through `/admin/demo`.
 - A look at the rebranded site in production.
 - Google Cloud Console: is the OAuth consent screen "Testing" or "In production"?

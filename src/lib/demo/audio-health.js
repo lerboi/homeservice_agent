@@ -47,11 +47,13 @@ export function summariseAudioStats(stats) {
 /** One line for the page, or '' when there is nothing to report. */
 export function describeAudioHealth(health) {
   if (!health) return '';
+  const packets = health.packetsLost + health.packetsReceived;
   const parts = [
     `${health.patchedPct}% patched over`,
-    `${health.packetsLost} of ${health.packetsLost + health.packetsReceived} packets lost`,
+    // Some browsers report no packet counts; say nothing rather than "0 of 0".
+    packets > 0 ? `${health.packetsLost} of ${packets} packets lost` : '',
     `${health.jitterMs} ms jitter`,
-  ];
+  ].filter(Boolean);
   return health.poor
     ? `The agent's voice reached this browser damaged (${parts.join(', ')}). That is this device or its connection, not the agent's speech.`
     : `The agent's voice reached this browser cleanly (${parts.join(', ')}).`;

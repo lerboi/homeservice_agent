@@ -2,7 +2,7 @@
 type: runbook
 status: current
 description: "Record the product demo from /admin/demo: checks before the take, the take itself, and removing the booking afterwards. Includes what to do when the calendar connection or the agent fails."
-verified: 2026-11-24
+verified: 2026-11-25
 tags: [voco/runbook]
 ---
 
@@ -19,7 +19,7 @@ One caller rings a clinic, books a cleaning and moves it, in under a minute. Und
 
 | You say | The agent should | On screen |
 |---|---|---|
-| (nothing) | "Thanks for calling Brightside Dental. Calls are recorded — how can I help?" | Captions start |
+| (nothing) | "Thank you for calling Brightside Dental. This call is recorded. How may I help you today?" | Captions start |
 | "Hi, it's Alex Tan. Can I book a cleaning for tomorrow at two?" | Say two tomorrow is free and ask to book it | Checked availability · open |
 | "Yes, please." | Confirm the booking, ask if there is anything else | Booked, Saved to Google Calendar, the event card; the event appears in Google |
 | "Actually, sorry, I've got a meeting then. Could you move it to Friday at ten?" | Say Friday at ten is free and ask to move it | Found the appointment, Checked availability · open |
@@ -65,6 +65,8 @@ From a terminal, without the page: `node --env-file=.env.local vault/_meta/tools
 | Agent greets, then hears nothing | Wrong or silent microphone | Pick another device; the level bar shows what the agent hears |
 | Timeline shows "Could not save to Google Calendar" | The push failed after the booking was made | The booking is in Voco. Check the connection, remove the booking, retake |
 | The agent says it is booked but no event card appears | The model claimed a booking without making one | It should not happen: a guard forces the booking ([[Voice Agent - Scheduling profile and fast LLM path (verified)]]). Search the Railway logs for `claim-guard` and report it |
+| "No recording: this month's recording minutes on the LiveKit plan are used up" | LiveKit's egress quota for the plan is spent | The call is unaffected. Use the screen recorder's audio, or move the LiveKit project to a plan with more egress minutes |
+| The voice turns slow, muffled or broken | Not yet traced | After the call read the line under it: "reached this browser damaged" means this device or its connection. Otherwise search the Railway logs for `tts_metrics` for that call and look for a jump in `s_per_char` |
 | Cleanup says the event could not be deleted | Calendar connection died between the take and the cleanup | Delete the event by hand in Google Calendar; the appointment is already cancelled |
 
 ## Verifying a deploy without speaking

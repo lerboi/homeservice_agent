@@ -4,7 +4,7 @@ system: Demo Studio
 status: current
 repo: homeservice_agent (src/app/admin/demo, src/app/api/admin/demo, src/lib/demo, src/hooks/useAgentCall.js) + livekit-agent
 description: "The /admin/demo recording station: a browser call in which the agent books an appointment that lands in Google Calendar. How the page, its three routes, the agent's demo flag and the live event stream fit together, and what is and is not verified."
-verified: 2026-11-24
+verified: 2026-11-25
 tags: [voco/system/demo-studio]
 ---
 
@@ -111,6 +111,11 @@ Recording a move or a cancel takes two calls: book in the first, then start a se
 ## The demo agent (deployed 2026-11-24)
 
 Demo Studio calls are taken by the demo agent, `livekit-agent/src/agents/demo`: the scheduling task in `src/lib/demo/scenarios.js` names `agent: 'demo'`. It is the front desk of a clinic with its own prompt and one turn policy (a plain "yes" to a single time on offer must make the change), running on the appointments agent's real tools, calendar writes and call wiring. It is a working agent, not a script, and is reachable from test calls only. The Model control starts on GPT-4.1 mini. Why it exists and how it rehearsed: [[2026-11-24 Demo call script and persona]] section 7.
+
+Added 2026-11-25 ([[2026-11-24 Demo call script and persona]] section 14):
+- A caller who names a day and no time is asked what time they would like; the agent does not offer times of its own choosing. The refused lookup (`STATE:time_not_given`) is not shown in the live actions.
+- The agent publishes `recording_failed` (`reason`: `quota` or `error`) when LiveKit will not start the recording; `recordingProblem` in `src/lib/demo/actions.js` turns it into the line under the call.
+- `useAgentCall` samples the browser's receive statistics for the agent's audio track and returns `audioHealth`; `src/lib/demo/audio-health.js` summarises it and the page shows one line after the call.
 
 ## The business the call answers as (deployed 2026-11-24)
 
