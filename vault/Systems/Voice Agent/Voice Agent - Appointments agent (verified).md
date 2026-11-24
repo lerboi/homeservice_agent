@@ -99,6 +99,8 @@ All of them sit in `AppointmentsAgent.llm_node`. They exist because the fast mod
 | Claim guard (`guard.py`) | After an offer or lookup and before a completed write, a reply that opens with "you're booked / I've moved it / it's cancelled" and has no tool call | Dropped. If only a new booking is in play, `book_appointment` is forced. If an existing appointment is in play, the model is corrected and answers again (a forced move or cancel would be worse than the false claim) |
 | Preamble filter (`preamble.py`) | Speech in the same response as a tool call ("Let me check that for you", a stray "[assistant]") | The speech is dropped; the goodbye before `end_call` is kept |
 
+Two more filters on every reply, added 2026-11-25: `preamble.speak_or_act` drops a tool call that comes after speech in the same response (one reply per caller turn; `end_call` excepted), and `speech_filter.strip_tool_mentions` removes anything in round or square brackets and anything after a line break that follows speech. Why: [[2026-11-24 Demo call script and persona]] section 14.
+
 `VOCO_BOOKING_CLAIM_GUARD=false` turns off the first two. They read English only. At most two re-runs per call.
 
 Code gates that do not depend on the model's wording: a booking, move or cancel for something first put to the caller after their last turn is refused once (`common.unconfirmed`, `VOCO_CONFIRM_GATE`); a date in the past is sent back for a silent retry.
