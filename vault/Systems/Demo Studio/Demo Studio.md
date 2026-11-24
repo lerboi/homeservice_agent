@@ -115,6 +115,7 @@ Demo Studio calls are taken by the demo agent, `livekit-agent/src/agents/demo`: 
 Added 2026-11-25 ([[2026-11-24 Demo call script and persona]] section 14):
 - A caller who names a day and no time is asked what time they would like; the agent does not offer times of its own choosing. The refused lookup (`STATE:time_not_given`) is not shown in the live actions.
 - The agent publishes `recording_failed` (`reason`: `quota` or `error`) when LiveKit will not start the recording; `recordingProblem` in `src/lib/demo/actions.js` turns it into the line under the call.
+- A Language control (English only by default, or Multilingual) writes `stt_language` to the room metadata; registry `src/lib/demo/languages.js`. The agent's `session` event reports it and the timeline shows "Listening: …".
 - `useAgentCall` samples the browser's receive statistics for the agent's audio track and returns `audioHealth`; `src/lib/demo/audio-health.js` summarises it and the page shows one line after the call.
 
 ## The business the call answers as (deployed 2026-11-24)
