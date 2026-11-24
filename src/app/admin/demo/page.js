@@ -22,7 +22,8 @@ import {
   Minimize2, Phone, PhoneOff, RefreshCw, Trash2, Volume2,
 } from 'lucide-react';
 import { fmtElapsed, useAgentCall } from '@/hooks/useAgentCall';
-import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
+import { buildTimeline, eventTitle, formatEventWhen, recordingProblem } from '@/lib/demo/actions';
+import { describeAudioHealth } from '@/lib/demo/audio-health';
 import { destinationState, getDestination, isDestinationSelectable } from '@/lib/demo/destinations';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 import { DEFAULT_DEMO_BUSINESS_NAME, cleanBusinessName } from '@/lib/demo/session';
@@ -56,7 +57,7 @@ export default function DemoStudioPage() {
   const {
     phase, inCall, error, agentJoined, muted, elapsed, segments, events, devices, deviceId,
     micLevel, micChecked, micSilent, result, recordingUrl, polling, audioBlocked, session,
-    agentSpeaking, userSpeaking, audioContainerRef,
+    agentSpeaking, userSpeaking, audioContainerRef, audioHealth,
   } = call;
 
   const [status, setStatus] = useState(null);
@@ -118,6 +119,8 @@ export default function DemoStudioPage() {
 
   const timeZone = session?.tenant?.timezone || status?.tenant?.timezone || 'UTC';
   const { actions, booking } = useMemo(() => buildTimeline(events, { timeZone }), [events, timeZone]);
+  // Why there is no audio to download, when the agent said the recording could not start.
+  const noRecording = useMemo(() => recordingProblem(events), [events]);
 
   const destinationStatus = status?.destinations?.find((d) => d.id === destination) || null;
   // Must be declared before canStart, which reads it.
@@ -611,6 +614,8 @@ export default function DemoStudioPage() {
                   <a href={recordingUrl} className="inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-2">
                     <Download className="h-4 w-4" /> Download audio (MP4)
                   </a>
+                ) : noRecording ? (
+                  <span className="text-sm" style={{ color: 'rgba(11,15,20,0.72)' }}>{noRecording}</span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: 'rgba(11,15,20,0.62)' }}>
                     {polling && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -630,6 +635,11 @@ export default function DemoStudioPage() {
                 )}
               </div>
               {recordingUrl && <audio controls src={recordingUrl} className="w-full" />}
+              {audioHealth && (
+                <p className="text-xs" style={{ color: audioHealth.poor ? '#B45309' : 'rgba(11,15,20,0.6)' }}>
+                  {describeAudioHealth(audioHealth)}
+                </p>
+              )}
               {cleanup.message && (
                 <p className={`text-sm ${cleanup.state === 'error' ? 'text-red-700' : ''}`} style={cleanup.state === 'error' ? undefined : { color: 'rgba(11,15,20,0.72)' }}>
                   {cleanup.message}

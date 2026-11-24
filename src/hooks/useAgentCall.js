@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DisconnectReason, Room, RoomEvent, Track } from 'livekit-client';
+import { summariseAudioStats } from '@/lib/demo/audio-health';
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 120_000; // egress upload can lag the call close
@@ -126,6 +127,10 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
   const [result, setResult] = useState(null);
   const [recordingUrl, setRecordingUrl] = useState(null);
   const [polling, setPolling] = useState(false);
+  // How cleanly this browser received the agent's voice (lib/demo/audio-health.js).
+  const [audioHealth, setAudioHealth] = useState(null);
+  const audioStatsRef = useRef(null); // latest receiver stats of the agent's audio track
+  const audioStatsTimerRef = useRef(null);
 
   const roomRef = useRef(null);
   const roomNameRef = useRef(null);
@@ -207,6 +212,7 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
       stopMeter();
       if (timerRef.current) clearInterval(timerRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
+      if (audioStatsTimerRef.current) clearInterval(audioStatsTimerRef.current);
     };
   }, [stopMeter]);
 
@@ -251,6 +257,11 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
       setEndReason(name);
     }
     setPhase('ended');
+    if (audioStatsTimerRef.current) clearInterval(audioStatsTimerRef.current);
+    audioStatsTimerRef.current = null;
+    const health = summariseAudioStats(audioStatsRef.current);
+    if (health) console.info(`[${tag}] agent audio as received:`, health);
+    setAudioHealth(health);
     setAgentSpeaking(false);
     setUserSpeaking(false);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -366,6 +377,8 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
     setAudioBlocked(false);
     setSegments([]);
     setEvents([]);
+    setAudioHealth(null);
+    audioStatsRef.current = null;
     setSession(null);
     setResult(null);
     setRecordingUrl(null);
@@ -488,6 +501,16 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
         const el = track.attach();
         el.autoplay = true;
         audioContainerRef.current?.appendChild(el);
+        // Sample the browser's own receive statistics while the call runs;
+        // the last sample is summarised when the call ends.
+        if (audioStatsTimerRef.current) clearInterval(audioStatsTimerRef.current);
+        audioStatsTimerRef.current = setInterval(() => {
+          try {
+            track.getReceiverStats?.()?.then((stats) => {
+              if (stats) audioStatsRef.current = stats;
+            }).catch(() => { /* best-effort */ });
+          } catch { /* best-effort */ }
+        }, 2000);
       }
     });
     room.on(RoomEvent.ParticipantConnected, () => setAgentJoined(true));
@@ -623,6 +646,7 @@ export function useAgentCall({ tag = 'agent-call' } = {}) {
     result,
     recordingUrl,
     polling,
+    audioHealth,
     // actions
     startCall,
     hangUp,

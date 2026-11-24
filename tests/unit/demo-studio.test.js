@@ -9,7 +9,8 @@ import {
   buildDemoRoomMetadata, cleanBusinessName, buildDemoRoomName, isDemoRoomOfTenant, validateDemoRequest,
 } from '@/lib/demo/session';
 import { DEFAULT_PREVIEW_VOICE_ID, QUALITY_OPTIONS, buildPreviewRequest } from '@/lib/demo/voice-quality';
-import { buildTimeline, eventTitle, formatEventWhen } from '@/lib/demo/actions';
+import { buildTimeline, eventTitle, formatEventWhen, recordingProblem } from '@/lib/demo/actions';
+import { describeAudioHealth, summariseAudioStats } from '@/lib/demo/audio-health';
 import { VOICE_OPTIONS } from '@/lib/demo/voices';
 import { MODEL_OPTIONS, getModel } from '@/lib/demo/models';
 
@@ -364,5 +365,40 @@ describe('live actions timeline', () => {
   it('ignores malformed events', () => {
     expect(buildTimeline([null, {}, { type: 5 }, { type: 'unknown' }])).toEqual({ actions: [], booking: null });
     expect(buildTimeline(undefined)).toEqual({ actions: [], booking: null });
+  });
+});
+
+describe('a missing recording and the audio as received', () => {
+  it('hides the step where the agent asked for a time instead of checking one', () => {
+    const { actions } = buildTimeline([
+      { id: 'a', type: 'tool', name: 'check_slot', args: { date: '2026-12-04', time: '08:00' }, state: 'STATE:time_not_given date=2026-12-04' },
+      { id: 'b', type: 'tool', name: 'check_day', args: { date: '2026-12-04' }, state: 'STATE:time_not_given date=2026-12-04' },
+    ]);
+    expect(actions).toEqual([]);
+  });
+
+  it('says why there is no recording', () => {
+    expect(recordingProblem([])).toBe('');
+    expect(recordingProblem([{ type: 'recording_failed', reason: 'quota' }])).toMatch(/recording minutes .* used up/);
+    expect(recordingProblem([{ type: 'recording_failed', reason: 'error' }])).toMatch(/could not start it/);
+    expect(buildTimeline([{ type: 'recording_failed', reason: 'quota' }]).actions).toEqual([]);
+  });
+
+  it('summarises the browser receive statistics', () => {
+    expect(summariseAudioStats(null)).toBeNull();
+    expect(summariseAudioStats({ totalSamplesDuration: 0 })).toBeNull();
+    const clean = summariseAudioStats({
+      totalSamplesDuration: 60, concealedSamples: 48000 * 6, silentConcealedSamples: 48000 * 6,
+      packetsLost: 0, packetsReceived: 3000, jitter: 0.004,
+    });
+    expect(clean).toMatchObject({ patchedPct: 0, packetsLost: 0, lostPct: 0, jitterMs: 4, poor: false });
+    expect(describeAudioHealth(clean)).toMatch(/cleanly/);
+    const damaged = summariseAudioStats({
+      totalSamplesDuration: 60, concealedSamples: 48000 * 6, silentConcealedSamples: 48000 * 3,
+      packetsLost: 90, packetsReceived: 2910, jitter: 0.08,
+    });
+    expect(damaged).toMatchObject({ patchedPct: 5, lostPct: 3, jitterMs: 80, poor: true });
+    expect(describeAudioHealth(damaged)).toMatch(/damaged/);
+    expect(describeAudioHealth(null)).toBe('');
   });
 });

@@ -84,6 +84,9 @@ export function eventTitle(callerName, reason) {
 function toolAction(event) {
   const args = event.args || {};
   const token = stateToken(event.state);
+  // The agent stopped itself from looking up a time the caller never said and
+  // asked for one instead: nothing was checked, so nothing is shown.
+  if (token === 'time_not_given') return null;
   switch (event.name) {
     case 'check_slot': {
       const when = [formatDate(args.date), formatClock(args.time)].filter(Boolean).join(', ');
@@ -176,6 +179,18 @@ function cardFor(event, booking, timeZone, status) {
     failed: false,
     status,
   };
+}
+
+/**
+ * Why a call has no audio to download, from the agent's `recording_failed`
+ * event ({ type, reason: 'quota' | 'error' }), or '' when the recording started.
+ */
+export function recordingProblem(events) {
+  const failed = (events || []).find((e) => e && e.type === 'recording_failed');
+  if (!failed) return '';
+  return failed.reason === 'quota'
+    ? 'No recording: this month’s recording minutes on the LiveKit plan are used up. The call itself was not affected.'
+    : 'No recording: LiveKit could not start it for this call. The call itself was not affected.';
 }
 
 /**
