@@ -9,7 +9,7 @@ tags: [voco/runbook]
 # Deploy
 
 ## Voice agent (`livekit-agent`)
-- Railway project `miraculous-love`, service `livekit_agent`, environment `production`, region europe-west4.
+- Railway project `miraculous-love`, service `livekit_agent`, environment `production`, region asia-southeast1 (Singapore) since 2026-11-25; it was europe-west4 before.
 - Pushing to `main` on GitHub (`lerboi/livekit_agent`) triggers a build from the `Dockerfile` and a deploy. Verified: the running deployment is commit `1dbee5a` from 2026-09-08.
 - The worker registers with LiveKit Cloud as `voco-voice-agent`. A healthy deploy logs `registered worker`.
 - Tests before pushing: `pytest` in the agent repo (663 passing with one known pre-existing failure, per [[2026-09-09 Call-experience items 1, 2, 3, 5 shipped]]).
