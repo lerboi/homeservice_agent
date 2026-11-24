@@ -52,12 +52,16 @@ export function getQuality(id) {
   return QUALITY_OPTIONS.find((q) => q.id === id) || null;
 }
 
-/** The greeting the agent opens with. The text mirrors the agent's own lines. */
+/**
+ * The greeting the agent opens with. The text mirrors the demo agent's own
+ * lines (livekit-agent src/agents/demo/entry.py PROFILE.greeting and
+ * src/agents/appointments/entry.py WARM_GREETING).
+ */
 export const GREETING_OPTIONS = [
   {
     id: 'standard',
     label: 'Standard',
-    text: (business) => `Thanks for calling ${business}. Calls are recorded — how can I help?`,
+    text: (business) => `Thank you for calling ${business}. This call is recorded. How may I help you today?`,
   },
   {
     id: 'warm',

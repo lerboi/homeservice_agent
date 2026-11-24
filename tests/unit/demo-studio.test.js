@@ -189,7 +189,7 @@ describe('room name and metadata', () => {
     expect(fast.voiceId).toBe(DEFAULT_PREVIEW_VOICE_ID);
     expect(fast.body.model_id).toBe('eleven_flash_v2_5');
     expect(fast.body.voice_settings).toEqual({ stability: 0.45, similarity_boost: 0.75, speed: 1.08 });
-    expect(fast.body.text.startsWith('Thanks for calling Brightside Dental. Calls are recorded')).toBe(true);
+    expect(fast.body.text.startsWith('Thank you for calling Brightside Dental. This call is recorded.')).toBe(true);
     const rich = buildPreviewRequest({ voiceId: 'abc', quality: 'rich', greeting: 'warm', businessName: 'Brightside Dental' });
     expect(rich.voiceId).toBe('abc');
     expect(rich.body.model_id).toBe('eleven_multilingual_v2');
